@@ -1,0 +1,79 @@
+import { useCustomFields } from "./use-customFields";
+import { getYupSchema } from "../utils/validations";
+import { FormObject } from "../Types/CustomField";
+import dayjs, { Dayjs } from "dayjs";
+
+export type FileData = {
+  base64: string;
+  name: string;
+  type: string;
+  size: number;
+};
+
+export type CustomFieldValues = {
+  [key: string]:
+    | string
+    | string[]
+    | boolean
+    | File[]
+    | Dayjs
+    | FileData[]
+    | number;
+};
+
+const useCustomForm = (formName: string) => {
+  const { customFields } = useCustomFields();
+
+  let formNameObject: FormObject | undefined;
+  let formId: string | undefined;
+
+  Object.entries(customFields).forEach((e) => {
+    if (e[1].formName === formName) {
+      formNameObject = e[1] as FormObject;
+      formId = e[0];
+    }
+  });
+
+  const validationSchema = getYupSchema(formNameObject?.fields || []);
+
+  const initialValues = formNameObject?.fields.reduce((acc, field) => {
+    if (field.type === "date") {
+      acc[field.label] = field.defaultValue || dayjs().format("YYYY-MM-DD");
+    } else if (field.type === "time") {
+      acc[field.label] =
+        field.defaultValue || dayjs().format("HH:mm");
+    } else if (field.type === "datetime") {
+      acc[field.label] =
+        field.defaultValue || dayjs().format("YYYY-MM-DDTHH:mm:ss");
+    } else {
+      acc[field.label] = field.defaultValue || "";
+    }
+    return acc;
+  }, {} as Record<string, string | string[] | boolean | File[] | Dayjs | FileData[]>);
+
+  const getDefaultValues = (formValues: CustomFieldValues) => {
+    if (!initialValues) return {};
+
+    Object.keys(formValues).forEach((key) => {
+      if (
+        (typeof formValues[key] === "string" && formValues[key] !== "") ||
+        (typeof formValues[key] === "object" &&
+          Object.entries(formValues[key]).length > 0) ||
+        (Array.isArray(formValues[key]) && formValues[key].length > 0)
+      ) {
+        initialValues[key] = formValues[key];
+      }
+    });
+    return initialValues;
+  };
+
+  return {
+    formNameObject,
+    formId,
+    validationSchema,
+    initialValues,
+    getDefaultValues,
+  };
+};
+
+export default useCustomForm;

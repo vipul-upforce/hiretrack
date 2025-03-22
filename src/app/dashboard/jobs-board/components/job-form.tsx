@@ -1,0 +1,299 @@
+"use client";
+
+import { useFormikContext } from "formik";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { ChipInput } from "@/components/ui/chip-input";
+import { FileUpload } from "@/components/ui/file-upload";
+import { Button } from "@/components/ui/button";
+import { JobFormValues } from "../schemas/job-schema";
+import { toast } from "@/hooks/use-toast";
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+// import { DatePicker } from "@/components/ui/date-picker";
+import { LinkIcon } from "lucide-react";
+
+export const skillSuggestions = [
+  "JavaScript",
+  "TypeScript",
+  "React",
+  "Node.js",
+  "Python",
+  "Java",
+  "SQL",
+  "AWS",
+  "Docker",
+  "Kubernetes",
+  "DevOps",
+  "Agile",
+  "Scrum",
+];
+
+interface JobFormProps {
+  job?: {
+    attachments: {
+      files: Array<{
+        id: string;
+        name: string;
+        url: string;
+        type: "pdf";
+        size: number;
+      }>;
+      images: Array<{
+        id: string;
+        name: string;
+        url: string;
+        type: "image";
+        size: number;
+      }>;
+    };
+  };
+  onRemoveExistingFile?: (fileId: string) => void;
+  onRemoveExistingImage?: (imageId: string) => void;
+}
+
+export function JobForm( props: JobFormProps) {
+  const {
+    values,
+    errors,
+    touched,
+    handleChange,
+    handleBlur,
+    setFieldValue,
+    setFieldTouched,
+  } = useFormikContext<JobFormValues>();
+  const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
+  const [newLink, setNewLink] = useState("");
+
+  const handleAddLink = () => {
+    try {
+      new URL(newLink); // Validate URL
+      setFieldValue("links", [...values.links, newLink]);
+      setNewLink("");
+      setIsLinkDialogOpen(false);
+    } catch {
+      toast({
+        title: "Invalid URL",
+        description: "Please enter a valid URL (e.g., https://example.com)",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <div className="space-y-4 pt-0">
+      <div className="space-y-2">
+        <Label htmlFor="title">
+          Job Title <span className="text-red-500">*</span>
+        </Label>
+        <Input
+          id="title"
+          name="title"
+          value={values.title}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          placeholder="e.g., Senior Frontend Developer"
+        />
+        {touched.title && errors.title && (
+          <p className="text-sm text-red-500">{errors.title}</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="description">
+          Description <span className="text-red-500">*</span>
+        </Label>
+        <Textarea
+          id="description"
+          name="description"
+          value={values.description}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          placeholder="Enter job description..."
+          className="min-h-[100px]"
+        />
+        {touched.description && errors.description && (
+          <p className="text-sm text-red-500">{String(errors.description)}</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label>
+          Required Skills <span className="text-red-500">*</span>
+        </Label>
+        <ChipInput
+          value={values.skills}
+          onChange={(newSkills) => setFieldValue("skills", newSkills)}
+          placeholder="Add skills..."
+          onSuggestionClick={(suggestion) => {
+            setFieldValue("skills", [...values.skills, suggestion]);
+          }}
+          suggestions={skillSuggestions.filter(
+            (skill) => !values.skills.includes(skill)
+          )}
+        />
+        {touched.skills && errors.skills && (
+          <p className="text-sm text-red-500">{String(errors.skills)}</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="experience">
+          Experience (years) <span className="text-red-500">*</span>
+        </Label>
+        <Input
+          id="experience"
+          name="experience"
+          type="number"
+          step="0.1"
+          value={values.experience}
+          onChange={(e) => {
+            const value = parseInt(e.target.value);
+            setFieldValue("experience", isNaN(value) ? 0 : value);
+          }}
+          onBlur={handleBlur}
+          placeholder="e.g., 5"
+          min="0"
+        />
+        {touched.experience && errors.experience && (
+          <p className="text-sm text-red-500">{errors.experience}</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label>Job Links</Label>
+        <div className="space-y-2">
+          {values.links.map((link, index) => (
+            <div key={index} className="flex items-center gap-2">
+              <LinkIcon className="h-4 w-4" />
+              <span className="text-sm">{link}</span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const newLinks = [...values.links];
+                  newLinks.splice(index, 1);
+                  setFieldValue("links", newLinks);
+                }}
+              >
+                ×
+              </Button>
+            </div>
+          ))}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setIsLinkDialogOpen(true);
+              setFieldTouched("links", true);
+            }}
+          >
+            Add Link
+          </Button>
+          {touched.links && errors.links && (
+            <p className="text-sm text-red-500">{String(errors.links)}</p>
+          )}
+        </div>
+      </div>
+
+      <Dialog
+        open={isLinkDialogOpen}
+        onOpenChange={(open) => {
+          setIsLinkDialogOpen(open);
+          setNewLink("");
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Link</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="link">URL</Label>
+              <Input
+                id="link"
+                placeholder="https://example.com"
+                value={newLink}
+                onChange={(e) => setNewLink(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddLink();
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setIsLinkDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="button" onClick={handleAddLink}>
+              Add
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <div className="space-y-2">
+        <Label>Attachments</Label>
+        <FileUpload
+          onFileSelect={(newFiles) =>
+            setFieldValue("files", [
+              ...(values.files || []),
+              ...newFiles.filter(
+                (file) =>
+                  !(values.files || []).some(
+                    (existingFile) => existingFile.name === file.name
+                  )
+              ),
+            ])
+          }
+          accept={{}} // Empty object means accept all file types
+          maxFiles={30}
+          files={values.files || []}
+          setter={(files : File[])=>{
+            setFieldValue("files", files)
+          }}
+          // existingFiles={job?.attachments.files} // Remove from UI
+        />
+      </div>
+
+      {/* <div className="space-y-2">
+        <Label>Images</Label>
+        <FileUpload
+          onFileSelect={(newImages) =>
+            setFieldValue("images", [
+              ...(values.images || []),
+              ...newImages.filter(
+                (file) =>
+                  !(values.images || []).some(
+                    (existingImage) => existingImage.name === file.name
+                  )
+              ),
+            ])
+          }
+          accept={{ "image/*": [".png", ".jpg", ".jpeg"] }}
+          maxFiles={5}
+          files={values.images || []}
+          setter={(files : File[])=>{
+            setFieldValue("images", files)
+          }}
+          // existingFiles={job?.attachments.images}
+        />
+      </div> */}
+    </div>
+  );
+}

@@ -1,0 +1,336 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { Formik, Form, Field } from "formik";
+import * as Yup from "yup";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useSignupMutation } from "@/lib/features/auth/authApi";
+import { FormikErrors, FormikTouched, FieldProps } from "formik";
+import { useToast } from "@/hooks/use-toast";
+import Cookies from "js-cookie";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
+import Link from "next/link";
+interface SignupFormValues {
+  email: string;
+  password: string;
+  name: string;
+  confirmPassword: string;
+  role: "" | "hr" | "interviewer" | "admin";
+  organizationId: object | string | number;
+}
+
+const SignupSchema = Yup.object().shape({
+  email: Yup.string()
+    .required("Email is required")
+    .matches(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, "Invalid Email"),
+  password: Yup.string()
+  .min(6, "Password must be at least 6 characters long")
+  .matches(/[a-z]/, "Password must contain at least one lowercase letter")
+  .matches(/[A-Z]/, "Password must contain at least one uppercase letter")
+  .matches(/\d/, "Password must contain at least one number")
+  .matches(/[@$!%*?&]/, "Password must contain at least one special character (@$!%*?&)")
+  .required("Password is required"),
+  name: Yup.string()
+    .required("Name is required")
+    .trim()
+    .matches(/^(?!\s+$).*/, "Name cannot be only spaces")
+    .min(2, "Name must be at least 2 characters long")
+    .max(20, "Name cannot exceed 20 characters")
+    .required("Name is required")
+    ,
+  confirmPassword: Yup.string()
+    .oneOf([Yup.ref("password")], "Passwords must match")
+    .required("Please confirm your password"),
+  role: Yup.string()
+    .oneOf(["hr", "interviewer","admin"], "Please select a valid role")
+    .required("Role is required"),
+});
+
+export default function Signup() {
+  const router = useRouter();
+  const { toast } = useToast();
+  // const [user, setUser] = useState<any>("");
+  const [signup, { isLoading }] = useSignupMutation();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const initialValues: SignupFormValues = {
+    email: "",
+    password: "",
+    name: "",
+    confirmPassword: "",
+    role: "",
+    organizationId: "",
+  };
+
+  const handleSubmit = async (
+    values: SignupFormValues,
+    { setStatus }: { setStatus: (message: string) => void }
+  ) => {
+    try {
+      const userData = Cookies.get("user");
+
+      if (userData) {
+        try {
+          const parsedData: SignupFormValues = JSON.parse(userData);
+          // setUser(parsedData);
+          const orgID_cookie = parsedData.organizationId || "";
+          const signupData = { ...values, organizationId: orgID_cookie };
+          const response = await signup(signupData).unwrap();
+
+          if (response.user) {
+            toast({
+              title: "Success",
+              description: "Account created successfully",
+              variant: "default",
+            });
+            router.push("/dashboard/users");
+          } else {
+            throw new Error("No user data received");
+          }
+        } catch (error: unknown) {
+          if (error && typeof error === "object" && "data" in error) {
+            const errorMessage =
+              (error.data as { error: string }).error ||
+              "Failed to parse user data from cookie";
+            throw new Error(errorMessage);
+          } else {
+            throw new Error("Failed to parse user data from cookie");
+          }
+        }
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        const errorMessage = err.message || "Failed to create account";
+        setStatus(errorMessage);
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="text-2xl text-center">Create Account</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Formik
+            initialValues={initialValues}
+            validationSchema={SignupSchema}
+            onSubmit={handleSubmit}
+          >
+            {({
+              errors,
+              touched,
+              isSubmitting,
+              status,
+            }: {
+              errors: FormikErrors<SignupFormValues>;
+              touched: FormikTouched<SignupFormValues>;
+              isSubmitting: boolean;
+              status?: string;
+            }) => (
+              <Form className="space-y-4">
+                {status && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{status}</AlertDescription>
+                  </Alert>
+                )}
+
+                {Object.keys(errors).some(
+                  (key) =>
+                    touched[key as keyof SignupFormValues] &&
+                    errors[key as keyof SignupFormValues]
+                ) && (
+                  <Alert variant="destructive">
+                    <AlertDescription>
+                      {Object.keys(errors).map((key) =>
+                        touched[key as keyof SignupFormValues] &&
+                        errors[key as keyof SignupFormValues] ? (
+                          <div key={key} className="mt-2">
+                            {errors[key as keyof SignupFormValues]}
+                          </div>
+                        ) : null
+                      )}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <Field name="name">
+                    {({ field }: FieldProps) => (
+                      <Input
+                        {...field}
+                        id="name"
+                        type="text"
+                        disabled={isLoading || isSubmitting}
+                        className={
+                          errors.name && touched.name ? "border-red-500" : ""
+                        }
+                      />
+                    )}
+                  </Field>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Field name="email">
+                    {({ field }: FieldProps) => (
+                      <Input
+                        {...field}
+                        id="email"
+                        type="email"
+                        disabled={isLoading || isSubmitting}
+                        className={
+                          errors.email && touched.email ? "border-red-500" : ""
+                        }
+                      />
+                    )}
+                  </Field>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Field name="password">
+                      {({ field }: FieldProps) => (
+                        <Input
+                          {...field}
+                          id="password"
+                          type={showPassword?"text":"password"}
+                          disabled={isLoading || isSubmitting}
+                          className={
+                            errors.password && touched.password
+                              ? "border-red-500"
+                              : ""
+                          }
+                        />
+                      )}
+                    </Field>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <div className="relative">
+                    <Field name="confirmPassword">
+                      {({ field }: FieldProps) => (
+                        <Input
+                          {...field}
+                          id="confirmPassword"
+                          type={showConfirmPassword?"text":"password"}
+                          disabled={isLoading || isSubmitting}
+                          className={
+                            errors.confirmPassword && touched.confirmPassword
+                              ? "border-red-500"
+                              : ""
+                          }
+                        />
+                      )}
+                    </Field>
+                    <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        >
+                          {showConfirmPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                      </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="role">Role</Label>
+                  <Field name="role">
+                    {({ field, form }: FieldProps) => (
+                      <Select
+                      {...field}
+                      value={field.value} // Bind Formik value
+                      onValueChange={(value) => form.setFieldValue(field.name, value)} 
+                      disabled={isLoading || isSubmitting}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="hr">HR</SelectItem>
+                        <SelectItem value="interviewer">Interviewer</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    )}
+                  </Field>
+                </div>
+
+                <CardFooter className="px-0 pt-6 flex-col space-y-4">
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={isLoading || isSubmitting}
+                  >
+                    {isLoading || isSubmitting
+                      ? "Creating User..."
+                      : "Create User"}
+                  </Button>
+                  {/* <p className="text-sm text-center text-gray-600">
+                    Already have an account?{" "}
+                    <Link
+                      href="/auth/login"
+                      className="text-blue-600 hover:underline"
+                    >
+                      Login
+                    </Link>
+                  </p> */}
+                </CardFooter>
+              </Form>
+            )}
+          </Formik>
+        <div className="flex justify-around">
+          <Link
+            href="/dashboard/users"
+            className="text-blue-600 hover:underline"
+          >
+            Go back to User List
+          </Link>
+        </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

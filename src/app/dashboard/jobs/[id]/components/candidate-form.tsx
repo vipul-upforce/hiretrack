@@ -1,0 +1,412 @@
+"use client";
+
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ChipInput } from "@/components/ui/chip-input";
+import { FileUpload } from "@/components/ui/file-upload";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { DatePicker } from "@/components/ui/date-picker";
+import { useField, useFormikContext } from "formik";
+import { CandidateFormValues } from "../schemas/candidate-schema";
+import { useFetchInterviewersQuery } from "@/lib/features/user/userApi";
+import { skillSuggestions } from "@/app/dashboard/jobs-board/components/job-form";
+import { v4 as uuidv4 } from "uuid";
+import CustomFields from "@/Custom_Fields/Components/CustomFields";
+
+import { useEffect, useState } from "react";
+
+// interface AttachmentFile extends File {
+//   id?: string; // Unique identifier, if available
+//   lastModified: number; // Fallback ID (since File has this)
+// }
+
+interface CandidateFormProps{
+  onFileUpload?: (file: File) => void;
+}
+
+export function CandidateForm({onFileUpload}:CandidateFormProps) {
+  const { setFieldValue, values, errors } =
+    useFormikContext<CandidateFormValues>();
+  const { data: interviewers, refetch } = useFetchInterviewersQuery();
+  const [nameField, nameMeta] = useField("name");
+  const [locationField, locationMeta] = useField("location");
+  const [experienceField, experienceMeta] = useField("experience");
+  const [skillsField, skillsMeta] = useField("skills");
+  const [expectedCTCField, expectedCTCMeta] = useField("expectedCTC");
+  const [currentCTCField, currentCTCMeta] = useField("currentCTC");
+  const [noticePeriodField, noticePeriodMeta] = useField("noticePeriod");
+  // const [currentLocationField, currentLocationMeta] =
+  //   useField("currentLocation");
+  // const [remarksField] = useField('remarks');
+  const [resumeField, resumeMeta] = useField("resume");
+  const [attachmentsField] = useField("attachments");
+  const [tempResumeUrl, setTempResumeUrl] = useState<string | null>(null);
+  // Get the current interviewer ID from the assignment
+  const currentInterviewerId =
+    typeof values.assignment?.interviewerId === "string"
+      ? values.assignment.interviewerId
+      : values.assignment?.interviewerId?._id || "";
+
+  useEffect(() => {
+    refetch();
+  }, []);
+  useEffect(() => {
+    if (tempResumeUrl) {
+      URL.revokeObjectURL(tempResumeUrl);
+    }
+    const resumeValue = values.resume as {url?:string};
+    if (resumeValue) {
+      if (values.resume instanceof File) {
+        setTempResumeUrl(URL.createObjectURL(values.resume));
+      } else if ('url' in resumeValue && resumeValue.url) {
+        setTempResumeUrl(resumeValue.url);
+      } 
+    } else {
+      setTempResumeUrl(null);
+    }
+    
+    return () => {
+      if (tempResumeUrl && values.resume && !('url' in values.resume)) {
+        URL.revokeObjectURL(tempResumeUrl);
+      }
+    };
+  }, [values.resume]);
+
+  return (
+
+    <div className={`w-full  flex flex-col md:flex-row gap-4 flex-1 h-full overflow-y-auto px-6 py-4`}>
+      <div className={`w-full md:w-1/2  space-y-4`}>
+        
+        <div className="space-y-2">
+          <Label>
+            Resume <span className="text-red-500">*</span>
+          </Label>
+          <FileUpload
+            accept={{ "application/pdf": [".pdf"] }}
+            maxFiles={1}
+            onFileSelect={async(files) => {
+              setFieldValue("resume", files[0]);
+              if (files[0]) {
+                setTempResumeUrl(URL.createObjectURL(files[0]));
+              }
+              if(onFileUpload){
+                await onFileUpload(files[0]);
+              }
+            }}
+            files={resumeField.value ? [resumeField.value] : []}
+            setter={(files) => setFieldValue("resume", files[0])}
+          />
+          {resumeMeta.touched && resumeMeta.error && (
+            <div className="text-sm text-destructive">{resumeMeta.error}</div>
+          )}
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">
+              Name <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="name"
+              {...nameField}
+              className={
+                nameMeta.error && nameMeta.touched ? "border-red-500" : ""
+              }
+            />
+            {nameMeta.touched && nameMeta.error && (
+              <p className="text-sm text-red-500">{nameMeta.error}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="location">
+              Location <span className="text-red-500">*</span>{" "}
+            </Label>
+            <Input
+              id="location"
+              {...locationField}
+              className={
+                locationMeta.error && locationMeta.touched ? "border-red-500" : ""
+              }
+            />
+            {locationMeta.touched && locationMeta.error && (
+              <p className="text-sm text-red-500">{locationMeta.error}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="experience">Experience (years)</Label>
+            <Input
+              id="experience"
+              type="number"
+              step="0.01"
+              {...experienceField}
+              className={
+                experienceMeta.error && experienceMeta.touched
+                  ? "border-red-500"
+                  : ""
+              }
+            />
+            {experienceMeta.touched && experienceMeta.error && (
+              <p className="text-sm text-red-500">{experienceMeta.error}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label>
+              Skills <span className="text-red-500">*</span>
+            </Label>
+            <ChipInput
+              value={skillsField.value}
+              onChange={(skills) => setFieldValue("skills", skills)}
+              onSuggestionClick={(suggestion) => {
+                setFieldValue("skills", [...skillsField.value, suggestion]);
+              }}
+              suggestions={
+                skillSuggestions.filter(
+                  (skill) => !skillsField.value.includes(skill)
+                ) || []
+              }
+              // error={skillsMeta.touched && skillsMeta.error}
+            />
+            {skillsMeta.touched && skillsMeta.error && (
+              <p className="text-sm text-red-500">{skillsMeta.error}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="expectedCTC">Expected CTC (LPA)</Label>
+            <Input
+              id="expectedCTC"
+              type="number"
+              {...expectedCTCField}
+              className={
+                expectedCTCMeta.error && expectedCTCMeta.touched
+                  ? "border-red-500"
+                  : ""
+              }
+            />
+            {expectedCTCMeta.touched && expectedCTCMeta.error && (
+              <p className="text-sm text-red-500">{expectedCTCMeta.error}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="currentCTC">Current CTC (LPA)</Label>
+            <Input
+              id="currentCTC"
+              type="number"
+              {...currentCTCField}
+              className={
+                currentCTCMeta.error && currentCTCMeta.touched
+                  ? "border-red-500"
+                  : ""
+              }
+            />
+            {currentCTCMeta.touched && currentCTCMeta.error && (
+              <p className="text-sm text-red-500">{currentCTCMeta.error}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="noticePeriod">Notice Period (days)</Label>
+            <Input
+              id="noticePeriod"
+              type="number"
+              {...noticePeriodField}
+              className={
+                noticePeriodMeta.error && noticePeriodMeta.touched
+                  ? "border-red-500"
+                  : ""
+              }
+            />
+            {noticePeriodMeta.touched && noticePeriodMeta.error && (
+              <p className="text-sm text-red-500">{noticePeriodMeta.error}</p>
+            )}
+          </div>
+
+          {/* <div className="space-y-2">
+            <Label htmlFor="currentLocation">
+              Current Location <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="currentLocation"
+              {...currentLocationField}
+              className={
+                currentLocationMeta.error && currentLocationMeta.touched
+                  ? "border-red-500"
+                  : ""
+              }
+            />
+            {currentLocationMeta.touched && currentLocationMeta.error && (
+              <p className="text-sm text-red-500">{currentLocationMeta.error}</p>
+            )}
+          </div> */}
+        </div>
+
+        {/* Assignment Section */}
+        <div className="space-y-4 border-t pt-4">
+          <Label className="text-lg font-semibold">Assignment</Label>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Assign To</Label>
+              <Select
+                value={currentInterviewerId}
+                onValueChange={(value) =>
+                  setFieldValue("assignment.interviewerId", value)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select interviewer" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="-1">None</SelectItem>
+                  {interviewers?.map((interviewer) => (
+                    <SelectItem key={interviewer._id} value={interviewer._id}>
+                      {interviewer.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors?.assignment && (
+                <p className="text-sm text-red-500">
+                  {String(
+                    errors.assignment[
+                      "interviewerId" as keyof typeof errors.assignment
+                    ] || ""
+                  )}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Deadline</Label>
+              <DatePicker
+                date={
+                  values.assignment?.deadline
+                    ? new Date(values.assignment.deadline)
+                    : undefined
+                }
+                onDateChange={(date) =>
+                  setFieldValue("assignment.deadline", date)
+                }
+                onBlur={() => {
+                  if (values.assignment?.deadline) {
+                    setFieldValue(
+                      "assignment.deadline",
+                      new Date(values.assignment.deadline)
+                    );
+                  }
+                }}
+                placeholder="Select deadline"
+              />
+              {errors?.assignment && (
+                <p className="text-sm text-red-500">
+                  {String(
+                    errors.assignment[
+                      "deadline" as keyof typeof errors.assignment
+                    ] || ""
+                  )}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Additional Attachments</Label>
+          <FileUpload
+            accept={{}}
+            maxFiles={30}
+            onFileSelect={(files) => {
+              const currentFiles = attachmentsField.value || [];
+              const newFiles = files.map((file) => {
+                let newFileName = file.name;
+          
+                const fileExists = currentFiles.some((att:File) => att.name === file.name);
+          
+                if (fileExists) {
+                  const fileExtension = file.name.split('.').pop();
+                  const baseName = file.name.replace(/\.[^/.]+$/, "");
+                  newFileName = `${baseName}_${uuidv4()}.${fileExtension}`;
+                }
+          
+                return new File([file], newFileName, { type: file.type });
+              });
+              setFieldValue("attachments", [...currentFiles, ...newFiles]);
+            }}
+
+            files={attachmentsField.value}
+
+          
+            setter = {(files)=>setFieldValue("attachments", files) }
+
+            // setter={(files: AttachmentFile[]) => {
+            //   const currentFiles: AttachmentFile[] = values.attachments || [];
+            
+            //   const updatedFiles = files.map((newFile) => {
+            //     const oldFile = currentFiles.find(
+            //       (old) =>
+            //         old.name !== newFile.name &&
+            //         (old.customId ? old.customId === newFile.customId : old.lastModified === newFile.lastModified)
+            //     );
+            
+            //     if (oldFile) {
+            //       console.log(`Renamed file: ${oldFile.name} → ${newFile.name}`);
+            
+            //       // Check for duplicates
+            //       const isDuplicate = currentFiles.some(
+            //         (existingFile) => existingFile.name === newFile.name && existingFile !== newFile
+            //       );
+            
+            //       if (isDuplicate) {
+            //         console.warn(`⚠️ Duplicate detected! Reverting ${newFile.name} back to ${oldFile.name}`);
+            //         return { ...newFile, name: oldFile.name }; // Revert to old name
+            //       }
+            //     }
+            
+            //     return newFile;
+            //   });
+            
+            //   setFieldValue("attachments", updatedFiles);
+            // }}
+            
+            
+            
+          />
+        </div>
+        <CustomFields formName="Candidate" />
+      </div>
+      {tempResumeUrl ? (
+        <div className="w-full md:w-1/2 h-full mb-4 md:mb-0 sticky top-0">
+          <div className="w-full h-full rounded-lg border overflow-hidden sticky top-0">
+            <iframe
+              src={tempResumeUrl}
+              className="w-full h-full"
+              title="Resume Preview"
+            />
+          </div>
+        </div>
+      ):(
+        <div className="w-full md:w-1/2 h-full mb-4 md:mb-0 sticky top-0">
+          <div className="w-full h-full rounded-lg border border-gray-300 bg-gray-50 flex items-center justify-center sticky top-0">
+            <div className="text-center p-6">
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                No Resume Preview Available
+              </h3>
+              <p className="text-gray-500">
+                Please upload resume to see a preview here!
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+
+  );
+}

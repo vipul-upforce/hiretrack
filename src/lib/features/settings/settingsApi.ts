@@ -1,0 +1,104 @@
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+
+// Add interface for test connection request
+interface TestConnectionRequest {
+  storageType: "cloudinary" | "s3" | "smtp";
+  credentials: {
+    cloud_name?: string;
+    api_key?: string;
+    api_secret?: string;
+    accessKeyId?: string;
+    secretAccessKey?: string;
+    region?: string;
+    user?: string;
+    pass?: string;
+  };
+}
+
+// Add interface for test connection response
+interface TestConnectionResponse {
+  success: boolean;
+  message: string;
+}
+
+export const settingsApi = createApi({
+  reducerPath: "settingsApi",
+  baseQuery: fetchBaseQuery({
+    baseUrl: "/api",
+  }),
+  tagTypes: ["Settings"],
+  endpoints: (builder) => ({
+    getSMTPConfigs: builder.query({
+      query: () => ({
+        url: `/settings/smtp`,
+        method: "GET",
+      }),
+    }),
+    getFSConfigs: builder.query({
+      query: () => ({
+        url: `/settings/fs`,
+        method: "GET",
+      }),
+    }),
+    updateSMTPConfigs: builder.mutation({
+      query: (smtpConfig) => ({
+        url: "/settings/smtp",
+        method: "PUT",
+        body: smtpConfig,
+      }),
+      invalidatesTags: ["Settings"],
+    }),
+    testConnection: builder.mutation<TestConnectionResponse, TestConnectionRequest>({
+      query: (body) => ({
+        url: "/test-connection",
+        method: "POST",
+        body,
+      }),
+    }),
+    updateFSConfigs: builder.mutation({
+      query: (fsConfig) => {
+        return {
+        url: "/settings/fs",
+        method: "PUT",
+        body: fsConfig,
+      }},
+      invalidatesTags: ["Settings"],
+    }),
+    getPortalConfigs: builder.query({
+      query: () => ({
+        url: `/settings/portal`,
+        method: "get",
+      }),
+    }),
+    updatePortalConfigs: builder.mutation({
+      query: (portalConfigs)=>{
+        return {
+          url: "/settings/portal",
+          method: "PUT",
+          body: portalConfigs,
+        }
+      }
+    }),
+    createResetToken : builder.mutation({
+      query: ({email}) => ({
+        url: "/auth/forgot-password",
+        method: "POST",
+        body: {email},
+      }),
+    })
+  }),
+});
+
+export const {
+  useGetSMTPConfigsQuery,
+  useUpdateSMTPConfigsMutation,
+  useGetFSConfigsQuery,
+  useUpdateFSConfigsMutation,
+  useCreateResetTokenMutation,
+  useGetPortalConfigsQuery,
+  useUpdatePortalConfigsMutation,
+  useTestConnectionMutation,
+} = settingsApi;
+
+// Export types for use in components
+export type { TestConnectionRequest, TestConnectionResponse };
