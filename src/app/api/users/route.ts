@@ -25,7 +25,8 @@ export async function GET() {
     const users = await User.find(
       { 
         _id: { $ne: session.user.id },
-        organizationId: session.user.organizationId
+        organizationId: session.user.organizationId,
+        isDeleted: { $ne: true }
       },
       { password: 0 }
     ).sort({ createdAt: -1 });
@@ -67,7 +68,7 @@ export async function PUT(req: Request) {
     }
 
     if(!User){
-      return NextResponse.json({ error: "User not found" }, { status: 400 });
+      return NextResponse.json({ error: "User Model Not Found" }, { status: 400 });
     }
     const updatedAdmin = await User.updateOne(
       { _id: adminId }, 
