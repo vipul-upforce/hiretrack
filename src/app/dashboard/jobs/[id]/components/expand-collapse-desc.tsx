@@ -28,7 +28,7 @@ const ExpandableDescription = ({ description }:{description: string}) => {
       <div
         ref={contentRef}
         className={`text-sm whitespace-pre-wrap break-words transition-all duration-200 ease-in-out ${
-          isExpanded ? "max-h-full pb-10" : "max-h-24 h-[100px] overflow-hidden"
+          isExpanded ? "max-h-full pb-10" : "max-h-24 h-auto overflow-hidden"
         }`}
       >
         <p

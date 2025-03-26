@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     await connectToDatabase();
     if (!Candidate) {
       return NextResponse.json(
-        { error: "Candidate not found" },
+        { error: "Candidate Model not found" },
         { status: 404 }
       );
     }

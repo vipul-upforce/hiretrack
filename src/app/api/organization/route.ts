@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     const id = new mongoose.Types.ObjectId(adminId);
     if (!Organization) {
       return NextResponse.json(
-        { error: "Organization not found" },
+        { error: "Database not connected." },
         { status: 400 }
       );
     }

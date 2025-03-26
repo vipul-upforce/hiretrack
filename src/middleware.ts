@@ -16,6 +16,16 @@ export function middleware(request: NextRequest) {
   const user = request.cookies.get("user"); // Check if user cookie exists
   const userData = user ? JSON.parse(user.value) : null; // Access the value property
 
+  // Handle API routes authentication
+  if (pathname.startsWith("/api") && pathname !== "/api/auth/login" && pathname !== "/api/auth/signup" && pathname !== "/api/organization"){
+    if (!user) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+  }
+
   // Redirect to login if not authenticated
   if (!user) {
     if (
@@ -27,7 +37,7 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // Allow access to the Calder page for all authenticated users
+  // Allow access to the Calendar page for all authenticated users
   if (pathname.includes("/calendar")) {
     return NextResponse.next();
   }
@@ -64,5 +74,5 @@ export function middleware(request: NextRequest) {
 
 // Specify the paths to apply the middleware
 export const config = {
-  matcher: ["/dashboard/:path*", "/auth/signup"],
+  matcher: ["/dashboard/:path*", "/auth/signup", "/api/:path*"],
 };

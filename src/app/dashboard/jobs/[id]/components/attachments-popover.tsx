@@ -57,10 +57,11 @@ const AttachmentsPopover = ({
         </PopoverTrigger>
 
         <PopoverContent
-          className="w-80 p-4 relative z-50"
+          className="w-80 p-4 max-h-[70vh] overflow-y-auto focus:outline-none"
           side="bottom"
           align="start"
           avoidCollisions={false}
+          onWheel={(e) => e.stopPropagation()}
         >
           <div className="space-y-2">
             <h4 className="font-medium">Attachments</h4>
@@ -83,7 +84,9 @@ const AttachmentsPopover = ({
                       <div className="flex items-center space-x-2 w-full">
                         <FileIcon className="h-4 w-4" />
                         <div className="flex flex-col w-full">
-                          <span className="text-sm w-full text-wrap break-all">{file.name}</span>
+                          <span className="text-sm w-full text-wrap break-all">
+                            {file.name}
+                          </span>
                           <span className="text-xs text-gray-500">
                             ({(file.size / 1024).toFixed(1)} KB)
                           </span>

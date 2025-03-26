@@ -163,7 +163,7 @@ export function SearchResults({
                   <TableCell className="font-medium">
                     {candidate.name}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="w-[50%]">
                     <div className="flex flex-wrap gap-1">
                       {candidate.skills.map((skill: string) => (
                         <Badge
