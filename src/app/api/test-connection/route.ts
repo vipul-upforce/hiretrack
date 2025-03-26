@@ -88,11 +88,14 @@ const testAWSConnection = async (credentials: {
 const testSMTPConnection = async (credentials: {
   user: string;
   pass: string;
+  host?: string;
+  port?: number;
+  from?: string;
 }) => {
   try {
     const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 587,
+      host: credentials.host,
+      port: credentials.port,
       secure: false, // Use `true` for port 465, `false` for other ports
       auth: {
         user: credentials.user,
