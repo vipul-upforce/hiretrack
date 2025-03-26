@@ -20,6 +20,7 @@ export interface IUser {
   updatedAt: Date;
   resetToken?: string;
   resetTokenExpiry?: Date;
+  isDeleted?: Boolean;
 }
 
 
@@ -54,6 +55,10 @@ export const userSchema = new Schema<IUser>({
   },
   resetTokenExpiry: {
     type: Date,
+    required: false
+  },
+  isDeleted:{
+    type: Boolean,
     required: false
   }
 }, {
