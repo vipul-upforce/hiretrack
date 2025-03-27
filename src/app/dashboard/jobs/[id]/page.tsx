@@ -19,7 +19,8 @@ import { useParams } from "next/navigation";
 import { useFetchJobByIdQuery } from "@/lib/features/job/jobApi";
 import {
   useUpdateCandidateMutation,
-  useFetchCandidatesQuery,
+  // useFetchCandidatesQuery,
+  useLazyFetchCandidatesQuery,
 } from "@/lib/features/candidate/candidateApi";
 import { toast } from "@/hooks/use-toast";
 import { Candidate, CandidateColumn, CandidateStatus } from "@/types/candidate";
@@ -55,7 +56,12 @@ export default function JobProgressPage() {
     data: candidates,
     isLoading: isCandidatesLoading,
     refetch,
-  } = useFetchCandidatesQuery(id as string);
+  } = useLazyFetchCandidatesQuery(id as string);
+  // const {
+  //   data: candidates,
+  //   isLoading: isCandidatesLoading,
+  //   refetch,
+  // } = useFetchCandidatesQuery(id as string);
   const [updateCandidate] = useUpdateCandidateMutation();
   const { data: lanes, isLoading: isLanesLoading } = useGetLanesQuery(user?.id);
   const [updateLanes] = useUpdateLanesMutation();
