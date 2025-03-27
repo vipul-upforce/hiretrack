@@ -3,30 +3,6 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   images: {
-    // remotePatterns: [
-    //   {
-    //     protocol: 'http',
-    //     hostname: 'localhost',
-    //     port: '3000', // Optional, specify if needed
-    //     pathname: '/**', // Use this to allow all paths
-    //   },
-    //   {
-    //     protocol: 'http',
-    //     hostname: '192.168.5.210',
-    //     port: '80', // Optional, specify if needed
-    //     pathname: '/**',
-    //   },
-    //   {
-    //     protocol: 'https',
-    //     hostname: 'res.cloudinary.com',
-    //     pathname: '/**',
-    //   },
-    //   {
-    //     protocol: 'https',
-    //     hostname: 'rms-bucket-upforcetech.s3.us-east-1.amazonaws.com',
-    //     pathname: '/**',
-    //   },
-    // ],
     domains: ["localhost", "192.168.5.210", "res.cloudinary.com","rms-bucket-upforcetech.s3.us-east-1.amazonaws.com"],
   },
   async headers() {

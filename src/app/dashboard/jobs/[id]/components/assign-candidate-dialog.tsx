@@ -215,8 +215,9 @@ export function AssignCandidateDialog({
         title: "Success",
         description: "Candidate assigned successfully",
       });
-      
-      refetch();
+      if (pathname !== "/dashboard" && pathname !== "/dashboard/calendar") {
+        refetch();
+      }
       onSuccess();
     } catch (error) {
     
@@ -418,7 +419,7 @@ export function AssignCandidateDialog({
                             };
                           }
                         });
-                        let duplicateFiles = updatedAttachments.filter((newFile) =>(
+                        const duplicateFiles = updatedAttachments.filter((newFile) =>(
                           candidate.attachments.some((existingFile) => existingFile.name === newFile.name) ||
                           values.attachments.some((existingFile) => existingFile.name === newFile.name)
                         ));

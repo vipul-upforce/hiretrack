@@ -87,5 +87,6 @@ export const {
   useUpdateCandidateHistoryMutation,
   useDeleteCandidateMutation,
   useFilterCandidatesMutation,
+  useLazyFetchCandidatesQuery,
   useLazyFetchCandidatesQuery
 } = candidateApi; 
