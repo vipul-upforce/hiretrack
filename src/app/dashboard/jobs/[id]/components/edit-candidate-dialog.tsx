@@ -13,8 +13,8 @@ import { candidateSchema } from "../schemas/candidate-schema";
 import { CandidateForm } from "./candidate-form";
 import {
   useUpdateCandidateMutation,
-  useFetchCandidatesQuery,
   useUpdateCandidateHistoryMutation,
+  useLazyFetchCandidatesQuery,
 } from "@/lib/features/candidate/candidateApi";
 import { Candidate } from "@/types/candidate";
 import { v4 as uuidv4 } from "uuid";
@@ -35,8 +35,8 @@ interface EditCandidateDialogProps {
   onOpenChange: (open: boolean) => void;
   onUpdate: (updatedCandidate: Candidate) => void;
   refetchAssignment?: () => void;
-  onSuccess: ()=>void;
-  reopenDetailsDialog?: () => void; 
+  onSuccess: () => void;
+  reopenDetailsDialog?: () => void;
 }
 
 const handleFileParse = async (
@@ -62,7 +62,7 @@ const handleFileParse = async (
       }
     };
 
-    reader.onerror = () => console.error("Failed to read file");
+    // reader.onerror = () => console.error("Failed to read file");
 
     reader.readAsDataURL(file); // Converts to data URL directly
   }
@@ -75,19 +75,22 @@ export function EditCandidateDialog({
   onUpdate,
   refetchAssignment,
   onSuccess,
-  reopenDetailsDialog
+  reopenDetailsDialog,
 }: EditCandidateDialogProps) {
   const { toast } = useToast();
   const { id } = useParams();
 
-  const { refetch } = useFetchCandidatesQuery(id as string);
+  const [refetchCandidate] = useLazyFetchCandidatesQuery();
+  const refetch = async () => {
+    await refetchCandidate(id as string);
+  };
   const [updateCandidate] = useUpdateCandidateMutation();
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
 
   const formName = "Candidate";
   const { getDefaultValues, validationSchema } = useCustomForm(formName);
   const pathname = usePathname();
-  const [parsedResumeData, setParsedResume] = useState<Resume|null>(null);
+  const [parsedResumeData, setParsedResume] = useState<Resume | null>(null);
 
   // const [currentUser, setCurrentUser] = useState<IUser|null>(null);
   const userCookie = Cookies.get("user") || "{}";
@@ -96,15 +99,15 @@ export function EditCandidateDialog({
   const user = JSON.parse(userCookie);
 
   const handleSubmit = async (values: Candidate) => {
-
-    const fileNames = values.attachments.map(file => file.name);
+    const fileNames = values.attachments.map((file) => file.name);
     const hasDuplicates = new Set(fileNames).size !== fileNames.length;
 
     if (hasDuplicates) {
       toast({
-        title:"Alert",
-        description:"Duplicate file names found! Please rename before submitting.",
-        variant:"destructive"
+        title: "Alert",
+        description:
+          "Duplicate file names found! Please rename before submitting.",
+        variant: "destructive",
       });
       return;
     }
@@ -144,21 +147,23 @@ export function EditCandidateDialog({
       );
 
       // Identify modified attachments
-      const latestModifiedAttachments = attachmentsBase64.filter(newAttachment => {
-        const originalAttachment = candidate.attachments.find(
-          oldAttachment => oldAttachment.id === newAttachment.id
-        );
-        
-        if (!originalAttachment) {
-          return true;
+      const latestModifiedAttachments = attachmentsBase64.filter(
+        (newAttachment) => {
+          const originalAttachment = candidate.attachments.find(
+            (oldAttachment) => oldAttachment.id === newAttachment.id
+          );
+
+          if (!originalAttachment) {
+            return true;
+          }
+
+          return (
+            originalAttachment.name !== newAttachment.name ||
+            originalAttachment.size !== newAttachment.size ||
+            originalAttachment.url !== newAttachment.url
+          );
         }
-        
-        return (
-          originalAttachment.name !== newAttachment.name ||
-          originalAttachment.size !== newAttachment.size ||
-          originalAttachment.url !== newAttachment.url
-        );
-      });
+      );
 
       const updatedCandidate: Partial<Candidate> = {
         ...values,
@@ -179,79 +184,92 @@ export function EditCandidateDialog({
           : undefined,
         attachments: attachmentsBase64,
       };
-      
-      
+
       // Remove assignment if interviewerId is -1, otherwise update it
       if (values.assignment) {
         if (values.assignment.interviewerId === "-1") {
           delete updatedCandidate.assignment;
-        } else if (typeof values.assignment.interviewerId === "string" || typeof values.assignment.interviewerId === "object") {
+        } else if (
+          typeof values.assignment.interviewerId === "string" ||
+          typeof values.assignment.interviewerId === "object"
+        ) {
           updatedCandidate.assignment = {
             assignment: values.assignment.assignment,
-            interviewerId: typeof values.assignment.interviewerId === "string"
-            ? values.assignment.interviewerId
-            : values.assignment.interviewerId._id.replace(/"/g, ""),
+            interviewerId:
+              typeof values.assignment.interviewerId === "string"
+                ? values.assignment.interviewerId
+                : values.assignment.interviewerId._id.replace(/"/g, ""),
             deadline: values.assignment.deadline,
             assignedAt: values.assignment.assignedAt,
           };
         }
       }
-      
+
       const result = await updateCandidate(updatedCandidate).unwrap();
-      
-      const previousInterviewer = typeof candidate.assignment?.interviewerId === "object"
-      ? candidate.assignment.interviewerId.name
-      : "";
-      const previousInterviewerId = typeof candidate.assignment?.interviewerId === "object"
-      ? Object(candidate.assignment.interviewerId._id)
-      : null;
-      
-      let nextInterviewer = typeof result.assignment?.interviewerId === "object"
-      ? result.assignment.interviewerId.name
-      : "";
-      let nextInterviewerId = typeof result.assignment?.interviewerId === "object"
-      ? Object(result.assignment.interviewerId._id)
-      : null;
-      
+
+      const previousInterviewer =
+        typeof candidate.assignment?.interviewerId === "object"
+          ? candidate.assignment.interviewerId.name
+          : "";
+      const previousInterviewerId =
+        typeof candidate.assignment?.interviewerId === "object"
+          ? Object(candidate.assignment.interviewerId._id)
+          : null;
+
+      const nextInterviewer =
+        typeof result.assignment?.interviewerId === "object"
+          ? result.assignment.interviewerId.name
+          : "";
+      const nextInterviewerId =
+        typeof result.assignment?.interviewerId === "object"
+          ? Object(result.assignment.interviewerId._id)
+          : null;
+
       let title;
-      if(!previousInterviewer || previousInterviewer==""){
-        title = `Assigned to ${nextInterviewer} : Assigned by ${user?user.name:"No one"}`;
+      if (!previousInterviewer || previousInterviewer === "") {
+        title = `Assigned to ${nextInterviewer} : Assigned by ${
+          user ? user.name : "No one"
+        }`;
       } else {
-        title = `${previousInterviewer} → ${nextInterviewer} : Assigned by ${user?user.name:"No one"}`;
+        title = `${previousInterviewer} → ${nextInterviewer} : Assigned by ${
+          user ? user.name : "No one"
+        }`;
       }
 
-      title=null
-      
+      title = null;
+
       // Create history entry with only modified attachments
       const newHistoryEntry: ICandidateHistory = {
         dateTime: updatedCandidate?.assignment?.deadline || "",
         title: title,
         currentInterviewer: nextInterviewerId,
         previousInterviewer: previousInterviewerId,
-        assignmentBy: user&&user as IUser ? user.id : "",
+        assignmentBy: user && (user as IUser) ? user.id : "",
         note: {
           description: "",
           date: "",
           rating: 0,
           userId: null,
         },
-        attachments: latestModifiedAttachments || []
-      }
+        attachments: latestModifiedAttachments || [],
+      };
 
-      if(nextInterviewer && nextInterviewer!=""){
+      if (nextInterviewer && nextInterviewer !== "") {
         await updateCandidateHistory({
-          candidateId: updatedCandidate._id!,
-          jobId: updatedCandidate?.jobId!,
-          newEntry: newHistoryEntry
+          candidateId: updatedCandidate._id || "",
+          jobId: updatedCandidate?.jobId || "",
+          newEntry: newHistoryEntry,
         }).unwrap();
       }
-      
+
       if (pathname === "/dashboard") {
         refetchAssignment?.();
       }
       // Update local state and refetch data
       onUpdate(result);
-      await refetch();
+      if(id){
+        await refetch();
+      }
       onSuccess();
       onOpenChange(false);
       toast({
@@ -260,11 +278,15 @@ export function EditCandidateDialog({
       });
     } catch (error) {
       // console.log(error);
-    
+
       if (typeof error === "object" && error !== null && "data" in error) {
         const errorData = (error as { data?: { error?: string } }).data;
-    
-        if (typeof errorData === "object" && errorData !== null && "error" in errorData) {
+
+        if (
+          typeof errorData === "object" &&
+          errorData !== null &&
+          "error" in errorData
+        ) {
           toast({
             title: "Error",
             description: errorData.error || "Failed to update job",
@@ -317,15 +339,21 @@ export function EditCandidateDialog({
     customFields: getDefaultValues(candidate.customFields || {}),
   };
 
-      
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => {
-      onOpenChange(open);
-      // if (!open && reopenDetailsDialog) {
-      //   setTimeout(reopenDetailsDialog, 100);
-      // }
-    }}>
-      <DialogContent className={`sm:max-w-[80vw] ${candidate.resume?"xl:max-w-[65vw]":"xl:max-w-[50vw]"} h-[90vh] p-0 flex flex-col justify-between overflow-hidden`}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        onOpenChange(open);
+        // if (!open && reopenDetailsDialog) {
+        //   setTimeout(reopenDetailsDialog, 100);
+        // }
+      }}
+    >
+      <DialogContent
+        className={`sm:max-w-[80vw] ${
+          candidate.resume ? "xl:max-w-[65vw]" : "xl:max-w-[50vw]"
+        } h-[90vh] p-0 flex flex-col justify-between overflow-hidden`}
+      >
         <DialogHeader className="px-6 pt-6">
           <DialogTitle>Edit Candidate</DialogTitle>
         </DialogHeader>
@@ -339,22 +367,22 @@ export function EditCandidateDialog({
               <FormUpdater parsedResumeData={parsedResumeData} />
 
               {/* <div className="flex-1 overflow-y-auto px-6 py-4  pt-0"> */}
-                <CandidateForm 
-                  onFileUpload={async (file: File) => {
-                    setFieldValue('resume', file);
-                    await handleFileParse(file, setParsedResume);
-                  }}
-                />
-                {/* <CustomFields formName={formName} /> */}
+              <CandidateForm
+                onFileUpload={async (file: File) => {
+                  setFieldValue("resume", file);
+                  await handleFileParse(file, setParsedResume);
+                }}
+              />
+              {/* <CustomFields formName={formName} /> */}
               {/* </div> */}
               <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => {
-                    onOpenChange(false)
-                    if(reopenDetailsDialog){
-                      reopenDetailsDialog()
+                    onOpenChange(false);
+                    if (reopenDetailsDialog) {
+                      reopenDetailsDialog();
                     }
                   }}
                 >

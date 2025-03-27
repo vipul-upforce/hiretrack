@@ -45,7 +45,7 @@ export const candidateApi = createApi({
         method: 'POST',
         body: {jobId, candidateId},
       }),
-      invalidatesTags: ['Candidate'],
+      // invalidatesTags: ['Candidate'],
     }),
     filterCandidates: builder.mutation({
       query: (data) => ({
@@ -81,5 +81,6 @@ export const {
   useFetchCandidateHistoryMutation,
   useUpdateCandidateHistoryMutation,
   useDeleteCandidateMutation,
-  useFilterCandidatesMutation
+  useFilterCandidatesMutation,
+  useLazyFetchCandidatesQuery
 } = candidateApi; 

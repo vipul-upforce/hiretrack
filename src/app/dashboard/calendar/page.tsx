@@ -440,7 +440,23 @@ export default function CalendarPage() {
           }}
           isOpen={isDetailsOpen}
           onOpenChange={setIsDetailsOpen}
-          onUpdate={() => refetch()}
+          onUpdate={async () => {
+            const { data } = await refetch();
+            // Update selectedEvent after refetch
+            const updatedCandidate = data?.find(
+              (candidate) =>
+                candidate._id === selectedEvent?.extendedProps.candidate._id
+            );
+            if (updatedCandidate) {
+              setSelectedEvent({
+                ...selectedEvent,
+                extendedProps: {
+                  ...selectedEvent.extendedProps,
+                  candidate: updatedCandidate,
+                },
+              });
+            }
+          }}
           hideEditButton={true}
         />
       )}
