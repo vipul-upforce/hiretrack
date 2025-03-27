@@ -110,7 +110,6 @@ export default function DashboardPage() {
     if (userData) {
       setUser(JSON.parse(userData));
     }
-
     fetchAssignments();
   }, []);
 

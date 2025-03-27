@@ -154,9 +154,9 @@ export function JobForm( props: JobFormProps) {
           type="number"
           step="0.1"
           value={values.experience}
-          onChange={(e) => {
-            const value = parseInt(e.target.value);
-            setFieldValue("experience", isNaN(value) ? 0 : value);
+          onChange={(e:React.ChangeEvent<HTMLInputElement>) => {
+            const value = parseFloat(e.target.value);
+            setFieldValue("experience", value && !isNaN(value) ? Number(value.toFixed(2)) : value);
           }}
           onBlur={handleBlur}
           placeholder="e.g., 5"
