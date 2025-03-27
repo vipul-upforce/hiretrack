@@ -14,7 +14,7 @@ import { CandidateForm } from "./candidate-form";
 import {
   useUpdateCandidateMutation,
   useUpdateCandidateHistoryMutation,
-  useLazyFetchCandidatesQuery,
+  // useLazyFetchCandidatesQuery,
 } from "@/lib/features/candidate/candidateApi";
 import { Candidate } from "@/types/candidate";
 import { v4 as uuidv4 } from "uuid";
@@ -80,10 +80,10 @@ export function EditCandidateDialog({
   const { toast } = useToast();
   const { id } = useParams();
 
-  const [refetchCandidate] = useLazyFetchCandidatesQuery();
-  const refetch = async () => {
-    await refetchCandidate(id as string);
-  };
+  // const [refetchCandidate] = useLazyFetchCandidatesQuery();
+  // const refetch = async () => {
+  //   await refetchCandidate(id as string);
+  // };
   const [updateCandidate] = useUpdateCandidateMutation();
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
 
@@ -267,10 +267,11 @@ export function EditCandidateDialog({
       }
       // Update local state and refetch data
       onUpdate(result);
+      // debugger
       if(id){
-        await refetch();
+        // await refetch();
+        onSuccess();
       }
-      onSuccess();
       onOpenChange(false);
       toast({
         title: "Success",

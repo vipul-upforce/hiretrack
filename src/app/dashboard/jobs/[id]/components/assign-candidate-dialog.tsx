@@ -217,8 +217,8 @@ export function AssignCandidateDialog({
       });
       if (pathname !== "/dashboard" && pathname !== "/dashboard/calendar") {
         refetch();
+        onSuccess();
       }
-      onSuccess();
     } catch (error) {
     
       if (typeof error === "object" && error !== null && "data" in error) {

@@ -28,7 +28,6 @@ import { useState, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import {
-  useFetchCandidateHistoryMutation,
   useLazyFetchCandidatesQuery,
   useUpdateCandidateMutation,
 } from "@/lib/features/candidate/candidateApi";
@@ -91,7 +90,7 @@ export function CandidateDetailsDialog({
   const pathname = usePathname();
   const { id } = useParams();
 
-  const [refetchCandidate] = useLazyFetchCandidatesQuery();
+  const [refetchCandidate,{data:candidateData}] = useLazyFetchCandidatesQuery();
 
   const refetch = async () => {
     await refetchCandidate((id as string) || candidate?.jobId._id || "");
@@ -131,22 +130,32 @@ export function CandidateDetailsDialog({
   const [timeLineItems, setTimeLineItems] = useState<ICandidateHistory[]>([]);
   
   useEffect(() => {
-    if (candidateData && localCandidate) {
-      const currentCandidate = candidateData.find(
-        (c) => c._id === localCandidate._id
-      );
-      if (currentCandidate && currentCandidate.history) {
-        setTimeLineItems(currentCandidate.history || []);
+    if (candidateData || localCandidate) {
+      if(!candidateData && localCandidate){
+        const currentCandidate = localCandidate;
+        if (currentCandidate && currentCandidate.history) {
+          setTimeLineItems(currentCandidate.history || []);
+        }
+      }else if(candidateData && localCandidate){
+        const currentCandidate = candidateData.find(
+          (c) => c._id === localCandidate._id
+        );
+        if (currentCandidate && currentCandidate.history) {
+          setTimeLineItems(currentCandidate.history || []);
+        }
       }
     }
   }, [candidateData, localCandidate]);
 
   useEffect(() => {
     if (candidate) {
+      // debugger
       setLocalCandidate(candidate);
-      refetch();
+      // if(pathname !== "/dashboard"){
+      //   refetch();
+      // }
     }
-  }, [candidate, id, refetch]);
+  }, [candidate, id]);
 
   const handleAddRemark = async () => {
     if (!newRemark.trim() || !user?.id) {
@@ -183,7 +192,6 @@ export function CandidateDetailsDialog({
       if (pathname !== "/dashboard" && pathname !== "/dashboard/calendar") {
         refetch();
       }
-      fetchHistory(); // Call fetchHistory after refetch
 
       setNewRemark("");
       setRemarkRating(null);
@@ -427,7 +435,7 @@ export function CandidateDetailsDialog({
             <div className="space-y-2">
               <Label className={labelClass}>Assignment History</Label>
               <ol className="relative border-s border-gray-200 dark:border-gray-700">
-                {validTimeLineItems.length > 0 && !error
+                {validTimeLineItems.length > 0
                   ? validTimeLineItems.reverse().map((interview, i) => {
                       const deadlineDate = formatDate(interview.dateTime);
                       const deadlineTime = formatTime(interview.dateTime);
