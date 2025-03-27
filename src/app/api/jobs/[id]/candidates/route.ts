@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase from "@/lib/mongodb";
+import connectToDatabase, { History } from "@/lib/mongodb";
 import { Candidate } from "@/lib/mongodb";
 
 export async function GET(
@@ -41,11 +41,31 @@ export async function GET(
           select: "title description ",
         },
       ]).lean();
-      
-      return NextResponse.json(candidates);
-    } catch (error) {
-      if (error instanceof Error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+
+      if(!History) return;
+
+      const candidatesWithHistory = await Promise.all(
+      candidates.map(async (candidate) => {
+        const history = await History?.findOne({
+          jobId: id,
+          candidateId: candidate._id.toString()
+        }).populate("history.currentInterviewer", "_id name email")
+        .populate("history.previousInterviewer", "_id name email") 
+        .populate("history.assignmentBy", "_id name email")
+        .populate("history.note.userId", "_id name email")
+        .lean();
+        
+        return {
+          ...candidate,
+          history: history ? history.history : []
+        };
+      })
+    );
+    // console.log("Candidate with History: ",candidatesWithHistory)
+    return NextResponse.json(candidatesWithHistory);
+  } catch (error) {
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
   }
 }

@@ -25,7 +25,7 @@ export const candidateApi = createApi({
         method: 'PUT',
         body: candidate,
       }),
-      // invalidatesTags: ['Candidate'],
+      invalidatesTags: ['Candidate'],
     }),
     updateCandidateStatus: builder.mutation<Candidate, { id: string; status: string }>({
       query: ({ id, status }) => ({
@@ -39,20 +39,21 @@ export const candidateApi = createApi({
       query: () => '/candidates/assignments',
       providesTags: ['Candidate'],
     }),
-    fetchCandidateHistory: builder.mutation<ICandidateHistory[], { jobId: string; candidateId: string}>({
-      query: ({jobId, candidateId}) => ({
-        url: '/candidates/history',
-        method: 'POST',
-        body: {jobId, candidateId},
-      }),
-      invalidatesTags: ['Candidate'],
-    }),
+    // fetchCandidateHistory: builder.mutation<ICandidateHistory[], { jobId: string; candidateId: string}>({
+    //   query: ({jobId, candidateId}) => ({
+    //     url: '/candidates/history',
+    //     method: 'POST',
+    //     body: {jobId, candidateId},
+    //   }),
+    //   invalidatesTags: ['Candidate'],
+    // }),
     filterCandidates: builder.mutation({
       query: (data) => ({
         url: '/candidates/filter',
         method: 'POST',
         body: data,
       }),
+      invalidatesTags: ['Candidate'],
     }),
     updateCandidateHistory: builder.mutation<ICandidateHistory[], { jobId: string |  { _id: string; title: string; description: string; }; candidateId: string, newEntry: ICandidateHistory}>({
       query: ({jobId, candidateId, newEntry}) => ({
@@ -69,6 +70,10 @@ export const candidateApi = createApi({
       }),
       invalidatesTags: ['Candidate'],
     }),
+    lazyFetchCandidates: builder.query<Candidate[], string>({
+      query: (jobId) => `/jobs/${jobId}/candidates`,
+      providesTags: ['Candidate'],
+    }),
   }),
 });
 
@@ -78,8 +83,9 @@ export const {
   useUpdateCandidateMutation,
   useUpdateCandidateStatusMutation,
   useFetchAssignedCandidatesQuery,
-  useFetchCandidateHistoryMutation,
+  // useFetchCandidateHistoryMutation,
   useUpdateCandidateHistoryMutation,
   useDeleteCandidateMutation,
-  useFilterCandidatesMutation
+  useFilterCandidatesMutation,
+  useLazyFetchCandidatesQuery
 } = candidateApi; 

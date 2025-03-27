@@ -28,7 +28,6 @@ import { useState, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import {
-  useFetchCandidateHistoryMutation,
   useUpdateCandidateMutation,
 } from "@/lib/features/candidate/candidateApi";
 import { useFetchCandidatesQuery } from "@/lib/features/candidate/candidateApi";
@@ -91,11 +90,10 @@ export function CandidateDetailsDialog({
   const pathname = usePathname();
   const { id } = useParams();
 
-  const { refetch } = useFetchCandidatesQuery(
+  const { data: candidateData, refetch } = useFetchCandidatesQuery(
     (id as string) || candidate?.jobId._id || ""
   );
 
-  const [fetchCandidateHistory, { error }] = useFetchCandidateHistoryMutation();
   const [isEditing, setIsEditing] = useState(false);
   const [newRemark, setNewRemark] = useState("");
   const [remarkRating, setRemarkRating] = useState<number | null>(null);
@@ -126,52 +124,26 @@ export function CandidateDetailsDialog({
   const [localCandidate, setLocalCandidate] = useState<Candidate | null>(
     candidate
   );
-  const data = {
-    jobId: localCandidate?.jobId?._id || localCandidate?.jobId,
-    candidateId: localCandidate?._id,
-  };
-
+  
   const [timeLineItems, setTimeLineItems] = useState<ICandidateHistory[]>([]);
-  const fetchHistory = async () => {
-    if (data.jobId && data.candidateId) {
-      try {
-        const history: ICandidateHistory[] = await fetchCandidateHistory({
-          jobId: data.jobId as string,
-          candidateId: data.candidateId as string,
-        }).unwrap();
-        setTimeLineItems(history || []);
-      } catch (err: unknown) {
-        let errorMessage = "An unknown error occurred";
-
-        if (err instanceof Error) {
-          errorMessage = err.message;
-        } else if (typeof err === "object" && err !== null && "data" in err) {
-          const errorObj = err as { data?: { error?: string } };
-          if (
-            errorObj.data &&
-            typeof errorObj.data === "object" &&
-            "error" in errorObj.data
-          ) {
-            errorMessage = errorObj.data?.error || errorMessage;
-          }
-        }
+  
+  useEffect(() => {
+    if (candidateData && localCandidate) {
+      const currentCandidate = candidateData.find(
+        (c) => c._id === localCandidate._id
+      );
+      if (currentCandidate && currentCandidate.history) {
+        setTimeLineItems(currentCandidate.history || []);
       }
     }
-  };
+  }, [candidateData, localCandidate]);
 
   useEffect(() => {
-    if (data.jobId && data.candidateId) {
-      fetchHistory();
-    }
-  }, [data.jobId, data.candidateId]);
-
-  useEffect(() => {
-    // debugger
     if (candidate) {
       setLocalCandidate(candidate);
-      // fetchHistory();
+      refetch();
     }
-  }, [candidate, id]);
+  }, [candidate, id, refetch]);
 
   const handleAddRemark = async () => {
     if (!newRemark.trim() || !user?.id) {
@@ -203,11 +175,9 @@ export function CandidateDetailsDialog({
       setLocalCandidate(result);
       onUpdate?.(result);
       if (pathname === "/dashboard") {
-        // debugger
         refetchAssignment?.();
       }
       await refetch();
-      fetchHistory(); // Call fetchHistory after refetch
 
       setNewRemark("");
       setRemarkRating(null);
@@ -454,7 +424,7 @@ export function CandidateDetailsDialog({
               <Label className={labelClass}>Assignment History</Label>
               <ol className="relative border-s border-gray-200 dark:border-gray-700">                  
                   {
-                    validTimeLineItems.length > 0 && !error 
+                    validTimeLineItems.length > 0 
                       ? validTimeLineItems.reverse().map((interview, i) => {
                           const deadlineDate = formatDate(interview.dateTime);
                           const deadlineTime = formatTime(interview.dateTime);
@@ -687,7 +657,7 @@ export function CandidateDetailsDialog({
           setLocalCandidate={setLocalCandidate}
           refetchAssignment={refetchAssignment}
           onSuccess={() => {
-            fetchHistory();
+            refetch();
           }}
         />
       )}
@@ -711,7 +681,7 @@ export function CandidateDetailsDialog({
           onUpdate={onUpdate || (() => {})}
           refetchAssignment={refetchAssignment}
           onSuccess={() => {
-            fetchHistory();
+            refetch();
           }}
           reopenDetailsDialog={() => {
             onOpenChange(true);
