@@ -16,11 +16,8 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import {
-  CreateAdminResponse,
   CreateOrgResponse,
-  useCreateAdminMutation,
   useCreateOrgMutation,
-  useUpdateAdminMutation,
 } from "@/lib/features/org/orgApi";
 import { Eye, EyeOff } from "lucide-react";
 import React from "react";
@@ -52,13 +49,19 @@ const OrgSchema = Yup.object().shape({
   email: Yup.string()
     .required("Email is required")
     .trim("email cannot be only spaces")
-    .matches(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, "Invalid Email"),
+    .matches(
+      /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+      "Invalid Email"
+    ),
   password: Yup.string()
     .min(6, "Password must be at least 6 characters long")
     .matches(/[a-z]/, "Password must contain at least one lowercase letter")
     .matches(/[A-Z]/, "Password must contain at least one uppercase letter")
     .matches(/\d/, "Password must contain at least one number")
-    .matches(/[@$!%*?&]/, "Password must contain at least one special character (@$!%*?&)")
+    .matches(
+      /[@$!%*?&]/,
+      "Password must contain at least one special character (@$!%*?&)"
+    )
     .required("Password is required"),
   confirmPassword: Yup.string()
     .oneOf([Yup.ref("password")], "Passwords must match")
@@ -70,10 +73,7 @@ const lanes: string[] = [];
 export default function OrgRegisterPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [createAdmin, { isLoading }] = useCreateAdminMutation();
   const [createOrg, { isLoading: isOrgLoading }] = useCreateOrgMutation();
-  const [updateAdmin, { isLoading: isUpdatingAdmin }] =
-    useUpdateAdminMutation();
   const [showPassword, setShowPassword] = React.useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
 
@@ -95,51 +95,33 @@ export default function OrgRegisterPage() {
       const adminData = { email, name: fullName, password, role };
 
       // Create the admin
-      const response: CreateAdminResponse = await createAdmin(adminData).unwrap();
-      if (response.user) {
+      const orgResponse: CreateOrgResponse = await createOrg({
+        name,
+        lanes,
+        adminData,
+      }).unwrap();
+      if (orgResponse.organization) {
         toast({
           title: "Success",
           description: "Admin account created successfully",
           variant: "default",
         });
-
-        const adminId = response.user.id;
-        // Create the organization using the adminId
-        const orgResponse: CreateOrgResponse = await createOrg({
-          name,
-          adminId,
-          lanes,
-        }).unwrap();
-
-        if (orgResponse.organization) {
-          toast({
-            title: "Success",
-            description: "Organization registered successfully",
-            variant: "default",
-          });
-
-          const organizationId = orgResponse._id;
-          await updateAdmin({
-            adminId,
-            organizationId,
-          }).unwrap();
-
-          // debugger
-          router.push("/auth/login");
-        } else {
-          throw new Error("Failed to create organization");
-        }
+        router.push("/auth/login");
       } else {
         throw new Error("Failed to create admin");
       }
     } catch (err: unknown) {
       let errorMessage = "An unknown error occurred";
-  
+
       if (err instanceof Error) {
         errorMessage = err.message;
-      } else if (typeof err === 'object' && err !== null && 'data' in err) {
+      } else if (typeof err === "object" && err !== null && "data" in err) {
         const errorObj = err as { data?: { error?: string } };
-        if (errorObj.data && typeof errorObj.data === 'object' && 'error' in errorObj.data) {
+        if (
+          errorObj.data &&
+          typeof errorObj.data === "object" &&
+          "error" in errorObj.data
+        ) {
           errorMessage = errorObj.data.error || errorMessage;
         }
       }
@@ -182,7 +164,7 @@ export default function OrgRegisterPage() {
                         {...field}
                         id="name"
                         type="text"
-                        disabled={isLoading || isUpdatingAdmin || isSubmitting}
+                        disabled={isSubmitting}
                         className={
                           errors.name && touched.name ? "border-red-500" : ""
                         }
@@ -204,7 +186,7 @@ export default function OrgRegisterPage() {
                         {...field}
                         id="fullName"
                         type="text"
-                        disabled={isLoading || isUpdatingAdmin || isSubmitting}
+                        disabled={isSubmitting}
                         className={
                           errors.fullName && touched.fullName
                             ? "border-red-500"
@@ -228,7 +210,7 @@ export default function OrgRegisterPage() {
                         {...field}
                         id="email"
                         type="email"
-                        disabled={isLoading || isUpdatingAdmin || isSubmitting}
+                        disabled={isSubmitting}
                         className={
                           errors.email && touched.email ? "border-red-500" : ""
                         }
@@ -251,9 +233,7 @@ export default function OrgRegisterPage() {
                           {...field}
                           id="password"
                           type={showPassword ? "text" : "password"}
-                          disabled={
-                            isLoading || isUpdatingAdmin || isSubmitting
-                          }
+                          disabled={isSubmitting}
                           className={
                             errors.password && touched.password
                               ? "border-red-500"
@@ -292,9 +272,7 @@ export default function OrgRegisterPage() {
                           {...field}
                           id="confirmPassword"
                           type={showConfirmPassword ? "text" : "password"}
-                          disabled={
-                            isLoading || isUpdatingAdmin || isSubmitting
-                          }
+                          disabled={isSubmitting}
                           className={
                             errors.confirmPassword && touched.confirmPassword
                               ? "border-red-500"
@@ -330,12 +308,10 @@ export default function OrgRegisterPage() {
                   <Button
                     type="submit"
                     className="w-full"
-                    disabled={isLoading || isSubmitting || isUpdatingAdmin}
+                    disabled={isSubmitting}
                   >
-                    {isSubmitting || isLoading || isOrgLoading
+                    {isSubmitting || isOrgLoading
                       ? "Registering..."
-                      : isUpdatingAdmin
-                      ? "Updating"
                       : "Register Organization"}
                   </Button>
                 </CardFooter>

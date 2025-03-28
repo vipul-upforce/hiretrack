@@ -3,7 +3,7 @@ const DEFAULT_LANES = ["applied", "screening", "shortlisted", "processing", "acc
 const organizationSchema = new Schema({
     name: { 
         type: String, 
-        required: true 
+        unique: true,
     },
     adminId: {
         type: Types.ObjectId,
