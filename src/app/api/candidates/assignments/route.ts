@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import { NextResponse, NextRequest } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
 import { Candidate } from '@/lib/mongodb';
@@ -12,9 +10,6 @@ export async function GET(req: NextRequest) {
     
     const user = req.cookies.get('user');
     const userData = JSON.parse(user?.value || '{}');
-    const query = {
-      'assignment.interviewerId': userData?.role === 'interviewer' ? userData?.id : { $exists: true }
-    }
     if(!Candidate || !User || !Job){
       return NextResponse.json({ error: "Candidate, User, or Job not found" }, { status: 400 });
     }
@@ -23,7 +18,11 @@ export async function GET(req: NextRequest) {
       expectedCTC: 0,
       customFields:0
     } : {};
-    const candidates = await Candidate.find(query, projection).populate([
+    const candidates = await Candidate.find({
+      'assignment.interviewerId': userData?.role === 'interviewer' ? userData?.id : { $exists: true },
+      "organizationId" : userData.organizationId,
+      "status" : { $ne : 'rejected'}
+    }, projection).populate([
       {
         path: 'assignment.interviewerId',
         model: User,
@@ -40,10 +39,7 @@ export async function GET(req: NextRequest) {
         select: '_id title skills description organizationId'
       }
     ]);
-    const filteredCandidates = candidates.filter(
-      (candidate) => candidate.jobId?.organizationId?.toString() === userData.organizationId && candidate.status !== 'rejected'
-    );
-    return NextResponse.json(filteredCandidates);
+    return NextResponse.json(candidates);
   } catch (error) {
     if (error instanceof Error) {
       return NextResponse.json(
