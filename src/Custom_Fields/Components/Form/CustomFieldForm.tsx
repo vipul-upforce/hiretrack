@@ -114,6 +114,17 @@ const CustomFieldForm = memo(
       []
     );
 
+    const handleNumberInputChange = (e: React.ChangeEvent<HTMLInputElement>, setFieldValue: (
+        field: string,
+        value: string | string[] | undefined
+      ) => void ) => {
+
+      const value = e.target.value;
+      if (value === '' || /^[0-9]+$/.test(value)) {
+        setFieldValue("defaultValue", value);
+      }
+    };
+
     return (
       <CustomFieldDialog
         isOpen={isOpen}
@@ -286,10 +297,21 @@ const CustomFieldForm = memo(
                   ) : (
                     <div>
                       <Label htmlFor="defaultValue">Default Value</Label>
-                      <Input
-                        id="defaultValue"
-                        {...getFieldProps("defaultValue")}
-                      />
+                      {values.type === "number" ? (
+                        <Input
+                          id="defaultValue"
+                          value={values.defaultValue || ""}
+                          onChange={(e) => handleNumberInputChange(e, setFieldValue)}
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                        />
+                      ) : (
+                        <Input
+                          id="defaultValue"
+                          {...getFieldProps("defaultValue")}
+                        />
+                      )}
                     </div>
                   )}
                 </>

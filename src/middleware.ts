@@ -17,7 +17,7 @@ export function middleware(request: NextRequest) {
   const userData = user ? JSON.parse(user.value) : null; // Access the value property
 
   // Handle API routes authentication
-  if (pathname.startsWith("/api") && pathname !== "/api/auth/login" && pathname !== "/api/auth/signup" && pathname !== "/api/organization"){
+  if (pathname.startsWith("/api") && pathname !== "/api/auth/login" && pathname !== "/api/auth/signup" && pathname !== "/api/organization" && pathname !== "/api/users"){
     if (!user) {
       return NextResponse.json(
         { error: "Authentication required" },

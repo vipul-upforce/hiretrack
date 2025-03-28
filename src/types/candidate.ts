@@ -48,7 +48,7 @@ export interface Candidate {
     title: string;
     description: string;
   };
-  history: ICandidateHistory[];
+  history?: ICandidateHistory[];
 }
 
 export type CandidateStatus = 
