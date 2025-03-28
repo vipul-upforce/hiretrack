@@ -26,10 +26,10 @@ export default function SMTPConfigs({ onClose }: { onClose: () => void }) {
     const [updateSMTPConfigs, { isLoading: isUpdating }] = useUpdateSMTPConfigsMutation();
   
     const initialValues = data ?? {
-      SMTP_HOST: "",
-      SMTP_PORT: "",
       SMTP_USER: "",
       SMTP_PASSWORD: "",
+      SMTP_HOST: "",
+      SMTP_PORT: "",
       SMTP_FROM: "",
     };
   
@@ -54,6 +54,9 @@ export default function SMTPConfigs({ onClose }: { onClose: () => void }) {
     
     const handleTestConnection = async (values: typeof initialValues) => {
       await testConnection('smtp', {
+        host: values.SMTP_HOST,
+        port: values.SMTP_PORT,
+        from: values.SMTP_FROM,
         // Map SMTP form fields to the credentials expected by our hook
         user: values.SMTP_USER,
         pass: values.SMTP_PASSWORD,

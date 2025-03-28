@@ -16,7 +16,7 @@ export async function DELETE(
   try {
     const session = await auth();
     if(!User){
-      return NextResponse.json({ error: "UserModel not found" }, { status: 400 });
+      return NextResponse.json({ error: "User Model not found" }, { status: 400 });
     }
     
     if (!session || session.user.role !== 'admin') {
@@ -29,7 +29,11 @@ export async function DELETE(
     await dbConnect();
     
     const { id } = await params;
-    const user = await User.findByIdAndDelete(id);
+    const user = await User.findByIdAndUpdate(
+      id,
+      { isDeleted: true },
+      { new: true }
+    );
     
     if (!user) {
       return NextResponse.json(
@@ -39,8 +43,8 @@ export async function DELETE(
     }
 
     return NextResponse.json({ message: 'User deleted successfully' });
-    } catch (error : unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+  } catch (error : unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     return NextResponse.json(
       { error: errorMessage },
       { status: 500 }

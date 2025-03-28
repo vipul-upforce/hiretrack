@@ -28,10 +28,9 @@ import { useState, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import {
-  useFetchCandidateHistoryMutation,
+  useLazyFetchCandidatesQuery,
   useUpdateCandidateMutation,
 } from "@/lib/features/candidate/candidateApi";
-import { useFetchCandidatesQuery } from "@/lib/features/candidate/candidateApi";
 import { useParams } from "next/navigation";
 import Cookies from "js-cookie";
 import CustomFieldsData from "../../../../../Custom_Fields/Components/CustomFields/customFields-details";
@@ -91,11 +90,12 @@ export function CandidateDetailsDialog({
   const pathname = usePathname();
   const { id } = useParams();
 
-  const { refetch } = useFetchCandidatesQuery(
-    (id as string) || candidate?.jobId._id || ""
-  );
+  const [refetchCandidate,{data:candidateData}] = useLazyFetchCandidatesQuery();
 
-  const [fetchCandidateHistory, { error }] = useFetchCandidateHistoryMutation();
+  const refetch = async () => {
+    await refetchCandidate((id as string) || candidate?.jobId._id || "");
+  };
+
   const [isEditing, setIsEditing] = useState(false);
   const [newRemark, setNewRemark] = useState("");
   const [remarkRating, setRemarkRating] = useState<number | null>(null);
@@ -126,50 +126,34 @@ export function CandidateDetailsDialog({
   const [localCandidate, setLocalCandidate] = useState<Candidate | null>(
     candidate
   );
-  const data = {
-    jobId: localCandidate?.jobId?._id || localCandidate?.jobId,
-    candidateId: localCandidate?._id,
-  };
-
+  
   const [timeLineItems, setTimeLineItems] = useState<ICandidateHistory[]>([]);
-  const fetchHistory = async () => {
-    if (data.jobId && data.candidateId) {
-      try {
-        const history: ICandidateHistory[] = await fetchCandidateHistory({
-          jobId: data.jobId as string,
-          candidateId: data.candidateId as string,
-        }).unwrap();
-        setTimeLineItems(history || []);
-      } catch (err: unknown) {
-        let errorMessage = "An unknown error occurred";
-
-        if (err instanceof Error) {
-          errorMessage = err.message;
-        } else if (typeof err === "object" && err !== null && "data" in err) {
-          const errorObj = err as { data?: { error?: string } };
-          if (
-            errorObj.data &&
-            typeof errorObj.data === "object" &&
-            "error" in errorObj.data
-          ) {
-            errorMessage = errorObj.data?.error || errorMessage;
-          }
+  
+  useEffect(() => {
+    if (candidateData || localCandidate) {
+      if(!candidateData && localCandidate){
+        const currentCandidate = localCandidate;
+        if (currentCandidate && currentCandidate.history) {
+          setTimeLineItems(currentCandidate.history || []);
+        }
+      }else if(candidateData && localCandidate){
+        const currentCandidate = candidateData.find(
+          (c) => c._id === localCandidate._id
+        );
+        if (currentCandidate && currentCandidate.history) {
+          setTimeLineItems(currentCandidate.history || []);
         }
       }
     }
-  };
+  }, [candidateData, localCandidate]);
 
   useEffect(() => {
-    if (data.jobId && data.candidateId) {
-      fetchHistory();
-    }
-  }, [data.jobId, data.candidateId]);
-
-  useEffect(() => {
-    // debugger
     if (candidate) {
+      // debugger
       setLocalCandidate(candidate);
-      // fetchHistory();
+      // if(pathname !== "/dashboard"){
+      //   refetch();
+      // }
     }
   }, [candidate, id]);
 
@@ -203,11 +187,11 @@ export function CandidateDetailsDialog({
       setLocalCandidate(result);
       onUpdate?.(result);
       if (pathname === "/dashboard") {
-        // debugger
         refetchAssignment?.();
       }
-      await refetch();
-      fetchHistory(); // Call fetchHistory after refetch
+      if (pathname !== "/dashboard" && pathname !== "/dashboard/calendar") {
+        refetch();
+      }
 
       setNewRemark("");
       setRemarkRating(null);
@@ -229,9 +213,7 @@ export function CandidateDetailsDialog({
 
   if (!localCandidate) return null;
 
-  const validTimeLineItems = timeLineItems.filter(
-    (item) => item.title !== ""
-  );
+  const validTimeLineItems = timeLineItems.filter((item) => item.title !== "");
 
   return (
     <>
@@ -452,56 +434,65 @@ export function CandidateDetailsDialog({
 
             <div className="space-y-2">
               <Label className={labelClass}>Assignment History</Label>
-              <ol className="relative border-s border-gray-200 dark:border-gray-700">                  
-                  {
-                    validTimeLineItems.length > 0 && !error 
-                      ? validTimeLineItems.reverse().map((interview, i) => {
-                          const deadlineDate = formatDate(interview.dateTime);
-                          const deadlineTime = formatTime(interview.dateTime);
-                          
-                          return (
-                            <div key={i} className="mb-10 ms-4">
-                              <div className="absolute w-3 h-3 bg-gray-200 rounded-full mt-1.5 -start-1.5 border border-white dark:border-gray-900 dark:bg-gray-700"></div>
-                              <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500 flex flex-row items-center">
-                                {deadlineDate} <Dot /> {deadlineTime}
-                              </time>
-                              <h3 className="text-lg font-semibold text-gray-900 dark:text-white capitalize flex flex-row itmes-center justify-start">
-                                {(interview.title!=="" || !interview.title) && interview.title!=="Assigned to Job"?(
-                                  <div className="flex flex-row items-start justify-between w-full">
-                                    <div className="flex flex-row">
-                                      <p className="pl-1">
-                                        {
-                                          (interview.previousInterviewer) && 
-                                          typeof interview.previousInterviewer === 'object' && ('name' in interview.previousInterviewer )
-                                            ? interview.previousInterviewer.name + " → " 
-                                            : ""
-                                        }
-                                      </p>
-                                      <p className="pl-1">
-                                        {
-                                          (interview.currentInterviewer) && 
-                                          typeof interview.currentInterviewer === 'object' && ('name' in interview.currentInterviewer )
-                                            ? interview.previousInterviewer? interview.currentInterviewer.name : `Assigned to ${interview.currentInterviewer.name}`  
-                                            : ""
-                                        }
-                                      </p>
-                                    </div>
-                                    <div className="flex flex-col items-end">
-                                      <p className="text-xs font-light text-gray-400">Assigned by</p>
-                                      <p className="font-light text-gray-500 text-sm">
-                                        {
-                                          (interview.assignmentBy) && 
-                                          typeof interview.assignmentBy === 'object' && ('name' in interview.assignmentBy )
-                                            ? `${interview.assignmentBy.name}` 
-                                            : ""
-                                        }
-                                      </p>
-                                    </div>
-                                  </div>
-                                ):interview.title}
-                              </h3>
-                              <div className="mb-4 text-base font-normal text-gray-500 dark:text-gray-400 flex flex-row justify-between w-full text-wrap break-all">
-                                <p>{interview.note ? interview.note.description : ""}</p>
+              <ol className="relative border-s border-gray-200 dark:border-gray-700">
+                {validTimeLineItems.length > 0
+                  ? validTimeLineItems.reverse().map((interview, i) => {
+                      const deadlineDate = formatDate(interview.dateTime);
+                      const deadlineTime = formatTime(interview.dateTime);
+
+                      return (
+                        <div key={i} className="mb-10 ms-4">
+                          <div className="absolute w-3 h-3 bg-gray-200 rounded-full mt-1.5 -start-1.5 border border-white dark:border-gray-900 dark:bg-gray-700"></div>
+                          <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500 flex flex-row items-center">
+                            {deadlineDate} <Dot /> {deadlineTime}
+                          </time>
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white capitalize flex flex-row itmes-center justify-start">
+                            {(interview.title !== "" || !interview.title) &&
+                            interview.title !== "Assigned to Job" ? (
+                              <div className="flex flex-row items-start justify-between w-full">
+                                <div className="flex flex-row">
+                                  <p className="pl-1">
+                                    {interview.previousInterviewer &&
+                                    typeof interview.previousInterviewer ===
+                                      "object" &&
+                                    "name" in interview.previousInterviewer
+                                      ? interview.previousInterviewer.name +
+                                        " → "
+                                      : ""}
+                                  </p>
+                                  <p className="pl-1">
+                                    {interview.currentInterviewer &&
+                                    typeof interview.currentInterviewer ===
+                                      "object" &&
+                                    "name" in interview.currentInterviewer
+                                      ? interview.previousInterviewer
+                                        ? interview.currentInterviewer.name
+                                        : `Assigned to ${interview.currentInterviewer.name}`
+                                      : ""}
+                                  </p>
+                                </div>
+                                <div className="flex flex-col items-end">
+                                  <p className="text-xs font-light text-gray-400">
+                                    Assigned by
+                                  </p>
+                                  <p className="font-light text-gray-500 text-sm">
+                                    {interview.assignmentBy &&
+                                    typeof interview.assignmentBy ===
+                                      "object" &&
+                                    "name" in interview.assignmentBy
+                                      ? `${interview.assignmentBy.name}`
+                                      : ""}
+                                  </p>
+                                </div>
+                              </div>
+                            ) : (
+                              interview.title
+                            )}
+                          </h3>
+                          <div className="mb-4 text-base font-normal text-gray-500 dark:text-gray-400 flex flex-row justify-between w-full text-wrap break-all">
+                            <p>
+                              {interview.note ? interview.note.description : ""}
+                            </p>
 
                             {interview.note && interview.note.rating !== 0 && (
                               <div className="flex flex-row items-center">
@@ -562,7 +553,7 @@ export function CandidateDetailsDialog({
                     <span>
                       Interviewer:{" "}
                       {typeof localCandidate.assignment.interviewerId ===
-                      "object" && localCandidate.assignment.interviewerId
+                        "object" && localCandidate.assignment.interviewerId
                         ? localCandidate.assignment.interviewerId.name
                         : "Unknown"}
                     </span>
@@ -687,7 +678,7 @@ export function CandidateDetailsDialog({
           setLocalCandidate={setLocalCandidate}
           refetchAssignment={refetchAssignment}
           onSuccess={() => {
-            fetchHistory();
+            refetch();
           }}
         />
       )}
@@ -711,7 +702,7 @@ export function CandidateDetailsDialog({
           onUpdate={onUpdate || (() => {})}
           refetchAssignment={refetchAssignment}
           onSuccess={() => {
-            fetchHistory();
+            refetch();
           }}
           reopenDetailsDialog={() => {
             onOpenChange(true);

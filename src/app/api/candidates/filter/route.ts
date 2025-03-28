@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
         ]).lean();;
 
     // Get total count for pagination
-    const totalCount = await Candidate.countDocuments(query);
+    const totalCount = candidates.length || 0;
 
     return NextResponse.json({
       candidates,

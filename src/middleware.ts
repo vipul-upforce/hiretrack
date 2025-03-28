@@ -37,7 +37,7 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // Allow access to the Calder page for all authenticated users
+  // Allow access to the Calendar page for all authenticated users
   if (pathname.includes("/calendar")) {
     return NextResponse.next();
   }
@@ -74,5 +74,5 @@ export function middleware(request: NextRequest) {
 
 // Specify the paths to apply the middleware
 export const config = {
-  matcher: ["/dashboard/:path*", "/auth/signup"],
+  matcher: ["/dashboard/:path*", "/auth/signup", "/api/:path*"],
 };

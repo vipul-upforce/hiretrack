@@ -90,17 +90,19 @@ const FormUpdater = ({ parsedResumeData }: { parsedResumeData: Resume | null }) 
         }
 
         if (values.skills.length===0 && parsedResumeData.skills?.descriptions.length > 0) {
-            const splitSkills = parsedResumeData.skills.descriptions
-                .flatMap((desc) =>
-                    desc
-                        .replace(/^[^:]+:/, "")
-                        ?.split(/[,|;\/]+/)
-                        .map((skill) => skill.trim())
-                )
-                .filter(Boolean);
+          const splitSkills = [...new Set(
+              parsedResumeData.skills.descriptions
+                  .flatMap((desc) =>
+                      desc
+                          .replace(/^[^:]+:/, "")
+                          ?.split(/[,|;\/]+/)
+                          .map((skill) => skill.trim())
+                  )
+                  .filter(Boolean)
+          )];
 
-            setFieldValue('skills', splitSkills);
-            setTouched({skills:true});
+          setFieldValue('skills', splitSkills);
+          setTouched({skills:true});
         }
 
         if (!values.experience && parsedResumeData.workExperiences.length > 0) {

@@ -13,7 +13,7 @@ export async function POST(req: Request) {
         { status: 500 }
       );
     }
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email, isDeleted: { $ne: true } });
     if (!user) {
       return NextResponse.json(
         { error: 'Invalid credentials' },

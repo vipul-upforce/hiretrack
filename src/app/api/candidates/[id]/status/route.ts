@@ -11,7 +11,7 @@ export async function PATCH(
     const { status } = await request.json();
     const { id } = await params;  
     if(!Candidate){
-      return NextResponse.json({ error: "Candidate not found" }, { status: 400 });
+      return NextResponse.json({ error: "Candidate Model not found" }, { status: 400 });
     }
     const updatedCandidate = await Candidate.findByIdAndUpdate(
       id,

@@ -19,6 +19,8 @@ import { useParams } from "next/navigation";
 import { useFetchJobByIdQuery } from "@/lib/features/job/jobApi";
 import {
   useUpdateCandidateMutation,
+  // useFetchCandidatesQuery,
+  // useLazyFetchCandidatesQuery,
   useFetchCandidatesQuery,
 } from "@/lib/features/candidate/candidateApi";
 import { toast } from "@/hooks/use-toast";
@@ -51,6 +53,11 @@ export default function JobProgressPage() {
   const { data: job, isLoading: isJobLoading } = useFetchJobByIdQuery(
     id as string
   );
+  // const {
+  //   data: candidates,
+  //   isLoading: isCandidatesLoading,
+  //   refetch,
+  // } = useLazyFetchCandidatesQuery(id as string);
   const {
     data: candidates,
     isLoading: isCandidatesLoading,
@@ -214,7 +221,6 @@ export default function JobProgressPage() {
         variant: "destructive",
       });
     }
-
     await refetch();
   };
 
@@ -271,7 +277,7 @@ export default function JobProgressPage() {
       });
       const newColumns = columns.filter((col) => col.id !== laneId);
       setColumns(newColumns);
-      await refetch();
+      // await refetch();
     } catch (err: unknown) {
       if (err && typeof err === "object" && "data" in err) {
         const errorMessage =

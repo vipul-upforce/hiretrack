@@ -195,35 +195,38 @@ export function CreateCandidateDialog({ jobId, isOpen, setIsOpen, resumeFile }: 
 
       
       const createdCandidate = await createCandidate(candidateData).unwrap();
-      const newHistoryEntry: ICandidateHistory = {
-        dateTime: createdCandidate?.assignment?.deadline || "",
-        title: typeof createdCandidate?.assignment?.interviewerId === 'object' && createdCandidate?.assignment?.interviewerId?.name 
-          ? `Assigned to ${createdCandidate.assignment.interviewerId.name} : Assigned by ${user.name}` 
-          : "",
-        currentInterviewer: typeof createdCandidate?.assignment?.interviewerId === 'object' && createdCandidate?.assignment?.interviewerId?
-          Object(createdCandidate.assignment.interviewerId._id):null,
-        previousInterviewer: null,
-        assignmentBy: user.id,
-
-        note: {
-          description: "",
-          date: "",
-          rating: 0,
-          userId: null,
-        },
-        attachments: createdCandidate.attachments?.map(attachment => ({
-          id: attachment.id,
-          name: attachment.name,
-          url: attachment.url,
-          type: attachment.type,
-          size: attachment.size,
-        })) || []
+      
+      if (createdCandidate?.assignment?.interviewerId) {
+        const newHistoryEntry: ICandidateHistory = {
+          dateTime: createdCandidate?.assignment?.deadline || "",
+          title: typeof createdCandidate?.assignment?.interviewerId === 'object' && createdCandidate?.assignment?.interviewerId?.name 
+            ? `Assigned to ${createdCandidate.assignment.interviewerId.name} : Assigned by ${user.name}` 
+            : "",
+          currentInterviewer: typeof createdCandidate?.assignment?.interviewerId === 'object' && createdCandidate?.assignment?.interviewerId?
+            Object(createdCandidate.assignment.interviewerId._id):null,
+          previousInterviewer: null,
+          assignmentBy: user.id,
+  
+          note: {
+            description: "",
+            date: "",
+            rating: 0,
+            userId: null,
+          },
+          attachments: createdCandidate.attachments?.map(attachment => ({
+            id: attachment.id,
+            name: attachment.name,
+            url: attachment.url,
+            type: attachment.type,
+            size: attachment.size,
+          })) || []
+        }
+        await updateCandidateHistory({
+          candidateId: createdCandidate._id,
+          jobId: candidateData.jobId._id,
+          newEntry: newHistoryEntry
+        }).unwrap();
       }
-      await updateCandidateHistory({
-        candidateId: createdCandidate._id,
-        jobId: candidateData.jobId._id,
-        newEntry: newHistoryEntry
-      }).unwrap();
       
       setIsOpen(false);
       toast({
