@@ -58,7 +58,7 @@ export function AssignJobDialog({
     { setSubmitting }: FormikHelpers<FormValues>
   ) => {
     try {
-      if(typeof candidate.jobId === "string" &&candidate.jobId!==values.jobId){
+      if(typeof candidate.jobId === "string" &&candidate.jobId!==values.jobId || typeof candidate.jobId === "object" &&candidate.jobId._id!==values.jobId){
         await assignJob({
           jobId: values.jobId,
           candidateId: candidate._id,
