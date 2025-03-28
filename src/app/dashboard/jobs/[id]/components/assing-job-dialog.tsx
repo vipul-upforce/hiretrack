@@ -58,15 +58,23 @@ export function AssignJobDialog({
     { setSubmitting }: FormikHelpers<FormValues>
   ) => {
     try {
-      await assignJob({
-        jobId: values.jobId,
-        candidateId: candidate._id,
-      }).unwrap();
-      onJobAssignment?.()
-      toast({
-        title: "Success",
-        description: "Candidate assigned successfully",
-      });
+      if(typeof candidate.jobId === "string" &&candidate.jobId!==values.jobId){
+        await assignJob({
+          jobId: values.jobId,
+          candidateId: candidate._id,
+        }).unwrap();
+        onJobAssignment?.()
+        toast({
+          title: "Success",
+          description: "Candidate assigned successfully",
+        });
+      }else{
+        toast({
+          title: "Error",
+          description: "Candidate is already assigned to this job",
+          variant:"destructive"
+        });
+      }
     } catch {
       toast({
         title: "Error",

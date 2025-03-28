@@ -83,14 +83,23 @@ export async function POST(req: Request) {
       );
     }
 
+    // Check if candidate is already assigned to this job
+    if (candidate.jobId?.toString() === jobId) {
+      return NextResponse.json(
+        { error: "Candidate is already assigned to this job" },
+        { status: 400 }
+      );
+    }
+
     const existingHistory = await History!.findOne({
       candidateId: candidateId,
-      jobId: candidate.jobId, // Now safe to access since we checked candidate exists
+      jobId: candidate.jobId,
     });
 
-    // Update candidate with new job assignment
+    // Update candidate with new job assignment and set status to "applied"
     await Candidate!.findByIdAndUpdate(candidateId, {
       jobId: jobId,
+      status: "applied",
       $set: {
         "tracking.assignedToJobDate": new Date().toISOString(),
       },

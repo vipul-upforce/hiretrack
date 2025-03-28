@@ -73,8 +73,8 @@ export default function DashboardLayout({
     setUserData(user ? JSON.parse(user) : null);
     if (user) {
       setUserLoggedIn(true);
+      refetch()
     }
-    refetch()
   }, []);
 
   const [isCollapsed, setIsCollapsed] = useState(false);

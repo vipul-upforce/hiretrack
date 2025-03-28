@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { History } from "@/lib/mongodb";
+import { Attachments, FileAttachment, handleFileAttachments } from "@/lib/fileUtils";
 
 export async function POST( //Getting the history data
   request: NextRequest,
@@ -59,7 +60,8 @@ export async function PUT(
   try {
     await connectToDatabase();
     const data = await request.json();
-    
+    const cookie = request.cookies.get("user")?.value || "{}";
+    const parsedCookie = JSON.parse(cookie);
     // Extracted history saving feature
     if (!data || !data.jobId || !data.candidateId) {
       return NextResponse.json(
@@ -67,7 +69,17 @@ export async function PUT(
         { status: 400 }
       );
     }
-    
+
+    if (data.newEntry.attachments) {
+      const newAttachments: Attachments = {
+        files: data.newEntry.attachments.filter((attachment: FileAttachment) => !attachment.type.startsWith("image/")) as FileAttachment[],
+        images: data.newEntry.attachments.filter((attachment: FileAttachment) => attachment.type.startsWith("image/")) as FileAttachment[]
+      }
+      const updatedFiles = await handleFileAttachments(newAttachments, parsedCookie.fileStorage, parsedCookie.organizationId, request);
+      
+      data.newEntry.attachments = [...updatedFiles.files,...updatedFiles.images];
+    }
+     
     const historyEntry = await History.findOneAndUpdate(
       { jobId: data.jobId, candidateId: data.candidateId },
       { $push: { history: data.newEntry } },
@@ -81,6 +93,7 @@ export async function PUT(
       );
     }
     return NextResponse.json(historyEntry.history);
+    // return NextResponse.json({});
   } catch (error) {
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

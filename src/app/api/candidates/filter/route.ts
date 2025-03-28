@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase from "@/lib/mongodb";
+import connectToDatabase, { History } from "@/lib/mongodb";
 import { Candidate } from "@/lib/mongodb";
 
 interface QueryCondition {
@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
       throw new Error("Candidate model is not available");
     }
     
-    const candidates = await Candidate.find(query)
+    const candidates_WO_history = await Candidate.find(query)
       .sort({ "tracking.createdAt": -1 })    
       .populate("remarks.userId", "name email")
       .populate([
@@ -127,7 +127,32 @@ export async function POST(request: NextRequest) {
             path: "jobId",
             select: "title description ",
           },
-        ]).lean();;
+        ]).lean();
+
+        if(!History) return;
+
+        const candidates = await Promise.all(
+          candidates_WO_history.map(async (candidate) => {
+            if (!candidate.jobId || typeof candidate.jobId !== "object" || !("_id" in candidate.jobId)) {
+              return candidate;
+            }
+        
+            const history = await History?.findOne({
+              jobId: (candidate.jobId as { _id: string })._id.toString(),
+              candidateId: candidate._id.toString()
+            })
+              .populate("history.currentInterviewer", "_id name email")
+              .populate("history.previousInterviewer", "_id name email") 
+              .populate("history.assignmentBy", "_id name email")
+              .populate("history.note.userId", "_id name email")
+              .lean();
+            
+            return {
+              ...candidate,
+              history: history ? history.history : []
+            };
+          })
+        );
 
     // Get total count for pagination
     const totalCount = candidates.length || 0;

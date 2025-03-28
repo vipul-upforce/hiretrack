@@ -64,7 +64,9 @@ export default function JobProgressPage() {
     refetch,
   } = useFetchCandidatesQuery(id as string);
   const [updateCandidate] = useUpdateCandidateMutation();
-  const { data: lanes, isLoading: isLanesLoading } = useGetLanesQuery(user?.id);
+  const { data: lanes, isLoading: isLanesLoading } = useGetLanesQuery(user?.id || undefined, {
+    skip: !user?.id
+  });
   const [updateLanes] = useUpdateLanesMutation();
   const [deleteLane] = useDeleteLaneMutation();
   // Add these new state variables
