@@ -11,7 +11,7 @@ export async function POST(req: Request) {
   let admin = null;
 
   try {
-    const { name, lanes, adminData } = await req.json();
+    const { name, adminData } = await req.json();
     
     if (!Organization || !User) {
       return NextResponse.json(
@@ -23,8 +23,7 @@ export async function POST(req: Request) {
     try {
       // 1. Create organization first
       createdOrg = await Organization.create([{ 
-        name: name, 
-        lanes: lanes, 
+        name: name,  
         adminId: new mongoose.Types.ObjectId(), // adminId is required
         customFields: { 
           h3qmln24v: { fields: [], formName: "Job Position" }, 
