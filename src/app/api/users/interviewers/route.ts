@@ -11,8 +11,10 @@ export async function GET(req:NextRequest) {
     if(!User){
       return NextResponse.json({ error: "User Model not found" }, { status: 400 });
     }
-    const interviewers = await User.find({ organizationId })
-      .select('_id name email organizationId');
+    const interviewers = await User.find({ 
+      organizationId,
+      isDeleted: { $ne: true }
+    }).select('_id name email organizationId');
     
     return NextResponse.json(interviewers);
   } catch (error : unknown) {

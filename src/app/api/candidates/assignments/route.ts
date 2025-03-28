@@ -1,7 +1,7 @@
 // @ts-nocheck
 
 import { NextResponse, NextRequest } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
+import connectToDatabase, { History } from '@/lib/mongodb';
 import { Candidate } from '@/lib/mongodb';
 import { User } from '@/lib/mongodb';
 import { Job } from '@/lib/mongodb';
@@ -43,7 +43,28 @@ export async function GET(req: NextRequest) {
     const filteredCandidates = candidates.filter(
       (candidate) => candidate.jobId?.organizationId?.toString() === userData.organizationId && candidate.status !== 'rejected'
     );
-    return NextResponse.json(filteredCandidates);
+
+    if(!History) return;
+
+      const candidatesWithHistory = await Promise.all(
+        filteredCandidates.map(async (candidate) => {
+        const history = await History?.findOne({
+          jobId: candidate.jobId._id,
+          candidateId: candidate._id.toString()
+        }).populate("history.currentInterviewer", "_id name email")
+        .populate("history.previousInterviewer", "_id name email") 
+        .populate("history.assignmentBy", "_id name email")
+        .populate("history.note.userId", "_id name email")
+        .lean();
+        
+        return {
+          ...candidate._doc,
+          history: history ? history.history : []
+        };
+      })
+    );
+
+    return NextResponse.json(candidatesWithHistory);
   } catch (error) {
     if (error instanceof Error) {
       return NextResponse.json(

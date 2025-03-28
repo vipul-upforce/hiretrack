@@ -33,7 +33,7 @@ interface CandidateFormProps{
 export function CandidateForm({onFileUpload}:CandidateFormProps) {
   const { setFieldValue, values, errors } =
     useFormikContext<CandidateFormValues>();
-  const { data: interviewers, refetch } = useFetchInterviewersQuery();
+  const { data: interviewers } = useFetchInterviewersQuery();
   const [nameField, nameMeta] = useField("name");
   const [locationField, locationMeta] = useField("location");
   const [experienceField, experienceMeta] = useField("experience");
@@ -53,9 +53,6 @@ export function CandidateForm({onFileUpload}:CandidateFormProps) {
       ? values.assignment.interviewerId
       : values.assignment?.interviewerId?._id || "";
 
-  useEffect(() => {
-    refetch();
-  }, []);
   useEffect(() => {
     if (tempResumeUrl) {
       URL.revokeObjectURL(tempResumeUrl);

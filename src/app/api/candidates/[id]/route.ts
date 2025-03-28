@@ -176,7 +176,7 @@ export async function GET(
     const { id } = await params;
     if (!Candidate) {
       return NextResponse.json(
-        { error: "Candidate not found" },
+        { error: "Candidate Model Not Found" },
         { status: 404 }
       );
     }

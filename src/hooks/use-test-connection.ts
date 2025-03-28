@@ -17,6 +17,9 @@ interface Credentials {
   // SMTP credentials
   user?: string;
   pass?: string;
+  host?: string,
+  port?: string,
+  from?: string,
 }
 
 interface UseTestConnectionReturn {

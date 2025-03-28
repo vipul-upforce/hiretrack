@@ -39,14 +39,14 @@ export const candidateApi = createApi({
       query: () => '/candidates/assignments',
       providesTags: ['Candidate'],
     }),
-    fetchCandidateHistory: builder.mutation<ICandidateHistory[], { jobId: string; candidateId: string}>({
-      query: ({jobId, candidateId}) => ({
-        url: '/candidates/history',
-        method: 'POST',
-        body: {jobId, candidateId},
-      }),
-      invalidatesTags: ['Candidate'],
-    }),
+    // fetchCandidateHistory: builder.mutation<ICandidateHistory[], { jobId: string; candidateId: string}>({
+    //   query: ({jobId, candidateId}) => ({
+    //     url: '/candidates/history',
+    //     method: 'POST',
+    //     body: {jobId, candidateId},
+    //   }),
+    //   invalidatesTags: ['Candidate'],
+    // }),
     filterCandidates: builder.mutation({
       query: (data) => ({
         url: '/candidates/filter',
@@ -78,8 +78,9 @@ export const {
   useUpdateCandidateMutation,
   useUpdateCandidateStatusMutation,
   useFetchAssignedCandidatesQuery,
-  useFetchCandidateHistoryMutation,
+  // useFetchCandidateHistoryMutation,
   useUpdateCandidateHistoryMutation,
   useDeleteCandidateMutation,
-  useFilterCandidatesMutation
+  useFilterCandidatesMutation,
+  useLazyFetchCandidatesQuery
 } = candidateApi; 

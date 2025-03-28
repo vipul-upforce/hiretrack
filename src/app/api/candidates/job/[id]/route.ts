@@ -10,7 +10,7 @@ export async function GET(
     await connectToDatabase();
     const { id } = await params;
     if (!Candidate) {
-      return NextResponse.json({ error: "Candidate not found" }, { status: 404 });
+      return NextResponse.json({ error: "Candidate Model Not Found" }, { status: 404 });
     }
     const candidates = await Candidate.find({ jobId: id })
       .sort({ 'tracking.createdAt': -1 });
