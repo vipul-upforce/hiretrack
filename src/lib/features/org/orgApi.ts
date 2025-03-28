@@ -33,8 +33,8 @@ export interface UpdateAdminResponse {
 
 export interface CreateOrgRequest {
   name: string;
-  adminId?: string | undefined;
   lanes: string[];
+  adminData: { email: string; name: string; password: string; role: string };
 }
 
 export interface CreateOrgResponse {
@@ -78,7 +78,7 @@ export const orgApi = createApi({
       query: (data) => ({
         url: "/organization/cs",
         method: "POST",
-        body: data, 
+        body: data,
       }),
     }),
     getCustomFields: builder.query({

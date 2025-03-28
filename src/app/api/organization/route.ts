@@ -1,45 +1,71 @@
 import { NextResponse } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
-import { Organization } from "@/lib/mongodb";
-import mongoose from "mongoose";
+import { Organization, User } from "@/lib/mongodb";
+import mongoose  from "mongoose";
+import bcrypt from 'bcryptjs';
 
 // Handle POST request
 export async function POST(req: Request) {
-  await connectToDatabase();
+  await connectToDatabase()
+  let createdOrg = null;
+  let admin = null;
 
   try {
-    const { name, adminId, lanes } = await req.json();
-    const id = new mongoose.Types.ObjectId(adminId);
-    if (!Organization) {
+    const { name, lanes, adminData } = await req.json();
+    
+    if (!Organization || !User) {
       return NextResponse.json(
         { error: "Database not connected." },
         { status: 400 }
       );
     }
-    const org = await Organization.create({
-      name: name,
-      adminId: id,
-      lanes: lanes,
-      customFields: {
-        h3qmln24v: {
-          fields: [],
-          formName: "Job Position",
-        },
-        g2xh8hoe1: {
-          fields: [],
-          formName: "Candidate",
-        },
-      },
-    });
 
-    return NextResponse.json(
-      {
-        message: "Organization Created Successfully",
-        organization: org,
-        _id: org.id,
-      },
-      { status: 201 }
-    );
+    try {
+      // 1. Create organization first
+      createdOrg = await Organization.create([{ 
+        name: name, 
+        lanes: lanes, 
+        adminId: new mongoose.Types.ObjectId(), // adminId is required
+        customFields: { 
+          h3qmln24v: { fields: [], formName: "Job Position" }, 
+          g2xh8hoe1: { fields: [], formName: "Candidate" } 
+        } 
+      }]);
+
+      const hashedPassword = await bcrypt.hash(adminData.password, 10);
+
+      // 2. Create admin user with org ID
+      admin = await User.create([{
+        ...adminData,
+        password:hashedPassword,
+        organizationId: createdOrg[0]._id,
+        role: 'admin'
+      }]);
+
+      // 3. Update organization with admin ID
+      await Organization.findByIdAndUpdate(
+        createdOrg[0]._id,
+        { adminId: admin[0]._id },
+        { new: true }
+      );
+
+      return NextResponse.json(
+        {
+          message: "Organization and Admin Created Successfully",
+          organization: createdOrg[0],
+          admin: admin[0],
+        },
+        { status: 201 }
+      );
+
+    } catch (adminError) {
+      // Manual rollback: Delete the created organization if admin creation fails
+      if (createdOrg) {
+        await Organization.deleteOne({ _id: createdOrg[0]._id });
+      }
+      throw adminError; // Re-throw to be caught by outer catch block
+    }
+
   } catch (error: unknown) {
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
