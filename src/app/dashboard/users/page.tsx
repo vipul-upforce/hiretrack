@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/select";
 import { Formik, Form, ErrorMessage, Field } from "formik"
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function UsersPage() {
   const router = useRouter();
@@ -56,6 +57,7 @@ export default function UsersPage() {
     name: string;
     email: string;
     role: string;
+    isDeleted?: boolean; // Added isDeleted field
   }
   const [selectedUser, setSelectedUser] = useState<SelectedUser | null>(null);
   useEffect(() => {
@@ -100,12 +102,14 @@ export default function UsersPage() {
     name: string;
     email: string;
     role: string;
+    isDeleted?: boolean; // Added isDeleted field
   }) => {
     setSelectedUser({
       id: user._id,
       name: user.name,
       email: user.email,
       role: user.role,
+      isDeleted: user.isDeleted, // Set isDeleted value
     });
     setIsOpen(true);
   };
@@ -178,7 +182,6 @@ export default function UsersPage() {
                   <TableCell>
                     {user.name}
                     {user.isDeleted && (
-                      // <span className="ml-2 text-red-500 text-sm">[Deleted]</span>
                       <Badge className="ml-2 bg-red-500 hover:bg-red-600">Deleted</Badge>
                     )}
                   </TableCell>
@@ -196,14 +199,14 @@ export default function UsersPage() {
                         setUserIdToDelete(user._id); 
                         setShowDeleteDialog(true);
                       }}
-                      disabled={isDeleting}
+                      disabled={isDeleting || user.isDeleted}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                     <Button
                       size="icon"
                       onClick={() => handleEditClick(user)}
-                      disabled={isUpdating || user.isDeleted}
+                      disabled={isUpdating}
                     >
                       <EditIcon className="h-4 w-4" />
                     </Button>
@@ -219,8 +222,7 @@ export default function UsersPage() {
           <DialogHeader>
             <DialogTitle>Delete User</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete the user? This action
-              cannot be undone.
+              Are you sure you want to delete the user? You can always reactivate the user from edit form.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -256,6 +258,7 @@ export default function UsersPage() {
                 name: selectedUser.name,
                 email: selectedUser.email,
                 role: selectedUser.role,
+                isDeleted: selectedUser.isDeleted || false,
               }}
               validationSchema={validationSchema}
               onSubmit={handleUpdate}
@@ -288,6 +291,21 @@ export default function UsersPage() {
                       </SelectContent>
                     </Select>
                     <ErrorMessage name="role" component="div" className="text-red-500 text-sm" />
+                  </div>
+
+                  <div>
+                    <Label className="flex flex-row items-center">
+                      <Checkbox
+                        id="isDeleted"
+                        checked={values.isDeleted}
+                        onCheckedChange={(checked) => {
+                          setFieldValue("isDeleted", checked);
+                        }}
+                      />
+                      <p className="ml-2">
+                        Deactivate user
+                      </p>
+                    </Label>
                   </div>
 
                   <DialogFooter>

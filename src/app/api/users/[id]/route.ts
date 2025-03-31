@@ -3,11 +3,12 @@ import dbConnect from '@/lib/mongodb';
 import { User } from '@/lib/mongodb';
 import { auth } from '@/lib/auth';
 
-interface EditUser{
-  name:string;
-  email:string;
-  role:'hr'|'interviewer'|'admin';
-}
+// interface EditUser{
+//   name:string;
+//   email:string;
+//   role:'hr'|'interviewer'|'admin';
+//   isDeleted?:boolean;
+// }
 
 export async function DELETE(
   req: Request,
@@ -68,19 +69,13 @@ export async function PUT(
     }
 
     await dbConnect();
-    const { name, email, role }: EditUser = await req.json(); 
     const { id } = await params; 
-    
-    const user = await User.findById(id);
+    const userData = await req.json(); 
+
+    const user = await User.findByIdAndUpdate(id, userData, { new: true });
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
-
-    user.name = name;
-    user.email = email;
-    user.role = role;
-
-    await user.save();
 
     return NextResponse.json({ message: 'User updated successfully' });
 
