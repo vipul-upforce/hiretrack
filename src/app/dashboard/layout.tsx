@@ -63,7 +63,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [userData, setUserData] = useState<{ role?: string } | null>(null);
+  const [userData, setUserData] = useState<{ name:string, email:string, role?: string } | null>(null);
   const { data: portalData, isLoading, refetch } = useGetPortalConfigsQuery(undefined);
   const { setUserLoggedIn } = useCustomFields();
   
@@ -191,6 +191,30 @@ export default function DashboardLayout({
       </div>
       {/* Settings and Logout Buttons */}
       <div className="px-3 pb-4 mt-auto space-y-2">
+        <div className='flex flex-row justify-center items-center'>
+          {portalData && portalData.portalLogo.url && (
+            <div className={"flex-shrink-0"}>
+              <img
+                src={portalData.portalLogo.url}
+                alt={portalData.portalName || "Portal Logo"}
+                className="h-8 w-auto object-contain rounded"
+              />
+            </div>
+          )}
+          <div
+            className={cn(
+              "w-full flex flex-col justify-left items-left rounded-lg px-3 pt-2 transition-all duration-300",
+              isCollapsed ? "hidden" : "opacity-100"
+            )}
+          >
+            <p className='text-lg p-0 font-bold'>
+              {userData?.name}
+            </p>
+            <p className='text-sm font-thin p-0 text-gray-600'>
+              {userData?.email}
+            </p>
+          </div>
+        </div>
         <Button
           variant="ghost"
           className={cn(

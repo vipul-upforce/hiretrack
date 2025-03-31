@@ -6,7 +6,7 @@ import Cookies from "js-cookie";
 
 import { OrgInfo } from "@/lib/models/user";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { Skeleton } from "@/components/ui/skeleton";
+// import { Skeleton } from "@/components/ui/skeleton";
 import DashboardLoader from "./components/dashboard-loader";
 import ActionItems from "@/components/actionitems";
 
@@ -135,7 +135,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* <Modal isOpen={true} onClose={() => {}} imageUrl="/notfound.png" /> */}
-      <Card>
+      {/* <Card>
         <CardHeader>
           <CardTitle className="text-3xl font-bold">
             Welcome to HireTrack
@@ -172,7 +172,7 @@ export default function DashboardPage() {
             )}
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

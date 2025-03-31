@@ -30,7 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import AddCustomFieldButton from "@/Custom_Fields/Components/AddCustomFieldButton";
+// import AddCustomFieldButton from "@/Custom_Fields/Components/AddCustomFieldButton";
 interface User {
   role: string;
   organizationId: string;
@@ -247,7 +247,7 @@ export default function KanbanPage() {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Job Positions</CardTitle>
           <div className="flex flex-row items-basline justify-between gap-2">
-            <AddCustomFieldButton />
+            {/* <AddCustomFieldButton /> */}
             <CreateJobDialog
               onJobCreated={handleJobCreated}
               userRole={user?.role}
