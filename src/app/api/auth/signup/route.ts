@@ -26,6 +26,12 @@ export async function POST(req: Request) {
     
     if (existingUser) {
       // return Response.json({ error: 'User already exists'  })
+      if(existingUser.isDeleted){
+        return NextResponse.json(
+          { error: 'User already exists, but is deactivated.' },
+          { status: 400 }
+        );
+      }
       return NextResponse.json(
         { error: 'User already exists' },
         { status: 400 }

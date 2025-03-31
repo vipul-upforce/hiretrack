@@ -9,16 +9,19 @@ const unauthorizedInterviewerPages = [
   "/dashboard/search",
 ];
 
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+export async function middleware(request: NextRequest) {
+  const { pathname } = await request.nextUrl;
 
   // Check if the user is authenticated
-  const user = request.cookies.get("user"); // Check if user cookie exists
-  const userData = user ? JSON.parse(user.value) : null; // Access the value property
+  const user = await request.cookies.get("user")?.value; // Check if user cookie exists
+  // console.log("REQ COOKIE: ", user);
+
+  const userData = user ? JSON.parse(user) : null; // Access the value property
 
   // Handle API routes authentication
-  if (pathname.startsWith("/api") && pathname !== "/api/auth/login" && pathname !== "/api/auth/signup" && pathname !== "/api/organization"){
+  if (pathname.startsWith("/api") && pathname !== "/api/auth/login" && pathname !== "/api/auth/signup" && pathname !== "/api/organization") {
     if (!user) {
+      console.warn("User cookie is undefined. Authentication required.");
       return NextResponse.json(
         { error: "Authentication required" },
         { status: 401 }

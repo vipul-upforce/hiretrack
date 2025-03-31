@@ -26,7 +26,7 @@ export async function GET() {
       { 
         _id: { $ne: session.user.id },
         organizationId: session.user.organizationId,
-        isDeleted: { $ne: true }
+        // isDeleted: { $ne: true }
       },
       { password: 0 }
     ).sort({ createdAt: -1 });

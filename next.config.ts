@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    domains: ["localhost", "192.168.5.210", "res.cloudinary.com","rms-bucket-upforcetech.s3.us-east-1.amazonaws.com"],
+    domains: ["192.168.56.1","localhost", "192.168.5.210", "res.cloudinary.com","rms-bucket-upforcetech.s3.us-east-1.amazonaws.com"],
     unoptimized: true
   },
   async headers() {

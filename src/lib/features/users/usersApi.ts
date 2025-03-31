@@ -8,6 +8,7 @@ export interface User {
   email: string;
   role: 'hr' | 'interviewer';
   createdAt: string;
+  isDeleted?: boolean;
 }
 
 export interface UserEdit{ 

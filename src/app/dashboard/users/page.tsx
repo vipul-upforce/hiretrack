@@ -5,6 +5,7 @@ import {
   useGetUsersQuery,
   useDeleteUserMutation,
   useUpdateUserMutation,
+  User,
 } from "@/lib/features/users/usersApi";
 import {
   Table,
@@ -41,6 +42,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Formik, Form, ErrorMessage, Field } from "formik"
+import { Badge } from "@/components/ui/badge";
 
 export default function UsersPage() {
   const router = useRouter();
@@ -171,9 +173,15 @@ export default function UsersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users?.map((user) => (
+              {users?.map((user:User) => (
                 <TableRow key={user._id}>
-                  <TableCell>{user.name}</TableCell>
+                  <TableCell>
+                    {user.name}
+                    {user.isDeleted && (
+                      // <span className="ml-2 text-red-500 text-sm">[Deleted]</span>
+                      <Badge className="ml-2 bg-red-500 hover:bg-red-600">Deleted</Badge>
+                    )}
+                  </TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell className="capitalize">{user.role}</TableCell>
                   <TableCell>
@@ -183,7 +191,6 @@ export default function UsersPage() {
                     <Button
                       variant="destructive"
                       size="icon"
-                      // onClick={() => handleDelete(user._id)}
                       onClick={(e) => {
                         e.stopPropagation();
                         setUserIdToDelete(user._id); 
@@ -196,7 +203,7 @@ export default function UsersPage() {
                     <Button
                       size="icon"
                       onClick={() => handleEditClick(user)}
-                      disabled={isUpdating}
+                      disabled={isUpdating || user.isDeleted}
                     >
                       <EditIcon className="h-4 w-4" />
                     </Button>
