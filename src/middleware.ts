@@ -19,7 +19,13 @@ export async function middleware(request: NextRequest) {
   const userData = user ? JSON.parse(user) : null; // Access the value property
 
   // Handle API routes authentication
-  if (pathname.startsWith("/api") && pathname !== "/api/auth/login" && pathname !== "/api/auth/signup" && pathname !== "/api/organization") {
+  if (
+    pathname.startsWith("/api") &&
+    pathname !== "/api/auth/login" &&
+    pathname !== "/api/auth/signup" &&
+    pathname !== "/api/organization" &&
+    pathname !== "/api/event-mail"
+  ) {
     if (!user) {
       console.warn("User cookie is undefined. Authentication required.");
       return NextResponse.json(

@@ -6,7 +6,9 @@ import { handleSingleFile } from "@/lib/fileUtils";
 import { handleFileAttachments } from "@/lib/fileUtils";
 import { Attachment } from "../route";
 import { History } from "@/lib/mongodb"; // Import History model
-import { ICandidate } from "@/lib/models/candidate";
+import { ICandidate as IExternalCandidate } from "@/lib/models/candidate"; // Import existing ICandidate
+import { IJob } from "@/lib/models/job";
+import mongoose from "mongoose";
 
 interface UpdateObject {
   $set: Record<string, unknown>;
@@ -14,54 +16,31 @@ interface UpdateObject {
   $unset?: Record<string, number>;
 }
 
-// import { Document } from "mongoose";
+interface IFJob {
+  _id: mongoose.Schema.Types.ObjectId;
+  title: string;
+  description: string;
+}
 
-// export interface ICandidate extends Document {
-//   _id: string;
-//   name: string;
-//   email: string;
-//   assignment?: {
-//     interviewerId: {
-//       _id: string;
-//       name: string;
-//       email: string;
-//     };
-//     deadline?: Date;
-//   };
-//   remarks?: {
-//     userId: {
-//       name: string;
-//       email: string;
-//     };
-//     text: string;
-//   }[];
-//   tracking?: {
-//     updatedAt: Date;
-//   };
-//   attachments?: Attachment[];
-// }
-
+type ICandidate = IExternalCandidate & { // Extend the existing ICandidate
+  jobId?: IFJob | mongoose.Schema.Types.ObjectId | null; // Make jobId optional
+}
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-
-  let fileStorage = 'local';
+  let fileStorage = "local";
   let organizationId;
 
   try {
     await connectToDatabase();
     const data = await request.json();
-    try {
-      const userCookie = request.cookies.get('user')?.value;
-      if (userCookie) {
-        const userData = JSON.parse(userCookie);
-        fileStorage = userData.fileStorage || 'local';
-        organizationId = userData.organizationId || "";
-      }
-    } catch {
-      
+    const userCookie = request.cookies.get("user")?.value;
+    if (userCookie) {
+      const userData = JSON.parse(userCookie);
+      fileStorage = userData.fileStorage || "local";
+      organizationId = userData.organizationId || "";
     }
     const { id } = await params;
 
@@ -87,11 +66,21 @@ export async function PUT(
     }
 
     if (data.resume) {
-      data.resume = await handleSingleFile(data.resume, fileStorage, organizationId, request);
+      data.resume = await handleSingleFile(
+        data.resume,
+        fileStorage,
+        organizationId,
+        request
+      );
     }
 
     if (data.customFields) {
-      const cs = await handleCustomFieldFiles(data.customFields, fileStorage, organizationId, request);
+      const cs = await handleCustomFieldFiles(
+        data.customFields,
+        fileStorage,
+        organizationId,
+        request
+      );
       data.customFields = cs;
     }
 
@@ -138,8 +127,8 @@ export async function PUT(
         { status: 404 }
       );
     }
-    
-    const updatedCandidate= await Candidate.findByIdAndUpdate(id, updateObj, {
+
+    const updatedCandidate = (await Candidate.findByIdAndUpdate(id, updateObj, {
       new: true,
       runValidators: true,
     })
@@ -153,11 +142,11 @@ export async function PUT(
           select: "name email",
         },
         {
-          path:"jobId",
-          select:"_id description"
-        }
+          path: "jobId",
+          select: "_id description title",
+        },
       ])
-      .lean() as ICandidate | null
+      .lean()) as ICandidate | null;
 
     if (!updatedCandidate) {
       return NextResponse.json(
@@ -165,6 +154,44 @@ export async function PUT(
         { status: 404 }
       );
     }
+    const origin = request.headers.get("origin");
+    const url = `${origin}/api/event-mail`;
+    const reqBody = {
+      email: updatedCandidate.assignment?.interviewerId.email,
+      eventTitle:
+        updatedCandidate.jobId && typeof updatedCandidate.jobId !== "string" && (updatedCandidate.jobId as unknown as IJob).title
+          ? "Interview for " + (updatedCandidate.jobId as unknown as IJob).title
+          : "Interview for Unknown Position",
+      startTime: updatedCandidate.assignment?.deadline,
+      endTime: updatedCandidate.assignment?.deadline,
+      jobName:
+        updatedCandidate.jobId && typeof updatedCandidate.jobId !== "string" && (updatedCandidate.jobId as unknown as IJob).title
+          ? (updatedCandidate.jobId as unknown as IJob).title
+          : "Unknown Job",
+      interviewerName: updatedCandidate.assignment?.interviewerId.name,
+      candidateName: updatedCandidate.name,
+      status: updatedCandidate.status,
+    };
+    if (updatedCandidate.assignment) {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: `user=${JSON.stringify(userCookie)}`, // Add your cookie here
+        },
+        body: JSON.stringify(reqBody),
+      });
+
+      // Check if the response is successful
+      if (!response.ok) {
+        const errorData = await response.json(); // Parse the error response
+        return NextResponse.json(
+          { error: errorData.message || "Failed to send email" },
+          { status: response.status }
+        );
+      }
+    }
+
     return NextResponse.json(updatedCandidate);
   } catch (error) {
     if (error instanceof Error) {

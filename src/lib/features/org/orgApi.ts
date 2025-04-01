@@ -37,6 +37,17 @@ export interface CreateOrgRequest {
   adminData: { email: string; name: string; password: string; role: string };
 }
 
+export interface IScheduledMailRequest {
+  email: string;
+  eventTitle: string;
+  startTime: string;
+  endTime: string;
+  jobName: string;
+  interviewerName: string;
+  candidateName: string;
+  status: string;
+}
+
 export interface CreateOrgResponse {
   message: string;
   organization: string;
@@ -87,11 +98,19 @@ export const orgApi = createApi({
         method: "GET",
       }),
     }),
+    sendMail: builder.mutation<{ message: string }, IScheduledMailRequest>({
+      query: (data) => ({
+        url: `/event-mail`,
+        method: "POST",
+        body: data,
+      }),
+    }),
   }),
 });
 
 export const {
   useCreateAdminMutation,
+  useSendMailMutation,
   useCreateOrgMutation,
   useUpdateAdminMutation,
   useUpdateCustomFieldsMutation,
