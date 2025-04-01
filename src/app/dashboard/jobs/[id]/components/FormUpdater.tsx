@@ -83,6 +83,10 @@ const FormUpdater = ({ parsedResumeData }: { parsedResumeData: Resume | null }) 
             setFieldValue('name', profile.name);
             setTouched({name:true});
         }
+        if (!values.email && profile.email) {
+            setFieldValue('email', profile.email);
+            setTouched({email:true});
+        }
 
         if (!values.location && profile.location) {
             setFieldValue('location', profile.location);

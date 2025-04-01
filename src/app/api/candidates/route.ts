@@ -144,6 +144,7 @@ export async function POST(request: NextRequest) {
         size: attachment.size,
       })),
       customFields: data.customFields,
+      email: data.email || "",
     };
 
     if (!Candidate) {

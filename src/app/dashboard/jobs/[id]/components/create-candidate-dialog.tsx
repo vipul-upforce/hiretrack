@@ -48,6 +48,7 @@ const getInitialValues = (customFields: CustomFieldValues) => ({
   assignee: "",
   deadline: undefined,
   customFields: { ...customFields },
+  email: "",
 });
 
 const handleFileParse = async (
@@ -66,7 +67,6 @@ const handleFileParse = async (
           const fileUrl = result; // Data URL format (e.g., data:application/pdf;base64,...)
 
           const parsedData = await parseResumeFromPdf(fileUrl);
-          // console.log("Parsed Resume Data:", parsedData);
           setParsedResume(parsedData);
         } catch (error) {
           console.error("Error parsing resume:", error);
@@ -171,6 +171,8 @@ export function CreateCandidateDialog({ jobId, isOpen, setIsOpen, resumeFile }: 
         expectedCTC: Number(parseFloat(String(values.expectedCTC)).toFixed(2)),
         experience: Number(parseFloat(String(values.experience)).toFixed(2)),
         noticePeriod: Number(parseFloat(String(values.noticePeriod)).toFixed(2)),
+        // Include email from parsed resume data
+        email: parsedResumeData?.profile?.email || values.email,
         // Only include assignment if both assignee and deadline are provided
         ...(values.assignee && values.deadline
           ? {

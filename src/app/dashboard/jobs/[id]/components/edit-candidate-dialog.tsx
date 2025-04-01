@@ -14,13 +14,11 @@ import { CandidateForm } from "./candidate-form";
 import {
   useUpdateCandidateMutation,
   useUpdateCandidateHistoryMutation,
-  // useLazyFetchCandidatesQuery,
 } from "@/lib/features/candidate/candidateApi";
 import { Candidate } from "@/types/candidate";
 import { v4 as uuidv4 } from "uuid";
 import { useParams, usePathname } from "next/navigation";
 import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
-// import CustomFields from "@/Custom_Fields/Components/CustomFields";
 import { ICandidateHistory } from "@/lib/models/history";
 import { useState } from "react";
 import { Resume } from "@/lib/redux/types";
@@ -51,8 +49,7 @@ const handleFileParse = async (
 
       if (result && typeof result === "string") {
         try {
-          // Use the full data URL, not just the Base64 content
-          const fileUrl = result; // Data URL format (e.g., data:application/pdf;base64,...)
+          const fileUrl = result;
 
           const parsedData = await parseResumeFromPdf(fileUrl);
           setParsedResume(parsedData);
@@ -62,9 +59,7 @@ const handleFileParse = async (
       }
     };
 
-    // reader.onerror = () => console.error("Failed to read file");
-
-    reader.readAsDataURL(file); // Converts to data URL directly
+    reader.readAsDataURL(file);
   }
 };
 
@@ -79,11 +74,6 @@ export function EditCandidateDialog({
 }: EditCandidateDialogProps) {
   const { toast } = useToast();
   const { id } = useParams();
-
-  // const [refetchCandidate] = useLazyFetchCandidatesQuery();
-  // const refetch = async () => {
-  //   await refetchCandidate(id as string);
-  // };
   const [updateCandidate] = useUpdateCandidateMutation();
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
 
@@ -91,11 +81,7 @@ export function EditCandidateDialog({
   const { getDefaultValues, validationSchema } = useCustomForm(formName);
   const pathname = usePathname();
   const [parsedResumeData, setParsedResume] = useState<Resume | null>(null);
-
-  // const [currentUser, setCurrentUser] = useState<IUser|null>(null);
   const userCookie = Cookies.get("user") || "{}";
-
-  // console.log("********************&^^^^ ",JSON.parse(userCookie))
   const user = JSON.parse(userCookie);
 
   const handleSubmit = async (values: Candidate) => {
@@ -112,7 +98,6 @@ export function EditCandidateDialog({
       return;
     }
     try {
-      // Handle new files if any
       const resumeBase64 =
         values.resume instanceof File
           ? await convertFileToBase64(values.resume)
@@ -141,12 +126,11 @@ export function EditCandidateDialog({
                 size: file.size,
               };
             }
-            return file; // file already has all required properties
+            return file;
           }
         )
       );
 
-      // Identify modified attachments
       const latestModifiedAttachments = attachmentsBase64.filter(
         (newAttachment) => {
           const originalAttachment = candidate.attachments.find(
@@ -182,6 +166,7 @@ export function EditCandidateDialog({
                   : values?.resume?.size || 0,
             }
           : undefined,
+        email: values.email, // Added email field
         currentCTC: Number(parseFloat(String(values.currentCTC)).toFixed(2)),
         expectedCTC: Number(parseFloat(String(values.expectedCTC)).toFixed(2)),
         experience: Number(parseFloat(String(values.experience)).toFixed(2)),
@@ -189,7 +174,6 @@ export function EditCandidateDialog({
         attachments: attachmentsBase64,
       };
 
-      // Remove assignment if interviewerId is -1, otherwise update it
       if (values.assignment) {
         if (values.assignment.interviewerId === "-1") {
           delete updatedCandidate.assignment;
@@ -242,7 +226,6 @@ export function EditCandidateDialog({
 
       title = null;
 
-      // Create history entry with only modified attachments
       const newHistoryEntry: ICandidateHistory = {
         dateTime: updatedCandidate?.assignment?.deadline || "",
         title: title,
@@ -269,11 +252,8 @@ export function EditCandidateDialog({
       if (pathname === "/dashboard") {
         refetchAssignment?.();
       }
-      // Update local state and refetch data
       onUpdate(result);
-      // debugger
-      if(id){
-        // await refetch();
+      if (id) {
         onSuccess();
       }
       onOpenChange(false);
@@ -282,8 +262,6 @@ export function EditCandidateDialog({
         description: "Candidate updated successfully",
       });
     } catch (error) {
-      // console.log(error);
-
       if (typeof error === "object" && error !== null && "data" in error) {
         const errorData = (error as { data?: { error?: string } }).data;
 
@@ -333,6 +311,7 @@ export function EditCandidateDialog({
     ...candidate,
     resume: candidate.resume,
     attachments: candidate.attachments,
+    email: candidate.email, // Added email to initial values
     assignment: candidate.assignment
       ? {
           assignment: candidate.assignment.assignment,
@@ -349,9 +328,6 @@ export function EditCandidateDialog({
       open={isOpen}
       onOpenChange={(open) => {
         onOpenChange(open);
-        // if (!open && reopenDetailsDialog) {
-        //   setTimeout(reopenDetailsDialog, 100);
-        // }
       }}
     >
       <DialogContent
@@ -370,16 +346,12 @@ export function EditCandidateDialog({
           {({ isSubmitting, errors, setFieldValue }) => (
             <Form className="flex flex-col h-[calc(90vh-80px)] overflow-hidden">
               <FormUpdater parsedResumeData={parsedResumeData} />
-
-              {/* <div className="flex-1 overflow-y-auto px-6 py-4  pt-0"> */}
               <CandidateForm
                 onFileUpload={async (file: File) => {
                   setFieldValue("resume", file);
                   await handleFileParse(file, setParsedResume);
                 }}
               />
-              {/* <CustomFields formName={formName} /> */}
-              {/* </div> */}
               <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4">
                 <Button
                   type="button"

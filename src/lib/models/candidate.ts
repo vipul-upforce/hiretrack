@@ -53,6 +53,7 @@ export interface ICandidate {
       required?: boolean;
     } | object; // Add object type to allow MongoDB documents
   };
+  email?: string;
 }
 
 export const candidateSchema = new Schema({
@@ -125,7 +126,8 @@ export const candidateSchema = new Schema({
   customFields: {
     type: Object,
     default: {}
-  }
+  },
+  email: { type: String, required: false },
 }, {
   timestamps: true
 });

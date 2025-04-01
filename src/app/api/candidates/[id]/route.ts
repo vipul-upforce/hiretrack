@@ -114,13 +114,19 @@ export async function PUT(
       updateObj.$set.remarks = data.remarks;
     }
 
+    // Handle email separately
+    if ("email" in data) {
+      updateObj.$set.email = data.email;
+    }
+
     // Handle other fields
     Object.entries(data).forEach(([key, value]) => {
       if (
         key !== "assignment" &&
         key !== "remarks" &&
         key !== "_id" &&
-        key !== "tracking"
+        key !== "tracking" &&
+        key !== "email"
       ) {
         updateObj.$set[key] = value;
       }

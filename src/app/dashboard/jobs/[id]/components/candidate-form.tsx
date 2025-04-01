@@ -47,6 +47,7 @@ export function CandidateForm({onFileUpload}:CandidateFormProps) {
   const [resumeField, resumeMeta] = useField("resume");
   const [attachmentsField] = useField("attachments");
   const [tempResumeUrl, setTempResumeUrl] = useState<string | null>(null);
+  const [emailField, emailMeta] = useField("email");
   // Get the current interviewer ID from the assignment
   const currentInterviewerId =
     typeof values.assignment?.interviewerId === "string"
@@ -117,6 +118,20 @@ export function CandidateForm({onFileUpload}:CandidateFormProps) {
             />
             {nameMeta.touched && nameMeta.error && (
               <p className="text-sm text-red-500">{nameMeta.error}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="email">Email <span className="text-red-500">*</span></Label>
+            
+            <Input
+              id="email"
+              type="email"
+              {...emailField}
+              className={emailMeta.error && emailMeta.touched ? "border-red-500" : ""}
+            />
+            {emailMeta.touched && emailMeta.error && (
+              <p className="text-sm text-red-500">{emailMeta.error}</p>
             )}
           </div>
 
@@ -226,6 +241,8 @@ export function CandidateForm({onFileUpload}:CandidateFormProps) {
               <p className="text-sm text-red-500">{noticePeriodMeta.error}</p>
             )}
           </div>
+
+          
 
           {/* <div className="space-y-2">
             <Label htmlFor="currentLocation">

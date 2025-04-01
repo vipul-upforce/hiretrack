@@ -49,6 +49,7 @@ export interface Candidate {
     description: string;
   };
   history?: ICandidateHistory[];
+  email?:string;
 }
 
 export type CandidateStatus = 

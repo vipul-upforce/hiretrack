@@ -50,6 +50,9 @@ export const candidateSchema = (customFields: Yup.Schema<unknown>) =>
         }
       ),
     customFields: customFields,
+    email: Yup.string()
+      .required("Email is required")
+      .matches(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, "Invalid Email"),
   });
 
 export interface CandidateFormValues {
@@ -70,4 +73,5 @@ export interface CandidateFormValues {
     interviewerId: string | { _id: string; name: string; email: string } | null;
     deadline: Date | null;
   } | null;
+  email?: string;
 }

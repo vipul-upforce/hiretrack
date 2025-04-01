@@ -90,7 +90,7 @@ export function CandidateDetailsDialog({
   const pathname = usePathname();
   const { id } = useParams();
 
-  const [refetchCandidate,{data:candidateData}] = useLazyFetchCandidatesQuery();
+  const [refetchCandidate, { data: candidateData }] = useLazyFetchCandidatesQuery();
 
   const refetch = async () => {
     await refetchCandidate((id as string) || candidate?.jobId._id || "");
@@ -126,17 +126,17 @@ export function CandidateDetailsDialog({
   const [localCandidate, setLocalCandidate] = useState<Candidate | null>(
     candidate
   );
-  
+
   const [timeLineItems, setTimeLineItems] = useState<ICandidateHistory[]>([]);
-  
+
   useEffect(() => {
     if (candidateData || localCandidate) {
-      if(!candidateData && localCandidate){
+      if (!candidateData && localCandidate) {
         const currentCandidate = localCandidate;
         if (currentCandidate && currentCandidate.history) {
           setTimeLineItems(currentCandidate.history || []);
         }
-      }else if(candidateData && localCandidate){
+      } else if (candidateData && localCandidate) {
         const currentCandidate = candidateData.find(
           (c) => c._id === localCandidate._id
         );
@@ -241,6 +241,14 @@ export function CandidateDetailsDialog({
               <CandidateStatusBadge status={localCandidate.status} />
             </div>
             <div className="space-y-2"></div>
+            {localCandidate.email && (
+              <div className="space-y-2 relative">
+                <Label className={labelClass}>
+                  Email
+                </Label>
+                <p>{localCandidate.email || ""}</p>
+              </div>
+            )}
             <div className="space-y-2 relative">
               <Label className={labelClass}>
                 {localCandidate.jobId.title ||
@@ -325,8 +333,8 @@ export function CandidateDetailsDialog({
                   <Label className={labelClass}>Attachments</Label>
 
                   {/* Filter and render image files */}
-                  <div className="flex gap-2">
-                    {localCandidate.attachments
+                  <div className="flex gap-2 flex-wrap">
+                    {/* {localCandidate.attachments
                       .filter((file) => {
                         const fileExtension = file.name
                           .split(".")
@@ -340,9 +348,17 @@ export function CandidateDetailsDialog({
                         <ImageGallery
                           key={file.name}
                           images={[file]}
-                          maxPreview={3}
+                          // maxPreview={3}
                         />
-                      ))}
+                      ))} */}
+                    <ImageGallery
+                      images={localCandidate.attachments.filter(file => {
+                        const fileExtension = file.name.split('.').pop()?.toLowerCase();
+                        return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExtension || '');
+                      })}
+                    // maxPreview={3}
+                    />
+
                   </div>
 
                   {/* Filter and render PDF files */}
@@ -437,81 +453,83 @@ export function CandidateDetailsDialog({
               <ol className="relative border-s border-gray-200 dark:border-gray-700">
                 {validTimeLineItems.length > 0
                   ? validTimeLineItems.reverse().map((interview, i) => {
-                      const deadlineDate = formatDate(interview.dateTime);
-                      const deadlineTime = formatTime(interview.dateTime);
+                    const deadlineDate = formatDate(interview.dateTime);
+                    const deadlineTime = formatTime(interview.dateTime);
 
-                      return (
-                        <div key={i} className="mb-10 ms-4">
-                          <div className="absolute w-3 h-3 bg-gray-200 rounded-full mt-1.5 -start-1.5 border border-white dark:border-gray-900 dark:bg-gray-700"></div>
-                          <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500 flex flex-row items-center">
-                            {deadlineDate} <Dot /> {deadlineTime}
-                          </time>
-                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white capitalize flex flex-row itmes-center justify-start">
-                            {(interview.title !== "" || !interview.title) &&
+                    return (
+                      <div key={i} className="mb-10 ms-4">
+                        <div className="absolute w-3 h-3 bg-gray-200 rounded-full mt-1.5 -start-1.5 border border-white dark:border-gray-900 dark:bg-gray-700"></div>
+                        <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500 flex flex-row items-center">
+                          {deadlineDate} <Dot /> {deadlineTime}
+                        </time>
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white capitalize flex flex-row itmes-center justify-start">
+                          {(interview.title !== "" || !interview.title) &&
                             interview.title !== "Assigned to Job" ? (
-                              <div className="flex flex-row items-start justify-between w-full">
-                                <div className="flex flex-row">
-                                  <p className="pl-1">
-                                    {interview.previousInterviewer &&
-                                    typeof interview.previousInterviewer ===
-                                      "object" &&
-                                    "name" in interview.previousInterviewer
-                                      ? interview.previousInterviewer.name +
-                                        " → "
-                                      : ""}
-                                  </p>
-                                  <p className="pl-1">
-                                    {interview.currentInterviewer &&
-                                    typeof interview.currentInterviewer ===
-                                      "object" &&
-                                    "name" in interview.currentInterviewer
-                                      ? interview.previousInterviewer
-                                        ? interview.currentInterviewer.name
-                                        : `Assigned to ${interview.currentInterviewer.name}`
-                                      : ""}
-                                  </p>
-                                </div>
-                                <div className="flex flex-col items-end">
-                                  <p className="text-xs font-light text-gray-400">
-                                    Assigned by
-                                  </p>
-                                  <p className="font-light text-gray-500 text-sm">
-                                    {interview.assignmentBy &&
-                                    typeof interview.assignmentBy ===
-                                      "object" &&
-                                    "name" in interview.assignmentBy
-                                      ? `${interview.assignmentBy.name}`
-                                      : ""}
-                                  </p>
-                                </div>
-                              </div>
-                            ) : (
-                              interview.title
-                            )}
-                          </h3>
-                          <div className="mb-4 text-base font-normal text-gray-500 dark:text-gray-400 flex flex-row justify-between w-full text-wrap break-all">
-                            <p>
-                              {interview.note ? interview.note.description : ""}
-                            </p>
+                            <div className="flex flex-row items-start justify-between w-full">
+                              <div className="flex flex-row">
 
-                            {interview.note && interview.note.rating !== 0 && (
-                              <div className="flex flex-row items-center">
-                                {interview.note.rating}/5
-                                <Star
-                                  size={"15px"}
-                                  className="mt-[1px]"
-                                  style={{ color: "orange" }}
-                                />
+                                {
+                                  interview.previousInterviewer && typeof interview.previousInterviewer ===
+                                    "object" &&
+                                    "name" in interview.previousInterviewer
+                                    ?
+                                    <p className="pl-1">
+                                      {interview.previousInterviewer.name +
+                                        " → "}
+                                    </p>
+                                    : null}
+                                <p className="pl-1">
+                                  {interview.currentInterviewer &&
+                                    typeof interview.currentInterviewer ===
+                                    "object" &&
+                                    "name" in interview.currentInterviewer
+                                    ? interview.previousInterviewer
+                                      ? interview.currentInterviewer.name
+                                      : `Assigned to ${interview.currentInterviewer.name}`
+                                    : ""}
+                                </p>
                               </div>
-                            )}
-                          </div>
-                          <AtttachmentsPopover
-                            attachments={interview.attachments}
-                            onMoreClick={() => null}
-                          />
+                              <div className="flex flex-col items-end">
+                                <p className="text-xs font-light text-gray-400">
+                                  Assigned by
+                                </p>
+                                <p className="font-light text-gray-500 text-sm">
+                                  {interview.assignmentBy &&
+                                    typeof interview.assignmentBy ===
+                                    "object" &&
+                                    "name" in interview.assignmentBy
+                                    ? `${interview.assignmentBy.name}`
+                                    : ""}
+                                </p>
+                              </div>
+                            </div>
+                          ) : (
+                            interview.title
+                          )}
+                        </h3>
+                        <div className="mb-4 text-base font-normal text-gray-500 dark:text-gray-400 flex flex-row justify-between w-full text-wrap break-all">
+                          <p>
+                            {interview.note ? interview.note.description : ""}
+                          </p>
+
+                          {interview.note && interview.note.rating !== 0 && (
+                            <div className="flex flex-row items-center">
+                              {interview.note.rating}/5
+                              <Star
+                                size={"15px"}
+                                className="mt-[1px]"
+                                style={{ color: "orange" }}
+                              />
+                            </div>
+                          )}
                         </div>
-                      );
-                    })
+                        <AtttachmentsPopover
+                          attachments={interview.attachments}
+                          onMoreClick={() => null}
+                        />
+                      </div>
+                    );
+                  })
                   : "No Assignment History Found"}
               </ol>
             </div>
@@ -574,7 +592,7 @@ export function CandidateDetailsDialog({
               <h3 className="font-semibold">Interview Remarks</h3>
               <div className="space-y-4">
                 {localCandidate?.remarks &&
-                localCandidate.remarks.length > 0 ? (
+                  localCandidate.remarks.length > 0 ? (
                   localCandidate.remarks.map((remark) => (
                     <div
                       key={remark.date}
@@ -674,7 +692,7 @@ export function CandidateDetailsDialog({
           refetch={refetch}
           isOpen={isAssigning}
           onOpenChange={setIsAssigning}
-          onUpdate={onUpdate || (() => {})}
+          onUpdate={onUpdate || (() => { })}
           setLocalCandidate={setLocalCandidate}
           refetchAssignment={refetchAssignment}
           onSuccess={() => {
@@ -699,7 +717,7 @@ export function CandidateDetailsDialog({
           candidate={localCandidate}
           isOpen={isEditing}
           onOpenChange={setIsEditing}
-          onUpdate={onUpdate || (() => {})}
+          onUpdate={onUpdate || (() => { })}
           refetchAssignment={refetchAssignment}
           onSuccess={() => {
             refetch();
