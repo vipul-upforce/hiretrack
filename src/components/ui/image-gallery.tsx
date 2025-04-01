@@ -16,7 +16,7 @@ interface ImageGalleryProps {
   maxPreview?: number;
 }
 
-export function ImageGallery({ images, maxPreview = 2 }: ImageGalleryProps) {
+export function ImageGallery({ images, maxPreview = 3 }: ImageGalleryProps) {
   const [selectedImage, setSelectedImage] = React.useState<Image | null>(null);
   const [showAll, setShowAll] = React.useState(false);
 
@@ -82,13 +82,13 @@ export function ImageGallery({ images, maxPreview = 2 }: ImageGalleryProps) {
             <DialogTitle className="break-words sr-only">
               Image Gallery
             </DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {images.map((image) =>
+          </DialogHeader> 
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 overflow-y-auto max-h-[80vh]">
+            {images.map((image) =>  
               image.url === "" ? null : (
                 <div
                   key={image.id}
-                  className="relative aspect-square rounded-md overflow-hidden cursor-pointer"
+                  className="relative w-48 h-48 rounded-md overflow-hidden cursor-pointer" 
                   onClick={() => {
                     setShowAll(false);
                     setSelectedImage(image);
@@ -97,8 +97,7 @@ export function ImageGallery({ images, maxPreview = 2 }: ImageGalleryProps) {
                   <img
                     src={image.url}
                     alt={image.name}
-                    // fill
-                    className="object-cover"
+                    className="object-cover w-full h-full"
                   />
                 </div>
               )

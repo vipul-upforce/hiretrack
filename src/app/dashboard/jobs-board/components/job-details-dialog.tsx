@@ -130,11 +130,11 @@ export function JobDetailsDialog({ job, isOpen, onOpenChange, userRole, onJobUpd
               </div>
 
               {job.attachments.images.length > 0 && (
-                <div className="space-y-2">
+                <div className="space-y-2 flex flex-wrap">
                   <Label className={labelClass}>Images</Label>
                   <ImageGallery 
                     images={job.attachments.images}
-                    maxPreview={3}
+                    // maxPreview={3}
                   />
                 </div>
               )}
@@ -144,17 +144,14 @@ export function JobDetailsDialog({ job, isOpen, onOpenChange, userRole, onJobUpd
                   <Label className={labelClass}>Attachments</Label>
                   
                   {/* Filter and render image files */}
-                  <div className='flex gap-2'>
-                  {job.attachments.files.filter(file => {
-                    const fileExtension = file.name.split('.').pop()?.toLowerCase();
-                    return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExtension || '');
-                  }).map((file) => (
+                  <div className='flex gap-2 flex flex-wrap'>
                     <ImageGallery 
-                      key={file.name}
-                      images={[file]}
-                      maxPreview={3}
+                      images={job.attachments.files.filter(file => {
+                        const fileExtension = file.name.split('.').pop()?.toLowerCase();
+                        return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExtension || '');
+                      })}
+                      // maxPreview={3}
                     />
-                  ))}
                   </div>
 
                   {/* Filter and render PDF files */}
