@@ -46,17 +46,12 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
   };
 
   const validationSchema = Yup.object({
-    // portalLogo: Yup.mixed().when(['existingLogo'], {
-    //   is: (existingLogo: PortalLogo | null) => !existingLogo,
-    //   then: () => Yup.mixed().required('Logo is required'),
-    //   otherwise: () => Yup.mixed().nullable(),
-    // }),
     portalName: Yup.string().trim().required("Portal Name is required").max(30,"Max length 30 chars"),
   });
 
   const handleSubmit = async (values: typeof initialValues) => {
     try {
-      let portalLogoData = values.existingLogo; // Changed from values?.existingLogo to values.existingLogo
+      let portalLogoData = values.existingLogo;
       if (values.portalLogo) {
         const portalLogoBase64 = await convertFileToBase64(values.portalLogo);
         portalLogoData = {
@@ -155,13 +150,22 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
                       setFieldValue('existingLogo', null);
                     }}
                   />
-                  {!values.portalLogo && values.existingLogo?.url && ( // Added optional chaining
+                  {!values.portalLogo && values.existingLogo?.url && (
                     <div className="mt-2">
                       <img 
                         src={values.existingLogo.url} 
                         alt="Current logo" 
                         className="max-h-20 object-contain"
                       />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFieldValue('existingLogo', null);
+                        }}
+                        className="mt-2 text-gray-500 hover:underline"
+                      >
+                        Remove Logo
+                      </button>
                     </div>
                   )}
                 </>
