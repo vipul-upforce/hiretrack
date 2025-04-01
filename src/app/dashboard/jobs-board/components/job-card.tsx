@@ -18,9 +18,11 @@ export function JobCard({ job, onClick, ...dragHandleProps }: JobCardProps) {
     >
       <h3 className="font-medium ">{job.title}</h3>
       {/* <p className="text-sm text-muted-foreground">{job.company}</p> */}
-      {job.attachments.images.length > 0 && (
-        <ImageGallery images={job.attachments.images} />
-      )}
+      <div className='flex flex-wrap'>
+        {job.attachments.images.length > 0 && (
+          <ImageGallery images={job.attachments.images} />
+        )}
+      </div>
     </div>
   );
 } 

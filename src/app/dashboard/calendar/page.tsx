@@ -336,35 +336,35 @@ export default function CalendarPage() {
                                     month: "long",
                                     day: "numeric",
                                   })
-                                  .replace(/(\d+)(?=th|st|nd|rd)/, "$1") +
-                                (new Date(
-                                  event.extendedProps.candidate.assignment.deadline
-                                ).getDate() %
-                                  10 ===
-                                  1 &&
-                                new Date(
-                                  event.extendedProps.candidate.assignment.deadline
-                                ).getDate() !== 11
-                                  ? "st"
-                                  : new Date(
-                                      event.extendedProps.candidate.assignment.deadline
-                                    ).getDate() %
-                                      10 ===
-                                      2 &&
-                                    new Date(
-                                      event.extendedProps.candidate.assignment.deadline
-                                    ).getDate() !== 12
-                                  ? "nd"
-                                  : new Date(
-                                      event.extendedProps.candidate.assignment.deadline
-                                    ).getDate() %
-                                      10 ===
-                                      3 &&
-                                    new Date(
-                                      event.extendedProps.candidate.assignment.deadline
-                                    ).getDate() !== 13
-                                  ? "rd"
-                                  : "")
+                                  // .replace(/(\d+)(?=th|st|nd|rd)/, "$1") + ""
+                                // (new Date(
+                                //   event.extendedProps.candidate.assignment.deadline
+                                // ).getDate() %
+                                //   10 ===
+                                //   1 &&
+                                // new Date(
+                                //   event.extendedProps.candidate.assignment.deadline
+                                // ).getDate() !== 11
+                                //   ? "st"
+                                //   : new Date(
+                                //       event.extendedProps.candidate.assignment.deadline
+                                //     ).getDate() %
+                                //       10 ===
+                                //       2 &&
+                                //     new Date(
+                                //       event.extendedProps.candidate.assignment.deadline
+                                //     ).getDate() !== 12
+                                //   ? "nd"
+                                //   : new Date(
+                                //       event.extendedProps.candidate.assignment.deadline
+                                //     ).getDate() %
+                                //       10 ===
+                                //       3 &&
+                                //     new Date(
+                                //       event.extendedProps.candidate.assignment.deadline
+                                //     ).getDate() !== 13
+                                //   ? "rd"
+                                //   : "")
                               : "Unknown"}
                           </span>
                         </div>

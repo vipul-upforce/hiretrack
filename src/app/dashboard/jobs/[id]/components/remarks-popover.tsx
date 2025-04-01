@@ -29,9 +29,9 @@ const RemarksPopover = ({
           <NotebookText className="h-4 w-4 ml-1" />
         </Badge>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-4">
+      <PopoverContent className="w-80 p-4 max-h-[60vh] overflow-y-auto">
         <div className="space-y-2">
-          <h4 className="font-medium">Remarks</h4>
+          <h4 className="font-bold">Remarks</h4>
           {candidate.remarks && candidate.remarks.length > 0 ? (
             <div className="space-y-2">
               {[...candidate.remarks]
@@ -42,7 +42,7 @@ const RemarksPopover = ({
                 .slice(0, 6)
                 .map((remark, index) => (
                   <div key={index} className="border-b pb-2">
-                    <div className="text-sm capitalize align-center">
+                    <div className="text-sm capitalize align-center w-full break-words">
                       {remark.description}
                       {remark?.rating && (
                         <div className="flex">

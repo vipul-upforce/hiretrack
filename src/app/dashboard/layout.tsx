@@ -203,7 +203,7 @@ export default function DashboardLayout({
           )}
           <div
             className={cn(
-              "w-full flex flex-col justify-left items-left rounded-lg px-3 pt-2 transition-all duration-300",
+              "w-full flex flex-col justify-left items-left rounded-lg px-3 pt-2 transition-all duration-300 break-words",
               isCollapsed ? "hidden" : "opacity-100"
             )}
           >

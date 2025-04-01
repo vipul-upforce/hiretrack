@@ -24,9 +24,9 @@ function AddCustomFields() {
   }, [handleClose]);
 
   return (
-    <div>
+    <div className="h-full">
       <Card
-        className="hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer mr-4" 
+        className="hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer mr-4 h-full" 
         onClick={onClick}
       >
         <CardHeader>

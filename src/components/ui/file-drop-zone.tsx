@@ -162,7 +162,7 @@ export const FileDropZone = ({
  }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pd-6">
       <div
         {...getRootProps()}
         className={cn(
@@ -214,10 +214,10 @@ export const FileDropZone = ({
                 {/* <PreviewComponent file={file} /> */}
               </div>
               <div 
-                className="flex-1 text-sm truncate cursor-pointer"
+                className="flex-1 w-[2px] text-sm truncate cursor-pointer"
                 onClick={() => openPreview(file)}
               >
-                <p className="font-medium">{file.name}</p>
+                <p className="font-medium truncate">{file.name}</p>
                 <p className="text-xs text-muted-foreground">
                   {Math.round(file.size / 1024)}KB - {file.type || 'Unknown type'}
                 </p>
