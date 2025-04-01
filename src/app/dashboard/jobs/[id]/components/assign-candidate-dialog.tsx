@@ -258,7 +258,11 @@ export function AssignCandidateDialog({
       onUpdate(result);
       onOpenChange(false);
       setLocalCandidate(result);
-      await refetch();
+      if (pathname !== "/dashboard" && pathname !== "/dashboard/calendar") {
+        await refetch();
+      }else{
+        refetchAssignment?.();
+      }
       toast({
         title: "Success",
         description: "Interviewer has been unassigned successfully",
