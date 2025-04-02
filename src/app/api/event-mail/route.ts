@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     } = await req.json();
     const user = JSON.parse(req.cookies.get("user")?.value || "{}");
     // const organizationId  = "67e12860196bf5e08045d22f";
-    const { organizationId } = JSON.parse(user);
+    const { organizationId } = user;
 
     // Validate that organizationId exists
     if (!organizationId) {
@@ -107,8 +107,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "Email sent successfully." });
     } else {
       return NextResponse.json(
-        {
-          error: emailStatus.message,
+        { 
+             error: emailStatus.message,
         },
         { status: emailStatus.status }
       );

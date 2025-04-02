@@ -32,6 +32,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Rating } from "@mui/material";
 import Cookies from "js-cookie";
 import { ICandidateHistory } from "@/lib/models/history";
+import { useSendMailMutation } from "@/lib/features/org/orgApi";
+import { sentAssignmentMail } from "@/lib/utils";
 
 interface AssignCandidateDialogProps {
   candidate: Candidate;
@@ -69,6 +71,7 @@ const validationSchema = Yup.object({
   attachments: Yup.array()
 });
 
+
 export function AssignCandidateDialog({
   candidate,
   isOpen,
@@ -81,7 +84,7 @@ export function AssignCandidateDialog({
 }: AssignCandidateDialogProps) {
   const pathname = usePathname();
   const [confirmUnassignOpen, setConfirmUnassignOpen] = useState(false);
-  
+  const [sendEmail] = useSendMailMutation();
   const [updateCandidate] = useUpdateCandidateMutation();
   const { data: interviewers, refetch: refetchInterviewers } = useFetchInterviewersQuery();
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
@@ -196,16 +199,20 @@ export function AssignCandidateDialog({
         attachments: values.attachments
       };
 
-      const result = await updateCandidate(updatedCandidate).unwrap();
+      const { data: result, error } = await updateCandidate(updatedCandidate);
+      if (!error) {
+        sentAssignmentMail(result, sendEmail);
+      }
       await updateCandidateHistory({
         candidateId: updatedCandidate._id,
         jobId: candidate.jobId._id || candidate.jobId,
         newEntry: newHistoryEntry
       }).unwrap();
-
-      onUpdate(result);
-      onOpenChange(false);
-      setLocalCandidate(result);
+      if(result){
+        onUpdate(result);
+        onOpenChange(false);
+        setLocalCandidate(result);
+      }
       
       if (pathname === "/dashboard") {
         refetchAssignment?.();

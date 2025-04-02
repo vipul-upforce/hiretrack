@@ -72,7 +72,7 @@ export const sendMail = async (
       });
       return result || { status: 500, message: "Failed to send email" };
     } else if (mailConfig.mailProvider === "resend") {
-      const result = await sendReSendMail({
+      const result = await sendReSendMail({ 
         settings: mailConfig,
         email,
         htmlContent,
