@@ -2,7 +2,7 @@ import React, { useContext, useState, useCallback } from "react";
 import { CustomFieldsContext } from "../../Context";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { EditIcon, TrashIcon } from "lucide-react";
+import { TrashIcon } from "lucide-react";
 import AddFormID from "./AddFormID";
 import { CustomField } from "../../Types/CustomField";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { DialogContent } from "@/components/ui/dialog";
 import { Dialog } from "@/components/ui/dialog";
-import { IconButton } from "@mui/material";
+// import { IconButton } from "@mui/material";
 interface CardProps {
   formId: string;
   formName: string;
@@ -27,13 +27,13 @@ function FormIDCard({ formId, formName, fields }: CardProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleEdit = useCallback(
-    (event: React.MouseEvent<HTMLButtonElement>) => {
-      event.stopPropagation();
-      setIsOpen(true);
-    },
-    [setIsOpen]
-  );
+  // const handleEdit = useCallback(
+  //   (event: React.MouseEvent<HTMLButtonElement>) => {
+  //     event.stopPropagation();
+  //     setIsOpen(true);
+  //   },
+  //   [setIsOpen]
+  // );
 
   const handleDelete = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -55,9 +55,9 @@ function FormIDCard({ formId, formName, fields }: CardProps) {
         <CardHeader>
           <CardTitle className="capitalize">
             {formName}{" "}
-            <IconButton onClick={handleEdit} style={{backgroundColor:"whitesmoke", height:"30px", width:"30px"}}>
+            {/* <IconButton onClick={handleEdit} style={{backgroundColor:"whitesmoke", height:"30px", width:"30px"}}>
               <EditIcon className="w-2 h-2" style={{height:"13px"}}/>
-            </IconButton>
+            </IconButton> */}
           </CardTitle>
           <div className="flex flex-wrap">
             {fields && fields.length > 0 ? (

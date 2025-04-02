@@ -191,13 +191,13 @@ export default function DashboardLayout({
       </div>
       {/* Settings and Logout Buttons */}
       <div className="px-3 pb-4 mt-auto space-y-2">
-        <div className='flex flex-row justify-center items-center'>
+        <div className='flex flex-row justify-center items-center px-4'>
           {portalData && portalData.portalLogo.url && (
             <div className={"flex-shrink-0"}>
               <img
                 src={portalData.portalLogo.url}
                 alt={portalData.portalName || "Portal Logo"}
-                className="h-8 w-auto object-contain rounded"
+                className="h-8 w-auto object-contain rounded-full outline outline-blac outline-solid"
               />
             </div>
           )}

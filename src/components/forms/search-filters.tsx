@@ -236,6 +236,9 @@ export function SearchFilters() {
                           />
                         </PopoverContent>
                       </Popover>
+                      {errors.createdAfter && (
+                        <p className="text-xs text-destructive mt-1">{errors.createdAfter}</p>
+                      )}
                     </div>
                     <div>
                       <Label className="text-xs">To</Label>
@@ -259,6 +262,9 @@ export function SearchFilters() {
                           />
                         </PopoverContent>
                       </Popover>
+                      {errors.createdBefore && (
+                        <p className="text-xs text-destructive mt-1">{errors.createdBefore}</p>
+                      )}
                     </div>
                   </div>
                 </div>
