@@ -10,7 +10,7 @@ const unauthorizedInterviewerPages = [
 ];
 
 export async function middleware(request: NextRequest) {
-  const { pathname } = await request.nextUrl;
+  const { pathname } = request.nextUrl;
 
   // Check if the user is authenticated
   const user = await request.cookies.get("user")?.value; // Check if user cookie exists
@@ -27,7 +27,6 @@ export async function middleware(request: NextRequest) {
     pathname !== "/api/event-mail"
   ) {
     if (!user) {
-      console.warn("User cookie is undefined. Authentication required.");
       return NextResponse.json(
         { error: "Authentication required" },
         { status: 401 }
