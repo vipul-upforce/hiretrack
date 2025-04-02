@@ -144,18 +144,18 @@ export async function POST(req: NextRequest) {
 
     // Configure email transporter
     const transporter = createTransport({
-      host: settings.smtpConfig.SMTP_HOST,
-      port: settings.smtpConfig.SMTP_PORT,
-      secure: Number(settings.smtpConfig.SMTP_PORT) === 465,
+      host: settings.mailConfig.smtp_host,
+      port: settings.mailConfig.smtp_port,
+      secure: Number(settings.mailConfig.smtp_port) === 465,
       auth: {
-        user: settings.smtpConfig.SMTP_USER,
-        pass: settings.smtpConfig.SMTP_PASSWORD,
+        user: settings.mailConfig.smtp_user,
+        pass: settings.mailConfig.smtp_password,
       },
     } as TransportOptions);
 
     // Send email
     const mailOptions = {
-      from: settings.smtpConfig.SMTP_FROM,
+      from: settings.mailConfig.smtp_from,
       to: email,
       subject: `Event Invitation: ${eventTitle}`,
       html: htmlContent,

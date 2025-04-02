@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Settings not found' }, { status: 404 });
     }
 
-    return NextResponse.json(settings.smtpConfig);
+    return NextResponse.json(settings.mailConfig);
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -38,13 +38,33 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Settings Model Not Found' }, { status: 404 });
     }
 
-    const smtpConfig = await req.json();
+    const mailConfig = await req.json();
+
+    let mailConfigObj;
+
+    if(mailConfig.mailProvider=="smtp"){
+      mailConfigObj = {
+        smtp_user: mailConfig.smtp_user,
+        smtp_password: mailConfig.smtp_password,       
+        smtp_host: mailConfig.smtp_host,
+        smtp_port: mailConfig.smtp_port,
+        smtp_from: mailConfig.smtp_from,
+        mailProvider: mailConfig.mailProvider
+      }
+    }else if(mailConfig.mailProvider=="resend"){
+      mailConfigObj={
+        mailProvider: mailConfig.mailProvider,
+        resend_api_key: mailConfig.resend_api_key,
+        resend_from: mailConfig.resend_from,
+        resend_reply_to: mailConfig.resend_reply_to
+      }
+    }
 
     const updatedUser = await Settings.findOneAndUpdate(
       {
         organizationId: userData.organizationId
       },
-      { smtpConfig },
+      { mailConfig: mailConfigObj },
       {
         new: true,
         runValidators: true,

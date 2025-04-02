@@ -41,10 +41,10 @@ export async function POST(req: Request) {
     if (!user) throw new Error('No account found with this email');
 
     const { organizationId } = user;
-    const settings = await Settings.findOne({ organizationId }).select('smtpConfig');
-    if (!settings || !settings.smtpConfig) throw new Error('SMTP Settings Not Found');
+    const settings = await Settings.findOne({ organizationId }).select('mailConfig');
+    if (!settings || !settings.mailConfig) throw new Error('SMTP Settings Not Found');
 
-    const smtpConfig = settings.smtpConfig;
+    const mailConfig = settings.mailConfig;
 
     // Generate password reset token
     const resetToken = crypto.randomBytes(32).toString('hex');
@@ -62,12 +62,12 @@ export async function POST(req: Request) {
 
     // Configure Nodemailer
     const transporter = createTransport({
-      host: smtpConfig.SMTP_HOST,
-      port: Number(smtpConfig.SMTP_PORT),
-      secure: Number(smtpConfig.SMTP_PORT) === 465,
+      host: mailConfig.smtp_host,
+      port: Number(mailConfig.smtp_port),
+      secure: Number(mailConfig.smtp_port) === 465,
       auth: {
-        user: smtpConfig.SMTP_USER,
-        pass: smtpConfig.SMTP_PASSWORD,
+        user: mailConfig.smtp_user,
+        pass: mailConfig.smtp_password,
       },
       tls: {
         rejectUnauthorized: false,
@@ -75,7 +75,7 @@ export async function POST(req: Request) {
     });
 
     await transporter.sendMail({
-      from: smtpConfig.SMTP_FROM,
+      from: mailConfig.smtp_from,
       to: email,
       subject: 'Password Reset Request',
       html: `
