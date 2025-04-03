@@ -18,7 +18,13 @@ export async function GET(req: NextRequest) {
     const settings = await Settings.findOne({ organizationId: userData.organizationId });
     
     if (!settings) {
-        return NextResponse.json({ error: 'Settings not found' }, { status: 404 });
+      return NextResponse.json(
+        {
+          fileStorage: null,
+          portalLogo: null,
+          portalName: null
+        }
+      );
     }
     
     const response = {

@@ -55,25 +55,23 @@ const sidebarItems: SidebarItem[] = [
     role: "admin",
   },
 ];
-// if (process.env.NODE_ENV === 'development') {
-//   console.log("ENV TEST: ", process.env.NEXT_PUBLIC_MONGODB_URI);
-// }
+
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const [userData, setUserData] = useState<{ name:string, email:string, role?: string } | null>(null);
-  const { data: portalData, isLoading, refetch } = useGetPortalConfigsQuery(undefined);
+  const { data: portalConfigData, isLoading, refetch } = useGetPortalConfigsQuery(undefined);
   const { setUserLoggedIn } = useCustomFields();
   
-  
+  // Use useEffect to set user data from cookies
   useEffect(() => {
     const user = Cookies.get("user");
     setUserData(user ? JSON.parse(user) : null);
     if (user) {
       setUserLoggedIn(true);
-      refetch()
+      refetch();
     }
   }, []);
 
@@ -86,7 +84,9 @@ export default function DashboardLayout({
     // Clear user data and token
     Cookies.remove('user');
     Cookies.remove('token');
-    setUserLoggedIn(false)
+    setUserData(null);
+    setUserLoggedIn(false);
+    refetch();
     toast({
       title: "Logged out",
       description: "You have been successfully logged out",
@@ -95,6 +95,7 @@ export default function DashboardLayout({
     router.push('/auth/login');
   };
 
+  const shouldShowPortalData = Boolean(portalConfigData && userData && portalConfigData.portalName );
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       <div 
@@ -105,23 +106,23 @@ export default function DashboardLayout({
             : "h-16 justify-between px-4"
         )}
       >
-        {portalData ? (
+        {shouldShowPortalData && portalConfigData ? (
           <div className={`flex items-center overflow-hidden `}>
-            {portalData.portalLogo.url && (
+            {portalConfigData.portalLogo?.url && (
               <div className={cn(
                 "flex-shrink-0",
                 isCollapsed ? "mx-auto w-0" : "mr-3"
               )}>
                 <img
-                  src={portalData.portalLogo.url}
-                  alt={portalData.portalName || "Portal Logo"}
+                  src={portalConfigData.portalLogo.url}
+                  alt={portalConfigData.portalName || "Portal Logo"}
                   className="h-8 w-auto object-contain rounded"
                 />
               </div>
             )}
             {!isCollapsed && (
               <h2 className="text-lg font-semibold truncate max-w-[200px]">
-                {portalData.portalName}
+                {portalConfigData.portalName}
               </h2>
             )}
           </div>
@@ -149,14 +150,12 @@ export default function DashboardLayout({
           )}
           aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
-          {/* {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />} */}
           <ChevronRight
             className={cn(
               "h-4 w-4 transition-transform duration-1000 ease-in-out",
               isCollapsed ? "rotate-0" : "rotate-180",
             )}
           />
-
         </Button>
       </div>
       <Separator />
@@ -191,13 +190,15 @@ export default function DashboardLayout({
       </div>
       {/* Settings and Logout Buttons */}
       <div className="px-3 pb-4 mt-auto space-y-2">
-        <div className='flex flex-row justify-center items-center px-4'>
-          {portalData && portalData.portalLogo.url && (
+        <div className={cn('flex flex-row justify-center items-center',
+           portalConfigData && portalConfigData.portalLogo?.url?"px-4":"pl-0"
+        )}>
+          {shouldShowPortalData && portalConfigData && portalConfigData.portalLogo?.url && (
             <div className={"flex-shrink-0"}>
               <img
-                src={portalData.portalLogo.url}
-                alt={portalData.portalName || "Portal Logo"}
-                className="h-8 w-auto object-contain rounded-full outline outline-blac outline-solid"
+                src={portalConfigData.portalLogo.url}
+                alt={portalConfigData.portalName || "Portal Logo"}
+                className="h-8 w-8 object-cover rounded-full outline outline-gray-400 outline-[2px] outline-solid"
               />
             </div>
           )}
@@ -264,4 +265,4 @@ export default function DashboardLayout({
       </main>
     </div>
   );
-} 
+}
