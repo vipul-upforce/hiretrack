@@ -26,6 +26,8 @@ import { parseResumeFromPdf } from "@/lib/parse-resume-from-pdf";
 import FormUpdater from "./FormUpdater";
 import Cookies from "js-cookie";
 import { IUser } from "@/lib/models/user";
+import { useSendMailMutation } from "@/lib/features/org/orgApi";
+import { sentAssignmentMail } from "@/lib/utils";
 
 interface EditCandidateDialogProps {
   candidate: Candidate;
@@ -75,6 +77,7 @@ export function EditCandidateDialog({
   const { toast } = useToast();
   const { id } = useParams();
   const [updateCandidate] = useUpdateCandidateMutation();
+  const [sendEmail] = useSendMailMutation();
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
 
   const formName = "Candidate";
@@ -193,8 +196,10 @@ export function EditCandidateDialog({
         }
       }
 
-      const result = await updateCandidate(updatedCandidate).unwrap();
-
+      const { data: result, error } = await updateCandidate(updatedCandidate);
+      if (!error) {
+        sentAssignmentMail(result, sendEmail);
+      }
       const previousInterviewer =
         typeof candidate.assignment?.interviewerId === "object"
           ? candidate.assignment.interviewerId.name
@@ -205,11 +210,11 @@ export function EditCandidateDialog({
           : null;
 
       const nextInterviewer =
-        typeof result.assignment?.interviewerId === "object"
+        result && typeof result.assignment?.interviewerId === "object"
           ? result.assignment.interviewerId.name
           : "";
       const nextInterviewerId =
-        typeof result.assignment?.interviewerId === "object"
+        result && typeof result.assignment?.interviewerId === "object"
           ? Object(result.assignment.interviewerId._id)
           : null;
 
@@ -252,7 +257,9 @@ export function EditCandidateDialog({
       if (pathname === "/dashboard") {
         refetchAssignment?.();
       }
-      onUpdate(result);
+      if (result) {
+        onUpdate(result);
+      }
       if (id) {
         onSuccess();
       }

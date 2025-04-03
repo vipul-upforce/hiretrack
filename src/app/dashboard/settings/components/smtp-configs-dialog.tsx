@@ -16,6 +16,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+const mailProviders = [
+  { key: "smtp", label: "SMTP" },
+  { key: "resend", label: "Resend" }
+];
+
 export default function SMTPConfigs({ onClose }: { onClose: () => void }) {
     const { toast } = useToast();
     const [showPassword, setShowPassword] = useState(false);
@@ -26,21 +31,71 @@ export default function SMTPConfigs({ onClose }: { onClose: () => void }) {
     const [updateSMTPConfigs, { isLoading: isUpdating }] = useUpdateSMTPConfigsMutation();
   
     const initialValues = data ?? {
-      SMTP_USER: "",
-      SMTP_PASSWORD: "",
-      SMTP_HOST: "",
-      SMTP_PORT: "",
-      SMTP_FROM: "",
+      mailProvider: "",
+      smtp_user: "",
+      smtp_password: "",
+      smtp_host: "",
+      smtp_port: "",
+      smtp_from: "",
+      resend_api_key: "",
+      resend_from: "",
+      resend_reply_to: ""
     };
   
     const validationSchema = Yup.object({
-      SMTP_HOST: Yup.string().trim().required("SMTP Host is required"),
-      SMTP_PORT: Yup.string().trim().required("SMTP Port is required"),
-      SMTP_USER: Yup.string().trim().email("Must be a valid email").required("SMTP User is required"),
-      SMTP_PASSWORD: Yup.string().trim().required("SMTP Password is required"),
-      SMTP_FROM: Yup.string().trim().email("Must be a valid email").required("SMTP From is required"),
+      mailProvider: Yup.string()
+        .oneOf(mailProviders.map((option) => option.key), "Invalid email service provider")
+        .required("Email service provider is required"),
+    
+      smtp_host: Yup.string().trim().when("mailProvider", {
+        is: (mailProvider: unknown) => mailProvider === "smtp",
+        then: (schema) => schema.required("SMTP Host is required"),
+        otherwise: (schema) => schema.notRequired(),
+      }),
+    
+      smtp_port: Yup.string().trim().when("mailProvider", {
+        is: (mailProvider: unknown) => mailProvider === "smtp",
+        then: (schema) => schema.required("SMTP Port is required"),
+        otherwise: (schema) => schema.notRequired(),
+      }),
+    
+      smtp_user: Yup.string().trim().when("mailProvider", {
+        is: (mailProvider: unknown) => mailProvider === "smtp",
+        then: (schema) => schema.email("Must be a valid email").required("SMTP User is required"),
+        otherwise: (schema) => schema.notRequired(),
+      }),
+    
+      smtp_password: Yup.string().trim().when("mailProvider", {
+        is: (mailProvider: unknown) => mailProvider === "smtp",
+        then: (schema) => schema.required("SMTP Password is required"),
+        otherwise: (schema) => schema.notRequired(),
+      }),
+    
+      smtp_from: Yup.string().trim().when("mailProvider", {
+        is: (mailProvider: unknown) => mailProvider === "smtp",
+        then: (schema) => schema.email("Must be a valid email").required("SMTP From is required"),
+        otherwise: (schema) => schema.notRequired(),
+      }),
+    
+      resend_api_key: Yup.string().trim().when("mailProvider", {
+        is: (mailProvider: unknown) => mailProvider === "resend",
+        then: (schema) => schema.required("Resend API Key is required"),
+        otherwise: (schema) => schema.notRequired(),
+      }),
+    
+      resend_from: Yup.string().trim().when("mailProvider", {
+        is: (mailProvider: unknown) => mailProvider === "resend",
+        then: (schema) => schema.email("Must be a valid email").required("Resend From is required"),
+        otherwise: (schema) => schema.notRequired(),
+      }),
+    
+      resend_reply_to: Yup.string().trim().when("mailProvider", {
+        is: (mailProvider: unknown) => mailProvider === "resend",
+        then: (schema) => schema.email("Must be a valid email").required("Resend Reply To is required"),
+        otherwise: (schema) => schema.notRequired(),
+      }),
     });
-  
+    
     const handleSubmit = async (values: typeof initialValues) => {
       try {
         await updateSMTPConfigs(values).unwrap();
@@ -53,71 +108,117 @@ export default function SMTPConfigs({ onClose }: { onClose: () => void }) {
     };
     
     const handleTestConnection = async (values: typeof initialValues) => {
-      await testConnection('smtp', {
-        host: values.SMTP_HOST,
-        port: values.SMTP_PORT,
-        from: values.SMTP_FROM,
-        // Map SMTP form fields to the credentials expected by our hook
-        user: values.SMTP_USER,
-        pass: values.SMTP_PASSWORD,
-      });
+      const credentials = values.mailProvider === 'resend' ? {
+        resend_api_key: values.resend_api_key,
+        resend_from: values.resend_from,
+        reply_to: values.resend_reply_to,
+      } : {
+        host: values.smtp_host,
+        port: values.smtp_port,
+        from: values.smtp_from,
+        user: values.smtp_user,
+        pass: values.smtp_password,
+      };
+
+      await testConnection(values.mailProvider, credentials);
     };
-  
     if (isLoading) return <div>Loading...</div>;
   
     const formFields = [
       {
         label: "SMTP Host",
-        name: "SMTP_HOST",
-        placeholder: "e.g., smtp.gmail.com"
+        name: "smtp_host",
+        placeholder: "e.g., smtp.gmail.com",
+        condition: "smtp"
       },
       {
         label: "SMTP Port",
-        name: "SMTP_PORT",
-        placeholder: "e.g., 587"
+        name: "smtp_port",
+        placeholder: "e.g., 587",
+        condition: "smtp"
       },
       {
         label: "SMTP User",
-        name: "SMTP_USER",
-        placeholder: "Email address"
+        name: "smtp_user",
+        placeholder: "Email address",
+        condition: "smtp"
       },
       {
         label: "Displayed Sender Email",
-        name: "SMTP_FROM",
-        placeholder: "Sender email for recipients"
+        name: "smtp_from",
+        placeholder: "Sender email for recipients",
+        condition: "smtp"
       },
-    ]
+      {
+        label: "API Key",
+        name: "resend_api_key",
+        placeholder: "Resend API Key",
+        condition: "resend"
+      },
+      {
+        label: "From",
+        name: "resend_from",
+        placeholder: "Resend From Email",
+        condition: "resend"
+      },
+      {
+        label: "Reply To",
+        name: "resend_reply_to",
+        placeholder: "Resend Reply To Email",
+        condition: "resend"
+      },
+    ];
   
     return (
       <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit} enableReinitialize>
         {({ values, handleChange, handleBlur, handleSubmit, isSubmitting }) => (
           <Form onSubmit={handleSubmit} className="space-y-4">
-            {formFields.map(({ label, name, placeholder }) => (
+            <div className="space-y-2">
+              <Label htmlFor="mailProvider">Mail Provider</Label>
+              <select
+                id="mailProvider"
+                name="mailProvider"
+                value={values.mailProvider}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                className="border rounded p-2 w-full"
+              >
+                {/* <option value="" label="Select mail provider" /> */}
+                {mailProviders.map(provider => (
+                  <option key={provider.key} value={provider.key} label={provider.label} />
+                ))}
+              </select>
+              <ErrorMessage name="mailProvider" component="div" className="text-red-500 text-sm" />
+            </div>
+
+            {formFields.filter(field => field.condition === values.mailProvider).map(({ label, name, placeholder }) => (
               <div key={name} className="space-y-2">
                 <Label htmlFor={name}>{label}</Label>
                 <Input id={name} name={name} value={values[name]} onChange={handleChange} onBlur={handleBlur} placeholder={placeholder} />
                 <ErrorMessage name={name} component="div" className="text-red-500 text-sm" />
               </div>
             ))}
-
-            <div className="space-y-2 relative">
-              <Label htmlFor="SMTP_PASSWORD">SMTP Password</Label>
-              <div className="relative">
-                <Input
-                  id="SMTP_PASSWORD"
-                  name="SMTP_PASSWORD"
-                  type={showPassword ? "text" : "password"}
-                  value={values.SMTP_PASSWORD}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  placeholder="Password"
-                />
-                <button type="button" className="absolute right-3 top-2.5 text-gray-500" onClick={() => setShowPassword(!showPassword)}>
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
+            
+            {values.mailProvider === "smtp" && (
+              <div className="space-y-2 relative">
+                <Label htmlFor="smtp_password">SMTP Password</Label>
+                <div className="relative">
+                  <Input
+                    id="smtp_password"
+                    name="smtp_password"
+                    type={showPassword ? "text" : "password"}
+                    value={values.smtp_password}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    placeholder="Password"
+                  />
+                  <button type="button" className="absolute right-3 top-2.5 text-gray-500" onClick={() => setShowPassword(!showPassword)}>
+                    {!showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+                <ErrorMessage name="smtp_password" component="div" className="text-red-500 text-sm" />
               </div>
-              <ErrorMessage name="SMTP_PASSWORD" component="div" className="text-red-500 text-sm" />
-            </div>
+            )}
 
             <div className="flex justify-end space-x-2">
               <Button

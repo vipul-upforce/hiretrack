@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { v2 as cloudinary } from "cloudinary";
 import { S3Client, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import nodemailer from "nodemailer";
+import { Resend } from 'resend';
 
 interface CustomError {
   error: {
@@ -18,6 +19,8 @@ export async function POST(request: Request) {
     return await testAWSConnection(credentials);
   } else if (storageType === "smtp") {
     return await testSMTPConnection(credentials);
+  } else if (storageType === "resend") {
+    return await testResendConnection(credentials);
   } else {
     return NextResponse.json(
       { success: false, message: "Invalid storage type" },
@@ -57,8 +60,8 @@ const testCloudinary = async (credentials: {
 const testAWSConnection = async (credentials: {
   accessKeyId: string;
   secretAccessKey: string;
-  region:string;
-  bucketName : string
+  region: string;
+  bucketName: string;
 }) => {
   try {
     const s3Client = new S3Client({
@@ -68,10 +71,10 @@ const testAWSConnection = async (credentials: {
         secretAccessKey: credentials.secretAccessKey,
       },
     });
-    
-    await s3Client.send(new ListObjectsV2Command({ 
+
+    await s3Client.send(new ListObjectsV2Command({
       Bucket: credentials.bucketName,
-      MaxKeys: 1 // Limit to just 5 objects for a quick check
+      MaxKeys: 1 // Limit to just 1 object for a quick check
     }));
     return NextResponse.json({
       success: true,
@@ -107,6 +110,36 @@ const testSMTPConnection = async (credentials: {
     return NextResponse.json({
       success: true,
       message: "SMTP connection successful",
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, message: error instanceof Error ? error.message : "" },
+      { status: 400 }
+    );
+  }
+};
+
+const testResendConnection = async (credentials: {
+  resend_api_key: string;
+  resend_from: string;
+  reply_to: string;
+}) => {
+  const resend = new Resend(credentials.resend_api_key);
+  try {
+    const { error } = await resend.emails.send({
+      from: credentials.resend_from,
+      to: "delivered@resend.dev",
+      subject: "Test Connection",
+      replyTo: credentials.reply_to,
+      html: "<p>This is a test email to verify the Resend connection.</p>",
+    });
+    if (error) {
+      throw new Error("Failed to send test email");
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Resend connection successful",
     });
   } catch (error) {
     return NextResponse.json(

@@ -2,7 +2,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 // Add interface for test connection request
 interface TestConnectionRequest {
-  storageType: "cloudinary" | "s3" | "smtp";
+  storageType: "cloudinary" | "s3" | "smtp" | "resend";
   credentials: {
     cloud_name?: string;
     api_key?: string;
@@ -41,10 +41,10 @@ export const settingsApi = createApi({
       }),
     }),
     updateSMTPConfigs: builder.mutation({
-      query: (smtpConfig) => ({
+      query: (mailConfig) => ({
         url: "/settings/smtp",
         method: "PUT",
-        body: smtpConfig,
+        body: mailConfig,
       }),
       invalidatesTags: ["Settings"],
     }),
