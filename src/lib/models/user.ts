@@ -32,7 +32,7 @@ export const userSchema = new Schema<IUser>({
   email: {
     type: String,
     required: true,
-    unique: true,
+    unique: false,
   },
   role: {
     type: String,

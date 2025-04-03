@@ -23,12 +23,13 @@ import { OrgInfo } from "@/lib/models/user";
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import ForgotPasswordDialog from "@/components/auth/ForgotPasswordDialog";
+import OrganizationDialog, { Organization } from "@/components/auth/OrganizationDialog";
 
-interface LoginFormValues {
+export interface LoginFormValues {
   email: string;
   password: string;
 }
-interface UserWithoutCF{
+export interface UserWithoutCF {
   id: string;
   name: string;
   email: string;
@@ -52,7 +53,10 @@ export default function Login() {
   const { setUserLoggedIn } = useCustomFields();
   const [showPassword, setShowPassword] = useState(false);
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
-
+  const [organizationDialogOpen, setOrganizationDialogOpen] = useState(false);
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [loginFormValues, setLoginFormValues] = useState<LoginFormValues>();
+  const [selectedOrg, setSelectedOrg] = useState<string>();
   const initialValues: LoginFormValues = {
     email: "",
     password: "",
@@ -62,10 +66,16 @@ export default function Login() {
     values: LoginFormValues,
     { setStatus }: { setStatus: (message: string) => void }
   ) => {
+    setLoginFormValues(values);
     try {
-      const response = await login(values).unwrap();
+      const response = await login({...values, orgId:selectedOrg}).unwrap();
+      if (response.organizations && response.organizations.length > 1 && !selectedOrg) {
+          setOrganizations(response.organizations);
+          setOrganizationDialogOpen(true); 
+          return; 
+        }
       if (response.user) {
-        const userWithoutCustomFields:UserWithoutCF = {
+        const userWithoutCustomFields: UserWithoutCF = {
           ...response.user
         };
         if (userWithoutCustomFields.organizationInfo) {
@@ -76,6 +86,7 @@ export default function Login() {
         }
         Cookies.set("user", JSON.stringify(userWithoutCustomFields), { expires: 7 }); // Expires in 7 days
         setUserLoggedIn(true);
+        
       }
       toast({
         title: "Success",
@@ -105,11 +116,30 @@ export default function Login() {
     }
   };
 
+  // useEffect(() => {
+  //   if (selectedOrg && loginFormValues) {
+  //     console.log("Selected Org: ",selectedOrg)
+  //   }
+  // }, [selectedOrg]);
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Login</CardTitle>
+          <CardTitle className="text-2xl font-bold flex flex-row justify-between items-center">
+            Login
+            {selectedOrg && 
+              <span 
+              className="text-lg font-medium text-gray-700 " 
+              style={{ 
+                animation: selectedOrg ? 'fadeInOrg 0.9s ease-in-out forwards' : 'none'
+              }}
+             >
+              {organizations.find(org => org.orgId === selectedOrg)?.name}
+             </span>
+            }  
+          </CardTitle>
+          
         </CardHeader>
         <CardContent>
           <Formik
@@ -192,7 +222,6 @@ export default function Login() {
                   )}
                 </div>
 
-
                 <CardFooter className="px-0 pt-6 flex-col space-y-4">
                   <Button
                     type="submit"
@@ -222,6 +251,16 @@ export default function Login() {
         isOpen={forgotPasswordOpen}
         onClose={() => setForgotPasswordOpen(false)}
       />
+      
+      {loginFormValues && !selectedOrg && (
+        <OrganizationDialog
+          isOpen={organizationDialogOpen}
+          onClose={() => setOrganizationDialogOpen(false)}
+          data={{ ...loginFormValues, organizations }}
+          setSelectedOrgId={(orgId: string) => setSelectedOrg(orgId)}
+        />
+      )}
+
     </div>
   );
 }

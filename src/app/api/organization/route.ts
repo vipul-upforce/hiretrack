@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
 import { Organization, User } from "@/lib/mongodb";
-import mongoose  from "mongoose";
+import mongoose from "mongoose";
 import bcrypt from 'bcryptjs';
 
 // Handle POST request
 export async function POST(req: Request) {
-  await connectToDatabase()
+  await connectToDatabase();
   let createdOrg = null;
   let admin = null;
 
@@ -33,15 +33,24 @@ export async function POST(req: Request) {
 
       const hashedPassword = await bcrypt.hash(adminData.password, 10);
 
-      // 2. Create admin user with org ID
+      // 2. Check if user with the same email already exists in the organization
+      const existingUser = await User.findOne({ email: adminData.email, organizationId: createdOrg[0]._id });
+      if (existingUser) {
+        return NextResponse.json(
+          { error: 'User with this email already exists in the organization.' },
+          { status: 400 }
+        );
+      }
+
+      // 3. Create admin user with org ID
       admin = await User.create([{
         ...adminData,
-        password:hashedPassword,
+        password: hashedPassword,
         organizationId: createdOrg[0]._id,
         role: 'admin'
       }]);
 
-      // 3. Update organization with admin ID
+      // 4. Update organization with admin ID
       await Organization.findByIdAndUpdate(
         createdOrg[0]._id,
         { adminId: admin[0]._id },

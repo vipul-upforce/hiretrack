@@ -3,8 +3,7 @@ import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/mongodb'; 
 import { User, Lane } from '@/lib/mongodb';
 import { signToken } from '@/lib/jwt';
-import mongoose from 'mongoose'
-// import { Organization } from '@/lib/models/organization';
+import mongoose from 'mongoose';
 
 const DEFAULT_LANES = ["applied", "screening", "shortlisted", "processing", "accepted", "rejected"];
 
@@ -13,30 +12,30 @@ export async function POST(req: Request) {
     await dbConnect();
     var { email, password, name, role, organizationId } = await req.json();
 
-    
-
     if (!(organizationId instanceof mongoose.Types.ObjectId)) {
       organizationId = new mongoose.Types.ObjectId(organizationId);
     }
-    if(!User || !Lane){
+    if (!User || !Lane) {
       return NextResponse.json({ error: "Database not connected" }, { status: 400 });
     }
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
+
+    // Check if user already exists in the same organization
+    // console.log("EXISTING USER: ",organizationId)
+    const existingUser = await User.findOne({ email, organizationId });
+    // console.log("EXISTING USER: ",existingUser)
+
     
     if (existingUser) {
-      // return Response.json({ error: 'User already exists'  })
-      if(existingUser.isDeleted){
+      if (existingUser.isDeleted) {
         return NextResponse.json(
           { error: 'User already exists, but is deactivated.' },
           { status: 400 }
         );
       }
       return NextResponse.json(
-        { error: 'User already exists' },
+        { error: 'User already exists in this organization' },
         { status: 400 }
       );
-
     }
 
     // Hash password
@@ -83,7 +82,7 @@ export async function POST(req: Request) {
     });
 
     return response;
-  } catch (error : unknown) {
+  } catch (error: unknown) {
     if (error instanceof Error) {
       return NextResponse.json(
         { error: error.message },

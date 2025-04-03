@@ -1,3 +1,4 @@
+import { Organization } from '@/components/auth/OrganizationDialog';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 interface AuthRequest {
@@ -5,6 +6,7 @@ interface AuthRequest {
   password: string;
   name?: string;
   confirmPassword?: string;
+  orgId?: string;
 }
 
 interface User {
@@ -18,6 +20,7 @@ interface AuthResponse {
   message: string;
   user: User;
   _id?:string;
+  organizations?: Organization[] 
 }
 
 export const authApi = createApi({
