@@ -40,32 +40,34 @@ export async function GET() {
         status: 0,
       }
     )
-    .sort({
-      "tracking.createdAt": -1,
-    })
-    .lean();
-    
+      .sort({
+        "tracking.createdAt": -1,
+      })
+      .lean();
+
     // Get the job position fields
     const jobPositionFields =
-    Object.values(customFields?.customFields || {}).find(
-      (field) => field.formName === "Job Position"
-    )?.fields || [];
-    
+      Object.values(customFields?.customFields || {}).find(
+        (field) => field.formName === "Job Position"
+      )?.fields || [];
+
     // Filter out private fields
     const publicFieldLabels = jobPositionFields
-    .filter((field: CustomField) => !field.private)
-    .map((data: CustomField) => data.label);
-    
+      ?.filter((field: CustomField) => !field.private)
+      ?.map((data: CustomField) => data.label);
+
     // Eliminate custom fields from jobs that are not in public fields
-    const filteredJobs = jobs.map((job) => ({
+    const filteredJobs = jobs?.map((job) => ({
       ...job,
       customFields: Object.fromEntries(
-        job.customFields ? Object.entries(job.customFields).filter(([key]) =>
-          publicFieldLabels.includes(key)
-        ) : []
+        job.customFields
+          ? Object.entries(job.customFields).filter(([key]) =>
+              publicFieldLabels.includes(key)
+            )
+          : []
       ),
     }));
-    
+
     return NextResponse.json(filteredJobs);
   } catch (error: unknown) {
     if (error instanceof Error) {
