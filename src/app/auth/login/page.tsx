@@ -24,6 +24,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import ForgotPasswordDialog from "@/components/auth/ForgotPasswordDialog";
 import OrganizationDialog, { Organization } from "@/components/auth/OrganizationDialog";
+import ReCAPTCHA from "react-google-recaptcha";
 
 export interface LoginFormValues {
   email: string;
@@ -57,6 +58,7 @@ export default function Login() {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loginFormValues, setLoginFormValues] = useState<LoginFormValues>();
   const [selectedOrg, setSelectedOrg] = useState<string>();
+  const [captcha, setCaptcha] = useState<string>();
   const initialValues: LoginFormValues = {
     email: "",
     password: "",
@@ -93,7 +95,12 @@ export default function Login() {
         description: "Login successful",
         variant: "default",
       });
-      router.replace("/dashboard");
+      // debugger
+      if(response.user.role === 'candidate'){
+        router.replace(`/${response.user.organizationInfo?.name}/apply-jobs`);
+      }else if(response.user.role == 'admin' || 'hr'){
+        router.replace('/dashboard')
+      }
     } catch (err: unknown) {
       if (err && typeof err === "object" && "data" in err) {
         const errorMessage =
@@ -222,11 +229,13 @@ export default function Login() {
                   )}
                 </div>
 
+                <ReCAPTCHA  sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!} onChange={(token)=>{token && setCaptcha(token)}} />
+                
                 <CardFooter className="px-0 pt-6 flex-col space-y-4">
                   <Button
                     type="submit"
                     className="w-full"
-                    disabled={isLoading || isSubmitting}
+                    disabled={isLoading || isSubmitting || !captcha}
                   >
                     {isLoading || isSubmitting ? "Logging in..." : "Login"}
                   </Button>

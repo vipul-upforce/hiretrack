@@ -20,7 +20,8 @@ import {
   useCreateOrgMutation,
 } from "@/lib/features/org/orgApi";
 import { Eye, EyeOff } from "lucide-react";
-import React from "react";
+import React, { useState } from "react";
+import ReCAPTCHA from "react-google-recaptcha"
 
 interface OrgFormValues {
   name: string;
@@ -75,6 +76,7 @@ export default function OrgRegisterPage() {
   const { toast } = useToast();
   const [createOrg, { isLoading: isOrgLoading }] = useCreateOrgMutation();
   const [showPassword, setShowPassword] = React.useState(false);
+  const [captcha, setCaptcha] = useState<string>();
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
 
   const initialValues: OrgFormValues = {
@@ -90,6 +92,13 @@ export default function OrgRegisterPage() {
     values: OrgFormValues,
     { setStatus }: { setStatus: (message: string) => void }
   ) => {
+    if(!captcha){
+      toast({
+        title: "Error",
+        description:"Captcha Not Verified",
+        variant:"default"
+      })
+    }
     try {
       const { name, email, fullName, password, role } = values;
       const adminData = { email, name: fullName, password, role };
@@ -281,6 +290,7 @@ export default function OrgRegisterPage() {
                         />
                       )}
                     </Field>
+                    
                     <Button
                       type="button"
                       variant="ghost"
@@ -304,11 +314,13 @@ export default function OrgRegisterPage() {
                   )}
                 </div>
 
+                <ReCAPTCHA sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!} onChange={(token)=>{token && setCaptcha(token)}} />
+                
                 <CardFooter className="px-0 pt-6 flex-col space-y-4">
                   <Button
                     type="submit"
                     className="w-full"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !captcha}
                   >
                     {isSubmitting || isOrgLoading
                       ? "Registering..."
