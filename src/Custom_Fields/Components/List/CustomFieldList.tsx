@@ -38,8 +38,12 @@ function CustomFieldList() {
     setIsOpen(false);
   }, [setIsOpen]);
 
-  const { selectedFormId, handleDeleteCustomField, setCustomFields, customFields } =
-    useContext(CustomFieldsContext);
+  const {
+    selectedFormId,
+    handleDeleteCustomField,
+    setCustomFields,
+    customFields,
+  } = useContext(CustomFieldsContext);
 
   // Initialize orderedFields when selectedFormId changes
   React.useEffect(() => {
@@ -60,9 +64,9 @@ function CustomFieldList() {
         ...customFields,
         [selectedFormId.formId]: {
           ...selectedFormId,
-          fields: items
-        }
-      }
+          fields: items,
+        },
+      };
       setCustomFields(orderedItems);
     }
     setOrderedFields(items);
@@ -199,6 +203,7 @@ const CustomFieldItem = React.memo(
                 {field.required && (
                   <Badge>{field.required ? "Required" : "Optional"}</Badge>
                 )}
+                <Badge>{field?.private ? "Private" : "Public"}</Badge>
                 {field.defaultValue && <Badge>{field.defaultValue}</Badge>}
                 {field.options && <Badge>{field.options.length}</Badge>}
               </div>

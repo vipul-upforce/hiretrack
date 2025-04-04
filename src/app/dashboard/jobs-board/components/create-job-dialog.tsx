@@ -82,14 +82,15 @@ export function CreateJobDialog({
     values: JobFormValues,
     { resetForm, setSubmitting }: FormikHelpers<JobFormValues>
   ) => {
-    const fileNames = values.files.map(file => file.name);
+    const fileNames = values.files.map((file) => file.name);
     const hasDuplicates = new Set(fileNames).size !== fileNames.length;
 
     if (hasDuplicates) {
       toast({
-        title:"Alert",
-        description:"Duplicate file names found! Please rename before submitting.",
-        variant:"destructive"
+        title: "Alert",
+        description:
+          "Duplicate file names found! Please rename before submitting.",
+        variant: "destructive",
       });
       return;
     }

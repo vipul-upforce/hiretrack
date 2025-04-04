@@ -18,19 +18,13 @@ import { useFetchInterviewersQuery } from "@/lib/features/user/userApi";
 import { skillSuggestions } from "@/app/dashboard/jobs-board/components/job-form";
 import { v4 as uuidv4 } from "uuid";
 import CustomFields from "@/Custom_Fields/Components/CustomFields";
-
 import { useEffect, useState } from "react";
 
-// interface AttachmentFile extends File {
-//   id?: string; // Unique identifier, if available
-//   lastModified: number; // Fallback ID (since File has this)
-// }
-
-interface CandidateFormProps{
+interface CandidateFormProps {
   onFileUpload?: (file: File) => void;
 }
 
-export function CandidateForm({onFileUpload}:CandidateFormProps) {
+export function CandidateForm({ onFileUpload }: CandidateFormProps) {
   const { setFieldValue, values, errors } =
     useFormikContext<CandidateFormValues>();
   const { data: interviewers } = useFetchInterviewersQuery();
@@ -41,9 +35,6 @@ export function CandidateForm({onFileUpload}:CandidateFormProps) {
   const [expectedCTCField, expectedCTCMeta] = useField("expectedCTC");
   const [currentCTCField, currentCTCMeta] = useField("currentCTC");
   const [noticePeriodField, noticePeriodMeta] = useField("noticePeriod");
-  // const [currentLocationField, currentLocationMeta] =
-  //   useField("currentLocation");
-  // const [remarksField] = useField('remarks');
   const [resumeField, resumeMeta] = useField("resume");
   const [attachmentsField] = useField("attachments");
   const [tempResumeUrl, setTempResumeUrl] = useState<string | null>(null);
@@ -58,29 +49,29 @@ export function CandidateForm({onFileUpload}:CandidateFormProps) {
     if (tempResumeUrl) {
       URL.revokeObjectURL(tempResumeUrl);
     }
-    const resumeValue = values.resume as {url?:string};
+    const resumeValue = values.resume as { url?: string };
     if (resumeValue) {
       if (values.resume instanceof File) {
         setTempResumeUrl(URL.createObjectURL(values.resume));
-      } else if ('url' in resumeValue && resumeValue.url) {
+      } else if ("url" in resumeValue && resumeValue.url) {
         setTempResumeUrl(resumeValue.url);
-      } 
+      }
     } else {
       setTempResumeUrl(null);
     }
-    
+
     return () => {
-      if (tempResumeUrl && values.resume && !('url' in values.resume)) {
+      if (tempResumeUrl && values.resume && !("url" in values.resume)) {
         URL.revokeObjectURL(tempResumeUrl);
       }
     };
   }, [values.resume]);
 
   return (
-
-    <div className={`w-full  flex flex-col md:flex-row gap-4 flex-1 h-full overflow-y-auto px-6 py-4`}>
+    <div
+      className={`w-full  flex flex-col md:flex-row gap-4 flex-1 h-full overflow-y-auto px-6 py-4`}
+    >
       <div className={`w-full md:w-1/2  space-y-4`}>
-        
         <div className="space-y-2">
           <Label>
             Resume <span className="text-red-500">*</span>
@@ -88,12 +79,12 @@ export function CandidateForm({onFileUpload}:CandidateFormProps) {
           <FileUpload
             accept={{ "application/pdf": [".pdf"] }}
             maxFiles={1}
-            onFileSelect={async(files) => {
+            onFileSelect={async (files) => {
               setFieldValue("resume", files[0]);
               if (files[0]) {
                 setTempResumeUrl(URL.createObjectURL(files[0]));
               }
-              if(onFileUpload){
+              if (onFileUpload) {
                 await onFileUpload(files[0]);
               }
             }}
@@ -122,13 +113,17 @@ export function CandidateForm({onFileUpload}:CandidateFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email <span className="text-red-500">*</span></Label>
-            
+            <Label htmlFor="email">
+              Email <span className="text-red-500">*</span>
+            </Label>
+
             <Input
               id="email"
               type="email"
               {...emailField}
-              className={emailMeta.error && emailMeta.touched ? "border-red-500" : ""}
+              className={
+                emailMeta.error && emailMeta.touched ? "border-red-500" : ""
+              }
             />
             {emailMeta.touched && emailMeta.error && (
               <p className="text-sm text-red-500">{emailMeta.error}</p>
@@ -143,7 +138,9 @@ export function CandidateForm({onFileUpload}:CandidateFormProps) {
               id="location"
               {...locationField}
               className={
-                locationMeta.error && locationMeta.touched ? "border-red-500" : ""
+                locationMeta.error && locationMeta.touched
+                  ? "border-red-500"
+                  : ""
               }
             />
             {locationMeta.touched && locationMeta.error && (
@@ -241,26 +238,6 @@ export function CandidateForm({onFileUpload}:CandidateFormProps) {
               <p className="text-sm text-red-500">{noticePeriodMeta.error}</p>
             )}
           </div>
-
-          
-
-          {/* <div className="space-y-2">
-            <Label htmlFor="currentLocation">
-              Current Location <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="currentLocation"
-              {...currentLocationField}
-              className={
-                currentLocationMeta.error && currentLocationMeta.touched
-                  ? "border-red-500"
-                  : ""
-              }
-            />
-            {currentLocationMeta.touched && currentLocationMeta.error && (
-              <p className="text-sm text-red-500">{currentLocationMeta.error}</p>
-            )}
-          </div> */}
         </div>
 
         {/* Assignment Section */}
@@ -341,57 +318,23 @@ export function CandidateForm({onFileUpload}:CandidateFormProps) {
               const currentFiles = attachmentsField.value || [];
               const newFiles = files.map((file) => {
                 let newFileName = file.name;
-          
-                const fileExists = currentFiles.some((att:File) => att.name === file.name);
-          
+
+                const fileExists = currentFiles.some(
+                  (att: File) => att.name === file.name
+                );
+
                 if (fileExists) {
-                  const fileExtension = file.name.split('.').pop();
+                  const fileExtension = file.name.split(".").pop();
                   const baseName = file.name.replace(/\.[^/.]+$/, "");
                   newFileName = `${baseName}_${uuidv4()}.${fileExtension}`;
                 }
-          
+
                 return new File([file], newFileName, { type: file.type });
               });
               setFieldValue("attachments", [...currentFiles, ...newFiles]);
             }}
-
             files={attachmentsField.value}
-
-          
-            setter = {(files)=>setFieldValue("attachments", files) }
-
-            // setter={(files: AttachmentFile[]) => {
-            //   const currentFiles: AttachmentFile[] = values.attachments || [];
-            
-            //   const updatedFiles = files.map((newFile) => {
-            //     const oldFile = currentFiles.find(
-            //       (old) =>
-            //         old.name !== newFile.name &&
-            //         (old.customId ? old.customId === newFile.customId : old.lastModified === newFile.lastModified)
-            //     );
-            
-            //     if (oldFile) {
-            //       console.log(`Renamed file: ${oldFile.name} → ${newFile.name}`);
-            
-            //       // Check for duplicates
-            //       const isDuplicate = currentFiles.some(
-            //         (existingFile) => existingFile.name === newFile.name && existingFile !== newFile
-            //       );
-            
-            //       if (isDuplicate) {
-            //         console.warn(`⚠️ Duplicate detected! Reverting ${newFile.name} back to ${oldFile.name}`);
-            //         return { ...newFile, name: oldFile.name }; // Revert to old name
-            //       }
-            //     }
-            
-            //     return newFile;
-            //   });
-            
-            //   setFieldValue("attachments", updatedFiles);
-            // }}
-            
-            
-            
+            setter={(files) => setFieldValue("attachments", files)}
           />
         </div>
         <CustomFields formName="Candidate" />
@@ -406,7 +349,7 @@ export function CandidateForm({onFileUpload}:CandidateFormProps) {
             />
           </div>
         </div>
-      ):(
+      ) : (
         <div className="w-full md:w-1/2 h-full mb-4 md:mb-0 sticky top-0">
           <div className="w-full h-full rounded-lg border border-gray-300 bg-gray-50 flex items-center justify-center sticky top-0">
             <div className="text-center p-6">
@@ -421,6 +364,5 @@ export function CandidateForm({onFileUpload}:CandidateFormProps) {
         </div>
       )}
     </div>
-
   );
 }
