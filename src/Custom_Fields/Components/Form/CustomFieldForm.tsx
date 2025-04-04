@@ -35,6 +35,7 @@ const CustomFieldForm = memo(
       persistance: "permanent",
       defaultValue: "",
       required: false,
+      private: false,
     });
 
     useEffect(() => {
@@ -214,6 +215,18 @@ const CustomFieldForm = memo(
                 />
                 <Label htmlFor="isRequired">Required Field</Label>
               </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="isPrivate"
+                  checked={values.private}
+                  onCheckedChange={(checked) =>
+                    setFieldValue("private", checked)
+                  }
+                />
+                <Label htmlFor="isPrivate">Private Field</Label>
+              </div>
+
               {[
                 "date",
                 "datetime",

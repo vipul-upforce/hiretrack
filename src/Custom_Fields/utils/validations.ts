@@ -7,6 +7,7 @@ export const validationSchema = Yup.object({
     .max(50, "Label must be 50 characters or less")
     .trim(),
   type: Yup.string().required("Field type is required"),
+  private: Yup.boolean(),
   options: Yup.array()
     .of(Yup.string())
     .when(["type"], ([type]) => {

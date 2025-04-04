@@ -114,14 +114,15 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
   // console.log(job, "job");
 
   const onSubmit = async (values: JobFormValues) => {
-    const fileNames = values.files.map(file => file.name);
+    const fileNames = values.files.map((file) => file.name);
     const hasDuplicates = new Set(fileNames).size !== fileNames.length;
 
     if (hasDuplicates) {
       toast({
-        title:"Alert",
-        description:"Duplicate file names found! Please rename before submitting.",
-        variant:"destructive"
+        title: "Alert",
+        description:
+          "Duplicate file names found! Please rename before submitting.",
+        variant: "destructive",
       });
       return;
     }
@@ -170,8 +171,12 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
     } catch (error) {
       if (typeof error === "object" && error !== null && "data" in error) {
         const errorData = (error as { data?: { error?: string } }).data;
-    
-        if (typeof errorData === "object" && errorData !== null && "error" in errorData) {
+
+        if (
+          typeof errorData === "object" &&
+          errorData !== null &&
+          "error" in errorData
+        ) {
           toast({
             title: "Error",
             description: errorData.error || "Failed to update job",
@@ -187,7 +192,6 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
         variant: "destructive",
       });
     }
-    
   };
 
   return (
