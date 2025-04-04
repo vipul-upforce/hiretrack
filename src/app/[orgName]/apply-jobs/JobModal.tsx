@@ -58,6 +58,7 @@ export default function JobModal({ job, isOpen, onClose }: JobModalProps) {
               <h4 className="font-medium">Experience Required:</h4>
               <p className="mt-1">{job.experience} years</p>
             </div>
+            <CustomFieldsData customFields={job?.customFields || {}} />
           </div>
           <div className="mt-6 flex justify-end gap-3">
             {/* <button
@@ -68,11 +69,10 @@ export default function JobModal({ job, isOpen, onClose }: JobModalProps) {
                 // alert('Application submitted!');
                 onClose();
               }}
-            >
-            Apply Now
-            </button> */}
+              >
+              Apply Now
+              </button> */}
             <CreateCandidateDialog jobId={job._id as string} isOpen={isFormDialogOpen} setIsOpen={setIsFormDialogOpen} />
-            <CustomFieldsData customFields={job?.customFields || {}} />
             {/* </button> */}
             <button
               type="button"
