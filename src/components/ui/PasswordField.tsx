@@ -44,7 +44,7 @@ export default function PasswordField({
         aria-label={showPassword ? "Hide password" : "Show password"}
         aria-controls={id}
       >
-        {showPassword ? (
+        {!showPassword ? (
           <EyeOff className="size-4 text-muted-foreground" />
         ) : (
           <Eye className="size-4 text-muted-foreground" />

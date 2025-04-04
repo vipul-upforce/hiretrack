@@ -20,7 +20,8 @@ export const candidateSchema = (customFields: Yup.Schema<unknown>) =>
       .min(0, "CTC cannot be negative").max(100000000, "Can not be more then 100CR"),
     noticePeriod: Yup.number()
       .required("Notice period is required")
-      .min(0, "Notice period cannot be negative").max(180, "Can not be more then 6 months"),
+      .integer("Notice period must be an integer")
+      .min(0, "Notice period cannot be negative").max(180, "Can not be more then 180 days(6 months)"),
     // currentLocation: Yup.string().required("Current location is required"),
     resume: Yup.mixed().required("Resume is required"),
     // remarks: Yup.string(),

@@ -10,7 +10,7 @@ interface SettingComponentProps {
   onClose: () => void;
 }
 const settingComponents: Record<string, React.ComponentType<SettingComponentProps>> = {
-  smtp: SMTPConfigs,
+  mail: SMTPConfigs,
   fs: FileStorageOptions,
   portal: PortalConfigs
 };

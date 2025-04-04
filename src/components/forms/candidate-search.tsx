@@ -37,7 +37,13 @@ const SearchSchema = Yup.object()
     skills: Yup.array().of(Yup.string()),
     location: Yup.string(),
     minExpectedCTC: Yup.number().nullable(),
-    maxExpectedCTC: Yup.number().nullable(),
+    maxExpectedCTC: Yup.number()
+    .nullable()
+    .when("minExpectedCTC", ([minExpectedCTC], schema) =>
+      minExpectedCTC !== undefined
+        ? schema.moreThan(minExpectedCTC, "Max Expected CTC must be greater than Min Expected CTC")
+        : schema
+    ),
     minExperience: Yup.number()
       .nullable()
       .min(0, "Minimum experience cannot be negative"),
@@ -48,9 +54,23 @@ const SearchSchema = Yup.object()
         "Max experience must be greater than min experience"
       ),
     minCurrentCTC: Yup.number().nullable(),
-    maxCurrentCTC: Yup.number().nullable(),
+    maxCurrentCTC: Yup.number()
+    .nullable()
+    .when("minCurrentCTC", ([minCurrentCTC], schema) =>
+      minCurrentCTC !== undefined
+        ? schema.moreThan(minCurrentCTC, "Max Current CTC must be greater than Min Current CTC")
+        : schema
+    ),
     createdAfter: Yup.string(),
-    createdBefore: Yup.string(),
+    createdBefore: Yup.string().when("createdAfter", ([createdAfter], schema) =>
+      createdAfter 
+        ? schema.test(
+            'is-after',
+            "To date must be after From date",
+            value => !value || new Date(value) > new Date(createdAfter)
+          )
+        : schema
+    ),
     organizationId: Yup.string(),
     logicOperator: Yup.string().oneOf(["$and", "$or"]),
   })
@@ -62,6 +82,8 @@ const SearchSchema = Yup.object()
       maxExperience: string;
       minCurrentCTC: string;
       maxCurrentCTC: string;
+      createdAfter?: string;
+      createdBefore?: string;
     } = {
       minExpectedCTC: "",
       maxExpectedCTC: "",
@@ -69,6 +91,8 @@ const SearchSchema = Yup.object()
       maxExperience: "",
       minCurrentCTC: "",
       maxCurrentCTC: "",
+      createdAfter: "",
+      createdBefore: ""
     };
 
     // Check Expected CTC pair
@@ -103,6 +127,17 @@ const SearchSchema = Yup.object()
       errors.maxCurrentCTC =
         "Both min and max Current CTC must be provided together";
     }
+    
+    // FIX: Correct error messages for date fields
+    if (
+      (values.createdAfter && !values.createdBefore) ||
+      (!values.createdAfter && values.createdBefore)
+    ) {
+      errors.createdAfter =
+        "Both Created After and Created Before dates must be provided together";
+      errors.createdBefore =
+        "Both Created After and Created Before dates must be provided together";
+    }
 
     const errorMessages = Object.keys(errors)
       .filter((key) => errors[key as keyof typeof errors])
@@ -112,8 +147,8 @@ const SearchSchema = Yup.object()
     return errorMessages
       ? new Yup.ValidationError(errorMessages, values)
       : true;
-  });
-
+    });
+    
 export default function CandidateSearch() {
   const [searchResults, setSearchResults] = useState<Candidate[]>([]);
   const [isSearching, setIsSearching] = useState(false);

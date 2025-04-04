@@ -88,7 +88,7 @@ export function ImageGallery({ images, maxPreview = 3 }: ImageGalleryProps) {
               image.url === "" ? null : (
                 <div
                   key={image.id}
-                  className="relative w-48 h-48 rounded-md overflow-hidden cursor-pointer" 
+                  className="relative aspect-square rounded-md overflow-hidden cursor-pointer" 
                   onClick={() => {
                     setShowAll(false);
                     setSelectedImage(image);
@@ -97,7 +97,7 @@ export function ImageGallery({ images, maxPreview = 3 }: ImageGalleryProps) {
                   <img
                     src={image.url}
                     alt={image.name}
-                    className="object-cover w-full h-full"
+                    className="object-cover w-full h-full object-contain"
                   />
                 </div>
               )

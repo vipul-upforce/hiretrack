@@ -170,7 +170,7 @@ export function CreateCandidateDialog({ jobId, isOpen, setIsOpen, resumeFile }: 
         currentCTC: Number(parseFloat(String(values.currentCTC)).toFixed(2)),
         expectedCTC: Number(parseFloat(String(values.expectedCTC)).toFixed(2)),
         experience: Number(parseFloat(String(values.experience)).toFixed(2)),
-        noticePeriod: Number(parseFloat(String(values.noticePeriod)).toFixed(2)),
+        noticePeriod: Number(parseFloat(String(values.noticePeriod)).toFixed(0)),
         // Include email from parsed resume data
         email: parsedResumeData?.profile?.email || values.email,
         // Only include assignment if both assignee and deadline are provided

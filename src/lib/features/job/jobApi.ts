@@ -14,6 +14,10 @@ export const jobApi = createApi({
       query: () => '/jobs/open',
       providesTags: ['Job'],
     }),
+    fetchOpenJob: builder.query<Job[], void>({
+      query: () => 'jobs/open-jobs',
+      providesTags: ['Job'],
+    }),
     createJob: builder.mutation<Job, Partial<Job>>({
       query: (newJob) => ({
         url: '/jobs',
@@ -71,5 +75,6 @@ export const {
   useFetchAssignmentsQuery,
   useDeleteJobMutation,
   useFetchOpenJobsQuery,
+  useFetchOpenJobQuery,
   useAssignJobMutation
 } = jobApi; 

@@ -7,7 +7,6 @@ import { handleFileAttachments } from "@/lib/fileUtils";
 import { Attachment } from "../route";
 import { History } from "@/lib/mongodb"; // Import History model
 import { ICandidate as IExternalCandidate } from "@/lib/models/candidate"; // Import existing ICandidate
-import { IJob } from "@/lib/models/job";
 import mongoose from "mongoose";
 
 interface UpdateObject {
@@ -22,9 +21,10 @@ interface IFJob {
   description: string;
 }
 
-type ICandidate = IExternalCandidate & { // Extend the existing ICandidate
+type ICandidate = IExternalCandidate & {
+  // Extend the existing ICandidate
   jobId?: IFJob | mongoose.Schema.Types.ObjectId | null; // Make jobId optional
-}
+};
 
 export async function PUT(
   request: NextRequest,
@@ -153,43 +153,6 @@ export async function PUT(
         { error: "Candidate not found" },
         { status: 404 }
       );
-    }
-    const origin = request.headers.get("origin");
-    const url = `${origin}/api/event-mail`;
-    const reqBody = {
-      email: updatedCandidate.assignment?.interviewerId.email,
-      eventTitle:
-        updatedCandidate.jobId && typeof updatedCandidate.jobId !== "string" && (updatedCandidate.jobId as unknown as IJob).title
-          ? "Interview for " + (updatedCandidate.jobId as unknown as IJob).title
-          : "Interview for Unknown Position",
-      startTime: updatedCandidate.assignment?.deadline,
-      endTime: updatedCandidate.assignment?.deadline,
-      jobName:
-        updatedCandidate.jobId && typeof updatedCandidate.jobId !== "string" && (updatedCandidate.jobId as unknown as IJob).title
-          ? (updatedCandidate.jobId as unknown as IJob).title
-          : "Unknown Job",
-      interviewerName: updatedCandidate.assignment?.interviewerId.name,
-      candidateName: updatedCandidate.name,
-      status: updatedCandidate.status,
-    };
-    if (updatedCandidate.assignment) {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Cookie: `user=${JSON.stringify(userCookie)}`, // Add your cookie here
-        },
-        body: JSON.stringify(reqBody),
-      });
-
-      // Check if the response is successful
-      if (!response.ok) {
-        const errorData = await response.json(); // Parse the error response
-        return NextResponse.json(
-          { error: errorData.message || "Failed to send email" },
-          { status: response.status }
-        );
-      }
     }
 
     return NextResponse.json(updatedCandidate);
