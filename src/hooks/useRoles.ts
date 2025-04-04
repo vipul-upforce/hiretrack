@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 
 const useRoles = () => {
-  const [role, setRole] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>("candidate");
 
   useEffect(() => {
     const user = Cookies.get("user");
