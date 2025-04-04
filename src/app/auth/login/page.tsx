@@ -23,7 +23,9 @@ import { OrgInfo } from "@/lib/models/user";
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import ForgotPasswordDialog from "@/components/auth/ForgotPasswordDialog";
-import OrganizationDialog, { Organization } from "@/components/auth/OrganizationDialog";
+import OrganizationDialog, {
+  Organization,
+} from "@/components/auth/OrganizationDialog";
 import ReCAPTCHA from "react-google-recaptcha";
 
 export interface LoginFormValues {
@@ -70,15 +72,19 @@ export default function Login() {
   ) => {
     setLoginFormValues(values);
     try {
-      const response = await login({...values, orgId:selectedOrg}).unwrap();
-      if (response.organizations && response.organizations.length > 1 && !selectedOrg) {
-          setOrganizations(response.organizations);
-          setOrganizationDialogOpen(true); 
-          return; 
-        }
+      const response = await login({ ...values, orgId: selectedOrg }).unwrap();
+      if (
+        response.organizations &&
+        response.organizations.length > 1 &&
+        !selectedOrg
+      ) {
+        setOrganizations(response.organizations);
+        setOrganizationDialogOpen(true);
+        return;
+      }
       if (response.user) {
         const userWithoutCustomFields: UserWithoutCF = {
-          ...response.user
+          ...response.user,
         };
         if (userWithoutCustomFields.organizationInfo) {
           userWithoutCustomFields.organizationInfo = {
@@ -86,9 +92,10 @@ export default function Login() {
           };
           delete userWithoutCustomFields.organizationInfo.customFields;
         }
-        Cookies.set("user", JSON.stringify(userWithoutCustomFields), { expires: 7 }); // Expires in 7 days
+        Cookies.set("user", JSON.stringify(userWithoutCustomFields), {
+          expires: 7,
+        }); // Expires in 7 days
         setUserLoggedIn(true);
-        
       }
       toast({
         title: "Success",
@@ -96,10 +103,10 @@ export default function Login() {
         variant: "default",
       });
       // debugger
-      if(response.user.role === 'candidate'){
+      if (response.user.role === "candidate") {
         router.replace(`/${response.user.organizationInfo?.name}/apply-jobs`);
-      }else if(response.user.role == 'admin' || 'hr'){
-        router.replace('/dashboard')
+      } else if (response.user.role == "admin" || "hr") {
+        router.replace("/dashboard");
       }
     } catch (err: unknown) {
       if (err && typeof err === "object" && "data" in err) {
@@ -135,18 +142,19 @@ export default function Login() {
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold flex flex-row justify-between items-center">
             Login
-            {selectedOrg && 
-              <span 
-              className="text-lg font-medium text-gray-700 " 
-              style={{ 
-                animation: selectedOrg ? 'fadeInOrg 0.9s ease-in-out forwards' : 'none'
-              }}
-             >
-              {organizations.find(org => org.orgId === selectedOrg)?.name}
-             </span>
-            }  
+            {selectedOrg && (
+              <span
+                className="text-lg font-medium text-gray-700 "
+                style={{
+                  animation: selectedOrg
+                    ? "fadeInOrg 0.9s ease-in-out forwards"
+                    : "none",
+                }}
+              >
+                {organizations.find((org) => org.orgId === selectedOrg)?.name}
+              </span>
+            )}
           </CardTitle>
-          
         </CardHeader>
         <CardContent>
           <Formik
@@ -225,12 +233,19 @@ export default function Login() {
                     </Button>
                   </div>
                   {errors.password && touched.password && (
-                    <div className="text-red-500 text-xs">{errors.password}</div>
+                    <div className="text-red-500 text-xs">
+                      {errors.password}
+                    </div>
                   )}
                 </div>
 
-                <ReCAPTCHA  sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!} onChange={(token)=>{token && setCaptcha(token)}} />
-                
+                <ReCAPTCHA
+                  sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
+                  onChange={(token) => {
+                    token && setCaptcha(token);
+                  }}
+                />
+
                 <CardFooter className="px-0 pt-6 flex-col space-y-4">
                   <Button
                     type="submit"
@@ -260,7 +275,7 @@ export default function Login() {
         isOpen={forgotPasswordOpen}
         onClose={() => setForgotPasswordOpen(false)}
       />
-      
+
       {loginFormValues && !selectedOrg && (
         <OrganizationDialog
           isOpen={organizationDialogOpen}
@@ -269,7 +284,6 @@ export default function Login() {
           setSelectedOrgId={(orgId: string) => setSelectedOrg(orgId)}
         />
       )}
-
     </div>
   );
 }

@@ -104,7 +104,6 @@ export default function Signup() {
             description: "Account created successfully",
             variant: "default",
           });
-          debugger;
           // if(response.user.role === "candidate" && ){
           //   router.push(`/${response.user.organizationInfo?.name}/apply-jobs`)
           // }else{

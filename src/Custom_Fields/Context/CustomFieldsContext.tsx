@@ -183,28 +183,34 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
       [customFields]
     );
 
-    const deleteFormIDAllCustomFields = useCallback((formId: string) => {
-      const formIdObject = customFields[formId];
-      if (formIdObject) {
-        setCustomFields((prev) => ({
-          ...prev,
-          [formId]: {
-            ...formIdObject,
-            fields: [],
-          },
-        }));
-        
-        // Update selected form ID state if it matches the cleared form
-        if (selectedFormId?.formId === formId) {
-          setSelectedFormId((prev) => prev && {
+    const deleteFormIDAllCustomFields = useCallback(
+      (formId: string) => {
+        const formIdObject = customFields[formId];
+        if (formIdObject) {
+          setCustomFields((prev) => ({
             ...prev,
-            fields: [],
-            formId: prev.formId,    
-            formName: prev.formName 
-          });
+            [formId]: {
+              ...formIdObject,
+              fields: [],
+            },
+          }));
+
+          // Update selected form ID state if it matches the cleared form
+          if (selectedFormId?.formId === formId) {
+            setSelectedFormId(
+              (prev) =>
+                prev && {
+                  ...prev,
+                  fields: [],
+                  formId: prev.formId,
+                  formName: prev.formName,
+                }
+            );
+          }
         }
-      }
-    }, [customFields, selectedFormId]);
+      },
+      [customFields, selectedFormId]
+    );
 
     return (
       <CustomFieldsContext.Provider

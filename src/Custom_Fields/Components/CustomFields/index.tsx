@@ -48,7 +48,7 @@ function CustomFields({ formName }: { formName: string }) {
     !formNameObject.fields ||
     Object.keys(formNameObject.fields).length === 0
   ) {
-    return;
+    return null;
   }
 
   return (
