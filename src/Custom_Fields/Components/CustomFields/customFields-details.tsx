@@ -26,18 +26,22 @@ interface FormValues {
 
 const CustomFieldsData = ({ customFields }: FormValues) => {
   // debugger
-  if (!customFields || Object.keys(customFields).length === 0 || Object.values(customFields).every(value => 
-      (typeof value === "string" && value.trim() === "") || 
-      (Array.isArray(value) && value.length === 0)
-    )) {
+  if (
+    !customFields ||
+    Object.keys(customFields).length === 0 ||
+    Object.values(customFields).every(
+      (value) =>
+        (typeof value === "string" && value.trim() === "") ||
+        (Array.isArray(value) && value.length === 0)
+    )
+  ) {
     return;
   }
 
   return (
     <div className="flex flex-col gap-4">
-
-      <hr className='pt-2'/>
-      <div className="font-bold text-lg py-2">Meta Fields</div>
+      <hr className="mt-4" />
+      <div className="font-bold text-lg">Meta Fields</div>
       {Object.entries(customFields).map(([key, value]) => {
         if (
           (typeof value === "string" && value.trim() === "") ||

@@ -77,6 +77,11 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL("/dashboard", request.url)); // Redirect to an unauthorized page
       }
     }
+
+    // Restrict access for candidate role
+    if (userRole !== "candidate" && pathname.includes("/apply-jobs")) {
+      return NextResponse.redirect(new URL("/dashboard", request.url)); // Redirect to an unauthorized page
+    }
   }
 
   return NextResponse.next();
