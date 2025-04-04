@@ -12,6 +12,7 @@ import { IJob } from "./models/job";
 import { ICandidate } from "./models/candidate";
 import settingsSchema, { ISettings } from "./models/settings";
 import { historySchema, IHistory } from "./models/history";
+import candidateAccountSchema, { IUCandidateAccount } from "./models/candidateAccount";
 
 interface MongooseGlobal {
   conn: typeof mongoose | null;
@@ -29,6 +30,7 @@ export var Job: mongoose.Model<IJob> | null = null;
 export var Candidate: mongoose.Model<ICandidate> | null = null;
 export var Settings: mongoose.Model<ISettings> | null = null;
 export var History: mongoose.Model<IHistory> | null = null;
+export var CandidateAccount: mongoose.Model<IUCandidateAccount> | null = null;
 
 const MONGODB_URI = process.env.MONGODB_URI!;
 
@@ -62,6 +64,7 @@ export default async function connectToDatabase() {
       Candidate = mongoose.model<ICandidate>("Candidate", candidateSchema);
       Settings = mongoose.model<ISettings>("Settings", settingsSchema);
       History = mongoose.model<IHistory>("History", historySchema);
+      CandidateAccount = mongoose.model<IUCandidateAccount>("CandidateAccount", candidateAccountSchema);
       console.log("Models registered");
       return mongoose;
     });

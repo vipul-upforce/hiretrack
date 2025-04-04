@@ -1,4 +1,5 @@
 import { Organization } from '@/components/auth/OrganizationDialog';
+import { OrgInfo } from '@/lib/models/user';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 interface AuthRequest {
@@ -14,6 +15,7 @@ interface User {
   name: string;
   email: string;
   role: string;
+  organizationInfo?: OrgInfo;
 }
 
 interface AuthResponse {

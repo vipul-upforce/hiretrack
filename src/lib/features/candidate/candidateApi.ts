@@ -1,6 +1,31 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { Candidate } from '@/types/candidate';
 import { ICandidateHistory } from '@/lib/models/history';
+import { Organization } from '@/components/auth/OrganizationDialog';
+import { OrgInfo } from '@/lib/models/user';
+
+interface AuthRequest {
+  email: string;
+  password: string;
+  name?: string;
+  confirmPassword?: string;
+  orgId?: string;
+}
+
+interface ICandidate {
+  id: string;
+  name: string;
+  email: string;
+  role?:string;
+  organizationInfo?: OrgInfo;
+}
+interface AuthResponse {
+  message: string;
+  user: ICandidate;
+  _id?:string;
+  organizations?: Organization[] 
+}
+
 
 export const candidateApi = createApi({
   reducerPath: 'candidateApi',
@@ -69,6 +94,14 @@ export const candidateApi = createApi({
       }),
       invalidatesTags: ['Candidate'],
     }),
+    candidateSignup: builder.mutation<AuthResponse, AuthRequest>({
+      query: (credentials) => ({
+        url: '/candidates/signup',
+        method: 'POST',
+        body: credentials,
+      }),
+      invalidatesTags: ['Candidate'],
+    }),
   }),
 });
 
@@ -82,5 +115,6 @@ export const {
   useUpdateCandidateHistoryMutation,
   useDeleteCandidateMutation,
   useFilterCandidatesMutation,
-  useLazyFetchCandidatesQuery
+  useLazyFetchCandidatesQuery,
+  useCandidateSignupMutation
 } = candidateApi; 

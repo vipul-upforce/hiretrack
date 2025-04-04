@@ -18,6 +18,7 @@ import { useFetchInterviewersQuery } from "@/lib/features/user/userApi";
 import { skillSuggestions } from "@/app/dashboard/jobs-board/components/job-form";
 import { v4 as uuidv4 } from "uuid";
 import CustomFields from "@/Custom_Fields/Components/CustomFields";
+import Cookies from "js-cookie";
 import { useEffect, useState } from "react";
 
 interface CandidateFormProps {
@@ -44,6 +45,9 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
     typeof values.assignment?.interviewerId === "string"
       ? values.assignment.interviewerId
       : values.assignment?.interviewerId?._id || "";
+
+    const userCookie = Cookies.get("user") || "{}";
+    const user = JSON.parse(userCookie);
 
   useEffect(() => {
     if (tempResumeUrl) {
@@ -239,9 +243,10 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
             )}
           </div>
         </div>
-
+        
         {/* Assignment Section */}
-        <div className="space-y-4 border-t pt-4">
+        {user && user.role!=="candidate" && <>
+          <div className="space-y-4 border-t pt-4">
           <Label className="text-lg font-semibold">Assignment</Label>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -308,12 +313,14 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
             </div>
           </div>
         </div>
+        </>
+        }
 
         <div className="space-y-2">
           <Label>Additional Attachments</Label>
           <FileUpload
             accept={{}}
-            maxFiles={30}
+            maxFiles={user.role==="candidate"?2:30}
             onFileSelect={(files) => {
               const currentFiles = attachmentsField.value || [];
               const newFiles = files.map((file) => {
@@ -334,7 +341,42 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
               setFieldValue("attachments", [...currentFiles, ...newFiles]);
             }}
             files={attachmentsField.value}
-            setter={(files) => setFieldValue("attachments", files)}
+
+          
+            setter = {(files)=>setFieldValue("attachments", files) }
+
+            // setter={(files: AttachmentFile[]) => {
+            //   const currentFiles: AttachmentFile[] = values.attachments || [];
+            
+            //   const updatedFiles = files.map((newFile) => {
+            //     const oldFile = currentFiles.find(
+            //       (old) =>
+            //         old.name !== newFile.name &&
+            //         (old.customId ? old.customId === newFile.customId : old.lastModified === newFile.lastModified)
+            //     );
+            
+            //     if (oldFile) {
+            //       console.log(`Renamed file: ${oldFile.name} → ${newFile.name}`);
+            
+            //       // Check for duplicates
+            //       const isDuplicate = currentFiles.some(
+            //         (existingFile) => existingFile.name === newFile.name && existingFile !== newFile
+            //       );
+            
+            //       if (isDuplicate) {
+            //         console.warn(`⚠️ Duplicate detected! Reverting ${newFile.name} back to ${oldFile.name}`);
+            //         return { ...newFile, name: oldFile.name }; // Revert to old name
+            //       }
+            //     }
+            
+            //     return newFile;
+            //   });
+            
+            //   setFieldValue("attachments", updatedFiles);
+            // }}
+            
+            
+            
           />
         </div>
         <CustomFields formName="Candidate" />

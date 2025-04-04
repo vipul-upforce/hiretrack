@@ -35,7 +35,7 @@ const CustomFieldsData = ({ customFields }: FormValues) => {
         (Array.isArray(value) && value.length === 0)
     )
   ) {
-    return;
+    return null;
   }
 
   return (

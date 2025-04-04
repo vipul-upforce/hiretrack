@@ -1,0 +1,63 @@
+import  { Schema } from 'mongoose';
+import { OrgInfo } from './user';
+
+
+export interface IUCandidateAccount {
+  _id: string;
+  organizationId: Schema.Types.ObjectId;
+  organizationInfo?: OrgInfo;
+  role: 'candidate'
+  name: string;
+  email: string;
+  password: string;
+  createdAt: Date;
+  updatedAt: Date;
+  resetToken?: string;
+  resetTokenExpiry?: Date;
+  isDeleted?: Boolean;
+}
+
+
+export const candidateAccountSchema = new Schema<IUCandidateAccount>({
+  name: {
+    type: String,
+    required: true,
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: false,
+  },
+  password: {
+    type: String,
+    required: true,
+  },
+  organizationId: { 
+    type: Schema.Types.ObjectId, 
+    ref:'Organization',
+    required: false
+  },
+  role:{
+    type:String,
+    // enum:["candidate"],
+    default: "candidate"
+  },
+  resetToken: {
+    type: String,
+    required: false
+  },
+  resetTokenExpiry: {
+    type: Date,
+    required: false
+  },
+  isDeleted:{
+    type: Boolean,
+    required: false
+  }
+}, {
+  timestamps: true,
+});
+
+export default candidateAccountSchema;
+
+// export const User = mongoose.model<IUser>('User', userSchema); 
