@@ -15,7 +15,12 @@ export async function GET(req: NextRequest) {
     if (!Settings) {
       return NextResponse.json({ error: 'Settings Model Not Found' }, { status: 404 });
     }
-    const settings = await Settings.findOne({ organizationId: userData.organizationId });
+    const settings = await Settings.findOne({ organizationId: userData.organizationId },
+      {
+        "fileStorage.storageType":1,
+        portalConfigs:1,
+        smtpConfigs:1
+      });
     
     if (!settings) {
       return NextResponse.json(

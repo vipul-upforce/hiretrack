@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Menu, KanbanSquare, Calendar, ChevronRight, LogOut, Home, Users, Settings, SearchCheckIcon } from "lucide-react";
+import { Menu, KanbanSquare, Calendar, ChevronRight, LogOut, Home, Users, Settings, SearchCheckIcon, Link2Icon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import Cookies from 'js-cookie';
 import { useCustomFields } from '@/Custom_Fields/hooks/use-customFields';
 import { useGetPortalConfigsQuery } from "@/lib/features/settings/settingsApi";
+import { IUser } from '@/lib/models/user';
 
 interface SidebarItem {
   title: string;
@@ -61,7 +62,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [userData, setUserData] = useState<{ name:string, email:string, role?: string } | null>(null);
+  const [userData, setUserData] = useState<IUser | null>(null);
   const { data: portalConfigData, isLoading, refetch } = useGetPortalConfigsQuery(undefined);
   const { setUserLoggedIn } = useCustomFields();
   
@@ -94,6 +95,23 @@ export default function DashboardLayout({
     
     router.push('/auth/login');
   };
+
+  const generate_share_org = () => {
+    const url = `${window.location.origin}/${userData?.organizationInfo?.name}/apply-jobs`;
+    navigator.clipboard.writeText(url).then(() => {
+      toast({
+        title:"Success",
+        description:"Organization sharing URL is copied to your clipboard",
+        variant:"default"
+      })
+    }).catch(err => {
+      toast({
+        title:"Success",
+        description:err.message || "Failed to get the org url.",
+        variant:"destructive"
+      })
+    });
+  }
 
   const shouldShowPortalData = Boolean(portalConfigData && userData && portalConfigData.portalName );
   const SidebarContent = () => (
@@ -190,6 +208,7 @@ export default function DashboardLayout({
       </div>
       {/* Settings and Logout Buttons */}
       <div className="px-3 pb-4 mt-auto space-y-2">
+        
         <div className={cn('flex flex-row justify-center items-center',
            portalConfigData && portalConfigData.portalLogo?.url?"px-4":"pl-0"
         )}>
@@ -216,6 +235,17 @@ export default function DashboardLayout({
             </p>
           </div>
         </div>
+        <Button
+          variant="ghost"
+          className={cn(
+            "w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:text-gray-600 hover:bg-gray-50",
+            isCollapsed ? "justify-center" : "justify-start"
+          )}
+          onClick={generate_share_org}
+        >
+          <Link2Icon className="h-5 w-5" />
+          <span className={cn("", isCollapsed && "hidden")}>Share Organization</span>
+        </Button>
         <Button
           variant="ghost"
           className={cn(
