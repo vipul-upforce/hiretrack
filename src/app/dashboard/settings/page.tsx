@@ -14,8 +14,8 @@ export default function Settings() {
       description: "Configure your organization's storage settings.",
     },
     {
-      title: "SMTP Configs",
-      key: "smtp",
+      title: "Email Configs",
+      key: "mail",
       description: "Configure the SMTP configurations for your organization.",
     },
     {

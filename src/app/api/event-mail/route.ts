@@ -1,8 +1,5 @@
-// pages/api/send-event-email.js
-// import { sendMail } from "@/lib/utils";
 import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Settings } from "@/lib/mongodb";
-import { createTransport, TransportOptions } from "nodemailer";
+import { sendMail } from ".";
 
 export async function POST(req: NextRequest) {
   try {
@@ -18,7 +15,15 @@ export async function POST(req: NextRequest) {
     } = await req.json();
     const user = JSON.parse(req.cookies.get("user")?.value || "{}");
     // const organizationId  = "67e12860196bf5e08045d22f";
-    const { organizationId } = JSON.parse(user);
+    const { organizationId } = user;
+
+    // Validate that organizationId exists
+    if (!organizationId) {
+      return NextResponse.json(
+        { error: "Organization ID is missing." },
+        { status: 400 }
+      );
+    }
 
     // Prepare a new detailed event description with HTML formatting
     const eventDescription: string = `<div><strong>Job Name:</strong> ${
@@ -102,8 +107,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "Email sent successfully." });
     } else {
       return NextResponse.json(
-        {
-          error: emailStatus.message,
+        { 
+             error: emailStatus.message,
         },
         { status: emailStatus.status }
       );
@@ -119,52 +124,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-
-
- const sendMail = async (
-  orgID: string,
-  email: string,
-  eventTitle: string,
-  htmlContent: string
-): Promise<{ status: number; message: string }> => {
-  try {
-    await connectToDatabase();
-    if (!Settings) {
-      return { status: 404, message: "Setting Model not found" };
-    }
-    const settingInfo = await Settings?.find({ organizationId: orgID });
-
-    // Check if settingInfo is not empty
-    if (!settingInfo || settingInfo.length === 0) {
-      return { status: 404, message: "Settings not found" };
-    }
-
-    // Access the first document in the array
-    const settings = settingInfo[0];
-
-    // Configure email transporter
-    const transporter = createTransport({
-      host: settings.smtpConfig.SMTP_HOST,
-      port: settings.smtpConfig.SMTP_PORT,
-      secure: Number(settings.smtpConfig.SMTP_PORT) === 465,
-      auth: {
-        user: settings.smtpConfig.SMTP_USER,
-        pass: settings.smtpConfig.SMTP_PASSWORD,
-      },
-    } as TransportOptions);
-
-    // Send email
-    const mailOptions = {
-      from: settings.smtpConfig.SMTP_FROM,
-      to: email,
-      subject: `Event Invitation: ${eventTitle}`,
-      html: htmlContent,
-    };
-
-    await transporter.sendMail(mailOptions);
-
-    return { status: 200, message: "Email Sent Successfully" };
-  } catch {
-    return { status: 500, message: "Unknown Error Occurred" };
-  }
-};

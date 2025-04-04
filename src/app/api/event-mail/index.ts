@@ -1,0 +1,166 @@
+import { ISettings } from "@/lib/models/settings";
+import connectToDatabase, { Settings } from "@/lib/mongodb";
+import { createTransport, TransportOptions } from "nodemailer";
+import { Resend } from "resend";
+
+interface ISmtp {
+  smtp_host: string;
+  smtp_port: string;
+  smtp_user: string;
+  smtp_password: string;
+  smtp_from: string;
+  mailProvider: string;
+}
+interface IResend {
+  resend_api_key: string;
+  resend_from: string;
+  resend_reply_to: string;
+  mailProvider: string;
+}
+interface IResendObj {
+  settings: IResend;
+  email: string;
+  htmlContent: string;
+  eventTitle: string;
+}
+interface ISmtpObj {
+  settings: ISmtp;
+  email: string;
+  htmlContent: string;
+  eventTitle: string;
+}
+
+export const sendMail = async (
+  orgID: string,
+  email: string,
+  eventTitle: string,
+  htmlContent: string
+): Promise<{ status: number; message: string }> => {
+  try {
+    await connectToDatabase();
+    if (!Settings) {
+      return { status: 404, message: "Setting Model not found" };
+    }
+    const settingInfo = (await Settings?.find({
+      organizationId: orgID,
+    })) as ISettings[];
+
+    // Check if settingInfo is not empty
+    if (!settingInfo || settingInfo.length === 0) {
+      return { status: 404, message: "Settings not found" };
+    }
+
+    // Access the first document in the array
+    const settings: ISettings = settingInfo[0];
+
+    const { mailConfig } = settings; // Now credentials should be recognized
+
+    // Check if smtpConfig is defined and has the required properties
+    if (!mailConfig || !mailConfig.mailProvider) {
+      return {
+        status: 400,
+        message: "SMTP configuration is missing or invalid",
+      };
+    }
+
+    if (mailConfig.mailProvider === "smtp") {
+      const result = await sendSmtpMail({
+        settings: mailConfig,
+        email,
+        htmlContent,
+        eventTitle,
+      });
+      return result || { status: 500, message: "Failed to send email" };
+    } else if (mailConfig.mailProvider === "resend") {
+      const result = await sendReSendMail({ 
+        settings: mailConfig,
+        email,
+        htmlContent,
+        eventTitle,
+      });
+      return result || { status: 500, message: "Failed to resend email" };
+    }
+
+    // Add a default return statement for unexpected mail types
+    return { status: 400, message: "Invalid mail type specified" };
+  } catch (err: unknown) {
+    return {
+      status: 500,
+      message: err instanceof Error ? err.message : "Unknown error occurred",
+    };
+  }
+};
+
+const sendSmtpMail = async (smtpObJ: ISmtpObj) => {
+  try {
+    // Configure email transporter
+    const transporter = createTransport({
+      host: smtpObJ.settings.smtp_host,
+      port: smtpObJ.settings.smtp_port,
+      secure: Number(smtpObJ.settings.smtp_port) === 465,
+      auth: {
+        user: smtpObJ.settings.smtp_user,
+        pass: smtpObJ.settings.smtp_password,
+      },
+    } as TransportOptions);
+
+    // Send email
+    const mailOptions = {
+      from: smtpObJ.settings.smtp_from,
+      to: smtpObJ.email,
+      subject: `Event Invitation: ${smtpObJ.eventTitle}`,
+      html: smtpObJ.htmlContent,
+    };
+
+    const result = await transporter
+      .sendMail(mailOptions)
+      .then(() => {
+        return { status: 200, message: "Email Sent Successfully" };
+      })
+      .catch((err) => {
+        return {
+          status: 500,
+          message:
+            err instanceof Error ? err.message : "Unknown error occurred",
+        };
+      });
+    return result;
+  } catch (error: unknown) {
+    return {
+      status: 500,
+      message:
+        error instanceof Error ? error.message : "Unknown error occurred",
+    };
+  }
+};
+
+const sendReSendMail = async (mailObj: IResendObj) => {
+  try {
+    const resend = new Resend("re_a1S4G4yT_FswGxxQhgjDxmsFgG38QXFEs");
+    const result = await resend.emails
+      .send({
+        from: mailObj.settings.resend_from,
+        to: [mailObj.email],
+        subject: mailObj.eventTitle,
+        replyTo: mailObj.settings.resend_reply_to,
+        html: mailObj.htmlContent,
+      })
+      .then(() => {
+        return { status: 200, message: "Email Sent Successfully" };
+      })
+      .catch((err) => {
+        return {
+          status: 500,
+          message:
+            err instanceof Error ? err.message : "Unknown error occurred",
+        };
+      });
+    return result;
+  } catch (error) {
+    return {
+      status: 500,
+      message:
+        error instanceof Error ? error.message : "Unknown error occurred",
+    };
+  }
+};

@@ -4,20 +4,28 @@ const settingsSchema = new Schema({
     organizationId:{ type:String, required:true },
     fileStorage:{ 
         storageType:{ type:String, default: '' },
+        
         cloudinaryCloudName:{ type:String, default: '' },
         cloudinaryApiSecret:{ type:String, default: '' },
         cloudinaryApiKey:{ type:String, default: '' },
+        
         awsRegion: { type:String, default: '' },
         awsAccessKeyId: { type:String, default: '' },
         awsSecretAccessKey: { type:String, default: '' },
         awsBucketName: { type:String, default: '' },
     },
-    smtpConfig: {
-        SMTP_HOST: { type: String, default: '' },
-        SMTP_PORT: { type: String, default: '' },
-        SMTP_USER: { type: String, default: '' },
-        SMTP_PASSWORD: { type: String, default: '' },
-        SMTP_FROM: { type: String, default: '' },
+    mailConfig: {
+        mailProvider:{ type:String, default: '' },
+
+        smtp_host: { type: String, default: '' },
+        smtp_port: { type: String, default: '' },
+        smtp_user: { type: String, default: '' },
+        smtp_password: { type: String, default: '' },
+        smtp_from: { type: String, default: '' },
+        
+        resend_api_key: { type: String, default: '' },
+        resend_from: { type: String, default: '' },
+        resend_reply_to: { type: String, default: '' },
     },
     portalConfigs:{
         portalLogo: {
@@ -37,7 +45,7 @@ const settingsSchema = new Schema({
 export interface ISettings {
     organizationId: string;
     fileStorage: Ifs;
-    smtpConfig: Ismtp;
+    mailConfig: Ismtp;
     portalConfigs?: {
         portalLogo: string | null;
         portalName: string;
@@ -45,11 +53,15 @@ export interface ISettings {
 }
 
 export interface Ismtp {
-    SMTP_HOST: string,
-    SMTP_PORT: string,
-    SMTP_USER:string,
-    SMTP_PASSWORD: string,
-    SMTP_FROM: string,
+    smtp_host: string,
+    smtp_port: string,
+    smtp_user:string,
+    smtp_password: string,
+    smtp_from: string,
+    resend_api_key: string,
+    resend_from: string,
+    resend_reply_to: string,
+    mailProvider: string
 }
 
 export interface Ifs {

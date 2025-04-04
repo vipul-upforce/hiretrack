@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useTestConnectionMutation } from '@/lib/features/settings/settingsApi';
 
-type StorageType = 'cloudinary' | 's3' | 'smtp';
+type StorageType = 'cloudinary' | 's3' | 'smtp' | 'resend';
 
 interface Credentials {
   // Cloudinary credentials
