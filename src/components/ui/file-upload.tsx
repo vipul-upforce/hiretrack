@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { Upload, File as FileIcon, Pencil } from "lucide-react";
 import { RenameFileDialog } from "./rename-file-dialog";
+import Cookies from "js-cookie";
 
 interface FileUploadProps {
   onFileSelect: (files: File[]) => void;
@@ -63,7 +64,8 @@ export function FileUpload({
     file: null,
     isExisting: false,
   });
-
+  const userCookie = Cookies.get("user") || "{}";
+  const user = JSON.parse(userCookie);
   const handleRename = (newName: string) => {
     if (renameFile.file) {
       if (renameFile.file instanceof File) {
@@ -110,6 +112,14 @@ export function FileUpload({
           {isDragActive
             ? "Drop the files here..."
             : "Drag 'n' drop files here, or click to select files"}
+        </p>
+        <p className="mt-2 text-sm text-gray-500">
+          {user.role === "candidate" && !accept["application/pdf"]
+            ? "Maximum 2 files are allowed" : null}
+        </p>
+        <p className="mt-2 text-sm text-gray-500">
+          {user.role === "candidate"
+            ? "File should have less than 3MB size" : null}
         </p>
       </div>
 
