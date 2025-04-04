@@ -162,7 +162,7 @@ export const FileDropZone = ({
  }
 
   return (
-    <div className="space-y-4 p-6">
+    <div className="space-y-4 p-0">
       <div
         {...getRootProps()}
         className={cn(

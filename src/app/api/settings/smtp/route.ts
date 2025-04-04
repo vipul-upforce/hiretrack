@@ -15,7 +15,17 @@ export async function GET(req: NextRequest) {
     const settings = await Settings.findOne({ organizationId: userData.organizationId });
 
     if (!settings) {
-      return NextResponse.json({ error: 'Settings not found' }, { status: 404 });
+      return NextResponse.json({
+        "smtp_host": "",
+        "smtp_port": "",
+        "smtp_user": "",
+        "smtp_password": "",
+        "smtp_from": "",
+        "mailProvider": "",
+        "resend_api_key": "",
+        "resend_from": "",
+        "resend_reply_to": ""
+      });
     }
 
     return NextResponse.json(settings.mailConfig);

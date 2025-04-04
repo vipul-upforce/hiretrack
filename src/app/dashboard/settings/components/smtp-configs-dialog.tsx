@@ -7,7 +7,7 @@ import { ErrorMessage, Form, Formik } from "formik";
 import * as Yup from "yup";
 import { Eye, EyeOff } from "lucide-react";
 import { useGetSMTPConfigsQuery, useUpdateSMTPConfigsMutation } from "@/lib/features/settings/settingsApi";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTestConnection } from "@/hooks/use-test-connection";
 import {
   Tooltip,
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/tooltip";
 
 const mailProviders = [
+  { key: "", label: "Select Mail Providers" },
   { key: "smtp", label: "SMTP" },
   { key: "resend", label: "Resend" }
 ];
@@ -28,6 +29,9 @@ export default function SMTPConfigs({ onClose }: { onClose: () => void }) {
     const { testConnection, isConnectionSuccessful, isTesting } = useTestConnection();
   
     const { data, isLoading, refetch } = useGetSMTPConfigsQuery(undefined);
+    useEffect(()=>{
+      refetch()
+    },[])
     const [updateSMTPConfigs, { isLoading: isUpdating }] = useUpdateSMTPConfigsMutation();
   
     const initialValues = data ?? {
@@ -220,7 +224,7 @@ export default function SMTPConfigs({ onClose }: { onClose: () => void }) {
               </div>
             )}
 
-            <div className="flex justify-end space-x-2">
+            {values.mailProvider && (<div className="flex justify-end space-x-2">
               <Button
                 type="button"
                 variant="outline"
@@ -229,7 +233,7 @@ export default function SMTPConfigs({ onClose }: { onClose: () => void }) {
               >
                 {isTesting ? "Testing..." : "Test Connection"}
               </Button>
-            </div>
+            </div>)}
 
             <div className="w-full flex justify-end">
               <TooltipProvider>
