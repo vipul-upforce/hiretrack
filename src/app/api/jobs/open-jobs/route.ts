@@ -1,4 +1,3 @@
-import { auth } from "@/lib/auth";
 import connectToDatabase, { Job, Organization } from "@/lib/mongodb";
 import { NextResponse } from "next/server";
 
@@ -7,21 +6,41 @@ interface CustomField {
   private?: boolean;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     await connectToDatabase();
-    const session = await auth();
-    const organizationId = session?.user.organizationId;
-    if (!Job) {
+    // Extract orgname from the query parameters
+    const url = new URL(request.url);
+    const orgName = url.searchParams.get("orgname");
+
+    if (!orgName) {
       return NextResponse.json(
-        { error: "Job or Candidate not found" },
+        { error: "Organization name not provided" },
+        { status: 400 }
+      );
+    }
+
+    if (!Organization) {
+      return NextResponse.json(
+        { error: "Organization Model not Found" },
         { status: 404 }
       );
     }
 
+    // Find the organization ID based on the orgName
+    const organization = await Organization.findOne({ name: orgName });
+    const organizationId = organization?._id;
+
     if (!organizationId) {
       return NextResponse.json(
-        { error: "Organization ID not found" },
+        { error: "Organization not found" },
+        { status: 404 }
+      );
+    }
+
+    if (!Job) {
+      return NextResponse.json(
+        { error: "Job Model not Found" },
         { status: 404 }
       );
     }

@@ -22,7 +22,7 @@ import PasswordField from "@/components/ui/PasswordField";
 import TimePicker from "@/components/ui/time-picker";
 import DatePicker from "@/components/ui/datepicker";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
+// import { useToast } from "@/hooks/use-toast";
 interface FileData {
   base64: string;
   name: string;
@@ -76,7 +76,7 @@ export const RenderField = ({
   options,
   setFieldError,
 }: RenderFieldProps) => {
-  const { toast } = useToast();
+  // const { toast } = useToast();
   switch (type) {
     case "text":
       return (
@@ -327,27 +327,28 @@ export const RenderField = ({
                     };
                   })
                 );
-                const fileNames = base64Files.map(file => file.name);
-                const hasDuplicates = new Set(fileNames).size !== fileNames.length;
+                const fileNames = base64Files.map((file) => file.name);
+                const hasDuplicates =
+                  new Set(fileNames).size !== fileNames.length;
                 if (hasDuplicates) {
-                  toast({
-                    title:"Alert",
-                    description:`Duplicate file names detected! Rename files to save changes for Meta field "${label}".`,
-                    variant:"destructive",
-                    duration: 5000, 
-                  });
+                  // toast({
+                  //   title: "Alert",
+                  //   description: `Duplicate file names detected! Rename files to save changes for Meta field "${label}".`,
+                  //   variant: "destructive",
+                  //   duration: 5000,
+                  // });
                   return;
                 }
                 setFieldValue("customFields." + label, base64Files);
-              } catch (error) {
-                toast({
-                  title:
-                    "Error processing files" +
-                    (error instanceof Error ? error.message : "Unknown error"),
-                  description:
-                    "There was an error processing the selected files",
-                  variant: "destructive",
-                });
+              } catch {
+                // toast({
+                //   title:
+                //     "Error processing files" +
+                //     (error instanceof Error ? error.message : "Unknown error"),
+                //   description:
+                //     "There was an error processing the selected files",
+                //   variant: "destructive",
+                // });
               }
             }}
             existingFiles={

@@ -105,7 +105,7 @@ export default function Login() {
       // debugger
       if (response.user.role === "candidate") {
         router.replace(`/${response.user.organizationInfo?.name}/apply-jobs`);
-      } else if (response.user.role == "admin" || "hr") {
+      } else if (response.user.role === "admin" || "hr") {
         router.replace("/dashboard");
       }
     } catch (err: unknown) {

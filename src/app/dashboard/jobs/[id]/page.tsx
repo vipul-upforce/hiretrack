@@ -64,14 +64,17 @@ export default function JobProgressPage() {
     refetch,
   } = useFetchCandidatesQuery(id as string);
   const [updateCandidate] = useUpdateCandidateMutation();
-  const { data: lanes, isLoading: isLanesLoading } = useGetLanesQuery(user?.id || undefined, {
-    skip: !user?.id
-  });
+  const { data: lanes, isLoading: isLanesLoading } = useGetLanesQuery(
+    user?.id || undefined,
+    {
+      skip: !user?.id,
+    }
+  );
   const [updateLanes] = useUpdateLanesMutation();
   const [deleteLane] = useDeleteLaneMutation();
   // Add these new state variables
-  const [droppedFileData, setDroppedFileData] = useState<File|null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [droppedFileData, setDroppedFileData] = useState<File | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isFileOver, setIsFileOver] = useState(false);
 
   // Get user from cookies when component mounts
@@ -83,11 +86,11 @@ export default function JobProgressPage() {
     }
   }, []);
 
-  useEffect(()=>{
-    if(!isDialogOpen){
-      setDroppedFileData(null)
+  useEffect(() => {
+    if (!isDialogOpen) {
+      setDroppedFileData(null);
     }
-  },[isDialogOpen])
+  }, [isDialogOpen]);
 
   // Update columns when candidates data changes
   useEffect(() => {
@@ -145,19 +148,15 @@ export default function JobProgressPage() {
     const { destination, source, type, draggableId } = result;
 
     if (
-      type === "candidate" && 
-      (!destination ||
-      (destination.droppableId === source.droppableId))
-    ) {
-      return;
-    }
-    
-    if (
-      type === "lane" && (!destination)
+      type === "candidate" &&
+      (!destination || destination.droppableId === source.droppableId)
     ) {
       return;
     }
 
+    if (type === "lane" && !destination) {
+      return;
+    }
 
     setOpenRemarksFor(draggableId);
 
@@ -258,9 +257,9 @@ export default function JobProgressPage() {
   };
 
   const handleFileDrop = async (file: File) => {
-    setIsDialogOpen(true); 
-    if(file.type==="application/pdf"){
-      setDroppedFileData(file)
+    setIsDialogOpen(true);
+    if (file.type === "application/pdf") {
+      setDroppedFileData(file);
     }
   };
 
@@ -317,7 +316,12 @@ export default function JobProgressPage() {
           <CardTitle>Candidates for {job?.title}</CardTitle>
           <div className="flex space-x-2">
             <CreateLaneDialog onAddLane={handleAddLane} />
-            <CreateCandidateDialog jobId={id as string} isOpen={isDialogOpen} setIsOpen={setIsDialogOpen} resumeFile={droppedFileData} />
+            <CreateCandidateDialog
+              jobId={id as string}
+              isOpen={isDialogOpen}
+              setIsOpen={setIsDialogOpen}
+              resumeFile={droppedFileData}
+            />
           </div>
         </CardHeader>
       </Card>
@@ -371,14 +375,17 @@ export default function JobProgressPage() {
                           </div>
                         </CardHeader>
                         <CardContent className="h-[89%]">
-                        <Droppable droppableId={column.id} type="candidate">
+                          <Droppable droppableId={column.id} type="candidate">
                             {(provided: DroppableProvided) => (
                               <div
                                 {...provided.droppableProps}
                                 ref={provided.innerRef}
                                 className={`space-y-3 min-h-full rounded-lg relative`}
                                 onDragOver={(e) => {
-                                  if (e.dataTransfer.types.includes("Files") && column.id==="applied") {
+                                  if (
+                                    e.dataTransfer.types.includes("Files") &&
+                                    column.id === "applied"
+                                  ) {
                                     e.preventDefault();
                                     e.stopPropagation();
                                     setIsFileOver(true);
@@ -388,7 +395,7 @@ export default function JobProgressPage() {
                                 onDragLeave={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
-                                  setIsFileOver(false)
+                                  setIsFileOver(false);
                                   e.dataTransfer.dropEffect = "none";
                                 }}
                                 onDrop={(e) => {
@@ -397,12 +404,15 @@ export default function JobProgressPage() {
                                     e.stopPropagation();
                                     setIsFileOver(false);
 
-                                    const files = Array.from(e.dataTransfer.files);
-                                    if (files.length > 0) handleFileDrop(files[0]);
+                                    const files = Array.from(
+                                      e.dataTransfer.files
+                                    );
+                                    if (files.length > 0)
+                                      handleFileDrop(files[0]);
                                   }
                                 }}
                               >
-                                {isFileOver&& column.id==="applied" && (
+                                {isFileOver && column.id === "applied" && (
                                   <div className="absolute bg-gray-200/50 h-full w-full border border-dashed border-gray-500 rounded-lg pointer-events-none">
                                     <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black text-white p-2 rounded-md shadow-lg text-lg font-semibold pointer-events-none animate-fade-in">
                                       Drop file here!

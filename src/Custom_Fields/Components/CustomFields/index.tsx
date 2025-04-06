@@ -53,8 +53,12 @@ function CustomFields({ formName }: { formName: string }) {
 
   return (
     <div className="flex flex-col gap-2">
-      <hr className="pt-2" />
-      <div className="font-bold text-lg py-2">Meta Fields</div>
+      {role !== "candidate" && (
+        <>
+          <hr className="pt-2" />
+          <div className="font-bold text-lg py-2">Meta Fields</div>
+        </>
+      )}
       {formNameObject?.fields
         ?.filter((field) => allFields || (!allFields && !field.private))
         .map((field) => (

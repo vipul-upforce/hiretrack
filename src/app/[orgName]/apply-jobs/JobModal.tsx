@@ -1,7 +1,10 @@
 import { CreateCandidateDialog } from "@/app/dashboard/jobs/[id]/components/create-candidate-dialog";
+import { Button } from "@/components/ui/button";
 import CustomFieldsData from "@/Custom_Fields/Components/CustomFields/customFields-details";
+import useRoles from "@/hooks/useRoles";
 import { Dialog } from "@headlessui/react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 // Define a type for the job object
 interface Job {
@@ -19,11 +22,26 @@ interface JobModalProps {
   job: Job | null; // Allow job to be null
   isOpen: boolean;
   onClose: () => void;
+  orgName: string;
+  readOnly: boolean;
 }
 
-export default function JobModal({ job, isOpen, onClose }: JobModalProps) {
-  if (!job) return null;
+export default function JobModal({
+  job,
+  isOpen,
+  onClose,
+  orgName,
+  readOnly,
+}: JobModalProps) {
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
+  const roles = useRoles();
+  const router = useRouter();
+
+  if (!job) return null;
+
+  const handleSignupRedirect = () => {
+    router.push("/" + orgName + "/signup");
+  };
 
   return (
     <Dialog open={isOpen} onClose={onClose}>
@@ -61,19 +79,26 @@ export default function JobModal({ job, isOpen, onClose }: JobModalProps) {
             <CustomFieldsData customFields={job?.customFields || {}} />
           </div>
           <div className="mt-6 flex justify-end gap-3">
-            {/* <button
-              type="button"
-              className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-              onClick={() => {
-                // Handle apply logic here
-                // alert('Application submitted!');
-                onClose();
-              }}
-              >
-              Apply Now
-              </button> */}
-            <CreateCandidateDialog jobId={job._id as string} isOpen={isFormDialogOpen} setIsOpen={setIsFormDialogOpen} />
-            {/* </button> */}
+            {roles === "" ? (
+              <>
+                <Button onClick={handleSignupRedirect}>Signup To Apply</Button>
+              </>
+            ) : (
+              <>
+                {readOnly ? (
+                  <Button onClick={handleSignupRedirect} disabled>
+                    Applied
+                  </Button>
+                ) : (
+                  <CreateCandidateDialog
+                    jobId={job._id as string}
+                    isOpen={isFormDialogOpen}
+                    setIsOpen={setIsFormDialogOpen}
+                  />
+                )}
+              </>
+            )}
+
             <button
               type="button"
               className="inline-flex justify-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2"

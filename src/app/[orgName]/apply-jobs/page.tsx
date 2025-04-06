@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-// import JobModal from './JobModal';
 import JobModal from "./JobModal";
 import { useFetchOpenJobQuery } from "@/lib/features/job/jobApi";
 import { Button } from "@/components/ui/button";
@@ -14,26 +13,54 @@ import { useCustomFields } from "@/Custom_Fields/hooks/use-customFields";
 
 // Define the Job type here or import it if it's defined elsewhere
 interface Job {
+  _id: string;
   title: string;
   description: string;
   skills: string[];
   experience: number;
 }
 
-export default function ApplyJobs() {
-  const { data: jobs, isLoading, error } = useFetchOpenJobQuery();
+export default function ApplyJobs({
+  params,
+}: {
+  params: Promise<{ orgName: string }>;
+}) {
+  const [orgName, setOrgName] = useState<string>("");
+  const {
+    data: jobs,
+    isLoading,
+    error,
+  } = useFetchOpenJobQuery({ orgName: orgName }, { skip: orgName === "" });
   const [selectedJob, setSelectedJob] = useState<Job | null>(null); // Allow Job or null
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [appliedApplications, setAppliedApplications] = useState<string[]>([]);
   const { toast } = useToast();
   const router = useRouter();
   const { setUserLoggedIn } = useCustomFields();
 
   useEffect(() => {
-    const user = Cookies.get("user");
+    (async () => {
+      const resolvedParams = await params; // Resolve the promise
+      setOrgName(resolvedParams.orgName); // Set the orgName state
+    })();
+  }, [params]);
+
+  useEffect(() => {
+    let user = Cookies.get("user");
     if (user) {
       setUserLoggedIn(true);
+      user = JSON.parse(user);
+      if (user && user.role === "candidate") {
+        setAppliedApplications(user.appliedApplications);
+      }
     }
   }, []);
+
+  console.log(
+    appliedApplications,
+    selectedJob,
+    appliedApplications.includes(selectedJob?._id)
+  );
 
   if (isLoading)
     return <div className="flex justify-center p-8">Loading...</div>;
@@ -53,8 +80,6 @@ export default function ApplyJobs() {
     router.push("/auth/login");
   };
 
-  const cookie = Cookies.get("user") || "{}";
-  const orgName = JSON.parse(cookie).organizationInfo?.name || "";
   return (
     <div className="container mx-auto p-2">
       <div className="px-3 py-6 flex flex-row justify-between items-center">
@@ -109,6 +134,14 @@ export default function ApplyJobs() {
         job={selectedJob}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        orgName={orgName}
+        readOnly={
+          !!(
+            appliedApplications &&
+            selectedJob &&
+            appliedApplications.includes(selectedJob?._id)
+          )
+        }
       />
     </div>
   );

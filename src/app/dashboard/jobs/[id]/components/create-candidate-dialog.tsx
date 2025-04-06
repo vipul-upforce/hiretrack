@@ -14,7 +14,10 @@ import { Formik, Form } from "formik";
 import { candidateSchema } from "../schemas/candidate-schema";
 import { useState, useEffect } from "react";
 import { CandidateForm } from "./candidate-form";
-import { useCreateCandidateMutation, useUpdateCandidateHistoryMutation } from "@/lib/features/candidate/candidateApi";
+import {
+  useCreateCandidateMutation,
+  useUpdateCandidateHistoryMutation,
+} from "@/lib/features/candidate/candidateApi";
 import { v4 as uuidv4 } from "uuid";
 import useCustomForm, {
   CustomFieldValues,
@@ -29,7 +32,7 @@ import Cookies from "js-cookie";
 interface CreateCandidateDialogProps {
   jobId: string;
   isOpen: boolean;
-  setIsOpen: (isOpen:boolean)=>void;
+  setIsOpen: (isOpen: boolean) => void;
   resumeFile?: File | null;
 }
 
@@ -68,14 +71,13 @@ const handleFileParse = async (
 
           const parsedData = await parseResumeFromPdf(fileUrl);
           setParsedResume(parsedData);
-        } catch (error) {
-          console.error("Error parsing resume:", error);
+        } catch {
           setParsedResume(null);
         }
       }
     };
 
-    reader.onerror = () => console.error("Failed to read file");
+    reader.onerror = () => {};
 
     reader.readAsDataURL(file); // Converts to data URL directly
   }
@@ -83,16 +85,20 @@ const handleFileParse = async (
 
 // This component will update form values when parsedResumeData changes
 
-
 // Define return type of getInitialValues
 type CandidateFormValues = ReturnType<typeof getInitialValues>;
 
-export function CreateCandidateDialog({ jobId, isOpen, setIsOpen, resumeFile }: CreateCandidateDialogProps) {
+export function CreateCandidateDialog({
+  jobId,
+  isOpen,
+  setIsOpen,
+  resumeFile,
+}: CreateCandidateDialogProps) {
   // const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
   const [createCandidate] = useCreateCandidateMutation();
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
-  const [parsedResumeData, setParsedResume] = useState<Resume|null>(null);
+  const [parsedResumeData, setParsedResume] = useState<Resume | null>(null);
   const formName = "Candidate";
   const { validationSchema, initialValues: inits } = useCustomForm(formName);
   const [resetForm, setResetForm] = useState(false);
@@ -111,22 +117,21 @@ export function CreateCandidateDialog({ jobId, isOpen, setIsOpen, resumeFile }: 
     } else {
       // Reset everything when the dialog closes
       setParsedResume(null);
-      setResetForm(prev => !prev); 
+      setResetForm((prev) => !prev);
       resumeFile = null; // Clear the resume file
     }
   }, [isOpen, resumeFile]);
-  
-  
 
   const handleSubmit = async (values: CandidateFormValues) => {
-    const fileNames = values.attachments.map(file => file.name);
+    const fileNames = values.attachments.map((file) => file.name);
     const hasDuplicates = new Set(fileNames).size !== fileNames.length;
 
     if (hasDuplicates) {
       toast({
-        title:"Alert",
-        description:"Duplicate file names found! Please rename before submitting.",
-        variant:"destructive"
+        title: "Alert",
+        description:
+          "Duplicate file names found! Please rename before submitting.",
+        variant: "destructive",
       });
       return;
     }
@@ -155,11 +160,11 @@ export function CreateCandidateDialog({ jobId, isOpen, setIsOpen, resumeFile }: 
       const resumeBase64 = values.resume
         ? await convertFileToBase64(values.resume)
         : null;
-      
+
       const attachmentsBase64 = await Promise.all(
         values.attachments.map((file) => convertFileToBase64(file))
       );
-      
+
       const candidateData = {
         ...values,
         jobId: {
@@ -170,7 +175,9 @@ export function CreateCandidateDialog({ jobId, isOpen, setIsOpen, resumeFile }: 
         currentCTC: Number(parseFloat(String(values.currentCTC)).toFixed(2)),
         expectedCTC: Number(parseFloat(String(values.expectedCTC)).toFixed(2)),
         experience: Number(parseFloat(String(values.experience)).toFixed(2)),
-        noticePeriod: Number(parseFloat(String(values.noticePeriod)).toFixed(0)),
+        noticePeriod: Number(
+          parseFloat(String(values.noticePeriod)).toFixed(0)
+        ),
         // Include email from parsed resume data
         email: parsedResumeData?.profile?.email || values.email,
         // Only include assignment if both assignee and deadline are provided
@@ -199,41 +206,46 @@ export function CreateCandidateDialog({ jobId, isOpen, setIsOpen, resumeFile }: 
         remarks: [],
       };
 
-      
       const createdCandidate = await createCandidate(candidateData).unwrap();
-      
+
       if (createdCandidate?.assignment?.interviewerId) {
         const newHistoryEntry: ICandidateHistory = {
           dateTime: createdCandidate?.assignment?.deadline || "",
-          title: typeof createdCandidate?.assignment?.interviewerId === 'object' && createdCandidate?.assignment?.interviewerId?.name 
-            ? `Assigned to ${createdCandidate.assignment.interviewerId.name} : Assigned by ${user.name}` 
-            : "",
-          currentInterviewer: typeof createdCandidate?.assignment?.interviewerId === 'object' && createdCandidate?.assignment?.interviewerId?
-            Object(createdCandidate.assignment.interviewerId._id):null,
+          title:
+            typeof createdCandidate?.assignment?.interviewerId === "object" &&
+            createdCandidate?.assignment?.interviewerId?.name
+              ? `Assigned to ${createdCandidate.assignment.interviewerId.name} : Assigned by ${user.name}`
+              : "",
+          currentInterviewer:
+            typeof createdCandidate?.assignment?.interviewerId === "object" &&
+            createdCandidate?.assignment?.interviewerId
+              ? Object(createdCandidate.assignment.interviewerId._id)
+              : null,
           previousInterviewer: null,
           assignmentBy: user.id,
-  
+
           note: {
             description: "",
             date: "",
             rating: 0,
             userId: null,
           },
-          attachments: createdCandidate.attachments?.map(attachment => ({
-            id: attachment.id,
-            name: attachment.name,
-            url: attachment.url,
-            type: attachment.type,
-            size: attachment.size,
-          })) || []
-        }
+          attachments:
+            createdCandidate.attachments?.map((attachment) => ({
+              id: attachment.id,
+              name: attachment.name,
+              url: attachment.url,
+              type: attachment.type,
+              size: attachment.size,
+            })) || [],
+        };
         await updateCandidateHistory({
           candidateId: createdCandidate._id,
           jobId: candidateData.jobId._id,
-          newEntry: newHistoryEntry
+          newEntry: newHistoryEntry,
         }).unwrap();
       }
-      
+
       setIsOpen(false);
       toast({
         title: "Success",
@@ -241,11 +253,15 @@ export function CreateCandidateDialog({ jobId, isOpen, setIsOpen, resumeFile }: 
       });
     } catch (error) {
       // console.log(error);
-    
+
       if (typeof error === "object" && error !== null && "data" in error) {
         const errorData = (error as { data?: { error?: string } }).data;
-    
-        if (typeof errorData === "object" && errorData !== null && "error" in errorData) {
+
+        if (
+          typeof errorData === "object" &&
+          errorData !== null &&
+          "error" in errorData
+        ) {
           toast({
             title: "Error",
             description: errorData.error || "Failed to update job",
@@ -261,7 +277,6 @@ export function CreateCandidateDialog({ jobId, isOpen, setIsOpen, resumeFile }: 
         variant: "destructive",
       });
     }
-    
   };
 
   const convertFileToBase64 = (file: File): Promise<string> => {
@@ -276,24 +291,29 @@ export function CreateCandidateDialog({ jobId, isOpen, setIsOpen, resumeFile }: 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        {
-          user.role==="candidate"?
-            <button
-              type="button"
-              className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-            >
-              Apply Now
-            </button>
-            :<Button>
-              <Plus className="h- w-4 mr-2" />
-              Add Candidate
-            </Button>
-        }
-        
+        {user.role === "candidate" ? (
+          <button
+            type="button"
+            className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+          >
+            Apply Now
+          </button>
+        ) : (
+          <Button>
+            <Plus className="h- w-4 mr-2" />
+            Add Candidate
+          </Button>
+        )}
       </DialogTrigger>
-      <DialogContent className={`sm:max-w-[80vw] xl:max-w-[65vw] h-[90vh] p-0 overflow-hidden flex flex-col justify-center`}>
+      <DialogContent
+        className={`sm:max-w-[80vw] xl:max-w-[65vw] h-[90vh] p-0 overflow-hidden flex flex-col justify-center`}
+      >
         <DialogHeader className="px-6 py-2">
-          <DialogTitle>{ user.role==="candidate"?"Add New Application":"Add New Candidate"}</DialogTitle>
+          <DialogTitle>
+            {user.role === "candidate"
+              ? "Add New Application"
+              : "Add New Candidate"}
+          </DialogTitle>
         </DialogHeader>
         <Formik
           key={resetForm.toString()}
@@ -309,15 +329,15 @@ export function CreateCandidateDialog({ jobId, isOpen, setIsOpen, resumeFile }: 
             <Form className="flex flex-col h-[calc(90vh-80px)] overflow-hidden">
               {/* This component will update form values when parsedResumeData changes */}
               <FormUpdater parsedResumeData={parsedResumeData} />
-              
-              <CandidateForm 
+
+              <CandidateForm
                 onFileUpload={async (file: File) => {
                   // console.log("Resume file uploaded: ", file);
-                  setFieldValue('resume', file);
+                  setFieldValue("resume", file);
                   await handleFileParse(file, setParsedResume);
                 }}
               />
-                {/* <CustomFields formName={formName} /> */}
+              {/* <CustomFields formName={formName} /> */}
               <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4">
                 <Button
                   type="button"
@@ -334,7 +354,11 @@ export function CreateCandidateDialog({ jobId, isOpen, setIsOpen, resumeFile }: 
                     Object.keys(touched).length === 0
                   }
                 >
-                  {isSubmitting ? "Saving..." : user.role==="candidate"?"Apply":"Add Candidate"}
+                  {isSubmitting
+                    ? "Saving..."
+                    : user.role === "candidate"
+                      ? "Apply"
+                      : "Add Candidate"}
                 </Button>
               </div>
             </Form>
