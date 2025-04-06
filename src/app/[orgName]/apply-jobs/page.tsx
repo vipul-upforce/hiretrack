@@ -20,6 +20,12 @@ interface Job {
   experience: number;
 }
 
+interface User {
+  role: string;
+  appliedApplications: string[];
+  // Add other properties as needed
+}
+
 export default function ApplyJobs({
   params,
 }: {
@@ -46,21 +52,15 @@ export default function ApplyJobs({
   }, [params]);
 
   useEffect(() => {
-    let user = Cookies.get("user");
+    const user = Cookies.get("user");
     if (user) {
       setUserLoggedIn(true);
-      user = JSON.parse(user);
-      if (user && user.role === "candidate") {
-        setAppliedApplications(user.appliedApplications);
+      const parsedUser = JSON.parse(user) as User;
+      if (parsedUser && parsedUser.role === "candidate") {
+        setAppliedApplications(parsedUser.appliedApplications);
       }
     }
   }, []);
-
-  console.log(
-    appliedApplications,
-    selectedJob,
-    appliedApplications.includes(selectedJob?._id)
-  );
 
   if (isLoading)
     return <div className="flex justify-center p-8">Loading...</div>;
