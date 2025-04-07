@@ -34,6 +34,12 @@ export const settingsApi = createApi({
         method: "GET",
       }),
     }),
+    getGeminiConfigs: builder.query({
+      query: () => ({
+        url: `/settings/gemini`,
+        method: "GET",
+      }),
+    }),
     getFSConfigs: builder.query({
       query: () => ({
         url: `/settings/fs`,
@@ -48,7 +54,18 @@ export const settingsApi = createApi({
       }),
       invalidatesTags: ["Settings"],
     }),
-    testConnection: builder.mutation<TestConnectionResponse, TestConnectionRequest>({
+    updateGemini: builder.mutation({
+      query: (genimiConfig) => ({
+        url: "/settings/gemini",
+        method: "PUT",
+        body: genimiConfig,
+      }),
+      invalidatesTags: ["Settings"],
+    }),
+    testConnection: builder.mutation<
+      TestConnectionResponse,
+      TestConnectionRequest
+    >({
       query: (body) => ({
         url: "/test-connection",
         method: "POST",
@@ -61,7 +78,7 @@ export const settingsApi = createApi({
           url: "/settings/fs",
           method: "PUT",
           body: fsConfig,
-        }
+        };
       },
       invalidatesTags: ["Settings"],
     }),
@@ -77,8 +94,8 @@ export const settingsApi = createApi({
           url: "/settings/portal",
           method: "PUT",
           body: portalConfigs,
-        }
-      }
+        };
+      },
     }),
     createResetToken: builder.mutation({
       query: ({ email, selectedOrgId }) => ({
@@ -86,7 +103,7 @@ export const settingsApi = createApi({
         method: "POST",
         body: { email, selectedOrgId },
       }),
-    })
+    }),
   }),
 });
 
@@ -99,6 +116,8 @@ export const {
   useGetPortalConfigsQuery,
   useUpdatePortalConfigsMutation,
   useTestConnectionMutation,
+  useGetGeminiConfigsQuery,
+  useUpdateGeminiMutation,
 } = settingsApi;
 
 // Export types for use in components

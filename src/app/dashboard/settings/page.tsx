@@ -22,7 +22,12 @@ export default function Settings() {
       title: "Portal",
       key: "portal",
       description: "Update the Portal configurations of your organization.",
-    }
+    },
+    {
+      title: "Gemini",
+      key: "gemini",
+      description: "Update the Gemini configurations of your organization.",
+    },
   ];
 
   return (
@@ -49,7 +54,7 @@ export default function Settings() {
           )}
         </div>
       ))}
-      <AddCustomFieldButton/>
+      <AddCustomFieldButton />
     </div>
   );
 }

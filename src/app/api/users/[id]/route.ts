@@ -63,11 +63,11 @@ export async function PUT(
     const { id } = await params;
     const userData = await req.json();
 
-    const user = await User.findByIdAndUpdate(id, userData, { new: true });
-    if (user?.isDeleted) {
+    let user = await User.findById(id);
+    if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
-
+    user = await User.findByIdAndUpdate(id, userData);
     return NextResponse.json({ message: "User updated successfully" });
   } catch (error: unknown) {
     const errorMessage =

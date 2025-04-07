@@ -31,7 +31,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ fileStorage: settings.fileStorage });
   } catch (error) {
     return NextResponse.json(
-      { error: "Internal server error" },
+      {
+        error: error instanceof Error ? error.message : "Internal server error",
+      },
       { status: 500 }
     );
   }
@@ -98,7 +100,9 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ message: "Settings updated successfully" });
   } catch (error) {
     return NextResponse.json(
-      { error: "Internal server error" },
+      {
+        error: error instanceof Error ? error.message : "Internal server error",
+      },
       { status: 500 }
     );
   }

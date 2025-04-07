@@ -7,6 +7,7 @@ import {
 } from "./features/org/orgApi";
 import { IJob } from "./models/job";
 import { toast } from "@/hooks/use-toast";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -53,4 +54,33 @@ export const sentAssignmentMail = async (
       });
     }
   }
+};
+
+const Get_Rersume_Score_Prompt = "give me resume score for this prompts";
+
+export const getResumeScore = async (resume: string, apiKey: string) => {
+  const genAI = new GoogleGenerativeAI(apiKey || "");
+  const base64Pdf = pdfBuffer.toString("base64");
+
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+  const prompt = Get_Rersume_Score_Prompt;
+
+  const parts = [
+    { text: prompt },
+    {
+      inlineData: {
+        mimeType: "application/pdf",
+        data: base64Pdf,
+      },
+    },
+  ];
+
+  const result = await model.generateContent({
+    contents: [{ role: "user", parts }],
+  });
+  const response = await result.response;
+  const text = response.text();
+
+  return text;
 };
