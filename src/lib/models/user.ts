@@ -1,16 +1,21 @@
-import  { Schema } from 'mongoose';
+import { Schema, ObjectId } from 'mongoose';
 
-export interface OrgInfo{
+export interface OrgInfo {
   customFields?: any;
-  _id:Schema.Types.ObjectId|string;
-  name:string;
-  adminId:Schema.Types.ObjectId|string;
-  lanes:string[];
+  _id: Schema.Types.ObjectId | string;
+  name: string;
+  adminId: Schema.Types.ObjectId | string;
+  lanes: string[];
+}
+
+export interface Organization {
+  _id: ObjectId | string;
+  name?: string;
 }
 
 export interface IUser {
   _id: string;
-  organizationId: Schema.Types.ObjectId;
+  organizationId: Organization | string;
   organizationInfo?: OrgInfo;
   name: string;
   email: string;
@@ -36,7 +41,7 @@ export const userSchema = new Schema<IUser>({
   },
   role: {
     type: String,
-    enum: ['hr', 'interviewer','admin'],
+    enum: ['hr', 'interviewer', 'admin'],
     required: true,
     default: 'hr'
   },
@@ -44,9 +49,9 @@ export const userSchema = new Schema<IUser>({
     type: String,
     required: true,
   },
-  organizationId: { 
-    type: Schema.Types.ObjectId, 
-    ref:'Organization',
+  organizationId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Organization',
     required: false
   },
   resetToken: {
@@ -57,7 +62,7 @@ export const userSchema = new Schema<IUser>({
     type: Date,
     required: false
   },
-  isDeleted:{
+  isDeleted: {
     type: Boolean,
     required: false
   }

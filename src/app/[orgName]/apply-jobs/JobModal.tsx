@@ -5,6 +5,7 @@ import useRoles from "@/hooks/useRoles";
 import { Dialog } from "@headlessui/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import ExpandableDescription from "@/app/dashboard/jobs/[id]/components/expand-collapse-desc";
 
 // Define a type for the job object
 interface Job {
@@ -49,16 +50,22 @@ export default function JobModal({
         className="fixed inset-0 bg-black bg-opacity-25"
         aria-hidden="true"
       />
-      <div className="fixed inset-0 flex items-center justify-center p-4">
-        <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+      <div className="fixed inset-0 flex items-center justify-center p-4 h-[100vh]">
+        <Dialog.Panel className="w-[50vw] transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all max-h-[80vh] overflow-y-auto ">
           <Dialog.Title
             as="h3"
-            className="text-lg font-medium leading-6 text-gray-900"
+            className="text-lg font-medium leading-6 text-gray-900 top-0"
           >
             {job.title}
           </Dialog.Title>
-          <div className="mt-2">
-            <p className="text-sm text-gray-500">{job.description}</p>
+          <div className="mt-2 ">
+            {/* <p className="text-sm text-gray-500">{job.description}</p> */}
+            <ExpandableDescription
+              description={
+                job.description ||
+                "No description Found"
+              }
+            />
             <div className="mt-4">
               <h4 className="font-medium">Required Skills:</h4>
               <div className="flex flex-wrap gap-2 mt-2">

@@ -3,7 +3,7 @@ import { OrgInfo } from "./user";
 
 export interface IUCandidateAccount {
   _id: string;
-  organizationId: Schema.Types.ObjectId;
+  organizationId: Schema.Types.ObjectId | string;
   organizationInfo?: OrgInfo;
   role: "candidate";
   name: string;

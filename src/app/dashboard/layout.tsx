@@ -244,11 +244,11 @@ export default function DashboardLayout({
       {/* Settings and Logout Buttons */}
       <div className="px-3 pb-4 mt-auto space-y-2">
 
-        <div className=" mt-auto space-y-2">
+        <div className="mt-auto space-y-2">
           <div
             className={cn(
-              "flex items-center gap-3  bg-gray-1000 rounded-lg p-2 transition-all border border-solid border-gray-200",
-              isCollapsed ? "justify-center flex flex-col items-center justify center" : "justify-start",
+              "flex items-center gap-3 bg-gray-1000 rounded-lg p-2 transition-all border border-solid border-gray-200",
+              isCollapsed ? "flex-col justify-center" : "justify-start"
             )}
           >
             {shouldShowPortalData && portalConfigData?.portalLogo?.url && (
@@ -256,7 +256,7 @@ export default function DashboardLayout({
                 <img
                   src={portalConfigData.portalLogo.url || "/placeholder.svg"}
                   alt={portalConfigData.portalName || "Portal Logo"}
-                  className={`h-8 w-8 object-cover rounded-full ${isCollapsed ? "" : "ring-2 ring-gray-200"}`}
+                  className={`object-cover h-8 w-8 rounded-full ${isCollapsed ? "aspect-ratio-square h-6 w-6" : "ring-2 ring-gray-200"}`}
                 />
               </div>
             )}
@@ -271,7 +271,7 @@ export default function DashboardLayout({
             <Button
               variant="ghost"
               size="icon"
-              className={` flex-shrink-0 h-8 w-8 rounded-full ${isCollapsed ? "ml-0" : "ml-auto"}`}
+              className={`h-8 w-8 rounded-full ${isCollapsed ? "ml-0" : "ml-auto"}`}
               onClick={generate_share_org}
               title="Copy Portal URL"
             >
@@ -280,6 +280,7 @@ export default function DashboardLayout({
             </Button>
           </div>
         </div>
+
         <Button
           variant="ghost"
           className={cn(

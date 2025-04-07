@@ -43,7 +43,6 @@ export async function POST(req: Request) {
           resetToken: resetTokenHash,
           resetTokenExpiry: { $gt: new Date() },
         });
-        console.log("Checking candidate collection:", user ? "Found" : "Not found");
 
         if (user) {
           isCandidate = true;
