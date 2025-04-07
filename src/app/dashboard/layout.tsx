@@ -244,50 +244,40 @@ export default function DashboardLayout({
       {/* Settings and Logout Buttons */}
       <div className="px-3 pb-4 mt-auto space-y-2">
 
-        <div
-          className={cn(
-            "flex flex-row justify-center items-center border border-solid border-gray-200 rounded-xl bg-gray-100",
-            portalConfigData && portalConfigData.portalLogo?.url
-              ? "px-6"
-              : "pl-0"
-          )}
-        >
-          {shouldShowPortalData &&
-            portalConfigData &&
-            portalConfigData.portalLogo?.url && (
-              <div className={"flex-shrink-0"}>
+        <div className=" mt-auto space-y-2">
+          <div
+            className={cn(
+              "flex items-center gap-3 border border-gray-200 rounded-xl bg-gray-50 p-2 transition-all",
+              isCollapsed ? "justify-center" : "justify-start",
+            )}
+          >
+            {shouldShowPortalData && portalConfigData?.portalLogo?.url && (
+              <div className="flex-shrink-0">
                 <img
-                  src={portalConfigData.portalLogo.url}
+                  src={portalConfigData.portalLogo.url || "/placeholder.svg"}
                   alt={portalConfigData.portalName || "Portal Logo"}
-                  className="h-8 w-8 object-cover rounded-full outline outline-gray-400 outline-[2px] outline-solid"
+                  className="h-8 w-8 object-cover rounded-full ring-2 ring-gray-200"
                 />
               </div>
             )}
-          <div
-            className={cn(
-              "w-full flex flex-col justify-left items-left rounded-lg px-3 py-2 transition-all duration-300 break-words",
-              isCollapsed ? "hidden" : "opacity-100"
+
+            {!isCollapsed && (
+              <div className="flex flex-col min-w-0 flex-1">
+                <p className="text-sm font-semibold truncate text-gray-900">{userData?.name}</p>
+                <p className="text-xs text-gray-500 truncate">{userData?.email}</p>
+              </div>
             )}
-          >
-            <p className="text-lg p-0 font-bold flex flex-row items-center justify-between">
-              {userData?.name}
-              <Button
-                variant="ghost"
-                className={cn(
-                  "w-full flex items-center gap-3 rounded-lg px-3 ml-6 py-2 text-sm transition-all hover:text-gray-600 hover:bg-gray-50",
-                  isCollapsed ? "justify-center" : "justify-start"
-                )}
-                onClick={generate_share_org}
-              >
-                <Link2Icon className="h-5 w-5" />
-                {/* <span className={cn("", isCollapsed && "hidden")}>
-                  Copy Portal URL
-                </span> */}
-              </Button>
-            </p>
-            <p className="text-sm font-thin p-0 text-gray-600">
-              {userData?.email}
-            </p>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="ml-auto flex-shrink-0 h-8 w-8 rounded-full"
+              onClick={generate_share_org}
+              title="Copy Portal URL"
+            >
+              <Link2Icon className="h-4 w-4" />
+              <span className="sr-only">Copy Portal URL</span>
+            </Button>
           </div>
         </div>
         <Button
