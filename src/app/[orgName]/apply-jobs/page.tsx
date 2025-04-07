@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { useCustomFields } from "@/Custom_Fields/hooks/use-customFields";
 import { useFetchAppliedApplicationQuery } from "@/lib/features/candidate/candidateApi";
+import Image from "next/image";
 
 // Define the Job type here or import it if it's defined elsewhere
 interface Job {
@@ -44,7 +45,7 @@ export default function ApplyJobs({
   const { data } = useFetchAppliedApplicationQuery({});
   const { toast } = useToast();
   const router = useRouter();
-  const { setUserLoggedIn } = useCustomFields();
+  const { setUserLoggedIn, userLoggedIn } = useCustomFields();
 
   useEffect(() => {
     (async () => {
@@ -90,7 +91,9 @@ export default function ApplyJobs({
             Open Positions for {orgName}
           </h1>
         </div>
-        <Button
+
+
+        {userLoggedIn && <Button
           variant="ghost"
           className={cn(
             "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all text-red-500 hover:text-red-600 hover:bg-red-50",
@@ -100,11 +103,11 @@ export default function ApplyJobs({
         >
           <LogOut className="h-5 w-5" />
           <span>Logout</span>
-        </Button>
+        </Button>}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {jobs?.map((job, index) => (
+        {jobs && jobs.length > 0 ? jobs.map((job, index) => (
           <div
             key={index}
             className="bg-white rounded-lg border-2 inset-shadow-sm p-6 cursor-pointer hover:shadow-lg transition-shadow"
@@ -129,7 +132,16 @@ export default function ApplyJobs({
               Experience: {job.experience} years
             </div>
           </div>
-        ))}
+        ))
+          : <div className="px-3 font-bold text-gray-500 w-[100vw] flex flex-col items-center justify-center">
+            <Image
+              src="/notfound.jpg"
+              alt="No data illustration"
+              width={600}
+              height={600}
+            />
+            No Jobs Found
+          </div>}
       </div>
 
       <JobModal

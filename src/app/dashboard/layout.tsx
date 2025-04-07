@@ -248,7 +248,7 @@ export default function DashboardLayout({
           <div
             className={cn(
               "flex items-center gap-3 border border-gray-200 rounded-xl bg-gray-50 p-2 transition-all",
-              isCollapsed ? "justify-center" : "justify-start",
+              isCollapsed ? "justify-center flex flex-col items-center justify center" : "justify-start",
             )}
           >
             {shouldShowPortalData && portalConfigData?.portalLogo?.url && (
@@ -271,7 +271,7 @@ export default function DashboardLayout({
             <Button
               variant="ghost"
               size="icon"
-              className="ml-auto flex-shrink-0 h-8 w-8 rounded-full"
+              className={` flex-shrink-0 h-8 w-8 rounded-full ${isCollapsed ? "ml-0" : "ml-auto"}`}
               onClick={generate_share_org}
               title="Copy Portal URL"
             >
