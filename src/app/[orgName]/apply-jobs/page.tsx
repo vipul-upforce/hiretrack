@@ -10,6 +10,7 @@ import Cookies from "js-cookie";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { useCustomFields } from "@/Custom_Fields/hooks/use-customFields";
+import { useFetchAppliedApplicationQuery } from "@/lib/features/candidate/candidateApi";
 
 // Define the Job type here or import it if it's defined elsewhere
 interface Job {
@@ -40,6 +41,7 @@ export default function ApplyJobs({
   const [selectedJob, setSelectedJob] = useState<Job | null>(null); // Allow Job or null
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [appliedApplications, setAppliedApplications] = useState<string[]>([]);
+  const { data } = useFetchAppliedApplicationQuery({});
   const { toast } = useToast();
   const router = useRouter();
   const { setUserLoggedIn } = useCustomFields();
@@ -53,14 +55,14 @@ export default function ApplyJobs({
 
   useEffect(() => {
     const user = Cookies.get("user");
-    if (user) {
+    if (user && data) {
       setUserLoggedIn(true);
       const parsedUser = JSON.parse(user) as User;
       if (parsedUser && parsedUser.role === "candidate") {
-        setAppliedApplications(parsedUser.appliedApplications);
+        setAppliedApplications(data.appliedApplications);
       }
     }
-  }, []);
+  }, [data]);
 
   if (isLoading)
     return <div className="flex justify-center p-8">Loading...</div>;

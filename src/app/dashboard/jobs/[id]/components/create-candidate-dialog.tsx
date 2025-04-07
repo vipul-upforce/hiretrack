@@ -16,6 +16,7 @@ import { useState, useEffect } from "react";
 import { CandidateForm } from "./candidate-form";
 import {
   useCreateCandidateMutation,
+  useUpdateAppliedApplicationMutation,
   useUpdateCandidateHistoryMutation,
 } from "@/lib/features/candidate/candidateApi";
 import { v4 as uuidv4 } from "uuid";
@@ -98,6 +99,7 @@ export function CreateCandidateDialog({
   const { toast } = useToast();
   const [createCandidate] = useCreateCandidateMutation();
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
+  const [updateAppliedApplication] = useUpdateAppliedApplicationMutation();
   const [parsedResumeData, setParsedResume] = useState<Resume | null>(null);
   const formName = "Candidate";
   const { validationSchema, initialValues: inits } = useCustomForm(formName);
@@ -207,6 +209,16 @@ export function CreateCandidateDialog({
       };
 
       const createdCandidate = await createCandidate(candidateData).unwrap();
+      if (user?.role === "candidate") {
+        try {
+          await updateAppliedApplication({ id: jobId });
+        } catch (error: unknown) {
+          toast({
+            title: "Failed",
+            description: `${error instanceof Error ? error.message : "Unknown Error Occured"}`,
+          });
+        }
+      }
 
       if (createdCandidate?.assignment?.interviewerId) {
         const newHistoryEntry: ICandidateHistory = {
@@ -311,7 +323,7 @@ export function CreateCandidateDialog({
         <DialogHeader className="px-6 py-2">
           <DialogTitle>
             {user.role === "candidate"
-              ? "Add New Application"
+              ? "Add Application"
               : "Add New Candidate"}
           </DialogTitle>
         </DialogHeader>
