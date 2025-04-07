@@ -111,7 +111,8 @@ export default function DashboardLayout({
     router.push("/auth/login");
   };
 
-  const generate_share_org = () => {
+  const generate_share_org = (e: React.FormEvent) => {
+    e.preventDefault()
     const url = `${window.location.origin}/${userData?.organizationInfo?.name}/apply-jobs`;
     navigator.clipboard
       .writeText(url)
@@ -242,11 +243,12 @@ export default function DashboardLayout({
       </div>
       {/* Settings and Logout Buttons */}
       <div className="px-3 pb-4 mt-auto space-y-2">
+
         <div
           className={cn(
-            "flex flex-row justify-center items-center",
+            "flex flex-row justify-center items-center border border-solid border-gray-200 rounded-xl bg-gray-100",
             portalConfigData && portalConfigData.portalLogo?.url
-              ? "px-4"
+              ? "px-6"
               : "pl-0"
           )}
         >
@@ -263,11 +265,26 @@ export default function DashboardLayout({
             )}
           <div
             className={cn(
-              "w-full flex flex-col justify-left items-left rounded-lg px-3 pt-2 transition-all duration-300 break-words",
+              "w-full flex flex-col justify-left items-left rounded-lg px-3 py-2 transition-all duration-300 break-words",
               isCollapsed ? "hidden" : "opacity-100"
             )}
           >
-            <p className="text-lg p-0 font-bold">{userData?.name}</p>
+            <p className="text-lg p-0 font-bold flex flex-row items-center justify-between">
+              {userData?.name}
+              <Button
+                variant="ghost"
+                className={cn(
+                  "w-full flex items-center gap-3 rounded-lg px-3 ml-6 py-2 text-sm transition-all hover:text-gray-600 hover:bg-gray-50",
+                  isCollapsed ? "justify-center" : "justify-start"
+                )}
+                onClick={generate_share_org}
+              >
+                <Link2Icon className="h-5 w-5" />
+                {/* <span className={cn("", isCollapsed && "hidden")}>
+                  Copy Portal URL
+                </span> */}
+              </Button>
+            </p>
             <p className="text-sm font-thin p-0 text-gray-600">
               {userData?.email}
             </p>
@@ -276,20 +293,7 @@ export default function DashboardLayout({
         <Button
           variant="ghost"
           className={cn(
-            "w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:text-gray-600 hover:bg-gray-50",
-            isCollapsed ? "justify-center" : "justify-start"
-          )}
-          onClick={generate_share_org}
-        >
-          <Link2Icon className="h-5 w-5" />
-          <span className={cn("", isCollapsed && "hidden")}>
-            Share Organization
-          </span>
-        </Button>
-        <Button
-          variant="ghost"
-          className={cn(
-            "w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all text-red-500 hover:text-red-600 hover:bg-red-50",
+            "w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:text-red-500 bg-red-100 hover:bg-red-200 text-red-600",
             isCollapsed ? "justify-center" : "justify-start"
           )}
           onClick={handleLogout}
