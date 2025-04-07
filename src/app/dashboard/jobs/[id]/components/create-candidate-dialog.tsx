@@ -20,15 +20,35 @@ import {
   useUpdateCandidateHistoryMutation,
 } from "@/lib/features/candidate/candidateApi";
 import { v4 as uuidv4 } from "uuid";
-import useCustomForm, {
-  CustomFieldValues,
-} from "@/Custom_Fields/hooks/useCustomForm";
-// import CustomFields from "@/Custom_Fields/Components/CustomFields";
+import useCustomForm, { CustomFieldValues } from "@/Custom_Fields/hooks/useCustomForm";
 import { ICandidateHistory } from "@/lib/models/history";
 import { Resume } from "@/lib/redux/types";
 import { parseResumeFromPdf } from "@/lib/parse-resume-from-pdf";
 import FormUpdater from "./FormUpdater";
 import Cookies from "js-cookie";
+
+// New function to call the evaluate API
+async function evaluateCandidate(candidateId: string) {
+  try {
+    const response = await fetch(`/api/candidates/${candidateId}/evaluate`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ candidateId }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to evaluate candidate");
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error("Evaluation error:", error);
+    throw error;
+  }
+}
 
 interface CreateCandidateDialogProps {
   jobId: string;
@@ -45,7 +65,6 @@ const getInitialValues = (customFields: CustomFieldValues) => ({
   expectedCTC: 0,
   currentCTC: 0,
   noticePeriod: 0,
-  // currentLocation: "",
   resume: null as File | null,
   remarks: "",
   attachments: [] as File[],
@@ -61,15 +80,11 @@ const handleFileParse = async (
 ) => {
   if (file && file.type === "application/pdf") {
     const reader = new FileReader();
-
     reader.onload = async () => {
       const result = reader.result;
-
       if (result && typeof result === "string") {
         try {
-          // Use the full data URL, not just the Base64 content
-          const fileUrl = result; // Data URL format (e.g., data:application/pdf;base64,...)
-
+          const fileUrl = result;
           const parsedData = await parseResumeFromPdf(fileUrl);
           setParsedResume(parsedData);
         } catch {
@@ -77,16 +92,11 @@ const handleFileParse = async (
         }
       }
     };
-
-    reader.onerror = () => {};
-
-    reader.readAsDataURL(file); // Converts to data URL directly
+    reader.onerror = () => { };
+    reader.readAsDataURL(file);
   }
 };
 
-// This component will update form values when parsedResumeData changes
-
-// Define return type of getInitialValues
 type CandidateFormValues = ReturnType<typeof getInitialValues>;
 
 export function CreateCandidateDialog({
@@ -95,7 +105,6 @@ export function CreateCandidateDialog({
   setIsOpen,
   resumeFile,
 }: CreateCandidateDialogProps) {
-  // const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
   const [createCandidate] = useCreateCandidateMutation();
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
@@ -104,23 +113,19 @@ export function CreateCandidateDialog({
   const formName = "Candidate";
   const { validationSchema, initialValues: inits } = useCustomForm(formName);
   const [resetForm, setResetForm] = useState(false);
-  // const [currentUser, setCurrentUser] = useState<IUser|null>(null);
 
   const userCookie = Cookies.get("user") || "{}";
   const user = JSON.parse(userCookie);
 
   useEffect(() => {
     if (isOpen) {
-      // Set the resume file when the dialog opens
       if (resumeFile) {
-        setParsedResume(null); // Reset parsed data
+        setParsedResume(null);
         handleFileParse(resumeFile, setParsedResume);
       }
     } else {
-      // Reset everything when the dialog closes
       setParsedResume(null);
       setResetForm((prev) => !prev);
-      resumeFile = null; // Clear the resume file
     }
   }, [isOpen, resumeFile]);
 
@@ -131,21 +136,17 @@ export function CreateCandidateDialog({
     if (hasDuplicates) {
       toast({
         title: "Alert",
-        description:
-          "Duplicate file names found! Please rename before submitting.",
+        description: "Duplicate file names found! Please rename before submitting.",
         variant: "destructive",
       });
       return;
     }
+
     try {
-      // Check for fields that contain only spaces
       const hasOnlySpaces = Object.entries(values).some((value) => {
-        // Check string fields only
         if (typeof value[1] === "string") {
-          // If the field is not empty but contains only spaces
           return value[1].length > 0 && value[1].trim() === "";
         }
-
         return false;
       });
 
@@ -158,7 +159,6 @@ export function CreateCandidateDialog({
         return;
       }
 
-      // Convert files to base64
       const resumeBase64 = values.resume
         ? await convertFileToBase64(values.resume)
         : null;
@@ -177,26 +177,22 @@ export function CreateCandidateDialog({
         currentCTC: Number(parseFloat(String(values.currentCTC)).toFixed(2)),
         expectedCTC: Number(parseFloat(String(values.expectedCTC)).toFixed(2)),
         experience: Number(parseFloat(String(values.experience)).toFixed(2)),
-        noticePeriod: Number(
-          parseFloat(String(values.noticePeriod)).toFixed(0)
-        ),
-        // Include email from parsed resume data
+        noticePeriod: Number(parseFloat(String(values.noticePeriod)).toFixed(0)),
         email: parsedResumeData?.profile?.email || values.email,
-        // Only include assignment if both assignee and deadline are provided
         ...(values.assignee && values.deadline
           ? {
-              assignee: values.assignee === "-1" ? "" : values.assignee,
-              deadline: values.deadline,
-            }
+            assignee: values.assignee === "-1" ? "" : values.assignee,
+            deadline: values.deadline,
+          }
           : {}),
         resume: resumeBase64
           ? {
-              id: uuidv4(),
-              name: values.resume?.name || "",
-              url: resumeBase64,
-              type: "pdf",
-              size: values.resume?.size || 0,
-            }
+            id: uuidv4(),
+            name: values.resume?.name || "",
+            url: resumeBase64, // Using base64 as URL for now; adjust if backend changes
+            type: "pdf",
+            size: values.resume?.size || 0,
+          }
           : undefined,
         attachments: attachmentsBase64.map((base64, index) => ({
           id: uuidv4(),
@@ -208,14 +204,33 @@ export function CreateCandidateDialog({
         remarks: [],
       };
 
+      // Step 1: Create the candidate
       const createdCandidate = await createCandidate(candidateData).unwrap();
+      const candidateId = createdCandidate._id;
+
+      // Step 2: Trigger the evaluation API call
+      try {
+        const evaluationResult = await evaluateCandidate(candidateId);
+        toast({
+          title: "Evaluation Complete",
+          description: "Candidate resume evaluated successfully",
+        });
+      } catch (evalError) {
+        toast({
+          title: "Evaluation Failed",
+          description: "Could not evaluate candidate resume",
+          variant: "destructive",
+        });
+      }
+
+      // Step 3: Handle additional updates (if applicable)
       if (user?.role === "candidate") {
         try {
           await updateAppliedApplication({ id: jobId });
         } catch (error: unknown) {
           toast({
             title: "Failed",
-            description: `${error instanceof Error ? error.message : "Unknown Error Occured"}`,
+            description: `${error instanceof Error ? error.message : "Unknown Error Occurred"}`,
           });
         }
       }
@@ -225,17 +240,16 @@ export function CreateCandidateDialog({
           dateTime: createdCandidate?.assignment?.deadline || "",
           title:
             typeof createdCandidate?.assignment?.interviewerId === "object" &&
-            createdCandidate?.assignment?.interviewerId?.name
+              createdCandidate?.assignment?.interviewerId?.name
               ? `Assigned to ${createdCandidate.assignment.interviewerId.name} : Assigned by ${user.name}`
               : "",
           currentInterviewer:
             typeof createdCandidate?.assignment?.interviewerId === "object" &&
-            createdCandidate?.assignment?.interviewerId
+              createdCandidate?.assignment?.interviewerId
               ? Object(createdCandidate.assignment.interviewerId._id)
               : null,
           previousInterviewer: null,
           assignmentBy: user.id,
-
           note: {
             description: "",
             date: "",
@@ -264,11 +278,8 @@ export function CreateCandidateDialog({
         description: "Candidate added successfully",
       });
     } catch (error) {
-      // console.log(error);
-
       if (typeof error === "object" && error !== null && "data" in error) {
         const errorData = (error as { data?: { error?: string } }).data;
-
         if (
           typeof errorData === "object" &&
           errorData !== null &&
@@ -276,16 +287,15 @@ export function CreateCandidateDialog({
         ) {
           toast({
             title: "Error",
-            description: errorData.error || "Failed to update job",
+            description: errorData.error || "Failed to create candidate",
             variant: "destructive",
           });
           return;
         }
       }
-
       toast({
         title: "Error",
-        description: "Failed to update job due to an unexpected error.",
+        description: "Failed to create candidate due to an unexpected error.",
         variant: "destructive",
       });
     }
@@ -322,9 +332,7 @@ export function CreateCandidateDialog({
       >
         <DialogHeader className="px-6 py-2">
           <DialogTitle>
-            {user.role === "candidate"
-              ? "Add Application"
-              : "Add New Candidate"}
+            {user.role === "candidate" ? "Add Application" : "Add New Candidate"}
           </DialogTitle>
         </DialogHeader>
         <Formik
@@ -339,17 +347,13 @@ export function CreateCandidateDialog({
         >
           {({ isSubmitting, errors, touched, setFieldValue }) => (
             <Form className="flex flex-col h-[calc(90vh-80px)] overflow-hidden">
-              {/* This component will update form values when parsedResumeData changes */}
               <FormUpdater parsedResumeData={parsedResumeData} />
-
               <CandidateForm
                 onFileUpload={async (file: File) => {
-                  // console.log("Resume file uploaded: ", file);
                   setFieldValue("resume", file);
                   await handleFileParse(file, setParsedResume);
                 }}
               />
-              {/* <CustomFields formName={formName} /> */}
               <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4">
                 <Button
                   type="button"

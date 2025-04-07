@@ -5,7 +5,7 @@ export interface ICandidate {
   jobId?: mongoose.Schema.Types.ObjectId;
   name: string;
   location: string;
-  organizationId:string;
+  organizationId: string;
   experience: number;
   skills: string[];
   expectedCTC: number;
@@ -38,31 +38,41 @@ export interface ICandidate {
     updatedAt: Date;
   };
   assignment?: {
-    interviewerId:{
+    interviewerId: {
       _id?: string;
       name?: string;
       email?: string;
-    } ;
+    };
     assignedAt: Date;
     deadline: Date;
   };
   customFields: {
-    [key: string]: string | string[] | CustomFieldFile[] | { 
+    [key: string]: string | string[] | CustomFieldFile[] | {
       type: string;
       value: string | number | boolean | null;
       required?: boolean;
     } | object; // Add object type to allow MongoDB documents
   };
   email?: string;
+  scores: {
+    overall: number;
+    experience: number;
+    skills: number;
+    strengths: string[];
+    areas_for_improvement: string[];
+    recommendation: string;
+    notes: string;
+    failure?: string;
+  }
 }
 
 export const candidateSchema = new Schema({
-  jobId: { 
-    type: mongoose.Schema.Types.ObjectId, 
+  jobId: {
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'Job',
-    required: true 
+    required: true
   },
-  organizationId:String,
+  organizationId: String,
   name: { type: String, required: true },
   location: { type: String, required: true },
   experience: { type: Number, required: true },
@@ -80,16 +90,16 @@ export const candidateSchema = new Schema({
   },
   remarks: [{
     _id: false,
-    description: { 
-      type: String, 
+    description: {
+      type: String,
       required: true,
       trim: true
     },
-    date: { 
-      type: String, 
-      required: true 
+    date: {
+      type: String,
+      required: true
     },
-    rating: { 
+    rating: {
       type: Number,
       min: 0,
       max: 5
@@ -128,6 +138,23 @@ export const candidateSchema = new Schema({
     default: {}
   },
   email: { type: String, required: false },
+  scores: {
+    overall: {
+      type: Number,
+      min: 0,
+      max: 10
+    },
+    experience: { type: Number, min: 0, max: 10 },
+    skills: { type: Number, min: 0, max: 10 },
+    education: { type: Number, min: 0, max: 10 },
+    projects: { type: Number, min: 0, max: 10, default: 0 },
+    certifications: { type: Number, min: 0, max: 10, default: 0 },
+    strengths: [String],
+    areas_for_improvement: [String],
+    recommendation: String,
+    notes: String,
+    failure: String
+  },
 }, {
   timestamps: true
 });
