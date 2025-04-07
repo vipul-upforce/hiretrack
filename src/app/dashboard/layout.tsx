@@ -247,7 +247,7 @@ export default function DashboardLayout({
         <div className=" mt-auto space-y-2">
           <div
             className={cn(
-              "flex items-center gap-3  bg-gray-50 rounded-lg p-2 transition-all",
+              "flex items-center gap-3  bg-gray-1000 rounded-lg p-2 transition-all border border-solid border-gray-200",
               isCollapsed ? "justify-center flex flex-col items-center justify center" : "justify-start",
             )}
           >

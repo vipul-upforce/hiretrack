@@ -58,10 +58,11 @@ export const settingsApi = createApi({
     updateFSConfigs: builder.mutation({
       query: (fsConfig) => {
         return {
-        url: "/settings/fs",
-        method: "PUT",
-        body: fsConfig,
-      }},
+          url: "/settings/fs",
+          method: "PUT",
+          body: fsConfig,
+        }
+      },
       invalidatesTags: ["Settings"],
     }),
     getPortalConfigs: builder.query({
@@ -71,7 +72,7 @@ export const settingsApi = createApi({
       }),
     }),
     updatePortalConfigs: builder.mutation({
-      query: (portalConfigs)=>{
+      query: (portalConfigs) => {
         return {
           url: "/settings/portal",
           method: "PUT",
@@ -79,11 +80,11 @@ export const settingsApi = createApi({
         }
       }
     }),
-    createResetToken : builder.mutation({
-      query: ({email}) => ({
+    createResetToken: builder.mutation({
+      query: ({ email, selectedOrgId }) => ({
         url: "/auth/forgot-password",
         method: "POST",
-        body: {email},
+        body: { email, selectedOrgId },
       }),
     })
   }),
