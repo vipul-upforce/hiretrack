@@ -247,7 +247,7 @@ export default function DashboardLayout({
         <div className=" mt-auto space-y-2">
           <div
             className={cn(
-              "flex items-center gap-3 border border-gray-200 rounded-xl bg-gray-50 p-2 transition-all",
+              "flex items-center gap-3  bg-gray-50 rounded-lg p-2 transition-all",
               isCollapsed ? "justify-center flex flex-col items-center justify center" : "justify-start",
             )}
           >
@@ -256,7 +256,7 @@ export default function DashboardLayout({
                 <img
                   src={portalConfigData.portalLogo.url || "/placeholder.svg"}
                   alt={portalConfigData.portalName || "Portal Logo"}
-                  className="h-8 w-8 object-cover rounded-full ring-2 ring-gray-200"
+                  className={`h-8 w-8 object-cover rounded-full ${isCollapsed ? "" : "ring-2 ring-gray-200"}`}
                 />
               </div>
             )}
