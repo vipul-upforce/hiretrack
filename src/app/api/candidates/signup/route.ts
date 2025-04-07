@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import dbConnect, { CandidateAccount, Organization } from '@/lib/mongodb'; 
+import dbConnect, { CandidateAccount, Organization, User } from '@/lib/mongodb';
 // import { Lane } from '@/lib/mongodb';
 import { signToken } from '@/lib/jwt';
 // import mongoose from 'mongoose';
@@ -15,14 +15,14 @@ export async function POST(req: Request) {
     // if (!(organizationId instanceof mongoose.Types.ObjectId)) {
     //   organizationId = new mongoose.Types.ObjectId(organizationId);
     // }
-    if (!CandidateAccount || !Organization) {
+    if (!CandidateAccount || !Organization || !User) {
       return NextResponse.json({ error: "Database not connected" }, { status: 400 });
     }
 
-    const existingUser = await CandidateAccount.findOne({ email });
-    const organizationInfo = await Organization.findOne({ name:orgName },{
+    const existingUser = await CandidateAccount.findOne({ email }) || await User.findOne({ email });
+    const organizationInfo = await Organization.findOne({ name: orgName }, {
       adminId: 0,
-      lanes:0
+      lanes: 0
     });
     if (!organizationInfo) {
       return NextResponse.json(
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
       );
     }
     const organizationId = organizationInfo?._id;
-    
+
     if (existingUser) {
       if (existingUser.isDeleted) {
         return NextResponse.json(
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
         );
       }
       return NextResponse.json(
-        { error: 'Candidate already exists in this organization' },
+        { error: 'Candidate already exists' },
         { status: 400 }
       );
     }
@@ -68,7 +68,7 @@ export async function POST(req: Request) {
     const token = signToken({
       id: user._id,
       email: user.email,
-    //   role: user.role,
+      //   role: user.role,
     });
 
     const response = NextResponse.json({

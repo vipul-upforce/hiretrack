@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
-import dbConnect, { Settings } from '@/lib/mongodb';
+import dbConnect, { CandidateAccount, Settings } from '@/lib/mongodb';
 import { User } from '@/lib/mongodb';
 import { sendMail } from '../../event-mail';
 
@@ -26,7 +26,7 @@ const getNodemailerErrorMessage = (error: NodemailerError) => {
     case -4039:
       return "The email service is temporarily unavailable. Please try again later.";
     default:
-      return "We couldn't send the email. Please check the email details and try again.";
+      return error.message || "We couldn't send the email. Please check the email details and try again.";
   }
 };
 
@@ -34,26 +34,60 @@ export async function POST(req: Request) {
   try {
     await dbConnect();
     const { email } = await req.json();
+    if (!User || !Settings || !CandidateAccount) throw new Error('Database not connected');
 
-    if (!User || !Settings) throw new Error('Database not connected');
 
-    const user = await User.findOne({ email });
-    if (!user) throw new Error('No account found with this email');
+    let user = null;
+    let isCandidate = false;
+
+    try {
+      user = await User.findOne({ email });
+      // console.log("Checking user collection:", user ? "Found" : "Not found");
+    } catch (e) {
+      user = null;
+      console.log("ERROR FINDING USER:", e);
+    }
+
+    if (!user) {
+      try {
+        user = await CandidateAccount.findOne({ email });
+        console.log("Checking candidate collection:", user ? "Found" : "Not found");
+
+        if (user) {
+          isCandidate = true;
+        }
+      } catch (e) {
+        console.log("ERROR FINDING CANDIDATE:", e);
+        user = null;
+      }
+    }
+
+    if (!user) {
+      throw new Error('No account found with this email');
+    }
 
     // Generate password reset token
     const resetToken = crypto.randomBytes(32).toString('hex');
     const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
-    const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour expiry
-    
-    await User.findByIdAndUpdate(user._id, {
-      resetToken: resetTokenHash,
-      resetTokenExpiry,
-    });
-    
-    const origin = req.headers.get('origin') || 'http://localhost:3000'; 
-    const resetUrl = `${origin}/auth/reset-password?token=${resetToken}`;
+    const resetTokenExpiry = new Date(Date.now() + 3600000);
+
+    if (isCandidate) {
+      await CandidateAccount.findByIdAndUpdate(user._id, {
+        resetToken: resetTokenHash,
+        resetTokenExpiry,
+      });
+    } else {
+      await User.findByIdAndUpdate(user._id, {
+        resetToken: resetTokenHash,
+        resetTokenExpiry,
+      });
+    }
+
+    const origin = req.headers.get('origin') || 'http://localhost:3000';
+    const resetUrl = `${origin}/auth/reset-password?token=${resetToken}${isCandidate ? '&type=candidate' : ''}`;
+
     const emailStatus = await sendMail(
-      user.organizationId.toString(),
+      isCandidate ? user.organizationId?.toString() || '' : user.organizationId.toString(),
       email,
       'Password Reset Request',
       `
@@ -70,20 +104,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Email sent successfully." });
     } else {
       return NextResponse.json(
-        { 
-             error: emailStatus.message,
+        {
+          error: emailStatus.message,
         },
         { status: emailStatus.status }
       );
     }
-   
+
   } catch (error: unknown) {
     let errorMessage = "An unknown error occurred";
-
     if (typeof error === "object" && error !== null) {
       errorMessage = getNodemailerErrorMessage(error as NodemailerError);
     }
-
     return NextResponse.json(
       { error: errorMessage },
       { status: 500 }

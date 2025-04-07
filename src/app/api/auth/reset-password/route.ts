@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import dbConnect from '@/lib/mongodb';
+import dbConnect, { CandidateAccount } from '@/lib/mongodb';
 import { User } from '@/lib/mongodb';
 
 export async function POST(req: Request) {
@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     await dbConnect();
     const { token, password } = await req.json();
 
-    if (!User) {
+    if (!User || !CandidateAccount) {
       return NextResponse.json(
         { error: 'Database not connected' },
         { status: 500 }
@@ -23,27 +23,58 @@ export async function POST(req: Request) {
       .digest('hex');
 
     // Find user with valid reset token
-    const user = await User.findOne({
-      resetToken: resetTokenHash,
-      resetTokenExpiry: { $gt: new Date() },
-    });
+    let user = null;
+    let isCandidate = false;
+
+    try {
+      user = await User.findOne({
+        resetToken: resetTokenHash,
+        resetTokenExpiry: { $gt: new Date() },
+      });
+      // console.log("Checking user collection:", user ? "Found" : "Not found");
+    } catch (e) {
+      user = null;
+      console.log("ERROR FINDING USER:", e);
+    }
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'Invalid or expired reset token' },
-        { status: 400 }
-      );
+      try {
+        user = await CandidateAccount.findOne({
+          resetToken: resetTokenHash,
+          resetTokenExpiry: { $gt: new Date() },
+        });
+        console.log("Checking candidate collection:", user ? "Found" : "Not found");
+
+        if (user) {
+          isCandidate = true;
+        }
+      } catch (e) {
+        console.log("ERROR FINDING CANDIDATE:", e);
+        user = null;
+      }
+    }
+
+    if (!user) {
+      throw new Error('Invalid or expired reset token');
     }
 
     // Hash the new password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Update user's password and clear reset token
-    await User.findByIdAndUpdate(user._id, {
-      password: hashedPassword,
-      resetToken: undefined,
-      resetTokenExpiry: undefined,
-    });
+    if (isCandidate) {
+      await CandidateAccount.findByIdAndUpdate(user._id, {
+        password: hashedPassword,
+        resetToken: undefined,
+        resetTokenExpiry: undefined,
+      });
+    } else {
+      await User.findByIdAndUpdate(user._id, {
+        password: hashedPassword,
+        resetToken: undefined,
+        resetTokenExpiry: undefined,
+      });
+    }
 
     return NextResponse.json(
       { message: 'Password reset successful' },
