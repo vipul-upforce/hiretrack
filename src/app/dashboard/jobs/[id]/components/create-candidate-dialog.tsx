@@ -16,6 +16,7 @@ import { useState, useEffect } from "react";
 import { CandidateForm } from "./candidate-form";
 import {
   useCreateCandidateMutation,
+  useEvaluateCandidateMutation,
   useUpdateAppliedApplicationMutation,
   useUpdateCandidateHistoryMutation,
 } from "@/lib/features/candidate/candidateApi";
@@ -28,25 +29,17 @@ import FormUpdater from "./FormUpdater";
 import Cookies from "js-cookie";
 
 // New function to call the evaluate API
-async function evaluateCandidate(candidateId: string) {
+async function evaluateCandidate(
+  candidateId: string,
+  evaluateCandidateMutation: any // Type this based on your mutation hook
+) {
   try {
-    const response = await fetch(`/api/candidates/${candidateId}/evaluate`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ candidateId }),
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to evaluate candidate");
-    }
-
-    const result = await response.json();
+    const result = await evaluateCandidateMutation({ candidateId }).unwrap();
     return result;
   } catch (error) {
     console.error("Evaluation error:", error);
-    throw error;
+    // throw error;
+    return null
   }
 }
 
@@ -107,6 +100,7 @@ export function CreateCandidateDialog({
 }: CreateCandidateDialogProps) {
   const { toast } = useToast();
   const [createCandidate] = useCreateCandidateMutation();
+  const [evaluateCandidateMutation] = useEvaluateCandidateMutation();
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
   const [updateAppliedApplication] = useUpdateAppliedApplicationMutation();
   const [parsedResumeData, setParsedResume] = useState<Resume | null>(null);
@@ -210,7 +204,11 @@ export function CreateCandidateDialog({
 
       // Step 2: Trigger the evaluation API call
       try {
-        const evaluationResult = await evaluateCandidate(candidateId);
+        await evaluateCandidate(
+          candidateId,
+          evaluateCandidateMutation
+        );
+        // console.log("@@@@@@@@@@@@@@@ evaluation result: ", evaluationResult)
         toast({
           title: "Evaluation Complete",
           description: "Candidate resume evaluated successfully",

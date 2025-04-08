@@ -22,6 +22,7 @@ import { useDeleteCandidateMutation } from "@/lib/features/candidate/candidateAp
 import { formatTime } from "./candidate-details-dialog";
 import AddRemarksPopover from "./add-remark-dialog";
 import RemarksPopover from "./remarks-popover";
+import { CandidateScoreBadge } from "./candidate-score-badge";
 
 interface CandidateCardProps {
   candidate: Candidate;
@@ -73,7 +74,7 @@ export function CandidateCard({
     return (
       <div className="bg-card border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow">
         <div className="flex justify-between items-start">
-        <h3 className="font-medium w-2/3 text-wrap break-words">{candidate.name}</h3>
+          <h3 className="font-medium w-2/3 text-wrap break-words">{candidate.name}</h3>
           <div className="flex gap-1">
             <AddRemarksPopover
               candidate={candidate}
@@ -169,6 +170,15 @@ export function CandidateCard({
             )}
           </div>
         )}
+        {
+          candidate.scores && candidate.scores.overall && (
+            <div className="capitalize flex gap-2 py-2">
+              <CandidateScoreBadge score={candidate.scores.overall} category="Overall" />
+              <CandidateScoreBadge score={candidate.scores.experience} category="Exper" />
+              <CandidateScoreBadge score={candidate.scores.skills} category="Skills" />
+            </div>
+          )
+        }
       </div>
     );
   }
@@ -181,9 +191,9 @@ export function CandidateCard({
           {...provided.draggableProps}
           {...provided.dragHandleProps}
           className="bg-card border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow"
-          // style={{
-          //   marginTop:`${index===0?"0px":"12px"}`
-          // }}
+        // style={{
+        //   marginTop:`${index===0?"0px":"12px"}`
+        // }}
         >
           <div className="flex justify-between items-start">
             <h3 className="font-medium w-2/3 text-wrap break-words">{candidate.name}</h3>
@@ -282,6 +292,15 @@ export function CandidateCard({
               )}
             </div>
           )}
+          {
+            candidate.scores && candidate.scores.overall && (
+              <div className="capitalize flex gap-2 py-2">
+                <CandidateScoreBadge score={candidate.scores.overall} category="Overall" />
+                <CandidateScoreBadge score={candidate.scores.experience} category="Exper" />
+                <CandidateScoreBadge score={candidate.scores.skills} category="Skills" />
+              </div>
+            )
+          }
         </div>
       )}
     </Draggable>

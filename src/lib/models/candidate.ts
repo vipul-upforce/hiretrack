@@ -54,7 +54,7 @@ export interface ICandidate {
     } | object; // Add object type to allow MongoDB documents
   };
   email?: string;
-  scores: {
+  scores?: {
     overall: number;
     experience: number;
     skills: number;

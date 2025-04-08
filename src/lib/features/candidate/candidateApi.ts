@@ -102,6 +102,19 @@ export const candidateApi = createApi({
       }),
       invalidatesTags: ["Candidate"],
     }),
+    evaluateCandidate: builder.mutation<
+      any,
+      {
+        candidateId: string;
+      }
+    >({
+      query: ({ candidateId }) => ({
+        url: "/candidates/evaluate",
+        method: "PUT",
+        body: { candidateId },
+      }),
+      invalidatesTags: ["Candidate"],
+    }),
     deleteCandidate: builder.mutation<{ message: string }, string>({
       query: (id) => ({
         url: `/candidates/${id}`,
@@ -124,6 +137,7 @@ export const {
   useFetchCandidatesQuery,
   useCreateCandidateMutation,
   useUpdateCandidateMutation,
+  useEvaluateCandidateMutation,
   useUpdateCandidateStatusMutation,
   useFetchAssignedCandidatesQuery,
   useFetchAppliedApplicationQuery,

@@ -1,7 +1,7 @@
 import { CustomFieldValues } from "@/Custom_Fields/hooks/useCustomForm";
 import { ICandidateHistory } from "@/lib/models/history";
 
-export interface JobDetail{
+export interface JobDetail {
   title: string;
   description: string;
 }
@@ -40,7 +40,7 @@ export interface Candidate {
   tracking?: {
     createdAt: string;
     updatedAt: string;
-    assignedToJobDate?:string
+    assignedToJobDate?: string
   };
   assignment: Assignment | null;
   customFields?: CustomFieldValues;
@@ -49,10 +49,20 @@ export interface Candidate {
     description: string;
   };
   history?: ICandidateHistory[];
-  email?:string;
+  email?: string;
+  scores?: {
+    overall: number;
+    experience: number;
+    skills: number;
+    strengths: string[];
+    areas_for_improvement: string[];
+    recommendation: string;
+    notes: string;
+    failure?: string;
+  }
 }
 
-export type CandidateStatus = 
+export type CandidateStatus =
   | 'applied'
   | 'screening'
   | 'shortlisted'
@@ -83,5 +93,5 @@ interface Assignment {
   deadline: string;
   assignedAt: string;
   status?: string;
-  assignment?: {status: string};
+  assignment?: { status: string };
 } 

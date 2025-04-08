@@ -42,7 +42,7 @@ export default function GeminiConfigs({ onClose }: { onClose: () => void }) {
     gemini_key: Yup.string()
       .trim()
       .required("Key is required")
-      .max(30, "Max length 30 chars"),
+      .max(50, "Max length 30 chars"),
   });
 
   const handleSubmit = async (values: typeof initialValues) => {
@@ -77,12 +77,12 @@ export default function GeminiConfigs({ onClose }: { onClose: () => void }) {
     placeholder: string;
     type?: string;
   }> = [
-    {
-      label: "Gemini Key",
-      name: "gemini_key",
-      placeholder: "Please enter your Gemini Key",
-    },
-  ];
+      {
+        label: "Gemini Key",
+        name: "gemini_key",
+        placeholder: "Please enter your Gemini Key",
+      },
+    ];
 
   return (
     <Formik<geminiValues>

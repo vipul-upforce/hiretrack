@@ -1,44 +1,43 @@
-import { useState, useRef, useEffect } from 'react';
-import { ChevronUp, ChevronDown } from 'lucide-react';
+import { useState, useRef, useEffect, ReactNode } from "react";
+import { ChevronUp, ChevronDown } from "lucide-react";
 
-const ExpandableDescription = ({ description }:{description: string}) => {
+const ExpandableDescription = ({ description }: { description: string | ReactNode; height?: number }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isOverflowing, setIsOverflowing] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
-  
+
   useEffect(() => {
     const checkOverflow = () => {
       if (contentRef.current) {
-        setIsOverflowing(contentRef.current.scrollHeight > 100);
+        setIsOverflowing(contentRef.current.scrollHeight > 50);
       }
     };
 
     checkOverflow();
-    window.addEventListener('resize', checkOverflow);
-    
+    window.addEventListener("resize", checkOverflow);
+
     return () => {
-      window.removeEventListener('resize', checkOverflow);
+      window.removeEventListener("resize", checkOverflow);
     };
   }, [description]);
 
-  const displayText = description || "No description Found";
-
   return (
-    <div className="relative">
+    <div className="relative transition-all duration-200 ease-in-out">
       <div
         ref={contentRef}
-        className={`text-sm whitespace-pre-wrap break-words transition-all duration-200 ease-in-out ${
-          isExpanded ? "max-h-full pb-10" : "max-h-24 h-auto overflow-hidden"
-        }`}
+        className={`text-sm whitespace-pre-wrap break-words transition-all duration-200 ease-in-out 
+          ${isExpanded ? "max-h-full pb-10" : `max-h-[60px] h-auto overflow-hidden`}`
+        }
       >
-        <p
-          className="text-sm whitespace-pre-wrap"
-          style={{ wordWrap: "break-word" }}
-        >
-          {displayText}
-        </p>
+        {typeof description === "string" ? (
+          <p className="text-sm whitespace-pre-wrap" style={{ wordWrap: "break-word" }}>
+            {description || "No description found"}
+          </p>
+        ) : (
+          description ?? <p>No description found</p>
+        )}
       </div>
-      
+
       {isOverflowing && (
         <button
           onClick={() => setIsExpanded(!isExpanded)}
