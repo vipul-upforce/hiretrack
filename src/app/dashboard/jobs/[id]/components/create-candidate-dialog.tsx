@@ -21,7 +21,9 @@ import {
   useUpdateCandidateHistoryMutation,
 } from "@/lib/features/candidate/candidateApi";
 import { v4 as uuidv4 } from "uuid";
-import useCustomForm, { CustomFieldValues } from "@/Custom_Fields/hooks/useCustomForm";
+import useCustomForm, {
+  CustomFieldValues,
+} from "@/Custom_Fields/hooks/useCustomForm";
 import { ICandidateHistory } from "@/lib/models/history";
 import { Resume } from "@/lib/redux/types";
 import { parseResumeFromPdf } from "@/lib/parse-resume-from-pdf";
@@ -31,15 +33,31 @@ import Cookies from "js-cookie";
 // New function to call the evaluate API
 async function evaluateCandidate(
   candidateId: string,
-  evaluateCandidateMutation: any // Type this based on your mutation hook
+  evaluateCandidateMutation: ReturnType<typeof useEvaluateCandidateMutation>[0],
+  toast: (props: {
+    title: string;
+    description: string;
+    variant?: "default" | "destructive" | null;
+  }) => void
 ) {
   try {
+    debugger;
     const result = await evaluateCandidateMutation({ candidateId }).unwrap();
+    toast({
+      title: "Evaluation Complete",
+      description: "Candidate resume evaluated successfully",
+    });
     return result;
   } catch (error) {
-    console.error("Evaluation error:", error);
-    // throw error;
-    return null
+    toast({
+      title: "Evaluation Failed",
+      description:
+        error instanceof Error
+          ? error?.message
+          : "Could not evaluate candidate resume",
+      variant: "destructive",
+    });
+    return null;
   }
 }
 
@@ -85,7 +103,7 @@ const handleFileParse = async (
         }
       }
     };
-    reader.onerror = () => { };
+    reader.onerror = () => {};
     reader.readAsDataURL(file);
   }
 };
@@ -130,7 +148,8 @@ export function CreateCandidateDialog({
     if (hasDuplicates) {
       toast({
         title: "Alert",
-        description: "Duplicate file names found! Please rename before submitting.",
+        description:
+          "Duplicate file names found! Please rename before submitting.",
         variant: "destructive",
       });
       return;
@@ -171,22 +190,24 @@ export function CreateCandidateDialog({
         currentCTC: Number(parseFloat(String(values.currentCTC)).toFixed(2)),
         expectedCTC: Number(parseFloat(String(values.expectedCTC)).toFixed(2)),
         experience: Number(parseFloat(String(values.experience)).toFixed(2)),
-        noticePeriod: Number(parseFloat(String(values.noticePeriod)).toFixed(0)),
+        noticePeriod: Number(
+          parseFloat(String(values.noticePeriod)).toFixed(0)
+        ),
         email: parsedResumeData?.profile?.email || values.email,
         ...(values.assignee && values.deadline
           ? {
-            assignee: values.assignee === "-1" ? "" : values.assignee,
-            deadline: values.deadline,
-          }
+              assignee: values.assignee === "-1" ? "" : values.assignee,
+              deadline: values.deadline,
+            }
           : {}),
         resume: resumeBase64
           ? {
-            id: uuidv4(),
-            name: values.resume?.name || "",
-            url: resumeBase64, // Using base64 as URL for now; adjust if backend changes
-            type: "pdf",
-            size: values.resume?.size || 0,
-          }
+              id: uuidv4(),
+              name: values.resume?.name || "",
+              url: resumeBase64, // Using base64 as URL for now; adjust if backend changes
+              type: "pdf",
+              size: values.resume?.size || 0,
+            }
           : undefined,
         attachments: attachmentsBase64.map((base64, index) => ({
           id: uuidv4(),
@@ -201,25 +222,7 @@ export function CreateCandidateDialog({
       // Step 1: Create the candidate
       const createdCandidate = await createCandidate(candidateData).unwrap();
       const candidateId = createdCandidate._id;
-
-      // Step 2: Trigger the evaluation API call
-      try {
-        await evaluateCandidate(
-          candidateId,
-          evaluateCandidateMutation
-        );
-        // console.log("@@@@@@@@@@@@@@@ evaluation result: ", evaluationResult)
-        toast({
-          title: "Evaluation Complete",
-          description: "Candidate resume evaluated successfully",
-        });
-      } catch (evalError) {
-        toast({
-          title: "Evaluation Failed",
-          description: "Could not evaluate candidate resume",
-          variant: "destructive",
-        });
-      }
+      evaluateCandidate(candidateId, evaluateCandidateMutation, toast);
 
       // Step 3: Handle additional updates (if applicable)
       if (user?.role === "candidate") {
@@ -238,12 +241,12 @@ export function CreateCandidateDialog({
           dateTime: createdCandidate?.assignment?.deadline || "",
           title:
             typeof createdCandidate?.assignment?.interviewerId === "object" &&
-              createdCandidate?.assignment?.interviewerId?.name
+            createdCandidate?.assignment?.interviewerId?.name
               ? `Assigned to ${createdCandidate.assignment.interviewerId.name} : Assigned by ${user.name}`
               : "",
           currentInterviewer:
             typeof createdCandidate?.assignment?.interviewerId === "object" &&
-              createdCandidate?.assignment?.interviewerId
+            createdCandidate?.assignment?.interviewerId
               ? Object(createdCandidate.assignment.interviewerId._id)
               : null,
           previousInterviewer: null,
@@ -271,10 +274,10 @@ export function CreateCandidateDialog({
       }
 
       setIsOpen(false);
-      toast({
-        title: "Success",
-        description: "Candidate added successfully",
-      });
+      // toast({
+      //   title: "Success",
+      //   description: "Candidate added successfully",
+      // });
     } catch (error) {
       if (typeof error === "object" && error !== null && "data" in error) {
         const errorData = (error as { data?: { error?: string } }).data;
@@ -330,7 +333,9 @@ export function CreateCandidateDialog({
       >
         <DialogHeader className="px-6 py-2">
           <DialogTitle>
-            {user.role === "candidate" ? "Add Application" : "Add New Candidate"}
+            {user.role === "candidate"
+              ? "Add Application"
+              : "Add New Candidate"}
           </DialogTitle>
         </DialogHeader>
         <Formik
