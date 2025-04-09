@@ -18,7 +18,7 @@ export async function POST(req: Request) {
 
     // Find all organizations with the same email
     const users = await User.find({ email, isDeleted: { $ne: true } });
-    const candidate = await CandidateAccount.findOne({ email });
+    const candidates = await CandidateAccount.find({ email });
 
     // Check if user exists in User collection
     if (users.length > 0) {
@@ -55,10 +55,13 @@ export async function POST(req: Request) {
           .lean();
 
         const token = signToken({
-          id: userInOrg._id,
+          id: userInOrg._id.toString(),
+          name: userInOrg.name,
           email: userInOrg.email,
           role: userInOrg.role,
-          name: userInOrg.name,
+          organizationId: userInOrg.organizationId,
+          organizationInfo: orgInfo,
+          fileStorage: fileStorage?.fileStorage?.storageType,
         });
 
         const response = NextResponse.json({
@@ -152,12 +155,89 @@ export async function POST(req: Request) {
     }
 
     // Check if candidate exists
-    if (candidate) {
-      // Check password for candidate
-      const isPasswordValid = await bcrypt.compare(
-        password,
-        candidate.password
-      );
+    if (candidates && candidates.length > 0) {
+      const candidate = candidates[0];
+      if (orgId) {
+        const candidateInOrg = candidates.find(
+          (candidate) => candidate.organizationId.toString() === orgId
+        );
+        if (!candidateInOrg) {
+          return NextResponse.json(
+            { error: "Invalid organization ID" },
+            { status: 401 }
+          );
+        }
+
+        // Check password for the specified organization
+        const isPasswordValid = await bcrypt.compare(
+          password,
+          candidateInOrg.password
+        );
+        if (!isPasswordValid) {
+          return NextResponse.json(
+            { error: "Invalid credentials" },
+            { status: 401 }
+          );
+        }
+
+        const orgInfo = await Organization.findById(candidateInOrg.organizationId, {
+          adminId: 0,
+          lanes: 0,
+        });
+
+        const token = signToken({
+          id: candidateInOrg._id,
+          email: candidateInOrg.email,
+          role: "candidate",
+          name: candidateInOrg.email,
+        });
+
+        const response = NextResponse.json({
+          user: {
+            id: candidateInOrg._id.toString(),
+            name: candidateInOrg.email,
+            email: candidateInOrg.email,
+            appliedApplications: candidateInOrg.appliedApplications,
+            role: "candidate",
+            organizationId: candidateInOrg.organizationId,
+            organizationInfo: orgInfo,
+          },
+        });
+
+        response.cookies.set("token", token, {
+          httpOnly: false,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "strict",
+          maxAge: 30 * 24 * 60 * 60,
+        });
+
+        return response;
+      }
+
+      // Collect organization info
+      const orgs = [];
+      for (const candidate of candidates) {
+        const orgInfo = await Organization.findById(candidate.organizationId);
+        orgs.push({
+          orgId: candidate.organizationId,
+          name: orgInfo?.name,
+        });
+      }
+
+      // If candidate exists in multiple organizations, return the organizations
+      if (orgs.length > 1) {
+        return NextResponse.json(
+          {
+            organizations: orgs,
+            message:
+              "Candidate exists in multiple organizations. Please specify the organization for login.",
+          },
+          { status: 200 }
+        );
+      }
+
+      // If candidate exists in a single organization, proceed to check password
+      const isPasswordValid = await bcrypt.compare(password, candidate.password);
       if (!isPasswordValid) {
         return NextResponse.json(
           { error: "Invalid credentials" },
@@ -165,17 +245,18 @@ export async function POST(req: Request) {
         );
       }
 
+      const orgInfo = await Organization.findById(candidate.organizationId, {
+        adminId: 0,
+        lanes: 0,
+      });
+
       const token = signToken({
         id: candidate._id,
         email: candidate.email,
         role: "candidate",
         name: candidate.email,
       });
-      const orgInfo = await Organization.findById(candidate.organizationId, {
-        adminId: 0,
-        lanes: 0,
-      });
-      // console.log("************ ",candidate.organizationInfo)
+
       const response = NextResponse.json({
         user: {
           id: candidate._id.toString(),
@@ -192,7 +273,7 @@ export async function POST(req: Request) {
         httpOnly: false,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
-        maxAge: 30 * 24 * 60 * 60,
+        maxAge: 30 * 24 * 60 * 60, // 30 days
       });
 
       return response;

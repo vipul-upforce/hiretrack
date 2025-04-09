@@ -14,9 +14,11 @@ export const jobApi = createApi({
       query: () => "/jobs/open",
       providesTags: ["Job"],
     }),
-    fetchOpenJob: builder.query<Job[], { orgName: string }>({
-      query: ({ orgName }) => ({
-        url: "/jobs/open-jobs?orgname=" + orgName,
+    fetchOpenJob: builder.query<Job[], { orgName: string, title: string }>({
+      query: ({ orgName, title }) => ({
+        url: `/jobs/open-jobs?orgname=${orgName}${
+          title ? `&title=${title}` : ""
+        }`,
         method: "GET",
       }),
       providesTags: ["Job"],

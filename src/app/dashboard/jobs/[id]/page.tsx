@@ -147,18 +147,9 @@ export default function JobProgressPage() {
   const onDragEnd = async (result: DropResult) => {
     const { destination, source, type, draggableId } = result;
 
-    if (
-      type === "candidate" &&
-      (!destination || destination.droppableId === source.droppableId)
-    ) {
+    if (!destination) {
       return;
     }
-
-    if (type === "lane" && !destination) {
-      return;
-    }
-
-    setOpenRemarksFor(draggableId);
 
     // Handle lane reordering
     if (type === "lane") {
@@ -170,7 +161,10 @@ export default function JobProgressPage() {
       return;
     }
 
-    // Handle candidate movement between lanes
+    if (source.droppableId !== destination.droppableId) {
+      setOpenRemarksFor(draggableId);
+    }
+
     const sourceColumn = columns.find((col) => col.id === source.droppableId);
     const destColumn = columns.find(
       (col) => col.id === destination.droppableId
@@ -178,7 +172,7 @@ export default function JobProgressPage() {
 
     if (!sourceColumn || !destColumn) return;
 
-    // Update local state first
+    // Create copies of the columns array and the candidate arrays
     const newColumns = [...columns];
     const sourceColumnIndex = columns.findIndex(
       (col) => col.id === source.droppableId
@@ -188,41 +182,53 @@ export default function JobProgressPage() {
     );
 
     const newSourceCandidates = [...sourceColumn.candidates];
-    const newDestCandidates = [...destColumn.candidates];
+    const newDestCandidates =
+      source.droppableId === destination.droppableId
+        ? newSourceCandidates
+        : [...destColumn.candidates];
 
     const [removed] = newSourceCandidates.splice(source.index, 1);
-    newDestCandidates.splice(destination.index, 0, {
-      ...removed,
-      status: destination.droppableId,
-    });
+
+    // Add the candidate to the destination list
+    if (source.droppableId !== destination.droppableId) {
+      newDestCandidates.splice(destination.index, 0, {
+        ...removed,
+        status: destination.droppableId,
+      });
+    } else {
+      newDestCandidates.splice(destination.index, 0, removed);
+    }
 
     newColumns[sourceColumnIndex] = {
       ...sourceColumn,
       candidates: newSourceCandidates,
     };
-    newColumns[destColumnIndex] = {
-      ...destColumn,
-      candidates: newDestCandidates,
-    };
+
+    if (sourceColumnIndex !== destColumnIndex) {
+      newColumns[destColumnIndex] = {
+        ...destColumn,
+        candidates: newDestCandidates,
+      };
+    }
 
     setColumns(newColumns);
 
-    // Then update the database
-    try {
-      await updateCandidate({
-        _id: draggableId,
-        status: destination.droppableId,
-      }).unwrap();
-    } catch {
-      const revertColumns = [...columns];
-      setColumns(revertColumns);
-      toast({
-        title: "Error",
-        description: "Failed to update candidate status",
-        variant: "destructive",
-      });
+    if (source.droppableId !== destination.droppableId) {
+      try {
+        await updateCandidate({
+          _id: draggableId,
+          status: destination.droppableId,
+        }).unwrap();
+      } catch {
+        setColumns([...columns]);
+        toast({
+          title: "Error",
+          description: "Failed to update candidate status",
+          variant: "destructive",
+        });
+      }
+      await refetch();
     }
-    await refetch();
   };
 
   // Add onUpdate handler to handle candidate updates
@@ -421,7 +427,7 @@ export default function JobProgressPage() {
                                 )}
                                 {column.candidates.map((candidate, index) => (
                                   <CandidateCard
-                                    key={candidate._id}
+                                    key={`${column.id}-${candidate._id}`}
                                     candidate={candidate}
                                     index={index}
                                     refetch={refetch}

@@ -12,7 +12,8 @@ export async function GET(request: Request) {
     // Extract orgname from the query parameters
     const url = new URL(request.url);
     const orgName = url.searchParams.get("orgname");
-
+    const title = url.searchParams.get("title");
+    
     if (!orgName) {
       return NextResponse.json(
         { error: "Organization name not provided" },
@@ -50,6 +51,12 @@ export async function GET(request: Request) {
       {
         organizationId: organizationId,
         status: "open",
+        ...(title && { 
+          title: { 
+            $regex: title, 
+            $options: "i" 
+          } 
+        })
       },
       {
         attachments: 0,

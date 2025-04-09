@@ -54,17 +54,14 @@ export default function JobModal({
         <Dialog.Panel className="w-[50vw] transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all max-h-[80vh] overflow-y-auto ">
           <Dialog.Title
             as="h3"
-            className="text-lg font-medium leading-6 text-gray-900 top-0"
+            className="text-lg font-medium leading-6 text-gray-900 top-0 break-words"
           >
             {job.title}
           </Dialog.Title>
           <div className="mt-2 ">
             {/* <p className="text-sm text-gray-500">{job.description}</p> */}
             <ExpandableDescription
-              description={
-                job.description ||
-                "No description Found"
-              }
+              description={job.description || "No description Found"}
             />
             <div className="mt-4">
               <h4 className="font-medium">Required Skills:</h4>
@@ -88,7 +85,7 @@ export default function JobModal({
           <div className="mt-6 flex justify-end gap-3">
             {roles === "" ? (
               <>
-                <Button onClick={handleSignupRedirect}>Signup To Apply</Button>
+                <Button onClick={handleSignupRedirect}>Apply</Button>
               </>
             ) : (
               <>

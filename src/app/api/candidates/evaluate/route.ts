@@ -125,7 +125,7 @@ export async function PUT(request: NextRequest) {
     const { candidateId } = data;
     const candidate = await Candidate.findById(candidateId).populate({
       path: "jobId",
-      select: "description",
+      select: "description organizationId",
     });
     if (!candidate) {
       return NextResponse.json(
@@ -134,7 +134,9 @@ export async function PUT(request: NextRequest) {
       );
     }
     const settingsData = await Settings.findOne({
-      organizationId: candidate.organizationId,
+      organizationId: candidate.jobId &&typeof candidate.jobId === "object" && "organizationId" in candidate.jobId
+      ? String(candidate.jobId.organizationId)
+      : ""
     });
     if (!settingsData) {
       return NextResponse.json(
