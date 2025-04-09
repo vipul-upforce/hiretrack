@@ -213,22 +213,22 @@ export default function JobProgressPage() {
 
     setColumns(newColumns);
 
-    if (source.droppableId !== destination.droppableId) {
-      try {
-        await updateCandidate({
-          _id: draggableId,
-          status: destination.droppableId,
-        }).unwrap();
-      } catch {
-        setColumns([...columns]);
-        toast({
-          title: "Error",
-          description: "Failed to update candidate status",
-          variant: "destructive",
-        });
-      }
-      await refetch();
+    // Then update the database
+    try {
+      await updateCandidate({
+        _id: draggableId,
+        status: destination.droppableId,
+      }).unwrap();
+    } catch {
+      const revertColumns = [...columns];
+      setColumns(revertColumns);
+      toast({
+        title: "Error",
+        description: "Failed to update candidate status",
+        variant: "destructive",
+      });
     }
+    await refetch();
   };
 
   // Add onUpdate handler to handle candidate updates

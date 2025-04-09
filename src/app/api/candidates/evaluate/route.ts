@@ -134,9 +134,12 @@ export async function PUT(request: NextRequest) {
       );
     }
     const settingsData = await Settings.findOne({
-      organizationId: candidate.jobId &&typeof candidate.jobId === "object" && "organizationId" in candidate.jobId
-      ? String(candidate.jobId.organizationId)
-      : ""
+      organizationId:
+        candidate.jobId &&
+        typeof candidate.jobId === "object" &&
+        "organizationId" in candidate.jobId
+          ? String(candidate.jobId.organizationId)
+          : "",
     });
     if (!settingsData) {
       return NextResponse.json(

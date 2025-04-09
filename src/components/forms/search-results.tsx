@@ -211,19 +211,33 @@ export function SearchResults({
                   />
                 </PaginationItem>
 
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                  (page) => (
-                    <PaginationItem key={page}>
-                      <PaginationLink
-                        onClick={() => onPageChange(page)}
-                        isActive={page === currentPage}
-                        className="cursor-pointer"
-                      >
-                        {page}
-                      </PaginationLink>
-                    </PaginationItem>
-                  )
-                )}
+                {(() => {
+                  const maxPagesToShow = 10;
+                  const startPage = Math.max(
+                    1,
+                    currentPage - Math.floor(maxPagesToShow / 2)
+                  );
+                  const endPage = Math.min(
+                    totalPages,
+                    startPage + maxPagesToShow - 1
+                  );
+
+                  const pages = [];
+                  for (let i = startPage; i <= endPage; i++) {
+                    pages.push(
+                      <PaginationItem key={i}>
+                        <PaginationLink
+                          onClick={() => onPageChange(i)}
+                          isActive={i === currentPage}
+                          className="cursor-pointer"
+                        >
+                          {i}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  }
+                  return pages;
+                })()}
 
                 <PaginationItem>
                   <PaginationNext

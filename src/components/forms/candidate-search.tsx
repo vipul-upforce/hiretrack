@@ -38,12 +38,15 @@ const SearchSchema = Yup.object()
     location: Yup.string(),
     minExpectedCTC: Yup.number().nullable(),
     maxExpectedCTC: Yup.number()
-    .nullable()
-    .when("minExpectedCTC", ([minExpectedCTC], schema) =>
-      minExpectedCTC !== undefined
-        ? schema.moreThan(minExpectedCTC, "Max Expected CTC must be greater than Min Expected CTC")
-        : schema
-    ),
+      .nullable()
+      .when("minExpectedCTC", ([minExpectedCTC], schema) =>
+        minExpectedCTC !== undefined
+          ? schema.moreThan(
+              minExpectedCTC,
+              "Max Expected CTC must be greater than Min Expected CTC"
+            )
+          : schema
+      ),
     minExperience: Yup.number()
       .nullable()
       .min(0, "Minimum experience cannot be negative"),
@@ -55,21 +58,26 @@ const SearchSchema = Yup.object()
       ),
     minCurrentCTC: Yup.number().nullable(),
     maxCurrentCTC: Yup.number()
-    .nullable()
-    .when("minCurrentCTC", ([minCurrentCTC], schema) =>
-      minCurrentCTC !== undefined
-        ? schema.moreThan(minCurrentCTC, "Max Current CTC must be greater than Min Current CTC")
-        : schema
-    ),
+      .nullable()
+      .when("minCurrentCTC", ([minCurrentCTC], schema) =>
+        minCurrentCTC !== undefined
+          ? schema.moreThan(
+              minCurrentCTC,
+              "Max Current CTC must be greater than Min Current CTC"
+            )
+          : schema
+      ),
     createdAfter: Yup.string(),
-    createdBefore: Yup.string().when("createdAfter", ([createdAfter], schema) =>
-      createdAfter 
-        ? schema.test(
-            'is-after',
-            "To date must be after From date",
-            value => !value || new Date(value) > new Date(createdAfter)
-          )
-        : schema
+    createdBefore: Yup.string().when(
+      "createdAfter",
+      ([createdAfter], schema) =>
+        createdAfter
+          ? schema.test(
+              "is-after",
+              "To date must be after From date",
+              (value) => !value || new Date(value) > new Date(createdAfter)
+            )
+          : schema
     ),
     organizationId: Yup.string(),
     logicOperator: Yup.string().oneOf(["$and", "$or"]),
@@ -92,7 +100,7 @@ const SearchSchema = Yup.object()
       minCurrentCTC: "",
       maxCurrentCTC: "",
       createdAfter: "",
-      createdBefore: ""
+      createdBefore: "",
     };
 
     // Check Expected CTC pair
@@ -127,7 +135,7 @@ const SearchSchema = Yup.object()
       errors.maxCurrentCTC =
         "Both min and max Current CTC must be provided together";
     }
-    
+
     // FIX: Correct error messages for date fields
     if (
       (values.createdAfter && !values.createdBefore) ||
@@ -147,8 +155,8 @@ const SearchSchema = Yup.object()
     return errorMessages
       ? new Yup.ValidationError(errorMessages, values)
       : true;
-    });
-    
+  });
+
 export default function CandidateSearch() {
   const [searchResults, setSearchResults] = useState<Candidate[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -178,7 +186,8 @@ export default function CandidateSearch() {
     logicOperator: "$and",
   };
 
-  const [currentFilters, setCurrentFilters] = useState<SearchFilter>(initialValues);
+  const [currentFilters, setCurrentFilters] =
+    useState<SearchFilter>(initialValues);
 
   const [filterCandidates] = useFilterCandidatesMutation();
 
@@ -204,7 +213,7 @@ export default function CandidateSearch() {
 
     try {
       const response = await filterCandidates(values).unwrap();
-      setSearchResults(response.candidates || []); 
+      setSearchResults(response.candidates || []);
       setCurrentPage(1);
     } catch (error) {
       toast({

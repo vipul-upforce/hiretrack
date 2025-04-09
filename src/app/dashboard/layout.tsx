@@ -112,24 +112,29 @@ export default function DashboardLayout({
   };
 
   const generate_share_org = (e: React.FormEvent) => {
-    e.preventDefault()
-    const url = `${window.location.origin}/${userData?.organizationInfo?.name}/apply-jobs`;
-    navigator.clipboard
-      .writeText(url)
-      .then(() => {
-        toast({
-          title: "Success",
-          description: "Organization sharing URL is copied to your clipboard",
-          variant: "default",
+    e.preventDefault();
+    const user = Cookies.get("user");
+    const parsedUser = user ? (JSON.parse(user) as IUser) : null;
+    if (parsedUser) {
+      setUserData(parsedUser);
+      const url = `${window.location.origin}/${parsedUser.organizationInfo?.name}/apply-jobs`;
+      navigator.clipboard
+        .writeText(url)
+        .then(() => {
+          toast({
+            title: "Success",
+            description: "Organization sharing URL is copied to your clipboard",
+            variant: "default",
+          });
+        })
+        .catch((err) => {
+          toast({
+            title: "Error",
+            description: err.message || "Failed to get the org url.",
+            variant: "destructive",
+          });
         });
-      })
-      .catch((err) => {
-        toast({
-          title: "Success",
-          description: err.message || "Failed to get the org url.",
-          variant: "destructive",
-        });
-      });
+    }
   };
 
   const shouldShowPortalData = Boolean(
@@ -243,7 +248,6 @@ export default function DashboardLayout({
       </div>
       {/* Settings and Logout Buttons */}
       <div className="px-3 pb-4 mt-auto space-y-2">
-
         <div className="mt-auto space-y-2">
           <div
             className={cn(
@@ -263,8 +267,12 @@ export default function DashboardLayout({
 
             {!isCollapsed && (
               <div className="flex flex-col min-w-0 flex-1">
-                <p className="text-sm font-semibold truncate text-gray-900">{userData?.name}</p>
-                <p className="text-xs text-gray-500 truncate">{userData?.email}</p>
+                <p className="text-sm font-semibold truncate text-gray-900">
+                  {userData?.name}
+                </p>
+                <p className="text-xs text-gray-500 truncate">
+                  {userData?.email}
+                </p>
               </div>
             )}
 

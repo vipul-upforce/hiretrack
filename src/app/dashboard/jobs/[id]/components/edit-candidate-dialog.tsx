@@ -352,7 +352,7 @@ export function EditCandidateDialog({
           validationSchema={candidateSchema(validationSchema)}
           onSubmit={handleSubmit}
         >
-          {({ isSubmitting, errors, setFieldValue }) => (
+          {({ isSubmitting, errors, setFieldValue, dirty }) => (
             <Form className="flex flex-col h-[calc(90vh-80px)] overflow-hidden">
               <FormUpdater parsedResumeData={parsedResumeData} />
               <CandidateForm
@@ -376,7 +376,9 @@ export function EditCandidateDialog({
                 </Button>
                 <Button
                   type="submit"
-                  disabled={isSubmitting || Object.keys(errors).length > 0}
+                  disabled={
+                    !dirty || isSubmitting || Object.keys(errors).length > 0
+                  }
                 >
                   {isSubmitting ? "Saving..." : "Save Changes"}
                 </Button>

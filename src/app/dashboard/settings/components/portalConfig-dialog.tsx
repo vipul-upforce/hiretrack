@@ -12,6 +12,7 @@ import {
 import { FileUpload } from "@/components/ui/file-upload";
 import { v4 as uuidv4 } from "uuid";
 import React from "react";
+import Cookies from "js-cookie";
 
 export interface PortalLogo {
   id: string;
@@ -25,6 +26,13 @@ export interface PortalConfigValues {
   portalLogo: File | null;
   portalName: string;
   existingLogo: PortalLogo | null;
+}
+
+interface User {
+  organizationInfo: {
+    name: string;
+  };
+  // Add other properties as needed
 }
 
 type FormFieldName = keyof PortalConfigValues;
@@ -46,7 +54,10 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
   };
 
   const validationSchema = Yup.object({
-    portalName: Yup.string().trim().required("Portal Name is required").max(30,"Max length 30 chars"),
+    portalName: Yup.string()
+      .trim()
+      .required("Portal Name is required")
+      .max(30, "Max length 30 chars"),
   });
 
   const handleSubmit = async (values: typeof initialValues) => {
@@ -67,8 +78,17 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
         portalName: values.portalName,
         portalLogo: portalLogoData,
       };
-
-      await updateSMTPConfigs(dataToSubmit).unwrap();
+      await updateSMTPConfigs(dataToSubmit);
+      const user = Cookies.get("user");
+      if (user) {
+        const parsedUser = JSON.parse(user) as User;
+        if (parsedUser) {
+          parsedUser.organizationInfo.name = dataToSubmit.portalName;
+        }
+        Cookies.set("user", JSON.stringify(parsedUser), {
+          expires: 1,
+        });
+      }
       toast({
         title: "Success",
         description: "Portal settings updated successfully",
@@ -142,25 +162,25 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
                     maxFiles={1}
                     onFileSelect={(files) => {
                       setFieldValue(name, files[0]);
-                      setFieldValue('existingLogo', null);
+                      setFieldValue("existingLogo", null);
                     }}
                     files={values[name] ? [values[name] as File] : []}
                     setter={(files) => {
                       setFieldValue(name, files[0]);
-                      setFieldValue('existingLogo', null);
+                      setFieldValue("existingLogo", null);
                     }}
                   />
                   {!values.portalLogo && values.existingLogo?.url && (
                     <div className="mt-2">
-                      <img 
-                        src={values.existingLogo.url} 
-                        alt="Current logo" 
+                      <img
+                        src={values.existingLogo.url}
+                        alt="Current logo"
                         className="max-h-20 object-contain"
                       />
                       <button
                         type="button"
                         onClick={() => {
-                          setFieldValue('existingLogo', null);
+                          setFieldValue("existingLogo", null);
                         }}
                         className="mt-2 text-gray-500 hover:underline"
                       >
@@ -173,7 +193,11 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
                 <Input
                   id={name}
                   name={name}
-                  value={typeof values[name] === 'string' ? values[name] as string : ''}
+                  value={
+                    typeof values[name] === "string"
+                      ? (values[name] as string)
+                      : ""
+                  }
                   onChange={handleChange}
                   onBlur={handleBlur}
                   placeholder={placeholder}

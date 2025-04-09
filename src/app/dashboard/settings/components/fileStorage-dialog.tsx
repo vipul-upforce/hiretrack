@@ -35,8 +35,9 @@ export default function FileStorageOptions({
   const { toast } = useToast();
   const [showKey, setShowKey] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
-  
-  const { testConnection, isConnectionSuccessful, isTesting } = useTestConnection();
+
+  const { testConnection, isConnectionSuccessful, isTesting } =
+    useTestConnection();
 
   const { data, isLoading, refetch } = useGetFSConfigsQuery(undefined);
   const [updateStorageConfigs, { isLoading: isUpdating }] =
@@ -126,7 +127,7 @@ export default function FileStorageOptions({
         description: "Storage settings updated successfully",
       });
       const updatedUser = { ...user, fileStorage: values.storageType };
-      Cookies.set("user", JSON.stringify(updatedUser), { expires: 7 });
+      Cookies.set("user", JSON.stringify(updatedUser), { expires: 1 });
       refetch();
       onClose();
     } catch {
@@ -139,7 +140,7 @@ export default function FileStorageOptions({
   };
 
   const handleTestConnection = async (values: typeof initialValues) => {
-    await testConnection(values.storageType as 'cloudinary' | 's3' | 'smtp', {
+    await testConnection(values.storageType as "cloudinary" | "s3" | "smtp", {
       // Cloudinary credentials
       cloud_name: values.cloudinaryCloudName,
       api_key: values.cloudinaryApiKey,
@@ -148,7 +149,7 @@ export default function FileStorageOptions({
       accessKeyId: values.awsAccessKeyId,
       secretAccessKey: values.awsSecretAccessKey,
       region: values.awsRegion,
-      bucketName:values.awsBucketName,
+      bucketName: values.awsBucketName,
       // SMTP credentials (if needed)
       user: "",
       pass: "",
@@ -409,7 +410,8 @@ export default function FileStorageOptions({
                     <Button
                       type="submit"
                       disabled={
-                        (values.storageType !=="local") && (isSubmitting || isUpdating || !isConnectionSuccessful)
+                        values.storageType !== "local" &&
+                        (isSubmitting || isUpdating || !isConnectionSuccessful)
                       }
                       title={
                         !isConnectionSuccessful

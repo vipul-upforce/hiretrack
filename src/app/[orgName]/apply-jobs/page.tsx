@@ -12,6 +12,8 @@ import { useRouter } from "next/navigation";
 import { useCustomFields } from "@/Custom_Fields/hooks/use-customFields";
 import { useFetchAppliedApplicationQuery } from "@/lib/features/candidate/candidateApi";
 import Image from "next/image";
+import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
+import { SerializedError } from "@reduxjs/toolkit";
 import { Input } from "@/components/ui/input";
 import { verifyToken } from "@/lib/jwt";
 
@@ -24,11 +26,12 @@ interface Job {
   experience: number;
 }
 
-interface User {
-  role: string;
-  appliedApplications: string[];
-  // Add other properties as needed
-}
+// Add type guard
+const isFetchBaseQueryError = (
+  error: FetchBaseQueryError | SerializedError
+): error is FetchBaseQueryError => {
+  return "status" in error;
+};
 
 export default function ApplyJobs({
   params,
@@ -57,7 +60,8 @@ export default function ApplyJobs({
   useEffect(() => {
     (async () => {
       const resolvedParams = await params; // Resolve the promise
-      setOrgName(resolvedParams.orgName); // Set the orgName state
+      const orgNameWithoutSpaces = resolvedParams.orgName.replace("%20", " ");
+      setOrgName(orgNameWithoutSpaces);
     })();
   }, [params]);
 
@@ -70,7 +74,7 @@ export default function ApplyJobs({
       const parsedUser = verifyToken(parsedCookie);
       if (
         parsedUser &&
-        typeof parsedUser == "object" &&
+        typeof parsedUser === "object" &&
         parsedUser.role === "candidate"
       ) {
         setAppliedApplications(data.appliedApplications);
@@ -78,14 +82,44 @@ export default function ApplyJobs({
     }
   }, [data]);
 
-  if (isLoading)
-    return <div className="flex justify-center p-8">Loading...</div>;
-  if (error)
-    return <div className="flex justify-center p-8">Error loading jobs</div>;
-
   const handleSearch = () => {
     setQueryTitle(searchTerm);
   };
+
+  if (isLoading)
+    return <div className="flex justify-center p-8">Loading...</div>;
+  if (error) {
+    if (isFetchBaseQueryError(error) && error.status !== 404) {
+      return (
+        <div className="px-3 font-bold text-gray-500 w-[100vw] flex flex-col items-center justify-center">
+          <Image
+            src="/error.webp"
+            alt="No data illustration"
+            width={600}
+            height={600}
+          />
+          {isFetchBaseQueryError(error) &&
+            "data" in error &&
+            (error.data as { error: string })?.error}
+        </div>
+      );
+    } else {
+      return (
+        <div className="px-3 font-bold text-gray-500 w-[100vw] flex flex-col items-center justify-center">
+          <Image
+            src="/notfound.jpg"
+            alt="No data illustration"
+            width={600}
+            height={600}
+          />
+          {isFetchBaseQueryError(error) &&
+            "data" in error &&
+            (error.data as { error: string })?.error}
+        </div>
+      );
+    }
+  }
+  // return <div className="flex justify-center p-8">Error loading jobs</div>;
 
   const handleLogout = () => {
     // Clear user data and token

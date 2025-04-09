@@ -93,7 +93,7 @@ export default function Login() {
           delete userWithoutCustomFields.organizationInfo.customFields;
         }
         Cookies.set("user", JSON.stringify(userWithoutCustomFields), {
-          expires: 7,
+          expires: 1,
         }); // Expires in 7 days
         setUserLoggedIn(true);
       }
@@ -242,7 +242,7 @@ export default function Login() {
                 <ReCAPTCHA
                   sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
                   onChange={(token) => {
-                    token && setCaptcha(token);
+                    if (token) setCaptcha(token);
                   }}
                 />
 

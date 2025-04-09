@@ -180,10 +180,13 @@ export async function POST(req: Request) {
           );
         }
 
-        const orgInfo = await Organization.findById(candidateInOrg.organizationId, {
-          adminId: 0,
-          lanes: 0,
-        });
+        const orgInfo = await Organization.findById(
+          candidateInOrg.organizationId,
+          {
+            adminId: 0,
+            lanes: 0,
+          }
+        );
 
         const token = signToken({
           id: candidateInOrg._id,
@@ -237,7 +240,10 @@ export async function POST(req: Request) {
       }
 
       // If candidate exists in a single organization, proceed to check password
-      const isPasswordValid = await bcrypt.compare(password, candidate.password);
+      const isPasswordValid = await bcrypt.compare(
+        password,
+        candidate.password
+      );
       if (!isPasswordValid) {
         return NextResponse.json(
           { error: "Invalid credentials" },

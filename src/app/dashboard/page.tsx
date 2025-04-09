@@ -36,14 +36,14 @@ export interface Assignment {
     jobId: {
       title: string;
       skills: string[];
-      description : string
+      description: string;
     };
   };
   jobId: {
-    _id : string;
+    _id: string;
     title: string;
     skills: string[];
-    description : string
+    description: string;
   };
   name: string;
   resume: {

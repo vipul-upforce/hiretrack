@@ -29,6 +29,7 @@ import { Resume } from "@/lib/redux/types";
 import { parseResumeFromPdf } from "@/lib/parse-resume-from-pdf";
 import FormUpdater from "./FormUpdater";
 import Cookies from "js-cookie";
+import * as pdfjs from "pdfjs-dist";
 
 // New function to call the evaluate API
 async function evaluateCandidate(
@@ -109,6 +110,24 @@ const handleFileParse = async (
 };
 
 type CandidateFormValues = ReturnType<typeof getInitialValues>;
+
+// Add this function before handleSubmit
+const checkPdfPageCount = async (file: File): Promise<number> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const arrayBuffer = reader.result as ArrayBuffer;
+      try {
+        const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
+        resolve(pdf.numPages);
+      } catch (error) {
+        reject(error);
+      }
+    };
+    reader.onerror = (error) => reject(error);
+    reader.readAsArrayBuffer(file);
+  });
+};
 
 export function CreateCandidateDialog({
   jobId,
@@ -222,7 +241,12 @@ export function CreateCandidateDialog({
       // Step 1: Create the candidate
       const createdCandidate = await createCandidate(candidateData).unwrap();
       const candidateId = createdCandidate._id;
-      evaluateCandidate(candidateId, evaluateCandidateMutation, toast);
+      if (values.resume && values.resume.type === "application/pdf") {
+        const pageCount = await checkPdfPageCount(values.resume);
+        if (pageCount <= 3) {
+          evaluateCandidate(candidateId, evaluateCandidateMutation, toast);
+        }
+      }
 
       // Step 3: Handle additional updates (if applicable)
       if (user?.role === "candidate") {
