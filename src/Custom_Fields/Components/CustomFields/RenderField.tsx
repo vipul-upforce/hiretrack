@@ -22,6 +22,7 @@ import PasswordField from "@/components/ui/PasswordField";
 import TimePicker from "@/components/ui/time-picker";
 import DatePicker from "@/components/ui/datepicker";
 import { Button } from "@/components/ui/button";
+// import { toast } from "@/hooks/use-toast";
 // import { useToast } from "@/hooks/use-toast";
 interface FileData {
   base64: string;
@@ -308,24 +309,49 @@ export const RenderField = ({
             onFilesChange={async (files: File[] | FileData[]) => {
               try {
                 const base64Files = await Promise.all(
-                  files.map(async (file) => {
-                    let fileurl;
-                    if ((file as FileData).base64) {
-                      fileurl = (file as FileData).base64;
-                    } else {
-                      if ((file as FileData).base64 === "") {
-                        fileurl = "";
+                  files
+                    // .filter((file) => {
+                    //   if (
+                    //     user.role === "candidate" &&
+                    //     file.size > 3 * 1024 * 1024
+                    //   ) {
+                    //     toast({
+                    //       title: `File "${file.name}" exceeds 3MB. Please upload a smaller file.`,
+                    //       variant: "destructive",
+                    //     });
+                    //     return false;
+                    //   }
+
+                    //   if (
+                    //     ["hr", "admin", "interviewer"].includes(user.role) &&
+                    //     file.size > 50 * 1024 * 1024
+                    //   ) {
+                    //     toast({
+                    //       title: `File "${file.name}" exceeds 50MB. Please upload a smaller file.`,
+                    //       variant: "destructive",
+                    //     });
+                    //     return false;
+                    //   }
+                    //   return true;
+                    // })
+                    .map(async (file) => {
+                      let fileurl;
+                      if ((file as FileData).base64) {
+                        fileurl = (file as FileData).base64;
                       } else {
-                        fileurl = await fileToBase64(file as File);
+                        if ((file as FileData).base64 === "") {
+                          fileurl = "";
+                        } else {
+                          fileurl = await fileToBase64(file as File);
+                        }
                       }
-                    }
-                    return {
-                      base64: fileurl,
-                      name: file.name,
-                      type: file.type,
-                      size: file.size,
-                    };
-                  })
+                      return {
+                        base64: fileurl,
+                        name: file.name,
+                        type: file.type,
+                        size: file.size,
+                      };
+                    })
                 );
                 const fileNames = base64Files.map((file) => file.name);
                 const hasDuplicates =

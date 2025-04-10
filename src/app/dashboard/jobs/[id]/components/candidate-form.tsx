@@ -20,6 +20,7 @@ import { v4 as uuidv4 } from "uuid";
 import CustomFields from "@/Custom_Fields/Components/CustomFields";
 import Cookies from "js-cookie";
 import { useEffect, useState } from "react";
+import { toast } from "@/hooks/use-toast";
 
 interface CandidateFormProps {
   onFileUpload?: (file: File) => void;
@@ -46,8 +47,8 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
       ? values.assignment.interviewerId
       : values.assignment?.interviewerId?._id || "";
 
-    const userCookie = Cookies.get("user") || "{}";
-    const user = JSON.parse(userCookie);
+  const userCookie = Cookies.get("user") || "{}";
+  const user = JSON.parse(userCookie);
 
   useEffect(() => {
     if (tempResumeUrl) {
@@ -84,6 +85,26 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
             accept={{ "application/pdf": [".pdf"] }}
             maxFiles={1}
             onFileSelect={async (files) => {
+              if (
+                user.role === "candidate" &&
+                files[0].size > 3 * 1024 * 1024
+              ) {
+                toast({
+                  title: "File size exceeds 3MB. Please upload a smaller file.",
+                  variant: "destructive",
+                });
+                return;
+              }
+              if (
+                ["hr", "admin", "interviewer"].includes(user.role) &&
+                files[0].size > 50 * 1024 * 1024
+              ) {
+                toast({
+                  title: "File size exceeds 3MB. Please upload a smaller file.",
+                  variant: "destructive",
+                });
+                return;
+              }
               setFieldValue("resume", files[0]);
               if (files[0]) {
                 setTempResumeUrl(URL.createObjectURL(files[0]));
@@ -243,140 +264,176 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
             )}
           </div>
         </div>
-        
-        {/* Assignment Section */}
-        {user && user.role!=="candidate" && <>
-          <div className="space-y-4 border-t pt-4">
-          <Label className="text-lg font-semibold">Assignment</Label>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Assign To</Label>
-              <Select
-                value={currentInterviewerId}
-                onValueChange={(value) =>
-                  setFieldValue("assignment.interviewerId", value)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select interviewer" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="-1">None</SelectItem>
-                  {interviewers?.map((interviewer) => (
-                    <SelectItem key={interviewer._id} value={interviewer._id}>
-                      {interviewer.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors?.assignment && (
-                <p className="text-sm text-red-500">
-                  {String(
-                    errors.assignment[
-                      "interviewerId" as keyof typeof errors.assignment
-                    ] || ""
-                  )}
-                </p>
-              )}
-            </div>
 
-            <div className="space-y-2">
-              <Label>Deadline</Label>
-              <DatePicker
-                date={
-                  values.assignment?.deadline
-                    ? new Date(values.assignment.deadline)
-                    : undefined
-                }
-                onDateChange={(date) =>
-                  setFieldValue("assignment.deadline", date)
-                }
-                onBlur={() => {
-                  if (values.assignment?.deadline) {
-                    setFieldValue(
-                      "assignment.deadline",
-                      new Date(values.assignment.deadline)
-                    );
-                  }
-                }}
-                placeholder="Select deadline"
-              />
-              {errors?.assignment && (
-                <p className="text-sm text-red-500">
-                  {String(
-                    errors.assignment[
-                      "deadline" as keyof typeof errors.assignment
-                    ] || ""
+        {/* Assignment Section */}
+        {user && user.role !== "candidate" && (
+          <>
+            <div className="space-y-4 border-t pt-4">
+              <Label className="text-lg font-semibold">Assignment</Label>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Assign To</Label>
+                  <Select
+                    value={currentInterviewerId}
+                    onValueChange={(value) =>
+                      setFieldValue("assignment.interviewerId", value)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select interviewer" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="-1">None</SelectItem>
+                      {interviewers?.map((interviewer) => (
+                        <SelectItem
+                          key={interviewer._id}
+                          value={interviewer._id}
+                        >
+                          {interviewer.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors?.assignment && (
+                    <p className="text-sm text-red-500">
+                      {String(
+                        errors.assignment[
+                          "interviewerId" as keyof typeof errors.assignment
+                        ] || ""
+                      )}
+                    </p>
                   )}
-                </p>
-              )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Deadline</Label>
+                  <DatePicker
+                    date={
+                      values.assignment?.deadline
+                        ? new Date(values.assignment.deadline)
+                        : undefined
+                    }
+                    onDateChange={(date) =>
+                      setFieldValue("assignment.deadline", date)
+                    }
+                    onBlur={() => {
+                      if (values.assignment?.deadline) {
+                        setFieldValue(
+                          "assignment.deadline",
+                          new Date(values.assignment.deadline)
+                        );
+                      }
+                    }}
+                    placeholder="Select deadline"
+                  />
+                  {errors?.assignment && (
+                    <p className="text-sm text-red-500">
+                      {String(
+                        errors.assignment[
+                          "deadline" as keyof typeof errors.assignment
+                        ] || ""
+                      )}
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-        </>
-        }
+          </>
+        )}
 
         <div className="space-y-2">
           <Label>Additional Attachments</Label>
           <FileUpload
             accept={{}}
-            maxFiles={user.role==="candidate"?2:30}
+            maxFiles={user.role === "candidate" ? 2 : 30}
             onFileSelect={(files) => {
               const currentFiles = attachmentsField.value || [];
-              const newFiles = files.map((file) => {
-                let newFileName = file.name;
 
-                const fileExists = currentFiles.some(
-                  (att: File) => att.name === file.name
-                );
+              const newFiles = files
+                .filter((file) => {
+                  if (
+                    user.role === "candidate" &&
+                    file.size > 3 * 1024 * 1024
+                  ) {
+                    toast({
+                      title: `File "${file.name}" exceeds 3MB. Please upload a smaller file.`,
+                      variant: "destructive",
+                    });
+                    return false;
+                  }
+                  if (
+                    ["hr", "admin", "interviewer"].includes(user.role) &&
+                    file.size > 50 * 1024 * 1024
+                  ) {
+                    toast({
+                      title: `File "${file.name}" exceeds 50MB. Please upload a smaller file.`,
+                      variant: "destructive",
+                    });
+                    return false;
+                  }
+                  return true;
+                })
+                .map((file) => {
+                  let newFileName = file.name;
 
-                if (fileExists) {
-                  const fileExtension = file.name.split(".").pop();
-                  const baseName = file.name.replace(/\.[^/.]+$/, "");
-                  newFileName = `${baseName}_${uuidv4()}.${fileExtension}`;
-                }
+                  const fileExists = currentFiles.some(
+                    (att: File) => att.name === file.name
+                  );
 
-                return new File([file], newFileName, { type: file.type });
-              });
-              setFieldValue("attachments", [...currentFiles, ...newFiles]);
+                  if (fileExists) {
+                    const fileExtension = file.name.split(".").pop();
+                    const baseName = file.name.replace(/\.[^/.]+$/, "");
+                    newFileName = `${baseName}_${uuidv4()}.${fileExtension}`;
+                  }
+
+                  return new File([file], newFileName, { type: file.type });
+                });
+
+              const updatedFileSelection = [...currentFiles, ...newFiles];
+              if (
+                updatedFileSelection.length > 2 &&
+                user.role === "candidate"
+              ) {
+                toast({
+                  title: "Maximum 2 files are allowed",
+                  variant: "destructive",
+                });
+                return;
+              }
+              setFieldValue("attachments", updatedFileSelection);
             }}
             files={attachmentsField.value}
-
-          
-            setter = {(files)=>setFieldValue("attachments", files) }
+            setter={(files) => setFieldValue("attachments", files)}
 
             // setter={(files: AttachmentFile[]) => {
             //   const currentFiles: AttachmentFile[] = values.attachments || [];
-            
+
             //   const updatedFiles = files.map((newFile) => {
             //     const oldFile = currentFiles.find(
             //       (old) =>
             //         old.name !== newFile.name &&
             //         (old.customId ? old.customId === newFile.customId : old.lastModified === newFile.lastModified)
             //     );
-            
+
             //     if (oldFile) {
             //       console.log(`Renamed file: ${oldFile.name} → ${newFile.name}`);
-            
+
             //       // Check for duplicates
             //       const isDuplicate = currentFiles.some(
             //         (existingFile) => existingFile.name === newFile.name && existingFile !== newFile
             //       );
-            
+
             //       if (isDuplicate) {
             //         console.warn(`⚠️ Duplicate detected! Reverting ${newFile.name} back to ${oldFile.name}`);
             //         return { ...newFile, name: oldFile.name }; // Revert to old name
             //       }
             //     }
-            
+
             //     return newFile;
             //   });
-            
+
             //   setFieldValue("attachments", updatedFiles);
             // }}
-            
-            
-            
           />
         </div>
         <CustomFields formName="Candidate" />
