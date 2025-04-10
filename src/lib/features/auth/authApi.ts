@@ -1,4 +1,4 @@
-import { Organization } from '@/components/auth/OrganizationDialog';
+import { OneOfMulOrganization } from '@/components/auth/OrganizationDialog';
 import { OrgInfo } from '@/lib/models/user';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
@@ -22,7 +22,7 @@ interface AuthResponse {
   message: string;
   user: User;
   _id?:string;
-  organizations?: Organization[] 
+  organizations?: OneOfMulOrganization[] 
 }
 
 export const authApi = createApi({

@@ -1,7 +1,7 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { Candidate } from "@/types/candidate";
 import { ICandidateHistory } from "@/lib/models/history";
-import { Organization } from "@/components/auth/OrganizationDialog";
+import { OneOfMulOrganization } from "@/components/auth/OrganizationDialog";
 import { OrgInfo } from "@/lib/models/user";
 
 interface AuthRequest {
@@ -23,7 +23,7 @@ interface AuthResponse {
   message: string;
   user: ICandidate;
   _id?: string;
-  organizations?: Organization[];
+  organizations?: OneOfMulOrganization[];
 }
 
 export const candidateApi = createApi({
