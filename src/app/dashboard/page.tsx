@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Cookies from "js-cookie";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 import { OrgInfo } from "@/lib/models/user";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-// import { Skeleton } from "@/components/ui/skeleton";
 import DashboardLoader from "./components/dashboard-loader";
 import ActionItems from "@/components/actionitems";
 
@@ -64,7 +65,6 @@ export interface Assignment {
   expectedCTC?: number;
   currentCTC?: number;
   noticePeriod: number;
-  // currentLocation: string;
   remarks: {
     description: string;
     date: string;
@@ -91,6 +91,8 @@ export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchText, setSearchText] = useState("");
+  const [filterText, setFilterText] = useState("");
   const shouldShowAssignments = user?.role === "admin" || user?.role === "hr";
 
   // Fetch assignments
@@ -105,7 +107,6 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    // Get user data from localStorage if available
     const userData = Cookies.get("user");
     if (userData) {
       setUser(JSON.parse(userData));
@@ -113,8 +114,33 @@ export default function DashboardPage() {
     fetchAssignments();
   }, []);
 
-  // Get today's assignments
-  const todayAssignments = assignments?.filter((assignment) => {
+  const applyFilter = () => {
+    setFilterText(searchText);
+  };
+
+  const filteredAssignments = assignments?.filter((assignment) => {
+    if (!filterText) return true;
+    const searchRegex = new RegExp(filterText, "i");
+
+    const jobSkills = assignment.jobId?.skills || [];
+    const assignmentSkills = assignment.skills || [];
+    const assignmentJobSkills = assignment.assignment?.jobId?.skills || [];
+    const allSkills = [
+      ...jobSkills,
+      ...assignmentSkills,
+      ...assignmentJobSkills,
+    ];
+
+    return (
+      searchRegex.test(assignment.candidateName || "") ||
+      searchRegex.test(assignment?.assignment?.interviewerId?.name || "") ||
+      searchRegex.test(assignment.jobId?.title || "") ||
+      (allSkills.length > 0 &&
+        allSkills.some((skill) => searchRegex.test(skill || "")))
+    );
+  });
+
+  const todayAssignments = filteredAssignments?.filter((assignment) => {
     const assignmentDate = new Date(
       assignment.assignment.deadline
     ).toDateString();
@@ -122,59 +148,17 @@ export default function DashboardPage() {
     return assignmentDate === today;
   });
 
-  // Get this week's assignments
-  const thisWeekAssignments = assignments?.filter((assignment) => {
+  const thisWeekAssignments = filteredAssignments?.filter((assignment) => {
     const assignmentDate = new Date(assignment.assignment.deadline);
     const startOfWeek = new Date();
-    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay()); // Set to the start of the week (Sunday)
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
     const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(endOfWeek.getDate() + 6); // Set to the end of the week (Saturday)
+    endOfWeek.setDate(endOfWeek.getDate() + 6);
     return assignmentDate >= startOfWeek && assignmentDate <= endOfWeek;
   });
 
   return (
     <div className="space-y-6">
-      {/* <Modal isOpen={true} onClose={() => {}} imageUrl="/notfound.png" /> */}
-      {/* <Card>
-        <CardHeader>
-          <CardTitle className="text-3xl font-bold">
-            Welcome to HireTrack
-          </CardTitle>
-          {user ? (
-            user.organizationInfo.name
-          ) : (
-            <Skeleton className="w-28 h-[16px] rounded-lg" />
-          )}
-        </CardHeader>
-        <CardContent>
-          <div className="mt-4 ">
-            <h2 className="text-xl font-semibold mb-2">
-              {user ? (
-                `${user.name}`
-              ) : (
-                <Skeleton className="w-28 h-[20px] rounded-lg" />
-              )}
-            </h2>
-            {user ? (
-              <div className="space-y-2 text-muted-foreground">
-                <p>Role: {user.role}</p>
-                <p>Email: {user.email}</p>
-              </div>
-            ) : (
-              <div className="space-y-2 text-muted-foreground">
-                <div className="flex flex-row justify-start items-center">
-                  Email: <Skeleton className="w-28 h-[16px] rounded-lg" />
-                </div>
-                <div className="flex flex-row justify-start items-center">
-                  Role: <Skeleton className="w-28 h-[16px] rounded-lg" />
-                </div>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card> */}
-
-      {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardHeader>
@@ -208,15 +192,39 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-      {/* Today's Interviews */}
+
+      {/* Search Input and Filter Button */}
+      <div className="mt-6 flex gap-2 items-center">
+        <Input
+          placeholder="Search assignments..."
+          value={searchText}
+          onChange={(e) => {
+            const value = e.target.value;
+            const sanitizedValue = value.replace(
+              /[\/\\*+?|\{\}\[\]()^$\.]/g,
+              ""
+            );
+
+            setSearchText(sanitizedValue);
+          }}
+          className="max-w-md"
+          onKeyPress={(e) => {
+            if (e.key === "Enter") {
+              applyFilter();
+            }
+          }}
+        />
+        <Button onClick={applyFilter}>Filter</Button>
+      </div>
+
       {shouldShowAssignments ? (
-        <div className="mt-6">
+        <div>
           <h2 className="text-2xl font-bold mb-4">All Assignments</h2>
           {isLoading ? (
             <DashboardLoader />
-          ) : assignments?.length > 0 ? (
+          ) : filteredAssignments?.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {assignments?.map((assignment) => (
+              {filteredAssignments?.map((assignment) => (
                 <ActionItems
                   key={assignment.id || assignment._id}
                   assignment={assignment}
@@ -232,7 +240,7 @@ export default function DashboardPage() {
         </div>
       ) : (
         <div className="mt-6">
-          <h2 className="text-2xl font-bold mb-4">Today&apos;s Interviews</h2>
+          <h2 className="text-2xl font-bold mb-4">Today's Interviews</h2>
           {isLoading ? (
             <DashboardLoader />
           ) : todayAssignments?.length > 0 ? (
@@ -269,7 +277,7 @@ export default function DashboardPage() {
                         {new Date(
                           assignment?.assignment?.deadline
                         ).toLocaleDateString() || "N/A"}
-                        &nbsp; T{" "}
+                          T{" "}
                         {new Date(
                           assignment?.assignment?.deadline
                         ).toLocaleTimeString([], {

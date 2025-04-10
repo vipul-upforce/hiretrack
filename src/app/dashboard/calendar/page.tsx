@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { useEffect, useState, useRef } from "react";
 import { EventClickArg } from "@fullcalendar/core";
 import { DateClickArg } from "@fullcalendar/interaction";
+import { Input } from "@/components/ui/input"; // Add Input import
+import { Button } from "@/components/ui/button"; // Add Button import
 import {
   CandidateDetailsDialog,
   formatTime,
@@ -43,7 +45,6 @@ interface CandidateAssignment {
   expectedCTC?: number;
   currentCTC?: number;
   noticePeriod: number;
-  // currentLocation: string;
   attachments: Array<{
     id: string;
     name: string;
@@ -102,21 +103,61 @@ export default function CalendarPage() {
     useState<CustomCalendarEvent | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const calendarRef = useRef<FullCalendar>(null);
+  const [searchText, setSearchText] = useState("");
+  const [filterText, setFilterText] = useState("");
 
   useEffect(() => {
     refetch();
   }, []);
 
   useEffect(() => {
-    if(!isDetailsOpen){
-      setSelectedEvent(null)
+    if (!isDetailsOpen) {
+      setSelectedEvent(null);
     }
-  }, [isDetailsOpen])
+  }, [isDetailsOpen]);
+
+  const applyFilter = () => {
+    setFilterText(searchText);
+  };
+
+  const filteredAssignments = assignments?.filter((assignment) => {
+    if (!filterText) return true;
+    const searchRegex = new RegExp(filterText, "i");
+
+    const jobSkills =
+      (typeof assignment.jobId === "object" && assignment.jobId?.skills) || [];
+    const assignmentSkills = assignment.skills || [];
+    const assignmentJobSkills = assignment.assignment?.jobId?.skills || [];
+    const allSkills = [
+      ...jobSkills,
+      ...assignmentSkills,
+      ...assignmentJobSkills,
+    ];
+
+    return (
+      searchRegex.test(assignment.name || "") ||
+      searchRegex.test(
+        assignment.jobId && typeof assignment.jobId === "object"
+          ? assignment.jobId.title
+          : ""
+      ) ||
+      searchRegex.test(
+        (typeof assignment?.assignment?.interviewerId === "object" &&
+          assignment?.assignment?.interviewerId?.name) ||
+          ""
+      ) ||
+      (allSkills.length > 0 &&
+        allSkills.some((skill) => searchRegex.test(skill || "")))
+    );
+  });
 
   const events =
-    assignments?.map((candidate) => ({
+    filteredAssignments?.map((candidate) => ({
       id: candidate._id,
-      title: candidate?.jobId?.title,
+      title:
+        candidate?.jobId && typeof candidate.jobId === "object"
+          ? candidate.jobId.title
+          : "Unknown",
       start: candidate?.assignment?.deadline
         ? new Date(candidate.assignment.deadline)
         : new Date(),
@@ -223,6 +264,31 @@ export default function CalendarPage() {
         </CardHeader>
       </Card>
 
+      {/* Search Input and Filter Button */}
+      <div className="flex gap-2 items-center">
+        <Input
+          placeholder="Search assignments..."
+          value={searchText}
+          onChange={(e) => {
+            const value = e.target.value;
+            const sanitizedValue = value.replace(
+              /[\/\\*+\?|\{\}\[\]()^$\.]/g,
+              ""
+            );
+
+            setSearchText(sanitizedValue);
+          }}
+          className="max-w-md"
+          onKeyPress={(e) => {
+            if (e.key === "Enter") {
+              applyFilter();
+            }
+          }}
+        />
+        <Button onClick={applyFilter}>Filter</Button>
+        <Button onClick={() => setFilterText("")}>Clear</Button>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-6 flex-1 min-h-0">
         <Card className="h-full">
           <CardContent className="p-4 h-full">
@@ -254,7 +320,7 @@ export default function CalendarPage() {
                 return (
                   <div
                     id="assignment-event"
-                    className="bg-white px-2 w-full rounded-xl border-[1px] border-solid border-gray-300  py-2 px-2 shadow-md transition hover:shadow-xl overflow-x-clip cursor-pointer"
+                    className="bg-white px-2 w-full rounded-xl border-[1px] border-solid border-gray-300 py-2 px-2 shadow-md transition hover:shadow-xl overflow-x-clip cursor-pointer"
                   >
                     <div className="flex flex-col">
                       <p className="text-sm font-bold text-black capitalize">
@@ -265,14 +331,14 @@ export default function CalendarPage() {
                       </p>
                     </div>
                     <div className="flex flex-row justify-between items-center">
-                      <p className="text-sm  text-black capitalize">
+                      <p className="text-sm text-black capitalize">
                         {arg.event._def.extendedProps.interviewer.name}
                       </p>
                       <p className="text-sm text-gray-500 font-thin">(I)</p>
                     </div>
                     <hr className="my-1" />
                     <div className="flex flex-row justify-between items-center">
-                      <p className="text-sm  text-black text-wrap capitalize">
+                      <p className="text-sm text-black text-wrap capitalize">
                         {arg.event._def.extendedProps.candidate.name}
                       </p>
                       <p className="text-sm text-gray-500 font-thin">(C)</p>
@@ -286,7 +352,7 @@ export default function CalendarPage() {
 
         <Card className="h-[calc(100vh-140px)] overflow-auto sticky top-6">
           <CardHeader>
-            <CardTitle>Today&apos;s Interview</CardTitle>
+            <CardTitle>Today's Interview</CardTitle>
           </CardHeader>
           <CardContent>
             {events
@@ -295,7 +361,6 @@ export default function CalendarPage() {
                   new Date(event.start).toLocaleDateString() ===
                   new Date().toLocaleDateString()
               )
-
               .map((event, i) => (
                 <div key={i}>
                   <ScrollArea className="">
@@ -330,41 +395,11 @@ export default function CalendarPage() {
                             {event.extendedProps.candidate.assignment?.deadline
                               ? new Date(
                                   event.extendedProps.candidate.assignment.deadline
-                                )
-                                  .toLocaleDateString("en-US", {
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric",
-                                  })
-                                  // .replace(/(\d+)(?=th|st|nd|rd)/, "$1") + ""
-                                // (new Date(
-                                //   event.extendedProps.candidate.assignment.deadline
-                                // ).getDate() %
-                                //   10 ===
-                                //   1 &&
-                                // new Date(
-                                //   event.extendedProps.candidate.assignment.deadline
-                                // ).getDate() !== 11
-                                //   ? "st"
-                                //   : new Date(
-                                //       event.extendedProps.candidate.assignment.deadline
-                                //     ).getDate() %
-                                //       10 ===
-                                //       2 &&
-                                //     new Date(
-                                //       event.extendedProps.candidate.assignment.deadline
-                                //     ).getDate() !== 12
-                                //   ? "nd"
-                                //   : new Date(
-                                //       event.extendedProps.candidate.assignment.deadline
-                                //     ).getDate() %
-                                //       10 ===
-                                //       3 &&
-                                //     new Date(
-                                //       event.extendedProps.candidate.assignment.deadline
-                                //     ).getDate() !== 13
-                                //   ? "rd"
-                                //   : "")
+                                ).toLocaleDateString("en-US", {
+                                  year: "numeric",
+                                  month: "long",
+                                  day: "numeric",
+                                })
                               : "Unknown"}
                           </span>
                         </div>
@@ -442,7 +477,6 @@ export default function CalendarPage() {
           onOpenChange={setIsDetailsOpen}
           onUpdate={async () => {
             const { data } = await refetch();
-            // Update selectedEvent after refetch
             const updatedCandidate = data?.find(
               (candidate) =>
                 candidate._id === selectedEvent?.extendedProps.candidate._id
