@@ -15,7 +15,7 @@ import Image from "next/image";
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import { SerializedError } from "@reduxjs/toolkit";
 import { Input } from "@/components/ui/input";
-import { verifyToken } from "@/lib/jwt";
+// import { verifyToken } from "@/lib/jwt";
 
 // Define the Job type here or import it if it's defined elsewhere
 interface Job {
@@ -70,8 +70,8 @@ export default function ApplyJobs({
 
     if (user && data) {
       setUserLoggedIn(true);
-      const parsedCookie = JSON.parse(user);
-      const parsedUser = verifyToken(parsedCookie);
+      const parsedUser = JSON.parse(user);
+      // const parsedUser = verifyToken(parsedCookie);
       if (
         parsedUser &&
         typeof parsedUser === "object" &&
@@ -88,7 +88,8 @@ export default function ApplyJobs({
 
   if (isLoading)
     return <div className="flex justify-center p-8">Loading...</div>;
-  if (error) {
+
+  if (error && !isLoading) {
     if (isFetchBaseQueryError(error) && error.status !== 404) {
       return (
         <div className="px-3 font-bold text-gray-500 w-[100vw] flex flex-col items-center justify-center">
@@ -157,7 +158,6 @@ export default function ApplyJobs({
           </Button>
         )}
       </div>
-
       <div className="flex gap-2 mb-4 w-full flex flex-row ">
         <div className="relative w-full flex flex-row items-center max-w-md">
           <Input
@@ -178,9 +178,9 @@ export default function ApplyJobs({
           Search
         </Button>
       </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {jobs && jobs.length > 0 ? (
+        {jobs &&
+          jobs.length > 0 &&
           jobs.map((job, index) => (
             <div
               key={index}
@@ -208,20 +208,19 @@ export default function ApplyJobs({
                 Experience: {job.experience} years
               </div>
             </div>
-          ))
-        ) : (
-          <div className="px-3 font-bold text-gray-500 w-[100vw] flex flex-col items-center justify-center">
-            <Image
-              src="/notfound.jpg"
-              alt="No data illustration"
-              width={600}
-              height={600}
-            />
-            No Jobs Found
-          </div>
-        )}
+          ))}
       </div>
-
+      {error && !jobs && (
+        <div className="px-3 font-bold text-gray-500 w-[100vw] flex flex-col items-center justify-center">
+          <Image
+            src="/notfound.jpg"
+            alt="No data illustration"
+            width={600}
+            height={600}
+          />
+          No Jobs Found
+        </div>
+      )}
       <JobModal
         job={selectedJob}
         isOpen={isModalOpen}

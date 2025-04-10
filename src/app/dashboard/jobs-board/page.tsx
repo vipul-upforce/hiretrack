@@ -259,8 +259,8 @@ export default function KanbanPage() {
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {columns.map((column) => (
-            <div key={column.id} className="space-y-4">
-              <Card>
+            <div key={column.id} className="space-y-4 min-h-[50vh] h-full ">
+              <Card className="h-full">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg font-semibold">
                     {column.title}
@@ -275,13 +275,13 @@ export default function KanbanPage() {
                     </span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="h-full">
                   <Droppable droppableId={column.id}>
                     {(provided: any) => (
                       <div
                         {...provided.droppableProps}
                         ref={provided.innerRef}
-                        className="space-y-3 min-h-[200px]"
+                        className="space-y-3 min-h-full"
                       >
                         {isCreatingJob && column.id === "open" && (
                           <div className="animate-pulse bg-muted/50 border rounded-lg p-3 shadow-sm">
@@ -289,7 +289,7 @@ export default function KanbanPage() {
                             <div className="h-4 w-1/3 bg-muted rounded"></div>
                           </div>
                         )}
-                        
+
                         {column.jobs.map((job, index) => (
                           <Draggable
                             key={job._id}

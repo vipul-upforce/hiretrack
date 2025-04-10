@@ -39,7 +39,7 @@ export default function GeminiConfigs({ onClose }: { onClose: () => void }) {
   };
 
   const validationSchema = Yup.object({
-    gemini_key: Yup.string().trim().max(50, "Max length 30 chars"),
+    gemini_key: Yup.string().trim().max(50, "Max length 50 chars"),
   });
 
   const handleSubmit = async (values: typeof initialValues) => {

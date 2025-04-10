@@ -76,8 +76,10 @@ export default function Signup() {
   };
 
   useEffect(() => {
-    if (window) {
-      const orgname = window.location.pathname.split("/")[1];
+    if (typeof window !== "undefined") {
+      const orgname = decodeURIComponent(
+        window.location.pathname.split("/")[1]
+      );
       setOrgName(orgname);
     }
   }, []);

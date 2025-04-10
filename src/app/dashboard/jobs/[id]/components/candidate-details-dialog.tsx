@@ -19,6 +19,7 @@ import {
   StarIcon,
   Dot,
   Star,
+  Copy,
 } from "lucide-react";
 import { PDFViewer } from "@/components/ui/pdf-viewer";
 import { Candidate } from "@/types/candidate";
@@ -110,6 +111,26 @@ export function CandidateDetailsDialog({
   const handleEditClick = () => {
     setIsEditing(true); // Open the edit dialog
     onOpenChange(false); // Close the current dialog
+  };
+
+  const handleCandidateInfoCopy = (email: string) => {
+    // e.preventDefault();
+    navigator.clipboard
+      .writeText(email)
+      .then(() => {
+        toast({
+          title: "Success",
+          description: "Candidate Email is copied to your clipboard",
+          variant: "default",
+        });
+      })
+      .catch((err) => {
+        toast({
+          title: "Error",
+          description: err.message || "Failed to copy the candidate email.",
+          variant: "destructive",
+        });
+      });
   };
 
   useEffect(() => {
@@ -230,26 +251,41 @@ export function CandidateDetailsDialog({
       >
         <DialogContent className="sm:max-w-[80vw] xl:max-w-[50vw] h-[90vh] p-0 overflow-hidden flex flex-col justify-start">
           <DialogHeader className="px-6 pt-6">
-            <DialogTitle className="text-lg font-semibold">
-              Candidate Details
+            <DialogTitle className="text-2xl font-semibold">
+              <div className="flex items-center justify-between">
+                <div className="">
+                  <div className="">{localCandidate.name}</div>
+                  <div className="text-gray-500 font-thin text-sm flex flex-row items-center justify-between w-full">
+                    {localCandidate.email}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="ml-2"
+                      onClick={() =>
+                        handleCandidateInfoCopy(localCandidate.email || "")
+                      }
+                      title="Copy Email"
+                    >
+                      <Copy size="1px" />
+                      <span className="sr-only">Copy Email</span>
+                    </Button>
+                  </div>
+                </div>
+                <div className="mr-6">
+                  <CandidateStatusBadge status={localCandidate.status} />
+                </div>
+              </div>
             </DialogTitle>
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto px-6 py-4 pt-0 space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <Label className={labelClass}>Name</Label>
-                <div className="text-sm">{localCandidate.name}</div>
-              </div>
-              <CandidateStatusBadge status={localCandidate.status} />
-            </div>
-            <div className="space-y-2"></div>
+            {/* <div className="space-y-2"></div>
             {localCandidate.email && (
               <div className="space-y-2 relative">
                 <Label className={labelClass}>Email</Label>
                 <p>{localCandidate.email || ""}</p>
               </div>
-            )}
+            )} */}
             <div className="space-y-2 relative">
               <Label className={labelClass}>
                 {localCandidate.jobId.title ||

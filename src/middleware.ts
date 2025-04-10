@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { verifyToken } from "./lib/jwt";
+// import { verifyToken } from "./lib/jwt";
 
 const unauthorizedInterviewerPages = [
   "/jobs-board",
@@ -34,9 +34,9 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Check if the user is authenticated
-  const user = await request.cookies.get("token")?.value;
-  const decrypedUser = JSON.stringify(user ? verifyToken(user) : "{}");
-  const userData = user ? JSON.parse(decrypedUser) : null;
+  const user = await request.cookies.get("user")?.value;
+  // const decrypedUser = JSON.stringify(user ? user : "{}");
+  const userData = user ? JSON.parse(user) : null;
 
   // Handle API routes authentication
   if (

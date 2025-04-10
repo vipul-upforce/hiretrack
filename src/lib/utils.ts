@@ -6,7 +6,7 @@ import {
   useSendMailMutation,
 } from "./features/org/orgApi";
 import { IJob } from "./models/job";
-import { toast } from "@/hooks/use-toast";
+// import { toast } from "@/hooks/use-toast";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -46,11 +46,11 @@ export const sentAssignmentMail = async (
     };
     const { error } = await sendEmail(reqBody);
     if (error) {
-      toast({
-        title: "Error",
-        description: "Email not sent.",
-        variant: "destructive",
-      });
+      // toast({
+      //   title: "Error",
+      //   description: "Email not sent.",
+      //   variant: "destructive",
+      // });
     }
   }
 };

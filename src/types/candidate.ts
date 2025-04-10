@@ -1,5 +1,6 @@
 import { CustomFieldValues } from "@/Custom_Fields/hooks/useCustomForm";
 import { ICandidateHistory } from "@/lib/models/history";
+import { Job } from "./job";
 
 export interface JobDetail {
   title: string;
@@ -12,6 +13,7 @@ export interface Candidate {
     _id: string;
     title: string;
     description: string;
+    skills?: string[];
   };
   name: string;
   location: string;
@@ -94,4 +96,5 @@ interface Assignment {
   assignedAt: string;
   status?: string;
   assignment?: { status: string };
+  jobId?: Job;
 } 

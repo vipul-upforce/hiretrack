@@ -24,7 +24,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import ForgotPasswordDialog from "@/components/auth/ForgotPasswordDialog";
 import OrganizationDialog, {
-  Organization,
+  OneOfMulOrganization,
 } from "@/components/auth/OrganizationDialog";
 import ReCAPTCHA from "react-google-recaptcha";
 
@@ -57,7 +57,9 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const [organizationDialogOpen, setOrganizationDialogOpen] = useState(false);
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [organizations, setOrganizations] = useState<OneOfMulOrganization[]>(
+    []
+  );
   const [loginFormValues, setLoginFormValues] = useState<LoginFormValues>();
   const [selectedOrg, setSelectedOrg] = useState<string>();
   const [captcha, setCaptcha] = useState<string>();

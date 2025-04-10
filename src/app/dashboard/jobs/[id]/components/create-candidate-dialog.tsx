@@ -42,7 +42,6 @@ async function evaluateCandidate(
   }) => void
 ) {
   try {
-    debugger;
     const result = await evaluateCandidateMutation({ candidateId }).unwrap();
     toast({
       title: "Evaluation Complete",

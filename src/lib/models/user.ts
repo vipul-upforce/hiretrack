@@ -19,7 +19,7 @@ export interface IUser {
   organizationInfo?: OrgInfo;
   name: string;
   email: string;
-  role: 'admin' | 'hr' | 'interviewer';
+  role: 'admin' | 'hr' | 'interviewer' | 'candidate';
   password: string;
   createdAt: Date;
   updatedAt: Date;
