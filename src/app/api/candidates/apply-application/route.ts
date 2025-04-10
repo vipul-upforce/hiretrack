@@ -6,7 +6,7 @@ export async function POST(request: NextRequest) {
   try {
     await connectToDatabase();
     const jobId = request.nextUrl.searchParams.get("jobid");
-    const { user } = (await auth()) || {};
+    const { user } = (await auth(request)) || {};
 
     if (!user) {
       return NextResponse.json(
@@ -34,10 +34,10 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     await connectToDatabase();
-    const { user } = (await auth()) || {};
+    const { user } = (await auth(request)) || {};
 
     if (!user) {
       return NextResponse.json(

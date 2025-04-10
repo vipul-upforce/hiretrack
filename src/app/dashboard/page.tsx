@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Cookies from "js-cookie";
 
@@ -9,6 +9,8 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 // import { Skeleton } from "@/components/ui/skeleton";
 import DashboardLoader from "./components/dashboard-loader";
 import ActionItems from "@/components/actionitems";
+import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
 
 interface User {
   name: string;
@@ -92,9 +94,11 @@ export default function DashboardPage() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const shouldShowAssignments = user?.role === "admin" || user?.role === "hr";
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6; // Adjust this number as needed
 
   // Fetch assignments
-  const fetchAssignments = async () => {
+  const fetchAssignments = useCallback(async () => {
     try {
       const response = await fetch("/api/candidates/assignments");
       const data = await response.json();
@@ -102,16 +106,21 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  useEffect(() => {
-    // Get user data from localStorage if available
-    const userData = Cookies.get("user");
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
-    fetchAssignments();
   }, []);
+
+  const checkUser = async () => {
+    const user = Cookies.get("token");
+    if (user) {
+      const decryptedResponse = await verifyAndDecryptJWTToken(String(user));
+      if (decryptedResponse.success && decryptedResponse.user) {
+        setUser(decryptedResponse.user);
+      }
+    }
+  };
+  useEffect(() => {
+    checkUser();
+    fetchAssignments();
+  }, [fetchAssignments]);
 
   // Get today's assignments
   const todayAssignments = assignments?.filter((assignment) => {
@@ -134,46 +143,6 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* <Modal isOpen={true} onClose={() => {}} imageUrl="/notfound.png" /> */}
-      {/* <Card>
-        <CardHeader>
-          <CardTitle className="text-3xl font-bold">
-            Welcome to HireTrack
-          </CardTitle>
-          {user ? (
-            user.organizationInfo.name
-          ) : (
-            <Skeleton className="w-28 h-[16px] rounded-lg" />
-          )}
-        </CardHeader>
-        <CardContent>
-          <div className="mt-4 ">
-            <h2 className="text-xl font-semibold mb-2">
-              {user ? (
-                `${user.name}`
-              ) : (
-                <Skeleton className="w-28 h-[20px] rounded-lg" />
-              )}
-            </h2>
-            {user ? (
-              <div className="space-y-2 text-muted-foreground">
-                <p>Role: {user.role}</p>
-                <p>Email: {user.email}</p>
-              </div>
-            ) : (
-              <div className="space-y-2 text-muted-foreground">
-                <div className="flex flex-row justify-start items-center">
-                  Email: <Skeleton className="w-28 h-[16px] rounded-lg" />
-                </div>
-                <div className="flex flex-row justify-start items-center">
-                  Role: <Skeleton className="w-28 h-[16px] rounded-lg" />
-                </div>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card> */}
-
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
@@ -215,15 +184,64 @@ export default function DashboardPage() {
           {isLoading ? (
             <DashboardLoader />
           ) : assignments?.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {assignments?.map((assignment) => (
-                <ActionItems
-                  key={assignment.id || assignment._id}
-                  assignment={assignment}
-                  fetchAssignments={fetchAssignments}
-                />
-              ))}
-            </div>
+            // <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            //   {assignments?.map((assignment) => (
+            //     <ActionItems
+            //       key={assignment.id || assignment._id}
+            //       assignment={assignment}
+            //       fetchAssignments={fetchAssignments}
+            //     />
+            //   ))}
+            // </div>
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {assignments
+                  ?.slice(
+                    (currentPage - 1) * itemsPerPage,
+                    currentPage * itemsPerPage
+                  )
+                  .map((assignment) => (
+                    <ActionItems
+                      key={assignment.id || assignment._id}
+                      assignment={assignment}
+                      fetchAssignments={fetchAssignments}
+                    />
+                  ))}
+              </div>
+
+              {/* Pagination Controls */}
+              <div className="flex justify-center items-center gap-4 mt-6">
+                <Button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
+                  disabled={currentPage === 1}
+                  variant="outline"
+                >
+                  Previous
+                </Button>
+                <span className="text-sm">
+                  Page {currentPage} of{" "}
+                  {Math.ceil(assignments.length / itemsPerPage)}
+                </span>
+                <Button
+                  onClick={() =>
+                    setCurrentPage((prev) =>
+                      Math.min(
+                        prev + 1,
+                        Math.ceil(assignments.length / itemsPerPage)
+                      )
+                    )
+                  }
+                  disabled={
+                    currentPage === Math.ceil(assignments.length / itemsPerPage)
+                  }
+                  variant="outline"
+                >
+                  Next
+                </Button>
+              </div>
+            </>
           ) : (
             <p className="text-lg font-semibold text-gray-500 text-center py-10 w-full flex justify-center items-center">
               No assignments found.

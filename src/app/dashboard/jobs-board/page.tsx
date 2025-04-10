@@ -30,6 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { verifyAndDecryptJWTToken } from "@/lib/auth";
 // import AddCustomFieldButton from "@/Custom_Fields/Components/AddCustomFieldButton";
 interface User {
   role: string;
@@ -64,10 +65,15 @@ export default function KanbanPage() {
   const [isCreatingJob, setIsCreatingJob] = useState(false);
 
   useEffect(() => {
-    const userData = Cookies.get("user");
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
+    (async () => {
+      const token = Cookies.get("token");
+      if (token) {
+        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+        if (decryptedResponse.success && decryptedResponse.user) {
+          setUser(decryptedResponse.user);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -289,7 +295,7 @@ export default function KanbanPage() {
                             <div className="h-4 w-1/3 bg-muted rounded"></div>
                           </div>
                         )}
-                        
+
                         {column.jobs.map((job, index) => (
                           <Draggable
                             key={job._id}

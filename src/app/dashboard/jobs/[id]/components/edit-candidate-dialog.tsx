@@ -20,7 +20,7 @@ import { v4 as uuidv4 } from "uuid";
 import { useParams, usePathname } from "next/navigation";
 import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
 import { ICandidateHistory } from "@/lib/models/history";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Resume } from "@/lib/redux/types";
 import { parseResumeFromPdf } from "@/lib/parse-resume-from-pdf";
 import FormUpdater from "./FormUpdater";
@@ -28,6 +28,7 @@ import Cookies from "js-cookie";
 import { IUser } from "@/lib/models/user";
 import { useSendMailMutation } from "@/lib/features/org/orgApi";
 import { sentAssignmentMail } from "@/lib/utils";
+import { verifyAndDecryptJWTToken } from "@/lib/auth";
 
 interface EditCandidateDialogProps {
   candidate: Candidate;
@@ -84,8 +85,19 @@ export function EditCandidateDialog({
   const { getDefaultValues, validationSchema } = useCustomForm(formName);
   const pathname = usePathname();
   const [parsedResumeData, setParsedResume] = useState<Resume | null>(null);
-  const userCookie = Cookies.get("user") || "{}";
-  const user = JSON.parse(userCookie);
+  const [user, setuser] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      const token = Cookies.get("token");
+      if (token) {
+        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+        if (decryptedResponse.success && decryptedResponse.user) {
+          setuser(decryptedResponse.user);
+        }
+      }
+    })();
+  }, []);
 
   const handleSubmit = async (values: Candidate) => {
     const fileNames = values.attachments.map((file) => file.name);
@@ -199,9 +211,15 @@ export function EditCandidateDialog({
       }
 
       const { data: result, error } = await updateCandidate(updatedCandidate);
-      if (!error) {
-        sentAssignmentMail(result, sendEmail);
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.data.error || "Failed to update job",
+          variant: "destructive",
+        });
+        return;
       }
+      sentAssignmentMail(result, sendEmail);
       const previousInterviewer =
         typeof candidate.assignment?.interviewerId === "object"
           ? candidate.assignment.interviewerId.name

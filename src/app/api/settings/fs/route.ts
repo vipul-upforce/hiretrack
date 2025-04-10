@@ -1,13 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect, { Settings } from "@/lib/mongodb";
+import { verifyAndDecryptToken } from "@/app/actions/auth";
 
 export async function GET(req: NextRequest) {
   try {
     await dbConnect();
-    const userCookie = req.cookies.get("user");
-    const userData = JSON.parse(userCookie?.value || "{}");
-    if (!userData || userData.role !== "admin") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    let organizationId = "";
+    const token = req.cookies.get("token");
+    if (token?.value) {
+      const decryptedResponse = await verifyAndDecryptToken(
+        String(token?.value)
+      );
+      const userData = decryptedResponse.user;
+      if (decryptedResponse.success) {
+        organizationId = userData.organizationId || "";
+        if (userData.role !== "admin") {
+          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+      }
     }
     if (!Settings) {
       return NextResponse.json(
@@ -16,7 +26,8 @@ export async function GET(req: NextRequest) {
       );
     }
     const settings = await Settings.findOne({
-      organizationId: userData.organizationId,
+      // organizationId: userData.organizationId,
+      organizationId: organizationId,
     });
 
     if (!settings) {
@@ -42,11 +53,19 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     await dbConnect();
-    const userCookie = req.cookies.get("user");
-    const userData = JSON.parse(userCookie?.value || "{}");
-
-    if (!userData || userData.role !== "admin") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    let organizationId = "";
+    const token = req.cookies.get("token");
+    if (token?.value) {
+      const decryptedResponse = await verifyAndDecryptToken(
+        String(token?.value)
+      );
+      const userData = decryptedResponse.user;
+      if (decryptedResponse.success) {
+        organizationId = userData.organizationId || "";
+        if (userData.role !== "admin") {
+          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+      }
     }
 
     if (!Settings) {
@@ -80,7 +99,8 @@ export async function PUT(req: NextRequest) {
 
     const updatedUser = await Settings.findOneAndUpdate(
       {
-        organizationId: userData.organizationId,
+        // organizationId: userData.organizationId,
+        organizationId: organizationId,
       },
       { fileStorage: storageObj },
       {

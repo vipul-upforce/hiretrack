@@ -1,15 +1,20 @@
 import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
+import { verifyAndDecryptJWTToken } from "@/lib/auth";
 
 const useRoles = () => {
   const [role, setRole] = useState<string | null>("");
 
   useEffect(() => {
-    const user = Cookies.get("user");
-    if (user) {
-      const userData = JSON.parse(user);
-      setRole(userData.role); // Adjust this based on your user object structure
-    }
+    (async () => {
+      const token = Cookies.get("token");
+      if (token) {
+        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+        if (decryptedResponse.success && decryptedResponse.user) {
+          setRole(decryptedResponse.user.role);
+        }
+      }
+    })();
   }, []);
 
   return role;

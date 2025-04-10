@@ -27,6 +27,7 @@ import OrganizationDialog, {
   Organization,
 } from "@/components/auth/OrganizationDialog";
 import ReCAPTCHA from "react-google-recaptcha";
+import { signToken, verifyAndDecryptToken } from "@/app/actions/auth";
 
 export interface LoginFormValues {
   email: string;
@@ -82,9 +83,12 @@ export default function Login() {
         setOrganizationDialogOpen(true);
         return;
       }
-      if (response.user) {
+      const decryptedResponse = await verifyAndDecryptToken(
+        String(response.user)
+      );
+      if (decryptedResponse.success && decryptedResponse.user) {
         const userWithoutCustomFields: UserWithoutCF = {
-          ...response.user,
+          ...decryptedResponse.user,
         };
         if (userWithoutCustomFields.organizationInfo) {
           userWithoutCustomFields.organizationInfo = {
@@ -92,9 +96,10 @@ export default function Login() {
           };
           delete userWithoutCustomFields.organizationInfo.customFields;
         }
-        Cookies.set("user", JSON.stringify(userWithoutCustomFields), {
+        const token = await signToken(userWithoutCustomFields);
+        Cookies.set("token", String(token), {
           expires: 1,
-        }); // Expires in 7 days
+        });
         setUserLoggedIn(true);
       }
       toast({
@@ -103,9 +108,11 @@ export default function Login() {
         variant: "default",
       });
       // debugger
-      if (response.user.role === "candidate") {
-        router.replace(`/${response.user.organizationInfo?.name}/apply-jobs`);
-      } else if (response.user.role === "admin" || "hr") {
+      if (decryptedResponse.user.role === "candidate") {
+        router.replace(
+          `/${decryptedResponse.user.organizationInfo?.name}/apply-jobs`
+        );
+      } else if (decryptedResponse.user.role === "admin" || "hr") {
         router.replace("/dashboard");
       }
     } catch (err: unknown) {
@@ -130,12 +137,6 @@ export default function Login() {
     }
   };
 
-  // useEffect(() => {
-  //   if (selectedOrg && loginFormValues) {
-  //     console.log("Selected Org: ",selectedOrg)
-  //   }
-  // }, [selectedOrg]);
-
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
       <Card className="w-full max-w-md">
@@ -144,11 +145,15 @@ export default function Login() {
             Login
             {selectedOrg && (
               <span
-                className="text-lg font-medium text-gray-700 "
+                className="text-lg font-medium text-gray-700 cursor-pointer"
                 style={{
                   animation: selectedOrg
                     ? "fadeInOrg 0.9s ease-in-out forwards"
                     : "none",
+                }}
+                onClick={() => {
+                  setSelectedOrg("");
+                  setOrganizationDialogOpen(true);
                 }}
               >
                 {organizations.find((org) => org.orgId === selectedOrg)?.name}

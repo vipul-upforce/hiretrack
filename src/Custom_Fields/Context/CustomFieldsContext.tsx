@@ -16,6 +16,7 @@ import {
   useUpdateCustomFieldsMutation,
 } from "@/lib/features/org/orgApi";
 import Cookies from "js-cookie";
+import { verifyAndDecryptJWTToken } from "@/lib/auth";
 
 // Create a provider component
 export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
@@ -28,25 +29,31 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
     const [getCustomField] = useLazyGetCustomFieldsQuery();
     const [userLoggedIn, setUserLoggedIn] = useState<boolean>(false);
 
-    const postCustomFields = useCallback(() => {
-      const user = Cookies.get("user");
-      if (user) {
-        const userObject = JSON.parse(user);
-        const orgId = userObject.organizationId;
-        updateCustomFields({
-          orgId: orgId,
-          customFields: customFields,
-        });
+    const postCustomFields = useCallback(async () => {
+      const token = Cookies.get("token");
+      if (token) {
+        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+        if (decryptedResponse.success && decryptedResponse.user) {
+          const userObject = decryptedResponse.user;
+          const orgId = userObject.organizationId;
+          updateCustomFields({
+            orgId: orgId,
+            customFields: customFields,
+          });
+        }
       }
     }, [customFields]);
 
     const getCustomFields = useCallback(async () => {
-      const user = Cookies.get("user");
-      if (user) {
-        const userObject = JSON.parse(user);
-        const orgId = userObject.organizationId;
-        const data = await getCustomField(orgId);
-        if (data.data) setCustomFields(data.data);
+      const token = Cookies.get("token");
+      if (token) {
+        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+        if (decryptedResponse.success && decryptedResponse.user) {
+          const userObject = decryptedResponse.user;
+          const orgId = userObject.organizationId;
+          const data = await getCustomField(orgId);
+          if (data.data) setCustomFields(data.data);
+        }
       }
     }, []);
 

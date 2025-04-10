@@ -15,7 +15,7 @@ import Image from "next/image";
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import { SerializedError } from "@reduxjs/toolkit";
 import { Input } from "@/components/ui/input";
-import { verifyToken } from "@/lib/jwt";
+import { verifyAndDecryptJWTToken } from "@/lib/auth";
 
 // Define the Job type here or import it if it's defined elsewhere
 interface Job {
@@ -32,6 +32,24 @@ const isFetchBaseQueryError = (
 ): error is FetchBaseQueryError => {
   return "status" in error;
 };
+
+const JobCardSkeleton = () => (
+  <div className="bg-white rounded-lg border-2 p-6 animate-pulse">
+    <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
+    <div className="space-y-2">
+      <div className="h-4 bg-gray-200 rounded w-full"></div>
+      <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+    </div>
+    <div className="flex flex-wrap gap-2 mt-4">
+      <div className="h-6 bg-gray-200 rounded-full w-20"></div>
+      <div className="h-6 bg-gray-200 rounded-full w-20"></div>
+      <div className="h-6 bg-gray-200 rounded-full w-20"></div>
+    </div>
+    <div className="mt-4">
+      <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+    </div>
+  </div>
+);
 
 export default function ApplyJobs({
   params,
@@ -66,28 +84,26 @@ export default function ApplyJobs({
   }, [params]);
 
   useEffect(() => {
-    const user = Cookies.get("user");
-
-    if (user && data) {
-      setUserLoggedIn(true);
-      const parsedCookie = JSON.parse(user);
-      const parsedUser = verifyToken(parsedCookie);
-      if (
-        parsedUser &&
-        typeof parsedUser === "object" &&
-        parsedUser.role === "candidate"
-      ) {
-        setAppliedApplications(data.appliedApplications);
+    (async () => {
+      const user = Cookies.get("token");
+      if (user && data) {
+        setUserLoggedIn(true);
+        const decryptedResponse = await verifyAndDecryptJWTToken(String(user));
+        if (
+          decryptedResponse.success &&
+          decryptedResponse.user &&
+          decryptedResponse.user.role === "candidate"
+        ) {
+          setAppliedApplications(data.appliedApplications);
+        }
       }
-    }
+    })();
   }, [data]);
 
   const handleSearch = () => {
     setQueryTitle(searchTerm);
   };
 
-  if (isLoading)
-    return <div className="flex justify-center p-8">Loading...</div>;
   if (error) {
     if (isFetchBaseQueryError(error) && error.status !== 404) {
       return (
@@ -123,7 +139,6 @@ export default function ApplyJobs({
 
   const handleLogout = () => {
     // Clear user data and token
-    Cookies.remove("user");
     Cookies.remove("token");
 
     toast({
@@ -180,7 +195,32 @@ export default function ApplyJobs({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {jobs && jobs.length > 0 ? (
+        {isLoading ? (
+          // Show skeleton loading cards
+          <>
+            {[...Array(6)].map((_, index) => (
+              <JobCardSkeleton key={index} />
+            ))}
+          </>
+        ) : error ? (
+          // Show error state
+          <div className="px-3 font-bold text-gray-500 w-[100vw] flex flex-col items-center justify-center">
+            <Image
+              src={
+                isFetchBaseQueryError(error) && error.status !== 404
+                  ? "/error.webp"
+                  : "/notfound.jpg"
+              }
+              alt="No data illustration"
+              width={600}
+              height={600}
+            />
+            {isFetchBaseQueryError(error) &&
+              "data" in error &&
+              (error.data as { error: string })?.error}
+          </div>
+        ) : jobs && jobs.length > 0 ? (
+          // Show job cards
           jobs.map((job, index) => (
             <div
               key={index}
@@ -210,6 +250,7 @@ export default function ApplyJobs({
             </div>
           ))
         ) : (
+          // Show no jobs found
           <div className="px-3 font-bold text-gray-500 w-[100vw] flex flex-col items-center justify-center">
             <Image
               src="/notfound.jpg"

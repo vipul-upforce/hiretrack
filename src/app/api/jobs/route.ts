@@ -3,14 +3,14 @@ import connectToDatabase from "@/lib/mongodb";
 import { Job } from "@/lib/mongodb";
 import { Candidate } from "@/lib/mongodb";
 import { auth } from "@/lib/auth";
-import { handleCustomFieldFiles, handleFileAttachments } from '@/lib/fileUtils';
+import { handleCustomFieldFiles, handleFileAttachments } from "@/lib/fileUtils";
+import { verifyAndDecryptToken } from "@/app/actions/auth";
 
-
-export async function GET() {
+export async function GET(request: NextRequest) {
   // console.log("ENV TEST: ",process.env.MONGODB_URI)
   try {
     await connectToDatabase();
-    const session = await auth();
+    const session = await auth(request);
     const organizationId = session?.user.organizationId;
     if (!Job) {
       return NextResponse.json(
@@ -31,7 +31,7 @@ export async function GET() {
     // Add candidate count to each job
     const jobsWithCount = await Promise.all(
       jobs.map(async (job) => {
-        const candidateCount =   await Candidate!.countDocuments({
+        const candidateCount = await Candidate!.countDocuments({
           jobId: job._id,
         });
         return { ...job.toObject(), candidateCount }; // Convert job to plain object and add count
@@ -46,7 +46,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  let fileStorage='local';
+  let fileStorage = "local";
   let organizationId;
   try {
     await connectToDatabase();
@@ -55,30 +55,37 @@ export async function POST(request: NextRequest) {
     if (!data || !data.title || !data.attachments) {
       return NextResponse.json({ error: "Invalid data" }, { status: 400 });
     }
-    
-        try {
-          const userCookie = request.cookies.get('user')?.value;
-          if (userCookie) {
-            const userData = JSON.parse(userCookie);
-            // console.log("$$$$$$$$$$$$JOBN ",userData)
-            fileStorage = userData.fileStorage || 'local';
-            organizationId = userData.organizationId || '';
-          }
-        } catch {
-          throw Error()
+
+    try {
+      const token = request.cookies.get("token");
+      if (token?.value) {
+        const decryptedResponse = await verifyAndDecryptToken(
+          String(token?.value)
+        );
+        const userData = decryptedResponse.user;
+        if (decryptedResponse.success) {
+          fileStorage = userData.fileStorage || "local";
+          organizationId = userData.organizationId || "";
         }
+      }
+    } catch {
+      throw Error();
+    }
 
     // Handle file uploads
     if (data.attachments) {
-      data.attachments = await handleFileAttachments(data.attachments, fileStorage, organizationId, request);
+      data.attachments = await handleFileAttachments(
+        data.attachments,
+        fileStorage,
+        organizationId
+      );
     }
-      
+
     if (data.customFields) {
       const cs = await handleCustomFieldFiles(
         data.customFields,
         fileStorage,
-        organizationId,
-        request
+        organizationId
       );
       data.customFields = cs;
     }

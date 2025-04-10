@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
-import { Job } from '@/lib/mongodb';
-import { Candidate } from '@/lib/mongodb';
-import { handleFileAttachments, handleCustomFieldFiles } from '@/lib/fileUtils';
-
+import { NextRequest, NextResponse } from "next/server";
+import connectToDatabase from "@/lib/mongodb";
+import { Job } from "@/lib/mongodb";
+import { Candidate } from "@/lib/mongodb";
+import { handleFileAttachments, handleCustomFieldFiles } from "@/lib/fileUtils";
+import { verifyAndDecryptToken } from "@/app/actions/auth";
 
 export async function GET(
   _request: Request,
@@ -18,43 +18,42 @@ export async function GET(
     const job = await Job.findById(id);
 
     if (!job) {
-      return NextResponse.json(
-        { error: 'Job not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 
     return NextResponse.json(job);
-  } catch (error : unknown)   {
+  } catch (error: unknown) {
     if (error instanceof Error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  let fileStorage='local';
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  let fileStorage = "local";
   let organizationId;
   try {
     await connectToDatabase();
     const data = await request.json();
     const { id } = await params;
-    try {
-      const userCookie = request.cookies.get('user')?.value;
-      if (userCookie) {
-        const userData = JSON.parse(userCookie);
-        // console.log("$$$$$$$$$$$$JOBN ",userData)
-        fileStorage = userData.fileStorage || 'local';
-        organizationId = userData.organizationId || '';
+    const token = request.cookies.get("token");
+    let userData;
+    if (token?.value) {
+      const decryptedResponse = await verifyAndDecryptToken(
+        String(token?.value)
+      );
+      if (decryptedResponse.success) {
+        userData = decryptedResponse.user;
+        fileStorage = userData.fileStorage || "local";
+        organizationId = userData.organizationId || "";
       }
-    } catch (error) {
-      console.error("Error parsing user cookie:", error);
     }
+
     if (!data || Object.keys(data).length === 0) {
-      return NextResponse.json({ error: 'Invalid data' }, { status: 400 });
+      return NextResponse.json({ error: "Invalid data" }, { status: 400 });
     }
 
     if (!Job) {
@@ -71,7 +70,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         request
       );
     }
-    
+
     if (data.customFields) {
       const cs = await handleCustomFieldFiles(
         data.customFields,
@@ -91,7 +90,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     await connectToDatabase();
     const { id } = await params;
@@ -101,7 +103,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     // First, find the job to ensure it exists
     const job = await Job.findById(id);
     if (!job) {
-      return NextResponse.json({ error: 'Job not found' }, { status: 404 });
+      return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 
     // Delete the job
@@ -111,13 +113,16 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     // Delete associated candidates and assignments
     await Candidate.deleteMany({ jobId: id }); // Adjust the field name as necessary
 
-    return NextResponse.json({ message: 'Job and associated candidates and assignments deleted successfully' }, { status: 200 });
+    return NextResponse.json(
+      {
+        message:
+          "Job and associated candidates and assignments deleted successfully",
+      },
+      { status: 200 }
+    );
   } catch (error: unknown) {
     if (error instanceof Error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
   }
-} 
+}

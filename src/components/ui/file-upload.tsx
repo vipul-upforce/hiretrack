@@ -1,11 +1,11 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { Upload, File as FileIcon, Pencil } from "lucide-react";
 import { RenameFileDialog } from "./rename-file-dialog";
 import Cookies from "js-cookie";
-
+import { verifyAndDecryptJWTToken } from "@/lib/auth";
 interface FileUploadProps {
   onFileSelect: (files: File[]) => void;
   onExistingFilesChange?: (
@@ -64,8 +64,20 @@ export function FileUpload({
     file: null,
     isExisting: false,
   });
-  const userCookie = Cookies.get("user") || "{}";
-  const user = JSON.parse(userCookie);
+  const [user, setuser] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      const token = Cookies.get("token");
+      if (token) {
+        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+        if (decryptedResponse.success && decryptedResponse.user) {
+          setuser(decryptedResponse.user);
+        }
+      }
+    })();
+  }, []);
+
   const handleRename = (newName: string) => {
     if (renameFile.file) {
       if (renameFile.file instanceof File) {
@@ -114,12 +126,14 @@ export function FileUpload({
             : "Drag 'n' drop files here, or click to select files"}
         </p>
         <p className="mt-2 text-sm text-gray-500">
-          {user.role === "candidate" && !accept["application/pdf"]
-            ? "Maximum 2 files are allowed" : null}
+          {user && user.role === "candidate" && !accept["application/pdf"]
+            ? "Maximum 2 files are allowed"
+            : null}
         </p>
         <p className="mt-2 text-sm text-gray-500">
-          {user.role === "candidate"
-            ? "File should have less than 3MB size" : null}
+          {user && user.role === "candidate"
+            ? "File should have less than 3MB size"
+            : null}
         </p>
       </div>
 

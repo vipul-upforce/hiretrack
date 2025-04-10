@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { History } from "@/lib/mongodb";
 import { Candidate } from "@/lib/mongodb";
+import { verifyAndDecryptToken } from "@/app/actions/auth";
 
 export async function GET(
   _request: NextRequest,
@@ -8,12 +9,17 @@ export async function GET(
 ) {
   try {
     await connectToDatabase();
-    const cookie = _request.cookies.get("user")?.value; 
-    let userData = null; 
-    if (cookie) {
-      userData = JSON.parse(cookie);
+    let role = "";
+    const token = _request.cookies.get("token");
+    if (token?.value) {
+      const decryptedResponse = await verifyAndDecryptToken(
+        String(token?.value)
+      );
+      const userData = decryptedResponse.user;
+      if (decryptedResponse.success) {
+        role = userData.role;
+      }
     }
-    const role = userData.role;
 
     const { id } = await params;
     if (!Candidate) {
@@ -23,16 +29,19 @@ export async function GET(
       );
     }
     let candidates = null;
-    const projection = role === "interviewer" ? { 
-      currentCTC: 0,
-      expectedCTC: 0,
-      customFields:0
-    } : {};
-    
+    const projection =
+      role === "interviewer"
+        ? {
+            currentCTC: 0,
+            expectedCTC: 0,
+            customFields: 0,
+          }
+        : {};
+
     candidates = await Candidate.find({ jobId: id }, projection)
-    .populate("remarks.userId", "name email")
-    .populate([
-      {
+      .populate("remarks.userId", "name email")
+      .populate([
+        {
           path: "assignment.interviewerId",
           select: "_id name email",
         },
@@ -40,24 +49,26 @@ export async function GET(
           path: "jobId",
           select: "title description ",
         },
-      ]).lean();
+      ])
+      .lean();
 
-      if(!History) return;
+    if (!History) return;
 
-      const candidatesWithHistory = await Promise.all(
+    const candidatesWithHistory = await Promise.all(
       candidates.map(async (candidate) => {
         const history = await History?.findOne({
           jobId: id,
-          candidateId: candidate._id.toString()
-        }).populate("history.currentInterviewer", "_id name email")
-        .populate("history.previousInterviewer", "_id name email") 
-        .populate("history.assignmentBy", "_id name email")
-        .populate("history.note.userId", "_id name email")
-        .lean();
-        
+          candidateId: candidate._id.toString(),
+        })
+          .populate("history.currentInterviewer", "_id name email")
+          .populate("history.previousInterviewer", "_id name email")
+          .populate("history.assignmentBy", "_id name email")
+          .populate("history.note.userId", "_id name email")
+          .lean();
+
         return {
           ...candidate,
-          history: history ? history.history : []
+          history: history ? history.history : [],
         };
       })
     );

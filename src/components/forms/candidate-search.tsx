@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Formik, Form } from "formik";
 import * as Yup from "yup";
 import { SearchFilters } from "@/components/forms/search-filters";
@@ -12,6 +12,7 @@ import { useFilterCandidatesMutation } from "@/lib/features/candidate/candidateA
 import Cookies from "js-cookie";
 import { useToast } from "@/hooks/use-toast";
 import { Candidate } from "@/types/candidate";
+import { verifyAndDecryptJWTToken } from "@/lib/auth";
 
 // Define the search filter interface
 export interface SearchFilter {
@@ -165,10 +166,19 @@ export default function CandidateSearch() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const itemsPerPage = 10;
   const { toast } = useToast();
+  const [OrgID, setOrgID] = useState("");
 
-  // Safely parse the user cookie
-  const user = Cookies.get("user");
-  const orgID = user ? JSON.parse(user).organizationId : ""; // Provide a default value
+  useEffect(() => {
+    (async () => {
+      const token = Cookies.get("token");
+      if (token) {
+        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+        if (decryptedResponse.success && decryptedResponse.user) {
+          setOrgID(decryptedResponse.user.organizationId);
+        }
+      }
+    })();
+  }, []);
 
   const initialValues: SearchFilter = {
     name: "",
@@ -182,7 +192,6 @@ export default function CandidateSearch() {
     maxCurrentCTC: undefined,
     createdAfter: "",
     createdBefore: "",
-    organizationId: orgID, // Use the parsed orgID
     logicOperator: "$and",
   };
 
@@ -212,6 +221,8 @@ export default function CandidateSearch() {
     setCurrentFilters(values); // Store the current filters
 
     try {
+      debugger;
+      values.organizationId = OrgID;
       const response = await filterCandidates(values).unwrap();
       setSearchResults(response.candidates || []);
       setCurrentPage(1);

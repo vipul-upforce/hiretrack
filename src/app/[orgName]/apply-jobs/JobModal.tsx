@@ -80,7 +80,11 @@ export default function JobModal({
               <h4 className="font-medium">Experience Required:</h4>
               <p className="mt-1">{job.experience} years</p>
             </div>
-            <CustomFieldsData customFields={job?.customFields || {}} />
+            {roles !== "" && (
+              <>
+                <CustomFieldsData customFields={job?.customFields || {}} />
+              </>
+            )}
           </div>
           <div className="mt-6 flex justify-end gap-3">
             {roles === "" ? (

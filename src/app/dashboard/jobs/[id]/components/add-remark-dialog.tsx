@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Rating } from "@mui/material";
 import { Button } from "@/components/ui/button";
+import { verifyAndDecryptToken } from "@/app/actions/auth";
 
 const AddRemarksDialog = ({
   candidate,
@@ -34,57 +35,62 @@ const AddRemarksDialog = ({
   const [updateCandidate] = useUpdateCandidateMutation();
 
   const handleAddRemark = async () => {
-    const user = JSON.parse(Cookies.get("user") || "{}");
+    const token = Cookies.get("token");
+    if (token) {
+      const decryptedResponse = await verifyAndDecryptToken(String(token));
+      if (decryptedResponse.success && decryptedResponse.user) {
+        const user = decryptedResponse.user;
+        if (!newRemark.trim() || !user?.id) {
+          toast({
+            title: "Error",
+            description: "Please add remarks",
+            variant: "destructive",
+          });
+          return;
+        }
 
-    if (!newRemark.trim() || !user?.id) {
-      toast({
-        title: "Error",
-        description: "Please add remarks",
-        variant: "destructive",
-      });
-      return;
-    }
+        try {
+          const newRemarkObj = {
+            description: String(newRemark).trim(),
+            date: new Date().toISOString(),
+            rating: remarkRating ? Number(remarkRating) : undefined,
+            userId: {
+              _id: user.id,
+              name: user.name,
+              email: user.email,
+            },
+          };
+          const updateData = {
+            _id: candidate?._id,
+            remarks: [...(candidate?.remarks || []), newRemarkObj],
+          };
+          toast({
+            title: "Updating",
+            description: `Updating ${candidate.name}'s remarks`,
+          });
 
-    try {
-      const newRemarkObj = {
-        description: String(newRemark).trim(),
-        date: new Date().toISOString(),
-        rating: remarkRating ? Number(remarkRating) : undefined,
-        userId: {
-          _id: user.id,
-          name: user.name,
-          email: user.email,
-        },
-      };
-      const updateData = {
-        _id: candidate?._id,
-        remarks: [...(candidate?.remarks || []), newRemarkObj],
-      };
-      toast({
-        title: "Updating",
-        description: `Updating ${candidate.name}'s remarks`,
-      });
+          await updateCandidate(updateData).unwrap();
+          await refetch();
 
-      await updateCandidate(updateData).unwrap();
-      await refetch();
+          setNewRemark("");
+          setRemarkRating(null);
+          setOpenRemarksFor("");
 
-      setNewRemark("");
-      setRemarkRating(null);
-      setOpenRemarksFor("");
+          toast({
+            title: "Success",
+            description: "Remark added successfully",
+          });
 
-      toast({
-        title: "Success",
-        description: "Remark added successfully",
-      });
-
-      onOpenChange(false); // Close dialog after success
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        toast({
-          title: "Error",
-          description: error.message,
-          variant: "destructive",
-        });
+          onOpenChange(false); // Close dialog after success
+        } catch (error: unknown) {
+          if (error instanceof Error) {
+            toast({
+              title: "Error",
+              description: error.message,
+              variant: "destructive",
+            });
+          }
+        }
       }
     }
   };

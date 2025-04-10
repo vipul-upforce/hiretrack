@@ -37,6 +37,7 @@ import Cookies from "js-cookie";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 import { Breadcrumb } from "./components/breadcrumb";
+import { verifyAndDecryptJWTToken } from "@/lib/auth";
 
 export default function JobProgressPage() {
   const { id } = useParams();
@@ -79,11 +80,15 @@ export default function JobProgressPage() {
 
   // Get user from cookies when component mounts
   useEffect(() => {
-    const userData = Cookies.get("user");
-    if (userData) {
-      const user = JSON.parse(userData);
-      setUser(user);
-    }
+    (async () => {
+      const user = Cookies.get("token");
+      if (user) {
+        const decryptedResponse = await verifyAndDecryptJWTToken(String(user));
+        if (decryptedResponse.success && decryptedResponse.user) {
+          setUser(decryptedResponse.user);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {

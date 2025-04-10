@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendMail } from ".";
+import { verifyAndDecryptToken } from "@/app/actions/auth";
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,9 +14,17 @@ export async function POST(req: NextRequest) {
       candidateName,
       status,
     } = await req.json();
-    const user = JSON.parse(req.cookies.get("user")?.value || "{}");
-    // const organizationId  = "67e12860196bf5e08045d22f";
-    const { organizationId } = user;
+    let organizationId;
+    const token = req.cookies.get("token");
+    if (token?.value) {
+      const decryptedResponse = await verifyAndDecryptToken(
+        String(token?.value)
+      );
+      const userData = decryptedResponse.user;
+      if (decryptedResponse.success) {
+        organizationId = userData.organizationId || "";
+      }
+    }
 
     // Validate that organizationId exists
     if (!organizationId) {
@@ -107,13 +116,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "Email sent successfully." });
     } else {
       return NextResponse.json(
-        { 
-             error: emailStatus.message,
+        {
+          error: emailStatus.message,
         },
         { status: emailStatus.status }
       );
     }
-
   } catch (error: unknown) {
     return NextResponse.json(
       {

@@ -1,16 +1,31 @@
-import { auth } from '@/lib/auth';
-import { redirect } from 'next/navigation';
+"use client";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import Cookies from "js-cookie";
+import { verifyAndDecryptJWTToken } from "@/lib/auth";
 
-export default async function UsersLayout({
+export default function UsersLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth();
+  const router = useRouter();
 
-  if (!session || session.user.role !== 'admin') {
-    redirect('/dashboard');
-  }
+  const checkUser = async () => {
+    const token = Cookies.get("token");
+    if (token) {
+      const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+      if (decryptedResponse.success && decryptedResponse.user) {
+        if (decryptedResponse.user.role !== "admin") {
+          router.push("/dashboard");
+        }
+      }
+    }
+  };
+
+  useEffect(() => {
+    checkUser();
+  }, []);
 
   return <>{children}</>;
-} 
+}
