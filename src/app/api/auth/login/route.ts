@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import dbConnect, { CandidateAccount, Settings } from "@/lib/mongodb";
 import { signToken } from "@/lib/jwt";
 import { User, Organization } from "@/lib/mongodb";
+import { OneOfMulOrganization } from "@/components/auth/OrganizationDialog";
 
 export async function POST(req: Request) {
   try {
@@ -17,8 +18,267 @@ export async function POST(req: Request) {
     }
 
     // Find all organizations with the same email
-    const users = await User.find({ email, isDeleted: { $ne: true } });
+    const users = await User.find({ email });
     const candidates = await CandidateAccount.find({ email });
+
+    if(users.length > 0 && candidates.length > 0){
+      // Handle case when user exists in both collections
+      
+      if (orgId) {
+        // Find user and candidate in the specified organization
+        const userInOrg = users.find(
+          (user) => user.organizationId.toString() === orgId
+        );
+        const candidateInOrg = candidates.find(
+          (candidate) => candidate.organizationId.toString() === orgId
+        );
+        
+        // Check if either account exists in the specified org
+        if (!userInOrg && !candidateInOrg) {
+          return NextResponse.json(
+            { error: "Invalid organization ID" },
+            { status: 401 }
+          );
+        }
+    
+        // If both user and candidate accounts exist for this organization
+        if (userInOrg && candidateInOrg) {
+          // Create array with both account types
+          const accounts = [];
+          
+          // Verify password for user account
+          const isUserPasswordValid = await bcrypt.compare(
+            password,
+            userInOrg.password
+          );
+          
+          // Verify password for candidate account
+          const isCandidatePasswordValid = await bcrypt.compare(
+            password,
+            candidateInOrg.password
+          );
+          
+          // Return error if both passwords are invalid
+          if (!isUserPasswordValid && !isCandidatePasswordValid) {
+            return NextResponse.json(
+              { error: "Invalid credentials" },
+              { status: 401 }
+            );
+          }
+          
+          // Get organization info
+          const orgInfo = await Organization.findById(orgId);
+          
+          // Add user account if password is valid
+          if (isUserPasswordValid) {
+            const fileStorage = await Settings.findOne(
+              { organizationId: userInOrg.organizationId },
+              { _id: 0 }
+            )
+              .select("fileStorage")
+              .lean();
+              
+            accounts.push({
+              id: userInOrg._id.toString(),
+              name: userInOrg.name,
+              email: userInOrg.email,
+              role: userInOrg.role,
+              organizationId: userInOrg.organizationId.toString(),
+              isCandidate: false,
+              organizationInfo: orgInfo,
+              fileStorage: fileStorage?.fileStorage?.storageType,
+            });
+          }
+          
+          // Add candidate account if password is valid
+          if (isCandidatePasswordValid) {
+            accounts.push({
+              id: candidateInOrg._id.toString(),
+              name: candidateInOrg.email,
+              email: candidateInOrg.email,
+              role: "candidate",
+              organizationId: candidateInOrg.organizationId.toString(),
+              isCandidate: true,
+              appliedApplications: candidateInOrg.appliedApplications,
+              organizationInfo: orgInfo,
+            });
+          }
+          
+          // Return both accounts for the user to choose
+          return NextResponse.json(
+            {
+              accounts,
+              message: "This email has multiple account types. Please select which account to use.",
+            },
+            { status: 200 }
+          );
+        }
+        
+        // Handle case where only user account exists
+        if (userInOrg) {
+          const isPasswordValid = await bcrypt.compare(
+            password,
+            userInOrg.password
+          );
+          
+          if (!isPasswordValid) {
+            return NextResponse.json(
+              { error: "Invalid credentials" },
+              { status: 401 }
+            );
+          }
+          
+          const orgInfo = await Organization.findById(userInOrg.organizationId);
+          const fileStorage = await Settings.findOne(
+            { organizationId: userInOrg.organizationId },
+            { _id: 0 }
+          )
+            .select("fileStorage")
+            .lean();
+          
+          const token = signToken({
+            id: userInOrg._id.toString(),
+            name: userInOrg.name,
+            email: userInOrg.email,
+            role: userInOrg.role,
+            organizationId: userInOrg.organizationId,
+            organizationInfo: orgInfo,
+            fileStorage: fileStorage?.fileStorage?.storageType,
+          });
+          
+          const response = NextResponse.json({
+            user: {
+              id: userInOrg._id.toString(),
+              name: userInOrg.name,
+              email: userInOrg.email,
+              role: userInOrg.role,
+              organizationId: userInOrg.organizationId,
+              organizationInfo: orgInfo,
+              fileStorage: fileStorage?.fileStorage?.storageType,
+            },
+          });
+          
+          response.cookies.set("token", token, {
+            httpOnly: false,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+            maxAge: 30 * 24 * 60 * 60,
+          });
+          
+          return response;
+        }
+        
+        // Handle case where only candidate account exists
+        if (candidateInOrg) {
+          const isPasswordValid = await bcrypt.compare(
+            password,
+            candidateInOrg.password
+          );
+          
+          if (!isPasswordValid) {
+            return NextResponse.json(
+              { error: "Invalid credentials" },
+              { status: 401 }
+            );
+          }
+          
+          const orgInfo = await Organization.findById(
+            candidateInOrg.organizationId,
+            {
+              adminId: 0,
+              lanes: 0,
+            }
+          );
+          
+          const token = signToken({
+            id: candidateInOrg._id,
+            email: candidateInOrg.email,
+            role: "candidate",
+            name: candidateInOrg.email,
+          });
+          
+          const response = NextResponse.json({
+            user: {
+              id: candidateInOrg._id.toString(),
+              name: candidateInOrg.email,
+              email: candidateInOrg.email,
+              appliedApplications: candidateInOrg.appliedApplications,
+              role: "candidate",
+              organizationId: candidateInOrg.organizationId,
+              organizationInfo: orgInfo,
+            },
+          });
+          
+          response.cookies.set("token", token, {
+            httpOnly: false,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+            maxAge: 30 * 24 * 60 * 60,
+          });
+          
+          return response;
+        }
+      }
+    
+      // If no orgId provided, collect all organizations from both collections
+      const orgs:OneOfMulOrganization[] = [];
+      const orgMap = new Map(); // To track unique organizations
+      
+      // Add organizations from User collection
+      for (const user of users) {
+        const orgId = user.organizationId.toString();
+        const orgInfo = await Organization.findById(user.organizationId);
+        
+        if (!orgMap.has(orgId)) {
+          orgMap.set(orgId, {
+            orgId,
+            name: orgInfo?.name,
+            isCandidate: false,
+            accountTypes: ["user"]
+          });
+        } else {
+          const org = orgMap.get(orgId);
+          if (!org.accountTypes.includes("user")) {
+            org.accountTypes.push("user");
+          }
+        }
+      }
+      
+      // Add organizations from CandidateAccount collection
+      for (const candidate of candidates) {
+        const orgId = candidate.organizationId.toString();
+        const orgInfo = await Organization.findById(candidate.organizationId);
+        
+        if (!orgMap.has(orgId)) {
+          orgMap.set(orgId, {
+            orgId,
+            name: orgInfo?.name,
+            isCandidate: true,
+            accountTypes: ["candidate"]
+          });
+        } else {
+          const org = orgMap.get(orgId);
+          if (!org.accountTypes.includes("candidate")) {
+            org.accountTypes.push("candidate");
+          }
+        }
+      }
+      
+      // Convert map to array
+      orgMap.forEach(org => {
+        orgs.push(org);
+      });
+      
+      // Return the list of organizations with account type information
+      return NextResponse.json(
+        {
+          organizations: orgs,
+          message:
+            "Account exists in multiple organizations. Please specify the organization for login.",
+        },
+        { status: 200 }
+      );
+    }
 
     // Check if user exists in User collection
     if (users.length > 0) {
@@ -93,6 +353,7 @@ export async function POST(req: Request) {
         orgs.push({
           orgId: user.organizationId,
           name: orgInfo?.name,
+          isCandidate: false
         });
       }
 
@@ -224,6 +485,7 @@ export async function POST(req: Request) {
         orgs.push({
           orgId: candidate.organizationId,
           name: orgInfo?.name,
+          isCandidate: true
         });
       }
 

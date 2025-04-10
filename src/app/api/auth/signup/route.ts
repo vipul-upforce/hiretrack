@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import dbConnect from '@/lib/mongodb'; 
+import dbConnect, { CandidateAccount } from '@/lib/mongodb'; 
 import { User, Lane } from '@/lib/mongodb';
 import { signToken } from '@/lib/jwt';
 import mongoose from 'mongoose';
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
 
     // Check if user already exists in the same organization
     // console.log("EXISTING USER: ",organizationId)
-    const existingUser = await User.findOne({ email, organizationId });
+    const existingUser = await User.findOne({ email, organizationId }) || await CandidateAccount?.findOne({email,organizationId});
     // console.log("EXISTING USER: ",existingUser)
 
     

@@ -22,7 +22,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // const existingUser = await CandidateAccount.findOne({ email }) || await User.findOne({ email });
     const organizationInfo = await Organization.findOne(
       { name: orgName },
       {
@@ -37,19 +36,20 @@ export async function POST(req: Request) {
       );
     }
     const organizationId = organizationInfo?._id;
+    const existingUser = await CandidateAccount.findOne({ email, organizationId }) || await User.findOne({email, organizationId});
 
-    // if (existingUser) {
-    //   if (existingUser.isDeleted) {
-    //     return NextResponse.json(
-    //       { error: 'Candidate already exists, but is deactivated.' },
-    //       { status: 400 }
-    //     );
-    //   }
-    //   return NextResponse.json(
-    //     { error: 'Candidate already exists' },
-    //     { status: 400 }
-    //   );
-    // }
+    if (existingUser) {
+      if (existingUser.isDeleted) {
+        return NextResponse.json(
+          { error: 'Candidate already exists, but is deactivated.' },
+          { status: 400 }
+        );
+      }
+      return NextResponse.json(
+        { error: 'Candidate already exists in this Organization' },
+        { status: 400 }
+      );
+    }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);

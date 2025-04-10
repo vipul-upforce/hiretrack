@@ -64,7 +64,7 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
       toast({
         title: "Success",
         description: "Password reset link has been sent to your email",
-        variant: "default"
+        variant: "default",
       });
       setTimeout(() => onClose(), 2000);
     } catch (err: unknown) {
@@ -76,7 +76,7 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
       toast({
         title: "Alert",
         description: errorMessage,
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setSubmitting(false);
@@ -94,13 +94,13 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
       // Send request with both email and selected organization
       await createResetToken({
         email: emailValue,
-        selectedOrgId: values.selectedOrgId
+        selectedOrgId: values.selectedOrgId,
       }).unwrap();
 
       toast({
         title: "Success",
         description: "Password reset link has been sent to your email",
-        variant: "default"
+        variant: "default",
       });
       setTimeout(() => {
         resetDialog();
@@ -115,7 +115,7 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
       toast({
         title: "Alert",
         description: errorMessage,
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setSubmitting(false);
@@ -142,8 +142,8 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
           </DialogTitle>
           {step === "select-org" && (
             <DialogDescription>
-              We found your email in multiple organizations.
-              Please select which account you want to reset the password for.
+              We found your email in multiple organizations. Please select which
+              account you want to reset the password for.
             </DialogDescription>
           )}
         </DialogHeader>
@@ -166,7 +166,9 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
                         type="email"
                         placeholder="Enter your email"
                         disabled={isSubmitting || isLoading}
-                        className={errors.email && touched.email ? "border-red-500" : ""}
+                        className={
+                          errors.email && touched.email ? "border-red-500" : ""
+                        }
                       />
                     )}
                   </Field>
@@ -175,11 +177,18 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
                   )}
                 </div>
                 <div className="flex justify-end space-x-2">
-                  <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleClose}
+                    disabled={isSubmitting}
+                  >
                     Cancel
                   </Button>
                   <Button type="submit" disabled={isSubmitting || isLoading}>
-                    {isSubmitting || isLoading ? "Sending..." : "Send Reset Link"}
+                    {isSubmitting || isLoading
+                      ? "Sending..."
+                      : "Send Reset Link"}
                   </Button>
                 </div>
               </Form>
@@ -187,29 +196,46 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
           </Formik>
         ) : (
           <Formik
-            initialValues={{ selectedOrgId: orgAccounts.length > 0 ? orgAccounts[0].organizationId : "" }}
+            initialValues={{
+              selectedOrgId:
+                orgAccounts.length > 0 ? orgAccounts[0].organizationId : "",
+            }}
             onSubmit={handleOrgSelection}
           >
             {({ isSubmitting }) => (
               <Form className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="organization">Select your organization</Label>
+                  <hr />
                   <Field name="selectedOrgId">
                     {({ field, form }: any) => (
                       <RadioGroup
                         value={field.value}
-                        onValueChange={(value) => form.setFieldValue("selectedOrgId", value)}
-                        className="space-y-2"
+                        onValueChange={(value) =>
+                          form.setFieldValue("selectedOrgId", value)
+                        }
+                        className="space-y-2 max-h-[40vh] overflow-y-auto"
                       >
                         {orgAccounts.map((account) => (
-                          <div key={account.id} className="flex items-center space-x-3 p-3 border rounded-md">
-                            <RadioGroupItem value={account.organizationId} id={account.id} />
+                          <div
+                            key={account.id}
+                            className="flex items-center space-x-3 p-3 border rounded-md"
+                          >
+                            <RadioGroupItem
+                              value={account.organizationId}
+                              id={account.id}
+                            />
                             <div className="flex flex-col">
-                              <Label htmlFor={account.id} className="font-medium">
+                              <Label
+                                htmlFor={account.id}
+                                className="font-medium"
+                              >
                                 {account.organizationName || "Organization"}
                               </Label>
                               <span className="text-xs text-gray-500">
-                                {account.isCandidate ? "Candidate Account" : "User Account"}
+                                {account.isCandidate
+                                  ? "Candidate Account"
+                                  : "User Account"}
                               </span>
                             </div>
                           </div>
@@ -218,6 +244,7 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
                     )}
                   </Field>
                 </div>
+                <hr />
                 <div className="flex justify-end space-x-2">
                   <Button
                     type="button"
