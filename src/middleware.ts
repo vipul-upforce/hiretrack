@@ -21,7 +21,7 @@ export async function verifyAndDecryptToken(token: string) {
       throw new Error("Invalid token structure");
     }
     const bytes = CryptoJS.AES.decrypt(payload.user, JWT_SECRET);
-    const decryptedData = bytes.toString(CryptoJS.enc.Utf8);
+    const decryptedData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
 
     return { success: true, user: decryptedData };
   } catch (err) {

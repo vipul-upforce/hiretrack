@@ -19,7 +19,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useTestConnection } from "@/hooks/use-test-connection";
-import { signToken } from "@/app/actions/auth";
+import * as jose from "jose";
+import CryptoJS from "crypto-js";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 
 interface User {
@@ -51,6 +52,29 @@ export default function FileStorageOptions({
   const { data, isLoading, refetch } = useGetFSConfigsQuery(undefined);
   const [updateStorageConfigs, { isLoading: isUpdating }] =
     useUpdateFSConfigsMutation();
+
+  const signToken = async (payload: unknown) => {
+    const JWT_SECRET = "your_jwt_secret_key";
+    try {
+      // Parse the payload as JSON
+      const parsedPayload = payload;
+      debugger;
+      const encryptedPayload = CryptoJS.AES.encrypt(
+        JSON.stringify(parsedPayload),
+        JWT_SECRET
+      ).toString();
+      // Create a secret key for signing
+      const secretKey = new TextEncoder().encode(JWT_SECRET);
+      // Sign the JWT
+      const jwt = await new jose.SignJWT({ user: encryptedPayload })
+        .setProtectedHeader({ alg: "HS256" })
+        .setIssuedAt()
+        .setExpirationTime("2h") // Token expires in 2 hours
+        .sign(secretKey);
+
+      return jwt;
+    } catch {}
+  };
 
   useEffect(() => {
     (async () => {
