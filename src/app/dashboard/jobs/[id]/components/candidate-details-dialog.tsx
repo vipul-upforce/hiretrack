@@ -302,13 +302,13 @@ export function CandidateDetailsDialog({
             )} */}
             <div className="space-y-2 relative">
               <Label className={labelClass}>
-                {localCandidate.jobId.title ||
+                {localCandidate.jobId?.title ||
                   localCandidate.jobDetails?.title ||
                   "Job Description"}
               </Label>
               <ExpandableDescription
                 description={
-                  localCandidate.jobId.description ||
+                  localCandidate.jobId?.description ||
                   localCandidate.jobDetails?.description ||
                   "No description Found"
                 }
