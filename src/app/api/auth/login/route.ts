@@ -457,7 +457,7 @@ const checkMultipleOrgs = async (
   );
 };
 
-const returnTokenBasedResponse = async (obj: any) => {
+const returnTokenBasedResponse = async (obj: unknown) => {
   const token = signToken(obj);
 
   const response = NextResponse.json({

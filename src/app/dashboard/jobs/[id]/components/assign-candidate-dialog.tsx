@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Formik, Form, Field, FormikHelpers } from "formik";
+import { Formik, Form, Field, FormikHelpers, FieldProps } from "formik";
 import * as Yup from "yup";
 import {
   Dialog,
@@ -58,6 +58,12 @@ interface Attachment {
   size: number;
 }
 
+interface User {
+  id: string;
+  name: string;
+  email: string;
+}
+
 interface FormValues {
   interviewerId: string;
   deadline: dayjs.Dayjs;
@@ -92,7 +98,7 @@ export function AssignCandidateDialog({
   const { data: interviewers, refetch: refetchInterviewers } =
     useFetchInterviewersQuery();
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
-  const [user, setuser] = useState(null);
+  const [user, setuser] = useState<User | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -158,9 +164,9 @@ export function AssignCandidateDialog({
         date: new Date().toISOString(),
         rating: values.rating ? Number(values.rating) : 0,
         userId: {
-          _id: user.id,
-          name: user.name,
-          email: user.email,
+          _id: user!.id,
+          name: user!.name,
+          email: user!.email,
         },
       };
 
@@ -201,9 +207,9 @@ export function AssignCandidateDialog({
 
       let title;
       if (!previousInterviewer || previousInterviewer === "") {
-        title = `Assigned to ${nextInterviewer} : Assigned by ${user.name}`;
+        title = `Assigned to ${nextInterviewer} : Assigned by ${user!.name}`;
       } else {
-        title = `${previousInterviewer} → ${nextInterviewer} : Assigned by ${user.name}`;
+        title = `${previousInterviewer} → ${nextInterviewer} : Assigned by ${user!.name}`;
       }
 
       title = null;
@@ -212,7 +218,7 @@ export function AssignCandidateDialog({
         dateTime: updatedCandidate.assignment.deadline,
         currentInterviewer: nextInterviewerId,
         previousInterviewer: previousInterviewerId,
-        assignmentBy: user.id,
+        assignmentBy: user!.id,
         title: title,
         note: newRemarkObj,
         attachments: values.attachments,
@@ -331,7 +337,7 @@ export function AssignCandidateDialog({
                   <div className="grid gap-2">
                     <Label htmlFor="interviewerId">Assign To</Label>
                     <Field name="interviewerId">
-                      {({ field }: any) => (
+                      {({ field }: FieldProps) => (
                         <Select
                           value={field.value}
                           onValueChange={(value) =>
@@ -364,7 +370,7 @@ export function AssignCandidateDialog({
                   <div className="grid gap-2">
                     <Label htmlFor="deadline">Deadline</Label>
                     <Field name="deadline">
-                      {({ field }: any) => (
+                      {({ field }: FieldProps) => (
                         <DateTimePicker
                           value={field.value}
                           onChange={(date) => setFieldValue("deadline", date)}
@@ -381,7 +387,7 @@ export function AssignCandidateDialog({
 
                   <div className="space-y-4">
                     <Field name="remark">
-                      {({ field }: any) => (
+                      {({ field }: FieldProps) => (
                         <Textarea placeholder="Add a remark..." {...field} />
                       )}
                     </Field>
@@ -389,7 +395,7 @@ export function AssignCandidateDialog({
                       <div className="flex items-center gap-2">
                         <Label htmlFor="rating">Rating:</Label>
                         <Field name="rating">
-                          {({ field }: any) => (
+                          {({ field }: { field: { value: number } }) => (
                             <Rating
                               name="rating"
                               value={field.value}

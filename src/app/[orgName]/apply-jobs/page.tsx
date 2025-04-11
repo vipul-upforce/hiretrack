@@ -26,12 +26,11 @@ interface Job {
   experience: number;
 }
 
-// Add type guard
-const isFetchBaseQueryError = (
-  error: FetchBaseQueryError | SerializedError
-): error is FetchBaseQueryError => {
-  return "status" in error;
-};
+function isFetchBaseQueryError(
+  error: FetchBaseQueryError | SerializedError | unknown
+): error is FetchBaseQueryError {
+  return typeof error === "object" && error !== null && "status" in error;
+}
 
 const JobCardSkeleton = () => (
   <div className="bg-white rounded-lg border-2 p-6 animate-pulse">
@@ -73,7 +72,11 @@ export default function ApplyJobs({
   } = useFetchOpenJobQuery(
     { orgName: orgName, title: queryTitle },
     { skip: orgName === "" }
-  );
+  ) as {
+    data: Job[];
+    isLoading: boolean;
+    error: FetchBaseQueryError | SerializedError;
+  };
 
   useEffect(() => {
     (async () => {
@@ -249,7 +252,10 @@ export default function ApplyJobs({
                 Experience: {job.experience} years
               </div>
             </div>
-          ))}
+          ))
+        ) : (
+          ""
+        )}
       </div>
       {error && !jobs && (
         <div className="px-3 font-bold text-gray-500 w-[100vw] flex flex-col items-center justify-center">
