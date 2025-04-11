@@ -260,19 +260,20 @@ export default function DashboardPage() {
                 </Button>
                 <span className="text-sm">
                   Page {currentPage} of{" "}
-                  {Math.ceil(assignments.length / itemsPerPage)}
+                  {Math.ceil(filteredAssignments.length / itemsPerPage)}
                 </span>
                 <Button
                   onClick={() =>
                     setCurrentPage((prev) =>
                       Math.min(
                         prev + 1,
-                        Math.ceil(assignments.length / itemsPerPage)
+                        Math.ceil(filteredAssignments.length / itemsPerPage)
                       )
                     )
                   }
                   disabled={
-                    currentPage === Math.ceil(assignments.length / itemsPerPage)
+                    currentPage ===
+                    Math.ceil(filteredAssignments.length / itemsPerPage)
                   }
                   variant="outline"
                 >
