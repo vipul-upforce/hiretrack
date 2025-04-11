@@ -22,6 +22,7 @@ import Cookies from "js-cookie";
 import { useEffect, useState } from "react";
 import { toast } from "@/hooks/use-toast";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import { User } from "@/lib/features/org/orgApi";
 
 interface CandidateFormProps {
   onFileUpload?: (file: File) => void;
@@ -47,7 +48,7 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
     typeof values.assignment?.interviewerId === "string"
       ? values.assignment.interviewerId
       : values.assignment?.interviewerId?._id || "";
-  const [user, setuser] = useState(null);
+  const [user, setuser] = useState<User | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -97,6 +98,7 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
             maxFiles={1}
             onFileSelect={async (files) => {
               if (
+                user &&
                 user.role === "candidate" &&
                 files[0].size > 3 * 1024 * 1024
               ) {
@@ -107,6 +109,7 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
                 return;
               }
               if (
+                user &&
                 ["hr", "admin", "interviewer"].includes(user.role) &&
                 files[0].size > 50 * 1024 * 1024
               ) {
@@ -363,6 +366,7 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
               const newFiles = files
                 .filter((file) => {
                   if (
+                    user &&
                     user.role === "candidate" &&
                     file.size > 3 * 1024 * 1024
                   ) {
@@ -373,6 +377,7 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
                     return false;
                   }
                   if (
+                    user &&
                     ["hr", "admin", "interviewer"].includes(user.role) &&
                     file.size > 50 * 1024 * 1024
                   ) {
@@ -402,6 +407,7 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
 
               const updatedFileSelection = [...currentFiles, ...newFiles];
               if (
+                user &&
                 updatedFileSelection.length > 2 &&
                 user.role === "candidate"
               ) {

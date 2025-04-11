@@ -45,6 +45,7 @@ import ExpandableDescription from "./expand-collapse-desc";
 import { AssignJobDialog } from "./assing-job-dialog";
 import { CandidateScoreBadge } from "./candidate-score-badge";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import { User } from "@/lib/features/users/usersApi";
 
 interface CandidateDetailsDialogProps {
   candidate: Candidate | null;
@@ -107,7 +108,7 @@ export function CandidateDetailsDialog({
   const [updateCandidate] = useUpdateCandidateMutation();
   const [isAssigning, setIsAssigning] = useState(false);
   const [isAssigningJob, setIsAssigningJob] = useState(false);
-  const [user, setuser] = useState(null);
+  const [user, setuser] = useState<User | null>(null);
 
   useEffect(() => {
     (async () => {
