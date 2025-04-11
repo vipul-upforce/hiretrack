@@ -74,6 +74,7 @@ export default function Login() {
     setLoginFormValues(values);
     try {
       const response = await login({ ...values, orgId: selectedOrg }).unwrap();
+      debugger;
       if (
         response.organizations &&
         response.organizations.length > 1 &&

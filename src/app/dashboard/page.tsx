@@ -95,7 +95,7 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const shouldShowAssignments = user?.role === "admin" || user?.role === "hr";
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6; // Adjust this number as needed
+  const itemsPerPage = 12; // Adjust this number as needed
 
   // Fetch assignments
   const fetchAssignments = useCallback(async () => {
@@ -184,15 +184,6 @@ export default function DashboardPage() {
           {isLoading ? (
             <DashboardLoader />
           ) : assignments?.length > 0 ? (
-            // <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            //   {assignments?.map((assignment) => (
-            //     <ActionItems
-            //       key={assignment.id || assignment._id}
-            //       assignment={assignment}
-            //       fetchAssignments={fetchAssignments}
-            //     />
-            //   ))}
-            // </div>
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {assignments
