@@ -25,10 +25,10 @@ import { Resume } from "@/lib/redux/types";
 import { parseResumeFromPdf } from "@/lib/parse-resume-from-pdf";
 import FormUpdater from "./FormUpdater";
 import Cookies from "js-cookie";
-import { IUser } from "@/lib/models/user";
 import { useSendMailMutation } from "@/lib/features/org/orgApi";
 import { sentAssignmentMail } from "@/lib/utils";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 
 interface EditCandidateDialogProps {
   candidate: Candidate;
@@ -38,6 +38,12 @@ interface EditCandidateDialogProps {
   refetchAssignment?: () => void;
   onSuccess: () => void;
   reopenDetailsDialog?: () => void;
+}
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
 }
 
 const handleFileParse = async (
@@ -66,6 +72,20 @@ const handleFileParse = async (
   }
 };
 
+const isFetchBaseQueryError = (
+  error: unknown
+): error is FetchBaseQueryError & { data: { error: string } } => {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "data" in error &&
+    typeof error.data === "object" &&
+    error.data !== null &&
+    "error" in error.data &&
+    typeof error.data.error === "string"
+  );
+};
+
 export function EditCandidateDialog({
   candidate,
   isOpen,
@@ -85,7 +105,7 @@ export function EditCandidateDialog({
   const { getDefaultValues, validationSchema } = useCustomForm(formName);
   const pathname = usePathname();
   const [parsedResumeData, setParsedResume] = useState<Resume | null>(null);
-  const [user, setuser] = useState(null);
+  const [user, setuser] = useState<User | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -214,7 +234,9 @@ export function EditCandidateDialog({
       if (error) {
         toast({
           title: "Error",
-          description: error.data.error || "Failed to update job",
+          description: isFetchBaseQueryError(error)
+            ? error.data.error
+            : "Failed to update job",
           variant: "destructive",
         });
         return;
@@ -256,7 +278,7 @@ export function EditCandidateDialog({
         title: title,
         currentInterviewer: nextInterviewerId,
         previousInterviewer: previousInterviewerId,
-        assignmentBy: user && (user as IUser) ? user.id : "",
+        assignmentBy: user ? user.id : "",
         note: {
           description: "",
           date: "",

@@ -92,8 +92,7 @@ export async function PUT(req: NextRequest) {
       uploadedLogo = await handleSingleFile(
         data.portalLogo,
         fileStorage,
-        organizationId,
-        req
+        organizationId
       );
     }
 

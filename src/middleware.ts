@@ -3,12 +3,19 @@ import type { NextRequest } from "next/server";
 import CryptoJS from "crypto-js";
 import { jwtVerify } from "jose";
 
+interface JWTPayload {
+  user: string;
+}
+
 export async function verifyAndDecryptToken(token: string) {
   const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key";
   try {
     if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
     const secretKey = new TextEncoder().encode(JWT_SECRET);
-    const { payload } = await jwtVerify(token, secretKey);
+    const { payload }: { payload: JWTPayload } = await jwtVerify(
+      token,
+      secretKey
+    );
 
     if (!payload || typeof payload !== "object" || !payload.user) {
       throw new Error("Invalid token structure");

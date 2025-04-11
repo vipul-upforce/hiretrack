@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth";
 import { Organization } from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 
-export async function GET(request: NextResponse) {
+export async function GET(request: NextRequest) {
   try {
     await connectToDatabase();
     const { searchParams } = new URL(request.url);

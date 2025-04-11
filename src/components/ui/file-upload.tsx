@@ -42,6 +42,13 @@ interface RenameFileState {
   };
 }
 
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
 const formatFileSize = (bytes: number): string => {
   if (bytes === 0) return "0 Bytes";
 
@@ -64,7 +71,7 @@ export function FileUpload({
     file: null,
     isExisting: false,
   });
-  const [user, setuser] = useState(null);
+  const [user, setuser] = useState<User | null>(null);
 
   useEffect(() => {
     (async () => {

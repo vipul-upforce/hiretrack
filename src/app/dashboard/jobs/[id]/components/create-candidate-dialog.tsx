@@ -45,6 +45,13 @@ async function evaluateCandidate(
   }
 }
 
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
 interface CreateCandidateDialogProps {
   jobId: string;
   isOpen: boolean;
@@ -127,7 +134,7 @@ export function CreateCandidateDialog({
   const formName = "Candidate";
   const { validationSchema, initialValues: inits } = useCustomForm(formName);
   const [resetForm, setResetForm] = useState(false);
-  const [user, setuser] = useState(null);
+  const [user, setuser] = useState<User | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -259,7 +266,7 @@ export function CreateCandidateDialog({
           title:
             typeof createdCandidate?.assignment?.interviewerId === "object" &&
             createdCandidate?.assignment?.interviewerId?.name
-              ? `Assigned to ${createdCandidate.assignment.interviewerId.name} : Assigned by ${user.name}`
+              ? `Assigned to ${createdCandidate.assignment.interviewerId.name} : Assigned by ${user!.name}`
               : "",
           currentInterviewer:
             typeof createdCandidate?.assignment?.interviewerId === "object" &&

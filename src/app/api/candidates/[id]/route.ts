@@ -66,8 +66,7 @@ export async function PUT(
       const { files: f, images: i } = await handleFileAttachments(
         data.attachments,
         fileStorage,
-        organizationId,
-        request
+        organizationId
       );
       data.attachments = [...f, ...i];
     }
@@ -76,8 +75,7 @@ export async function PUT(
       data.resume = await handleSingleFile(
         data.resume,
         fileStorage,
-        organizationId,
-        request
+        organizationId
       );
     }
 
@@ -85,8 +83,7 @@ export async function PUT(
       const cs = await handleCustomFieldFiles(
         data.customFields,
         fileStorage,
-        organizationId,
-        request
+        organizationId
       );
       data.customFields = cs;
     }

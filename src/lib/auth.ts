@@ -3,6 +3,10 @@ import { NextRequest } from "next/server";
 import { jwtDecode } from "jwt-decode";
 import CryptoJS from "crypto-js";
 
+interface JWTPayload {
+  user: string;
+}
+
 export async function auth(request: NextRequest) {
   const token = request.cookies.get("token");
   if (token?.value) {
@@ -19,7 +23,7 @@ export async function verifyAndDecryptJWTToken(token: string) {
   try {
     if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
 
-    const decoded = jwtDecode(token);
+    const decoded = jwtDecode<JWTPayload>(token);
     if (!decoded || typeof decoded !== "object" || !decoded.user) {
       throw new Error("Invalid token structure");
     }

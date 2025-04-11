@@ -22,6 +22,14 @@ import { useTestConnection } from "@/hooks/use-test-connection";
 import { signToken } from "@/app/actions/auth";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  fileStorage?: string;
+  organizationId?: string;
+}
+
 const storageOptions = [
   { key: "local", label: "Local Storage" },
   { key: "cloudinary", label: "Cloudinary" },
@@ -33,7 +41,7 @@ export default function FileStorageOptions({
 }: {
   onClose: () => void;
 }) {
-  const [user, setuser] = useState(null);
+  const [user, setuser] = useState<User | null>(null);
   const { toast } = useToast();
   const [showKey, setShowKey] = useState(false);
   const [showSecret, setShowSecret] = useState(false);

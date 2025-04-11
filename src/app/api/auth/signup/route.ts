@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import dbConnect, { CandidateAccount } from "@/lib/mongodb";
 import { User, Lane } from "@/lib/mongodb";
-import { signToken } from "@/lib/jwt";
 import mongoose from "mongoose";
 
 const DEFAULT_LANES = [
