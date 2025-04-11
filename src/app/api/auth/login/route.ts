@@ -20,7 +20,12 @@ export async function POST(req: Request) {
     }
 
     // Find all organizations with the same email
-    const users = await User.find({ email });
+    const users = await User.find({
+      email,
+      isDeleted: {
+        $ne: true,
+      },
+    });
     const candidates = await CandidateAccount.find({ email });
 
     if (users.length > 0 && candidates.length > 0) {

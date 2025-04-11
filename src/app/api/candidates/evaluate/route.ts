@@ -1,7 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { Candidate, Settings } from "@/lib/mongodb";
-import fetch from "node-fetch";
+// import fetch from "node-fetch";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { promises as fs } from "fs";
+import path from "path";
+import { verifyAndDecryptToken } from "@/app/actions/auth";
+
+const generateBase64 = async (url: any) => {
+  const urlParams = new URLSearchParams(url.split("?")[1]);
+  const pathName = urlParams.get("pathName");
+  console.log("@########## pathname: ", pathName);
+  if (!pathName) {
+    return "";
+  }
+  const safePath = path.normalize(pathName).replace(/^(\.\.(\/|\\|$))+/, "");
+  const filePath = safePath;
+  const fileBuffer = await fs.readFile(filePath);
+  const base64Resume = fileBuffer.toString("base64");
+  return base64Resume;
+};
 
 async function evaluateResume(
   resumeText: string,
@@ -155,15 +172,27 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const response = await fetch(resumeUrl);
-    if (!response.ok) {
-      return NextResponse.json(
-        { error: "Failed to fetch resume file" },
-        { status: 500 }
-      );
+    let base64Resume;
+    const cookie = (await request.cookies.get("token")?.value) || "{}";
+    const token = await verifyAndDecryptToken(cookie);
+    const user = (await token).user;
+    const fileStorage = user.fileStorage;
+    if (fileStorage === "local") {
+      base64Resume = await generateBase64(resumeUrl);
+    } else {
+      const response = await fetch(resumeUrl);
+      console.log("NOT LOCAL", response);
+      if (!response.ok) {
+        return NextResponse.json(
+          { error: "Failed to fetch resume file" },
+          { status: 500 }
+        );
+      }
+      const arrayBuffer = await response.arrayBuffer();
+      const resumeBuffer = Buffer.from(arrayBuffer);
+      base64Resume = resumeBuffer.toString("base64");
     }
-    const resumeBuffer = await response.buffer();
-    const base64Resume = resumeBuffer.toString("base64");
+
     const jobDescription =
       candidate.jobId &&
       typeof candidate.jobId === "object" &&
@@ -175,8 +204,6 @@ export async function PUT(request: NextRequest) {
       settingsData.gemini.gemini_key,
       jobDescription
     );
-
-    // console.log("%%%%%%%SCORES: ", scores)
 
     candidate.scores = scores;
     await candidate.save();

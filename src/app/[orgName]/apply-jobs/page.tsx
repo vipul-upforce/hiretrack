@@ -81,7 +81,7 @@ export default function ApplyJobs({
   useEffect(() => {
     (async () => {
       const resolvedParams = await params; // Resolve the promise
-      const orgNameWithoutSpaces = resolvedParams.orgName.replace("%20", " ");
+      const orgNameWithoutSpaces = decodeURIComponent(resolvedParams.orgName);
       setOrgName(orgNameWithoutSpaces);
     })();
   }, [params]);
