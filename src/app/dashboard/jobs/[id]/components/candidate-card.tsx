@@ -183,7 +183,7 @@ export function CandidateCard({
             {candidate.scores.experience && (
               <CandidateScoreBadge
                 score={candidate.scores.experience}
-                category="Exper"
+                category="Experience"
               />
             )}
             {candidate.scores.skills && (

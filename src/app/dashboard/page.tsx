@@ -140,7 +140,7 @@ export default function DashboardPage() {
     ];
 
     return (
-      searchRegex.test(assignment.candidateName || "") ||
+      searchRegex.test(assignment.name || "") ||
       searchRegex.test(assignment?.assignment?.interviewerId?.name || "") ||
       searchRegex.test(assignment.jobId?.title || "") ||
       (allSkills.length > 0 &&
