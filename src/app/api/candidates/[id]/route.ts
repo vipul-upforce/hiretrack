@@ -8,6 +8,7 @@ import { Attachment } from "../route";
 import { History } from "@/lib/mongodb"; // Import History model
 import { ICandidate as IExternalCandidate } from "@/lib/models/candidate"; // Import existing ICandidate
 import mongoose from "mongoose";
+import { verifyAndDecryptToken } from "@/app/actions/auth";
 
 interface UpdateObject {
   $set: Record<string, unknown>;
@@ -36,11 +37,17 @@ export async function PUT(
   try {
     await connectToDatabase();
     const data = await request.json();
-    const userCookie = request.cookies.get("user")?.value;
-    if (userCookie) {
-      const userData = JSON.parse(userCookie);
-      fileStorage = userData.fileStorage || "local";
-      organizationId = userData.organizationId || "";
+
+    const token = request.cookies.get("token");
+    if (token?.value) {
+      const decryptedResponse = await verifyAndDecryptToken(
+        String(token?.value)
+      );
+      const userData = decryptedResponse.user;
+      if (decryptedResponse.success) {
+        fileStorage = userData.fileStorage || "local";
+        organizationId = userData.organizationId || "";
+      }
     }
     const { id } = await params;
 

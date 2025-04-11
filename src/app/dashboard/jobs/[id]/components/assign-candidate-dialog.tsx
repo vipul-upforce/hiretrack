@@ -21,7 +21,10 @@ import {
 import { Label } from "@/components/ui/label";
 import { Candidate } from "@/types/candidate";
 import { toast } from "@/hooks/use-toast";
-import { useUpdateCandidateHistoryMutation, useUpdateCandidateMutation } from "@/lib/features/candidate/candidateApi";
+import {
+  useUpdateCandidateHistoryMutation,
+  useUpdateCandidateMutation,
+} from "@/lib/features/candidate/candidateApi";
 import { useFetchInterviewersQuery } from "@/lib/features/user/userApi";
 import { DateTimePicker } from "@/components/ui/DateTimePicker";
 import dayjs from "dayjs";
@@ -34,6 +37,7 @@ import Cookies from "js-cookie";
 import { ICandidateHistory } from "@/lib/models/history";
 import { useSendMailMutation } from "@/lib/features/org/orgApi";
 import { sentAssignmentMail } from "@/lib/utils";
+import { verifyAndDecryptJWTToken } from "@/lib/auth";
 
 interface AssignCandidateDialogProps {
   candidate: Candidate;
@@ -68,9 +72,8 @@ const validationSchema = Yup.object({
   deadline: Yup.date().min(new Date(), "Past date is not allowed").nullable(),
   remark: Yup.string(),
   rating: Yup.number().nullable(),
-  attachments: Yup.array()
+  attachments: Yup.array(),
 });
-
 
 export function AssignCandidateDialog({
   candidate,
@@ -80,17 +83,28 @@ export function AssignCandidateDialog({
   onUpdate,
   setLocalCandidate,
   refetchAssignment,
-  onSuccess
+  onSuccess,
 }: AssignCandidateDialogProps) {
   const pathname = usePathname();
   const [confirmUnassignOpen, setConfirmUnassignOpen] = useState(false);
   const [sendEmail] = useSendMailMutation();
   const [updateCandidate] = useUpdateCandidateMutation();
-  const { data: interviewers, refetch: refetchInterviewers } = useFetchInterviewersQuery();
+  const { data: interviewers, refetch: refetchInterviewers } =
+    useFetchInterviewersQuery();
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
-  
-  const cookie = Cookies.get("user") || "{}";
-  const user = JSON.parse(cookie);
+  const [user, setuser] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      const token = Cookies.get("token");
+      if (token) {
+        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+        if (decryptedResponse.success && decryptedResponse.user) {
+          setuser(decryptedResponse.user);
+        }
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -100,15 +114,16 @@ export function AssignCandidateDialog({
 
   // Initial form values
   const initialValues: FormValues = {
-    interviewerId: typeof candidate.assignment?.interviewerId === "string"
-      ? candidate.assignment.interviewerId
-      : candidate.assignment?.interviewerId?._id || "",
-    deadline: candidate.assignment 
-      ? dayjs(candidate.assignment.deadline) 
+    interviewerId:
+      typeof candidate.assignment?.interviewerId === "string"
+        ? candidate.assignment.interviewerId
+        : candidate.assignment?.interviewerId?._id || "",
+    deadline: candidate.assignment
+      ? dayjs(candidate.assignment.deadline)
       : dayjs(),
     remark: "",
     rating: null,
-    attachments: []
+    attachments: [],
   };
 
   // Function to convert files to data URLs
@@ -125,14 +140,15 @@ export function AssignCandidateDialog({
     values: FormValues,
     { setSubmitting }: FormikHelpers<FormValues>
   ) => {
-    const fileNames = candidate.attachments.map(file => file.name);
+    const fileNames = candidate.attachments.map((file) => file.name);
     const hasDuplicates = new Set(fileNames).size !== fileNames.length;
 
     if (hasDuplicates) {
       toast({
-        title:"Alert",
-        description:"A file with the same name already exists in this candidate, Please rename before submitting.",
-        variant:"destructive"
+        title: "Alert",
+        description:
+          "A file with the same name already exists in this candidate, Please rename before submitting.",
+        variant: "destructive",
       });
       return;
     }
@@ -150,36 +166,39 @@ export function AssignCandidateDialog({
 
       const updatedCandidate = {
         ...candidate,
-        remarks: newRemarkObj.description || values.rating 
-          ? [...(candidate.remarks || []), newRemarkObj] 
-          : candidate.remarks,
+        remarks:
+          newRemarkObj.description || values.rating
+            ? [...(candidate.remarks || []), newRemarkObj]
+            : candidate.remarks,
         assignment: {
           interviewerId: values.interviewerId,
           deadline: values.deadline.toString(),
           assignedAt: dayjs().toString(),
         },
-        attachments: [...candidate.attachments, ...values.attachments]
+        attachments: [...candidate.attachments, ...values.attachments],
       };
 
-      const previousInterviewer = typeof candidate.assignment?.interviewerId === "object"
-        ? candidate.assignment.interviewerId.name
-        : "";
-      const previousInterviewerId = typeof candidate.assignment?.interviewerId === "object"
-        ? Object(candidate.assignment.interviewerId._id)
-        : null;
+      const previousInterviewer =
+        typeof candidate.assignment?.interviewerId === "object"
+          ? candidate.assignment.interviewerId.name
+          : "";
+      const previousInterviewerId =
+        typeof candidate.assignment?.interviewerId === "object"
+          ? Object(candidate.assignment.interviewerId._id)
+          : null;
 
       let nextInterviewer = "No Next interviewer";
       let nextInterviewerId = null;
       if (values.interviewerId && interviewers) {
         const foundNextInterviewer = interviewers.find(
-          interviewer => interviewer._id === values.interviewerId
+          (interviewer) => interviewer._id === values.interviewerId
         );
         if (foundNextInterviewer) {
           nextInterviewer = foundNextInterviewer.name;
           nextInterviewerId = Object(foundNextInterviewer._id);
         }
       }
-      
+
       let title;
       if (!previousInterviewer || previousInterviewer === "") {
         title = `Assigned to ${nextInterviewer} : Assigned by ${user.name}`;
@@ -187,7 +206,7 @@ export function AssignCandidateDialog({
         title = `${previousInterviewer} → ${nextInterviewer} : Assigned by ${user.name}`;
       }
 
-      title=null
+      title = null;
 
       const newHistoryEntry: ICandidateHistory = {
         dateTime: updatedCandidate.assignment.deadline,
@@ -196,7 +215,7 @@ export function AssignCandidateDialog({
         assignmentBy: user.id,
         title: title,
         note: newRemarkObj,
-        attachments: values.attachments
+        attachments: values.attachments,
       };
 
       const { data: result, error } = await updateCandidate(updatedCandidate);
@@ -206,18 +225,18 @@ export function AssignCandidateDialog({
       await updateCandidateHistory({
         candidateId: updatedCandidate._id,
         jobId: candidate.jobId._id || candidate.jobId,
-        newEntry: newHistoryEntry
+        newEntry: newHistoryEntry,
       }).unwrap();
-      if(result){
+      if (result) {
         onUpdate(result);
         onOpenChange(false);
         setLocalCandidate(result);
       }
-      
+
       if (pathname === "/dashboard") {
         refetchAssignment?.();
       }
-      
+
       toast({
         title: "Success",
         description: "Candidate assigned successfully",
@@ -227,11 +246,14 @@ export function AssignCandidateDialog({
         onSuccess();
       }
     } catch (error) {
-    
       if (typeof error === "object" && error !== null && "data" in error) {
         const errorData = (error as { data?: { error?: string } }).data;
-    
-        if (typeof errorData === "object" && errorData !== null && "error" in errorData) {
+
+        if (
+          typeof errorData === "object" &&
+          errorData !== null &&
+          "error" in errorData
+        ) {
           toast({
             title: "Error",
             description: errorData.error || "Failed to update job",
@@ -267,7 +289,7 @@ export function AssignCandidateDialog({
       setLocalCandidate(result);
       if (pathname !== "/dashboard" && pathname !== "/dashboard/calendar") {
         await refetch();
-      }else{
+      } else {
         refetchAssignment?.();
       }
       toast({
@@ -276,7 +298,9 @@ export function AssignCandidateDialog({
       });
     } catch (error: unknown) {
       toast({
-        title: "Error: " + (error instanceof Error ? error.message : "Unknown error"),
+        title:
+          "Error: " +
+          (error instanceof Error ? error.message : "Unknown error"),
         description: "Failed to unassign interviewer",
         variant: "destructive",
       });
@@ -293,7 +317,7 @@ export function AssignCandidateDialog({
             Assign Candidate
           </DialogTitle>
         </DialogHeader>
-        
+
         <Formik
           initialValues={initialValues}
           validationSchema={validationSchema}
@@ -310,14 +334,19 @@ export function AssignCandidateDialog({
                       {({ field }: any) => (
                         <Select
                           value={field.value}
-                          onValueChange={(value) => setFieldValue("interviewerId", value)}
+                          onValueChange={(value) =>
+                            setFieldValue("interviewerId", value)
+                          }
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select interviewer" />
                           </SelectTrigger>
                           <SelectContent>
                             {interviewers?.map((interviewer) => (
-                              <SelectItem key={interviewer._id} value={interviewer._id}>
+                              <SelectItem
+                                key={interviewer._id}
+                                value={interviewer._id}
+                              >
                                 {interviewer.name}
                               </SelectItem>
                             ))}
@@ -326,7 +355,9 @@ export function AssignCandidateDialog({
                       )}
                     </Field>
                     {errors.interviewerId && touched.interviewerId && (
-                      <div className="text-red-500 text-sm">{errors.interviewerId}</div>
+                      <div className="text-red-500 text-sm">
+                        {errors.interviewerId}
+                      </div>
                     )}
                   </div>
 
@@ -340,18 +371,18 @@ export function AssignCandidateDialog({
                         />
                       )}
                     </Field>
-                    {typeof errors.deadline === "string" && touched.deadline && (
-                      <div className="text-red-500 text-sm">{errors.deadline}</div>
-                    )}
+                    {typeof errors.deadline === "string" &&
+                      touched.deadline && (
+                        <div className="text-red-500 text-sm">
+                          {errors.deadline}
+                        </div>
+                      )}
                   </div>
 
                   <div className="space-y-4">
                     <Field name="remark">
                       {({ field }: any) => (
-                        <Textarea
-                          placeholder="Add a remark..."
-                          {...field}
-                        />
+                        <Textarea placeholder="Add a remark..." {...field} />
                       )}
                     </Field>
                     <div className="flex justify-between items-center">
@@ -362,7 +393,9 @@ export function AssignCandidateDialog({
                             <Rating
                               name="rating"
                               value={field.value}
-                              onChange={(e, value) => setFieldValue("rating", value)}
+                              onChange={(e, value) =>
+                                setFieldValue("rating", value)
+                              }
                               precision={0.5}
                             />
                           )}
@@ -381,12 +414,22 @@ export function AssignCandidateDialog({
                           files.map(async (file) => {
                             const dataUrl = await readFileAsDataURL(file);
                             let newFileName = file.name;
-                            if (candidate.attachments.some((existingFile) => existingFile.name === file.name) || 
-                                values.attachments.some((existingFile) => existingFile.name === file.name)
-                              ) {
+                            if (
+                              candidate.attachments.some(
+                                (existingFile) =>
+                                  existingFile.name === file.name
+                              ) ||
+                              values.attachments.some(
+                                (existingFile) =>
+                                  existingFile.name === file.name
+                              )
+                            ) {
                               // const timestamp = Date.now();
-                              const fileExtension = file.name.split('.').pop();
-                              const baseName = file.name.replace(/\.[^/.]+$/, "");
+                              const fileExtension = file.name.split(".").pop();
+                              const baseName = file.name.replace(
+                                /\.[^/.]+$/,
+                                ""
+                              );
                               newFileName = `${baseName}_${uuidv4()}.${fileExtension}`;
                             }
                             return {
@@ -398,51 +441,76 @@ export function AssignCandidateDialog({
                             };
                           })
                         );
-                        setFieldValue("attachments", [...values.attachments, ...newAttachments]);
+                        setFieldValue("attachments", [
+                          ...values.attachments,
+                          ...newAttachments,
+                        ]);
                       }}
-                      
-                      
-                      files={(values.attachments || []).map(att => 
-                        new File([att.url], att.name, { type: att.type })
+                      files={(values.attachments || []).map(
+                        (att) =>
+                          new File([att.url], att.name, { type: att.type })
                       )}
                       setter={(uiFiles) => {
                         const fileIndexMap = new Map();
                         uiFiles.forEach((file, index) => {
                           fileIndexMap.set(file, index);
                         });
-                        
-                        const updatedAttachments = uiFiles.map((file, index) => {
-                          const existingAttachment = values.attachments[index] || values.attachments.find(att => att.size === file.size);
-                          
-                          if (existingAttachment) {
-                            return {
-                              ...existingAttachment,
-                              name: file.name,
-                              type: file.type
-                            };
-                          } else {
-                            return {
-                              id: uuidv4(),
-                              name: file.name,
-                              url: "",
-                              type: file.type,
-                              size: file.size
-                            };
+
+                        const updatedAttachments = uiFiles.map(
+                          (file, index) => {
+                            const existingAttachment =
+                              values.attachments[index] ||
+                              values.attachments.find(
+                                (att) => att.size === file.size
+                              );
+
+                            if (existingAttachment) {
+                              return {
+                                ...existingAttachment,
+                                name: file.name,
+                                type: file.type,
+                              };
+                            } else {
+                              return {
+                                id: uuidv4(),
+                                name: file.name,
+                                url: "",
+                                type: file.type,
+                                size: file.size,
+                              };
+                            }
                           }
-                        });
-                        const duplicateFiles = updatedAttachments.filter((newFile) =>(
-                          candidate.attachments.some((existingFile) => existingFile.name === newFile.name) ||
-                          values.attachments.some((existingFile) => existingFile.name === newFile.name)
-                        ));
-                        
-                        const uniqueRenamedAttachments = updatedAttachments.filter(
-                          (newFile) => !duplicateFiles.some((duplicate) => duplicate.name === newFile.name)
                         );
-                        const filteredSelecedFiles = values.attachments.filter((file)=>
-                          !uniqueRenamedAttachments.some((newFile)=> newFile.id === file.id)
-                        )
+                        const duplicateFiles = updatedAttachments.filter(
+                          (newFile) =>
+                            candidate.attachments.some(
+                              (existingFile) =>
+                                existingFile.name === newFile.name
+                            ) ||
+                            values.attachments.some(
+                              (existingFile) =>
+                                existingFile.name === newFile.name
+                            )
+                        );
+
+                        const uniqueRenamedAttachments =
+                          updatedAttachments.filter(
+                            (newFile) =>
+                              !duplicateFiles.some(
+                                (duplicate) => duplicate.name === newFile.name
+                              )
+                          );
+                        const filteredSelecedFiles = values.attachments.filter(
+                          (file) =>
+                            !uniqueRenamedAttachments.some(
+                              (newFile) => newFile.id === file.id
+                            )
+                        );
                         if (uniqueRenamedAttachments.length > 0) {
-                          setFieldValue("attachments", [...filteredSelecedFiles,...uniqueRenamedAttachments]);
+                          setFieldValue("attachments", [
+                            ...filteredSelecedFiles,
+                            ...uniqueRenamedAttachments,
+                          ]);
                         }
                       }}
                     />
@@ -463,17 +531,14 @@ export function AssignCandidateDialog({
                   )}
                 </div>
                 <div className="flex gap-2">
-                  <Button 
+                  <Button
                     type="button"
-                    variant="outline" 
+                    variant="outline"
                     onClick={() => onOpenChange(false)}
                   >
                     Cancel
                   </Button>
-                  <Button 
-                    type="submit"
-                    disabled={isSubmitting}
-                  >
+                  <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting ? "Assigning..." : "Assign"}
                   </Button>
                 </div>
@@ -493,7 +558,10 @@ export function AssignCandidateDialog({
             <p>Are you sure you want to unassign this interviewer?</p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmUnassignOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setConfirmUnassignOpen(false)}
+            >
               Cancel
             </Button>
             <Button onClick={confirmUnassign}>Confirm</Button>

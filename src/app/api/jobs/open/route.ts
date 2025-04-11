@@ -1,13 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
 import { Job, Candidate, History } from "@/lib/mongodb";
 import { auth } from "@/lib/auth";
 import { ICandidateHistory } from "@/lib/models/history";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     await connectToDatabase();
-    const session = await auth();
+    const session = await auth(request);
     const organizationId = session?.user.organizationId;
     if (!Job) {
       return NextResponse.json(
@@ -43,10 +43,10 @@ export async function GET() {
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     await connectToDatabase();
-    const session = await auth();
+    const session = await auth(req);
     const organizationId = session?.user.organizationId;
 
     if (!organizationId) {
@@ -108,12 +108,12 @@ export async function POST(req: Request) {
     // If there's existing history, update it with the new jobId
     if (existingHistory) {
       await History!.findOneAndUpdate(
-        { 
+        {
           candidateId: candidateId,
-          jobId: candidate.jobId 
+          jobId: candidate.jobId,
         },
-        { 
-          $set: { jobId: jobId }
+        {
+          $set: { jobId: jobId },
         }
       );
     }
@@ -122,21 +122,17 @@ export async function POST(req: Request) {
     const job = await Job!.findById(jobId);
 
     if (!job) {
-      return NextResponse.json(
-        { error: "Job not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 
     // Fetch both previous and new job details
-    const previousJob = candidate.jobId ? await Job!.findById(candidate.jobId) : null;
+    const previousJob = candidate.jobId
+      ? await Job!.findById(candidate.jobId)
+      : null;
     const nextJob = await Job!.findById(jobId);
 
     if (!nextJob) {
-      return NextResponse.json(
-        { error: "Job not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 
     // Create a new history entry for the job assignment
@@ -144,7 +140,7 @@ export async function POST(req: Request) {
       dateTime: new Date().toISOString(),
       title: "Assigned to Job",
       note: {
-        description: `Candidate moved from ${previousJob?.title || 'No previous job'} to ${nextJob.title}`,
+        description: `Candidate moved from ${previousJob?.title || "No previous job"} to ${nextJob.title}`,
         date: new Date().toISOString(),
         rating: 0,
         userId: session?.user._id || null,
@@ -152,7 +148,7 @@ export async function POST(req: Request) {
       attachments: [],
       currentInterviewer: null,
       previousInterviewer: null,
-      assignmentBy: session?.user._id || null
+      assignmentBy: session?.user._id || null,
     };
 
     // Add this entry to history collection

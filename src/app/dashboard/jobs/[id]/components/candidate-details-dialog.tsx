@@ -44,6 +44,7 @@ import { ICandidateHistory } from "@/lib/models/history";
 import ExpandableDescription from "./expand-collapse-desc";
 import { AssignJobDialog } from "./assing-job-dialog";
 import { CandidateScoreBadge } from "./candidate-score-badge";
+import { verifyAndDecryptJWTToken } from "@/lib/auth";
 
 interface CandidateDetailsDialogProps {
   candidate: Candidate | null;
@@ -106,7 +107,19 @@ export function CandidateDetailsDialog({
   const [updateCandidate] = useUpdateCandidateMutation();
   const [isAssigning, setIsAssigning] = useState(false);
   const [isAssigningJob, setIsAssigningJob] = useState(false);
-  const user = JSON.parse(Cookies.get("user") || "{}");
+  const [user, setuser] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      const token = Cookies.get("token");
+      if (token) {
+        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+        if (decryptedResponse.success && decryptedResponse.user) {
+          setuser(decryptedResponse.user);
+        }
+      }
+    })();
+  }, []);
 
   const handleEditClick = () => {
     setIsEditing(true); // Open the edit dialog
@@ -325,7 +338,7 @@ export function CandidateDetailsDialog({
                   {localCandidate.noticePeriod} days
                 </div>
               </div>
-              {user.role !== "interviewer" && (
+              {user && user.role !== "interviewer" && (
                 <>
                   <div className="space-y-2">
                     <Label className={labelClass}>Current CTC</Label>

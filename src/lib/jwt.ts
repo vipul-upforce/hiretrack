@@ -1,9 +1,14 @@
-import jwt from 'jsonwebtoken';
+import jwt from "jsonwebtoken";
+import CryptoJS from "crypto-js";
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_SECRET = "your_jwt_secret_key";
 
 export const signToken = (payload: any) => {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '1d' });
+  const encryptedPayload = CryptoJS.AES.encrypt(
+    JSON.stringify(payload),
+    JWT_SECRET
+  ).toString();
+  return jwt.sign({ user: encryptedPayload }, JWT_SECRET, { expiresIn: "1d" });
 };
 
 export const verifyToken = (token: string) => {
@@ -12,4 +17,4 @@ export const verifyToken = (token: string) => {
   } catch (error) {
     return null;
   }
-}; 
+};

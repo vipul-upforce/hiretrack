@@ -21,6 +21,7 @@ import CustomFields from "@/Custom_Fields/Components/CustomFields";
 import Cookies from "js-cookie";
 import { useEffect, useState } from "react";
 import { toast } from "@/hooks/use-toast";
+import { verifyAndDecryptJWTToken } from "@/lib/auth";
 
 interface CandidateFormProps {
   onFileUpload?: (file: File) => void;
@@ -46,9 +47,19 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
     typeof values.assignment?.interviewerId === "string"
       ? values.assignment.interviewerId
       : values.assignment?.interviewerId?._id || "";
+  const [user, setuser] = useState(null);
 
-  const userCookie = Cookies.get("user") || "{}";
-  const user = JSON.parse(userCookie);
+  useEffect(() => {
+    (async () => {
+      const token = Cookies.get("token");
+      if (token) {
+        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+        if (decryptedResponse.success && decryptedResponse.user) {
+          setuser(decryptedResponse.user);
+        }
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     if (tempResumeUrl) {
@@ -345,7 +356,7 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
           <Label>Additional Attachments</Label>
           <FileUpload
             accept={{}}
-            maxFiles={user.role === "candidate" ? 2 : 30}
+            maxFiles={user && user.role === "candidate" ? 2 : 30}
             onFileSelect={(files) => {
               const currentFiles = attachmentsField.value || [];
 
@@ -404,36 +415,6 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
             }}
             files={attachmentsField.value}
             setter={(files) => setFieldValue("attachments", files)}
-
-            // setter={(files: AttachmentFile[]) => {
-            //   const currentFiles: AttachmentFile[] = values.attachments || [];
-
-            //   const updatedFiles = files.map((newFile) => {
-            //     const oldFile = currentFiles.find(
-            //       (old) =>
-            //         old.name !== newFile.name &&
-            //         (old.customId ? old.customId === newFile.customId : old.lastModified === newFile.lastModified)
-            //     );
-
-            //     if (oldFile) {
-            //       console.log(`Renamed file: ${oldFile.name} → ${newFile.name}`);
-
-            //       // Check for duplicates
-            //       const isDuplicate = currentFiles.some(
-            //         (existingFile) => existingFile.name === newFile.name && existingFile !== newFile
-            //       );
-
-            //       if (isDuplicate) {
-            //         console.warn(`⚠️ Duplicate detected! Reverting ${newFile.name} back to ${oldFile.name}`);
-            //         return { ...newFile, name: oldFile.name }; // Revert to old name
-            //       }
-            //     }
-
-            //     return newFile;
-            //   });
-
-            //   setFieldValue("attachments", updatedFiles);
-            // }}
           />
         </div>
         <CustomFields formName="Candidate" />

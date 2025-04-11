@@ -10,7 +10,7 @@ import {
 } from "@/lib/features/settings/settingsApi";
 import Cookies from "js-cookie";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import {
   Tooltip,
@@ -19,6 +19,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useTestConnection } from "@/hooks/use-test-connection";
+import { signToken } from "@/app/actions/auth";
+import { verifyAndDecryptJWTToken } from "@/lib/auth";
 
 const storageOptions = [
   { key: "local", label: "Local Storage" },
@@ -31,17 +33,28 @@ export default function FileStorageOptions({
 }: {
   onClose: () => void;
 }) {
-  const user = JSON.parse(Cookies.get("user") || "{}");
+  const [user, setuser] = useState(null);
   const { toast } = useToast();
   const [showKey, setShowKey] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
-
   const { testConnection, isConnectionSuccessful, isTesting } =
     useTestConnection();
 
   const { data, isLoading, refetch } = useGetFSConfigsQuery(undefined);
   const [updateStorageConfigs, { isLoading: isUpdating }] =
     useUpdateFSConfigsMutation();
+
+  useEffect(() => {
+    (async () => {
+      const token = Cookies.get("token");
+      if (token) {
+        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+        if (decryptedResponse.success && decryptedResponse.user) {
+          setuser(decryptedResponse.user);
+        }
+      }
+    })();
+  }, []);
 
   const initialValues = {
     storageType: data?.fileStorage?.storageType || "local",
@@ -127,7 +140,10 @@ export default function FileStorageOptions({
         description: "Storage settings updated successfully",
       });
       const updatedUser = { ...user, fileStorage: values.storageType };
-      Cookies.set("user", JSON.stringify(updatedUser), { expires: 1 });
+      const token = await signToken(updatedUser);
+      Cookies.set("token", String(token), {
+        expires: 1,
+      });
       refetch();
       onClose();
     } catch {

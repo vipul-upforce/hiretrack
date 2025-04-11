@@ -1,28 +1,37 @@
-import { NextRequest, NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
-import {User} from '@/lib/mongodb';
+import { NextRequest, NextResponse } from "next/server";
+import connectToDatabase from "@/lib/mongodb";
+import { User } from "@/lib/mongodb";
+import { verifyAndDecryptToken } from "@/app/actions/auth";
 
-export async function GET(req:NextRequest) {
+export async function GET(req: NextRequest) {
   try {
     await connectToDatabase();
-    const user = req.cookies.get('user');
-    const userData = JSON.parse(user?.value || '{}');
-    const organizationId = userData.organizationId;
-    if(!User){
-      return NextResponse.json({ error: "User Model not found" }, { status: 400 });
+    let organizationId;
+    const token = req.cookies.get("token");
+    if (token?.value) {
+      const decryptedResponse = await verifyAndDecryptToken(
+        String(token?.value)
+      );
+      const userData = decryptedResponse.user;
+      if (decryptedResponse.success) {
+        organizationId = userData.organizationId;
+      }
     }
-    const interviewers = await User.find({ 
-      organizationId,
-      isDeleted: { $ne: true }
-    }).select('_id name email organizationId');
-    
-    return NextResponse.json(interviewers);
-  } catch (error : unknown) {
-    if (error instanceof Error) {
+    if (!User) {
       return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
+        { error: "User Model not found" },
+        { status: 400 }
       );
     }
+    const interviewers = await User.find({
+      organizationId,
+      isDeleted: { $ne: true },
+    }).select("_id name email organizationId");
+
+    return NextResponse.json(interviewers);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
   }
-} 
+}

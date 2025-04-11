@@ -1,49 +1,49 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-// import { verifyToken } from "./lib/jwt";
+import CryptoJS from "crypto-js";
+import { jwtVerify } from "jose";
 
-const unauthorizedInterviewerPages = [
-  "/jobs-board",
-  "/jobs",
-  "/auth/signup",
-  "/dashboard/settings",
-  "/dashboard/search",
-];
+export async function verifyAndDecryptToken(token: string) {
+  const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key";
+  try {
+    if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
+    const secretKey = new TextEncoder().encode(JWT_SECRET);
+    const { payload } = await jwtVerify(token, secretKey);
 
-const apiExemptPaths = [
-  "/api/jobs/open-jobs",
-  "/api/auth/login",
-  "/api/auth/signup",
-  "/api/organization",
-  "/api/auth/forgot-password",
-  "/api/auth/reset-password",
-  "/api/event-mail",
-  "/api/candidates/signup",
-  "/api/files",
-  "/apply-jobs",
-];
+    if (!payload || typeof payload !== "object" || !payload.user) {
+      throw new Error("Invalid token structure");
+    }
+    const bytes = CryptoJS.AES.decrypt(payload.user, JWT_SECRET);
+    const decryptedData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
 
-const redirectPaths = [
-  "/dashboard",
-  "/jobs",
-  "/auth/signup",
-  "/:orgName/apply-jobs",
-];
+    return { success: true, user: decryptedData };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Unknown Error Occurred",
+    };
+  }
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  let userData;
+  const token = request.cookies.get("token");
+  if (token?.value) {
+    const decryptedResponse = await verifyAndDecryptToken(String(token?.value));
+    if (decryptedResponse.success) {
+      userData = decryptedResponse.user;
+    }
+  }
   // Check if the user is authenticated
-  const user = await request.cookies.get("user")?.value;
-  // const decrypedUser = JSON.stringify(user ? user : "{}");
-  const userData = user ? JSON.parse(user) : null;
 
   // Handle API routes authentication
   if (
     pathname.startsWith("/api") &&
     !apiExemptPaths.some((path) => pathname === path || pathname.includes(path))
   ) {
-    if (!user) {
+    if (!userData) {
       return NextResponse.json(
         { error: "Authentication required" },
         { status: 401 }
@@ -60,16 +60,10 @@ export async function middleware(request: NextRequest) {
   if (isOrgPath) {
     const subPath = `/${pathParts[1]}`;
     if (subPath === "/apply-jobs") {
-      // if (!user) {
-      //   const orgName = pathParts[0];
-      //   return NextResponse.redirect(
-      //     new URL(`/${orgName}/signup`, request.url)
-      //   );
-      // }
     }
   } else {
     if (
-      !user &&
+      !userData &&
       redirectPaths.some((path) => {
         if (path.includes(":orgName")) return false;
         return pathname.startsWith(path);
@@ -136,3 +130,31 @@ export const config = {
     "/:orgName/:path*",
   ],
 };
+
+const unauthorizedInterviewerPages = [
+  "/jobs-board",
+  "/jobs",
+  "/auth/signup",
+  "/dashboard/settings",
+  "/dashboard/search",
+];
+
+const apiExemptPaths = [
+  "/api/jobs/open-jobs",
+  "/api/auth/login",
+  "/api/auth/signup",
+  "/api/organization",
+  "/api/auth/forgot-password",
+  "/api/auth/reset-password",
+  "/api/event-mail",
+  "/api/candidates/signup",
+  // "/api/files",
+  "/apply-jobs",
+];
+
+const redirectPaths = [
+  "/dashboard",
+  "/jobs",
+  "/auth/signup",
+  "/:orgName/apply-jobs",
+];

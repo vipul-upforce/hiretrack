@@ -13,6 +13,7 @@ import { FileUpload } from "@/components/ui/file-upload";
 import { v4 as uuidv4 } from "uuid";
 import React from "react";
 import Cookies from "js-cookie";
+import { signToken, verifyAndDecryptToken } from "@/app/actions/auth";
 
 export interface PortalLogo {
   id: string;
@@ -79,15 +80,19 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
         portalLogo: portalLogoData,
       };
       await updateSMTPConfigs(dataToSubmit);
-      const user = Cookies.get("user");
-      if (user) {
-        const parsedUser = JSON.parse(user) as User;
-        if (parsedUser) {
-          parsedUser.organizationInfo.name = dataToSubmit.portalName;
+      const token = Cookies.get("token");
+      if (token) {
+        const decryptedResponse = await verifyAndDecryptToken(String(token));
+        if (decryptedResponse.success && decryptedResponse.user) {
+          const parsedUser = decryptedResponse.user as User;
+          if (parsedUser) {
+            parsedUser.organizationInfo.name = dataToSubmit.portalName;
+          }
+          const token = await signToken(parsedUser);
+          Cookies.set("token", String(token), {
+            expires: 1,
+          });
         }
-        Cookies.set("user", JSON.stringify(parsedUser), {
-          expires: 1,
-        });
       }
       toast({
         title: "Success",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Cookies from "js-cookie";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,8 @@ import { OrgInfo } from "@/lib/models/user";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import DashboardLoader from "./components/dashboard-loader";
 import ActionItems from "@/components/actionitems";
+import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
 
 interface User {
   name: string;
@@ -94,9 +96,11 @@ export default function DashboardPage() {
   const [searchText, setSearchText] = useState("");
   const [filterText, setFilterText] = useState("");
   const shouldShowAssignments = user?.role === "admin" || user?.role === "hr";
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12; // Adjust this number as needed
 
   // Fetch assignments
-  const fetchAssignments = async () => {
+  const fetchAssignments = useCallback(async () => {
     try {
       const response = await fetch("/api/candidates/assignments");
       const data = await response.json();
@@ -104,15 +108,21 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  useEffect(() => {
-    const userData = Cookies.get("user");
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
-    fetchAssignments();
   }, []);
+
+  const checkUser = async () => {
+    const user = Cookies.get("token");
+    if (user) {
+      const decryptedResponse = await verifyAndDecryptJWTToken(String(user));
+      if (decryptedResponse.success && decryptedResponse.user) {
+        setUser(decryptedResponse.user);
+      }
+    }
+  };
+  useEffect(() => {
+    checkUser();
+    fetchAssignments();
+  }, [fetchAssignments]);
 
   const applyFilter = () => {
     setFilterText(searchText);
@@ -223,15 +233,55 @@ export default function DashboardPage() {
           {isLoading ? (
             <DashboardLoader />
           ) : filteredAssignments?.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredAssignments?.map((assignment) => (
-                <ActionItems
-                  key={assignment.id || assignment._id}
-                  assignment={assignment}
-                  fetchAssignments={fetchAssignments}
-                />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredAssignments
+                  ?.slice(
+                    (currentPage - 1) * itemsPerPage,
+                    currentPage * itemsPerPage
+                  )
+                  .map((assignment) => (
+                    <ActionItems
+                      key={assignment.id || assignment._id}
+                      assignment={assignment}
+                      fetchAssignments={fetchAssignments}
+                    />
+                  ))}
+              </div>
+
+              {/* Pagination Controls */}
+              <div className="flex justify-center items-center gap-4 mt-6">
+                <Button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
+                  disabled={currentPage === 1}
+                  variant="outline"
+                >
+                  Previous
+                </Button>
+                <span className="text-sm">
+                  Page {currentPage} of{" "}
+                  {Math.ceil(assignments.length / itemsPerPage)}
+                </span>
+                <Button
+                  onClick={() =>
+                    setCurrentPage((prev) =>
+                      Math.min(
+                        prev + 1,
+                        Math.ceil(assignments.length / itemsPerPage)
+                      )
+                    )
+                  }
+                  disabled={
+                    currentPage === Math.ceil(assignments.length / itemsPerPage)
+                  }
+                  variant="outline"
+                >
+                  Next
+                </Button>
+              </div>
+            </>
           ) : (
             <p className="text-lg font-semibold text-gray-500 text-center py-10 w-full flex justify-center items-center">
               No assignments found.

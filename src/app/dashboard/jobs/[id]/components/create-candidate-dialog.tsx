@@ -30,33 +30,17 @@ import { parseResumeFromPdf } from "@/lib/parse-resume-from-pdf";
 import FormUpdater from "./FormUpdater";
 import Cookies from "js-cookie";
 import * as pdfjs from "pdfjs-dist";
+import { verifyAndDecryptJWTToken } from "@/lib/auth";
 
 // New function to call the evaluate API
 async function evaluateCandidate(
   candidateId: string,
-  evaluateCandidateMutation: ReturnType<typeof useEvaluateCandidateMutation>[0],
-  toast: (props: {
-    title: string;
-    description: string;
-    variant?: "default" | "destructive" | null;
-  }) => void
+  evaluateCandidateMutation: ReturnType<typeof useEvaluateCandidateMutation>[0]
 ) {
   try {
     const result = await evaluateCandidateMutation({ candidateId }).unwrap();
-    toast({
-      title: "Evaluation Complete",
-      description: "Candidate resume evaluated successfully",
-    });
     return result;
-  } catch (error) {
-    toast({
-      title: "Evaluation Failed",
-      description:
-        error instanceof Error
-          ? error?.message
-          : "Could not evaluate candidate resume",
-      variant: "destructive",
-    });
+  } catch {
     return null;
   }
 }
@@ -143,9 +127,19 @@ export function CreateCandidateDialog({
   const formName = "Candidate";
   const { validationSchema, initialValues: inits } = useCustomForm(formName);
   const [resetForm, setResetForm] = useState(false);
+  const [user, setuser] = useState(null);
 
-  const userCookie = Cookies.get("user") || "{}";
-  const user = JSON.parse(userCookie);
+  useEffect(() => {
+    (async () => {
+      const token = Cookies.get("token");
+      if (token) {
+        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+        if (decryptedResponse.success && decryptedResponse.user) {
+          setuser(decryptedResponse.user);
+        }
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -243,7 +237,7 @@ export function CreateCandidateDialog({
       if (values.resume && values.resume.type === "application/pdf") {
         const pageCount = await checkPdfPageCount(values.resume);
         if (pageCount <= 3) {
-          evaluateCandidate(candidateId, evaluateCandidateMutation, toast);
+          evaluateCandidate(candidateId, evaluateCandidateMutation);
         }
       }
 
@@ -273,7 +267,7 @@ export function CreateCandidateDialog({
               ? Object(createdCandidate.assignment.interviewerId._id)
               : null,
           previousInterviewer: null,
-          assignmentBy: user.id,
+          assignmentBy: user && user.id,
           note: {
             description: "",
             date: "",
@@ -337,7 +331,7 @@ export function CreateCandidateDialog({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        {user.role === "candidate" ? (
+        {user && user.role === "candidate" ? (
           <button
             type="button"
             className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
@@ -356,7 +350,7 @@ export function CreateCandidateDialog({
       >
         <DialogHeader className="px-6 py-2">
           <DialogTitle>
-            {user.role === "candidate"
+            {user && user.role === "candidate"
               ? "Add Application"
               : "Add New Candidate"}
           </DialogTitle>
@@ -398,7 +392,7 @@ export function CreateCandidateDialog({
                 >
                   {isSubmitting
                     ? "Saving..."
-                    : user.role === "candidate"
+                    : user && user.role === "candidate"
                       ? "Apply"
                       : "Add Candidate"}
                 </Button>

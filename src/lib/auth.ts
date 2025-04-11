@@ -1,17 +1,36 @@
-import { cookies } from 'next/headers';
+import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { NextRequest } from "next/server";
+import { jwtDecode } from "jwt-decode";
+import CryptoJS from "crypto-js";
 
-export async function auth() {
-  const cookieStore = await cookies();
-  const userCookie = cookieStore.get('user');
-  
-  if (!userCookie) {
-    return null;
+export async function auth(request: NextRequest) {
+  const token = request.cookies.get("token");
+  if (token?.value) {
+    const decryptedResponse = await verifyAndDecryptToken(String(token?.value));
+    const userData = decryptedResponse.user;
+    if (decryptedResponse.success) {
+      return { user: userData };
+    }
   }
+}
 
+export async function verifyAndDecryptJWTToken(token: string) {
+  const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key";
   try {
-    const user = JSON.parse(userCookie.value);
-    return { user };
-  } catch {
-    return null;
+    if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
+
+    const decoded = jwtDecode(token);
+    if (!decoded || typeof decoded !== "object" || !decoded.user) {
+      throw new Error("Invalid token structure");
+    }
+
+    const bytes = CryptoJS.AES.decrypt(decoded.user, JWT_SECRET);
+    const decryptedData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+    return { success: true, user: decryptedData };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Unknown Error Occurred",
+    };
   }
-} 
+}

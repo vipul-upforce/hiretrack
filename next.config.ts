@@ -2,9 +2,16 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    domains: ["192.168.56.1","localhost", "192.168.5.210", "res.cloudinary.com","rms-bucket-upforcetech.s3.us-east-1.amazonaws.com"],
-    unoptimized: true
+    domains: [
+      "192.168.56.1",
+      "localhost",
+      "192.168.5.210",
+      "res.cloudinary.com",
+      "rms-bucket-upforcetech.s3.us-east-1.amazonaws.com",
+    ],
+    unoptimized: true,
   },
+  reactStrictMode: false,
   async headers() {
     return [
       {
@@ -12,11 +19,18 @@ const nextConfig: NextConfig = {
         headers: [
           { key: "Access-Control-Allow-Credentials", value: "true" },
           { key: "Access-Control-Allow-Origin", value: "*" },
-          { key: "Access-Control-Allow-Methods", value: "GET,DELETE,PATCH,POST,PUT" },
-          { key: "Access-Control-Allow-Headers", value: "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version" },
-        ]
-      }
-    ]
+          {
+            key: "Access-Control-Allow-Methods",
+            value: "GET,DELETE,PATCH,POST,PUT",
+          },
+          {
+            key: "Access-Control-Allow-Headers",
+            value:
+              "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version",
+          },
+        ],
+      },
+    ];
   },
   webpack: (config, { isServer }) => {
     config.resolve.alias = {
@@ -35,7 +49,7 @@ const nextConfig: NextConfig = {
 
     config.module.rules.push({
       test: /\.node$/,
-      use: 'node-loader',
+      use: "node-loader",
     });
 
     return config;

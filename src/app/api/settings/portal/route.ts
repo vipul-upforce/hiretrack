@@ -1,12 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect, { Organization, Settings } from "@/lib/mongodb";
 import { handleSingleFile } from "@/lib/fileUtils";
+import { verifyAndDecryptToken } from "@/app/actions/auth";
 
 export async function GET(req: NextRequest) {
   try {
     await dbConnect();
-    const userCookie = req.cookies.get("user");
-    const userData = await JSON.parse(userCookie?.value || "{}");
+    let organizationId = "";
+    const token = req.cookies.get("token");
+    if (token?.value) {
+      const decryptedResponse = await verifyAndDecryptToken(
+        String(token?.value)
+      );
+      const userData = decryptedResponse.user;
+      if (decryptedResponse.success) {
+        organizationId = userData.organizationId || "";
+      }
+    }
 
     if (!Settings) {
       return NextResponse.json(
@@ -15,7 +25,8 @@ export async function GET(req: NextRequest) {
       );
     }
     const settings = await Settings.findOne(
-      { organizationId: userData.organizationId },
+      // { organizationId: userData.organizationId },
+      { organizationId: organizationId },
       {
         "fileStorage.storageType": 1,
         portalConfigs: 1,
@@ -47,19 +58,25 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  let fileStorage = "local";
-  let organizationId;
   try {
     await dbConnect();
-    const userCookie = req.cookies.get("user");
-    const userData = JSON.parse(userCookie?.value || "{}");
 
-    if (!userData || userData.role !== "admin") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    let organizationId = "";
+    let fileStorage = "";
+    const token = req.cookies.get("token");
+    if (token?.value) {
+      const decryptedResponse = await verifyAndDecryptToken(
+        String(token?.value)
+      );
+      const userData = decryptedResponse.user;
+      if (decryptedResponse.success) {
+        if (userData.role !== "admin") {
+          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        fileStorage = userData.fileStorage || "local";
+        organizationId = userData.organizationId || "";
+      }
     }
-
-    fileStorage = userData.fileStorage || "local";
-    organizationId = userData.organizationId || "";
 
     if (!Settings) {
       return NextResponse.json(
@@ -85,13 +102,15 @@ export async function PUT(req: NextRequest) {
       portalName: data.portalName,
     };
 
-    await Organization?.findByIdAndUpdate(userData.organizationId, {
+    // await Organization?.findByIdAndUpdate(userData.organizationId, {
+    await Organization?.findByIdAndUpdate(organizationId, {
       name: updatedPortal.portalName,
     });
 
     const updatedSettings = await Settings.findOneAndUpdate(
       {
-        organizationId: userData.organizationId,
+        // organizationId: userData.organizationId,
+        organizationId: organizationId,
       },
       { portalConfigs: updatedPortal },
       {

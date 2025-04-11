@@ -9,9 +9,8 @@ import {
   UploadApiOptions,
 } from "cloudinary";
 import { Settings } from "./mongodb";
-import { NextRequest } from "next/server";
+// import { NextRequest } from "next/server";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-// const { fileStorage } = JSON.parse(Cookies.get("user") || "{}");
 
 export const uploadFile = async (
   base64: string,
@@ -40,9 +39,6 @@ export const uploadFile = async (
   const format = mimeType.split("/")[1];
 
   const timestamp = new Date().getTime();
-  // const fileExtension = format.replace('jpeg', 'jpg');
-  // const finalFileName = fileName || `file_${timestamp}.${fileExtension}`;
-  // const publicId = finalFileName.split('.')[0]; // Remove extension for public_id
 
   const uploadOptions: UploadApiOptions = {
     resource_type: "auto" satisfies "auto",
@@ -54,26 +50,20 @@ export const uploadFile = async (
     use_original_filename: true,
   };
 
-  // const uploadResult: UploadApiResponse | void = await cloudinary.uploader
-  //   .upload(base64, uploadOptions)
-  //   .catch((error) => {
-  //     console.error("Cloudinary upload error:", error);
-  //   });
-
-  // if (!uploadResult) {
-  //   return "";
-  // }
-
-  // return uploadResult?.secure_url;
   try {
-    const uploadResult: UploadApiResponse = await cloudinary.uploader.upload(base64, uploadOptions);
+    const uploadResult: UploadApiResponse = await cloudinary.uploader.upload(
+      base64,
+      uploadOptions
+    );
     return uploadResult?.secure_url;
   } catch (error) {
     console.error("Cloudinary upload error:", error);
     if (typeof error === "object" && error !== null && "message" in error) {
-      throw new Error(`File upload to Cloudinary failed: ${(error as { message: string }).message}`);
+      throw new Error(
+        `File upload to Cloudinary failed: ${(error as { message: string }).message}`
+      );
     }
-  
+
     throw new Error("File upload to Cloudinary failed: Unknown error");
   }
 };
@@ -143,35 +133,37 @@ export const uploadFileToS3 = async (
     return `https://${s3Settings.awsBucketName}.s3.${s3Settings.awsRegion}.amazonaws.com/${type}/${finalFileName}`;
   } catch (error) {
     console.error("S3 upload error:", error);
-  
+
     let userFriendlyMessage = "File upload failed. Please try again later.";
-  
+
     if (typeof error === "object" && error !== null) {
       // If it's a standard error with a message
       if ("message" in error) {
-        userFriendlyMessage = "File upload failed. Please check your AWS API Storage configuration and try again";
+        userFriendlyMessage =
+          "File upload failed. Please check your AWS API Storage configuration and try again";
       }
     }
-  
+
     throw new Error(`S3 upload failed: ${userFriendlyMessage}`);
-  }  
+  }
 };
 
 export async function saveFileLocally(
   base64: string,
   folder: "documents" | "images",
-  fileName: string,
-  req: NextRequest
+  fileName: string
+  // req: NextRequest
 ) {
   const publicPath = path.join(process.cwd(), "assets");
   await ensureDirectoryExists(publicPath);
   await ensureDirectoryExists(path.join(publicPath, folder));
 
   const base64Data = base64.replace(/^data:[^;]+;base64,/, "");
-  const filePath = path.join(publicPath, folder, fileName);
+  const filePath = path.join("assets", folder, fileName);
   await fs.promises.writeFile(filePath, Buffer.from(base64Data, "base64"));
-  const origin = req.headers.get("origin") || "http://localhost:3000";
-  return `${origin}/api/files?pathName=${filePath}`;
+  // const origin = req.headers.get("origin") || "http://localhost:3000";
+  // return `${origin}/api/files?pathName=${filePath}`;
+  return `/api/files?pathName=${filePath}`;
 }
 
 export interface FileAttachment {
@@ -223,8 +215,8 @@ async function ensureDirectoryExists(dirPath: string) {
 export async function handleFileAttachments(
   newAttachments: Attachments,
   fileStorage: string,
-  organizationId: string,
-  req: NextRequest
+  organizationId: string
+  // req: NextRequest
 ) {
   const updatedAttachments: Attachments = { files: [], images: [] };
   async function processFiles(
@@ -256,7 +248,8 @@ export async function handleFileAttachments(
             );
             break;
           default:
-            url = await saveFileLocally(item.url, folder, uploadName, req);
+            // url = await saveFileLocally(item.url, folder, uploadName, req);
+            url = await saveFileLocally(item.url, folder, uploadName);
         }
         processedItems.push({ ...item, url: url || "" });
       } else {
@@ -311,8 +304,8 @@ export async function handleFileAttachments(
 export async function handleCustomFieldFiles(
   customFields: CustomFields,
   fileStorage: string,
-  organizationId: string,
-  req: NextRequest
+  organizationId: string
+  // req: NextRequest
 ) {
   for (const fieldKey in customFields) {
     const field = customFields[fieldKey];
@@ -351,7 +344,8 @@ export async function handleCustomFieldFiles(
               );
               break;
             default:
-              url = await saveFileLocally(file.base64, folder, file.name, req);
+              // url = await saveFileLocally(file.base64, folder, file.name, req);
+              url = await saveFileLocally(file.base64, folder, file.name);
           }
           processedFiles.push({ ...file, base64: url || "" });
         } else {
@@ -398,8 +392,8 @@ export async function handleCustomFieldFiles(
 export async function handleSingleFile(
   file: SingleFileField | null,
   fileStorage: string,
-  organizationId: string,
-  req: NextRequest
+  organizationId: string
+  // req: NextRequest
 ) {
   if (!file) return null;
   if (file.url?.startsWith("data:")) {
@@ -414,7 +408,8 @@ export async function handleSingleFile(
         url = await uploadFileToS3(file.url, folder, organizationId, file.name);
         break;
       default:
-        url = await saveFileLocally(file.url, folder, file.name, req);
+        // url = await saveFileLocally(file.url, folder, file.name, req);
+        url = await saveFileLocally(file.url, folder, file.name);
     }
     return { ...file, url: url || "" };
   } else {

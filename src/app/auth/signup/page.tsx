@@ -17,10 +17,17 @@ import { useSignupMutation } from "@/lib/features/auth/authApi";
 import { FormikErrors, FormikTouched, FieldProps } from "formik";
 import { useToast } from "@/hooks/use-toast";
 import Cookies from "js-cookie";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
+import { verifyAndDecryptToken } from "@/app/actions/auth";
 
 interface SignupFormValues {
   email: string;
@@ -34,13 +41,19 @@ interface SignupFormValues {
 const SignupSchema = Yup.object().shape({
   email: Yup.string()
     .required("Email is required")
-    .matches(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, "Invalid Email"),
+    .matches(
+      /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+      "Invalid Email"
+    ),
   password: Yup.string()
     .min(6, "Password must be at least 6 characters long")
     .matches(/[a-z]/, "Password must contain at least one lowercase letter")
     .matches(/[A-Z]/, "Password must contain at least one uppercase letter")
     .matches(/\d/, "Password must contain at least one number")
-    .matches(/[@$!%*?&]/, "Password must contain at least one special character (@$!%*?&)")
+    .matches(
+      /[@$!%*?&]/,
+      "Password must contain at least one special character (@$!%*?&)"
+    )
     .required("Password is required"),
   name: Yup.string()
     .required("Name is required")
@@ -77,33 +90,34 @@ export default function Signup() {
     { setStatus }: { setStatus: (message: string) => void }
   ) => {
     try {
-      const userData = Cookies.get("user");
-
+      const userData = Cookies.get("token");
       if (userData) {
-        try {
-          const parsedData: SignupFormValues = JSON.parse(userData);
-          const orgID_cookie = parsedData.organizationId || "";
-          const signupData = { ...values, organizationId: orgID_cookie };
-          const response = await signup(signupData).unwrap();
+        const decryptedResponse = await verifyAndDecryptToken(String(userData));
+        if (decryptedResponse.success && decryptedResponse.user) {
+          try {
+            const orgID_cookie = decryptedResponse.user.organizationId || "";
+            const signupData = { ...values, organizationId: orgID_cookie };
+            const response = await signup(signupData).unwrap();
 
-          if (response.user) {
-            toast({
-              title: "Success",
-              description: "Account created successfully",
-              variant: "default",
-            });
-            router.push("/dashboard/users");
-          } else {
-            throw new Error("No user data received");
-          }
-        } catch (error: unknown) {
-          if (error && typeof error === "object" && "data" in error) {
-            const errorMessage =
-              (error.data as { error: string }).error ||
-              "Failed to parse user data from cookie";
-            throw new Error(errorMessage);
-          } else {
-            throw new Error("Failed to parse user data from cookie");
+            if (response.user) {
+              toast({
+                title: "Success",
+                description: "Account created successfully",
+                variant: "default",
+              });
+              router.push("/dashboard/users");
+            } else {
+              throw new Error("No user data received");
+            }
+          } catch (error: unknown) {
+            if (error && typeof error === "object" && "data" in error) {
+              const errorMessage =
+                (error.data as { error: string }).error ||
+                "Failed to parse user data from cookie";
+              throw new Error(errorMessage);
+            } else {
+              throw new Error("Failed to parse user data from cookie");
+            }
           }
         }
       }
@@ -157,7 +171,9 @@ export default function Signup() {
                           }
                         />
                         {errors.name && touched.name && (
-                          <div className="text-red-500 text-sm">{errors.name}</div>
+                          <div className="text-red-500 text-sm">
+                            {errors.name}
+                          </div>
                         )}
                       </>
                     )}
@@ -175,11 +191,15 @@ export default function Signup() {
                           type="email"
                           disabled={isLoading || isSubmitting}
                           className={
-                            errors.email && touched.email ? "border-red-500" : ""
+                            errors.email && touched.email
+                              ? "border-red-500"
+                              : ""
                           }
                         />
                         {errors.email && touched.email && (
-                          <div className="text-red-500 text-sm">{errors.email}</div>
+                          <div className="text-red-500 text-sm">
+                            {errors.email}
+                          </div>
                         )}
                       </>
                     )}
@@ -204,7 +224,9 @@ export default function Signup() {
                             }
                           />
                           {errors.password && touched.password && (
-                            <div className="text-red-500 text-sm">{errors.password}</div>
+                            <div className="text-red-500 text-sm">
+                              {errors.password}
+                            </div>
                           )}
                         </>
                       )}
@@ -213,7 +235,7 @@ export default function Signup() {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className={`absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent ${errors.password && touched.password ? 'translate-y-[-25px]' : ''}`}
+                      className={`absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent ${errors.password && touched.password ? "translate-y-[-25px]" : ""}`}
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {!showPassword ? (
@@ -242,9 +264,12 @@ export default function Signup() {
                                 : ""
                             }
                           />
-                          {errors.confirmPassword && touched.confirmPassword && (
-                            <div className="text-red-500 text-sm">{errors.confirmPassword}</div>
-                          )}
+                          {errors.confirmPassword &&
+                            touched.confirmPassword && (
+                              <div className="text-red-500 text-sm">
+                                {errors.confirmPassword}
+                              </div>
+                            )}
                         </>
                       )}
                     </Field>
@@ -252,8 +277,10 @@ export default function Signup() {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className={`absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent ${errors.confirmPassword && touched.confirmPassword ? 'translate-y-[-25px]' : ''}`}
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className={`absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent ${errors.confirmPassword && touched.confirmPassword ? "translate-y-[-25px]" : ""}`}
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
                     >
                       {!showConfirmPassword ? (
                         <EyeOff className="h-4 w-4" />
@@ -272,7 +299,9 @@ export default function Signup() {
                         <Select
                           {...field}
                           value={field.value} // Bind Formik value
-                          onValueChange={(value) => form.setFieldValue(field.name, value)}
+                          onValueChange={(value) =>
+                            form.setFieldValue(field.name, value)
+                          }
                           disabled={isLoading || isSubmitting}
                         >
                           <SelectTrigger>
@@ -281,11 +310,15 @@ export default function Signup() {
                           <SelectContent>
                             <SelectItem value="admin">Admin</SelectItem>
                             <SelectItem value="hr">HR</SelectItem>
-                            <SelectItem value="interviewer">Interviewer</SelectItem>
+                            <SelectItem value="interviewer">
+                              Interviewer
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                         {errors.role && touched.role && (
-                          <div className="text-red-500 text-sm">{errors.role}</div>
+                          <div className="text-red-500 text-sm">
+                            {errors.role}
+                          </div>
                         )}
                       </>
                     )}

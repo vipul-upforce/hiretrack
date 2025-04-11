@@ -89,14 +89,7 @@ export default function Signup() {
     { setStatus }: { setStatus: (message: string) => void }
   ) => {
     try {
-      // const userData = Cookies.get("user");
-
-      // if (userData) {
       try {
-        // debugger
-        // const parsedData: SignupFormValues = JSON.parse(userData);
-        // const orgName = parsedData.organizationInfo?.name || "";
-
         const signupData = { ...values, orgName };
         const response = await signup(signupData).unwrap();
 
@@ -106,11 +99,7 @@ export default function Signup() {
             description: "Account created successfully",
             variant: "default",
           });
-          // if(response.user.role === "candidate" && ){
-          //   router.push(`/${response.user.organizationInfo?.name}/apply-jobs`)
-          // }else{
           router.push("/auth/login");
-          // }
         } else {
           throw new Error("No user data received");
         }
@@ -311,7 +300,7 @@ export default function Signup() {
                 <ReCAPTCHA
                   sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
                   onChange={(token) => {
-                    token && setCaptcha(token);
+                    if (token) setCaptcha(token);
                   }}
                 />
                 <CardFooter className="px-0 pt-6 flex-col space-y-4">

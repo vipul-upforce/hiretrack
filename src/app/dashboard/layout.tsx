@@ -24,6 +24,8 @@ import Cookies from "js-cookie";
 import { useCustomFields } from "@/Custom_Fields/hooks/use-customFields";
 import { useGetPortalConfigsQuery } from "@/lib/features/settings/settingsApi";
 import { IUser } from "@/lib/models/user";
+import { verifyAndDecryptToken } from "../actions/auth";
+import { verifyAndDecryptJWTToken } from "@/lib/auth";
 
 interface SidebarItem {
   title: string;
@@ -83,12 +85,18 @@ export default function DashboardLayout({
 
   // Use useEffect to set user data from cookies
   useEffect(() => {
-    const user = Cookies.get("user");
-    setUserData(user ? JSON.parse(user) : null);
-    if (user) {
-      setUserLoggedIn(true);
-      refetch();
-    }
+    (async () => {
+      const user = Cookies.get("token");
+      if (user) {
+        setUserLoggedIn(true);
+        const decryptedResponse = await verifyAndDecryptJWTToken(String(user));
+        if (decryptedResponse.success && decryptedResponse.user) {
+          setUserData(decryptedResponse.user);
+          setUserLoggedIn(true);
+          refetch();
+        }
+      }
+    })();
   }, []);
 
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -98,7 +106,6 @@ export default function DashboardLayout({
 
   const handleLogout = () => {
     // Clear user data and token
-    Cookies.remove("user");
     Cookies.remove("token");
     setUserData(null);
     setUserLoggedIn(false);
@@ -111,10 +118,16 @@ export default function DashboardLayout({
     router.push("/auth/login");
   };
 
-  const generate_share_org = (e: React.FormEvent) => {
+  const generate_share_org = async (e: React.FormEvent) => {
     e.preventDefault();
-    const user = Cookies.get("user");
-    const parsedUser = user ? (JSON.parse(user) as IUser) : null;
+    let parsedUser;
+    const user = Cookies.get("token");
+    if (user) {
+      const decryptedResponse = await verifyAndDecryptToken(String(user));
+      if (decryptedResponse.success && decryptedResponse.user) {
+        parsedUser = decryptedResponse.user;
+      }
+    }
     if (parsedUser) {
       setUserData(parsedUser);
       const url = `${window.location.origin}/${parsedUser.organizationInfo?.name}/apply-jobs`;

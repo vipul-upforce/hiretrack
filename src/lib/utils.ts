@@ -6,7 +6,23 @@ import {
   useSendMailMutation,
 } from "./features/org/orgApi";
 import { IJob } from "./models/job";
-// import { toast } from "@/hooks/use-toast";
+import { toast } from "@/hooks/use-toast";
+import jwt from "jsonwebtoken";
+import CryptoJS from "crypto-js";
+
+export const verifyAndDecryptToken = (token: string) => {
+  try {
+    const JWT_SECRET = "your_jwt_secret_key";
+    if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
+
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const bytes = CryptoJS.AES.decrypt(decoded.user, JWT_SECRET);
+    const decryptedData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+    return decryptedData;
+  } catch (err) {
+    throw Error(err instanceof Error ? err.message : "Unknown Error Occured");
+  }
+};
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -54,5 +70,3 @@ export const sentAssignmentMail = async (
     }
   }
 };
-
-
