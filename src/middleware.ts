@@ -21,7 +21,7 @@ export async function verifyAndDecryptToken(token: string) {
       throw new Error("Invalid token structure");
     }
     const bytes = CryptoJS.AES.decrypt(payload.user, JWT_SECRET);
-    const decryptedData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+    const decryptedData = bytes.toString(CryptoJS.enc.Utf8);
 
     return { success: true, user: decryptedData };
   } catch (err) {
@@ -35,12 +35,14 @@ export async function verifyAndDecryptToken(token: string) {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  let userData;
+  let userData: { role: string } | undefined;
   const token = request.cookies.get("token");
   if (token?.value) {
     const decryptedResponse = await verifyAndDecryptToken(String(token?.value));
     if (decryptedResponse.success) {
-      userData = decryptedResponse.user;
+      userData = decryptedResponse.user as unknown as {
+        role: string;
+      };
     }
   }
   // Check if the user is authenticated

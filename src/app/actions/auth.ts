@@ -24,7 +24,7 @@ export async function verifyAndDecryptToken(token: string) {
   }
 }
 
-export const signToken = async (payload: any) => {
+export const signToken = async (payload: unknown) => {
   const encryptedPayload = CryptoJS.AES.encrypt(
     JSON.stringify(payload),
     JWT_SECRET

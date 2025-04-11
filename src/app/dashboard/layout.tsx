@@ -24,7 +24,6 @@ import Cookies from "js-cookie";
 import { useCustomFields } from "@/Custom_Fields/hooks/use-customFields";
 import { useGetPortalConfigsQuery } from "@/lib/features/settings/settingsApi";
 import { IUser } from "@/lib/models/user";
-import { verifyAndDecryptToken } from "../actions/auth";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 
 interface SidebarItem {
@@ -123,7 +122,7 @@ export default function DashboardLayout({
     let parsedUser;
     const user = Cookies.get("token");
     if (user) {
-      const decryptedResponse = await verifyAndDecryptToken(String(user));
+      const decryptedResponse = await verifyAndDecryptJWTToken(String(user));
       if (decryptedResponse.success && decryptedResponse.user) {
         parsedUser = decryptedResponse.user;
       }

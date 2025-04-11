@@ -27,7 +27,7 @@ import {
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { verifyAndDecryptJWTToken } from "@/lib/auth";
 
 interface SignupFormValues {
   email: string;
@@ -92,7 +92,9 @@ export default function Signup() {
     try {
       const userData = Cookies.get("token");
       if (userData) {
-        const decryptedResponse = await verifyAndDecryptToken(String(userData));
+        const decryptedResponse = await verifyAndDecryptJWTToken(
+          String(userData)
+        );
         if (decryptedResponse.success && decryptedResponse.user) {
           try {
             const orgID_cookie = decryptedResponse.user.organizationId || "";

@@ -13,7 +13,9 @@ import { FileUpload } from "@/components/ui/file-upload";
 import { v4 as uuidv4 } from "uuid";
 import React from "react";
 import Cookies from "js-cookie";
-import { signToken, verifyAndDecryptToken } from "@/app/actions/auth";
+import * as jose from "jose";
+import CryptoJS from "crypto-js";
+import { verifyAndDecryptJWTToken } from "@/lib/auth";
 
 export interface PortalLogo {
   id: string;
@@ -61,6 +63,29 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
       .max(30, "Max length 30 chars"),
   });
 
+  const signToken = async (payload: unknown) => {
+    const JWT_SECRET = "your_jwt_secret_key";
+    try {
+      // Parse the payload as JSON
+      const parsedPayload = payload;
+      debugger;
+      const encryptedPayload = CryptoJS.AES.encrypt(
+        JSON.stringify(parsedPayload),
+        JWT_SECRET
+      ).toString();
+      // Create a secret key for signing
+      const secretKey = new TextEncoder().encode(JWT_SECRET);
+      // Sign the JWT
+      const jwt = await new jose.SignJWT({ user: encryptedPayload })
+        .setProtectedHeader({ alg: "HS256" })
+        .setIssuedAt()
+        .setExpirationTime("2h") // Token expires in 2 hours
+        .sign(secretKey);
+
+      return jwt;
+    } catch {}
+  };
+
   const handleSubmit = async (values: typeof initialValues) => {
     try {
       let portalLogoData = values.existingLogo;
@@ -82,7 +107,7 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
       await updateSMTPConfigs(dataToSubmit);
       const token = Cookies.get("token");
       if (token) {
-        const decryptedResponse = await verifyAndDecryptToken(String(token));
+        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
         if (decryptedResponse.success && decryptedResponse.user) {
           const parsedUser = decryptedResponse.user as User;
           if (parsedUser) {

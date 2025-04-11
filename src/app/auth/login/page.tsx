@@ -27,7 +27,10 @@ import OrganizationDialog, {
   OneOfMulOrganization,
 } from "@/components/auth/OrganizationDialog";
 import ReCAPTCHA from "react-google-recaptcha";
-import { signToken, verifyAndDecryptToken } from "@/app/actions/auth";
+// import { signToken } from "@/app/actions/auth";
+import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import * as jose from "jose";
+import CryptoJS from "crypto-js";
 
 export interface LoginFormValues {
   email: string;
@@ -69,6 +72,29 @@ export default function Login() {
     password: "",
   };
 
+  const signToken = async (payload: unknown) => {
+    const JWT_SECRET = "your_jwt_secret_key";
+    try {
+      // Parse the payload as JSON
+      const parsedPayload = payload;
+      debugger;
+      const encryptedPayload = CryptoJS.AES.encrypt(
+        JSON.stringify(parsedPayload),
+        JWT_SECRET
+      ).toString();
+      // Create a secret key for signing
+      const secretKey = new TextEncoder().encode(JWT_SECRET);
+      // Sign the JWT
+      const jwt = await new jose.SignJWT({ user: encryptedPayload })
+        .setProtectedHeader({ alg: "HS256" })
+        .setIssuedAt()
+        .setExpirationTime("2h") // Token expires in 2 hours
+        .sign(secretKey);
+
+      return jwt;
+    } catch {}
+  };
+
   const handleSubmit = async (
     values: LoginFormValues,
     { setStatus }: { setStatus: (message: string) => void }
@@ -76,7 +102,6 @@ export default function Login() {
     setLoginFormValues(values);
     try {
       const response = await login({ ...values, orgId: selectedOrg }).unwrap();
-      debugger;
       if (
         response.organizations &&
         response.organizations.length > 1 &&
@@ -86,7 +111,7 @@ export default function Login() {
         setOrganizationDialogOpen(true);
         return;
       }
-      const decryptedResponse = await verifyAndDecryptToken(
+      const decryptedResponse = await verifyAndDecryptJWTToken(
         String(response.user)
       );
       if (decryptedResponse.success && decryptedResponse.user) {
@@ -112,11 +137,11 @@ export default function Login() {
       });
       // debugger
       if (decryptedResponse.user.role === "candidate") {
-        router.replace(
+        router.push(
           `/${decryptedResponse.user.organizationInfo?.name}/apply-jobs`
         );
       } else if (decryptedResponse.user.role === "admin" || "hr") {
-        router.replace("/dashboard");
+        router.push("/dashboard");
       }
     } catch (err: unknown) {
       if (err && typeof err === "object" && "data" in err) {

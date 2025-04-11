@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Rating } from "@mui/material";
 import { Button } from "@/components/ui/button";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { verifyAndDecryptJWTToken } from "@/lib/auth";
 
 const AddRemarksDialog = ({
   candidate,
@@ -37,7 +37,7 @@ const AddRemarksDialog = ({
   const handleAddRemark = async () => {
     const token = Cookies.get("token");
     if (token) {
-      const decryptedResponse = await verifyAndDecryptToken(String(token));
+      const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
       if (decryptedResponse.success && decryptedResponse.user) {
         const user = decryptedResponse.user;
         if (!newRemark.trim() || !user?.id) {
