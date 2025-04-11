@@ -156,6 +156,10 @@ const candidateLogin = async (
         { status: 401 }
       );
     }
+    const fileStorage = await Settings!
+      .findOne({ organizationId: candidateInOrg.organizationId }, { _id: 0 })
+      .select("fileStorage")
+      .lean();
 
     // Check password for the specified organization
     const isPasswordValid = await bcrypt.compare(
@@ -184,6 +188,7 @@ const candidateLogin = async (
       role: "candidate",
       organizationId: candidateInOrg.organizationId,
       organizationInfo: orgInfo,
+      fileStorage: fileStorage?.fileStorage?.storageType,
     };
     const response = returnTokenBasedResponse(tokenObj);
     return response;
@@ -199,6 +204,10 @@ const candidateLogin = async (
       isCandidate: true,
     });
   }
+  const fileStorage = await Settings!
+    .findOne({ organizationId: candidate.organizationId }, { _id: 0 })
+    .select("fileStorage")
+    .lean();
 
   // If candidate exists in multiple organizations, return the organizations
   if (orgs.length > 1) {
@@ -231,6 +240,7 @@ const candidateLogin = async (
     role: "candidate",
     organizationId: candidate.organizationId,
     organizationInfo: orgInfo,
+    fileStorage: fileStorage?.fileStorage?.storageType,
   };
   const response = returnTokenBasedResponse(tokenObj);
   return response;
@@ -371,6 +381,10 @@ const checkMultipleOrgs = async (
         password,
         candidateInOrg.password
       );
+      const fileStorage = await Settings!
+        .findOne({ organizationId: candidateInOrg.organizationId }, { _id: 0 })
+        .select("fileStorage")
+        .lean();
 
       if (!isPasswordValid) {
         return NextResponse.json(
@@ -395,6 +409,7 @@ const checkMultipleOrgs = async (
         role: "candidate",
         organizationId: candidateInOrg.organizationId,
         organizationInfo: orgInfo,
+        fileStorage: fileStorage?.fileStorage?.storageType,
       };
 
       const response = await returnTokenBasedResponse(tokenObj);
