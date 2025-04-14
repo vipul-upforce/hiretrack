@@ -19,10 +19,16 @@ const generateBase64 = async (url: any) => {
   return base64Resume;
 };
 
+interface JobForEvaluate {
+  description: string;
+  title: string;
+  skills: string[];
+}
+
 async function evaluateResume(
   resumeText: string,
   api_key: string,
-  jobDescription: string
+  jobData: JobForEvaluate
 ): Promise<{
   overall: number;
   experience: number;
@@ -39,14 +45,21 @@ async function evaluateResume(
   try {
     const genAI = new GoogleGenerativeAI(api_key);
     const data = resumeText;
+    const jobDescription = jobData.description;
+    const jobTitle = jobData.title;
+    const jobSkills = jobData.skills.join(", ");
 
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `
-          As a seasoned senior technology leader with expertise in talent acquisition, you are tasked with evaluating a candidate for The detailed job description is as follows: 
-          ${jobDescription}
+    As a seasoned senior technology leader with expertise in talent acquisition, you are tasked with evaluating a candidate for The details of the job is as follows: 
     
-          Your objective is to assess this CV against the job description. Please provide your evaluation in JSON format, adhering to the following structure and guidelines:
+    Job Title: ${jobTitle}
+    Job Description: ${jobDescription}
+    Skills required for this job: ${jobSkills}
+    
+    
+    Your objective is to assess this CV against the job description. Please provide your evaluation in JSON format, adhering to the following structure and guidelines:
     
           {
             "overall": // An overall rating (out of 10) reflecting the candidate's suitability for the role based on the CV. Consider the alignment of skills, experience, and demonstrated impact with the job description.
@@ -57,10 +70,10 @@ async function evaluateResume(
             "recommendation": // A brief recommendation, such as "Strongly Recommend for Interview," "Recommend for Interview," "Consider for Other Roles," or "Not a Strong Match."
             "notes": // Any additional qualitative observations or context that informed your ratings and recommendation.
             "failure": // If the process encounters a critical error or you cannot provide a meaningful evaluation, include an error message here. Otherwise, this field should be omitted or left empty.
-          }
-          You are a strict and professional talent acquisition expert, the criteria for evaluation is very high. The candidate must have matching experience and skills to the job description.
-        Below is the text content of a Curriculum Vitae (CV) submitted by an applicant:
-        `;
+            }
+            You are a strict and professional talent acquisition expert, the criteria for evaluation is very high. The candidate must have matching experience and skills to the job description.
+            Below is the text content of a Curriculum Vitae (CV) submitted by an applicant:
+            `;
 
     const parts = [
       { text: prompt },
@@ -141,7 +154,7 @@ export async function PUT(request: NextRequest) {
     const { candidateId } = data;
     const candidate = await Candidate.findById(candidateId).populate({
       path: "jobId",
-      select: "description organizationId",
+      select: "description organizationId title skills",
     });
     if (!candidate) {
       return NextResponse.json(
@@ -198,10 +211,21 @@ export async function PUT(request: NextRequest) {
       "description" in candidate.jobId
         ? String(candidate.jobId.description)
         : "";
+    const jobData = {
+      description: jobDescription,
+      title:
+        typeof candidate.jobId === "object" && "title" in candidate.jobId
+          ? String(candidate.jobId.title)
+          : "",
+      skills:
+        typeof candidate.jobId === "object" && "skills" in candidate.jobId
+          ? (candidate.jobId.skills as string[])
+          : [],
+    };
     const scores = await evaluateResume(
       base64Resume,
       settingsData.gemini.gemini_key,
-      jobDescription
+      jobData
     );
 
     candidate.scores = scores;

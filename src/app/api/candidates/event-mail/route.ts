@@ -18,7 +18,6 @@ export function loadTemplate(
 
   // console.log("########## PATH: ", templatePath);
   let content = fs.readFileSync(templatePath, "utf-8");
-
   for (const [key, value] of Object.entries(variables)) {
     const regex = new RegExp(`{{\\s*${key}\\s*}}`, "g");
     content = content.replace(regex, value);
@@ -94,31 +93,27 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const candidateHtmlContent = loadTemplate("job-application-(candidate)", {
-      orgName,
-      eventTitle,
-      name,
-      jobName,
-      candidateName,
-      status,
-    });
-
-    // Send email to candidate
-    const candidateEmailStatus = await sendMail(
-      organizationId,
-      email,
-      eventTitle,
-      candidateHtmlContent
-    );
+    // const candidateHtmlContent = loadTemplate("job-application-(candidate)", {
+    //   orgName,
+    //   eventTitle,
+    //   name,
+    //   jobName,
+    //   candidateName,
+    //   status,
+    // });
 
     // Find all HR users in the organization
     const hrUsers = await User.find({
       organizationId: organizationId,
       role: { $in: ["hr"] },
     });
+    const hrEmails: string[] = [];
+    hrUsers.map((user) => {
+      hrEmails.push(user.email);
+    });
 
     // Prepare HR notification email content
-    const hrNotificationTitle = "New Candidate Applied";
+    const hrNotificationTitle = `${candidateName} applied for ${jobName}`;
     const hrHtmlContent = loadTemplate("job-application-(hr)", {
       orgName,
       hrNotificationTitle,
@@ -129,39 +124,22 @@ export async function POST(req: NextRequest) {
       applicationDate: new Date().toLocaleString(),
     });
 
-    // Send emails to all HR personnel
-    const hrEmailPromises = hrUsers.map((hrUser) => {
-      if (hrUser.email && emailRegex.test(hrUser.email)) {
-        return sendMail(
-          organizationId,
-          hrUser.email,
-          hrNotificationTitle,
-          hrHtmlContent
-        );
-      }
-      // console.log(`Skipping invalid HR email: ${hrUser.email}`);
-      return Promise.resolve({ status: 400, message: "Invalid HR email" });
-    });
+    const candidateAndHr = [email, ...hrEmails];
 
-    // Wait for all HR emails to be sent
-    const hrEmailResults = await Promise.allSettled(hrEmailPromises);
-    const successfulHrEmails = hrEmailResults.filter(
-      (result) => result.status === "fulfilled" && result.value.status === 200
-    ).length;
+    const candidateEmailStatus = await sendMail(
+      organizationId,
+      candidateAndHr,
+      eventTitle,
+      hrHtmlContent
+    );
 
     // Prepare response
-    let message = "";
     if (candidateEmailStatus.status === 200) {
-      message = "Email sent successfully to candidate.";
-      if (successfulHrEmails > 0) {
-        message += ` Notification sent to ${successfulHrEmails} HR personnel.`;
-      }
-      return NextResponse.json({ message });
+      return NextResponse.json({ message: "Email sent successfully" });
     } else {
       return NextResponse.json(
         {
           error: candidateEmailStatus.message,
-          hrNotifications: `${successfulHrEmails} HR notifications sent successfully.`,
         },
         { status: candidateEmailStatus.status }
       );

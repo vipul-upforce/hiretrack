@@ -144,7 +144,7 @@ export async function POST(req: Request) {
 
 // Function to handle the actual password reset after organization selection
 async function handlePasswordReset(
-  email: string,
+  email: string[],
   organizationId: string,
   req: Request,
   isCandidate?: boolean

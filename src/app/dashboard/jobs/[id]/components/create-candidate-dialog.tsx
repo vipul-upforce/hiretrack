@@ -230,7 +230,7 @@ export function CreateCandidateDialog({
         noticePeriod: Number(
           parseFloat(String(values.noticePeriod)).toFixed(0)
         ),
-        email: parsedResumeData?.profile?.email || values.email,
+        email: values.email || parsedResumeData?.profile?.email,
         ...(values.assignee && values.deadline
           ? {
               assignee: values.assignee === "-1" ? "" : values.assignee,
