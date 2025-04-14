@@ -1,0 +1,17 @@
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    <h2>{{eventTitle}}</h2>
+    <p><strong>Meeting time:</strong> {{startDate}}</p>
+    <p>
+      <div>
+        <strong>Job Name:</strong> {{jobName}}<br>
+        <strong>Interviewer Name:</strong> {{interviewerName}}<br>
+        <strong>Candidate Name:</strong> {{candidateName}}<br>
+        <strong>Status:</strong> {{status}}
+      </div>
+    </p>
+    <div style="margin-top: 20px;">
+      <p>Add this event to your calendar:</p>
+      <a href="{{googleCalendarLink}}" target="_blank" style="display: inline-block; background-color: #4285F4; color: white; padding: 10px 15px; margin-right: 10px; text-decoration: none; border-radius: 4px;">Google Calendar</a>
+      <a href="{{outlookCalendarLink}}" target="_blank" style="display: inline-block; background-color: #0078D4; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px;">Outlook Calendar</a>
+    </div>
+</div>

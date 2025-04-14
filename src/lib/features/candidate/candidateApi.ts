@@ -3,6 +3,7 @@ import { Candidate } from "@/types/candidate";
 import { ICandidateHistory } from "@/lib/models/history";
 import { OneOfMulOrganization } from "@/components/auth/OrganizationDialog";
 import { OrgInfo } from "@/lib/models/user";
+import { NextResponse } from "next/server";
 
 interface AuthRequest {
   email: string;
@@ -103,7 +104,7 @@ export const candidateApi = createApi({
       invalidatesTags: ["Candidate"],
     }),
     evaluateCandidate: builder.mutation<
-      any,
+      NextResponse,
       {
         candidateId: string;
       }
@@ -130,6 +131,19 @@ export const candidateApi = createApi({
       }),
       invalidatesTags: ["Candidate"],
     }),
+    applicationEventMail: builder.mutation<
+      NextResponse,
+      {
+        candidateId: string;
+      }
+    >({
+      query: ({ candidateId }) => ({
+        url: `/candidates/event-mail`,
+        method: "POST",
+        body: { candidateId },
+      }),
+      invalidatesTags: ["Candidate"],
+    }),
   }),
 });
 
@@ -147,4 +161,5 @@ export const {
   useFilterCandidatesMutation,
   useLazyFetchCandidatesQuery,
   useCandidateSignupMutation,
+  useApplicationEventMailMutation,
 } = candidateApi;

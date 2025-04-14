@@ -15,6 +15,7 @@ import { candidateSchema } from "../schemas/candidate-schema";
 import { useState, useEffect } from "react";
 import { CandidateForm } from "./candidate-form";
 import {
+  useApplicationEventMailMutation,
   useCreateCandidateMutation,
   useEvaluateCandidateMutation,
   useUpdateAppliedApplicationMutation,
@@ -40,6 +41,21 @@ async function evaluateCandidate(
   try {
     const result = await evaluateCandidateMutation({ candidateId }).unwrap();
     return result;
+  } catch {
+    return null;
+  }
+}
+
+//event mail handler function
+async function sendAppliedEventMail(
+  candidateId: string,
+  applicationEventMailMutation: ReturnType<
+    typeof useApplicationEventMailMutation
+  >[0]
+) {
+  try {
+    const resp = await applicationEventMailMutation({ candidateId }).unwrap();
+    return resp;
   } catch {
     return null;
   }
@@ -128,6 +144,8 @@ export function CreateCandidateDialog({
   const { toast } = useToast();
   const [createCandidate] = useCreateCandidateMutation();
   const [evaluateCandidateMutation] = useEvaluateCandidateMutation();
+  const [applicationEventMailMutation, { isLoading: isSendingEmail }] =
+    useApplicationEventMailMutation();
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
   const [updateAppliedApplication] = useUpdateAppliedApplicationMutation();
   const [parsedResumeData, setParsedResume] = useState<Resume | null>(null);
@@ -250,6 +268,7 @@ export function CreateCandidateDialog({
 
       // Step 3: Handle additional updates (if applicable)
       if (user?.role === "candidate") {
+        // sendAppliedEventMail(candidateId, applicationEventMailMutation);
         try {
           await updateAppliedApplication({ id: jobId });
         } catch (error: unknown) {
@@ -298,6 +317,9 @@ export function CreateCandidateDialog({
       }
 
       setIsOpen(false);
+      if (user?.role === "candidate") {
+        sendAppliedEventMail(candidateId, applicationEventMailMutation);
+      }
       // toast({
       //   title: "Success",
       //   description: "Candidate added successfully",
@@ -341,9 +363,10 @@ export function CreateCandidateDialog({
         {user && user.role === "candidate" ? (
           <button
             type="button"
+            disabled={isSendingEmail}
             className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
           >
-            Apply Now
+            {isSendingEmail ? "Processing..." : "Apply Now"}
           </button>
         ) : (
           <Button>
