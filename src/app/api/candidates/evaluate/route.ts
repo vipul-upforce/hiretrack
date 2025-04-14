@@ -4,7 +4,7 @@ import connectToDatabase, { Candidate, Settings } from "@/lib/mongodb";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { promises as fs } from "fs";
 import path from "path";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+// import { verifyAndDecryptToken } from "@/app/actions/auth";
 
 const generateBase64 = async (url: any) => {
   const urlParams = new URLSearchParams(url.split("?")[1]);
@@ -185,15 +185,15 @@ export async function PUT(request: NextRequest) {
     }
 
     let base64Resume;
-    const cookie = (await request.cookies.get("token")?.value) || "{}";
-    const token = await verifyAndDecryptToken(cookie);
-    const user = (await token).user;
-    const fileStorage = user.fileStorage;
+    // const cookie = (await request.cookies.get("token")?.value) || "{}";
+    // const token = await verifyAndDecryptToken(cookie);
+    // const user = (await token).user;
+    const fileStorage = settingsData.fileStorage.storageType || "local";
+
     if (fileStorage === "local") {
       base64Resume = await generateBase64(resumeUrl);
     } else {
       const response = await fetch(resumeUrl);
-      console.log("NOT LOCAL", response);
       if (!response.ok) {
         return NextResponse.json(
           { error: "Failed to fetch resume file" },

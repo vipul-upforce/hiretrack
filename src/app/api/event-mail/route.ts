@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendMail } from ".";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
-import { loadTemplate } from "../candidates/event-mail/route";
+import { loadTemplate } from "@/lib/templateLoader";
 
 export async function POST(req: NextRequest) {
   try {

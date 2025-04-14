@@ -5,7 +5,7 @@ import { User } from "@/lib/mongodb";
 import { sendMail } from "../../event-mail";
 import { ObjectId } from "mongoose";
 import { Organization } from "@/lib/models/user";
-import { loadTemplate } from "../../candidates/event-mail/route";
+import { loadTemplate } from "@/lib/templateLoader";
 
 type NodemailerError = {
   errno?: number;
