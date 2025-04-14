@@ -5,6 +5,6 @@ export interface Assignment {
   deadline: string;
   assignedAt: string;
   status?: string;
-  assignment?: {status: string;};
-  jobId?:string | Job;
-} 
+  assignment?: { status: string };
+  jobId?: string | Job;
+}

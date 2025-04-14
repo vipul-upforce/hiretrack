@@ -1,6 +1,12 @@
-'use client';
+"use client";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -14,13 +20,13 @@ interface CreateLaneDialogProps {
 
 export function CreateLaneDialog({ onAddLane }: CreateLaneDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState("");
   const { toast } = useToast();
 
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open);
     if (!open) {
-      setTitle('');
+      setTitle("");
     }
   };
 
@@ -36,7 +42,7 @@ export function CreateLaneDialog({ onAddLane }: CreateLaneDialogProps) {
     }
 
     onAddLane(title);
-    setTitle('');
+    setTitle("");
     setIsOpen(false);
   };
 
@@ -70,7 +76,11 @@ export function CreateLaneDialog({ onAddLane }: CreateLaneDialogProps) {
             />
           </div>
           <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleOpenChange(false)}
+            >
               Cancel
             </Button>
             <Button type="submit">Add Lane</Button>
@@ -79,4 +89,4 @@ export function CreateLaneDialog({ onAddLane }: CreateLaneDialogProps) {
       </DialogContent>
     </Dialog>
   );
-} 
+}

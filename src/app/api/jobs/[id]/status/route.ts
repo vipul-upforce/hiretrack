@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
-import { Job } from '@/lib/mongodb';
+import { NextResponse } from "next/server";
+import connectToDatabase from "@/lib/mongodb";
+import { Job } from "@/lib/mongodb";
 
 export async function PATCH(
   request: Request,
@@ -23,19 +23,13 @@ export async function PATCH(
     );
 
     if (!updatedJob) {
-      return NextResponse.json(
-        { error: 'Job not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 
     return NextResponse.json(updatedJob);
-  } catch (error : unknown) {
+  } catch (error: unknown) {
     if (error instanceof Error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
   }
-} 
+}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 const Unauthorized = () => {
   return (
@@ -9,4 +9,4 @@ const Unauthorized = () => {
   );
 };
 
-export default Unauthorized; 
+export default Unauthorized;

@@ -1,9 +1,9 @@
-'use client';
-import React from 'react';
-import Image from 'next/image';
-import { Button } from '@/components/ui/button';
-import { useRouter } from 'next/navigation';
-import Cookies from 'js-cookie';
+"use client";
+import React from "react";
+import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
 interface INoDataFound {
   name: string;
 }
@@ -11,11 +11,11 @@ export const NoDataFound = (props: INoDataFound) => {
   const { name } = props;
   const router = useRouter();
   const handleClick = () => {
-    const user = Cookies.get('user');
-    if(user){
-      router.push( '/dashboard');
-    }else{
-      router.push('/auth/login');
+    const user = Cookies.get("user");
+    if (user) {
+      router.push("/dashboard");
+    } else {
+      router.push("/auth/login");
     }
   };
   return (
@@ -33,7 +33,9 @@ export const NoDataFound = (props: INoDataFound) => {
         <p className="mt-2 text-gray-600">
           We couldn&apos;t find any Page to display.
         </p>
-        <Button className='mt-4' onClick={handleClick}>Go to Home</Button>
+        <Button className="mt-4" onClick={handleClick}>
+          Go to Home
+        </Button>
       </div>
     </div>
   );

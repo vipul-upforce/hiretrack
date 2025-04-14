@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 // import { DynamicEntityForm } from "@/components/forms/dynamic-entity-form"
 
@@ -8,7 +8,7 @@ export default function JobsPage() {
   //     method: 'POST',
   //     body: formData
   //   })
-    
+
   //   if (!response.ok) {
   //     throw new Error('Failed to create job')
   //   }
@@ -22,5 +22,5 @@ export default function JobsPage() {
         onSubmit={handleSubmit}
       /> */}
     </div>
-  )
-} 
+  );
+}

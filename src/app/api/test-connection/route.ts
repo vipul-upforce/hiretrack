@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { v2 as cloudinary } from "cloudinary";
 import { S3Client, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import nodemailer from "nodemailer";
-import { Resend } from 'resend';
+import { Resend } from "resend";
 
 interface CustomError {
   error: {
@@ -72,10 +72,12 @@ const testAWSConnection = async (credentials: {
       },
     });
 
-    await s3Client.send(new ListObjectsV2Command({
-      Bucket: credentials.bucketName,
-      MaxKeys: 1 // Limit to just 1 object for a quick check
-    }));
+    await s3Client.send(
+      new ListObjectsV2Command({
+        Bucket: credentials.bucketName,
+        MaxKeys: 1, // Limit to just 1 object for a quick check
+      })
+    );
     return NextResponse.json({
       success: true,
       message: "AWS connection successful",

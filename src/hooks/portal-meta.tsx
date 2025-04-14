@@ -6,7 +6,7 @@ export function useLocation() {
   const [location, setLocation] = useState({
     pathname: window.location.pathname,
     search: window.location.search,
-    hash: window.location.hash
+    hash: window.location.hash,
   });
 
   useEffect(() => {
@@ -14,21 +14,21 @@ export function useLocation() {
       setLocation({
         pathname: window.location.pathname,
         search: window.location.search,
-        hash: window.location.hash
+        hash: window.location.hash,
       });
     };
 
     // Listen for popstate events
-    window.addEventListener('popstate', handleLocationChange);
-    
+    window.addEventListener("popstate", handleLocationChange);
+
     // Create a mutation observer to detect changes to the URL
     const observer = new MutationObserver(() => {
       const currentLocation = {
         pathname: window.location.pathname,
         search: window.location.search,
-        hash: window.location.hash
+        hash: window.location.hash,
       };
-      
+
       if (
         currentLocation.pathname !== location.pathname ||
         currentLocation.search !== location.search ||
@@ -37,16 +37,15 @@ export function useLocation() {
         handleLocationChange();
       }
     });
-    
+
     // Observe the document for changes
     observer.observe(document, { subtree: true, childList: true });
-    
+
     return () => {
-      window.removeEventListener('popstate', handleLocationChange);
+      window.removeEventListener("popstate", handleLocationChange);
       observer.disconnect();
     };
   }, [location]);
 
   return location;
-
 }

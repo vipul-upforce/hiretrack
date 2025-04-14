@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import CustomFieldDialog from "./Common/CustomFieldDialog";
 import React, { useContext, useEffect, useState, useCallback } from "react";
@@ -26,7 +26,7 @@ function AddCustomFields() {
   return (
     <div className="h-full">
       <Card
-        className="hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer mr-4 h-full" 
+        className="hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer mr-4 h-full"
         onClick={onClick}
       >
         <CardHeader>

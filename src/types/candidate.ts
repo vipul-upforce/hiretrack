@@ -42,7 +42,7 @@ export interface Candidate {
   tracking?: {
     createdAt: string;
     updatedAt: string;
-    assignedToJobDate?: string
+    assignedToJobDate?: string;
   };
   assignment: Assignment | null;
   customFields?: CustomFieldValues;
@@ -61,17 +61,17 @@ export interface Candidate {
     recommendation: string;
     notes: string;
     failure?: string;
-  }
+  };
 }
 
 export type CandidateStatus =
-  | 'applied'
-  | 'screening'
-  | 'shortlisted'
-  | 'processing'
-  | 'accepted'
-  | 'rejected'
-  | 'default';
+  | "applied"
+  | "screening"
+  | "shortlisted"
+  | "processing"
+  | "accepted"
+  | "rejected"
+  | "default";
 
 export interface CandidateColumn {
   id: CandidateStatus;
@@ -97,4 +97,4 @@ interface Assignment {
   status?: string;
   assignment?: { status: string };
   jobId?: Job;
-} 
+}

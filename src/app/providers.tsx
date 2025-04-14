@@ -14,15 +14,19 @@ import { useLocation } from "@/hooks/portal-meta";
 const PortalConfigHandler = ({ children }: { children: React.ReactNode }) => {
   const { data: portalConfig } = useGetPortalConfigsQuery(undefined);
   const location = useLocation();
-  
+
   useEffect(() => {
     // Remove the debugger statement for production
     document.title = portalConfig?.portalName || "Hire Track";
-   
+
     if (portalConfig?.portalLogo) {
       const existingFavicon = document.querySelector("link[rel~='icon']");
-      if (!existingFavicon || existingFavicon.getAttribute("href") !== portalConfig.portalLogo.url) {
-        const link = (existingFavicon || document.createElement("link") )as HTMLLinkElement;
+      if (
+        !existingFavicon ||
+        existingFavicon.getAttribute("href") !== portalConfig.portalLogo.url
+      ) {
+        const link = (existingFavicon ||
+          document.createElement("link")) as HTMLLinkElement;
         link.type = "image/x-icon";
         link.rel = "shortcut icon";
         link.href = portalConfig.portalLogo.url;
@@ -32,7 +36,7 @@ const PortalConfigHandler = ({ children }: { children: React.ReactNode }) => {
       }
     }
   }, [portalConfig, location]); // Will react to all location changes
-  
+
   return <>{children}</>;
 };
 

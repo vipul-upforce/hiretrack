@@ -1,5 +1,5 @@
-import mongoose, { Schema } from 'mongoose';
-import { CustomFieldFile } from '../fileUtils';
+import mongoose, { Schema } from "mongoose";
+import { CustomFieldFile } from "../fileUtils";
 
 export interface ICandidate {
   jobId?: mongoose.Schema.Types.ObjectId;
@@ -47,11 +47,16 @@ export interface ICandidate {
     deadline: Date;
   };
   customFields: {
-    [key: string]: string | string[] | CustomFieldFile[] | {
-      type: string;
-      value: string | number | boolean | null;
-      required?: boolean;
-    } | object; // Add object type to allow MongoDB documents
+    [key: string]:
+      | string
+      | string[]
+      | CustomFieldFile[]
+      | {
+          type: string;
+          value: string | number | boolean | null;
+          required?: boolean;
+        }
+      | object; // Add object type to allow MongoDB documents
   };
   email?: string;
   scores?: {
@@ -63,101 +68,107 @@ export interface ICandidate {
     recommendation: string;
     notes: string;
     failure?: string;
-  }
+  };
 }
 
-export const candidateSchema = new Schema({
-  jobId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Job',
-    required: true
-  },
-  organizationId: String,
-  name: { type: String, required: true },
-  location: { type: String, required: true },
-  experience: { type: Number, required: true },
-  skills: [{ type: String }],
-  expectedCTC: { type: Number, required: true },
-  currentCTC: { type: Number, required: true },
-  noticePeriod: { type: Number, required: true },
-  // currentLocation: { type: String, required: true },
-  resume: {
-    id: String,
-    name: String,
-    url: String,
-    type: { type: String, default: 'pdf' },
-    size: Number
-  },
-  remarks: [{
-    _id: false,
-    description: {
-      type: String,
+export const candidateSchema = new Schema(
+  {
+    jobId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Job",
       required: true,
-      trim: true
     },
-    date: {
+    organizationId: String,
+    name: { type: String, required: true },
+    location: { type: String, required: true },
+    experience: { type: Number, required: true },
+    skills: [{ type: String }],
+    expectedCTC: { type: Number, required: true },
+    currentCTC: { type: Number, required: true },
+    noticePeriod: { type: Number, required: true },
+    // currentLocation: { type: String, required: true },
+    resume: {
+      id: String,
+      name: String,
+      url: String,
+      type: { type: String, default: "pdf" },
+      size: Number,
+    },
+    remarks: [
+      {
+        _id: false,
+        description: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        date: {
+          type: String,
+          required: true,
+        },
+        rating: {
+          type: Number,
+          min: 0,
+          max: 5,
+        },
+        userId: {
+          type: Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
+      },
+    ],
+    attachments: [
+      {
+        id: String,
+        name: String,
+        url: String,
+        type: { type: String, default: "pdf" },
+        size: Number,
+      },
+    ],
+    status: {
       type: String,
-      required: true
     },
-    rating: {
-      type: Number,
-      min: 0,
-      max: 5
+    tracking: {
+      createdAt: { type: Date, default: Date.now },
+      updatedAt: { type: Date, default: Date.now },
+      assignedToJobDate: { type: Date, default: Date.now },
     },
-    userId: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: true
-    }
-  }],
-  attachments: [{
-    id: String,
-    name: String,
-    url: String,
-    type: { type: String, default: 'pdf' },
-    size: Number
-  }],
-  status: {
-    type: String,
-  },
-  tracking: {
-    createdAt: { type: Date, default: Date.now },
-    updatedAt: { type: Date, default: Date.now },
-    assignedToJobDate: { type: Date, default: Date.now }
-  },
-  assignment: {
-    interviewerId: {
-      type: Schema.Types.ObjectId,
-      ref: 'User'
+    assignment: {
+      interviewerId: {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+      },
+      assignedAt: Date,
+      deadline: Date,
     },
-    assignedAt: Date,
-    deadline: Date
-  },
-  customFields: {
-    type: Object,
-    default: {}
-  },
-  email: { type: String, required: false },
-  scores: {
-    overall: {
-      type: Number,
-      min: 0,
-      max: 10
+    customFields: {
+      type: Object,
+      default: {},
     },
-    experience: { type: Number, min: 0, max: 10 },
-    skills: { type: Number, min: 0, max: 10 },
-    education: { type: Number, min: 0, max: 10 },
-    projects: { type: Number, min: 0, max: 10, default: 0 },
-    certifications: { type: Number, min: 0, max: 10, default: 0 },
-    strengths: [String],
-    areas_for_improvement: [String],
-    recommendation: String,
-    notes: String,
-    failure: String
+    email: { type: String, required: false },
+    scores: {
+      overall: {
+        type: Number,
+        min: 0,
+        max: 10,
+      },
+      experience: { type: Number, min: 0, max: 10 },
+      skills: { type: Number, min: 0, max: 10 },
+      education: { type: Number, min: 0, max: 10 },
+      projects: { type: Number, min: 0, max: 10, default: 0 },
+      certifications: { type: Number, min: 0, max: 10, default: 0 },
+      strengths: [String],
+      areas_for_improvement: [String],
+      recommendation: String,
+      notes: String,
+      failure: String,
+    },
   },
-}, {
-  timestamps: true
-});
+  {
+    timestamps: true,
+  }
+);
 
-// export const Candidate = mongoose.model('Candidate', candidateSchema); 
-
+// export const Candidate = mongoose.model('Candidate', candidateSchema);

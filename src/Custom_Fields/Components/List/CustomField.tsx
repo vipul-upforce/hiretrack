@@ -19,7 +19,9 @@ function FormCustomFieldList() {
   }, [setIsOpen]);
 
   const breadcrumbs = [
-    <div key="custom-fields" onClick={() => setStepName("FormList")}>Meta Fields</div>,
+    <div key="custom-fields" onClick={() => setStepName("FormList")}>
+      Meta Fields
+    </div>,
     <div key={selectedFormId?.formName}>{selectedFormId?.formName}</div>,
   ];
 

@@ -1,10 +1,9 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { toast } from '@/hooks/use-toast';
+import { useEffect } from "react";
+import { toast } from "@/hooks/use-toast";
 
 export function KanbanBoard() {
-
   useEffect(() => {
     fetchJobs();
   }, []);
@@ -23,4 +22,4 @@ export function KanbanBoard() {
   };
 
   // ... rest of the component remains same
-} 
+}

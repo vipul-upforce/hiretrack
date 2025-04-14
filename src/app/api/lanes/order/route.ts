@@ -1,7 +1,6 @@
-
-import { NextResponse } from 'next/server';
-import { Lane } from '@/lib/mongodb';
-import connectToDatabase from '@/lib/mongodb';
+import { NextResponse } from "next/server";
+import { Lane } from "@/lib/mongodb";
+import connectToDatabase from "@/lib/mongodb";
 
 export async function PUT(request: Request) {
   try {
@@ -15,7 +14,7 @@ export async function PUT(request: Request) {
     await Promise.all(
       lanes.map(async (lane: { _id: string; order: number }) => {
         await Lane!.findByIdAndUpdate(lane._id, {
-          $set: { order: lane.order }
+          $set: { order: lane.order },
         });
       })
     );
@@ -23,10 +22,6 @@ export async function PUT(request: Request) {
     return NextResponse.json({ success: true });
   } catch (err) {
     const error = err as Error;
-    return NextResponse.json(
-      { error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
-} 
-
+}

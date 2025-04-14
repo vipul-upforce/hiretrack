@@ -5,7 +5,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { FileIcon, Folder } from "lucide-react";
 import { PDFViewer } from "@/components/ui/pdf-viewer";
 import { Button } from "@/components/ui/button";
@@ -15,7 +20,6 @@ interface Image {
   url: string;
   name: string;
 }
-
 
 const AttachmentsPopover = ({
   attachments,
@@ -68,10 +72,17 @@ const AttachmentsPopover = ({
             {attachments.length > 0 ? (
               <div className="space-y-2">
                 {visibleAttachments.map((file) => {
-                  const fileExtension = file.name.split(".").pop()?.toLowerCase();
-                  const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(
-                    fileExtension || ""
-                  );
+                  const fileExtension = file.name
+                    .split(".")
+                    .pop()
+                    ?.toLowerCase();
+                  const isImage = [
+                    "jpg",
+                    "jpeg",
+                    "png",
+                    "gif",
+                    "webp",
+                  ].includes(fileExtension || "");
                   const isPDF = fileExtension === "pdf";
 
                   return isPDF ? (

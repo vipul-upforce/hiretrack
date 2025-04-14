@@ -36,17 +36,19 @@ export async function POST(req: Request) {
       );
     }
     const organizationId = organizationInfo?._id;
-    const existingUser = await CandidateAccount.findOne({ email, organizationId }) || await User.findOne({email, organizationId});
+    const existingUser =
+      (await CandidateAccount.findOne({ email, organizationId })) ||
+      (await User.findOne({ email, organizationId }));
 
     if (existingUser) {
       if (existingUser.isDeleted) {
         return NextResponse.json(
-          { error: 'Candidate already exists, but is deactivated.' },
+          { error: "Candidate already exists, but is deactivated." },
           { status: 400 }
         );
       }
       return NextResponse.json(
-        { error: 'Candidate already exists in this Organization' },
+        { error: "Candidate already exists in this Organization" },
         { status: 400 }
       );
     }

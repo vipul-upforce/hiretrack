@@ -7,7 +7,7 @@ export const laneApi = createApi({
   tagTypes: ["Lane"],
   endpoints: (builder) => ({
     getLanes: builder.query({
-      query: (userId) => userId ? `lanes?userId=${userId}` : 'lanes',
+      query: (userId) => (userId ? `lanes?userId=${userId}` : "lanes"),
       providesTags: ["Lane"],
     }),
     updateLanes: builder.mutation<ILane, { userId: string; lanes: string[] }>({

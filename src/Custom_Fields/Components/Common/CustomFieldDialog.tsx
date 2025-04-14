@@ -18,7 +18,7 @@ function CustomFieldDialog({
 }: CustomFieldDialogProps) {
   return (
     <div>
-        <Dialog open={isOpen} onOpenChange={onClose} modal={modal}>
+      <Dialog open={isOpen} onOpenChange={onClose} modal={modal}>
         <DialogContent
           className={`${
             !regular ? "sm:max-w-[80vw] xl:max-w-[50vw] h-[90vh]" : ""

@@ -29,13 +29,12 @@ const AddFormID: React.FC<AddFormIDProps> = ({ isOpen, setIsOpen, formId }) => {
     }
   }, [formId, customFields]);
 
-  const validationSchema = 
-      Yup.object({
-        formName: Yup.string()
-          .required("Form name is required")
-          .min(2, "Form name must be at least 2 characters")
-          .trim("Form name should not have leading or trailing spaces"),
-      })
+  const validationSchema = Yup.object({
+    formName: Yup.string()
+      .required("Form name is required")
+      .min(2, "Form name must be at least 2 characters")
+      .trim("Form name should not have leading or trailing spaces"),
+  });
 
   const handleSubmit = useCallback(
     (
@@ -60,7 +59,7 @@ const AddFormID: React.FC<AddFormIDProps> = ({ isOpen, setIsOpen, formId }) => {
         validationSchema={validationSchema}
         onSubmit={handleSubmit}
         enableReinitialize={true}
-        validateOnMount={false} 
+        validateOnMount={false}
       >
         {({
           values,
@@ -69,15 +68,15 @@ const AddFormID: React.FC<AddFormIDProps> = ({ isOpen, setIsOpen, formId }) => {
           handleChange,
           handleBlur,
           handleSubmit,
-          resetForm
+          resetForm,
         }) => (
           <CustomFieldDialog
             regular
             isOpen={isOpen}
             onClose={() => {
-              setInitialValues({ formName: "" }); 
-              setTimeout(() => resetForm(), 0.5); 
-              setIsOpen(false)
+              setInitialValues({ formName: "" });
+              setTimeout(() => resetForm(), 0.5);
+              setIsOpen(false);
             }}
             title={formId ? "Edit Form ID" : "Add Form ID"}
           >

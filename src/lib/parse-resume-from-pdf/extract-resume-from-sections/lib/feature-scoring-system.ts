@@ -72,7 +72,7 @@ export const getTextWithHighestFeatureScore = (
 
   // Note: If textItems is an empty array, textsWithHighestFeatureScore[0] is undefined, so we default it to empty string
   const text = !returnConcatenatedStringForTextsWithSameHighestScore
-    ? textsWithHighestFeatureScore[0] ?? ""
+    ? (textsWithHighestFeatureScore[0] ?? "")
     : textsWithHighestFeatureScore.map((s) => s.trim()).join(" ");
 
   return [text, textScores] as const;

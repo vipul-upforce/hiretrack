@@ -1,6 +1,6 @@
-import { Suspense } from "react"
-import CandidateSearch from "@/components/forms/candidate-search"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Suspense } from "react";
+import CandidateSearch from "@/components/forms/candidate-search";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Page() {
   return (
@@ -10,6 +10,5 @@ export default function Page() {
         <CandidateSearch />
       </Suspense>
     </div>
-  )
+  );
 }
-

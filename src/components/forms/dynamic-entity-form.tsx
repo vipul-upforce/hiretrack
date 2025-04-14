@@ -113,7 +113,7 @@
 //         })
 
 //         await onSubmit(formData)
-        
+
 //         toast({
 //           title: "Success",
 //           description: `${entityType === 'jobs' ? 'Job' : 'Candidate'} ${isEditing ? 'updated' : 'created'} successfully`
@@ -187,18 +187,12 @@
 //       </div>
 //     </form>
 //   )
-// } 
+// }
 
-
-
-
-
-import React from 'react'
+import React from "react";
 
 function DynamicEntityForm() {
-  return (
-    <div>DynamicEntityForm</div>
-  )
+  return <div>DynamicEntityForm</div>;
 }
 
 export default DynamicEntityForm;

@@ -25,7 +25,7 @@ export interface CustomField {
   persistance: Persistance;
   defaultValue?: string | string[];
   required: boolean;
-  private:boolean;
+  private: boolean;
 }
 
 export type CustomFieldFormProps = {

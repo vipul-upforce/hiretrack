@@ -1,10 +1,10 @@
-import mongoose, { Document } from 'mongoose';
-import { Schema } from 'mongoose';
+import mongoose, { Document } from "mongoose";
+import { Schema } from "mongoose";
 
 export const jobSchema = new mongoose.Schema({
-  organizationId: { 
-    type: Schema.Types.ObjectId, 
-    ref: 'Organization' 
+  organizationId: {
+    type: Schema.Types.ObjectId,
+    ref: "Organization",
   },
   title: { type: String, required: true },
   // company: { type: String, required: true },
@@ -13,37 +13,41 @@ export const jobSchema = new mongoose.Schema({
   experience: { type: Number, required: true },
   links: [{ type: String }],
   // validTill: { type: Date, required: true },
-  status: { 
-    type: String, 
-    enum: ['open', 'closed', 'draft'],
-    default: 'open'
+  status: {
+    type: String,
+    enum: ["open", "closed", "draft"],
+    default: "open",
   },
   attachments: {
-    files: [{
-      id: String,
-      name: String,
-      url: String,
-      type: { type: String, default: 'pdf' },
-      size: Number
-    }],
-    images: [{
-      id: String,
-      name: String,
-      url: String,
-      type: { type: String, default: 'image' },
-      size: Number
-    }]
+    files: [
+      {
+        id: String,
+        name: String,
+        url: String,
+        type: { type: String, default: "pdf" },
+        size: Number,
+      },
+    ],
+    images: [
+      {
+        id: String,
+        name: String,
+        url: String,
+        type: { type: String, default: "image" },
+        size: Number,
+      },
+    ],
   },
   tracking: {
     createdAt: { type: Date, default: Date.now },
     openedAt: Date,
     closedAt: Date,
-    updatedAt: { type: Date, default: Date.now }
+    updatedAt: { type: Date, default: Date.now },
   },
   customFields: {
     type: Object,
-    default: {}
-  }
+    default: {},
+  },
 });
 
 export interface IJob extends Document<mongoose.Types.ObjectId> {
@@ -71,7 +75,7 @@ export interface IJob extends Document<mongoose.Types.ObjectId> {
       type: string;
       size: number;
     }[];
-  };  
+  };
   tracking: {
     createdAt: Date;
     openedAt: Date;
@@ -83,4 +87,4 @@ export interface IJob extends Document<mongoose.Types.ObjectId> {
   };
 }
 
-// export const Job = mongoose.model('Job', jobSchema); 
+// export const Job = mongoose.model('Job', jobSchema);

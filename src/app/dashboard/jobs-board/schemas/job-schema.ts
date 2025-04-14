@@ -5,11 +5,12 @@ import { Dayjs } from "dayjs";
 import * as Yup from "yup";
 
 // export const jobSchema = (customFields: Yup.Schema<unknown>)=>{
-export const jobSchema = (customFields: Yup.Schema<unknown>)=>{
+export const jobSchema = (customFields: Yup.Schema<unknown>) => {
   return Yup.object().shape({
     title: Yup.string()
       .required("Job title is required")
-      .trim("Title should not have leading or trailing spaces").max(50,"Word Can't be this Big"),
+      .trim("Title should not have leading or trailing spaces")
+      .max(50, "Word Can't be this Big"),
     // company: Yup.string()
     //   .required("Company name is required")
     //   .min(2, "Company name must be at least 2 characters")
@@ -47,5 +48,8 @@ export interface JobFormValues {
   images: File[];
   removedFiles?: string[];
   removedImages?: string[];
-  customFields: Record<string, string | boolean | string[] | File[] | Dayjs | FileData[]>;
+  customFields: Record<
+    string,
+    string | boolean | string[] | File[] | Dayjs | FileData[]
+  >;
 }

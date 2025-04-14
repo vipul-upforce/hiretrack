@@ -1,13 +1,24 @@
-'use client';
+"use client";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 import { Job } from "@/types/job";
 import { Briefcase, UserPlus } from "lucide-react";
 // import { Building2, Briefcase, Calendar, UserPlus } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useFetchInterviewersQuery } from "@/lib/features/user/userApi";
@@ -29,8 +40,12 @@ export function JobDetailsDialog({
   const { data: interviewers } = useFetchInterviewersQuery();
   const [updateJob] = useUpdateJobMutation();
   const { toast } = useToast();
-  const [selectedInterviewer, setSelectedInterviewer] = useState(job.assignment?.interviewerId || '');
-  const [deadline, setDeadline] = useState<Date | undefined>(job.assignment?.deadline);
+  const [selectedInterviewer, setSelectedInterviewer] = useState(
+    job.assignment?.interviewerId || ""
+  );
+  const [deadline, setDeadline] = useState<Date | undefined>(
+    job.assignment?.deadline
+  );
   const [isExpanded, setIsExpanded] = useState(false);
 
   const labelClass = "text-sm text-muted-foreground";
@@ -72,7 +87,9 @@ export function JobDetailsDialog({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[80vw] xl:max-w-[50vw] max-h-[90vh] overflow-y-auto flex flex-col justify-start">
         <DialogHeader className="px-6 pt-6">
-          <DialogTitle className="text-xl font-semibold">{job.title}</DialogTitle>
+          <DialogTitle className="text-xl font-semibold">
+            {job.title}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -105,7 +122,9 @@ export function JobDetailsDialog({
             <div className="space-y-2">
               <Label className={labelClass}>Status</Label>
               <div className="text-sm">
-                <Badge variant={job.status === 'open' ? 'default' : 'secondary'}>
+                <Badge
+                  variant={job.status === "open" ? "default" : "secondary"}
+                >
                   {job.status}
                 </Badge>
               </div>
@@ -127,8 +146,11 @@ export function JobDetailsDialog({
           {/* Description */}
           <div className="space-y-2">
             <Label className={labelClass}>Description</Label>
-            <Button onClick={() => setIsExpanded(!isExpanded)} className="text-left">
-              {isExpanded ? 'Collapse' : 'Expand'}
+            <Button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="text-left"
+            >
+              {isExpanded ? "Collapse" : "Expand"}
             </Button>
             {isExpanded && (
               <div className="text-sm whitespace-pre-wrap">
@@ -140,8 +162,10 @@ export function JobDetailsDialog({
           {/* Assignment Section */}
           <div className="space-y-6 border-t pt-4">
             <div className="space-y-4">
-              <Label className="text-lg font-semibold">Assign to Interviewer</Label>
-              
+              <Label className="text-lg font-semibold">
+                Assign to Interviewer
+              </Label>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Select Interviewer</Label>
@@ -154,7 +178,10 @@ export function JobDetailsDialog({
                     </SelectTrigger>
                     <SelectContent>
                       {interviewers?.map((interviewer) => (
-                        <SelectItem key={interviewer._id} value={interviewer._id}>
+                        <SelectItem
+                          key={interviewer._id}
+                          value={interviewer._id}
+                        >
                           {interviewer.name}
                         </SelectItem>
                       ))}
@@ -182,22 +209,34 @@ export function JobDetailsDialog({
 
             {job.assignment && (
               <div className="space-y-2 bg-muted p-4 rounded-lg">
-                <Label className="text-lg font-semibold">Current Assignment</Label>
+                <Label className="text-lg font-semibold">
+                  Current Assignment
+                </Label>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm text-muted-foreground">Assigned To</Label>
+                    <Label className="text-sm text-muted-foreground">
+                      Assigned To
+                    </Label>
                     <div className="text-sm font-medium">
-                      {interviewers?.find(i => i._id === job.assignment?.interviewerId)?.name}
+                      {
+                        interviewers?.find(
+                          (i) => i._id === job.assignment?.interviewerId
+                        )?.name
+                      }
                     </div>
                   </div>
                   <div>
-                    <Label className="text-sm text-muted-foreground">Deadline</Label>
+                    <Label className="text-sm text-muted-foreground">
+                      Deadline
+                    </Label>
                     <div className="text-sm font-medium">
                       {format(new Date(job.assignment.deadline), "PPP")}
                     </div>
                   </div>
                   <div>
-                    <Label className="text-sm text-muted-foreground">Assigned On</Label>
+                    <Label className="text-sm text-muted-foreground">
+                      Assigned On
+                    </Label>
                     <div className="text-sm font-medium">
                       {format(new Date(job.assignment.assignedAt), "PPP")}
                     </div>
@@ -210,4 +249,4 @@ export function JobDetailsDialog({
       </DialogContent>
     </Dialog>
   );
-} 
+}

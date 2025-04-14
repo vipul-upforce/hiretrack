@@ -14,14 +14,17 @@ export const candidateSchema = (customFields: Yup.Schema<unknown>) =>
       .min(1, "At least one skill is required"),
     expectedCTC: Yup.number()
       .required("Expected CTC is required")
-      .min(0, "CTC cannot be negative").max(100000000, "Can not be more then 100CR"),
+      .min(0, "CTC cannot be negative")
+      .max(100000000, "Can not be more then 100CR"),
     currentCTC: Yup.number()
       .required("Current CTC is required")
-      .min(0, "CTC cannot be negative").max(100000000, "Can not be more then 100CR"),
+      .min(0, "CTC cannot be negative")
+      .max(100000000, "Can not be more then 100CR"),
     noticePeriod: Yup.number()
       .required("Notice period is required")
       .integer("Notice period must be an integer")
-      .min(0, "Notice period cannot be negative").max(180, "Can not be more then 180 days(6 months)"),
+      .min(0, "Notice period cannot be negative")
+      .max(180, "Can not be more then 180 days(6 months)"),
     // currentLocation: Yup.string().required("Current location is required"),
     resume: Yup.mixed().required("Resume is required"),
     // remarks: Yup.string(),
@@ -31,7 +34,9 @@ export const candidateSchema = (customFields: Yup.Schema<unknown>) =>
     assignment: Yup.object()
       .shape({
         interviewerId: Yup.string().nullable(),
-        deadline: Yup.date().min(new Date(), "Past date is not allowed").nullable(),
+        deadline: Yup.date()
+          .min(new Date(), "Past date is not allowed")
+          .nullable(),
       })
       .nullable()
       .test(
@@ -53,7 +58,10 @@ export const candidateSchema = (customFields: Yup.Schema<unknown>) =>
     customFields: customFields,
     email: Yup.string()
       .required("Email is required")
-      .matches(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, "Invalid Email"),
+      .matches(
+        /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+        "Invalid Email"
+      ),
   });
 
 export interface CandidateFormValues {

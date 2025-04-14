@@ -23,7 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import LoaderSkeletonUsers from "./components/loader-skeleton-users";
 import { EditIcon, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import * as Yup from "yup"
+import * as Yup from "yup";
 import {
   Dialog,
   DialogContent,
@@ -41,7 +41,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Formik, Form, ErrorMessage, Field } from "formik"
+import { Formik, Form, ErrorMessage, Field } from "formik";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -52,7 +52,7 @@ export default function UsersPage() {
   const [deleteUser, { isLoading: isDeleting }] = useDeleteUserMutation();
   const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
   const [isOpen, setIsOpen] = useState(false);
-  interface SelectedUser{
+  interface SelectedUser {
     id?: string;
     name: string;
     email: string;
@@ -81,8 +81,8 @@ export default function UsersPage() {
       });
     }
   };
-   
-  const handleUpdate = async (values:SelectedUser) => {
+
+  const handleUpdate = async (values: SelectedUser) => {
     try {
       await updateUser({ id: selectedUser?.id, ...values }).unwrap();
       toast({ title: "Success", description: "User updated successfully" });
@@ -91,11 +91,13 @@ export default function UsersPage() {
     } catch (error: unknown) {
       toast({
         title: "Error",
-        description: "Failed to update user" + (error instanceof Error ? error.message : ""),
+        description:
+          "Failed to update user" +
+          (error instanceof Error ? error.message : ""),
         variant: "destructive",
       });
     }
-  }
+  };
 
   const handleEditClick = (user: {
     _id: string;
@@ -123,7 +125,10 @@ export default function UsersPage() {
       .required("Full Name is required"),
     email: Yup.string()
       .required("Email is required")
-      .matches(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, "Invalid Email"),
+      .matches(
+        /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+        "Invalid Email"
+      ),
     role: Yup.string()
       .oneOf(["hr", "interviewer", "admin"], "Invalid role")
       .required("Role is required"),
@@ -177,12 +182,14 @@ export default function UsersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users?.map((user:User) => (
+              {users?.map((user: User) => (
                 <TableRow key={user._id}>
                   <TableCell>
                     {user.name}
                     {user.isDeleted && (
-                      <Badge className="ml-2 bg-red-500 hover:bg-red-600">Deleted</Badge>
+                      <Badge className="ml-2 bg-red-500 hover:bg-red-600">
+                        Deleted
+                      </Badge>
                     )}
                   </TableCell>
                   <TableCell>{user.email}</TableCell>
@@ -196,7 +203,7 @@ export default function UsersPage() {
                       size="icon"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setUserIdToDelete(user._id); 
+                        setUserIdToDelete(user._id);
                         setShowDeleteDialog(true);
                       }}
                       disabled={isDeleting || user.isDeleted}
@@ -222,7 +229,8 @@ export default function UsersPage() {
           <DialogHeader>
             <DialogTitle>Delete User</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete the user? You can always reactivate the user from edit form.
+              Are you sure you want to delete the user? You can always
+              reactivate the user from edit form.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -235,9 +243,9 @@ export default function UsersPage() {
             <Button
               variant="destructive"
               onClick={() => {
-                if(userIdToDelete){
+                if (userIdToDelete) {
                   handleDelete(userIdToDelete);
-                  setUserIdToDelete(null); 
+                  setUserIdToDelete(null);
                 }
                 setShowDeleteDialog(false);
               }}
@@ -263,17 +271,43 @@ export default function UsersPage() {
               validationSchema={validationSchema}
               onSubmit={handleUpdate}
             >
-              {({ handleChange, handleBlur, handleSubmit, values, setFieldValue }) => (
+              {({
+                handleChange,
+                handleBlur,
+                handleSubmit,
+                values,
+                setFieldValue,
+              }) => (
                 <Form className="space-y-4">
                   <div>
                     <Label>Name</Label>
-                    <Field as={Input} name="name" onChange={handleChange} onBlur={handleBlur} value={values.name} />
-                    <ErrorMessage name="name" component="div" className="text-red-500 text-sm" />
+                    <Field
+                      as={Input}
+                      name="name"
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      value={values.name}
+                    />
+                    <ErrorMessage
+                      name="name"
+                      component="div"
+                      className="text-red-500 text-sm"
+                    />
                   </div>
                   <div>
                     <Label>Email</Label>
-                    <Field as={Input} name="email" onChange={handleChange} onBlur={handleBlur} value={values.email} />
-                    <ErrorMessage name="email" component="div" className="text-red-500 text-sm" />
+                    <Field
+                      as={Input}
+                      name="email"
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      value={values.email}
+                    />
+                    <ErrorMessage
+                      name="email"
+                      component="div"
+                      className="text-red-500 text-sm"
+                    />
                   </div>
                   <div>
                     <Label>Role</Label>
@@ -290,7 +324,11 @@ export default function UsersPage() {
                         <SelectItem value="interviewer">Interviewer</SelectItem>
                       </SelectContent>
                     </Select>
-                    <ErrorMessage name="role" component="div" className="text-red-500 text-sm" />
+                    <ErrorMessage
+                      name="role"
+                      component="div"
+                      className="text-red-500 text-sm"
+                    />
                   </div>
 
                   <div>
@@ -302,14 +340,16 @@ export default function UsersPage() {
                           setFieldValue("isDeleted", checked);
                         }}
                       />
-                      <p className="ml-2">
-                        Deactivate user
-                      </p>
+                      <p className="ml-2">Deactivate user</p>
                     </Label>
                   </div>
 
                   <DialogFooter>
-                    <Button type="submit" disabled={isUpdating} onClick={() => handleSubmit()}>
+                    <Button
+                      type="submit"
+                      disabled={isUpdating}
+                      onClick={() => handleSubmit()}
+                    >
                       Update
                     </Button>
                   </DialogFooter>

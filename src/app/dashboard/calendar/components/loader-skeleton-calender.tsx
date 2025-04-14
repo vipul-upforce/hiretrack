@@ -3,23 +3,27 @@ import { Skeleton } from "@/components/ui/skeleton";
 const LoaderSkeletonCalendar = () => (
   <div className="space-y-6">
     <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
-      <div className="font-semibold leading-none tracking-tight">Interview Calendar</div>
+      <div className="font-semibold leading-none tracking-tight">
+        Interview Calendar
+      </div>
     </div>
     <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-6">
       {/* Left Section - Calendar Skeleton */}
       <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
         <Skeleton className="w-full h-[700px] rounded-lg" />
       </div>
-      
+
       {/* Right Section - Today's Interviews */}
       <div className="rounded-xl border bg-card text-card-foreground shadow h-fit sticky top-6 p-6">
         <div className="font-semibold text-md mb-4">Today's Interviews</div>
         <div className="space-y-4">
           {[1, 2].map((_, i) => (
-              <div key={i} className="space-y-2">
-                <Skeleton className="w-1/2 h-8 rounded-lg" />
+            <div key={i} className="space-y-2">
+              <Skeleton className="w-1/2 h-8 rounded-lg" />
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Interviewer:</span>
+                <span className="text-sm text-muted-foreground">
+                  Interviewer:
+                </span>
                 <Skeleton className="w-1/3 h-5 rounded-lg" />
               </div>
               <div className="flex justify-between items-center">

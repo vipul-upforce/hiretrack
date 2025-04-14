@@ -1,52 +1,52 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const FormFieldSchema = new mongoose.Schema({
   moduleType: {
     type: String,
-    enum: ['jobs', 'candidates'],
-    required: true
+    enum: ["jobs", "candidates"],
+    required: true,
   },
   fieldType: {
     type: String,
     enum: [
-      'text',
-      'number',
-      'select',
-      'multiSelect',
-      'radio',
-      'checkbox',
-      'date',
-      'file',
-      'textarea',
-      'chip'
+      "text",
+      "number",
+      "select",
+      "multiSelect",
+      "radio",
+      "checkbox",
+      "date",
+      "file",
+      "textarea",
+      "chip",
     ],
-    required: true
+    required: true,
   },
   label: {
     type: String,
-    required: true
+    required: true,
   },
   name: {
     type: String,
-    required: true
+    required: true,
   },
   isRequired: {
     type: Boolean,
-    default: false
+    default: false,
   },
   defaultValue: mongoose.Schema.Types.Mixed,
   options: [String], // For select, multiSelect, radio
   isPermanent: {
     type: Boolean,
-    default: false
+    default: false,
   },
   createdAt: {
     type: Date,
-    default: Date.now
-  }
+    default: Date.now,
+  },
 });
 
-export const FormField = mongoose.model('FormField', FormFieldSchema);
+export const FormField = mongoose.model("FormField", FormFieldSchema);
 
 export interface FormField {
   _id: string;
@@ -61,4 +61,4 @@ export interface FormField {
   createdAt: Date;
   maxSize?: number;
   maxFiles?: number;
-} 
+}

@@ -12,7 +12,9 @@ import { IJob } from "./models/job";
 import { ICandidate } from "./models/candidate";
 import settingsSchema, { ISettings } from "./models/settings";
 import { historySchema, IHistory } from "./models/history";
-import candidateAccountSchema, { IUCandidateAccount } from "./models/candidateAccount";
+import candidateAccountSchema, {
+  IUCandidateAccount,
+} from "./models/candidateAccount";
 
 interface MongooseGlobal {
   conn: typeof mongoose | null;
@@ -57,14 +59,20 @@ export default async function connectToDatabase() {
     };
 
     cached!.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      Organization = mongoose.model<IOrganization>("Organization", organizationSchema);
+      Organization = mongoose.model<IOrganization>(
+        "Organization",
+        organizationSchema
+      );
       User = mongoose.model<IUser>("User", userSchema);
       Lane = mongoose.model<ILane>("Lane", laneSchema);
       Job = mongoose.model<IJob>("Job", jobSchema);
       Candidate = mongoose.model<ICandidate>("Candidate", candidateSchema);
       Settings = mongoose.model<ISettings>("Settings", settingsSchema);
       History = mongoose.model<IHistory>("History", historySchema);
-      CandidateAccount = mongoose.model<IUCandidateAccount>("CandidateAccount", candidateAccountSchema);
+      CandidateAccount = mongoose.model<IUCandidateAccount>(
+        "CandidateAccount",
+        candidateAccountSchema
+      );
       console.log("Models registered");
       return mongoose;
     });

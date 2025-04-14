@@ -1,12 +1,12 @@
-import { configureStore } from '@reduxjs/toolkit';
-import { authApi } from './features/auth/authApi';
-import { jobApi } from './features/job/jobApi';
-import { candidateApi } from './features/candidate/candidateApi';
-import { userApi } from './features/user/userApi';
-import { laneApi } from './features/lane/laneApi';
-import { apiSlice } from './features/api/apiSlice';
-import { orgApi } from './features/org/orgApi';
-import { settingsApi } from './features/settings/settingsApi';
+import { configureStore } from "@reduxjs/toolkit";
+import { authApi } from "./features/auth/authApi";
+import { jobApi } from "./features/job/jobApi";
+import { candidateApi } from "./features/candidate/candidateApi";
+import { userApi } from "./features/user/userApi";
+import { laneApi } from "./features/lane/laneApi";
+import { apiSlice } from "./features/api/apiSlice";
+import { orgApi } from "./features/org/orgApi";
+import { settingsApi } from "./features/settings/settingsApi";
 
 export const store = configureStore({
   reducer: {
@@ -28,9 +28,9 @@ export const store = configureStore({
       candidateApi.middleware,
       userApi.middleware,
       laneApi.middleware,
-      apiSlice.middleware,
+      apiSlice.middleware
     ),
 });
 
 export type RootState = ReturnType<typeof store.getState>;
-export type AppDispatch = typeof store.dispatch; 
+export type AppDispatch = typeof store.dispatch;

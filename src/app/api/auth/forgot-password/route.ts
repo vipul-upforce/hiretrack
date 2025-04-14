@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server';
-import crypto from 'crypto';
-import dbConnect, { CandidateAccount, Settings } from '@/lib/mongodb';
-import { User } from '@/lib/mongodb';
-import { sendMail } from '../../event-mail';
-import { ObjectId } from 'mongoose';
-import { Organization } from '@/lib/models/user';
+import { NextResponse } from "next/server";
+import crypto from "crypto";
+import dbConnect, { CandidateAccount, Settings } from "@/lib/mongodb";
+import { User } from "@/lib/mongodb";
+import { sendMail } from "../../event-mail";
+import { ObjectId } from "mongoose";
+import { Organization } from "@/lib/models/user";
 
 type NodemailerError = {
   errno?: number;
@@ -14,7 +14,7 @@ type NodemailerError = {
 // Organization user data to return to frontend
 interface OrgUserData {
   id: string;
-  organizationId: string | { _id: ObjectId | string, name: string };
+  organizationId: string | { _id: ObjectId | string; name: string };
   organizationName?: string;
   email: string;
   isCandidate: boolean;
@@ -36,7 +36,10 @@ const getNodemailerErrorMessage = (error: NodemailerError) => {
     case -4039:
       return "The email service is temporarily unavailable. Please try again later.";
     default:
-      return error.message || "We couldn't send the email. Please check the email details and try again.";
+      return (
+        error.message ||
+        "We couldn't send the email. Please check the email details and try again."
+      );
   }
 };
 
@@ -46,7 +49,8 @@ export async function POST(req: Request) {
     await dbConnect();
     const { email, selectedOrgId } = await req.json();
 
-    if (!User || !Settings || !CandidateAccount) throw new Error('Database not connected');
+    if (!User || !Settings || !CandidateAccount)
+      throw new Error("Database not connected");
 
     // If selectedOrgId is provided, handle password reset for specific organization
     if (selectedOrgId) {
@@ -54,43 +58,57 @@ export async function POST(req: Request) {
     }
 
     // Otherwise, find all accounts with the email and return them
-    const regularUsers = await User.find({ email }).populate('organizationId', 'name');
-    const candidateUsers = await CandidateAccount.find({ email }).populate('organizationId', 'name');
+    const regularUsers = await User.find({ email }).populate(
+      "organizationId",
+      "name"
+    );
+    const candidateUsers = await CandidateAccount.find({ email }).populate(
+      "organizationId",
+      "name"
+    );
 
     // Format results for frontend
-    const userAccounts: OrgUserData[] = regularUsers.map(user => ({
+    const userAccounts: OrgUserData[] = regularUsers.map((user) => ({
       id: user._id.toString(),
-      organizationId: (user.organizationId && typeof user.organizationId === "object" && "_id" in user.organizationId)
-        ? (user.organizationId as Organization)._id.toString()
-        : "",
-      organizationName: (user.organizationId && typeof user.organizationId === "object" && "name" in user.organizationId)
-        ? user.organizationId.name
-        : "",
+      organizationId:
+        user.organizationId &&
+        typeof user.organizationId === "object" &&
+        "_id" in user.organizationId
+          ? (user.organizationId as Organization)._id.toString()
+          : "",
+      organizationName:
+        user.organizationId &&
+        typeof user.organizationId === "object" &&
+        "name" in user.organizationId
+          ? user.organizationId.name
+          : "",
       email: user.email,
-      isCandidate: false
+      isCandidate: false,
     }));
 
-    const candidateAccounts: OrgUserData[] = candidateUsers.map(user => ({
+    const candidateAccounts: OrgUserData[] = candidateUsers.map((user) => ({
       id: user._id.toString(),
       organizationId: user.organizationId
-        ? (typeof user.organizationId === "object" && "_id" in user.organizationId
+        ? typeof user.organizationId === "object" &&
+          "_id" in user.organizationId
           ? (user.organizationId as Organization)._id.toString()
-          : user.organizationId.toString())
+          : user.organizationId.toString()
         : "",
-      organizationName: (user.organizationId && typeof user.organizationId === "object" && "name" in user.organizationId)
-        ? String(user.organizationId.name) // Explicitly cast to string
-        : "",
+      organizationName:
+        user.organizationId &&
+        typeof user.organizationId === "object" &&
+        "name" in user.organizationId
+          ? String(user.organizationId.name) // Explicitly cast to string
+          : "",
       email: user.email,
-      isCandidate: true
+      isCandidate: true,
     }));
-
-
 
     const allAccounts = [...userAccounts, ...candidateAccounts];
 
     if (allAccounts.length === 0) {
       return NextResponse.json(
-        { error: 'No account found with this email' },
+        { error: "No account found with this email" },
         { status: 404 }
       );
     }
@@ -98,31 +116,28 @@ export async function POST(req: Request) {
     // If only one account exists, proceed with password reset directly
     if (allAccounts.length === 1) {
       const account = allAccounts[0];
-      return await handlePasswordReset(email,
-        typeof account.organizationId === "object" && "_id" in account.organizationId
+      return await handlePasswordReset(
+        email,
+        typeof account.organizationId === "object" &&
+          "_id" in account.organizationId
           ? account.organizationId._id.toString()
           : account.organizationId,
         req,
         account.isCandidate
       );
-
     }
 
     // Return list of accounts for user selection
     return NextResponse.json({
       multipleAccounts: true,
-      accounts: allAccounts
+      accounts: allAccounts,
     });
-
   } catch (error: unknown) {
     let errorMessage = "An unknown error occurred";
     if (typeof error === "object" && error !== null) {
       errorMessage = getNodemailerErrorMessage(error as NodemailerError);
     }
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 
@@ -137,19 +152,19 @@ async function handlePasswordReset(
     // Find the correct user with both email and organizationId
     let user;
     if (!CandidateAccount || !User) {
-      throw new Error("Database not connected")
+      throw new Error("Database not connected");
     }
     if (isCandidate !== undefined) {
       // If we explicitly know if it's a candidate or not
       if (isCandidate) {
         user = await CandidateAccount.findOne({
           email,
-          organizationId
+          organizationId,
         });
       } else {
         user = await User.findOne({
           email,
-          organizationId
+          organizationId,
         });
       }
     } else {
@@ -163,12 +178,17 @@ async function handlePasswordReset(
     }
 
     if (!user) {
-      throw new Error('No account found with this email in the selected organization');
+      throw new Error(
+        "No account found with this email in the selected organization"
+      );
     }
 
     // Generate password reset token
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const resetTokenHash = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
     const resetTokenExpiry = new Date(Date.now() + 3600000);
 
     // Update the user with reset token
@@ -184,13 +204,13 @@ async function handlePasswordReset(
       });
     }
 
-    const origin = req.headers.get('origin') || 'http://localhost:3000';
-    const resetUrl = `${origin}/auth/reset-password?token=${resetToken}${isCandidate ? '&type=candidate' : ''}`;
+    const origin = req.headers.get("origin") || "http://localhost:3000";
+    const resetUrl = `${origin}/auth/reset-password?token=${resetToken}${isCandidate ? "&type=candidate" : ""}`;
 
     const emailStatus = await sendMail(
       organizationId,
       email,
-      'Password Reset Request',
+      "Password Reset Request",
       `
         <p>Hello,</p>
         <p>You requested to reset your password.</p>
@@ -214,9 +234,6 @@ async function handlePasswordReset(
     if (typeof error === "object" && error !== null) {
       errorMessage = getNodemailerErrorMessage(error as NodemailerError);
     }
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

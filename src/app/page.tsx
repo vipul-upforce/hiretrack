@@ -1,4 +1,4 @@
-import { redirect } from 'next/navigation';
+import { redirect } from "next/navigation";
 
 export default function Home() {
   // Check if the user is authenticated
@@ -6,10 +6,8 @@ export default function Home() {
 
   if (!isAuthenticated) {
     // Redirect to the login page
-    redirect('/auth/login'); // Ensure you import redirect from 'next/navigation'
+    redirect("/auth/login"); // Ensure you import redirect from 'next/navigation'
   }
 
-  return (
-    <></>
-  );
+  return <></>;
 }

@@ -1,13 +1,24 @@
-'use client';
+"use client";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ChipInput } from "@/components/ui/chip-input";
 import { DatePicker } from "@/components/ui/date-picker";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Job } from "@/types/job";
 import { useUpdateJobMutation } from "@/lib/features/job/jobApi";
@@ -38,8 +49,12 @@ export function JobEditDialog({
   const [skills, setSkills] = useState(job.skills);
   const [experience, setExperience] = useState(job.experience.toString());
   // const [validTill, setValidTill] = useState<Date>(new Date(job.validTill));
-  const [selectedInterviewer, setSelectedInterviewer] = useState(job.assignment?.interviewerId || '');
-  const [deadline, setDeadline] = useState<Date | undefined>(job.assignment?.deadline);
+  const [selectedInterviewer, setSelectedInterviewer] = useState(
+    job.assignment?.interviewerId || ""
+  );
+  const [deadline, setDeadline] = useState<Date | undefined>(
+    job.assignment?.deadline
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,20 +69,23 @@ export function JobEditDialog({
         skills,
         experience: Number(experience),
         // validTill,
-        assignment: selectedInterviewer && deadline ? {
-          interviewerId: selectedInterviewer,
-          assignedAt: new Date(),
-          deadline,
-        } : undefined,
+        assignment:
+          selectedInterviewer && deadline
+            ? {
+                interviewerId: selectedInterviewer,
+                assignedAt: new Date(),
+                deadline,
+              }
+            : undefined,
       };
 
       await updateJob(updatedJob).unwrap();
-      
+
       toast({
         title: "Success",
         description: "Job updated successfully",
       });
-      
+
       onOpenChange(false);
     } catch {
       toast({
@@ -116,14 +134,12 @@ export function JobEditDialog({
               onChange={setSkills}
               placeholder={`Enter skills`}
               onSuggestionClick={(suggestion) => {
-                setSkills([
-                  ...skills,
-                  suggestion,
-                ]);
+                setSkills([...skills, suggestion]);
               }}
-              suggestions={skillSuggestions.filter(
-                (skill) => !skills.includes(skill)
-              ) || []}
+              suggestions={
+                skillSuggestions.filter((skill) => !skills.includes(skill)) ||
+                []
+              }
             />
           </div>
 
@@ -173,16 +189,26 @@ export function JobEditDialog({
 
             {job.assignment && (
               <div className="bg-muted p-4 rounded-lg space-y-2">
-                <Label className="text-sm text-muted-foreground">Current Assignment</Label>
+                <Label className="text-sm text-muted-foreground">
+                  Current Assignment
+                </Label>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <span className="text-sm text-muted-foreground">Assigned To: </span>
+                    <span className="text-sm text-muted-foreground">
+                      Assigned To:{" "}
+                    </span>
                     <span className="text-sm font-medium">
-                      {interviewers?.find(i => i._id === job.assignment?.interviewerId)?.name}
+                      {
+                        interviewers?.find(
+                          (i) => i._id === job.assignment?.interviewerId
+                        )?.name
+                      }
                     </span>
                   </div>
                   <div>
-                    <span className="text-sm text-muted-foreground">Deadline: </span>
+                    <span className="text-sm text-muted-foreground">
+                      Deadline:{" "}
+                    </span>
                     <span className="text-sm font-medium">
                       {format(new Date(job.assignment.deadline), "PPP")}
                     </span>
@@ -193,7 +219,11 @@ export function JobEditDialog({
           </div>
 
           <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={isSaving}>
@@ -204,4 +234,4 @@ export function JobEditDialog({
       </DialogContent>
     </Dialog>
   );
-} 
+}

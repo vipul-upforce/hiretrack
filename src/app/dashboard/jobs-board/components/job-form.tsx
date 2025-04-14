@@ -59,7 +59,7 @@ interface JobFormProps {
   onRemoveExistingImage?: (imageId: string) => void;
 }
 
-export function JobForm( props: JobFormProps) {
+export function JobForm(props: JobFormProps) {
   const {
     values,
     errors,
@@ -264,8 +264,8 @@ export function JobForm( props: JobFormProps) {
           accept={{}} // Empty object means accept all file types
           maxFiles={30}
           files={values.files || []}
-          setter={(files : File[])=>{
-            setFieldValue("files", files)
+          setter={(files: File[]) => {
+            setFieldValue("files", files);
           }}
           // existingFiles={job?.attachments.files} // Remove from UI
         />

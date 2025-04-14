@@ -8,8 +8,11 @@ export async function POST(req: Request) {
 
   try {
     const { orgId, customFields } = await req.json();
-    if(!Organization){
-      return NextResponse.json({ error: "Organization not found" }, { status: 400 });
+    if (!Organization) {
+      return NextResponse.json(
+        { error: "Organization not found" },
+        { status: 400 }
+      );
     }
     const org = await Organization.findById(orgId);
     if (org) {

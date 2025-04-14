@@ -4,12 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,7 +18,10 @@ const ResetPasswordSchema = Yup.object().shape({
     .matches(/[a-z]/, "Password must contain at least one lowercase letter")
     .matches(/[A-Z]/, "Password must contain at least one uppercase letter")
     .matches(/\d/, "Password must contain at least one number")
-    .matches(/[@$!%*?&]/, "Password must contain at least one special character")
+    .matches(
+      /[@$!%*?&]/,
+      "Password must contain at least one special character"
+    )
     .required("Password is required"),
   confirmPassword: Yup.string()
     .oneOf([Yup.ref("password")], "Passwords must match")
@@ -65,7 +63,8 @@ function ResetPasswordContent() {
 
       toast({
         title: "Success",
-        description: "Password reset successful. Please login with your new password.",
+        description:
+          "Password reset successful. Please login with your new password.",
       });
       router.push("/auth/login");
     } catch (error) {
@@ -102,7 +101,11 @@ function ResetPasswordContent() {
                           {...field}
                           type={showPassword ? "text" : "password"}
                           id="password"
-                          className={errors.password && touched.password ? "border-red-500" : ""}
+                          className={
+                            errors.password && touched.password
+                              ? "border-red-500"
+                              : ""
+                          }
                         />
                       )}
                     </Field>
@@ -121,7 +124,9 @@ function ResetPasswordContent() {
                     </Button>
                   </div>
                   {errors.password && touched.password && (
-                    <div className="text-red-500 text-xs">{errors.password}</div>
+                    <div className="text-red-500 text-xs">
+                      {errors.password}
+                    </div>
                   )}
                 </div>
 
@@ -134,7 +139,11 @@ function ResetPasswordContent() {
                           {...field}
                           type={showConfirmPassword ? "text" : "password"}
                           id="confirmPassword"
-                          className={errors.confirmPassword && touched.confirmPassword ? "border-red-500" : ""}
+                          className={
+                            errors.confirmPassword && touched.confirmPassword
+                              ? "border-red-500"
+                              : ""
+                          }
                         />
                       )}
                     </Field>
@@ -143,7 +152,9 @@ function ResetPasswordContent() {
                       variant="ghost"
                       size="icon"
                       className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
                     >
                       {!showConfirmPassword ? (
                         <EyeOff className="h-4 w-4" />
@@ -153,7 +164,9 @@ function ResetPasswordContent() {
                     </Button>
                   </div>
                   {errors.confirmPassword && touched.confirmPassword && (
-                    <div className="text-red-500 text-xs">{errors.confirmPassword}</div>
+                    <div className="text-red-500 text-xs">
+                      {errors.confirmPassword}
+                    </div>
                   )}
                 </div>
 
@@ -171,16 +184,18 @@ function ResetPasswordContent() {
 
 export default function ResetPassword() {
   return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Loading...</CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-screen bg-background">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>Loading...</CardTitle>
+            </CardHeader>
+          </Card>
+        </div>
+      }
+    >
       <ResetPasswordContent />
     </Suspense>
   );
-} 
+}

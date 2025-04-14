@@ -1,17 +1,31 @@
-"use client"
-import { useFormikContext } from "formik"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { format } from "date-fns"
-import { CalendarIcon } from "lucide-react"
-import { SearchFilter } from "./candidate-search"
-import { ChipInput } from "../ui/chip-input"
-
+"use client";
+import { useFormikContext } from "formik";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
+import { SearchFilter } from "./candidate-search";
+import { ChipInput } from "../ui/chip-input";
 
 // Mock data for skills
 const availableSkills = [
@@ -32,11 +46,11 @@ const availableSkills = [
   "Kotlin",
   "MATLAB",
   "R",
-]
+];
 
 export function SearchFilters() {
-  const { values, errors, touched, setFieldValue, handleChange, handleBlur } = useFormikContext<SearchFilter>()
-
+  const { values, errors, touched, setFieldValue, handleChange, handleBlur } =
+    useFormikContext<SearchFilter>();
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -74,7 +88,7 @@ export function SearchFilters() {
               value={values.skills}
               onChange={(skills) => setFieldValue("skills", skills)}
               onSuggestionClick={(suggestion) => {
-                setFieldValue("skills", [...(values.skills||[]), suggestion]);
+                setFieldValue("skills", [...(values.skills || []), suggestion]);
               }}
               suggestions={
                 availableSkills.filter(
@@ -97,15 +111,21 @@ export function SearchFilters() {
                 id="minExpectedCTC"
                 name="minExpectedCTC"
                 type="number"
-                step="0.01" 
+                step="0.01"
                 placeholder="Min"
                 value={values.minExpectedCTC || ""}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                className={errors.minExpectedCTC && touched.minExpectedCTC ? "border-destructive" : ""}
+                className={
+                  errors.minExpectedCTC && touched.minExpectedCTC
+                    ? "border-destructive"
+                    : ""
+                }
               />
               {errors.minExpectedCTC && touched.minExpectedCTC && (
-                <p className="text-xs text-destructive mt-1">{errors.minExpectedCTC}</p>
+                <p className="text-xs text-destructive mt-1">
+                  {errors.minExpectedCTC}
+                </p>
               )}
             </div>
             <div>
@@ -113,15 +133,21 @@ export function SearchFilters() {
                 id="maxExpectedCTC"
                 name="maxExpectedCTC"
                 type="number"
-                step="0.01" 
+                step="0.01"
                 placeholder="Max"
                 value={values.maxExpectedCTC || ""}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                className={errors.maxExpectedCTC && touched.maxExpectedCTC ? "border-destructive" : ""}
+                className={
+                  errors.maxExpectedCTC && touched.maxExpectedCTC
+                    ? "border-destructive"
+                    : ""
+                }
               />
               {errors.maxExpectedCTC && touched.maxExpectedCTC && (
-                <p className="text-xs text-destructive mt-1">{errors.maxExpectedCTC}</p>
+                <p className="text-xs text-destructive mt-1">
+                  {errors.maxExpectedCTC}
+                </p>
               )}
             </div>
           </div>
@@ -135,15 +161,21 @@ export function SearchFilters() {
                 id="minCurrentCTC"
                 name="minCurrentCTC"
                 type="number"
-                step="0.01" 
+                step="0.01"
                 placeholder="Min"
                 value={values.minCurrentCTC || ""}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                className={errors.minCurrentCTC && touched.minCurrentCTC ? "border-destructive" : ""}
+                className={
+                  errors.minCurrentCTC && touched.minCurrentCTC
+                    ? "border-destructive"
+                    : ""
+                }
               />
               {errors.minCurrentCTC && touched.minCurrentCTC && (
-                <p className="text-xs text-destructive mt-1">{errors.minCurrentCTC}</p>
+                <p className="text-xs text-destructive mt-1">
+                  {errors.minCurrentCTC}
+                </p>
               )}
             </div>
             <div>
@@ -151,15 +183,21 @@ export function SearchFilters() {
                 id="maxCurrentCTC"
                 name="maxCurrentCTC"
                 type="number"
-                step="0.01" 
+                step="0.01"
                 placeholder="Max"
                 value={values.maxCurrentCTC || ""}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                className={errors.maxCurrentCTC && touched.maxCurrentCTC ? "border-destructive" : ""}
+                className={
+                  errors.maxCurrentCTC && touched.maxCurrentCTC
+                    ? "border-destructive"
+                    : ""
+                }
               />
               {errors.maxCurrentCTC && touched.maxCurrentCTC && (
-                <p className="text-xs text-destructive mt-1">{errors.maxCurrentCTC}</p>
+                <p className="text-xs text-destructive mt-1">
+                  {errors.maxCurrentCTC}
+                </p>
               )}
             </div>
           </div>
@@ -173,15 +211,21 @@ export function SearchFilters() {
                 id="minExperience"
                 name="minExperience"
                 type="number"
-                step="0.01" 
+                step="0.01"
                 placeholder="Min"
                 value={values.minExperience || ""}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                className={errors.minExperience && touched.minExperience ? "border-destructive" : ""}
+                className={
+                  errors.minExperience && touched.minExperience
+                    ? "border-destructive"
+                    : ""
+                }
               />
               {errors.minExperience && touched.minExperience && (
-                <p className="text-xs text-destructive mt-1">{errors.minExperience}</p>
+                <p className="text-xs text-destructive mt-1">
+                  {errors.minExperience}
+                </p>
               )}
             </div>
             <div>
@@ -189,15 +233,21 @@ export function SearchFilters() {
                 id="maxExperience"
                 name="maxExperience"
                 type="number"
-                step="0.01" 
+                step="0.01"
                 placeholder="Max"
                 value={values.maxExperience || ""}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                className={errors.maxExperience && touched.maxExperience ? "border-destructive" : ""}
+                className={
+                  errors.maxExperience && touched.maxExperience
+                    ? "border-destructive"
+                    : ""
+                }
               />
               {errors.maxExperience && touched.maxExperience && (
-                <p className="text-xs text-destructive mt-1">{errors.maxExperience}</p>
+                <p className="text-xs text-destructive mt-1">
+                  {errors.maxExperience}
+                </p>
               )}
             </div>
           </div>
@@ -218,7 +268,10 @@ export function SearchFilters() {
                       <Label className="text-xs">From</Label>
                       <Popover>
                         <PopoverTrigger asChild>
-                          <Button variant="outline" className="w-full justify-start text-left font-normal">
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start text-left font-normal"
+                          >
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {values.createdAfter ? (
                               format(new Date(values.createdAfter), "PPP")
@@ -230,21 +283,35 @@ export function SearchFilters() {
                         <PopoverContent className="w-auto p-0">
                           <Calendar
                             mode="single"
-                            selected={values.createdAfter ? new Date(values.createdAfter) : undefined}
-                            onSelect={(date) => setFieldValue("createdAfter", date ? date.toISOString() : "")}
+                            selected={
+                              values.createdAfter
+                                ? new Date(values.createdAfter)
+                                : undefined
+                            }
+                            onSelect={(date) =>
+                              setFieldValue(
+                                "createdAfter",
+                                date ? date.toISOString() : ""
+                              )
+                            }
                             initialFocus
                           />
                         </PopoverContent>
                       </Popover>
                       {errors.createdAfter && (
-                        <p className="text-xs text-destructive mt-1">{errors.createdAfter}</p>
+                        <p className="text-xs text-destructive mt-1">
+                          {errors.createdAfter}
+                        </p>
                       )}
                     </div>
                     <div>
                       <Label className="text-xs">To</Label>
                       <Popover>
                         <PopoverTrigger asChild>
-                          <Button variant="outline" className="w-full justify-start text-left font-normal">
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start text-left font-normal"
+                          >
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {values.createdBefore ? (
                               format(new Date(values.createdBefore), "PPP")
@@ -256,14 +323,25 @@ export function SearchFilters() {
                         <PopoverContent className="w-auto p-0">
                           <Calendar
                             mode="single"
-                            selected={values.createdBefore ? new Date(values.createdBefore) : undefined}
-                            onSelect={(date) => setFieldValue("createdBefore", date ? date.toISOString() : "")}
+                            selected={
+                              values.createdBefore
+                                ? new Date(values.createdBefore)
+                                : undefined
+                            }
+                            onSelect={(date) =>
+                              setFieldValue(
+                                "createdBefore",
+                                date ? date.toISOString() : ""
+                              )
+                            }
                             initialFocus
                           />
                         </PopoverContent>
                       </Popover>
                       {errors.createdBefore && (
-                        <p className="text-xs text-destructive mt-1">{errors.createdBefore}</p>
+                        <p className="text-xs text-destructive mt-1">
+                          {errors.createdBefore}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -274,13 +352,17 @@ export function SearchFilters() {
                   <Select
                     name="logicOperator"
                     value={values.logicOperator || "$and"}
-                    onValueChange={(value) => setFieldValue("logicOperator", value)}
+                    onValueChange={(value) =>
+                      setFieldValue("logicOperator", value)
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select logic operator" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="$and">AND (Match all filters)</SelectItem>
+                      <SelectItem value="$and">
+                        AND (Match all filters)
+                      </SelectItem>
                       <SelectItem value="$or">OR (Match any filter)</SelectItem>
                     </SelectContent>
                   </Select>
@@ -291,6 +373,5 @@ export function SearchFilters() {
         </Accordion>
       </div>
     </div>
-  )
+  );
 }
-

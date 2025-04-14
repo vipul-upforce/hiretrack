@@ -1,7 +1,12 @@
 import { useState, useRef, useEffect, ReactNode } from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
 
-const ExpandableDescription = ({ description }: { description: string | ReactNode; height?: number }) => {
+const ExpandableDescription = ({
+  description,
+}: {
+  description: string | ReactNode;
+  height?: number;
+}) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isOverflowing, setIsOverflowing] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -26,15 +31,17 @@ const ExpandableDescription = ({ description }: { description: string | ReactNod
       <div
         ref={contentRef}
         className={`text-sm whitespace-pre-wrap break-words transition-all duration-200 ease-in-out 
-          ${isExpanded ? "max-h-full pb-10" : `max-h-[60px] h-auto overflow-hidden`}`
-        }
+          ${isExpanded ? "max-h-full pb-10" : `max-h-[60px] h-auto overflow-hidden`}`}
       >
         {typeof description === "string" ? (
-          <p className="text-sm whitespace-pre-wrap" style={{ wordWrap: "break-word" }}>
+          <p
+            className="text-sm whitespace-pre-wrap"
+            style={{ wordWrap: "break-word" }}
+          >
             {description || "No description found"}
           </p>
         ) : (
-          description ?? <p>No description found</p>
+          (description ?? <p>No description found</p>)
         )}
       </div>
 

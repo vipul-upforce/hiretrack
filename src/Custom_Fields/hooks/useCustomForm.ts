@@ -36,20 +36,25 @@ const useCustomForm = (formName: string) => {
 
   const validationSchema = getYupSchema(formNameObject?.fields || []);
 
-  const initialValues = formNameObject?.fields.reduce((acc, field) => {
-    if (field.type === "date") {
-      acc[field.label] = field.defaultValue || dayjs().format("YYYY-MM-DD");
-    } else if (field.type === "time") {
-      acc[field.label] =
-        field.defaultValue || dayjs().format("HH:mm");
-    } else if (field.type === "datetime") {
-      acc[field.label] =
-        field.defaultValue || dayjs().format("YYYY-MM-DDTHH:mm:ss");
-    } else {
-      acc[field.label] = field.defaultValue || "";
-    }
-    return acc;
-  }, {} as Record<string, string | string[] | boolean | File[] | Dayjs | FileData[]>);
+  const initialValues = formNameObject?.fields.reduce(
+    (acc, field) => {
+      if (field.type === "date") {
+        acc[field.label] = field.defaultValue || dayjs().format("YYYY-MM-DD");
+      } else if (field.type === "time") {
+        acc[field.label] = field.defaultValue || dayjs().format("HH:mm");
+      } else if (field.type === "datetime") {
+        acc[field.label] =
+          field.defaultValue || dayjs().format("YYYY-MM-DDTHH:mm:ss");
+      } else {
+        acc[field.label] = field.defaultValue || "";
+      }
+      return acc;
+    },
+    {} as Record<
+      string,
+      string | string[] | boolean | File[] | Dayjs | FileData[]
+    >
+  );
 
   const getDefaultValues = (formValues: CustomFieldValues) => {
     if (!initialValues) return {};

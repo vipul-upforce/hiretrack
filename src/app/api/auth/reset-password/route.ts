@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
-import crypto from 'crypto';
-import dbConnect, { CandidateAccount } from '@/lib/mongodb';
-import { User } from '@/lib/mongodb';
+import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
+import crypto from "crypto";
+import dbConnect, { CandidateAccount } from "@/lib/mongodb";
+import { User } from "@/lib/mongodb";
 
 export async function POST(req: Request) {
   try {
@@ -11,16 +11,16 @@ export async function POST(req: Request) {
 
     if (!User || !CandidateAccount) {
       return NextResponse.json(
-        { error: 'Database not connected' },
+        { error: "Database not connected" },
         { status: 500 }
       );
     }
 
     // Hash the token from the request
     const resetTokenHash = crypto
-      .createHash('sha256')
+      .createHash("sha256")
       .update(token)
-      .digest('hex');
+      .digest("hex");
 
     // Find user with valid reset token
     let user = null;
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
     }
 
     if (!user) {
-      throw new Error('Invalid or expired reset token');
+      throw new Error("Invalid or expired reset token");
     }
 
     // Hash the new password
@@ -76,14 +76,14 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json(
-      { message: 'Password reset successful' },
+      { message: "Password reset successful" },
       { status: 200 }
     );
   } catch (error) {
-    console.error('Reset password error:', error);
+    console.error("Reset password error:", error);
     return NextResponse.json(
-      { error: 'Failed to reset password' },
+      { error: "Failed to reset password" },
       { status: 500 }
     );
   }
-} 
+}

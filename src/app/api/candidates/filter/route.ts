@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       createdAfter,
       createdBefore,
       organizationId,
-      logicOperator = "$or"  // Default to $or if not specified
+      logicOperator = "$or", // Default to $or if not specified
     } = body;
 
     // Build query using the specified logic operator
@@ -42,11 +42,8 @@ export async function POST(request: NextRequest) {
     if (organizationId) {
       if (!query.$and) query.$and = [];
       query.$and.push({ organizationId: organizationId });
-    }else{
-      return NextResponse.json(
-        { error: "Please Add OrgID" },
-        { status: 500 }
-      );
+    } else {
+      return NextResponse.json({ error: "Please Add OrgID" }, { status: 500 });
     }
 
     if (name) {
@@ -60,7 +57,7 @@ export async function POST(request: NextRequest) {
 
     // Handle skills with $and
     if (skills && skills.length > 0) {
-      const skillsConditions = skills.map((skill : string) => ({
+      const skillsConditions = skills.map((skill: string) => ({
         skills: {
           $regex: skill.trim(),
           $options: "i",
@@ -114,45 +111,50 @@ export async function POST(request: NextRequest) {
     if (!Candidate) {
       throw new Error("Candidate model is not available");
     }
-    
+
     const candidates_WO_history = await Candidate.find(query)
-      .sort({ "tracking.createdAt": -1 })    
+      .sort({ "tracking.createdAt": -1 })
       .populate("remarks.userId", "name email")
       .populate([
         {
-            path: "assignment.interviewerId",
-            select: "_id name email",
-          },
-          {
-            path: "jobId",
-            select: "title description ",
-          },
-        ]).lean();
+          path: "assignment.interviewerId",
+          select: "_id name email",
+        },
+        {
+          path: "jobId",
+          select: "title description ",
+        },
+      ])
+      .lean();
 
-        if(!History) return;
+    if (!History) return;
 
-        const candidates = await Promise.all(
-          candidates_WO_history.map(async (candidate) => {
-            if (!candidate.jobId || typeof candidate.jobId !== "object" || !("_id" in candidate.jobId)) {
-              return candidate;
-            }
-        
-            const history = await History?.findOne({
-              jobId: (candidate.jobId as { _id: string })._id.toString(),
-              candidateId: candidate._id.toString()
-            })
-              .populate("history.currentInterviewer", "_id name email")
-              .populate("history.previousInterviewer", "_id name email") 
-              .populate("history.assignmentBy", "_id name email")
-              .populate("history.note.userId", "_id name email")
-              .lean();
-            
-            return {
-              ...candidate,
-              history: history ? history.history : []
-            };
-          })
-        );
+    const candidates = await Promise.all(
+      candidates_WO_history.map(async (candidate) => {
+        if (
+          !candidate.jobId ||
+          typeof candidate.jobId !== "object" ||
+          !("_id" in candidate.jobId)
+        ) {
+          return candidate;
+        }
+
+        const history = await History?.findOne({
+          jobId: (candidate.jobId as { _id: string })._id.toString(),
+          candidateId: candidate._id.toString(),
+        })
+          .populate("history.currentInterviewer", "_id name email")
+          .populate("history.previousInterviewer", "_id name email")
+          .populate("history.assignmentBy", "_id name email")
+          .populate("history.note.userId", "_id name email")
+          .lean();
+
+        return {
+          ...candidate,
+          history: history ? history.history : [],
+        };
+      })
+    );
 
     // Get total count for pagination
     const totalCount = candidates.length || 0;

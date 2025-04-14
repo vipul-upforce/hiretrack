@@ -23,6 +23,7 @@
     },
     "noUnusedLocals": true
   },
+  "sourceMap": true,
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "couldinary.js"],
   "exclude": ["node_modules"]
 }

@@ -8,7 +8,7 @@ export interface JobAssignment {
 
 export interface Job {
   _id: string;
-  organizationId?: string | object,
+  organizationId?: string | object;
   title: string;
   // company?: string;
   description: string;
@@ -16,21 +16,21 @@ export interface Job {
   experience: number;
   links: string[];
   // validTill?: Date;
-  status: 'open' | 'closed' | 'draft';
+  status: "open" | "closed" | "draft";
   candidateCount?: number;
   attachments: {
     files: Array<{
       id: string;
       name: string;
       url: string;
-      type: 'pdf';
+      type: "pdf";
       size: number;
     }>;
     images: Array<{
       id: string;
       name: string;
       url: string;
-      type: 'image';
+      type: "image";
       size: number;
     }>;
   };

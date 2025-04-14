@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
 import { Organization, User } from "@/lib/mongodb";
 import mongoose from "mongoose";
-import bcrypt from 'bcryptjs';
+import bcrypt from "bcryptjs";
 
 // Handle POST request
 export async function POST(req: Request) {
@@ -12,7 +12,7 @@ export async function POST(req: Request) {
 
   try {
     const { name, adminData } = await req.json();
-    
+
     if (!Organization || !User) {
       return NextResponse.json(
         { error: "Database not connected." },
@@ -22,33 +22,40 @@ export async function POST(req: Request) {
 
     try {
       // 1. Create organization first
-      createdOrg = await Organization.create([{ 
-        name: name,  
-        adminId: new mongoose.Types.ObjectId(), // adminId is required
-        customFields: { 
-          h3qmln24v: { fields: [], formName: "Job Position" }, 
-          g2xh8hoe1: { fields: [], formName: "Candidate" } 
-        } 
-      }]);
+      createdOrg = await Organization.create([
+        {
+          name: name,
+          adminId: new mongoose.Types.ObjectId(), // adminId is required
+          customFields: {
+            h3qmln24v: { fields: [], formName: "Job Position" },
+            g2xh8hoe1: { fields: [], formName: "Candidate" },
+          },
+        },
+      ]);
 
       const hashedPassword = await bcrypt.hash(adminData.password, 10);
 
       // 2. Check if user with the same email already exists in the organization
-      const existingUser = await User.findOne({ email: adminData.email, organizationId: createdOrg[0]._id });
+      const existingUser = await User.findOne({
+        email: adminData.email,
+        organizationId: createdOrg[0]._id,
+      });
       if (existingUser) {
         return NextResponse.json(
-          { error: 'User with this email already exists in the organization.' },
+          { error: "User with this email already exists in the organization." },
           { status: 400 }
         );
       }
 
       // 3. Create admin user with org ID
-      admin = await User.create([{
-        ...adminData,
-        password: hashedPassword,
-        organizationId: createdOrg[0]._id,
-        role: 'admin'
-      }]);
+      admin = await User.create([
+        {
+          ...adminData,
+          password: hashedPassword,
+          organizationId: createdOrg[0]._id,
+          role: "admin",
+        },
+      ]);
 
       // 4. Update organization with admin ID
       await Organization.findByIdAndUpdate(
@@ -65,7 +72,6 @@ export async function POST(req: Request) {
         },
         { status: 201 }
       );
-
     } catch (adminError) {
       // Manual rollback: Delete the created organization if admin creation fails
       if (createdOrg) {
@@ -73,7 +79,6 @@ export async function POST(req: Request) {
       }
       throw adminError; // Re-throw to be caught by outer catch block
     }
-
   } catch (error: unknown) {
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 400 });

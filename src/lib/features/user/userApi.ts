@@ -1,4 +1,4 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 interface Interviewer {
   _id: string;
@@ -7,13 +7,13 @@ interface Interviewer {
 }
 
 export const userApi = createApi({
-  reducerPath: 'userApi',
-  baseQuery: fetchBaseQuery({ baseUrl: '/api' }),
+  reducerPath: "userApi",
+  baseQuery: fetchBaseQuery({ baseUrl: "/api" }),
   endpoints: (builder) => ({
     fetchInterviewers: builder.query<Interviewer[], void>({
-      query: () => '/users/interviewers',
+      query: () => "/users/interviewers",
     }),
   }),
 });
 
-export const { useFetchInterviewersQuery } = userApi; 
+export const { useFetchInterviewersQuery } = userApi;

@@ -22,8 +22,12 @@ interface CardProps {
 }
 
 function FormIDCard({ formId, formName, fields }: CardProps) {
-  const { handleDeleteFormId, setStepName, selecteFormIdTarget, deleteFormIDAllCustomFields } =
-    useContext(CustomFieldsContext);
+  const {
+    handleDeleteFormId,
+    setStepName,
+    selecteFormIdTarget,
+    deleteFormIDAllCustomFields,
+  } = useContext(CustomFieldsContext);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -39,7 +43,7 @@ function FormIDCard({ formId, formName, fields }: CardProps) {
     (event: React.MouseEvent<HTMLButtonElement>) => {
       event.stopPropagation();
       // handleDeleteFormId(formId);
-      deleteFormIDAllCustomFields(formId)
+      deleteFormIDAllCustomFields(formId);
     },
     [formId, handleDeleteFormId]
   );

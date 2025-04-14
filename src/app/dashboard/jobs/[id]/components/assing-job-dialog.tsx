@@ -43,7 +43,7 @@ export function AssignJobDialog({
   candidate,
   isOpen,
   onOpenChange,
-  onJobAssignment
+  onJobAssignment,
 }: AssignCandidateDialogProps) {
   const { data: jobs } = useFetchOpenJobsQuery();
   const [assignJob] = useAssignJobMutation();
@@ -58,21 +58,26 @@ export function AssignJobDialog({
     { setSubmitting }: FormikHelpers<FormValues>
   ) => {
     try {
-      if(typeof candidate.jobId === "string" &&candidate.jobId!==values.jobId || typeof candidate.jobId === "object" &&candidate.jobId._id!==values.jobId){
+      if (
+        (typeof candidate.jobId === "string" &&
+          candidate.jobId !== values.jobId) ||
+        (typeof candidate.jobId === "object" &&
+          candidate.jobId._id !== values.jobId)
+      ) {
         await assignJob({
           jobId: values.jobId,
           candidateId: candidate._id,
         }).unwrap();
-        onJobAssignment?.()
+        onJobAssignment?.();
         toast({
           title: "Success",
           description: "Candidate assigned successfully",
         });
-      }else{
+      } else {
         toast({
           title: "Error",
           description: "Candidate is already assigned to this job",
-          variant:"destructive"
+          variant: "destructive",
         });
       }
     } catch {

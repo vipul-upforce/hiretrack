@@ -1,6 +1,6 @@
-import { OneOfMulOrganization } from '@/components/auth/OrganizationDialog';
-import { OrgInfo } from '@/lib/models/user';
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { OneOfMulOrganization } from "@/components/auth/OrganizationDialog";
+import { OrgInfo } from "@/lib/models/user";
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 interface AuthRequest {
   email: string;
@@ -21,35 +21,34 @@ interface User {
 interface AuthResponse {
   message: string;
   user: User;
-  _id?:string;
-  organizations?: OneOfMulOrganization[] 
+  _id?: string;
+  organizations?: OneOfMulOrganization[];
 }
 
 export const authApi = createApi({
-  reducerPath: 'authApi',
-  baseQuery: fetchBaseQuery({ 
-    baseUrl: '/api',
-    credentials: 'include', // Important for cookies
+  reducerPath: "authApi",
+  baseQuery: fetchBaseQuery({
+    baseUrl: "/api",
+    credentials: "include", // Important for cookies
   }),
-  tagTypes: ['Users'], 
+  tagTypes: ["Users"],
   endpoints: (builder) => ({
     login: builder.mutation<AuthResponse, AuthRequest>({
       query: (credentials) => ({
-        url: '/auth/login',
-        method: 'POST',
+        url: "/auth/login",
+        method: "POST",
         body: credentials,
       }),
     }),
     signup: builder.mutation<AuthResponse, AuthRequest>({
       query: (credentials) => ({
-        url: '/auth/signup',
-        method: 'POST',
+        url: "/auth/signup",
+        method: "POST",
         body: credentials,
       }),
-      invalidatesTags: ['Users'], // Ensure correct format
+      invalidatesTags: ["Users"], // Ensure correct format
     }),
   }),
 });
 
-
-export const { useLoginMutation, useSignupMutation } = authApi; 
+export const { useLoginMutation, useSignupMutation } = authApi;

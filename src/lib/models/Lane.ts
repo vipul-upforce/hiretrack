@@ -1,10 +1,10 @@
-import mongoose, { Schema } from 'mongoose';
+import mongoose, { Schema } from "mongoose";
 
 export interface ILane {
   userId: string;
   lanes: LaneItem[];
   order: number;
-  organizationId: object
+  organizationId: object;
 }
 
 export interface LaneItem {
@@ -17,10 +17,10 @@ export const laneSchema = new mongoose.Schema<ILane>({
   userId: { type: String, required: true },
   lanes: { type: [Object], default: [] },
   order: { type: Number, default: 0 },
-  organizationId: { 
-    type: Schema.Types.ObjectId, 
-    ref: 'Organization' 
-  } 
+  organizationId: {
+    type: Schema.Types.ObjectId,
+    ref: "Organization",
+  },
 });
 
-// export const Lane = mongoose.model<ILane>('Lane', laneSchema); 
+// export const Lane = mongoose.model<ILane>('Lane', laneSchema);
