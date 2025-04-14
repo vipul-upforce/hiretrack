@@ -243,7 +243,7 @@ export function CreateCandidateDialog({
       const candidateId = createdCandidate._id;
       if (values.resume && values.resume.type === "application/pdf") {
         const pageCount = await checkPdfPageCount(values.resume);
-        if (pageCount <= 3) {
+        if (pageCount <= 4) {
           evaluateCandidate(candidateId, evaluateCandidateMutation);
         }
       }

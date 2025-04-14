@@ -9,7 +9,6 @@ import { verifyAndDecryptToken } from "@/app/actions/auth";
 const generateBase64 = async (url: any) => {
   const urlParams = new URLSearchParams(url.split("?")[1]);
   const pathName = urlParams.get("pathName");
-  console.log("@########## pathname: ", pathName);
   if (!pathName) {
     return "";
   }
@@ -59,7 +58,7 @@ async function evaluateResume(
             "notes": // Any additional qualitative observations or context that informed your ratings and recommendation.
             "failure": // If the process encounters a critical error or you cannot provide a meaningful evaluation, include an error message here. Otherwise, this field should be omitted or left empty.
           }
-    
+          You are a strict and professional talent acquisition expert, the criteria for evaluation is very high. The candidate must have matching experience and skills to the job description.
         Below is the text content of a Curriculum Vitae (CV) submitted by an applicant:
         `;
 
