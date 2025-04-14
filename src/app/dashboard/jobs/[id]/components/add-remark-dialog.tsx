@@ -125,7 +125,7 @@ const AddRemarksDialog = ({
         </div>
         <DialogFooter>
           <Button variant="secondary" onClick={() => onOpenChange(false)}>
-            Cancel
+            No Remarks
           </Button>
           <Button onClick={handleAddRemark}>Add Remark</Button>
         </DialogFooter>

@@ -89,7 +89,7 @@ export async function PUT(
 }
 
 export async function DELETE(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -104,17 +104,12 @@ export async function DELETE(
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 
-    // Delete the job
-    await Job.findByIdAndDelete(id);
-
-    // Assuming you have Candidate and Assignment models
-    // Delete associated candidates and assignments
-    await Candidate.deleteMany({ jobId: id }); // Adjust the field name as necessary
+    // Toggle Delete the job
+    await Job.findByIdAndUpdate(id, { isDeleted: !job.isDeleted });
 
     return NextResponse.json(
       {
-        message:
-          "Job and associated candidates and assignments deleted successfully",
+        message: `Job ${job.isDeleted ? "Un" : ""}Archived successfully.`,
       },
       { status: 200 }
     );

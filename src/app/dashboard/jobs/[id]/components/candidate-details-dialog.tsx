@@ -268,7 +268,12 @@ export function CandidateDetailsDialog({
             <DialogTitle className="text-2xl font-semibold">
               <div className="flex items-center justify-between">
                 <div className="">
-                  <div className="">{localCandidate.name}</div>
+                  <div className="flex gap-2 items-center">
+                    {localCandidate.name}{" "}
+                    {localCandidate.isDeleted && (
+                      <Badge className={`bg-red-500`}>Archived</Badge>
+                    )}
+                  </div>
                   <div className="text-gray-500 font-thin text-sm flex flex-row items-center justify-between w-full">
                     {localCandidate.email}
                     <Button
@@ -293,13 +298,6 @@ export function CandidateDetailsDialog({
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto px-6 py-4 pt-0 space-y-6">
-            {/* <div className="space-y-2"></div>
-            {localCandidate.email && (
-              <div className="space-y-2 relative">
-                <Label className={labelClass}>Email</Label>
-                <p>{localCandidate.email || ""}</p>
-              </div>
-            )} */}
             <div className="space-y-2 relative">
               <Label className={labelClass}>
                 {localCandidate.jobId?.title ||

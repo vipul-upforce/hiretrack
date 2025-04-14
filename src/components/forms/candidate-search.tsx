@@ -221,7 +221,6 @@ export default function CandidateSearch() {
     setCurrentFilters(values); // Store the current filters
 
     try {
-      debugger;
       values.organizationId = OrgID;
       const response = await filterCandidates(values).unwrap();
       setSearchResults(response.candidates || []);

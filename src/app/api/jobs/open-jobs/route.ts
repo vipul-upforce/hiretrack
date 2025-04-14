@@ -21,15 +21,15 @@ export async function GET(request: Request) {
       );
     }
 
-    if (!Organization) {
+    if (!Organization && !Job) {
       return NextResponse.json(
-        { error: "Organization Model not Found" },
+        { error: "DB Model not Found" },
         { status: 404 }
       );
     }
 
     // Find the organization ID based on the orgName
-    const organization = await Organization.findOne({ name: orgName });
+    const organization = await Organization!.findOne({ name: orgName });
     const organizationId = organization?._id;
 
     if (!organizationId) {
@@ -39,33 +39,28 @@ export async function GET(request: Request) {
       );
     }
 
-    if (!Job) {
-      return NextResponse.json(
-        { error: "Job Model not Found" },
-        { status: 404 }
-      );
-    }
-
     const customFields = await Organization?.findById(organizationId);
-    const jobs = await Job.find(
-      {
-        organizationId: organizationId,
-        status: "open",
-        ...(title && {
-          title: {
-            $regex: title,
-            $options: "i",
-          },
-        }),
-      },
-      {
-        attachments: 0,
-        tracking: 0,
-        organizationId: 0,
-        links: 0,
-        status: 0,
-      }
-    )
+    const jobs = await Job!
+      .find(
+        {
+          organizationId: organizationId,
+          status: "open",
+          ...(title && {
+            title: {
+              $regex: title,
+              $options: "i",
+            },
+          }),
+          $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
+        },
+        {
+          attachments: 0,
+          tracking: 0,
+          organizationId: 0,
+          links: 0,
+          status: 0,
+        }
+      )
       .sort({
         "tracking.createdAt": -1,
       })

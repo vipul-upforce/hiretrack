@@ -69,6 +69,7 @@ export interface ICandidate {
     notes: string;
     failure?: string;
   };
+  isDeleted: boolean;
 }
 
 export const candidateSchema = new Schema(
@@ -165,6 +166,7 @@ export const candidateSchema = new Schema(
       notes: String,
       failure: String,
     },
+    isDeleted: Boolean,
   },
   {
     timestamps: true,

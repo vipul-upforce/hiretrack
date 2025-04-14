@@ -52,6 +52,7 @@ export interface Candidate {
   };
   history?: ICandidateHistory[];
   email?: string;
+  isDeleted?: boolean;
   scores?: {
     overall: number;
     experience: number;

@@ -42,4 +42,5 @@ export interface Job {
   };
   assignment?: JobAssignment;
   customFields: CustomFieldValues;
+  isDeleted?: boolean;
 }

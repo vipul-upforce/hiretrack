@@ -15,11 +15,12 @@ import {
   useDeleteJobMutation,
 } from "@/lib/features/job/jobApi";
 import { toast } from "@/hooks/use-toast";
-import { Info, Trash2 } from "lucide-react";
+import { ArchiveRestore, Info, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import LoaderSkeleton from "./components/loader-skeleton";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,6 +49,7 @@ export default function KanbanPage() {
   const [user, setUser] = useState<User | null>(null);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const [createJob] = useCreateJobMutation();
   const {
     data: jobs,
@@ -86,11 +88,15 @@ export default function KanbanPage() {
     if (jobs) {
       const initialColumnsWithJobs = initialColumns.map((column) => ({
         ...column,
-        jobs: jobs.filter((job) => job.status === column.id),
+        jobs: jobs.filter(
+          (job) =>
+            job.status === column.id &&
+            (showArchived ? job.isDeleted : !job.isDeleted)
+        ),
       }));
       setColumns(initialColumnsWithJobs);
     }
-  }, [jobs]);
+  }, [jobs, showArchived]);
 
   const handleJobCreated = async (newJob: Omit<Job, "id">) => {
     setIsCreatingJob(true);
@@ -212,16 +218,11 @@ export default function KanbanPage() {
 
     try {
       await deleteJob(jobToDelete).unwrap();
-      // Update local state
-      const newColumns = columns.map((column) => ({
-        ...column,
-        jobs: column.jobs.filter((job) => job._id !== jobToDelete),
-      }));
-      setColumns(newColumns);
 
+      setSelectedJob(null);
       toast({
         title: "Success",
-        description: "Job position deleted successfully",
+        description: `Job Action Applied successfully.`,
       });
     } catch (error: unknown) {
       if (error instanceof Error) {
@@ -252,8 +253,22 @@ export default function KanbanPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Job Positions</CardTitle>
-          <div className="flex flex-row items-basline justify-between gap-2">
-            {/* <AddCustomFieldButton /> */}
+          <div className="flex flex-row items-center justify-between gap-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="showArchived"
+                checked={showArchived}
+                onCheckedChange={(checked) =>
+                  setShowArchived(checked as boolean)
+                }
+              />
+              <label
+                htmlFor="showArchived"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Show Archived
+              </label>
+            </div>
             <CreateJobDialog
               onJobCreated={handleJobCreated}
               userRole={user?.role}
@@ -334,17 +349,32 @@ export default function KanbanPage() {
                                   >
                                     <Info className="h-4 w-4" />
                                   </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="text-destructive hover:text-destructive/90 hidden"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleDeleteClick(job._id);
-                                    }}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
+                                  {!job.isDeleted ? (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="text-destructive hover:text-destructive/90"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteClick(job._id);
+                                      }}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  ) : (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="text-blue-500 hover:text-blue-500/90"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteClick(job._id);
+                                        setSelectedJob(job);
+                                      }}
+                                    >
+                                      <ArchiveRestore className="h-4 w-4" />
+                                    </Button>
+                                  )}
                                 </div>
                               </div>
                             )}
@@ -385,9 +415,13 @@ export default function KanbanPage() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
-              className="bg-destructive hover:bg-destructive/90"
+              className={
+                !selectedJob?.isDeleted
+                  ? "bg-destructive hover:bg-destructive/90"
+                  : "text-blue-500 bg-blue hover:bg-blue hover:text-blue-500/90"
+              }
             >
-              Delete
+              {selectedJob?.isDeleted ? "UnArchived" : "Archived"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

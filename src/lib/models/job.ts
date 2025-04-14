@@ -48,6 +48,7 @@ export const jobSchema = new mongoose.Schema({
     type: Object,
     default: {},
   },
+  isDeleted: Boolean,
 });
 
 export interface IJob extends Document<mongoose.Types.ObjectId> {
@@ -85,6 +86,7 @@ export interface IJob extends Document<mongoose.Types.ObjectId> {
   customFields: {
     [key: string]: object;
   };
+  isDeleted?: boolean;
 }
 
 // export const Job = mongoose.model('Job', jobSchema);

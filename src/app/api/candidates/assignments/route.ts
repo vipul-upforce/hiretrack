@@ -18,9 +18,13 @@ export async function GET(req: NextRequest) {
       );
       const userData = decryptedResponse.user;
       if (decryptedResponse.success) {
+        const openJobs = await Job!.find({ status: "open" }).lean();
+        const jobIds = openJobs.map((job) => job._id.toString());
         const query = {
           "assignment.interviewerId":
             userData?.role === "interviewer" ? userData?.id : { $exists: true },
+          $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
+          jobId: { $in: jobIds },
         };
         if (!Candidate || !User || !Job) {
           return NextResponse.json(
