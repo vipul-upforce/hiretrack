@@ -15,7 +15,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { useField, useFormikContext } from "formik";
 import { CandidateFormValues } from "../schemas/candidate-schema";
 import { useFetchInterviewersQuery } from "@/lib/features/user/userApi";
-import { skillSuggestions } from "@/app/dashboard/jobs-board/components/job-form";
+// import { skillSuggestions } from "@/app/dashboard/jobs-board/components/job-form";
 import { v4 as uuidv4 } from "uuid";
 import CustomFields from "@/Custom_Fields/Components/CustomFields";
 import Cookies from "js-cookie";
@@ -215,11 +215,11 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
               onSuggestionClick={(suggestion) => {
                 setFieldValue("skills", [...skillsField.value, suggestion]);
               }}
-              suggestions={
-                skillSuggestions.filter(
-                  (skill) => !skillsField.value.includes(skill)
-                ) || []
-              }
+              // suggestions={
+              //   skillSuggestions.filter(
+              //     (skill) => !skillsField.value.includes(skill)
+              //   ) || []
+              // }
               // error={skillsMeta.touched && skillsMeta.error}
             />
             {skillsMeta.touched && skillsMeta.error && (

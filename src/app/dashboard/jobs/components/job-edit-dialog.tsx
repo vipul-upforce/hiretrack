@@ -25,7 +25,7 @@ import { useUpdateJobMutation } from "@/lib/features/job/jobApi";
 import { useFetchInterviewersQuery } from "@/lib/features/user/userApi";
 import { useState } from "react";
 import { format } from "date-fns";
-import { skillSuggestions } from "../../jobs-board/components/job-form";
+// import { skillSuggestions } from "../../jobs-board/components/job-form";
 
 interface JobEditDialogProps {
   job: Job;
@@ -136,10 +136,10 @@ export function JobEditDialog({
               onSuggestionClick={(suggestion) => {
                 setSkills([...skills, suggestion]);
               }}
-              suggestions={
-                skillSuggestions.filter((skill) => !skills.includes(skill)) ||
-                []
-              }
+              // suggestions={
+              //   skillSuggestions.filter((skill) => !skills.includes(skill)) ||
+              //   []
+              // }
             />
           </div>
 

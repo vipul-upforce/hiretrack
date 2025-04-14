@@ -27,26 +27,26 @@ import { CalendarIcon } from "lucide-react";
 import { SearchFilter } from "./candidate-search";
 import { ChipInput } from "../ui/chip-input";
 
-// Mock data for skills
-const availableSkills = [
-  "JavaScript",
-  "TypeScript",
-  "React",
-  "Angular",
-  "Vue",
-  "Node.js",
-  "Python",
-  "Java",
-  "C#",
-  "PHP",
-  "Ruby",
-  "Go",
-  "Rust",
-  "Swift",
-  "Kotlin",
-  "MATLAB",
-  "R",
-];
+// // Mock data for skills
+// const availableSkills = [
+//   "JavaScript",
+//   "TypeScript",
+//   "React",
+//   "Angular",
+//   "Vue",
+//   "Node.js",
+//   "Python",
+//   "Java",
+//   "C#",
+//   "PHP",
+//   "Ruby",
+//   "Go",
+//   "Rust",
+//   "Swift",
+//   "Kotlin",
+//   "MATLAB",
+//   "R",
+// ];
 
 export function SearchFilters() {
   const { values, errors, touched, setFieldValue, handleChange, handleBlur } =
@@ -90,11 +90,11 @@ export function SearchFilters() {
               onSuggestionClick={(suggestion) => {
                 setFieldValue("skills", [...(values.skills || []), suggestion]);
               }}
-              suggestions={
-                availableSkills.filter(
-                  (skill) => !values?.skills?.includes(skill)
-                ) || []
-              }
+              // suggestions={
+              //   availableSkills.filter(
+              //     (skill) => !values?.skills?.includes(skill)
+              //   ) || []
+              // }
               // error={skillsMeta.touched && skillsMeta.error}
             />
           </div>

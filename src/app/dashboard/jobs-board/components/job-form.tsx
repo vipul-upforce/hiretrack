@@ -135,9 +135,9 @@ export function JobForm(props: JobFormProps) {
           onSuggestionClick={(suggestion) => {
             setFieldValue("skills", [...values.skills, suggestion]);
           }}
-          suggestions={skillSuggestions.filter(
-            (skill) => !values.skills.includes(skill)
-          )}
+          // suggestions={skillSuggestions.filter(
+          //   (skill) => !values.skills.includes(skill)
+          // )}
         />
         {touched.skills && errors.skills && (
           <p className="text-sm text-red-500">{String(errors.skills)}</p>

@@ -20,7 +20,7 @@ import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
 interface CreateJobDialogProps {
   onJobCreated: (
     job: JobFormValues & {
-      status: "open";
+      status: "draft";
       attachments: {
         files: Array<{
           id: string;
@@ -97,7 +97,7 @@ export function CreateJobDialog({
     try {
       const newJob = {
         ...values,
-        status: "open" as const,
+        status: "draft" as const,
         candidateCount: 0,
         attachments: {
           files:
