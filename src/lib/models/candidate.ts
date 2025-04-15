@@ -44,7 +44,7 @@ export interface ICandidate {
       email?: string;
     };
     assignedAt: Date;
-    deadline: Date;
+    time: Date;
   };
   customFields: {
     [key: string]:
@@ -142,7 +142,7 @@ export const candidateSchema = new Schema(
         ref: "User",
       },
       assignedAt: Date,
-      deadline: Date,
+      time: Date,
     },
     customFields: {
       type: Object,

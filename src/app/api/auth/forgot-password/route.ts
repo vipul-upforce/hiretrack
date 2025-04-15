@@ -5,6 +5,7 @@ import { User } from "@/lib/mongodb";
 import { sendMail } from "../../event-mail";
 import { ObjectId } from "mongoose";
 import { Organization } from "@/lib/models/user";
+import { loadTemplate } from "@/lib/templateLoader";
 
 type NodemailerError = {
   errno?: number;
@@ -143,7 +144,7 @@ export async function POST(req: Request) {
 
 // Function to handle the actual password reset after organization selection
 async function handlePasswordReset(
-  email: string,
+  email: string[],
   organizationId: string,
   req: Request,
   isCandidate?: boolean
@@ -207,18 +208,15 @@ async function handlePasswordReset(
     const origin = req.headers.get("origin") || "http://localhost:3000";
     const resetUrl = `${origin}/auth/reset-password?token=${resetToken}${isCandidate ? "&type=candidate" : ""}`;
 
+    const htmlContent = loadTemplate("reset-password-request", {
+      resetUrl,
+    });
+
     const emailStatus = await sendMail(
       organizationId,
       email,
       "Password Reset Request",
-      `
-        <p>Hello,</p>
-        <p>You requested to reset your password.</p>
-        <p>Click the link below to reset your password:</p>
-        <a href="${resetUrl}">Reset Password</a>
-        <p>This link will expire in 1 hour.</p>
-        <p>If you didn't request this, please ignore this email.</p>
-      `
+      htmlContent
     );
 
     if (emailStatus.status === 200) {

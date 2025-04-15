@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendMail } from ".";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { loadTemplate } from "@/lib/templateLoader";
 
 export async function POST(req: NextRequest) {
   try {
@@ -91,19 +92,17 @@ export async function POST(req: NextRequest) {
     )}`;
 
     // Prepare email HTML content
-    const htmlContent = `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2>${eventTitle}</h2>
-            <p><strong>Start Time:</strong> ${startDate.toLocaleString()}</p>
-            <p><strong>End Time:</strong> ${endDate.toLocaleString()}</p>
-            <p>${eventDescription}</p>
-            <div style="margin-top: 20px;">
-              <p>Add this event to your calendar:</p>
-              <a href="${googleCalendarLink}" target="_blank" style="display: inline-block; background-color: #4285F4; color: white; padding: 10px 15px; margin-right: 10px; text-decoration: none; border-radius: 4px;">Google Calendar</a>
-              <a href="${outlookCalendarLink}" target="_blank" style="display: inline-block; background-color: #0078D4; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px;">Outlook Calendar</a>
-            </div>
-          </div>
-        `;
+    const htmlContent = loadTemplate("assignment-event", {
+      eventTitle,
+      startDate: startDate.toLocaleString(),
+      endDate: endDate.toLocaleString(),
+      jobName,
+      interviewerName,
+      candidateName,
+      status,
+      googleCalendarLink,
+      outlookCalendarLink,
+    });
 
     const emailStatus = await sendMail(
       organizationId,

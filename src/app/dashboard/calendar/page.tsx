@@ -158,11 +158,11 @@ export default function CalendarPage() {
         candidate?.jobId && typeof candidate.jobId === "object"
           ? candidate.jobId.title
           : "Unknown",
-      start: candidate?.assignment?.deadline
-        ? new Date(candidate.assignment.deadline)
+      start: candidate?.assignment?.time
+        ? new Date(candidate.assignment.time)
         : new Date(),
-      end: candidate?.assignment?.deadline
-        ? new Date(candidate.assignment.deadline)
+      end: candidate?.assignment?.time
+        ? new Date(candidate.assignment.time)
         : new Date(),
       extendedProps: {
         candidate: {
@@ -225,7 +225,7 @@ export default function CalendarPage() {
             ...eventsOnDate[0].extendedProps.candidate,
             assignment: eventsOnDate[0].extendedProps.candidate.assignment || {
               interviewerId: "",
-              deadline: "",
+              time: "",
               assignedAt: new Date().toISOString(),
               status: "",
             },
@@ -392,9 +392,9 @@ export default function CalendarPage() {
                             Date:
                           </span>
                           <span className="text-sm font-medium">
-                            {event.extendedProps.candidate.assignment?.deadline
+                            {event.extendedProps.candidate.assignment?.time
                               ? new Date(
-                                  event.extendedProps.candidate.assignment.deadline
+                                  event.extendedProps.candidate.assignment.time
                                 ).toLocaleDateString("en-US", {
                                   year: "numeric",
                                   month: "long",
@@ -463,7 +463,7 @@ export default function CalendarPage() {
               interviewerId:
                 selectedEvent.extendedProps.candidate.assignment
                   ?.interviewerId || "",
-              deadline:
+              time:
                 selectedEvent.start?.toISOString() || new Date().toISOString(),
               assignedAt: new Date().toISOString(),
               assignment: {

@@ -48,8 +48,8 @@ export const sentAssignmentMail = async (
         (result.jobId as unknown as IJob).title
           ? "Interview for " + (result.jobId as unknown as IJob).title
           : "Interview for Unknown Position",
-      startTime: result.assignment?.deadline,
-      endTime: result.assignment?.deadline,
+      startTime: result.assignment?.time,
+      endTime: result.assignment?.time,
       jobName:
         result.jobId &&
         typeof result.jobId !== "string" &&
