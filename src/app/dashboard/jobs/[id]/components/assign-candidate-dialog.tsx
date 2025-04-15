@@ -532,7 +532,7 @@ export function AssignCandidateDialog({
                       variant="outline"
                       onClick={handleUnassign}
                     >
-                      Unassign
+                      Mark As Done
                     </Button>
                   )}
                 </div>
@@ -558,10 +558,10 @@ export function AssignCandidateDialog({
       <Dialog open={confirmUnassignOpen} onOpenChange={setConfirmUnassignOpen}>
         <DialogContent className="sm:max-w-[300px]">
           <DialogHeader>
-            <DialogTitle>Confirm Unassign</DialogTitle>
+            <DialogTitle>Confirm Mark As Done</DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <p>Are you sure you want to unassign this interviewer?</p>
+            <p>Are you sure you want to Mark As Done this interviewer?</p>
           </div>
           <DialogFooter>
             <Button

@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -109,6 +110,7 @@ export function CandidateDetailsDialog({
   const [isAssigning, setIsAssigning] = useState(false);
   const [isAssigningJob, setIsAssigningJob] = useState(false);
   const [user, setuser] = useState<User | null>(null);
+  const [confirmUnassignOpen, setConfirmUnassignOpen] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -246,6 +248,43 @@ export function CandidateDetailsDialog({
           variant: "destructive",
         });
       }
+    }
+  };
+
+  const handleUnassign = () => {
+    setConfirmUnassignOpen(true);
+  };
+
+  const confirmUnassign = async () => {
+    try {
+      const updatedCandidate = {
+        ...localCandidate,
+        assignment: null,
+      };
+      const result = await updateCandidate(updatedCandidate).unwrap();
+      if (result) {
+        onUpdate?.(result);
+        setLocalCandidate(result);
+        if (pathname !== "/dashboard" && pathname !== "/dashboard/calendar") {
+          await refetch();
+        } else {
+          refetchAssignment?.();
+        }
+        toast({
+          title: "Success",
+          description: "Interviewer has been unassigned successfully",
+        });
+      }
+    } catch (error: unknown) {
+      toast({
+        title:
+          "Error: " +
+          (error instanceof Error ? error.message : "Unknown error"),
+        description: "Failed to unassign interviewer",
+        variant: "destructive",
+      });
+    } finally {
+      setConfirmUnassignOpen(false);
     }
   };
 
@@ -795,24 +834,37 @@ export function CandidateDetailsDialog({
             </div>
           </div>
 
-          <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4">
+          <div className="flex space-x-2 border-t bg-background px-6 py-4">
             {!fromFilter ? (
-              <>
-                <Button onClick={() => setIsAssigning(true)}>Assign</Button>
-                {!hideEditButton && (
-                  <Button onClick={handleEditClick}>Edit</Button>
-                )}
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    onOpenChange(false);
-                    setNewRemark("");
-                    setRemarkRating(null);
-                  }}
-                >
-                  Close
-                </Button>
-              </>
+              <div className="flex justify-between w-full">
+                <div className="flex gap-2">
+                  <Button onClick={() => setIsAssigning(true)}>
+                    Assign To
+                  </Button>
+                  <Button
+                    onClick={handleUnassign}
+                    disabled={!localCandidate.assignment}
+                    variant="outline"
+                  >
+                    UnAssign
+                  </Button>
+                </div>
+                <div className="flex gap-2">
+                  {!hideEditButton && (
+                    <Button onClick={handleEditClick}>Edit</Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      onOpenChange(false);
+                      setNewRemark("");
+                      setRemarkRating(null);
+                    }}
+                  >
+                    Close
+                  </Button>
+                </div>
+              </div>
             ) : (
               <div>
                 <Button onClick={() => setIsAssigningJob(true)}>
@@ -864,6 +916,29 @@ export function CandidateDetailsDialog({
           }}
         />
       )}
+      {/* Add Confirm Unassign Dialog */}
+      <Dialog open={confirmUnassignOpen} onOpenChange={setConfirmUnassignOpen}>
+        <DialogContent className="sm:max-w-[300px]">
+          <DialogHeader>
+            <DialogTitle>Confirm Unassign</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p>Are you sure you want to unassign this interviewer?</p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setConfirmUnassignOpen(false);
+                onOpenChange(true);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={confirmUnassign}>Confirm</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
