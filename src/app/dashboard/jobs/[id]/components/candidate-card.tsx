@@ -1,24 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { Draggable, DraggableProvided } from "@hello-pangea/dnd";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Info, Trash2 } from "lucide-react";
+import { ArchiveRestore, Info, Trash2 } from "lucide-react";
 import { Candidate } from "@/types/candidate";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { useToast } from "@/hooks/use-toast";
-import { useDeleteCandidateMutation } from "@/lib/features/candidate/candidateApi";
 import { formatTime } from "./candidate-details-dialog";
 import AddRemarksPopover from "./add-remark-dialog";
 import RemarksPopover from "./remarks-popover";
@@ -29,6 +15,7 @@ interface CandidateCardProps {
   index: number;
   onViewDetails: (candidate: Candidate) => void;
   onDashboard?: boolean;
+  onDeleteClick?: (candidateId: string) => void;
 }
 
 export function CandidateCard({
@@ -39,37 +26,12 @@ export function CandidateCard({
   setOpenRemarksFor,
   refetch,
   onDashboard,
+  onDeleteClick,
 }: CandidateCardProps & {
   openRemarks: boolean;
   setOpenRemarksFor: (id: string | null) => void;
   refetch: () => void;
 }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const { toast } = useToast();
-  const [deleteCandidate, { isLoading: isDeleting }] =
-    useDeleteCandidateMutation();
-
-  const handleDelete = async () => {
-    try {
-      await deleteCandidate(candidate._id).unwrap();
-
-      toast({
-        title: "Success",
-        description: "Candidate deleted successfully",
-      });
-
-      setIsOpen(false);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description:
-          error instanceof Error ? error.message : "Failed to delete candidate",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // console.log(candidate)
   if (onDashboard) {
     return (
       <div className="bg-card border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow">
@@ -89,38 +51,6 @@ export function CandidateCard({
             />
           </div>
           <div className="flex gap-1">
-            <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="hidden h-8 w-8 text-destructive hover:text-destructive/90 hover:bg-destructive/10"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete {candidate.name}&apos;s
-                    application. This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel disabled={isDeleting}>
-                    Cancel
-                  </AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handleDelete}
-                    disabled={isDeleting}
-                    className="bg-destructive hover:bg-destructive/90"
-                  >
-                    {isDeleting ? "Deleting..." : "Delete"}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
             <RemarksPopover
               candidate={candidate}
               onMoreClick={() => {
@@ -164,11 +94,11 @@ export function CandidateCard({
               {typeof candidate.assignment?.interviewerId === "object" &&
                 candidate.assignment?.interviewerId?.name}
             </Badge>
-            {candidate.assignment?.deadline && (
-              <Badge>{candidate.assignment?.deadline.split("T")[0]}</Badge>
+            {candidate.assignment?.time && (
+              <Badge>{candidate.assignment?.time.split("T")[0]}</Badge>
             )}
-            {candidate.assignment?.deadline && (
-              <Badge>{formatTime(candidate.assignment?.deadline)} </Badge>
+            {candidate.assignment?.time && (
+              <Badge>{formatTime(candidate.assignment?.time)} </Badge>
             )}
           </div>
         )}
@@ -206,9 +136,6 @@ export function CandidateCard({
           {...provided.draggableProps}
           {...provided.dragHandleProps}
           className="bg-card border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow"
-          // style={{
-          //   marginTop:`${index===0?"0px":"12px"}`
-          // }}
         >
           <div className="flex justify-between items-start">
             <h3 className="font-medium w-2/3 text-wrap break-words">
@@ -226,38 +153,31 @@ export function CandidateCard({
               />
             </div>
             <div className="flex gap-1">
-              <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="hidden h-8 w-8 text-destructive hover:text-destructive/90 hover:bg-destructive/10"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will permanently delete {candidate.name}&apos;s
-                      application. This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel disabled={isDeleting}>
-                      Cancel
-                    </AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={handleDelete}
-                      disabled={isDeleting}
-                      className="bg-destructive hover:bg-destructive/90"
-                    >
-                      {isDeleting ? "Deleting..." : "Delete"}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              {!candidate.isDeleted ? (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-destructive hover:text-destructive/90"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteClick?.(candidate._id);
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-blue-500 hover:text-blue-500/90"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteClick?.(candidate._id);
+                  }}
+                >
+                  <ArchiveRestore className="h-4 w-4" />
+                </Button>
+              )}
               <RemarksPopover
                 candidate={candidate}
                 onMoreClick={() => {
@@ -301,11 +221,11 @@ export function CandidateCard({
                 {typeof candidate.assignment?.interviewerId === "object" &&
                   candidate.assignment?.interviewerId?.name}
               </Badge>
-              {candidate.assignment?.deadline && (
-                <Badge>{candidate.assignment?.deadline.split("T")[0]}</Badge>
+              {candidate.assignment?.time && (
+                <Badge>{candidate.assignment?.time.split("T")[0]}</Badge>
               )}
-              {candidate.assignment?.deadline && (
-                <Badge>{formatTime(candidate.assignment?.deadline)} </Badge>
+              {candidate.assignment?.time && (
+                <Badge>{formatTime(candidate.assignment?.time)} </Badge>
               )}
             </div>
           )}

@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
       {
         organizationId: organizationId,
         status: "open",
+        $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
       },
       {
         _id: 1,

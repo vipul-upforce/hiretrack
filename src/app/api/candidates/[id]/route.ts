@@ -214,7 +214,21 @@ export async function DELETE(
       );
     }
 
-    const deletedCandidate = await Candidate.findByIdAndDelete(id);
+    const candidate = await Candidate.findById(id);
+
+    if (!candidate) {
+      return NextResponse.json(
+        { error: "Candidate not found" },
+        { status: 404 }
+      );
+    }
+
+    // const deletedCandidate = await Candidate.findByIdAndUpdate(id, { isDeleted : });
+    const deletedCandidate = await Candidate.findByIdAndUpdate(
+      id,
+      { isDeleted: !candidate.isDeleted },
+      { new: true }
+    );
 
     if (!deletedCandidate) {
       return NextResponse.json(

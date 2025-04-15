@@ -77,7 +77,6 @@ export default function Login() {
     try {
       // Parse the payload as JSON
       const parsedPayload = payload;
-      debugger;
       const encryptedPayload = CryptoJS.AES.encrypt(
         JSON.stringify(parsedPayload),
         JWT_SECRET

@@ -52,6 +52,7 @@ export interface Candidate {
   };
   history?: ICandidateHistory[];
   email?: string;
+  isDeleted?: boolean;
   scores?: {
     overall: number;
     experience: number;
@@ -92,7 +93,7 @@ export interface Remark {
 
 interface Assignment {
   interviewerId: string | { _id: string; name: string; email: string };
-  deadline: string;
+  time: string;
   assignedAt: string;
   status?: string;
   assignment?: { status: string };

@@ -120,8 +120,8 @@ export async function POST(request: NextRequest) {
                 assignment: {
                   interviewerId: data.assignment.interviewerId,
                   assignedAt: new Date(),
-                  ...(data.assignment.deadline && {
-                    deadline: new Date(data.assignment.deadline),
+                  ...(data.assignment.time && {
+                    time: new Date(data.assignment.time),
                   }),
                 },
               }

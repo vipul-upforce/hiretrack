@@ -3,7 +3,7 @@ import { CustomFieldValues } from "@/Custom_Fields/hooks/useCustomForm";
 export interface JobAssignment {
   interviewerId: string;
   assignedAt: Date;
-  deadline: Date;
+  time: Date;
 }
 
 export interface Job {
@@ -42,4 +42,5 @@ export interface Job {
   };
   assignment?: JobAssignment;
   customFields: CustomFieldValues;
+  isDeleted?: boolean;
 }

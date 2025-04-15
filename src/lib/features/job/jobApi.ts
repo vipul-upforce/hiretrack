@@ -60,6 +60,7 @@ export const jobApi = createApi({
         url: `/jobs/${id}`,
         method: "DELETE",
       }),
+      invalidatesTags: ["Job"],
     }),
     assignJob: builder.mutation({
       query: (data) => ({

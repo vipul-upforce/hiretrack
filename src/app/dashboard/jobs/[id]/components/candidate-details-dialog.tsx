@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -109,6 +110,7 @@ export function CandidateDetailsDialog({
   const [isAssigning, setIsAssigning] = useState(false);
   const [isAssigningJob, setIsAssigningJob] = useState(false);
   const [user, setuser] = useState<User | null>(null);
+  const [confirmUnassignOpen, setConfirmUnassignOpen] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -249,6 +251,43 @@ export function CandidateDetailsDialog({
     }
   };
 
+  const handleUnassign = () => {
+    setConfirmUnassignOpen(true);
+  };
+
+  const confirmUnassign = async () => {
+    try {
+      const updatedCandidate = {
+        ...localCandidate,
+        assignment: null,
+      };
+      const result = await updateCandidate(updatedCandidate).unwrap();
+      if (result) {
+        onUpdate?.(result);
+        setLocalCandidate(result);
+        if (pathname !== "/dashboard" && pathname !== "/dashboard/calendar") {
+          await refetch();
+        } else {
+          refetchAssignment?.();
+        }
+        toast({
+          title: "Success",
+          description: "Interviewer has been unassigned successfully",
+        });
+      }
+    } catch (error: unknown) {
+      toast({
+        title:
+          "Error: " +
+          (error instanceof Error ? error.message : "Unknown error"),
+        description: "Failed to unassign interviewer",
+        variant: "destructive",
+      });
+    } finally {
+      setConfirmUnassignOpen(false);
+    }
+  };
+
   if (!localCandidate) return null;
 
   const validTimeLineItems = timeLineItems.filter((item) => item.title !== "");
@@ -268,7 +307,12 @@ export function CandidateDetailsDialog({
             <DialogTitle className="text-2xl font-semibold">
               <div className="flex items-center justify-between">
                 <div className="">
-                  <div className="">{localCandidate.name}</div>
+                  <div className="flex gap-2 items-center">
+                    {localCandidate.name}{" "}
+                    {localCandidate.isDeleted && (
+                      <Badge className={`bg-red-500`}>Archived</Badge>
+                    )}
+                  </div>
                   <div className="text-gray-500 font-thin text-sm flex flex-row items-center justify-between w-full">
                     {localCandidate.email}
                     <Button
@@ -293,13 +337,6 @@ export function CandidateDetailsDialog({
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto px-6 py-4 pt-0 space-y-6">
-            {/* <div className="space-y-2"></div>
-            {localCandidate.email && (
-              <div className="space-y-2 relative">
-                <Label className={labelClass}>Email</Label>
-                <p>{localCandidate.email || ""}</p>
-              </div>
-            )} */}
             <div className="space-y-2 relative">
               <Label className={labelClass}>
                 {localCandidate.jobId?.title ||
@@ -594,14 +631,14 @@ export function CandidateDetailsDialog({
               <ol className="relative border-s border-gray-200 dark:border-gray-700">
                 {validTimeLineItems.length > 0
                   ? validTimeLineItems.reverse().map((interview, i) => {
-                      const deadlineDate = formatDate(interview.dateTime);
-                      const deadlineTime = formatTime(interview.dateTime);
+                      const timeDate = formatDate(interview.dateTime);
+                      const timeTime = formatTime(interview.dateTime);
 
                       return (
                         <div key={i} className="mb-10 ms-4">
                           <div className="absolute w-3 h-3 bg-gray-200 rounded-full mt-1.5 -start-1.5 border border-white dark:border-gray-900 dark:bg-gray-700"></div>
                           <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500 flex flex-row items-center">
-                            {deadlineDate} <Dot /> {deadlineTime}
+                            {timeDate} <Dot /> {timeTime}
                           </time>
                           <h3 className="text-lg font-semibold text-gray-900 dark:text-white capitalize flex flex-row itmes-center justify-start">
                             {(interview.title !== "" || !interview.title) &&
@@ -716,9 +753,8 @@ export function CandidateDetailsDialog({
                     </span>
                   </div>
                   <div>
-                    Interview Date:{" "}
-                    {formatDate(localCandidate.assignment.deadline)} on{" "}
-                    {formatTime(localCandidate.assignment.deadline)}
+                    Interview Date: {formatDate(localCandidate.assignment.time)}{" "}
+                    on {formatTime(localCandidate.assignment.time)}
                   </div>
                 </div>
               ) : (
@@ -797,24 +833,37 @@ export function CandidateDetailsDialog({
             </div>
           </div>
 
-          <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4">
+          <div className="flex space-x-2 border-t bg-background px-6 py-4">
             {!fromFilter ? (
-              <>
-                <Button onClick={() => setIsAssigning(true)}>Assign</Button>
-                {!hideEditButton && (
-                  <Button onClick={handleEditClick}>Edit</Button>
-                )}
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    onOpenChange(false);
-                    setNewRemark("");
-                    setRemarkRating(null);
-                  }}
-                >
-                  Close
-                </Button>
-              </>
+              <div className="flex justify-between w-full">
+                <div className="flex gap-2">
+                  <Button onClick={() => setIsAssigning(true)}>
+                    Assign To
+                  </Button>
+                  <Button
+                    onClick={handleUnassign}
+                    disabled={!localCandidate.assignment}
+                    variant="outline"
+                  >
+                    UnAssign
+                  </Button>
+                </div>
+                <div className="flex gap-2">
+                  {!hideEditButton && (
+                    <Button onClick={handleEditClick}>Edit</Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      onOpenChange(false);
+                      setNewRemark("");
+                      setRemarkRating(null);
+                    }}
+                  >
+                    Close
+                  </Button>
+                </div>
+              </div>
             ) : (
               <div>
                 <Button onClick={() => setIsAssigningJob(true)}>
@@ -866,6 +915,29 @@ export function CandidateDetailsDialog({
           }}
         />
       )}
+      {/* Add Confirm Unassign Dialog */}
+      <Dialog open={confirmUnassignOpen} onOpenChange={setConfirmUnassignOpen}>
+        <DialogContent className="sm:max-w-[300px]">
+          <DialogHeader>
+            <DialogTitle>Confirm Unassign</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p>Are you sure you want to unassign this interviewer?</p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setConfirmUnassignOpen(false);
+                onOpenChange(true);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={confirmUnassign}>Confirm</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

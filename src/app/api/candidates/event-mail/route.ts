@@ -1,0 +1,135 @@
+import { NextRequest, NextResponse } from "next/server";
+import { sendMail } from "@/app/api/event-mail";
+import { Candidate, Organization, User } from "@/lib/mongodb"; // Add User import
+import { ICandidate } from "@/lib/models/candidate";
+import { loadTemplate } from "@/lib/templateLoader";
+
+export async function POST(req: NextRequest) {
+  try {
+    const { candidateId } = await req.json();
+    if (!Candidate || !User) {
+      throw new Error("Database not connected");
+    }
+
+    // Get candidate data
+    const candidateData = await Candidate.findOne({
+      _id: candidateId,
+    }).populate({
+      path: "jobId",
+      select: "title",
+    });
+
+    // console.log("############# candidateData: ", candidateData);
+
+    if (!candidateData || !Organization) {
+      return NextResponse.json(
+        { error: "Candidate not found" },
+        { status: 404 }
+      );
+    }
+
+    const { name, email } = candidateData as ICandidate;
+    let organizationId = candidateData.organizationId;
+
+    if (!organizationId) {
+      return NextResponse.json(
+        { error: "Organization ID is missing." },
+        { status: 400 }
+      );
+    }
+    const orgData = await Organization.findById(organizationId);
+    let orgName = "";
+    if (orgData) {
+      orgName = orgData.name;
+    }
+
+    // Get job information
+    const jobName =
+      (typeof candidateData.jobId === "object" &&
+        "title" in candidateData.jobId &&
+        (candidateData.jobId?.title as string)) ||
+      "Not specified";
+    const candidateName = name;
+    const status = "Applied";
+
+    // Prepare candidate email content
+    const eventTitle = "Application Successful";
+
+    if (!email || !eventTitle) {
+      return NextResponse.json(
+        { error: "Email and event title are required." },
+        { status: 400 }
+      );
+    }
+
+    // Validate email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: "Invalid email format." },
+        { status: 400 }
+      );
+    }
+
+    // const candidateHtmlContent = loadTemplate("job-application-(candidate)", {
+    //   orgName,
+    //   eventTitle,
+    //   name,
+    //   jobName,
+    //   candidateName,
+    //   status,
+    // });
+
+    // Find all HR users in the organization
+    const hrUsers = await User.find({
+      organizationId: organizationId,
+      role: { $in: ["hr"] },
+    });
+    const hrEmails: string[] = [];
+    hrUsers.map((user) => {
+      hrEmails.push(user.email);
+    });
+
+    // Prepare HR notification email content
+    const hrNotificationTitle = `${candidateName} applied for ${jobName}`;
+    const hrHtmlContent = loadTemplate("job-application-(hr)", {
+      orgName,
+      hrNotificationTitle,
+      status,
+      email,
+      candidateName,
+      jobName,
+      applicationDate: new Date().toLocaleString(),
+    });
+
+    const candidateAndHr = [email, ...hrEmails];
+
+    const candidateEmailStatus = await sendMail(
+      organizationId,
+      candidateAndHr,
+      eventTitle,
+      hrHtmlContent
+    );
+
+    // Prepare response
+    if (candidateEmailStatus.status === 200) {
+      return NextResponse.json({ message: "Email sent successfully" });
+    } else {
+      return NextResponse.json(
+        {
+          error: candidateEmailStatus.message,
+        },
+        { status: candidateEmailStatus.status }
+      );
+    }
+  } catch (error: unknown) {
+    console.error("Error sending emails:", error);
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error ? error.message : "Unknown Error Occurred",
+      },
+      { status: 500 }
+    );
+  }
+}

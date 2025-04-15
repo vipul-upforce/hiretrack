@@ -19,20 +19,20 @@ interface IResend {
 }
 interface IResendObj {
   settings: IResend;
-  email: string;
+  email: string[];
   htmlContent: string;
   eventTitle: string;
 }
 interface ISmtpObj {
   settings: ISmtp;
-  email: string;
+  email: string[];
   htmlContent: string;
   eventTitle: string;
 }
 
 export const sendMail = async (
   orgID: string,
-  email: string,
+  email: string[],
   eventTitle: string,
   htmlContent: string
 ): Promise<{ status: number; message: string }> => {
@@ -140,7 +140,7 @@ const sendReSendMail = async (mailObj: IResendObj) => {
     const result = await resend.emails
       .send({
         from: mailObj.settings.resend_from,
-        to: [mailObj.email],
+        to: mailObj.email,
         subject: mailObj.eventTitle,
         replyTo: mailObj.settings.resend_reply_to,
         html: mailObj.htmlContent,

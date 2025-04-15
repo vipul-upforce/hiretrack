@@ -44,7 +44,7 @@ export interface ICandidate {
       email?: string;
     };
     assignedAt: Date;
-    deadline: Date;
+    time: Date;
   };
   customFields: {
     [key: string]:
@@ -69,6 +69,7 @@ export interface ICandidate {
     notes: string;
     failure?: string;
   };
+  isDeleted: boolean;
 }
 
 export const candidateSchema = new Schema(
@@ -141,7 +142,7 @@ export const candidateSchema = new Schema(
         ref: "User",
       },
       assignedAt: Date,
-      deadline: Date,
+      time: Date,
     },
     customFields: {
       type: Object,
@@ -165,6 +166,7 @@ export const candidateSchema = new Schema(
       notes: String,
       failure: String,
     },
+    isDeleted: Boolean,
   },
   {
     timestamps: true,

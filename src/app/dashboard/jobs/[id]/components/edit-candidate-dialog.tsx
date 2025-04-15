@@ -224,7 +224,7 @@ export function EditCandidateDialog({
               typeof values.assignment.interviewerId === "string"
                 ? values.assignment.interviewerId
                 : values.assignment.interviewerId._id.replace(/"/g, ""),
-            deadline: values.assignment.deadline,
+            time: values.assignment.time,
             assignedAt: values.assignment.assignedAt,
           };
         }
@@ -274,7 +274,7 @@ export function EditCandidateDialog({
       title = null;
 
       const newHistoryEntry: ICandidateHistory = {
-        dateTime: updatedCandidate?.assignment?.deadline || "",
+        dateTime: updatedCandidate?.assignment?.time || "",
         title: title,
         currentInterviewer: nextInterviewerId,
         previousInterviewer: previousInterviewerId,
@@ -365,7 +365,7 @@ export function EditCandidateDialog({
       ? {
           assignment: candidate.assignment.assignment,
           interviewerId,
-          deadline: candidate.assignment.deadline,
+          time: candidate.assignment.time,
           assignedAt: candidate.assignment.assignedAt,
         }
       : null,

@@ -19,9 +19,8 @@ import { useParams } from "next/navigation";
 import { useFetchJobByIdQuery } from "@/lib/features/job/jobApi";
 import {
   useUpdateCandidateMutation,
-  // useFetchCandidatesQuery,
-  // useLazyFetchCandidatesQuery,
   useFetchCandidatesQuery,
+  useDeleteCandidateMutation,
 } from "@/lib/features/candidate/candidateApi";
 import { toast } from "@/hooks/use-toast";
 import { Candidate, CandidateColumn, CandidateStatus } from "@/types/candidate";
@@ -38,6 +37,17 @@ import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 import { Breadcrumb } from "./components/breadcrumb";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 
 export default function JobProgressPage() {
   const { id } = useParams();
@@ -50,15 +60,16 @@ export default function JobProgressPage() {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [openRemarksFor, setOpenRemarksFor] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [candidateToDelete, setCandidateToDelete] = useState<string | null>(
+    null
+  );
+  const [deleteCandidate] = useDeleteCandidateMutation();
 
   const { data: job, isLoading: isJobLoading } = useFetchJobByIdQuery(
     id as string
   );
-  // const {
-  //   data: candidates,
-  //   isLoading: isCandidatesLoading,
-  //   refetch,
-  // } = useLazyFetchCandidatesQuery(id as string);
   const {
     data: candidates,
     isLoading: isCandidatesLoading,
@@ -120,14 +131,16 @@ export default function JobProgressPage() {
           id: lane as CandidateStatus,
           title: column?.title || lane,
           candidates: candidates.filter(
-            (candidate) => candidate.status === lane
+            (candidate) =>
+              candidate.status === lane &&
+              (showArchived ? candidate.isDeleted : !candidate.isDeleted)
           ),
         } as CandidateColumn;
       });
 
       setColumns(updatedColumns);
     }
-  }, [candidates, lanes]);
+  }, [candidates, lanes, showArchived]);
 
   // console.log(columns)
 
@@ -311,6 +324,44 @@ export default function JobProgressPage() {
     await refetch();
   };
 
+  const handleDeleteClick = (candidateId: string) => {
+    setCandidateToDelete(candidateId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!candidateToDelete) return;
+
+    try {
+      if (selectedCandidate) {
+        await deleteCandidate(selectedCandidate._id).unwrap();
+      }
+
+      setSelectedCandidate(null);
+      toast({
+        title: "Success",
+        description: `Candidate ${selectedCandidate?.isDeleted ? "Unarchived" : "Archived"} successfully`,
+      });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to update candidate status",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setCandidateToDelete(null);
+    }
+  };
+
   if (isJobLoading || isCandidatesLoading || isLanesLoading) {
     return <LoaderSkeleton />;
   }
@@ -325,14 +376,31 @@ export default function JobProgressPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Candidates for {job?.title}</CardTitle>
-          <div className="flex space-x-2">
-            <CreateLaneDialog onAddLane={handleAddLane} />
-            <CreateCandidateDialog
-              jobId={id as string}
-              isOpen={isDialogOpen}
-              setIsOpen={setIsDialogOpen}
-              resumeFile={droppedFileData}
-            />
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="showArchived"
+                checked={showArchived}
+                onCheckedChange={(checked) =>
+                  setShowArchived(checked as boolean)
+                }
+              />
+              <label
+                htmlFor="showArchived"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Show Archived
+              </label>
+            </div>
+            <div className="flex space-x-2">
+              <CreateLaneDialog onAddLane={handleAddLane} />
+              <CreateCandidateDialog
+                jobId={id as string}
+                isOpen={isDialogOpen}
+                setIsOpen={setIsDialogOpen}
+                resumeFile={droppedFileData}
+              />
+            </div>
           </div>
         </CardHeader>
       </Card>
@@ -444,6 +512,10 @@ export default function JobProgressPage() {
                                       openRemarksFor === candidate._id
                                     }
                                     setOpenRemarksFor={setOpenRemarksFor}
+                                    onDeleteClick={(id: string) => {
+                                      setSelectedCandidate(candidate);
+                                      handleDeleteClick(id);
+                                    }}
                                   />
                                 ))}
                                 {provided.placeholder}
@@ -468,6 +540,35 @@ export default function JobProgressPage() {
         onOpenChange={setIsDetailsOpen}
         onUpdate={handleCandidateUpdate}
       />
+
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {selectedCandidate?.isDeleted
+                ? "This will unarchive this candidate. They will be visible in the regular view."
+                : "This will archive this candidate. They will be hidden from the regular view."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className={
+                !selectedCandidate?.isDeleted
+                  ? "bg-destructive hover:bg-destructive/90"
+                  : "text-blue-500 bg-blue hover:bg-blue hover:text-blue-500/90"
+              }
+            >
+              {selectedCandidate?.isDeleted ? "Unarchive" : "Archive"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

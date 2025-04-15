@@ -66,7 +66,7 @@ interface User {
 
 interface FormValues {
   interviewerId: string;
-  deadline: dayjs.Dayjs;
+  time: dayjs.Dayjs;
   remark: string;
   rating: number | null;
   attachments: Attachment[];
@@ -75,7 +75,7 @@ interface FormValues {
 // Validation schema
 const validationSchema = Yup.object({
   interviewerId: Yup.string().required("Interviewer is required"),
-  deadline: Yup.date().min(new Date(), "Past date is not allowed").nullable(),
+  time: Yup.date().min(new Date(), "Past date is not allowed").nullable(),
   remark: Yup.string(),
   rating: Yup.number().nullable(),
   attachments: Yup.array(),
@@ -124,9 +124,7 @@ export function AssignCandidateDialog({
       typeof candidate.assignment?.interviewerId === "string"
         ? candidate.assignment.interviewerId
         : candidate.assignment?.interviewerId?._id || "",
-    deadline: candidate.assignment
-      ? dayjs(candidate.assignment.deadline)
-      : dayjs(),
+    time: candidate.assignment ? dayjs(candidate.assignment.time) : dayjs(),
     remark: "",
     rating: null,
     attachments: [],
@@ -178,7 +176,7 @@ export function AssignCandidateDialog({
             : candidate.remarks,
         assignment: {
           interviewerId: values.interviewerId,
-          deadline: values.deadline.toString(),
+          time: values.time.toString(),
           assignedAt: dayjs().toString(),
         },
         attachments: [...candidate.attachments, ...values.attachments],
@@ -215,7 +213,7 @@ export function AssignCandidateDialog({
       title = null;
 
       const newHistoryEntry: ICandidateHistory = {
-        dateTime: updatedCandidate.assignment.deadline,
+        dateTime: updatedCandidate.assignment.time,
         currentInterviewer: nextInterviewerId,
         previousInterviewer: previousInterviewerId,
         assignmentBy: user!.id,
@@ -391,21 +389,18 @@ export function AssignCandidateDialog({
                   </div>
 
                   <div className="grid gap-2">
-                    <Label htmlFor="deadline">Deadline</Label>
-                    <Field name="deadline">
+                    <Label htmlFor="time">Time</Label>
+                    <Field name="time">
                       {({ field }: FieldProps) => (
                         <DateTimePicker
                           value={field.value}
-                          onChange={(date) => setFieldValue("deadline", date)}
+                          onChange={(date) => setFieldValue("time", date)}
                         />
                       )}
                     </Field>
-                    {typeof errors.deadline === "string" &&
-                      touched.deadline && (
-                        <div className="text-red-500 text-sm">
-                          {errors.deadline}
-                        </div>
-                      )}
+                    {typeof errors.time === "string" && touched.time && (
+                      <div className="text-red-500 text-sm">{errors.time}</div>
+                    )}
                   </div>
 
                   <div className="space-y-4">
@@ -555,7 +550,7 @@ export function AssignCandidateDialog({
                       variant="outline"
                       onClick={handleUnassign}
                     >
-                      Unassign
+                      Mark As Done
                     </Button>
                   )}
                 </div>
@@ -581,10 +576,10 @@ export function AssignCandidateDialog({
       <Dialog open={confirmUnassignOpen} onOpenChange={setConfirmUnassignOpen}>
         <DialogContent className="sm:max-w-[300px]">
           <DialogHeader>
-            <DialogTitle>Confirm Unassign</DialogTitle>
+            <DialogTitle>Confirm Mark As Done</DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <p>Are you sure you want to unassign this interviewer?</p>
+            <p>Are you sure you want to Mark As Done this interviewer?</p>
           </div>
           <DialogFooter>
             <Button
