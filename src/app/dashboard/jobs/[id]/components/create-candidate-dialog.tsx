@@ -281,7 +281,7 @@ export function CreateCandidateDialog({
 
       if (createdCandidate?.assignment?.interviewerId) {
         const newHistoryEntry: ICandidateHistory = {
-          dateTime: createdCandidate?.assignment?.time || "",
+          dateTime: new Date().toLocaleString() || "",
           title:
             typeof createdCandidate?.assignment?.interviewerId === "object" &&
             createdCandidate?.assignment?.interviewerId?.name

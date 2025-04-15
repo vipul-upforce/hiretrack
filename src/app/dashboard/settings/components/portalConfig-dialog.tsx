@@ -68,7 +68,7 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
     try {
       // Parse the payload as JSON
       const parsedPayload = payload;
-      debugger;
+      // debugger;
       const encryptedPayload = CryptoJS.AES.encrypt(
         JSON.stringify(parsedPayload),
         JWT_SECRET

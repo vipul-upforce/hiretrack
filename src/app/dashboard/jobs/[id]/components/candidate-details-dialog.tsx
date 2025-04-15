@@ -31,6 +31,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import {
   useLazyFetchCandidatesQuery,
+  useUpdateCandidateHistoryMutation,
   useUpdateCandidateMutation,
 } from "@/lib/features/candidate/candidateApi";
 import { useParams } from "next/navigation";
@@ -111,6 +112,7 @@ export function CandidateDetailsDialog({
   const [isAssigningJob, setIsAssigningJob] = useState(false);
   const [user, setuser] = useState<User | null>(null);
   const [confirmUnassignOpen, setConfirmUnassignOpen] = useState(false);
+  const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
 
   useEffect(() => {
     (async () => {
@@ -270,6 +272,37 @@ export function CandidateDetailsDialog({
         } else {
           refetchAssignment?.();
         }
+
+        const previousInterviewerId =
+          typeof localCandidate?.assignment?.interviewerId === "object"
+            ? Object(localCandidate.assignment.interviewerId._id)
+            : null;
+        const newHistoryEntry: ICandidateHistory = {
+          dateTime: new Date().toLocaleString(),
+          currentInterviewer: null,
+          previousInterviewer: previousInterviewerId,
+          assignmentBy: user!.id,
+          title: null,
+          note: {
+            description: "",
+            date: "",
+            rating: 0,
+            userId: null,
+          },
+          attachments: [],
+        };
+        // debugger;
+        await updateCandidateHistory({
+          candidateId: updatedCandidate._id || "",
+          jobId: localCandidate?.jobId._id || localCandidate?.jobId || "",
+          newEntry: newHistoryEntry,
+        }).unwrap();
+
+        if (pathname == "/dashboard/calendar") {
+          setIsAssigning(false);
+          onOpenChange(false);
+        }
+
         toast({
           title: "Success",
           description: "Interviewer has been unassigned successfully",
@@ -631,8 +664,8 @@ export function CandidateDetailsDialog({
               <ol className="relative border-s border-gray-200 dark:border-gray-700">
                 {validTimeLineItems.length > 0
                   ? validTimeLineItems.reverse().map((interview, i) => {
-                      const timeDate = formatDate(interview.dateTime);
-                      const timeTime = formatTime(interview.dateTime);
+                      const timeDate = interview.dateTime.split(",")[0];
+                      const timeTime = interview.dateTime.split(",")[1];
 
                       return (
                         <div key={i} className="mb-10 ms-4">
@@ -640,30 +673,43 @@ export function CandidateDetailsDialog({
                           <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500 flex flex-row items-center">
                             {timeDate} <Dot /> {timeTime}
                           </time>
-                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white capitalize flex flex-row itmes-center justify-start">
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white capitalize flex flex-row items-center justify-start">
                             {(interview.title !== "" || !interview.title) &&
                             interview.title !== "Assigned to Job" ? (
                               <div className="flex flex-row items-start justify-between w-full">
                                 <div className="flex flex-row">
-                                  {interview.previousInterviewer &&
-                                  typeof interview.previousInterviewer ===
+                                  {interview.currentInterviewer &&
+                                  typeof interview.currentInterviewer ===
                                     "object" &&
-                                  "name" in interview.previousInterviewer ? (
+                                  "name" in interview.currentInterviewer ? (
+                                    <>
+                                      {interview.previousInterviewer &&
+                                      typeof interview.previousInterviewer ===
+                                        "object" &&
+                                      "name" in
+                                        interview.previousInterviewer ? (
+                                        <p className="pl-1">
+                                          {interview.previousInterviewer.name +
+                                            " → " +
+                                            interview.currentInterviewer.name}
+                                        </p>
+                                      ) : (
+                                        <p className="pl-1">
+                                          {`Assigned to ${interview.currentInterviewer.name}`}
+                                        </p>
+                                      )}
+                                    </>
+                                  ) : (
                                     <p className="pl-1">
-                                      {interview.previousInterviewer.name +
-                                        " → "}
+                                      Unassigned from{" "}
+                                      {interview?.previousInterviewer &&
+                                        typeof interview.previousInterviewer ===
+                                          "object" &&
+                                        "name" in
+                                          interview.previousInterviewer &&
+                                        interview.previousInterviewer.name}
                                     </p>
-                                  ) : null}
-                                  <p className="pl-1">
-                                    {interview.currentInterviewer &&
-                                    typeof interview.currentInterviewer ===
-                                      "object" &&
-                                    "name" in interview.currentInterviewer
-                                      ? interview.previousInterviewer
-                                        ? interview.currentInterviewer.name
-                                        : `Assigned to ${interview.currentInterviewer.name}`
-                                      : ""}
-                                  </p>
+                                  )}
                                 </div>
                                 <div className="flex flex-col items-end">
                                   <p className="text-xs font-light text-gray-400">
@@ -884,7 +930,13 @@ export function CandidateDetailsDialog({
           setLocalCandidate={setLocalCandidate}
           refetchAssignment={refetchAssignment}
           onSuccess={() => {
-            refetch();
+            // debugger;
+            if (pathname == "/dashboard/calendar") {
+              setIsAssigning(false);
+              onOpenChange(false);
+            } else {
+              refetch();
+            }
           }}
         />
       )}

@@ -213,7 +213,7 @@ export function AssignCandidateDialog({
       title = null;
 
       const newHistoryEntry: ICandidateHistory = {
-        dateTime: updatedCandidate.assignment.time,
+        dateTime: new Date().toLocaleString(),
         currentInterviewer: nextInterviewerId,
         previousInterviewer: previousInterviewerId,
         assignmentBy: user!.id,
@@ -247,8 +247,8 @@ export function AssignCandidateDialog({
       });
       if (pathname !== "/dashboard" && pathname !== "/dashboard/calendar") {
         refetch();
-        onSuccess();
       }
+      onSuccess();
     } catch (error) {
       if (typeof error === "object" && error !== null && "data" in error) {
         const errorData = (error as { data?: { error?: string } }).data;
@@ -296,16 +296,17 @@ export function AssignCandidateDialog({
       } else {
         refetchAssignment?.();
       }
+      onSuccess();
       const previousInterviewerId =
         typeof candidate.assignment?.interviewerId === "object"
           ? Object(candidate.assignment.interviewerId._id)
           : null;
       const newHistoryEntry: ICandidateHistory = {
-        dateTime: "",
+        dateTime: new Date().toLocaleString(),
         currentInterviewer: null,
         previousInterviewer: previousInterviewerId,
         assignmentBy: user!.id,
-        title: null,
+        title: "Unassigned",
         note: {
           description: "",
           date: "",
