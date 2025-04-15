@@ -164,11 +164,11 @@ export function CandidateCard({
               {typeof candidate.assignment?.interviewerId === "object" &&
                 candidate.assignment?.interviewerId?.name}
             </Badge>
-            {candidate.assignment?.deadline && (
-              <Badge>{candidate.assignment?.deadline.split("T")[0]}</Badge>
+            {candidate.assignment?.time && (
+              <Badge>{candidate.assignment?.time.split("T")[0]}</Badge>
             )}
-            {candidate.assignment?.deadline && (
-              <Badge>{formatTime(candidate.assignment?.deadline)} </Badge>
+            {candidate.assignment?.time && (
+              <Badge>{formatTime(candidate.assignment?.time)} </Badge>
             )}
           </div>
         )}
@@ -301,11 +301,11 @@ export function CandidateCard({
                 {typeof candidate.assignment?.interviewerId === "object" &&
                   candidate.assignment?.interviewerId?.name}
               </Badge>
-              {candidate.assignment?.deadline && (
-                <Badge>{candidate.assignment?.deadline.split("T")[0]}</Badge>
+              {candidate.assignment?.time && (
+                <Badge>{candidate.assignment?.time.split("T")[0]}</Badge>
               )}
-              {candidate.assignment?.deadline && (
-                <Badge>{formatTime(candidate.assignment?.deadline)} </Badge>
+              {candidate.assignment?.time && (
+                <Badge>{formatTime(candidate.assignment?.time)} </Badge>
               )}
             </div>
           )}

@@ -30,26 +30,24 @@ export const candidateSchema = (customFields: Yup.Schema<unknown>) =>
     // remarks: Yup.string(),
     attachments: Yup.array().of(Yup.mixed()),
     assignee: Yup.string().nullable(),
-    deadline: Yup.date().nullable(),
+    time: Yup.date().nullable(),
     assignment: Yup.object()
       .shape({
         interviewerId: Yup.string().nullable(),
-        deadline: Yup.date()
-          .min(new Date(), "Past date is not allowed")
-          .nullable(),
+        time: Yup.date().min(new Date(), "Past date is not allowed").nullable(),
       })
       .nullable()
       .test(
-        "interviewer-required-if-deadline",
-        "Interviewer ID is required if a deadline is set",
+        "interviewer-required-if-time",
+        "Interviewer ID is required if a time is set",
         function (value) {
           if (
-            value?.deadline &&
+            value?.time &&
             (!value.interviewerId || value.interviewerId === "-1")
           ) {
             return this.createError({
               path: "assignment.interviewerId",
-              message: "Interviewer ID is required when a deadline is set",
+              message: "Interviewer ID is required when a time is set",
             });
           }
           return true;
@@ -77,10 +75,10 @@ export interface CandidateFormValues {
   // remarks: string;
   attachments: File[];
   assignee?: string;
-  deadline?: Date;
+  time?: Date;
   assignment?: {
     interviewerId: string | { _id: string; name: string; email: string } | null;
-    deadline: Date | null;
+    time: Date | null;
   } | null;
   email?: string;
 }

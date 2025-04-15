@@ -594,14 +594,14 @@ export function CandidateDetailsDialog({
               <ol className="relative border-s border-gray-200 dark:border-gray-700">
                 {validTimeLineItems.length > 0
                   ? validTimeLineItems.reverse().map((interview, i) => {
-                      const deadlineDate = formatDate(interview.dateTime);
-                      const deadlineTime = formatTime(interview.dateTime);
+                      const timeDate = formatDate(interview.dateTime);
+                      const timeTime = formatTime(interview.dateTime);
 
                       return (
                         <div key={i} className="mb-10 ms-4">
                           <div className="absolute w-3 h-3 bg-gray-200 rounded-full mt-1.5 -start-1.5 border border-white dark:border-gray-900 dark:bg-gray-700"></div>
                           <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500 flex flex-row items-center">
-                            {deadlineDate} <Dot /> {deadlineTime}
+                            {timeDate} <Dot /> {timeTime}
                           </time>
                           <h3 className="text-lg font-semibold text-gray-900 dark:text-white capitalize flex flex-row itmes-center justify-start">
                             {(interview.title !== "" || !interview.title) &&
@@ -716,9 +716,8 @@ export function CandidateDetailsDialog({
                     </span>
                   </div>
                   <div>
-                    Interview Date:{" "}
-                    {formatDate(localCandidate.assignment.deadline)} on{" "}
-                    {formatTime(localCandidate.assignment.deadline)}
+                    Interview Date: {formatDate(localCandidate.assignment.time)}{" "}
+                    on {formatTime(localCandidate.assignment.time)}
                   </div>
                 </div>
               ) : (

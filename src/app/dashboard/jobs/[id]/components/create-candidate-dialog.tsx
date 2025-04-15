@@ -87,7 +87,7 @@ const getInitialValues = (customFields: CustomFieldValues) => ({
   remarks: "",
   attachments: [] as File[],
   assignee: "",
-  deadline: undefined,
+  time: undefined,
   customFields: { ...customFields },
   email: "",
 });
@@ -231,10 +231,10 @@ export function CreateCandidateDialog({
           parseFloat(String(values.noticePeriod)).toFixed(0)
         ),
         email: values.email || parsedResumeData?.profile?.email,
-        ...(values.assignee && values.deadline
+        ...(values.assignee && values.time
           ? {
               assignee: values.assignee === "-1" ? "" : values.assignee,
-              deadline: values.deadline,
+              time: values.time,
             }
           : {}),
         resume: resumeBase64
@@ -281,7 +281,7 @@ export function CreateCandidateDialog({
 
       if (createdCandidate?.assignment?.interviewerId) {
         const newHistoryEntry: ICandidateHistory = {
-          dateTime: createdCandidate?.assignment?.deadline || "",
+          dateTime: createdCandidate?.assignment?.time || "",
           title:
             typeof createdCandidate?.assignment?.interviewerId === "object" &&
             createdCandidate?.assignment?.interviewerId?.name

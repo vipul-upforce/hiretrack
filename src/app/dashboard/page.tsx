@@ -27,7 +27,7 @@ export interface Assignment {
   status: string;
   assignment: {
     assignedAt: string;
-    deadline: string;
+    time: string;
     name: string;
     interviewerId: {
       _id: string;
@@ -149,15 +149,13 @@ export default function DashboardPage() {
   });
 
   const todayAssignments = filteredAssignments?.filter((assignment) => {
-    const assignmentDate = new Date(
-      assignment.assignment.deadline
-    ).toDateString();
+    const assignmentDate = new Date(assignment.assignment.time).toDateString();
     const today = new Date().toDateString();
     return assignmentDate === today;
   });
 
   const thisWeekAssignments = filteredAssignments?.filter((assignment) => {
-    const assignmentDate = new Date(assignment.assignment.deadline);
+    const assignmentDate = new Date(assignment.assignment.time);
     const startOfWeek = new Date();
     startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
     const endOfWeek = new Date(startOfWeek);
@@ -324,11 +322,11 @@ export default function DashboardPage() {
                       <p className="text-sm font-semibold capitalize">
                         Date:{" "}
                         {new Date(
-                          assignment?.assignment?.deadline
+                          assignment?.assignment?.time
                         ).toLocaleDateString() || "N/A"}
                           T{" "}
                         {new Date(
-                          assignment?.assignment?.deadline
+                          assignment?.assignment?.time
                         ).toLocaleTimeString([], {
                           hour: "2-digit",
                           minute: "2-digit",

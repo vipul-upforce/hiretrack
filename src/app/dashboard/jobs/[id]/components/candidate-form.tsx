@@ -320,31 +320,31 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Deadline</Label>
+                  <Label>time</Label>
                   <DatePicker
                     date={
-                      values.assignment?.deadline
-                        ? new Date(values.assignment.deadline)
+                      values.assignment?.time
+                        ? new Date(values.assignment.time)
                         : undefined
                     }
                     onDateChange={(date) =>
-                      setFieldValue("assignment.deadline", date)
+                      setFieldValue("assignment.time", date)
                     }
                     onBlur={() => {
-                      if (values.assignment?.deadline) {
+                      if (values.assignment?.time) {
                         setFieldValue(
-                          "assignment.deadline",
-                          new Date(values.assignment.deadline)
+                          "assignment.time",
+                          new Date(values.assignment.time)
                         );
                       }
                     }}
-                    placeholder="Select deadline"
+                    placeholder="Select time"
                   />
                   {errors?.assignment && (
                     <p className="text-sm text-red-500">
                       {String(
                         errors.assignment[
-                          "deadline" as keyof typeof errors.assignment
+                          "time" as keyof typeof errors.assignment
                         ] || ""
                       )}
                     </p>
