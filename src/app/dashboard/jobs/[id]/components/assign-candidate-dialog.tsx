@@ -298,6 +298,29 @@ export function AssignCandidateDialog({
       } else {
         refetchAssignment?.();
       }
+      const previousInterviewerId =
+        typeof candidate.assignment?.interviewerId === "object"
+          ? Object(candidate.assignment.interviewerId._id)
+          : null;
+      const newHistoryEntry: ICandidateHistory = {
+        dateTime: "",
+        currentInterviewer: null,
+        previousInterviewer: previousInterviewerId,
+        assignmentBy: user!.id,
+        title: null,
+        note: {
+          description: "",
+          date: "",
+          rating: 0,
+          userId: null,
+        },
+        attachments: [],
+      };
+      await updateCandidateHistory({
+        candidateId: updatedCandidate._id,
+        jobId: candidate.jobId._id || candidate.jobId,
+        newEntry: newHistoryEntry,
+      }).unwrap();
       toast({
         title: "Success",
         description: "Interviewer has been unassigned successfully",
