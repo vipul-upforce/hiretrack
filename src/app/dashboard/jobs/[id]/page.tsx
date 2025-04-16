@@ -65,6 +65,8 @@ export default function JobProgressPage() {
   const [candidateToDelete, setCandidateToDelete] = useState<string | null>(
     null
   );
+  const [isConfirmLaneDeleteOpen, setIsConfirmLaneDeleteOpen] = useState(false);
+  const [laneToDelete, setLaneToDelete] = useState<string | null>(null);
   const [deleteCandidate] = useDeleteCandidateMutation();
 
   const { data: job, isLoading: isJobLoading } = useFetchJobByIdQuery(
@@ -287,7 +289,10 @@ export default function JobProgressPage() {
     }
   };
 
-  const handleDeleteLane = async (laneId: string) => {
+  const handleDeleteLane = () => {
+    setIsConfirmLaneDeleteOpen(true);
+  };
+  const handleConfirmDeleteLane = async (laneId: string) => {
     if (!user?.id) return;
 
     try {
@@ -321,6 +326,7 @@ export default function JobProgressPage() {
         });
       }
     }
+    setIsConfirmLaneDeleteOpen(false);
     await refetch();
   };
 
@@ -446,7 +452,10 @@ export default function JobProgressPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleDeleteLane(column.id)}
+                              onClick={() => {
+                                handleDeleteLane();
+                                setLaneToDelete(column.id);
+                              }}
                               className="h-8 w-8 p-0"
                             >
                               <Trash2 className="h-4 w-4 text-muted-foreground" />
@@ -565,6 +574,35 @@ export default function JobProgressPage() {
               }
             >
               {selectedCandidate?.isDeleted ? "Unarchive" : "Archive"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={isConfirmLaneDeleteOpen}
+        onOpenChange={setIsConfirmLaneDeleteOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This ill remove the lane from all the jobs in this organization.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() =>
+                laneToDelete && handleConfirmDeleteLane(laneToDelete)
+              }
+              className={
+                !selectedCandidate?.isDeleted
+                  ? "bg-destructive hover:bg-destructive/90"
+                  : "text-blue-500 bg-blue hover:bg-blue hover:text-blue-500/90"
+              }
+            >
+              delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

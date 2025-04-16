@@ -102,21 +102,21 @@ export function CandidateCard({
             )}
           </div>
         )}
-        {candidate.scores && candidate.scores.overall && (
+        {candidate.scores && candidate.scores.overall !== undefined && (
           <div className="capitalize flex gap-2 py-2">
-            {candidate.scores.overall && (
+            {candidate.scores.overall >= 0 && (
               <CandidateScoreBadge
                 score={candidate.scores.overall}
                 category="Overall"
               />
             )}
-            {candidate.scores.experience && (
+            {candidate.scores.experience >= 0 && (
               <CandidateScoreBadge
                 score={candidate.scores.experience}
                 category="Experience"
               />
             )}
-            {candidate.scores.skills && (
+            {candidate.scores.skills >= 0 && (
               <CandidateScoreBadge
                 score={candidate.scores.skills}
                 category="Skills"
@@ -229,21 +229,21 @@ export function CandidateCard({
               )}
             </div>
           )}
-          {candidate.scores && candidate.scores.overall && (
+          {candidate.scores && candidate.scores.overall !== undefined && (
             <div className="capitalize flex gap-2 py-2">
-              {candidate.scores.overall && (
+              {candidate.scores.overall >= 0 && (
                 <CandidateScoreBadge
                   score={candidate.scores.overall}
                   category="Overall"
                 />
               )}
-              {candidate.scores.experience && (
+              {candidate.scores.experience >= 0 && (
                 <CandidateScoreBadge
                   score={candidate.scores.experience}
                   category="Experience"
                 />
               )}
-              {candidate.scores.skills && (
+              {candidate.scores.skills >= 0 && (
                 <CandidateScoreBadge
                   score={candidate.scores.skills}
                   category="Skills"

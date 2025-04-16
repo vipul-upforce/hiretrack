@@ -7,13 +7,14 @@ const DashboardLoader = () => (
         className="rounded-xl border bg-card text-card-foreground shadow"
         key={i}
       >
-        <div className="flex flex-col space-y-1.5 p-6">
+        {/* <div className="flex flex-col space-y-1.5 p-6">
           <div className="text-lg font-semibold py-2 leading-none tracking-tight">
             <Skeleton className="w-1/2 h-[20px] rounded-lg" />
           </div>
-        </div>
-        <div className="p-6 pt-0">
-          <div className="space-y-2">
+        </div> */}
+        {/* <div className="p-2 "> */}
+        <Skeleton className="w-full h-[200px] p-6 rounded-lg" />
+        {/* <div className="space-y-2">
             <div className="text-sm text-muted-foreground flex flex-row justify-start items-center">
               Position: <Skeleton className="w-1/3 h-[16px] rounded-lg" />
             </div>
@@ -38,8 +39,8 @@ const DashboardLoader = () => (
               Date:
               <Skeleton className="w-1/3 h-[16px] rounded-lg" />
             </div>
-          </div>
-        </div>
+          </div> */}
+        {/* </div> */}
       </div>
     ))}
   </div>

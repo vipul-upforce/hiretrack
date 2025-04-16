@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff } from "lucide-react";
+import { useResetPasswordbyUserMutation } from "@/lib/features/auth/authApi";
 
 const ResetPasswordSchema = Yup.object().shape({
   password: Yup.string()
@@ -35,6 +36,7 @@ function ResetPasswordContent() {
   const [token, setToken] = useState<string>("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [resetPasswordbyUser] = useResetPasswordbyUserMutation();
 
   useEffect(() => {
     const tokenParam = searchParams.get("token");
@@ -50,16 +52,7 @@ function ResetPasswordContent() {
     { setStatus }: { setStatus: (message: string) => void }
   ) => {
     try {
-      const response = await fetch("/api/auth/reset-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, password: values.password }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to reset password");
-      }
+      await resetPasswordbyUser({ password: values.password, token });
 
       toast({
         title: "Success",
