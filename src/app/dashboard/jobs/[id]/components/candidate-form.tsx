@@ -141,6 +141,7 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
             </Label>
             <Input
               id="name"
+              placeholder="Enter name"
               {...nameField}
               className={
                 nameMeta.error && nameMeta.touched ? "border-red-500" : ""
@@ -159,6 +160,7 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
             <Input
               id="email"
               type="email"
+              placeholder="Enter email"
               {...emailField}
               className={
                 emailMeta.error && emailMeta.touched ? "border-red-500" : ""
@@ -175,6 +177,7 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
             </Label>
             <Input
               id="location"
+              placeholder="Enter Location"
               {...locationField}
               className={
                 locationMeta.error && locationMeta.touched
@@ -191,6 +194,7 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
             <Label htmlFor="experience">Experience (years)</Label>
             <Input
               id="experience"
+              placeholder="Enter experience in years..."
               type="number"
               step="0.01"
               {...experienceField}
@@ -207,9 +211,10 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
 
           <div className="space-y-2">
             <Label>
-              Skills <span className="text-red-500">*</span>
+              Skills (Hit Enter to Add) <span className="text-red-500">*</span>
             </Label>
             <ChipInput
+              placeholder="Hit Enter to Add"
               value={skillsField.value}
               onChange={(skills) => setFieldValue("skills", skills)}
               onSuggestionClick={(suggestion) => {
@@ -231,6 +236,7 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
             <Label htmlFor="expectedCTC">Expected CTC (LPA)</Label>
             <Input
               id="expectedCTC"
+              placeholder="in LPA..."
               type="number"
               {...expectedCTCField}
               className={
@@ -248,6 +254,7 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
             <Label htmlFor="currentCTC">Current CTC (LPA)</Label>
             <Input
               id="currentCTC"
+              placeholder="in LPA..."
               type="number"
               {...currentCTCField}
               className={
@@ -265,6 +272,7 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
             <Label htmlFor="noticePeriod">Notice Period (days)</Label>
             <Input
               id="noticePeriod"
+              placeholder="in days..."
               type="number"
               {...noticePeriodField}
               className={

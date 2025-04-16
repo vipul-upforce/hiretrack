@@ -126,7 +126,8 @@ export function JobForm(props: JobFormProps) {
 
       <div className="space-y-2">
         <Label>
-          Required Skills <span className="text-red-500">*</span>
+          Required Skills (Hit Enter to add){" "}
+          <span className="text-red-500">*</span>
         </Label>
         <ChipInput
           value={values.skills}

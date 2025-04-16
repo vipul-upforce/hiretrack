@@ -103,6 +103,10 @@ export function FileUpload({
         );
         setter?.(updatedFiles);
       }
+      setDroppedFiles((prev = []) => {
+        const combined = [...prev, newName];
+        return Array.from(new Set(combined));
+      });
     }
   };
 
