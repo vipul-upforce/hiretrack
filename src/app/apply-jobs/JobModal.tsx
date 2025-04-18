@@ -41,8 +41,14 @@ export default function JobModal({
 
   if (!job) return null;
 
-  const handleSignupRedirect = () => {
-    router.push("/" + orgName + "/signup");
+  const handleSignupRedirect = async () => {
+    const data = await fetch("/api/organization");
+    const allowance = await data.json();
+    console.log("@@@@@@@@@@@@ ALLOWANCE: ", allowance);
+    if (!allowance.allow) {
+      return router.push("/signup");
+    }
+    router.push("/signup?orgName=" + orgName);
   };
 
   return (

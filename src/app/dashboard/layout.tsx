@@ -81,6 +81,17 @@ export default function DashboardLayout({
     refetch,
   } = useGetPortalConfigsQuery(undefined);
   const { setUserLoggedIn } = useCustomFields();
+  const [hasMultipleOrgs, seHasMultipleOrgs] = useState(false);
+
+  useEffect(() => {
+    async function checkAllowance() {
+      const data = await fetch("/api/organization");
+      const allowance = await data.json();
+      console.log("@@@@@@@@@@@@ ALLOWANCE: ", allowance);
+      seHasMultipleOrgs(allowance.allow);
+    }
+    checkAllowance();
+  }, []);
 
   // Use useEffect to set user data from cookies
   useEffect(() => {
@@ -130,7 +141,12 @@ export default function DashboardLayout({
     if (parsedUser) {
       // debugger;
       setUserData(parsedUser);
-      const url = `${window.location.origin}/apply-jobs?orgName=${parsedUser.organizationInfo?.name}`;
+      let url;
+      if (hasMultipleOrgs) {
+        url = `${window.location.origin}/apply-jobs?orgName=${parsedUser.organizationInfo?.name}`;
+      } else {
+        url = `${window.location.origin}/apply-jobs`;
+      }
       navigator.clipboard
         .writeText(url)
         .then(() => {

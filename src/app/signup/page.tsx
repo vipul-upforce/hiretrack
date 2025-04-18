@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation"; // Add useSearchParams
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
 import {
@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { FormikErrors, FormikTouched, FieldProps } from "formik";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useCandidateSignupMutation } from "@/lib/features/candidate/candidateApi";
 import ReCAPTCHA from "react-google-recaptcha";
@@ -27,7 +27,6 @@ interface SignupFormValues {
   name: string;
   confirmPassword: string;
   organizationInfo?: { name: string };
-  // orgName: string;
 }
 
 const SignupSchema = Yup.object().shape({
@@ -60,70 +59,77 @@ const SignupSchema = Yup.object().shape({
 
 export default function Signup() {
   const router = useRouter();
+  const searchParams = useSearchParams(); // Use searchParams to get query string
   const { toast } = useToast();
   const [signup, { isLoading }] = useCandidateSignupMutation();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  // const [orgName, setOrgName] = useState<string>();
-  const [captcha, setCaptcha] = useState<string>();
+  const [orgName, setOrgName] = useState<string | undefined>();
+  const [captcha, setCaptcha] = useState<string | undefined>();
 
   const initialValues: SignupFormValues = {
     email: "",
     password: "",
     name: "",
     confirmPassword: "",
-    // orgName: "",
   };
 
-  // useEffect(() => {
-  //   if (typeof window !== "undefined") {
-  //     const orgname = decodeURIComponent(
-  //       window.location.pathname.split("/")[1]
-  //     );
-  //     setOrgName(orgname);
-  //   }
-  // }, []);
+  // Extract orgName from query string
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const orgNameFromQuery = searchParams.get("orgName");
+      if (orgNameFromQuery) {
+        setOrgName(decodeURIComponent(orgNameFromQuery));
+      }
+    }
+  }, [searchParams]);
+  useEffect(() => {
+    async function checkAllowance() {
+      const data = await fetch("/api/organization");
+      const allowance = await data.json();
+      console.log("@@@@@@@@@@@@ ALLOWANCE: ", allowance);
+      if (!allowance.allow) {
+        router.push("/signup");
+      }
+    }
+    checkAllowance();
+  }, []);
 
   const handleSubmit = async (
     values: SignupFormValues,
     { setStatus }: { setStatus: (message: string) => void }
   ) => {
     try {
-      try {
-        const signupData = { ...values, name: values.name.trim() };
-        const response = await signup(signupData).unwrap();
+      const signupData = {
+        ...values,
+        name: values.name.trim(),
+        ...(orgName && { organizationInfo: { name: orgName } }),
+      };
+      const response = await signup(signupData).unwrap();
 
-        if (response.user) {
-          toast({
-            title: "Success",
-            description: "Account created successfully",
-            variant: "default",
-          });
-          router.push("/auth/login");
-        } else {
-          throw new Error("No user data received");
-        }
-      } catch (error: unknown) {
-        if (error && typeof error === "object" && "data" in error) {
-          const errorMessage =
-            (error.data as { error: string }).error ||
-            "Failed to parse user data from cookie";
-          throw new Error(errorMessage);
-        } else {
-          throw new Error("Failed to parse user data from cookie");
-        }
-      }
-      // }
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        const errorMessage = err.message || "Failed to create account";
-        setStatus(errorMessage);
+      if (response.user) {
         toast({
-          title: "Error",
-          description: errorMessage,
-          variant: "destructive",
+          title: "Success",
+          description: "Account created successfully",
+          variant: "default",
         });
+        router.push("/auth/login");
+      } else {
+        throw new Error("No user data received");
       }
+    } catch (error: unknown) {
+      let errorMessage = "Failed to create account";
+      if (error && typeof error === "object" && "data" in error) {
+        errorMessage =
+          (error.data as { error: string }).error ||
+          "Failed to parse user data from cookie";
+      }
+      setStatus(errorMessage);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
     }
   };
 
@@ -133,9 +139,9 @@ export default function Signup() {
         <CardHeader>
           <CardTitle className="text-2xl font-bold flex flex-row justify-between items-center">
             Create Account
-            {/* {orgName && (
+            {orgName && (
               <span
-                className="text-lg font-medium text-gray-700 "
+                className="text-lg font-medium text-gray-700"
                 style={{
                   animation: orgName
                     ? "fadeInOrg 0.9s ease-in-out forwards"
@@ -144,7 +150,7 @@ export default function Signup() {
               >
                 {orgName}
               </span>
-            )} */}
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -242,7 +248,11 @@ export default function Signup() {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className={`absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent ${errors.password && touched.password ? "translate-y-[-25px]" : ""}`}
+                      className={`absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent ${
+                        errors.password && touched.password
+                          ? "translate-y-[-25px]"
+                          : ""
+                      }`}
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {!showPassword ? (
@@ -284,7 +294,11 @@ export default function Signup() {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className={`absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent ${errors.confirmPassword && touched.confirmPassword ? "translate-y-[-25px]" : ""}`}
+                      className={`absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent ${
+                        errors.confirmPassword && touched.confirmPassword
+                          ? "translate-y-[-25px]"
+                          : ""
+                      }`}
                       onClick={() =>
                         setShowConfirmPassword(!showConfirmPassword)
                       }
