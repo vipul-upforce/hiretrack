@@ -54,13 +54,37 @@ export interface CreateOrgResponse {
   _id?: string;
 }
 
+// Define the Batch and ProcessedItem types
+export interface ProcessedItem {
+  filename: string;
+  candidateId: string;
+  status: "success" | "failure";
+  message: string;
+  processedAt: string;
+  _id: string;
+}
+
+export interface Batch {
+  _id: string;
+  organizationId: string;
+  totalFiles: number;
+  successCount: number;
+  failureCount: number;
+  status: "pending" | "processing" | "completed" | "failed";
+  items: ProcessedItem[];
+  startedAt: string;
+  completedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const orgApi = createApi({
   reducerPath: "orgApi",
   baseQuery: fetchBaseQuery({
     baseUrl: "/api",
     credentials: "include",
   }),
-  tagTypes: ["Users"],
+  tagTypes: ["Users", "Batches"], // Add Batches to tagTypes
   endpoints: (builder) => ({
     createAdmin: builder.mutation<CreateAdminResponse, CreateAdminRequest>({
       query: (credentials) => ({
@@ -105,9 +129,27 @@ export const orgApi = createApi({
         body: data,
       }),
     }),
+    // New endpoint to fetch batches
+    fetchBatches: builder.query<Batch[], string>({
+      query: (organizationId) => `/process-cv?organizationId=${organizationId}`,
+      providesTags: ["Batches"], // Tag for refetching
+    }),
+    // New endpoint to post a batch
+    postBatch: builder.mutation<
+      Batch,
+      { formData: FormData; organizationId: string }
+    >({
+      query: ({ formData, organizationId }) => ({
+        url: `/process-cv?organizationId=${organizationId}`,
+        method: "POST",
+        body: formData,
+      }),
+      invalidatesTags: ["Batches"], // Invalidate Batches tag to refetch
+    }),
   }),
 });
 
+// Export hooks for usage in functional components
 export const {
   useCreateAdminMutation,
   useSendMailMutation,
@@ -116,5 +158,7 @@ export const {
   useUpdateCustomFieldsMutation,
   useGetCustomFieldsQuery,
   useLazyGetCustomFieldsQuery,
+  useFetchBatchesQuery, // Hook for fetching batches
+  usePostBatchMutation, // Hook for posting a batch
 } = orgApi;
 // export const { useCreateAdminMutation } = orgApi;

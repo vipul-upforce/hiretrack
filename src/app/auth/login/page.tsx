@@ -87,7 +87,7 @@ export default function Login() {
       const jwt = await new jose.SignJWT({ user: encryptedPayload })
         .setProtectedHeader({ alg: "HS256" })
         .setIssuedAt()
-        .setExpirationTime("2h") // Token expires in 2 hours
+        .setExpirationTime("30d") // Token expires in 2 hours
         .sign(secretKey);
 
       return jwt;
@@ -110,6 +110,7 @@ export default function Login() {
         setOrganizationDialogOpen(true);
         return;
       }
+      debugger;
       const decryptedResponse = await verifyAndDecryptJWTToken(
         String(response.user)
       );
@@ -124,9 +125,7 @@ export default function Login() {
           delete userWithoutCustomFields.organizationInfo.customFields;
         }
         const token = await signToken(userWithoutCustomFields);
-        Cookies.set("token", String(token), {
-          expires: 1,
-        });
+        Cookies.set("token", String(token), { expires: 30 });
         setUserLoggedIn(true);
       }
       toast({

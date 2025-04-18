@@ -97,10 +97,11 @@ export async function POST(req: NextRequest) {
       jobId: candidate.jobId,
     });
 
+    const lane = session?.user?.organizationInfo?.lanes[0];
     // Update candidate with new job assignment and set status to "applied"
     await Candidate!.findByIdAndUpdate(candidateId, {
       jobId: jobId,
-      status: "applied",
+      status: lane,
       $set: {
         "tracking.assignedToJobDate": new Date().toISOString(),
       },

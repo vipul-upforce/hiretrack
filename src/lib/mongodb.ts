@@ -15,6 +15,7 @@ import { historySchema, IHistory } from "./models/history";
 import candidateAccountSchema, {
   IUCandidateAccount,
 } from "./models/candidateAccount";
+import cvBatchSchema, { ICVBatch } from "./models/cvBatch";
 
 interface MongooseGlobal {
   conn: typeof mongoose | null;
@@ -33,6 +34,7 @@ export var Candidate: mongoose.Model<ICandidate> | null = null;
 export var Settings: mongoose.Model<ISettings> | null = null;
 export var History: mongoose.Model<IHistory> | null = null;
 export var CandidateAccount: mongoose.Model<IUCandidateAccount> | null = null;
+export var cvBatch: mongoose.Model<ICVBatch> | null = null;
 
 const MONGODB_URI = process.env.MONGODB_URI!;
 
@@ -73,6 +75,7 @@ export default async function connectToDatabase() {
         "CandidateAccount",
         candidateAccountSchema
       );
+      cvBatch = mongoose.model<ICVBatch>("CVBatch", cvBatchSchema);
       console.log("Models registered");
       return mongoose;
     });
