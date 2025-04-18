@@ -113,6 +113,23 @@ async function processResume(
       };
     }
 
+    // Check if a candidate with the same name exists
+    const existingCandidate = await Candidate?.findOne({
+      name: parsedData.name,
+      organizationId: organizationId,
+      isDeleted: false,
+    });
+
+    if (existingCandidate) {
+      return {
+        ...parsedData,
+        organizationId,
+        status: "rejected",
+        isDeleted: false,
+        error: "Candidate with this name already exists",
+      };
+    }
+
     return {
       ...parsedData,
       organizationId,

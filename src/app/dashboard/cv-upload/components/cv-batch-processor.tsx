@@ -8,8 +8,11 @@ import { Button } from "@/components/ui/button";
 import {
   usePostBatchMutation,
   useFetchBatchesQuery,
+  User,
 } from "@/lib/features/org/orgApi";
 import { useToast } from "@/hooks/use-toast";
+import Cookies from "js-cookie";
+import { verifyAndDecryptJWTToken } from "@/lib/auth";
 
 export type FileWithPreview = {
   id: string;
@@ -43,7 +46,9 @@ export type Batch = {
   updatedAt: string;
 };
 
-const ORGANIZATION_ID = "67f8b96242e3672573cb198e";
+interface ErrorResponse {
+  error?: string;
+}
 
 export function CVBatchProcessor() {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
@@ -52,13 +57,33 @@ export function CVBatchProcessor() {
   const [postBatch] = usePostBatchMutation();
   const [isPosting, setIsPosting] = useState(false);
   const { toast } = useToast();
+  const [User, setUser] = useState<User | null>(null);
 
   // Fetch all batches using RTK Query
   const {
     data: batches,
     error,
     isLoading,
-  } = useFetchBatchesQuery(ORGANIZATION_ID);
+  } = useFetchBatchesQuery(User ? User?.organizationId : "", {
+    skip: !User?.organizationId,
+  });
+
+  const getUser = async () => {
+    // debugger;
+    const userData = Cookies.get("token");
+    if (userData) {
+      const decryptedResponse = await verifyAndDecryptJWTToken(
+        String(userData)
+      );
+      if (decryptedResponse.success && decryptedResponse.user) {
+        setUser(decryptedResponse.user);
+      }
+    }
+  };
+
+  useEffect(() => {
+    getUser();
+  }, []);
 
   useEffect(() => {
     if (batches) {
@@ -90,19 +115,18 @@ export function CVBatchProcessor() {
         formData.append("file", file.file);
       });
 
+      const organizationId = User?.organizationId || "";
       const { data: batchResult, error } = await postBatch({
         formData,
-        organizationId: ORGANIZATION_ID,
+        organizationId,
       });
       if (error) {
         toast({
+          variant: "destructive",
           title: "Batch Not Processed",
           description:
-            "data" in error &&
-            typeof error.data === "object" &&
-            error.data &&
-            "message" in error.data
-              ? String(error.data.message)
+            "data" in error && typeof error.data === "object" && error.data
+              ? (error.data as ErrorResponse).error || "Failed to process batch"
               : "Failed to process batch",
         });
         return;
