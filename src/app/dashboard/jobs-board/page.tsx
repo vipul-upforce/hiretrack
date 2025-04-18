@@ -407,8 +407,9 @@ export default function KanbanPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete this job position and all associated
-              candidates. This action cannot be undone.
+              This will restore the job position and make it active again for
+              candidates to view and apply. You can archive it again later if
+              needed.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -421,7 +422,7 @@ export default function KanbanPage() {
                   : "text-blue-500 bg-blue hover:bg-blue hover:text-blue-500/90"
               }
             >
-              {selectedJob?.isDeleted ? "UnArchived" : "Archived"}
+              {selectedJob?.isDeleted ? "Unarchive" : "Archive"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

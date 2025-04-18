@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { Upload, File as FileIcon, Pencil } from "lucide-react";
+import { Upload, File as FileIcon, Pencil, X } from "lucide-react";
 import { RenameFileDialog } from "./rename-file-dialog";
 import Cookies from "js-cookie";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
@@ -72,6 +72,7 @@ export function FileUpload({
     isExisting: false,
   });
   const [user, setuser] = useState<User | null>(null);
+  const [droppedFiles, setDroppedFiles] = useState<string[]>();
 
   useEffect(() => {
     (async () => {
@@ -105,9 +106,19 @@ export function FileUpload({
     }
   };
 
+  const handleRemoveFile = (fileNameToRemove: string) => {
+    const updatedFiles = files.filter((file) => file.name !== fileNameToRemove);
+    setter(updatedFiles);
+  };
+
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
       onFileSelect(acceptedFiles);
+      console.log("(((((((((((((((( ", acceptedFiles);
+      setDroppedFiles((prev = []) => {
+        const combined = [...prev, ...acceptedFiles.map((file) => file.name)];
+        return Array.from(new Set(combined));
+      });
     },
     [onFileSelect]
   );
@@ -175,9 +186,9 @@ export function FileUpload({
           </div>
         ))}
 
-        {files?.map((file, index) => (
+        {files?.map((file) => (
           <div
-            key={index}
+            key={file.name}
             className="flex items-center justify-between p-2 border rounded"
           >
             <div className="flex items-center space-x-2">
@@ -193,13 +204,23 @@ export function FileUpload({
                 className="p-2 hover:bg-muted rounded-md"
                 onClick={() =>
                   setRenameFile({
-                    file: file,
+                    file,
                     isExisting: false,
                   })
                 }
               >
                 <Pencil className="h-4 w-4 text-muted-foreground" />
               </button>
+              {droppedFiles?.includes(file.name) && (
+                <button
+                  type="button"
+                  className="p-2 hover:bg-muted rounded-md hover:text-red-500"
+                  onClick={() => handleRemoveFile(file.name)}
+                  aria-label="Remove file"
+                >
+                  <X className="h-4 w-4 text-muted-foreground" />
+                </button>
+              )}
             </div>
           </div>
         ))}
