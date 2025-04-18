@@ -33,100 +33,100 @@ export async function verifyAndDecryptToken(token: string) {
 }
 
 export async function middleware(request: NextRequest) {
-  // const { pathname } = request.nextUrl;
+  const { pathname } = request.nextUrl;
 
-  // let userData: { role: string } | undefined;
-  // const token = request.cookies.get("token");
-  // if (token?.value) {
-  //   const decryptedResponse = await verifyAndDecryptToken(String(token?.value));
-  //   if (decryptedResponse.success) {
-  //     userData = decryptedResponse.user as unknown as {
-  //       role: string;
-  //     };
-  //   }
-  // }
-  // // Check if the user is authenticated
+  let userData: { role: string } | undefined;
+  const token = request.cookies.get("token");
+  if (token?.value) {
+    const decryptedResponse = await verifyAndDecryptToken(String(token?.value));
+    if (decryptedResponse.success) {
+      userData = decryptedResponse.user as unknown as {
+        role: string;
+      };
+    }
+  }
+  // Check if the user is authenticated
 
-  // // Handle API routes authentication
-  // if (
-  //   pathname.startsWith("/api") &&
-  //   !apiExemptPaths.some((path) => pathname === path || pathname.includes(path))
-  // ) {
-  //   if (!userData) {
-  //     return NextResponse.json(
-  //       { error: "Authentication required" },
-  //       { status: 401 }
-  //     );
-  //   }
-  // }
+  // Handle API routes authentication
+  if (
+    pathname.startsWith("/api") &&
+    !apiExemptPaths.some((path) => pathname === path || pathname.includes(path))
+  ) {
+    if (!userData) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+  }
 
-  // // Extract organization name from the path if it exists
-  // const pathParts = pathname.split("/").filter(Boolean);
-  // const isOrgPath =
-  //   pathParts.length > 1 &&
-  //   !["dashboard", "auth", "api", "jobs", "calendar"].includes(pathParts[0]);
+  // Extract organization name from the path if it exists
+  const pathParts = pathname.split("/").filter(Boolean);
+  const isOrgPath =
+    pathParts.length > 1 &&
+    !["dashboard", "auth", "api", "jobs", "calendar"].includes(pathParts[0]);
 
-  // if (isOrgPath) {
-  //   const subPath = `/${pathParts[1]}`;
-  //   if (subPath === "/apply-jobs") {
-  //   }
-  // } else {
-  //   if (
-  //     !userData &&
-  //     redirectPaths.some((path) => {
-  //       if (path.includes(":orgName")) return false;
-  //       return pathname.startsWith(path);
-  //     })
-  //   ) {
-  //     return NextResponse.redirect(new URL("/auth/login", request.url));
-  //   }
-  // }
+  if (isOrgPath) {
+    const subPath = `/${pathParts[1]}`;
+    if (subPath === "/apply-jobs") {
+    }
+  } else {
+    if (
+      !userData &&
+      redirectPaths.some((path) => {
+        if (path.includes(":orgName")) return false;
+        return pathname.startsWith(path);
+      })
+    ) {
+      return NextResponse.redirect(new URL("/auth/login", request.url));
+    }
+  }
 
-  // // Allow access to the Calendar page for all authenticated users
-  // if (pathname.includes("/calendar")) {
-  //   return NextResponse.next();
-  // }
+  // Allow access to the Calendar page for all authenticated users
+  if (pathname.includes("/calendar")) {
+    return NextResponse.next();
+  }
 
-  // // Role-based access control
-  // if (userData) {
-  //   const userRole = userData.role;
-  //   // Allow all pages for admin and hr roles
-  //   if (userRole === "admin") {
-  //     return NextResponse.next();
-  //   }
-  //   if (userRole === "hr") {
-  //     if (
-  //       pathname.includes("/auth/signup") ||
-  //       pathname.includes("/dashboard/settings")
-  //     ) {
-  //       return NextResponse.redirect(new URL("/dashboard", request.url));
-  //     }
-  //   }
-  //   // Redirect candidate role to apply-jobs route
-  //   if (userRole === "candidate") {
-  //     if (
-  //       pathname.includes("/dashboard") ||
-  //       pathname.includes("/dashboard/:path*")
-  //     ) {
-  //       return NextResponse.redirect(
-  //         new URL(`/${pathParts[0]}/apply-jobs`, request.url)
-  //       );
-  //     }
-  //   }
-  //   // Restrict access for interviewer role
-  //   if (userRole === "interviewer") {
-  //     if (
-  //       unauthorizedInterviewerPages.some((path) => pathname.includes(path))
-  //     ) {
-  //       return NextResponse.redirect(new URL("/dashboard", request.url)); // Redirect to an unauthorized page
-  //     }
-  //   }
+  // Role-based access control
+  if (userData) {
+    const userRole = userData.role;
+    // Allow all pages for admin and hr roles
+    if (userRole === "admin") {
+      return NextResponse.next();
+    }
+    if (userRole === "hr") {
+      if (
+        pathname.includes("/auth/signup") ||
+        pathname.includes("/dashboard/settings")
+      ) {
+        return NextResponse.redirect(new URL("/dashboard", request.url));
+      }
+    }
+    // Redirect candidate role to apply-jobs route
+    if (userRole === "candidate") {
+      if (
+        pathname.includes("/dashboard") ||
+        pathname.includes("/dashboard/:path*")
+      ) {
+        return NextResponse.redirect(
+          new URL(`/${pathParts[0]}/apply-jobs`, request.url)
+        );
+      }
+    }
+    // Restrict access for interviewer role
+    if (userRole === "interviewer") {
+      if (
+        unauthorizedInterviewerPages.some((path) => pathname.includes(path))
+      ) {
+        return NextResponse.redirect(new URL("/dashboard", request.url)); // Redirect to an unauthorized page
+      }
+    }
 
-  //   // Restrict access for candidate role
-  //   if (userRole !== "candidate" && pathname.includes("/apply-jobs")) {
-  //     return NextResponse.redirect(new URL("/dashboard", request.url)); // Redirect to an unauthorized page
-  //   }
-  // }
+    // Restrict access for candidate role
+    if (userRole !== "candidate" && pathname.includes("/apply-jobs")) {
+      return NextResponse.redirect(new URL("/dashboard", request.url)); // Redirect to an unauthorized page
+    }
+  }
 
   return NextResponse.next();
 }

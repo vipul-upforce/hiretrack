@@ -1,7 +1,7 @@
 "use client";
 
 import type { FileWithPreview } from "./cv-batch-processor";
-import { FileText, X } from "lucide-react";
+import { FileText, X, Archive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface FileListProps {
@@ -20,40 +20,33 @@ export function FileList({
   }
 
   return (
-    <div className="border rounded-lg overflow-hidden">
-      <div className="bg-muted p-3 border-b">
-        <div className="flex items-center justify-between">
-          <h3 className="font-medium">Files ({files.length})</h3>
-        </div>
-      </div>
-      <ul className="divide-y">
-        {files.map((file) => (
-          <li key={file.id} className="p-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="bg-primary/10 p-2 rounded">
-                <FileText className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="font-medium truncate max-w-[300px]">
-                  {file.file.name}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {(file.file.size / 1024).toFixed(1)} KB
-                </p>
-              </div>
-            </div>
+    <div className="space-y-2">
+      {files.map((file) => (
+        <div
+          key={file.id}
+          className="flex items-center justify-between p-2 border rounded-lg"
+        >
+          <div className="flex items-center gap-2">
+            {file.isZip ? (
+              <Archive className="h-4 w-4 text-blue-500" />
+            ) : (
+              <FileText className="h-4 w-4 text-gray-500" />
+            )}
+            <span className="text-sm truncate">{file.file.name}</span>
+          </div>
+          {!isProcessing && (
             <Button
               variant="ghost"
               size="icon"
+              className="h-8 w-8"
               onClick={() => onRemove(file.id)}
-              disabled={isProcessing}
               aria-label="Remove file"
             >
               <X className="h-4 w-4" />
             </Button>
-          </li>
-        ))}
-      </ul>
+          )}
+        </div>
+      ))}
     </div>
   );
 }

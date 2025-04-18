@@ -11,9 +11,8 @@ export async function auth(request: NextRequest) {
   const token = request.cookies.get("token");
   if (token?.value) {
     const decryptedResponse = await verifyAndDecryptToken(String(token?.value));
-    const userData = decryptedResponse.user;
-    if (decryptedResponse.success) {
-      return { user: userData };
+    if (decryptedResponse.success && decryptedResponse.user) {
+      return { user: decryptedResponse.user };
     }
   }
 }

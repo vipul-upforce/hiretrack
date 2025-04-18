@@ -29,5 +29,5 @@ export const signToken = async (payload: unknown) => {
     JSON.stringify(payload),
     JWT_SECRET
   ).toString();
-  return jwt.sign({ user: encryptedPayload }, JWT_SECRET, { expiresIn: "1d" });
+  return jwt.sign({ user: encryptedPayload }, JWT_SECRET, { expiresIn: "30d" });
 };

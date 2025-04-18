@@ -1,43 +1,78 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { FileUploader } from "./file-uploader";
 import { FileList } from "./file-list";
-import { BatchProgress } from "./batch-progress";
 import { CompletedBatches } from "./completed-batches";
 import { Button } from "@/components/ui/button";
-import { processBatch } from "@/lib/actions/process-files";
-import { v4 as uuidv4 } from "uuid";
+import {
+  usePostBatchMutation,
+  useFetchBatchesQuery,
+} from "@/lib/features/org/orgApi";
+import { useToast } from "@/hooks/use-toast";
 
 export type FileWithPreview = {
   id: string;
   file: File;
   preview?: string;
   error?: string;
+  isZip?: boolean;
+};
+
+export type ProcessedItem = {
+  filename: string;
+  candidateId: string;
+  status: "success" | "failure";
+  message: string;
+  error?: string;
+  processedAt: string;
+  _id: string;
 };
 
 export type Batch = {
-  id: string;
-  files: FileWithPreview[];
+  _id: string;
+  organizationId: string;
+  totalFiles: number;
+  successCount: number;
+  failureCount: number;
   status: "pending" | "processing" | "completed" | "failed";
-  progress: {
-    total: number;
-    processed: number;
-    successful: number;
-    failed: number;
-  };
-  timestamp: number;
-  failedFiles: FileWithPreview[];
+  items: ProcessedItem[];
+  startedAt: string;
+  completedAt?: string;
+  createdAt: string;
+  updatedAt: string;
 };
+
+const ORGANIZATION_ID = "67f8b96242e3672573cb198e";
 
 export function CVBatchProcessor() {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
-  const [currentBatch, setCurrentBatch] = useState<Batch | null>(null);
   const [completedBatches, setCompletedBatches] = useState<Batch[]>([]);
   const processingRef = useRef(false);
+  const [postBatch] = usePostBatchMutation();
+  const [isPosting, setIsPosting] = useState(false);
+  const { toast } = useToast();
 
-  const handleFilesAdded = useCallback((newFiles: FileWithPreview[]) => {
-    setFiles((prevFiles) => [...prevFiles, ...newFiles]);
+  // Fetch all batches using RTK Query
+  const {
+    data: batches,
+    error,
+    isLoading,
+  } = useFetchBatchesQuery(ORGANIZATION_ID);
+
+  useEffect(() => {
+    if (batches) {
+      setCompletedBatches(batches);
+    }
+  }, [batches]);
+
+  const handleFilesAdded = useCallback((newFiles: File[]) => {
+    const processedFiles = newFiles.map((file) => ({
+      id: crypto.randomUUID(),
+      file,
+      isZip: file.type === "application/zip" || file.name.endsWith(".zip"),
+    }));
+    setFiles((prevFiles) => [...prevFiles, ...processedFiles]);
   }, []);
 
   const handleRemoveFile = useCallback((id: string) => {
@@ -46,112 +81,46 @@ export function CVBatchProcessor() {
 
   const handleProcessBatch = async () => {
     if (files.length === 0 || processingRef.current) return;
-
+    setIsPosting(true);
     processingRef.current = true;
-    const batchId = uuidv4();
-
-    const newBatch: Batch = {
-      id: batchId,
-      files: [...files],
-      status: "processing",
-      progress: {
-        total: files.length,
-        processed: 0,
-        successful: 0,
-        failed: 0,
-      },
-      timestamp: Date.now(),
-      failedFiles: [],
-    };
-
-    setCurrentBatch(newBatch);
 
     try {
-      // Process files one by one to track progress
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
+      const formData = new FormData();
+      files.forEach((file) => {
+        formData.append("file", file.file);
+      });
 
-        try {
-          // Call the server action to process the file
-          await processBatch(file.file);
-
-          // Update progress
-          setCurrentBatch((prev) => {
-            if (!prev) return null;
-            return {
-              ...prev,
-              progress: {
-                ...prev.progress,
-                processed: i + 1,
-                successful: prev.progress.successful + 1,
-              },
-            };
-          });
-        } catch (error) {
-          // Update progress with failure
-          setCurrentBatch((prev) => {
-            if (!prev) return null;
-            const failedFile = {
-              ...file,
-              error:
-                error instanceof Error
-                  ? error.message
-                  : "Failed to process file",
-            };
-            return {
-              ...prev,
-              progress: {
-                ...prev.progress,
-                processed: i + 1,
-                failed: prev.progress.failed + 1,
-              },
-              failedFiles: [...prev.failedFiles, failedFile],
-            };
-          });
-        }
+      const { data: batchResult, error } = await postBatch({
+        formData,
+        organizationId: ORGANIZATION_ID,
+      });
+      if (error) {
+        toast({
+          title: "Batch Not Processed",
+          description:
+            "data" in error &&
+            typeof error.data === "object" &&
+            error.data &&
+            "message" in error.data
+              ? String(error.data.message)
+              : "Failed to process batch",
+        });
+        return;
       }
 
-      // Mark batch as completed
-      setCurrentBatch((prev) => {
-        if (!prev) return null;
-        const completedBatch = {
-          ...prev,
-          status: "completed" as const,
-        };
-
-        // Add to completed batches
-        setCompletedBatches((prevBatches) => [completedBatch, ...prevBatches]);
-
-        return completedBatch;
-      });
-
-      // Clear current files after processing
+      setCompletedBatches((prevBatches) => [batchResult, ...prevBatches]);
       setFiles([]);
-    } catch {
-      setCurrentBatch((prev) => {
-        if (!prev) return null;
-        const failedBatch = {
-          ...prev,
-          status: "failed" as const,
-        };
-
-        // Add to completed batches even if failed
-        setCompletedBatches((prevBatches) => [failedBatch, ...prevBatches]);
-
-        return failedBatch;
-      });
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Failed to process batch");
     } finally {
       processingRef.current = false;
-      // Reset current batch after a delay to show final progress
-      setTimeout(() => {
-        setCurrentBatch(null);
-      }, 2000);
+      setIsPosting(false);
     }
   };
 
   return (
     <div className="space-y-8">
-      <FileUploader onFilesAdded={handleFilesAdded} />
+      <FileUploader isProcessing={isPosting} onFilesAdded={handleFilesAdded} />
 
       {files.length > 0 && (
         <div className="space-y-4">
@@ -159,21 +128,21 @@ export function CVBatchProcessor() {
             <h2 className="text-xl font-semibold">Current Batch</h2>
             <Button
               onClick={handleProcessBatch}
-              disabled={files.length === 0 || !!currentBatch}
+              disabled={files.length === 0 || isPosting}
             >
-              Process Batch
+              {isPosting ? "Processing..." : "Process Batch"}
             </Button>
           </div>
           <FileList
+            isProcessing={isPosting}
             files={files}
             onRemove={handleRemoveFile}
-            isProcessing={!!currentBatch}
           />
         </div>
       )}
 
-      {currentBatch && <BatchProgress batch={currentBatch} />}
-
+      {isLoading && <p>Loading batches...</p>}
+      {error && <p>Error fetching batches: </p>}
       {completedBatches.length > 0 && (
         <CompletedBatches batches={completedBatches} />
       )}

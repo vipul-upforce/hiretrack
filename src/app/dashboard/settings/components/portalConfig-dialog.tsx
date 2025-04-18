@@ -79,7 +79,7 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
       const jwt = await new jose.SignJWT({ user: encryptedPayload })
         .setProtectedHeader({ alg: "HS256" })
         .setIssuedAt()
-        .setExpirationTime("2h") // Token expires in 2 hours
+        .setExpirationTime("30d") // Token expires in 2 hours
         .sign(secretKey);
 
       return jwt;
@@ -115,7 +115,8 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
           }
           const token = await signToken(parsedUser);
           Cookies.set("token", String(token), {
-            expires: 1,
+            sameSite: "strict",
+            expires: 30,
           });
         }
       }

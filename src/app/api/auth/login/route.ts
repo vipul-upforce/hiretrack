@@ -487,9 +487,8 @@ const returnTokenBasedResponse = async (obj: unknown) => {
 
   response.cookies.set("token", token, {
     httpOnly: false,
-    secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
-    maxAge: 1 * 24 * 60 * 60,
+    maxAge: 30 * 24 * 60 * 60 * 1000,
   });
 
   return response;

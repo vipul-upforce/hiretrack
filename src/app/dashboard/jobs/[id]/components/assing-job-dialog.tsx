@@ -58,7 +58,9 @@ export function AssignJobDialog({
     { setSubmitting }: FormikHelpers<FormValues>
   ) => {
     try {
+      debugger;
       if (
+        candidate.jobId === undefined ||
         (typeof candidate.jobId === "string" &&
           candidate.jobId !== values.jobId) ||
         (typeof candidate.jobId === "object" &&
