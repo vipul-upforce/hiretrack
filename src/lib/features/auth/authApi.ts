@@ -1,6 +1,7 @@
 import { OneOfMulOrganization } from "@/components/auth/OrganizationDialog";
 import { OrgInfo } from "@/lib/models/user";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { NextResponse } from "next/server";
 
 interface AuthRequest {
   email: string;
@@ -48,7 +49,32 @@ export const authApi = createApi({
       }),
       invalidatesTags: ["Users"], // Ensure correct format
     }),
+    resetPasswordbyAdmin: builder.mutation<
+      NextResponse,
+      { password: string; candidateId: string }
+    >({
+      query: (creds) => ({
+        url: "/auth/reset-password",
+        method: "PUT",
+        body: creds,
+      }),
+    }),
+    resetPasswordbyUser: builder.mutation<
+      NextResponse,
+      { password: string; token: string }
+    >({
+      query: (creds) => ({
+        url: "/auth/reset-password",
+        method: "POST",
+        body: creds,
+      }),
+    }),
   }),
 });
 
-export const { useLoginMutation, useSignupMutation } = authApi;
+export const {
+  useLoginMutation,
+  useSignupMutation,
+  useResetPasswordbyAdminMutation,
+  useResetPasswordbyUserMutation,
+} = authApi;

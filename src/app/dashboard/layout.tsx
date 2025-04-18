@@ -14,6 +14,7 @@ import {
   Settings,
   SearchCheckIcon,
   Link2Icon,
+  UploadIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -60,6 +61,11 @@ const sidebarItems: SidebarItem[] = [
     href: "/dashboard/users",
     icon: <Users className="h-5 w-5" />,
     role: "admin",
+  },
+  {
+    title: "CV Upload",
+    href: "/dashboard/cv-upload",
+    icon: <UploadIcon className="h-5 w-5" />,
   },
   {
     title: "Settings",

@@ -346,21 +346,23 @@ export function CandidateDetailsDialog({
                       <Badge className={`bg-red-500`}>Archived</Badge>
                     )}
                   </div>
-                  <div className="text-gray-500 font-thin text-sm flex flex-row items-center justify-between w-full">
-                    {localCandidate.email}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="ml-2"
-                      onClick={() =>
-                        handleCandidateInfoCopy(localCandidate.email || "")
-                      }
-                      title="Copy Email"
-                    >
-                      <Copy size="1px" />
-                      <span className="sr-only">Copy Email</span>
-                    </Button>
-                  </div>
+                  {localCandidate.email && (
+                    <div className="text-gray-500 font-thin text-sm flex flex-row items-center justify-between w-full">
+                      {localCandidate.email}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="ml-2"
+                        onClick={() =>
+                          handleCandidateInfoCopy(localCandidate.email || "")
+                        }
+                        title="Copy Email"
+                      >
+                        <Copy size="1px" />
+                        <span className="sr-only">Copy Email</span>
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 <div className="mr-6">
                   <CandidateStatusBadge status={localCandidate.status} />
@@ -467,19 +469,19 @@ export function CandidateDetailsDialog({
                       localCandidate.scores.experience ||
                       localCandidate.scores.skills) && (
                       <div className="flex flex-wrap gap-2 flex flex-row items-center">
-                        {localCandidate.scores.overall && (
+                        {localCandidate.scores.overall >= 0 && (
                           <CandidateScoreBadge
                             score={localCandidate.scores.overall}
                             category="Overall"
                           />
                         )}
-                        {localCandidate.scores.experience && (
+                        {localCandidate.scores.experience >= 0 && (
                           <CandidateScoreBadge
                             score={localCandidate.scores.experience}
                             category="Experience"
                           />
                         )}
-                        {localCandidate.scores.skills && (
+                        {localCandidate.scores.skills >= 0 && (
                           <CandidateScoreBadge
                             score={localCandidate.scores.skills}
                             category="Skills"
@@ -891,7 +893,7 @@ export function CandidateDetailsDialog({
                     disabled={!localCandidate.assignment}
                     variant="outline"
                   >
-                    UnAssign
+                    Mark As Done
                   </Button>
                 </div>
                 <div className="flex gap-2">
@@ -971,10 +973,10 @@ export function CandidateDetailsDialog({
       <Dialog open={confirmUnassignOpen} onOpenChange={setConfirmUnassignOpen}>
         <DialogContent className="sm:max-w-[300px]">
           <DialogHeader>
-            <DialogTitle>Confirm Unassign</DialogTitle>
+            <DialogTitle>Mark as Done</DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <p>Are you sure you want to unassign this interviewer?</p>
+            <p>Are you sure you want to mark this assignment as complete?</p>
           </div>
           <DialogFooter>
             <Button

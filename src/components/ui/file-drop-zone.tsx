@@ -151,6 +151,10 @@ export const FileDropZone = ({
   ): Promise<File> => {
     const arrayBuffer = await file.arrayBuffer();
     const blob = new Blob([arrayBuffer], { type: file.type });
+    setDroppedFiles((prev = []) => {
+      const combined = [...prev, newFileName];
+      return Array.from(new Set(combined));
+    });
 
     return new File([blob], newFileName, {
       type: file.type,
@@ -235,7 +239,9 @@ export const FileDropZone = ({
         return updatedDroppedFiles;
       });
     }
-
+    setDroppedFiles((prev) => {
+      return Array.from(new Set([...prev, newName]));
+    });
     setFiles(updatedFiles);
     onFilesChange(updatedFiles);
   };

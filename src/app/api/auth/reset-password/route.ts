@@ -1,8 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import dbConnect, { CandidateAccount } from "@/lib/mongodb";
 import { User } from "@/lib/mongodb";
+import { verifyAndDecryptToken } from "@/middleware";
 
 export async function POST(req: Request) {
   try {
@@ -74,6 +75,83 @@ export async function POST(req: Request) {
         resetTokenExpiry: undefined,
       });
     }
+
+    return NextResponse.json(
+      { message: "Password reset successful" },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Reset password error:", error);
+    return NextResponse.json(
+      { error: "Failed to reset password" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(req: NextRequest) {
+  try {
+    await dbConnect();
+    const { candidateId, password } = await req.json();
+
+    if (!candidateId || !password) {
+      return NextResponse.json(
+        { error: "Candidate ID and password are required" },
+        { status: 400 }
+      );
+    }
+    if (!User) {
+      return NextResponse.json(
+        { error: "Database not connected" },
+        { status: 404 }
+      );
+    }
+
+    if (password.length < 7) {
+      return NextResponse.json(
+        { error: "Password must be at least 6 characters long" },
+        { status: 400 }
+      );
+    }
+
+    const token = req.cookies.get("token");
+    if (!token?.value) {
+      return NextResponse.json(
+        { error: "Authentication token missing" },
+        { status: 401 }
+      );
+    }
+
+    const decryptedResponse = await verifyAndDecryptToken(token.value);
+    if (!decryptedResponse?.user) {
+      return NextResponse.json(
+        { error: "Invalid or expired token" },
+        { status: 401 }
+      );
+    }
+    const role = decryptedResponse.user.role;
+    if (role !== "admin") {
+      return NextResponse.json(
+        { error: "Only Admins can perform this action" },
+        { status: 401 }
+      );
+    }
+    const user = await User.findById(candidateId);
+    if (!user) {
+      return NextResponse.json(
+        { error: "Candidate not found" },
+        { status: 404 }
+      );
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await User.findByIdAndUpdate(candidateId, {
+      password: hashedPassword,
+      resetToken: null,
+      resetTokenExpiry: null,
+    });
 
     return NextResponse.json(
       { message: "Password reset successful" },

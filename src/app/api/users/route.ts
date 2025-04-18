@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
 
     const users = await User.find(
       {
-        _id: { $ne: session.user.id },
+        // _id: { $ne: session.user.id },
         organizationId: session.user.organizationId,
         // isDeleted: { $ne: true }
       },

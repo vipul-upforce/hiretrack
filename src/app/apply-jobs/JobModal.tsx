@@ -61,7 +61,7 @@ export default function JobModal({
         <Dialog.Panel className="w-[50vw] transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all max-h-[80vh] overflow-y-auto ">
           <Dialog.Title
             as="h3"
-            className="text-lg font-medium leading-6 text-gray-900 top-0 break-words"
+            className="text-lg font-bold leading-6 text-gray-900 top-0 break-words"
           >
             {job.title}
           </Dialog.Title>
@@ -71,7 +71,7 @@ export default function JobModal({
               description={job.description || "No description Found"}
             />
             <div className="mt-4">
-              <h4 className="font-medium">Required Skills:</h4>
+              <h4 className="font-bold">Required Skills:</h4>
               <div className="flex flex-wrap gap-2 mt-2">
                 {job.skills.map((skill: string, i: number) => (
                   <span
@@ -84,13 +84,13 @@ export default function JobModal({
               </div>
             </div>
             <div className="mt-4">
-              <h4 className="font-medium">Experience Required:</h4>
+              <h4 className="font-bold">Experience Required:</h4>
               <p className="mt-1">{job.experience} years</p>
             </div>
             {roles !== "" && (
-              <>
+              <div className="mt-4">
                 <CustomFieldsData customFields={job?.customFields || {}} />
-              </>
+              </div>
             )}
           </div>
           <div className="mt-6 flex justify-end gap-3">

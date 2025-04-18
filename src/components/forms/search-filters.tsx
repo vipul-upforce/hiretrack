@@ -81,9 +81,10 @@ export function SearchFilters() {
         </div>
 
         <div>
-          <Label>Skills</Label>
+          <Label>Skills (Hit Enter to add)</Label>
           <div className="flex gap-2">
             <ChipInput
+              placeholder="Hit Enter to Add"
               fullWidth={true}
               value={values.skills}
               onChange={(skills) => setFieldValue("skills", skills)}

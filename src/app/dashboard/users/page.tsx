@@ -21,7 +21,7 @@ import { format } from "date-fns";
 
 import { useToast } from "@/hooks/use-toast";
 import LoaderSkeletonUsers from "./components/loader-skeleton-users";
-import { EditIcon, Trash2 } from "lucide-react";
+import { EditIcon, Eye, EyeOff, ShieldQuestion, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import * as Yup from "yup";
 import {
@@ -41,9 +41,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Formik, Form, ErrorMessage, Field } from "formik";
+import { Formik, Form, ErrorMessage, Field, FieldProps } from "formik";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useResetPasswordbyAdminMutation } from "@/lib/features/auth/authApi";
 
 export default function UsersPage() {
   const router = useRouter();
@@ -51,7 +52,12 @@ export default function UsersPage() {
   const { data: users, isLoading, error, refetch } = useGetUsersQuery();
   const [deleteUser, { isLoading: isDeleting }] = useDeleteUserMutation();
   const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
+  const [resetPasswordbyAdmin, { isLoading: isReseting }] =
+    useResetPasswordbyAdminMutation();
   const [isOpen, setIsOpen] = useState(false);
+  const [isPasswordOpen, setIsPasswordOpen] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   interface SelectedUser {
     id?: string;
     name: string;
@@ -60,6 +66,10 @@ export default function UsersPage() {
     isDeleted?: boolean; // Added isDeleted field
   }
   const [selectedUser, setSelectedUser] = useState<SelectedUser | null>(null);
+  const [selectedPasswordUser, setSelectedPasswordUser] = useState<{
+    candidateId: string;
+    name: string;
+  } | null>(null);
   useEffect(() => {
     refetch();
   }, []);
@@ -103,6 +113,37 @@ export default function UsersPage() {
     }
   };
 
+  const handlePasswordUpdate = async (
+    candidateId: string,
+    values: {
+      password: string;
+    }
+  ) => {
+    try {
+      await resetPasswordbyAdmin({
+        candidateId: candidateId,
+        password: values.password,
+      }).unwrap();
+
+      toast({
+        title: "Success",
+        description: "User password reset successfully",
+      });
+
+      setIsPasswordOpen(false);
+      setSelectedPasswordUser(null);
+    } catch (error: unknown) {
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error
+            ? `Failed to reset password: ${error.message}`
+            : "Failed to reset password. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleEditClick = (user: {
     _id: string;
     name: string;
@@ -118,6 +159,14 @@ export default function UsersPage() {
       isDeleted: user.isDeleted, // Set isDeleted value
     });
     setIsOpen(true);
+  };
+
+  const handlePasswordClick = (candidateId: string, name: string) => {
+    setSelectedPasswordUser({
+      candidateId,
+      name,
+    });
+    setIsPasswordOpen(true);
   };
   const validationSchema = Yup.object().shape({
     name: Yup.string()
@@ -136,6 +185,23 @@ export default function UsersPage() {
     role: Yup.string()
       .oneOf(["hr", "interviewer", "admin"], "Invalid role")
       .required("Role is required"),
+  });
+
+  const passwordValidationSchema = Yup.object().shape({
+    password: Yup.string()
+      .min(6, "Password must be at least 6 characters long")
+      .matches(/[a-z]/, "Password must contain at least one lowercase letter")
+      .matches(/[A-Z]/, "Password must contain at least one uppercase letter")
+      .matches(/\d/, "Password must contain at least one number")
+      .matches(
+        /[@$!%*?&]/,
+        "Password must contain at least one special character (@$!%*?&)"
+      )
+      .required("Password is required"),
+
+    confirmPassword: Yup.string()
+      .oneOf([Yup.ref("password")], "Passwords must match")
+      .required("Please confirm your password"),
   });
 
   if (isLoading) {
@@ -182,7 +248,7 @@ export default function UsersPage() {
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Created At</TableHead>
-                <TableHead className="w-[100px]">Actions</TableHead>
+                <TableHead className="w-[140px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -220,6 +286,13 @@ export default function UsersPage() {
                       disabled={isUpdating}
                     >
                       <EditIcon className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      onClick={() => handlePasswordClick(user._id, user.name)}
+                      disabled={isUpdating}
+                    >
+                      <ShieldQuestion className="h-4 w-4" />
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -355,6 +428,146 @@ export default function UsersPage() {
                       onClick={() => handleSubmit()}
                     >
                       Update
+                    </Button>
+                  </DialogFooter>
+                </Form>
+              )}
+            </Formik>
+          </DialogContent>
+        </Dialog>
+      )}
+      {selectedPasswordUser && (
+        <Dialog open={isPasswordOpen} onOpenChange={setIsPasswordOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                Reset Password for {selectedPasswordUser.name}
+              </DialogTitle>
+            </DialogHeader>
+            <Formik
+              initialValues={{
+                password: "",
+                confirmPassword: "",
+              }}
+              validationSchema={passwordValidationSchema}
+              onSubmit={(values) =>
+                selectedPasswordUser &&
+                handlePasswordUpdate(selectedPasswordUser.candidateId, {
+                  password: values.password,
+                })
+              }
+            >
+              {({
+                handleChange,
+                handleBlur,
+                handleSubmit,
+                values,
+                errors,
+                touched,
+                isSubmitting,
+                setFieldValue,
+              }) => (
+                <Form className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <div className="relative">
+                      <Field name="password">
+                        {({ field }: FieldProps) => (
+                          <>
+                            <Input
+                              {...field}
+                              id="password"
+                              type={showPassword ? "text" : "password"}
+                              disabled={isLoading || isSubmitting}
+                              className={
+                                errors.password && touched.password
+                                  ? "border-red-500"
+                                  : ""
+                              }
+                            />
+                            {errors.password && touched.password && (
+                              <div className="text-red-500 text-sm">
+                                {errors.password}
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </Field>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className={`absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent ${errors.password && touched.password ? "translate-y-[-25px]" : ""}`}
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {!showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Confirm Password</Label>
+                    <div className="relative">
+                      <Field name="confirmPassword">
+                        {({ field }: FieldProps) => (
+                          <>
+                            <Input
+                              {...field}
+                              id="confirmPassword"
+                              type={showConfirmPassword ? "text" : "password"}
+                              disabled={isLoading || isSubmitting}
+                              className={
+                                errors.confirmPassword &&
+                                touched.confirmPassword
+                                  ? "border-red-500"
+                                  : ""
+                              }
+                            />
+                            {errors.confirmPassword &&
+                              touched.confirmPassword && (
+                                <div className="text-red-500 text-sm">
+                                  {errors.confirmPassword}
+                                </div>
+                              )}
+                          </>
+                        )}
+                      </Field>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className={`absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent ${errors.confirmPassword && touched.confirmPassword ? "translate-y-[-25px]" : ""}`}
+                        onClick={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
+                      >
+                        {!showConfirmPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <DialogFooter>
+                    <Button
+                      type="submit"
+                      disabled={isUpdating}
+                      // onClick={() => handleSubmit()}
+                    >
+                      {isReseting ? (
+                        <div className="flex items-center">
+                          <div className="w-4 h-4 mr-2 border-t-2 border-b-2 border-white rounded-full animate-spin"></div>
+                          Updating...
+                        </div>
+                      ) : (
+                        "Reset Password"
+                      )}
                     </Button>
                   </DialogFooter>
                 </Form>

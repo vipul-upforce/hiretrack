@@ -117,6 +117,7 @@ export default function Login() {
         setOrganizationDialogOpen(true);
         return;
       }
+      debugger;
       const decryptedResponse = await verifyAndDecryptJWTToken(
         String(response.user)
       );
@@ -131,13 +132,7 @@ export default function Login() {
           delete userWithoutCustomFields.organizationInfo.customFields;
         }
         const token = await signToken(userWithoutCustomFields);
-        Cookies.set("token", String(token), {
-          // expires: new Date(
-          //   Date.now() + 1 * 60 * 1000 + 5 * 60 * 60 * 1000 + 30 * 60 * 1000
-          // ),
-          expires: new Date(Date.now() + 100 * 60 * 1000),
-          // maxAge: 30 * 24 * 60 * 60,
-        });
+        Cookies.set("token", String(token), { expires: 30 });
         setUserLoggedIn(true);
       }
       toast({

@@ -487,7 +487,6 @@ const returnTokenBasedResponse = async (obj: unknown) => {
 
   response.cookies.set("token", token, {
     httpOnly: false,
-    secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
     // expires: new Date(Date.now() + 2 * 60 * 1000),
     expires: 30,

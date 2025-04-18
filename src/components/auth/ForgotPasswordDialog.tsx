@@ -30,8 +30,12 @@ interface OrgAccount {
 
 const validationSchema = Yup.object({
   email: Yup.string()
-    .email("Invalid email address")
-    .required("Email is required"),
+    .transform((value) => (typeof value === "string" ? value.trim() : value))
+    .required("Email is required")
+    .matches(
+      /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+      "Invalid Email"
+    ),
 });
 
 const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
@@ -51,7 +55,9 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
       setSubmitting(true);
       setEmailValue(values.email);
 
-      const response = await createResetToken({ email: values.email }).unwrap();
+      const response = await createResetToken({
+        email: values.email.trim(),
+      }).unwrap();
 
       // If multiple accounts were found
       if (response.multipleAccounts && response.accounts) {
@@ -163,7 +169,7 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
                       <Input
                         {...field}
                         id="email"
-                        type="email"
+                        // type="email"
                         placeholder="Enter your email"
                         disabled={isSubmitting || isLoading}
                         className={
