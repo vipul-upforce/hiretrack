@@ -21,7 +21,7 @@ import Cookies from "js-cookie";
 import { useCustomFields } from "@/Custom_Fields/hooks/use-customFields";
 import { OrgInfo } from "@/lib/models/user";
 import { Eye, EyeOff } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ForgotPasswordDialog from "@/components/auth/ForgotPasswordDialog";
 import OrganizationDialog, {
   OneOfMulOrganization,
@@ -72,6 +72,13 @@ export default function Login() {
     password: "",
   };
 
+  useEffect(() => {
+    const token = Cookies.get("token");
+    if (token) {
+      router.push("/dashboard");
+    }
+  }, []);
+
   const signToken = async (payload: unknown) => {
     const JWT_SECRET = "your_jwt_secret_key";
     try {
@@ -87,7 +94,7 @@ export default function Login() {
       const jwt = await new jose.SignJWT({ user: encryptedPayload })
         .setProtectedHeader({ alg: "HS256" })
         .setIssuedAt()
-        .setExpirationTime("30d") // Token expires in 2 hours
+        .setExpirationTime("30d")
         .sign(secretKey);
 
       return jwt;
@@ -136,7 +143,8 @@ export default function Login() {
       // debugger
       if (decryptedResponse.user.role === "candidate") {
         router.push(
-          `/${decryptedResponse.user.organizationInfo?.name}/apply-jobs`
+          // `/${decryptedResponse.user.organizationInfo?.name}/apply-jobs`
+          `/apply-jobs`
         );
       } else if (decryptedResponse.user.role === "admin" || "hr") {
         router.push("/dashboard");

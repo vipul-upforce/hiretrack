@@ -45,7 +45,6 @@ export async function middleware(request: NextRequest) {
       };
     }
   }
-  // Check if the user is authenticated
 
   // Handle API routes authentication
   if (
@@ -130,7 +129,6 @@ export async function middleware(request: NextRequest) {
 
   return NextResponse.next();
 }
-// Specify the paths to apply the middleware
 export const config = {
   matcher: [
     "/dashboard/:path*",
@@ -157,7 +155,11 @@ const apiExemptPaths = [
   "/api/auth/reset-password",
   "/api/event-mail",
   "/api/candidates/signup",
+  "/api/candidates/evaluate",
+  "/api/candidates/event-mail",
   // "/api/files",
+  "/api/candidates/guest-apply",
+  "/api/candidates/apply-application",
   "/apply-jobs",
 ];
 

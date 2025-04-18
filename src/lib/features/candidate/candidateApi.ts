@@ -44,6 +44,14 @@ export const candidateApi = createApi({
       }),
       invalidatesTags: ["Candidate"],
     }),
+    createGuestCandidate: builder.mutation<Candidate, Partial<Candidate>>({
+      query: (newCandidate) => ({
+        url: "/candidates/guest-apply",
+        method: "POST",
+        body: newCandidate,
+      }),
+      invalidatesTags: ["Candidate"],
+    }),
     updateCandidate: builder.mutation<Candidate, Partial<Candidate>>({
       query: (candidate) => ({
         url: `/candidates/${candidate._id}`,
@@ -150,6 +158,7 @@ export const candidateApi = createApi({
 export const {
   useFetchCandidatesQuery,
   useCreateCandidateMutation,
+  useCreateGuestCandidateMutation,
   useUpdateCandidateMutation,
   useEvaluateCandidateMutation,
   useUpdateCandidateStatusMutation,

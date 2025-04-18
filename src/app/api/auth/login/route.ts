@@ -488,7 +488,9 @@ const returnTokenBasedResponse = async (obj: unknown) => {
   response.cookies.set("token", token, {
     httpOnly: false,
     sameSite: "strict",
-    maxAge: 30 * 24 * 60 * 60 * 1000,
+    // expires: new Date(Date.now() + 2 * 60 * 1000),
+    expires: 30,
+    // maxAge: 30 * 24 * 60 * 60,
   });
 
   return response;

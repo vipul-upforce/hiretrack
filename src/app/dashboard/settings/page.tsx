@@ -28,6 +28,11 @@ export default function Settings() {
       key: "gemini",
       description: "Update the Gemini configurations of your organization.",
     },
+    {
+      title: "Multiple Organizations",
+      key: "multipleorgs",
+      description: "Choose if there could be multiple organizations or not.",
+    },
   ];
 
   return (

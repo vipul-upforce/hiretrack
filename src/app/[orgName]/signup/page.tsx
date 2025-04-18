@@ -90,7 +90,7 @@ export default function Signup() {
   ) => {
     try {
       try {
-        const signupData = { ...values, orgName };
+        const signupData = { ...values, orgName, name: values.name.trim() };
         const response = await signup(signupData).unwrap();
 
         if (response.user) {
@@ -318,7 +318,7 @@ export default function Signup() {
           <div className="flex justify-center">
             Already have a candidate account?
             <Link
-              href="/dashboard/users"
+              href="/auth/login"
               className="text-blue-600 ml-1 hover:underline"
             >
               Login here

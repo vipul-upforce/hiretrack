@@ -40,6 +40,12 @@ export const settingsApi = createApi({
         method: "GET",
       }),
     }),
+    getMultipleOrgConfigs: builder.query({
+      query: () => ({
+        url: `/settings/multipleorg`,
+        method: "GET",
+      }),
+    }),
     getFSConfigs: builder.query({
       query: () => ({
         url: `/settings/fs`,
@@ -59,6 +65,14 @@ export const settingsApi = createApi({
         url: "/settings/gemini",
         method: "PUT",
         body: genimiConfig,
+      }),
+      invalidatesTags: ["Settings"],
+    }),
+    updateMultipleOrg: builder.mutation({
+      query: (multipleOrgConfig) => ({
+        url: "/settings/multipleorg",
+        method: "PUT",
+        body: multipleOrgConfig,
       }),
       invalidatesTags: ["Settings"],
     }),
@@ -118,6 +132,8 @@ export const {
   useTestConnectionMutation,
   useGetGeminiConfigsQuery,
   useUpdateGeminiMutation,
+  useUpdateMultipleOrgMutation,
+  useGetMultipleOrgConfigsQuery,
 } = settingsApi;
 
 // Export types for use in components

@@ -94,7 +94,11 @@ export default function UsersPage() {
 
   const handleUpdate = async (values: SelectedUser) => {
     try {
-      await updateUser({ id: selectedUser?.id, ...values }).unwrap();
+      await updateUser({
+        id: selectedUser?.id,
+        ...values,
+        name: values.name.trim(),
+      }).unwrap();
       toast({ title: "Success", description: "User updated successfully" });
       setIsOpen(false);
       refetch();
@@ -166,7 +170,7 @@ export default function UsersPage() {
   };
   const validationSchema = Yup.object().shape({
     name: Yup.string()
-      .trim()
+      // .trim()
       .strict(true)
       .min(2, "Full Name must be at least 2 characters long")
       .max(20, "Full Name cannot exceed 20 characters")

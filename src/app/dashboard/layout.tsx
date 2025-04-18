@@ -134,8 +134,9 @@ export default function DashboardLayout({
       }
     }
     if (parsedUser) {
+      // debugger;
       setUserData(parsedUser);
-      const url = `${window.location.origin}/${parsedUser.organizationInfo?.name}/apply-jobs`;
+      const url = `${window.location.origin}/apply-jobs?orgName=${parsedUser.organizationInfo?.name}`;
       navigator.clipboard
         .writeText(url)
         .then(() => {

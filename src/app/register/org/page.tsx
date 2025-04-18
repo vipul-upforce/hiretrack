@@ -20,7 +20,7 @@ import {
   useCreateOrgMutation,
 } from "@/lib/features/org/orgApi";
 import { Eye, EyeOff } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import ReCAPTCHA from "react-google-recaptcha";
 
 interface OrgFormValues {
@@ -78,6 +78,18 @@ export default function OrgRegisterPage() {
   const [showPassword, setShowPassword] = React.useState(false);
   const [captcha, setCaptcha] = useState<string>();
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
+
+  useEffect(() => {
+    async function checkAllowance() {
+      const data = await fetch("/api/organization");
+      const allowance = await data.json();
+      console.log("@@@@@@@@@@@@ ALLOWANCE: ", allowance);
+      if (!allowance.allow) {
+        router.push("/auth/login");
+      }
+    }
+    checkAllowance();
+  }, []);
 
   const initialValues: OrgFormValues = {
     name: "",

@@ -68,7 +68,7 @@ export default function FileStorageOptions({
       const jwt = await new jose.SignJWT({ user: encryptedPayload })
         .setProtectedHeader({ alg: "HS256" })
         .setIssuedAt()
-        .setExpirationTime("30d") // Token expires in 2 hours
+        .setExpirationTime("30d")
         .sign(secretKey);
 
       return jwt;
@@ -174,6 +174,7 @@ export default function FileStorageOptions({
       const token = await signToken(updatedUser);
       Cookies.set("token", String(token), {
         expires: 30,
+        // maxAge: 30 * 24 * 60 * 60,
       });
       refetch();
       onClose();

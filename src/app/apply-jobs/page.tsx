@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { LogOut, Search } from "lucide-react";
 import Cookies from "js-cookie";
 import { useToast } from "@/hooks/use-toast";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCustomFields } from "@/Custom_Fields/hooks/use-customFields";
 import { useFetchAppliedApplicationQuery } from "@/lib/features/candidate/candidateApi";
 import Image from "next/image";
@@ -50,18 +50,18 @@ const JobCardSkeleton = () => (
   </div>
 );
 
-export default function ApplyJobs({
-  params,
-}: {
-  params: Promise<{ orgName: string; title: string }>;
-}) {
+export default function ApplyJobs() {
   const [orgName, setOrgName] = useState<string>("");
-  const [selectedJob, setSelectedJob] = useState<Job | null>(null); // Allow Job or null
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [appliedApplications, setAppliedApplications] = useState<string[]>([]);
-  const { data } = useFetchAppliedApplicationQuery({});
+  const { data } = useFetchAppliedApplicationQuery(
+    {},
+    { skip: orgName === "" }
+  );
   const { toast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { setUserLoggedIn, userLoggedIn } = useCustomFields();
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [queryTitle, setQueryTitle] = useState<string>("");
@@ -71,7 +71,7 @@ export default function ApplyJobs({
     error,
   } = useFetchOpenJobQuery(
     { orgName: orgName, title: queryTitle },
-    { skip: orgName === "" }
+    { skip: orgName === null }
   ) as {
     data: Job[];
     isLoading: boolean;
@@ -80,27 +80,43 @@ export default function ApplyJobs({
 
   useEffect(() => {
     (async () => {
-      const resolvedParams = await params; // Resolve the promise
-      const orgNameWithoutSpaces = decodeURIComponent(resolvedParams.orgName);
-      setOrgName(orgNameWithoutSpaces);
-    })();
-  }, [params]);
-
-  useEffect(() => {
-    (async () => {
-      const user = Cookies.get("token");
-      if (user && data) {
-        setUserLoggedIn(true);
-        const decryptedResponse = await verifyAndDecryptJWTToken(String(user));
-        if (
-          decryptedResponse.success &&
-          decryptedResponse.user &&
-          decryptedResponse.user.role === "candidate"
-        ) {
-          setAppliedApplications(data.appliedApplications);
+      // debugger;
+      const token = Cookies.get("token");
+      const urlOrgName = searchParams.get("orgName");
+      if (token) {
+        try {
+          const decryptedResponse = await verifyAndDecryptJWTToken(token);
+          if (
+            decryptedResponse.success &&
+            decryptedResponse.user &&
+            decryptedResponse.user.organizationInfo &&
+            decryptedResponse.user.organizationInfo.name
+          ) {
+            setOrgName(decryptedResponse.user.organizationInfo.name);
+            setUserLoggedIn(true);
+          } else {
+            setOrgName(urlOrgName || "");
+          }
+        } catch (error) {
+          setOrgName(urlOrgName || "");
+          console.error("Error decrypting token:", error);
+          toast({
+            title: "Authentication Error",
+            description: "Please log in again",
+            variant: "destructive",
+          });
+          router.push("/auth/login");
         }
+      } else {
+        setOrgName(urlOrgName || "");
       }
     })();
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (data) {
+      setAppliedApplications(data.appliedApplications);
+    }
   }, [data]);
 
   const handleSearch = () => {
@@ -141,7 +157,6 @@ export default function ApplyJobs({
       );
     }
   }
-  // return <div className="flex justify-center p-8">Error loading jobs</div>;
 
   const handleLogout = () => {
     // Clear user data and token
@@ -160,7 +175,7 @@ export default function ApplyJobs({
       <div className="px-3 py-6 flex flex-row justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold mb-4 ">
-            Open Positions for {orgName}
+            Open Positions {orgName ? `for ${orgName}` : ""}
           </h1>
         </div>
 
@@ -230,7 +245,7 @@ export default function ApplyJobs({
               key={index}
               className="bg-white break-words rounded-lg border-2 inset-shadow-sm p-6 cursor-pointer hover:shadow-lg transition-shadow"
               onClick={() => {
-                setSelectedJob(job); // This will now work correctly
+                setSelectedJob(job);
                 setIsModalOpen(true);
               }}
             >
