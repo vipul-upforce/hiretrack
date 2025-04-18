@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useEffect, useState } from "react";
 import JobModal from "./JobModal";
 import { useFetchOpenJobQuery } from "@/lib/features/job/jobApi";
@@ -16,6 +17,7 @@ import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import { SerializedError } from "@reduxjs/toolkit";
 import { Input } from "@/components/ui/input";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import InvalidPage from "@/components/InvalidPage";
 
 // Define the Job type here or import it if it's defined elsewhere
 interface Job {
@@ -50,7 +52,8 @@ const JobCardSkeleton = () => (
   </div>
 );
 
-export default function ApplyJobs() {
+// Create a new client component for the main content
+const ApplyJobsContent = () => {
   const [orgName, setOrgName] = useState<string>("");
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -65,6 +68,7 @@ export default function ApplyJobs() {
   const { setUserLoggedIn, userLoggedIn } = useCustomFields();
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [queryTitle, setQueryTitle] = useState<string>("");
+  const [invalidPage, setInvalidPage] = useState<boolean>(false);
   const {
     data: jobs,
     isLoading,
@@ -78,39 +82,62 @@ export default function ApplyJobs() {
     error: FetchBaseQueryError | SerializedError;
   };
 
+  async function checkAllowance() {
+    const urlOrgName = searchParams.get("orgName");
+    if (urlOrgName) {
+      // If orgName exists in URL, page is valid
+      setInvalidPage(false);
+      return;
+    }
+
+    const data = await fetch("/api/organization");
+    if (!data.ok) {
+      return;
+    }
+    const allowance = await data.json();
+    if (allowance.allow) {
+      setInvalidPage(true);
+    }
+  }
+
   useEffect(() => {
-    (async () => {
-      // debugger;
-      const token = Cookies.get("token");
-      const urlOrgName = searchParams.get("orgName");
-      if (token) {
-        try {
-          const decryptedResponse = await verifyAndDecryptJWTToken(token);
-          if (
-            decryptedResponse.success &&
-            decryptedResponse.user &&
-            decryptedResponse.user.organizationInfo &&
-            decryptedResponse.user.organizationInfo.name
-          ) {
-            setOrgName(decryptedResponse.user.organizationInfo.name);
-            setUserLoggedIn(true);
-          } else {
-            setOrgName(urlOrgName || "");
-          }
-        } catch (error) {
+    checkAllowance();
+  }, [searchParams]);
+
+  const pageInit = async () => {
+    // debugger;
+    const token = Cookies.get("token");
+    const urlOrgName = searchParams.get("orgName");
+    if (token) {
+      try {
+        const decryptedResponse = await verifyAndDecryptJWTToken(token);
+        if (
+          decryptedResponse.success &&
+          decryptedResponse.user &&
+          decryptedResponse.user.organizationInfo &&
+          decryptedResponse.user.organizationInfo.name
+        ) {
+          setOrgName(decryptedResponse.user.organizationInfo.name);
+          setUserLoggedIn(true);
+        } else {
           setOrgName(urlOrgName || "");
-          console.error("Error decrypting token:", error);
-          toast({
-            title: "Authentication Error",
-            description: "Please log in again",
-            variant: "destructive",
-          });
-          router.push("/auth/login");
         }
-      } else {
+      } catch {
         setOrgName(urlOrgName || "");
+        toast({
+          title: "Authentication Error",
+          description: "Please log in again",
+          variant: "destructive",
+        });
+        router.push("/auth/login");
       }
-    })();
+    } else {
+      setOrgName(urlOrgName || "");
+    }
+  };
+
+  useEffect(() => {
+    pageInit();
   }, [searchParams]);
 
   useEffect(() => {
@@ -122,6 +149,10 @@ export default function ApplyJobs() {
   const handleSearch = () => {
     setQueryTitle(searchTerm);
   };
+
+  if (invalidPage) {
+    return <InvalidPage message="Page Doesn't Exists" />;
+  }
 
   if (isLoading)
     return <div className="flex justify-center p-8">Loading...</div>;
@@ -297,5 +328,16 @@ export default function ApplyJobs() {
         }
       />
     </div>
+  );
+};
+
+// Main page component with Suspense
+export default function ApplyJobs() {
+  return (
+    <Suspense
+      fallback={<div className="flex justify-center p-8">Loading...</div>}
+    >
+      <ApplyJobsContent />
+    </Suspense>
   );
 }

@@ -8,7 +8,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Formik, Form } from "formik";
 import { useState, useEffect } from "react";
@@ -17,8 +16,6 @@ import {
   useApplicationEventMailMutation,
   useCreateGuestCandidateMutation,
   useEvaluateCandidateMutation,
-  useUpdateAppliedApplicationMutation,
-  useUpdateCandidateHistoryMutation,
 } from "@/lib/features/candidate/candidateApi";
 import { v4 as uuidv4 } from "uuid";
 import useCustomForm, {
@@ -146,25 +143,10 @@ export function ApplyAsGuestDialog({
   const [evaluateCandidateMutation] = useEvaluateCandidateMutation();
   const [applicationEventMailMutation, { isLoading: isSendingEmail }] =
     useApplicationEventMailMutation();
-  const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
-  const [updateAppliedApplication] = useUpdateAppliedApplicationMutation();
   const [parsedResumeData, setParsedResume] = useState<Resume | null>(null);
   const formName = "Candidate";
   const { validationSchema, initialValues: inits } = useCustomForm(formName);
   const [resetForm, setResetForm] = useState(false);
-  //   const [user, setuser] = useState<User | null>(null);
-
-  //   useEffect(() => {
-  //     (async () => {
-  //       const token = Cookies.get("token");
-  //       if (token) {
-  //         const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-  //         if (decryptedResponse.success && decryptedResponse.user) {
-  //           setuser(decryptedResponse.user);
-  //         }
-  //       }
-  //     })();
-  //   }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -259,7 +241,6 @@ export function ApplyAsGuestDialog({
       // Step 1: Create the candidate
       const createdCandidate =
         await createGuestCandidate(candidateData).unwrap();
-      // debugger;
       const candidateId = createdCandidate._id;
       if (values.resume && values.resume.type === "application/pdf") {
         const pageCount = await checkPdfPageCount(values.resume);

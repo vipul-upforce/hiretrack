@@ -67,6 +67,7 @@ export default function Login() {
   const [loginFormValues, setLoginFormValues] = useState<LoginFormValues>();
   const [selectedOrg, setSelectedOrg] = useState<string>();
   const [captcha, setCaptcha] = useState<string>();
+  const [isMultiple, setIsMultiple] = useState<boolean>(false);
   const initialValues: LoginFormValues = {
     email: "",
     password: "",
@@ -75,8 +76,22 @@ export default function Login() {
   useEffect(() => {
     const token = Cookies.get("token");
     if (token) {
+      debugger;
       router.push("/dashboard");
     }
+  }, []);
+
+  useEffect(() => {
+    async function checkAllowance() {
+      const data = await fetch("/api/organization");
+      if (data.ok) {
+        const allowance = await data.json();
+        if (allowance.allow) {
+          setIsMultiple(true);
+        }
+      }
+    }
+    checkAllowance();
   }, []);
 
   const signToken = async (payload: unknown) => {
@@ -117,7 +132,6 @@ export default function Login() {
         setOrganizationDialogOpen(true);
         return;
       }
-      debugger;
       const decryptedResponse = await verifyAndDecryptJWTToken(
         String(response.user)
       );
@@ -142,11 +156,14 @@ export default function Login() {
       });
       // debugger
       if (decryptedResponse.user.role === "candidate") {
-        router.push(
-          // `/${decryptedResponse.user.organizationInfo?.name}/apply-jobs`
-          `/apply-jobs`
-        );
+        debugger;
+        const url = isMultiple
+          ? `/apply-jobs?orgName=${decryptedResponse.user.organizationInfo?.name}`
+          : "/apply-jobs";
+
+        router.push(url);
       } else if (decryptedResponse.user.role === "admin" || "hr") {
+        debugger;
         router.push("/dashboard");
       }
     } catch (err: unknown) {

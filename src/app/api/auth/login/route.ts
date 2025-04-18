@@ -26,7 +26,7 @@ export async function POST(req: Request) {
         $ne: true,
       },
     });
-    const candidates = await CandidateAccount.find({ email });
+    const candidates = await CandidateAccount.find({ email }).lean();
 
     if (users.length > 0 && candidates.length > 0) {
       return await checkMultipleOrgs(orgId, users, candidates, password);

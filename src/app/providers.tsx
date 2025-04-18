@@ -16,7 +16,6 @@ const PortalConfigHandler = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
 
   useEffect(() => {
-    // Remove the debugger statement for production
     document.title = portalConfig?.portalName || "Hire Track";
 
     if (portalConfig?.portalLogo) {
