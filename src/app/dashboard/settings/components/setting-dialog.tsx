@@ -11,6 +11,7 @@ import SMTPConfigs from "./smtp-configs-dialog";
 import FileStorageOptions from "./fileStorage-dialog";
 import PortalConfigs from "./portalConfig-dialog";
 import GeminiConfigs from "./gemini";
+import MultipleOrgsConfigs from "./MultipleOrgsConfigs";
 // import FileStorageOptions from "./file-storage-dialog"; // Example for another setting
 
 interface SettingComponentProps {
@@ -24,6 +25,7 @@ const settingComponents: Record<
   fs: FileStorageOptions,
   portal: PortalConfigs,
   gemini: GeminiConfigs,
+  multipleorgs: MultipleOrgsConfigs,
 };
 
 const SettingDialog = ({

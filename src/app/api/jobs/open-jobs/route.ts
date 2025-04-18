@@ -9,17 +9,9 @@ interface CustomField {
 export async function GET(request: Request) {
   try {
     await connectToDatabase();
-    // Extract orgname from the query parameters
     const url = new URL(request.url);
     const orgName = url.searchParams.get("orgname");
     const title = url.searchParams.get("title");
-
-    if (!orgName) {
-      return NextResponse.json(
-        { error: "Organization name not provided" },
-        { status: 400 }
-      );
-    }
 
     if (!Organization && !Job) {
       return NextResponse.json(
@@ -28,16 +20,33 @@ export async function GET(request: Request) {
       );
     }
 
-    // Find the organization ID based on the orgName
-    const organization = await Organization!.findOne({ name: orgName });
-    const organizationId = organization?._id;
+    let organizationId;
 
-    if (!organizationId) {
-      return NextResponse.json(
-        { error: "Organization not found" },
-        { status: 404 }
-      );
+    console.log("ORGNAME: ", orgName);
+
+    if (orgName !== "") {
+      const organization = await Organization!.findOne({ name: orgName });
+      organizationId = organization?._id;
+      console.log("ORGID: ", organizationId);
+
+      if (!organizationId) {
+        return NextResponse.json(
+          { error: "Organization not found" },
+          { status: 404 }
+        );
+      }
+    } else {
+      const organization = await Organization!.findOne().sort({ _id: 1 });
+      organizationId = organization?._id;
+
+      if (!organizationId) {
+        return NextResponse.json(
+          { error: "No organizations found" },
+          { status: 404 }
+        );
+      }
     }
+    console.log("ORG⛔⛔: ", organizationId);
 
     const customFields = await Organization?.findById(organizationId);
     const jobs = await Job!
@@ -66,18 +75,16 @@ export async function GET(request: Request) {
       })
       .lean();
 
-    // Get the job position fields
+    console.log("########### PUBLICJOBS: ", jobs);
     const jobPositionFields =
       Object.values(customFields?.customFields || {}).find(
         (field) => field.formName === "Job Position"
       )?.fields || [];
 
-    // Filter out private fields
     const publicFieldLabels = jobPositionFields
       ?.filter((field: CustomField) => !field.private)
       ?.map((data: CustomField) => data.label);
 
-    // Eliminate custom fields from jobs that are not in public fields
     const filteredJobs = jobs?.map((job) => ({
       ...job,
       customFields: Object.fromEntries(

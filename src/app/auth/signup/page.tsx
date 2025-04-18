@@ -98,7 +98,11 @@ export default function Signup() {
         if (decryptedResponse.success && decryptedResponse.user) {
           try {
             const orgID_cookie = decryptedResponse.user.organizationId || "";
-            const signupData = { ...values, organizationId: orgID_cookie };
+            const signupData = {
+              ...values,
+              organizationId: orgID_cookie,
+              name: values.name.trim(),
+            };
             const response = await signup(signupData).unwrap();
 
             if (response.user) {

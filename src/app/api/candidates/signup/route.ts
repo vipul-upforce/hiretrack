@@ -1,20 +1,13 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import dbConnect, { CandidateAccount, Organization, User } from "@/lib/mongodb";
-// import { Lane } from '@/lib/mongodb';
 import { signToken } from "@/lib/jwt";
-// import mongoose from 'mongoose';
-
-// const DEFAULT_LANES = ["applied", "screening", "shortlisted", "processing", "accepted", "rejected"];
 
 export async function POST(req: Request) {
   try {
     await dbConnect();
-    var { email, password, name, orgName } = await req.json();
+    const { email, password, name, orgName } = await req.json();
 
-    // if (!(organizationId instanceof mongoose.Types.ObjectId)) {
-    //   organizationId = new mongoose.Types.ObjectId(organizationId);
-    // }
     if (!CandidateAccount || !Organization || !User) {
       return NextResponse.json(
         { error: "Database not connected" },
@@ -22,20 +15,43 @@ export async function POST(req: Request) {
       );
     }
 
-    const organizationInfo = await Organization.findOne(
-      { name: orgName },
-      {
-        adminId: 0,
-        lanes: 0,
-      }
-    );
-    if (!organizationInfo) {
-      return NextResponse.json(
-        { error: `Organization "${orgName}" not found` },
-        { status: 404 }
+    let organizationInfo;
+    let organizationId;
+
+    if (orgName) {
+      // If orgName is provided, find the organization by name
+      organizationInfo = await Organization.findOne(
+        { name: orgName },
+        {
+          adminId: 0,
+          lanes: 0,
+        }
       );
+      if (!organizationInfo) {
+        return NextResponse.json(
+          { error: `Organization "${orgName}" not found` },
+          { status: 404 }
+        );
+      }
+      organizationId = organizationInfo._id;
+    } else {
+      // If orgName is not provided, find the first organization
+      organizationInfo = await Organization.findOne(
+        {},
+        {
+          adminId: 0,
+          lanes: 0,
+        }
+      );
+      if (!organizationInfo) {
+        return NextResponse.json(
+          { error: "No organizations found in the database" },
+          { status: 404 }
+        );
+      }
+      organizationId = organizationInfo._id;
     }
-    const organizationId = organizationInfo?._id;
+
     const existingUser =
       (await CandidateAccount.findOne({ email, organizationId })) ||
       (await User.findOne({ email, organizationId }));
@@ -61,22 +77,14 @@ export async function POST(req: Request) {
       email,
       password: hashedPassword,
       name,
-      // role,
       organizationId,
       organizationInfo,
     });
-
-    // // Create default lanes for the user
-    // await Lane.create({
-    //   userId: user._id,
-    //   lanes: DEFAULT_LANES
-    // });
 
     // Generate token
     const token = signToken({
       id: user._id,
       email: user.email,
-      //   role: user.role,
     });
 
     const response = NextResponse.json(

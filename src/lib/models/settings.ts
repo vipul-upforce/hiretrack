@@ -2,6 +2,7 @@ import { Schema, Document } from "mongoose";
 
 const settingsSchema = new Schema({
   organizationId: { type: String, required: true },
+  multipleOrg: { type: Boolean, default: false, requred: true },
   fileStorage: {
     storageType: { type: String, default: "" },
 
@@ -47,6 +48,7 @@ const settingsSchema = new Schema({
 
 export interface ISettings {
   organizationId: string;
+  multipleOrg: boolean;
   fileStorage: Ifs;
   mailConfig: Ismtp;
   gemini: IGemini;

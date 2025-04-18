@@ -6,6 +6,7 @@ import { Dialog } from "@headlessui/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import ExpandableDescription from "@/app/dashboard/jobs/[id]/components/expand-collapse-desc";
+import { ApplyAsGuestDialog } from "./ApplyAsGuest";
 
 // Define a type for the job object
 interface Job {
@@ -90,6 +91,11 @@ export default function JobModal({
             {roles === "" ? (
               <>
                 <Button onClick={handleSignupRedirect}>Apply</Button>
+                <ApplyAsGuestDialog
+                  jobId={job._id as string}
+                  isOpen={isFormDialogOpen}
+                  setIsOpen={setIsFormDialogOpen}
+                />
               </>
             ) : (
               <>

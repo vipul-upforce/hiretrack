@@ -79,7 +79,7 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
       const jwt = await new jose.SignJWT({ user: encryptedPayload })
         .setProtectedHeader({ alg: "HS256" })
         .setIssuedAt()
-        .setExpirationTime("2h") // Token expires in 2 hours
+        .setExpirationTime("30d")
         .sign(secretKey);
 
       return jwt;
@@ -93,7 +93,7 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
         const portalLogoBase64 = await convertFileToBase64(values.portalLogo);
         portalLogoData = {
           id: uuidv4(),
-          name: values.portalLogo.name,
+          name: values.portalLogo.name.trim(),
           url: portalLogoBase64,
           type: values.portalLogo.type,
           size: values.portalLogo.size,
@@ -101,7 +101,7 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
       }
 
       const dataToSubmit = {
-        portalName: values.portalName,
+        portalName: values.portalName.trim(),
         portalLogo: portalLogoData,
       };
       await updateSMTPConfigs(dataToSubmit);
@@ -115,7 +115,8 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
           }
           const token = await signToken(parsedUser);
           Cookies.set("token", String(token), {
-            expires: 1,
+            expires: 30,
+            // maxAge: 30 * 24 * 60 * 60,
           });
         }
       }

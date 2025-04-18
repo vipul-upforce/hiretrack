@@ -489,7 +489,9 @@ const returnTokenBasedResponse = async (obj: unknown) => {
     httpOnly: false,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
-    maxAge: 1 * 24 * 60 * 60,
+    // expires: new Date(Date.now() + 2 * 60 * 1000),
+    expires: 30,
+    // maxAge: 30 * 24 * 60 * 60,
   });
 
   return response;
