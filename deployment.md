@@ -1,4 +1,13 @@
 
+cd ../
+upforcetech@Vipuls-MacBook-Air-2 Dev % ls
+hiretrack               hiretrack.tar.gz        next
+upforcetech@Vipuls-MacBook-Air-2 Dev % rm -r hiretrack.tar.gz 
+upforcetech@Vipuls-MacBook-Air-2 Dev % ls
+hiretrack       next
+upforcetech@Vipuls-MacBook-Air-2 Dev % rm -r next            
+upforcetech@Vipuls-MacBook-Air-2 Dev % ls
+
 ## Make tar file of project
 ```tar -czvf hiretrack.tar.gz hiretrack```
 
@@ -13,6 +22,8 @@
 
 ## Extract tar
 ```tar -xzvf hiretrax.tar.gz```
+
+ rm -r assets/
 
 ## Move asset to hiretrack again 
 ```mv assets/ hiretrack/```
