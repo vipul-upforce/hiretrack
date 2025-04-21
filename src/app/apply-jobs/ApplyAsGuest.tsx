@@ -348,14 +348,14 @@ export function ApplyAsGuestDialog({
           disabled={isSendingEmail}
           className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
         >
-          {isSendingEmail ? "Processing..." : "Apply Now"}
+          {isSendingEmail ? "Processing..." : "Apply As Guest"}
         </button>
       </DialogTrigger>
       <DialogContent
         className={`sm:max-w-[80vw] xl:max-w-[65vw] h-[90vh] p-0 overflow-hidden flex flex-col justify-center`}
       >
         <DialogHeader className="px-6 py-2">
-          <DialogTitle>Apply As Guest</DialogTitle>
+          <DialogTitle>Apply</DialogTitle>
         </DialogHeader>
         <Formik
           key={resetForm.toString()}
