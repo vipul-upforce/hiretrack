@@ -8,7 +8,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Formik, Form } from "formik";
 import { useState, useEffect } from "react";
@@ -17,8 +16,6 @@ import {
   useApplicationEventMailMutation,
   useCreateGuestCandidateMutation,
   useEvaluateCandidateMutation,
-  useUpdateAppliedApplicationMutation,
-  useUpdateCandidateHistoryMutation,
 } from "@/lib/features/candidate/candidateApi";
 import { v4 as uuidv4 } from "uuid";
 import useCustomForm, {
@@ -146,8 +143,6 @@ export function ApplyAsGuestDialog({
   const [evaluateCandidateMutation] = useEvaluateCandidateMutation();
   const [applicationEventMailMutation, { isLoading: isSendingEmail }] =
     useApplicationEventMailMutation();
-  const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
-  const [updateAppliedApplication] = useUpdateAppliedApplicationMutation();
   const [parsedResumeData, setParsedResume] = useState<Resume | null>(null);
   const formName = "Candidate";
   const { validationSchema, initialValues: inits } = useCustomForm(formName);
