@@ -144,6 +144,7 @@ const unauthorizedInterviewerPages = [
   "/auth/signup",
   "/dashboard/settings",
   "/dashboard/search",
+  "/dashboard/cv-upload",
 ];
 
 const apiExemptPaths = [

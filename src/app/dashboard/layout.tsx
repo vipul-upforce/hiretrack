@@ -66,6 +66,7 @@ const sidebarItems: SidebarItem[] = [
     title: "CV Upload",
     href: "/dashboard/cv-upload",
     icon: <UploadIcon className="h-5 w-5" />,
+    role: "interviewer",
   },
   {
     title: "Settings",
@@ -93,7 +94,6 @@ export default function DashboardLayout({
     async function checkAllowance() {
       const data = await fetch("/api/organization");
       const allowance = await data.json();
-      console.log("@@@@@@@@@@@@ ALLOWANCE: ", allowance);
       seHasMultipleOrgs(allowance.allow);
     }
     checkAllowance();
@@ -258,7 +258,8 @@ export default function DashboardLayout({
             if (
               (item.role === "admin" && userData?.role !== "admin") ||
               (userData?.role === "interviewer" && item.title === "Jobs") ||
-              (userData?.role === "interviewer" && item.title === "Search")
+              (userData?.role === "interviewer" && item.title === "Search") ||
+              (userData?.role === "interviewer" && item.title === "CV Upload")
             ) {
               return null;
             }

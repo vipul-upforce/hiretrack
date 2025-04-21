@@ -29,8 +29,6 @@ export default function MultipleOrgsConfigs({
   React.useEffect(() => {
     refetch();
   }, [refetch]);
-  console.log(data, error);
-  console.log(data?.orgCount > 1);
 
   const initialValues: multipleOrgsValues = {
     multipleOrg: !!data?.multipleOrg,
@@ -41,7 +39,7 @@ export default function MultipleOrgsConfigs({
   });
 
   const handleSubmit = async (values: typeof initialValues) => {
-    if (error && "status" in error && error?.status == 403) {
+    if (error && "status" in error && error?.status === 403) {
       return toast({
         title: "Not Allowed",
         description: "This action is not allowed.",
@@ -80,7 +78,7 @@ export default function MultipleOrgsConfigs({
             <Checkbox
               id="multipleOrg"
               checked={values.multipleOrg}
-              disabled={error && "status" in error && error?.status == 403}
+              disabled={error && "status" in error && error?.status === 403}
               onCheckedChange={(checked) =>
                 setFieldValue("multipleOrg", Boolean(checked))
               }

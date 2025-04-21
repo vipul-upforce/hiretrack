@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation"; // Add useSearchParams
+import { useRouter } from "next/navigation";
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
 import {
@@ -16,10 +16,11 @@ import { Label } from "@/components/ui/label";
 import { FormikErrors, FormikTouched, FieldProps } from "formik";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useCandidateSignupMutation } from "@/lib/features/candidate/candidateApi";
 import ReCAPTCHA from "react-google-recaptcha";
+import { useSearchParams } from "next/navigation";
 
 interface SignupFormValues {
   email: string;
@@ -57,9 +58,10 @@ const SignupSchema = Yup.object().shape({
     .required("Please confirm your password"),
 });
 
-export default function Signup() {
+// Create a separate client component for the form
+const SignupForm = () => {
   const router = useRouter();
-  const searchParams = useSearchParams(); // Use searchParams to get query string
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [signup, { isLoading }] = useCandidateSignupMutation();
   const [showPassword, setShowPassword] = useState(false);
@@ -83,13 +85,15 @@ export default function Signup() {
       }
     }
   }, [searchParams]);
+
   useEffect(() => {
     async function checkAllowance() {
       const data = await fetch("/api/organization");
-      const allowance = await data.json();
-      console.log("@@@@@@@@@@@@ ALLOWANCE: ", allowance);
-      if (!allowance.allow) {
-        router.push("/signup");
+      if (!data.ok) {
+        const allowance = await data.json();
+        if (!allowance.allow) {
+          router.push("/signup");
+        }
       }
     }
     checkAllowance();
@@ -100,10 +104,11 @@ export default function Signup() {
     { setStatus }: { setStatus: (message: string) => void }
   ) => {
     try {
+      debugger;
       const signupData = {
         ...values,
         name: values.name.trim(),
-        ...(orgName && { organizationInfo: { name: orgName } }),
+        ...(orgName && { orgName: orgName }),
       };
       const response = await signup(signupData).unwrap();
 
@@ -341,5 +346,14 @@ export default function Signup() {
         </CardContent>
       </Card>
     </div>
+  );
+};
+
+// Main page component
+export default function Signup() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SignupForm />
+    </Suspense>
   );
 }

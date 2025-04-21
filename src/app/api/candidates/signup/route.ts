@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import dbConnect, { CandidateAccount, Organization, User } from "@/lib/mongodb";
-import { signToken } from "@/lib/jwt";
 
 export async function POST(req: Request) {
   try {
     await dbConnect();
     const { email, password, name, orgName } = await req.json();
-
     if (!CandidateAccount || !Organization || !User) {
       return NextResponse.json(
         { error: "Database not connected" },
@@ -81,12 +79,6 @@ export async function POST(req: Request) {
       organizationInfo,
     });
 
-    // Generate token
-    const token = signToken({
-      id: user._id,
-      email: user.email,
-    });
-
     const response = NextResponse.json(
       {
         message: "Candidate created successfully",
@@ -100,13 +92,6 @@ export async function POST(req: Request) {
       },
       { status: 201 }
     );
-
-    // Set cookie
-    response.cookies.set("token", token, {
-      httpOnly: false,
-      sameSite: "strict",
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
 
     return response;
   } catch (error: unknown) {

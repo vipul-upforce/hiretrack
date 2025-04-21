@@ -147,19 +147,6 @@ export function ApplyAsGuestDialog({
   const formName = "Candidate";
   const { validationSchema, initialValues: inits } = useCustomForm(formName);
   const [resetForm, setResetForm] = useState(false);
-  //   const [user, setuser] = useState<User | null>(null);
-
-  //   useEffect(() => {
-  //     (async () => {
-  //       const token = Cookies.get("token");
-  //       if (token) {
-  //         const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-  //         if (decryptedResponse.success && decryptedResponse.user) {
-  //           setuser(decryptedResponse.user);
-  //         }
-  //       }
-  //     })();
-  //   }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -254,7 +241,6 @@ export function ApplyAsGuestDialog({
       // Step 1: Create the candidate
       const createdCandidate =
         await createGuestCandidate(candidateData).unwrap();
-      // debugger;
       const candidateId = createdCandidate._id;
       if (values.resume && values.resume.type === "application/pdf") {
         const pageCount = await checkPdfPageCount(values.resume);

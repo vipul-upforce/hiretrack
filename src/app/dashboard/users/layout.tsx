@@ -17,6 +17,7 @@ export default function UsersLayout({
       const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
       if (decryptedResponse.success && decryptedResponse.user) {
         if (decryptedResponse.user.role !== "admin") {
+          debugger;
           router.push("/dashboard");
         }
       }
