@@ -56,12 +56,13 @@ const JobCardSkeleton = () => (
 const ApplyJobsContent = () => {
   const [orgName, setOrgName] = useState<string>("");
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpen, setIsJobModalOpen] = useState(false);
   const [appliedApplications, setAppliedApplications] = useState<string[]>([]);
   const { data } = useFetchAppliedApplicationQuery(
     {},
     { skip: orgName === "" }
   );
+
   const { toast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -277,7 +278,7 @@ const ApplyJobsContent = () => {
               className="bg-white break-words rounded-lg border-2 inset-shadow-sm p-6 cursor-pointer hover:shadow-lg transition-shadow"
               onClick={() => {
                 setSelectedJob(job);
-                setIsModalOpen(true);
+                setIsJobModalOpen(true);
               }}
             >
               <h2 className="text-xl font-semibold mb-2">{job.title}</h2>
@@ -314,10 +315,25 @@ const ApplyJobsContent = () => {
           No Jobs Found
         </div>
       )}
+      {/* {roles === "" || !roles ? ( */}
+      {/* <ApplyOptions
+          job={selectedJob}
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          orgName={orgName}
+          readOnly={
+            !!(
+              appliedApplications &&
+              selectedJob &&
+              appliedApplications.includes(selectedJob?._id)
+            )
+          }
+        /> */}
+      {/* ) : ( */}
       <JobModal
         job={selectedJob}
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => setIsJobModalOpen(false)}
         orgName={orgName}
         readOnly={
           !!(
@@ -327,6 +343,7 @@ const ApplyJobsContent = () => {
           )
         }
       />
+      {/* )} */}
     </div>
   );
 };

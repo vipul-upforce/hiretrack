@@ -26,6 +26,9 @@ import { useCustomFields } from "@/Custom_Fields/hooks/use-customFields";
 import { useGetPortalConfigsQuery } from "@/lib/features/settings/settingsApi";
 import { IUser } from "@/lib/models/user";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import { setAllowMultipleOrgs } from "@/lib/features/org/orgSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "@/lib/store";
 
 interface SidebarItem {
   title: string;
@@ -90,14 +93,21 @@ export default function DashboardLayout({
   const { setUserLoggedIn } = useCustomFields();
   const [hasMultipleOrgs, seHasMultipleOrgs] = useState(false);
 
+  const dispatch = useDispatch();
+  const allowMultipleOrgs = useSelector(
+    (state: RootState) => state.organization.allowMultipleOrgs
+  );
+
   useEffect(() => {
     async function checkAllowance() {
       const data = await fetch("/api/organization");
       const allowance = await data.json();
       seHasMultipleOrgs(allowance.allow);
+      dispatch(setAllowMultipleOrgs(allowance.allow));
     }
     checkAllowance();
-  }, []);
+    // console.log("@@@@@@@@@@@STATE: ", lastUpdated, allowMultipleOrgs);
+  }, [dispatch, allowMultipleOrgs]);
 
   // Use useEffect to set user data from cookies
   useEffect(() => {
@@ -149,7 +159,7 @@ export default function DashboardLayout({
       setUserData(parsedUser);
       let url;
       if (hasMultipleOrgs) {
-        url = `${window.location.origin}/apply-jobs?orgName=${parsedUser.organizationInfo?.name}`;
+        url = `${window.location.origin}/apply-jobs?o=${parsedUser.organizationInfo?.name}`;
       } else {
         url = `${window.location.origin}/apply-jobs`;
       }

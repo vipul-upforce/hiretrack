@@ -10,7 +10,7 @@ export async function GET(request: Request) {
   try {
     await connectToDatabase();
     const url = new URL(request.url);
-    const orgName = url.searchParams.get("orgname");
+    const orgName = url.searchParams.get("o");
     const title = url.searchParams.get("title");
 
     if (!Organization && !Job) {

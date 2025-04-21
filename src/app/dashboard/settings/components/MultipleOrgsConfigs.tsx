@@ -10,6 +10,8 @@ import {
   useUpdateMultipleOrgMutation,
 } from "@/lib/features/settings/settingsApi";
 import React from "react";
+import { useDispatch } from "react-redux";
+import { setAllowMultipleOrgs } from "@/lib/features/org/orgSlice";
 
 export interface multipleOrgsValues {
   multipleOrg: boolean;
@@ -21,6 +23,7 @@ export default function MultipleOrgsConfigs({
   onClose: () => void;
 }) {
   const { toast } = useToast();
+  const dispatch = useDispatch();
   const { data, isLoading, refetch, error } =
     useGetMultipleOrgConfigsQuery(undefined);
   const [updateMultipleOrgConfigs, { isLoading: isUpdating }] =
@@ -48,6 +51,9 @@ export default function MultipleOrgsConfigs({
     }
     try {
       await updateMultipleOrgConfigs(values).unwrap();
+
+      dispatch(setAllowMultipleOrgs(values.multipleOrg));
+
       toast({
         title: "Success",
         description: "Settings updated successfully",
@@ -90,7 +96,6 @@ export default function MultipleOrgsConfigs({
             component="div"
             className="text-red-500 text-sm"
           />
-
           <div className="w-full flex justify-end">
             <Button type="submit" disabled={isSubmitting || isUpdating}>
               {isSubmitting || isUpdating ? "Saving..." : "Save Settings"}

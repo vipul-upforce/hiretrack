@@ -7,9 +7,11 @@ import { laneApi } from "./features/lane/laneApi";
 import { apiSlice } from "./features/api/apiSlice";
 import { orgApi } from "./features/org/orgApi";
 import { settingsApi } from "./features/settings/settingsApi";
+import { organizationSlice } from "./features/org/orgSlice";
 
 export const store = configureStore({
   reducer: {
+    organization: organizationSlice.reducer,
     [authApi.reducerPath]: authApi.reducer,
     [orgApi.reducerPath]: orgApi.reducer,
     [settingsApi.reducerPath]: settingsApi.reducer,
