@@ -1,6 +1,6 @@
 
 ## Make tar file of project
-```tar -czvf nextjs-project.tar.gz my-nextjs-project/```
+```tar -czvf hiretrack.tar.gz hiretrack```
 
 ## Move tar to VM
 ```scp hiretrax.tar.gz root@157.245.97.186:/root```
