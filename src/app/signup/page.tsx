@@ -104,7 +104,7 @@ const SignupForm = () => {
     { setStatus }: { setStatus: (message: string) => void }
   ) => {
     try {
-      debugger;
+      // debugger;
       const signupData = {
         ...values,
         name: values.name.trim(),

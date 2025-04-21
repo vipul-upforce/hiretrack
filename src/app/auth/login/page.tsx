@@ -76,7 +76,7 @@ export default function Login() {
   useEffect(() => {
     const token = Cookies.get("token");
     if (token) {
-      debugger;
+      // debugger;
       router.push("/dashboard");
     }
   }, []);
@@ -156,14 +156,14 @@ export default function Login() {
       });
       // debugger
       if (decryptedResponse.user.role === "candidate") {
-        debugger;
+        // debugger;
         const url = isMultiple
-          ? `/apply-jobs?orgName=${decryptedResponse.user.organizationInfo?.name}`
+          ? `/apply-jobs?o=${decryptedResponse.user.organizationInfo?.name}`
           : "/apply-jobs";
 
         router.push(url);
       } else if (decryptedResponse.user.role === "admin" || "hr") {
-        debugger;
+        // debugger;
         router.push("/dashboard");
       }
     } catch (err: unknown) {

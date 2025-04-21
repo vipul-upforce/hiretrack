@@ -10,7 +10,7 @@ export default function InvalidPage({
   return (
     <div className="min-h-[80vh] flex flex-col items-center justify-center px-4">
       <Image
-        src="/404page.avif"
+        src="/notfound.jpg"
         alt="Invalid page illustration"
         width={400}
         height={400}

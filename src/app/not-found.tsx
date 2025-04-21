@@ -13,7 +13,7 @@ export const NoDataFound = (props: INoDataFound) => {
   const handleClick = () => {
     const user = Cookies.get("user");
     if (user) {
-      debugger;
+      // debugger;
       router.push("/dashboard");
     } else {
       router.push("/auth/login");
