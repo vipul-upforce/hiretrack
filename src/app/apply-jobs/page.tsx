@@ -84,7 +84,7 @@ const ApplyJobsContent = () => {
   };
 
   async function checkAllowance() {
-    const urlOrgName = searchParams.get("orgName");
+    const urlOrgName = searchParams.get("o");
     if (urlOrgName) {
       // If orgName exists in URL, page is valid
       setInvalidPage(false);
@@ -108,7 +108,7 @@ const ApplyJobsContent = () => {
   const pageInit = async () => {
     // debugger;
     const token = Cookies.get("token");
-    const urlOrgName = searchParams.get("orgName");
+    const urlOrgName = searchParams.get("o");
     if (token) {
       try {
         const decryptedResponse = await verifyAndDecryptJWTToken(token);
