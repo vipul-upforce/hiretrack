@@ -298,7 +298,7 @@ export function CandidateDetailsDialog({
           newEntry: newHistoryEntry,
         }).unwrap();
 
-        if (pathname == "/dashboard/calendar") {
+        if (pathname === "/dashboard/calendar") {
           setIsAssigning(false);
           onOpenChange(false);
         }
@@ -372,7 +372,7 @@ export function CandidateDetailsDialog({
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto px-6 py-4 pt-0 space-y-6">
-            <div className="space-y-2 relative">
+            <div className="space-y-1 relative">
               <Label className={labelClass}>
                 {localCandidate.jobId?.title ||
                   localCandidate.jobDetails?.title ||
@@ -493,7 +493,7 @@ export function CandidateDetailsDialog({
                 </div>
                 {showEvalDetails &&
                   localCandidate.scores.strengths?.length > 0 && (
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                       <Label className={labelClass}>Strengths</Label>
                       <ExpandableDescription
                         description={
@@ -505,13 +505,14 @@ export function CandidateDetailsDialog({
                             )}
                           </ul>
                         }
+                        open
                       />
                     </div>
                   )}
 
                 {showEvalDetails &&
                   localCandidate.scores.areas_for_improvement?.length > 0 && (
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                       <Label className={labelClass}>
                         Areas for Improvement
                       </Label>
@@ -525,6 +526,7 @@ export function CandidateDetailsDialog({
                             )}
                           </ul>
                         }
+                        open
                       />
                     </div>
                   )}
@@ -537,10 +539,11 @@ export function CandidateDetailsDialog({
                 )}
 
                 {showEvalDetails && localCandidate.scores.notes && (
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <Label className={labelClass}>Note</Label>
                     <ExpandableDescription
                       description={localCandidate.scores.notes}
+                      open
                     />
                   </div>
                 )}
@@ -933,7 +936,7 @@ export function CandidateDetailsDialog({
           refetchAssignment={refetchAssignment}
           onSuccess={() => {
             // debugger;
-            if (pathname == "/dashboard/calendar") {
+            if (pathname === "/dashboard/calendar") {
               setIsAssigning(false);
               onOpenChange(false);
             } else {

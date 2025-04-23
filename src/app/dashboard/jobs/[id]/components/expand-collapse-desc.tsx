@@ -3,12 +3,14 @@ import { ChevronUp, ChevronDown } from "lucide-react";
 
 const ExpandableDescription = ({
   description,
+  open,
 }: {
   description: string | ReactNode;
   height?: number;
+  open?: boolean;
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isOverflowing, setIsOverflowing] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(open || false);
+  const [isOverflowing, setIsOverflowing] = useState(open || false);
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -27,15 +29,15 @@ const ExpandableDescription = ({
   }, [description]);
 
   return (
-    <div className="relative transition-all duration-200 ease-in-out">
+    <div className="relative transition-all duration-200 ease-in-out flex">
       <div
         ref={contentRef}
-        className={`text-sm whitespace-pre-wrap break-words transition-all duration-200 ease-in-out 
-          ${isExpanded ? "max-h-full pb-10" : `max-h-[60px] h-auto overflow-hidden`}`}
+        className={`text-sm whitespace-pre-wrap flex  break-words transition-all duration-200 ease-in-out 
+          ${isExpanded ? "max-h-full pb-5" : `max-h-[60px] h-auto overflow-hidden`}`}
       >
         {typeof description === "string" ? (
           <p
-            className="text-sm whitespace-pre-wrap"
+            className="text-sm whitespace-pre-wrap pb-0"
             style={{ wordWrap: "break-word" }}
           >
             {description || "No description found"}
@@ -53,12 +55,12 @@ const ExpandableDescription = ({
           {isExpanded ? (
             <div className="flex items-center justify-center font-semibold bg-gradient-to-b from-transparent to-white rounded-lg px-2 py-2 transition-all duration-200">
               <ChevronUp className="h-4 w-4 mr-2" />
-              Show Less
+              {/* Show Less */}
             </div>
           ) : (
             <div className="relative top-[30px] flex items-center justify-center font-semibold bg-gradient-to-b from-transparent to-white rounded-lg px-2 py-2 transition-all duration-200">
               <ChevronDown className="h-4 w-4 mr-2" />
-              Show More
+              {/* Show More */}
             </div>
           )}
         </button>

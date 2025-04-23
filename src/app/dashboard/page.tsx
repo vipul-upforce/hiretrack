@@ -156,11 +156,7 @@ export default function DashboardPage() {
     );
   });
 
-  const todayAssignments = filteredAssignments?.filter((assignment) => {
-    const assignmentDate = new Date(assignment.assignment.time).toDateString();
-    const today = new Date().toDateString();
-    return assignmentDate === today;
-  });
+  const todayAssignments = filteredAssignments;
 
   const thisWeekAssignments = filteredAssignments?.filter((assignment) => {
     const assignmentDate = new Date(assignment.assignment.time);
