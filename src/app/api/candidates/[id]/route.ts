@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase from "@/lib/mongodb";
+import connectToDatabase, { User } from "@/lib/mongodb";
 import { Candidate } from "@/lib/mongodb";
 import { handleCustomFieldFiles } from "@/lib/fileUtils";
 import { handleSingleFile } from "@/lib/fileUtils";
@@ -9,6 +9,8 @@ import { History } from "@/lib/mongodb"; // Import History model
 import { ICandidate as IExternalCandidate } from "@/lib/models/candidate"; // Import existing ICandidate
 import mongoose from "mongoose";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { sendMail } from "../../event-mail";
+import { loadTemplate } from "@/lib/templateLoader";
 
 interface UpdateObject {
   $set: Record<string, unknown>;
@@ -33,6 +35,7 @@ export async function PUT(
 ) {
   let fileStorage = "local";
   let organizationId;
+  let userData;
 
   try {
     await connectToDatabase();
@@ -43,7 +46,7 @@ export async function PUT(
       const decryptedResponse = await verifyAndDecryptToken(
         String(token?.value)
       );
-      const userData = decryptedResponse.user;
+      userData = decryptedResponse.user;
       if (decryptedResponse.success) {
         fileStorage = userData.fileStorage || "local";
         organizationId = userData.organizationId || "";
@@ -102,9 +105,51 @@ export async function PUT(
       }
     }
 
-    // Handle remarks separately
-    if ("remarks" in data) {
-      updateObj.$set.remarks = data.remarks;
+    if (
+      "remarks" in data &&
+      Array.isArray(data.remarks) &&
+      data.remarks.length > 0
+    ) {
+      const existingCandidate = await Candidate!.findById(id);
+      const existingRemarks = existingCandidate?.remarks || [];
+
+      if (data.remarks.length > existingRemarks.length) {
+        updateObj.$set.remarks = data.remarks;
+        const latestRemark = data.remarks[data.remarks.length - 1];
+
+        if (organizationId && User && latestRemark?.description) {
+          const users = await User.find({
+            organizationId,
+            role: { $in: ["hr", "admin"] },
+            isDeleted: false || null,
+          }).select("email");
+
+          const emailList = users.map((user) => user.email);
+
+          const remark_adder = userData?.name || "user";
+          const remark_for = data.name;
+          const remark = latestRemark.description.trim();
+          const rating = latestRemark.rating || "None";
+
+          if (emailList.length > 0 && remark !== "") {
+            const emailContent = loadTemplate("remark-add", {
+              remark_adder,
+              remark_for,
+              rating,
+              remark,
+            });
+
+            sendMail(
+              organizationId,
+              emailList,
+              `New Remark Added For ${remark_for}`,
+              emailContent
+            );
+          }
+        }
+      } else {
+        updateObj.$set.remarks = data.remarks;
+      }
     }
 
     // Handle email separately

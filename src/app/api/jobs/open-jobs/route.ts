@@ -22,12 +22,9 @@ export async function GET(request: Request) {
 
     let organizationId;
 
-    console.log("ORGNAME: ", orgName);
-
     if (orgName !== "") {
       const organization = await Organization!.findOne({ name: orgName });
       organizationId = organization?._id;
-      console.log("ORGID: ", organizationId);
 
       if (!organizationId) {
         return NextResponse.json(

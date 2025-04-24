@@ -118,7 +118,6 @@ export function FileUpload({
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
       onFileSelect(acceptedFiles);
-      console.log("(((((((((((((((( ", acceptedFiles);
       setDroppedFiles((prev = []) => {
         const combined = [...prev, ...acceptedFiles.map((file) => file.name)];
         return Array.from(new Set(combined));

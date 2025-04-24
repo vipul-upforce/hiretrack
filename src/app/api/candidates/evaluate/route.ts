@@ -104,10 +104,8 @@ async function evaluateResume(
         jsonString = jsonString?.replace(/```/i, "");
         jsonString = jsonString?.trim();
 
-        console.log("JSONSTRING....: ", jsonString);
         try {
           if (!jsonString) throw new Error("No JSON string to parse");
-          console.log("JSONSTRING....: ", jsonString);
           const parsedObject = JSON.parse(jsonString);
           return parsedObject;
         } catch {
@@ -193,10 +191,8 @@ export async function PUT(request: NextRequest) {
     const fileStorage = settingsData.fileStorage.storageType || "local";
 
     if (fileStorage === "local") {
-      console.log("&&&&&LOCAL");
       base64Resume = await generateBase64(resumeUrl);
     } else {
-      console.log("|||||||NOTLOCAL");
       const response = await fetch(resumeUrl);
       if (!response.ok) {
         return NextResponse.json(

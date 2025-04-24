@@ -48,6 +48,12 @@ import { AssignJobDialog } from "./assing-job-dialog";
 import { CandidateScoreBadge } from "./candidate-score-badge";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { User } from "@/lib/features/users/usersApi";
+import {
+  // IScheduledMailRequest,
+  useSendMailMutation,
+} from "@/lib/features/org/orgApi";
+// import { IJob } from "@/lib/models/job";
+import { sentAssignmentMail } from "@/lib/utils";
 // import { sentAssignmentMail } from "@/lib/utils";
 // import {
 //   // IScheduledMailRequest,
@@ -119,7 +125,7 @@ export function CandidateDetailsDialog({
   const [user, setuser] = useState<User | null>(null);
   const [confirmUnassignOpen, setConfirmUnassignOpen] = useState(false);
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
-  // const [sendEmail] = useSendMailMutation();
+  const [sendEmail] = useSendMailMutation();
 
   useEffect(() => {
     (async () => {
@@ -229,38 +235,39 @@ export function CandidateDetailsDialog({
       };
       const updateData = {
         _id: localCandidate?._id,
+        name: localCandidate?.name,
         remarks: [...(localCandidate?.remarks || []), newRemarkObj],
       };
       const result = await updateCandidate(updateData).unwrap();
-      // if(result){
-      //   const reqBody: IScheduledMailRequest = {
-      //     email:
-      //       typeof result.assignment!.interviewerId === "object"
-      //         ? result.assignment!.interviewerId.email
-      //         : "",
-      //     eventTitle:
-      //       result.jobId &&
-      //       typeof result.jobId !== "string" &&
-      //       (result.jobId as unknown as IJob).title
-      //         ? ("Remarks Added by " + result.assignment!.interviewerId .email)
-      //         : "",
-      //     startTime: result.assignment?.time as string,
-      //     endTime: result.assignment?.time as string,
-      //     jobName:
-      //       result.jobId &&
-      //       typeof result.jobId !== "string" &&
-      //       (result.jobId as unknown as IJob).title
-      //         ? (result.jobId as unknown as IJob).title
-      //         : "Unknown Job",
-      //     interviewerName:
-      //       typeof result.assignment!.interviewerId === "object"
-      //         ? result.assignment!.interviewerId.name
-      //         : "",
-      //     candidateName: result.name,
-      //     status: result.status,
-      //   };
-      //   sentAssignmentMail(result, sendEmail);
-      // }
+      if (result) {
+        // const reqBody: IScheduledMailRequest = {
+        //   email:
+        //     typeof result.assignment!.interviewerId === "object"
+        //       ? result.assignment!.interviewerId.email
+        //       : "",
+        //   eventTitle:
+        //     result.jobId &&
+        //     typeof result.jobId !== "string" &&
+        //     (result.jobId as unknown as IJob).title
+        //       ? "Remarks Added by " + result.assignment!.interviewerId
+        //       : "",
+        //   startTime: result.assignment?.time as string,
+        //   endTime: result.assignment?.time as string,
+        //   jobName:
+        //     result.jobId &&
+        //     typeof result.jobId !== "string" &&
+        //     (result.jobId as unknown as IJob).title
+        //       ? (result.jobId as unknown as IJob).title
+        //       : "Unknown Job",
+        //   interviewerName:
+        //     typeof result.assignment!.interviewerId === "object"
+        //       ? result.assignment!.interviewerId.name
+        //       : "",
+        //   candidateName: result.name,
+        //   status: result.status,
+        // };
+        sentAssignmentMail(result, sendEmail);
+      }
       // Update both local and parent state
       setLocalCandidate(result);
       onUpdate?.(result);
@@ -301,6 +308,7 @@ export function CandidateDetailsDialog({
       };
       const result = await updateCandidate(updatedCandidate).unwrap();
       if (result) {
+        // sentUnAssignmentMail(result, sendEmail);
         onUpdate?.(result);
         setLocalCandidate(result);
         if (pathname !== "/dashboard" && pathname !== "/dashboard/calendar") {
@@ -375,7 +383,7 @@ export function CandidateDetailsDialog({
           <DialogHeader className="px-6 pt-6">
             <DialogTitle className="text-2xl font-semibold">
               <div className="flex items-center justify-between">
-                <div className="">
+                <div>
                   <div className="flex gap-2 items-center">
                     {localCandidate.name}{" "}
                     {localCandidate.isDeleted && (
@@ -383,24 +391,47 @@ export function CandidateDetailsDialog({
                     )}
                   </div>
                   {localCandidate.email && (
-                    <div className="text-gray-500 font-thin text-sm flex flex-row items-center justify-between w-full">
+                    <div className="text-gray-500 font-thin text-sm flex flex-row items-center">
                       {localCandidate.email}
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="ml-2"
+                        className="ml-2 h-6 w-6"
                         onClick={() =>
                           handleCandidateInfoCopy(localCandidate.email || "")
                         }
                         title="Copy Email"
                       >
-                        <Copy size="1px" />
+                        <Copy size={14} />
                         <span className="sr-only">Copy Email</span>
                       </Button>
                     </div>
                   )}
                 </div>
-                <div className="mr-6">
+
+                <div className="flex items-center gap-4 pr-8">
+                  <div className="text-right">
+                    {localCandidate?.assignment && (
+                      <div className="flex flex-col items-end">
+                        <div className="text-sm font-bold">
+                          {typeof localCandidate.assignment.interviewerId ===
+                            "object" && localCandidate.assignment.interviewerId
+                            ? localCandidate.assignment.interviewerId.name
+                            : "Unknown Interviewer"}
+                        </div>
+                        <div className="text-xs text-gray-500 flex items-center gap-1">
+                          <span>
+                            {formatDate(localCandidate.assignment.time)}
+                          </span>
+                          <span>•</span>
+                          <span>
+                            {formatTime(localCandidate.assignment.time)}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   <CandidateStatusBadge status={localCandidate.status} />
                 </div>
               </div>
@@ -924,7 +955,10 @@ export function CandidateDetailsDialog({
             {!fromFilter ? (
               <div className="flex justify-between w-full">
                 <div className="flex gap-2">
-                  <Button onClick={() => setIsAssigning(true)}>
+                  <Button
+                    className={user?.role == "interviewer" ? "hidden" : ""}
+                    onClick={() => setIsAssigning(true)}
+                  >
                     Assign To
                   </Button>
                   <Button

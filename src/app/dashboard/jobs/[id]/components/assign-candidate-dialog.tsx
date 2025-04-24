@@ -476,6 +476,7 @@ export function AssignCandidateDialog({
                           new File([att.url], att.name, { type: att.type })
                       )}
                       setter={(uiFiles) => {
+                        // debugger;
                         const fileIndexMap = new Map();
                         uiFiles.forEach((file, index) => {
                           fileIndexMap.set(file, index);

@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Rating } from "@mui/material";
 import { Button } from "@/components/ui/button";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
+// import { sentRemarkMail } from "@/lib/utils";
 
 const AddRemarksDialog = ({
   candidate,
@@ -60,8 +61,10 @@ const AddRemarksDialog = ({
               email: user.email,
             },
           };
+          // debugger;
           const updateData = {
             _id: candidate?._id,
+            name: candidate.name,
             remarks: [...(candidate?.remarks || []), newRemarkObj],
           };
           toast({
@@ -70,6 +73,8 @@ const AddRemarksDialog = ({
           });
 
           await updateCandidate(updateData).unwrap();
+          // sentRemarkMail(result, sendEmail);
+
           await refetch();
 
           setNewRemark("");

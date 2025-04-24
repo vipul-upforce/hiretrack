@@ -37,7 +37,20 @@ This document explains the HTML email templates currently in use across the syst
 
 ---
 
-## Template 3: Password Reset Email
+## Template 3: Remark Add Notification Email
+
+**Purpose:** Used to notify HR and Admins when a new remark is added for a candidate, including the remark details and rating.
+
+### Dynamic Variables:
+
+- `{{remark_adder}}` - Name of the user who added the remark
+- `{{remark_for}}` - Name of the candidate the remark is about
+- `{{remark}}` - The actual remark/comment text
+- `{{rating}}` - The rating given along with the remark
+
+---
+
+## Template 4: Password Reset Email
 
 **Purpose:** Sends a secured password reset link to users who request to reset their account credentials.
 
