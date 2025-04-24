@@ -4,6 +4,70 @@ import { verifyAndDecryptToken } from "@/app/actions/auth";
 import { loadTemplate } from "@/lib/templateLoader";
 import { User } from "@/lib/mongodb";
 
+export async function PUT(req: NextRequest) {
+  try {
+    let organizationId;
+    const { name } = await req.json();
+    const token = req.cookies.get("token");
+    if (token?.value) {
+      const decryptedResponse = await verifyAndDecryptToken(
+        String(token?.value)
+      );
+      const userData = decryptedResponse.user;
+      if (decryptedResponse.success) {
+        organizationId = userData.organizationId || "";
+      }
+    }
+
+    // Validate that organizationId exists
+    if (!organizationId) {
+      return NextResponse.json(
+        { error: "Organization ID is missing." },
+        { status: 400 }
+      );
+    }
+    if (!User) {
+      throw new Error("Database not connected");
+    }
+    const htmlContent = `
+      <div>
+        ${name} is unassigned from previous interviwer.
+      </div>
+    `;
+    const users = await User.find({
+      organizationId,
+      role: { $in: ["hr", "admin"] },
+      isDeleted: false || null,
+    }).select("email");
+
+    const emailList = users.map((user) => user.email);
+    const emailStatus = await sendMail(
+      organizationId,
+      [...emailList],
+      `Candidate Unassigned`,
+      htmlContent
+    );
+    if (emailStatus.status === 200) {
+      return NextResponse.json({ message: "Email sent successfully." });
+    } else {
+      return NextResponse.json(
+        {
+          error: emailStatus.message,
+        },
+        { status: emailStatus.status }
+      );
+    }
+  } catch (error: unknown) {
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error ? error.message : "Unknown Error Occurred",
+      },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const {

@@ -51,6 +51,7 @@ import { User } from "@/lib/features/users/usersApi";
 import {
   // IScheduledMailRequest,
   useSendMailMutation,
+  useSendUnassignMailMutation,
 } from "@/lib/features/org/orgApi";
 // import { IJob } from "@/lib/models/job";
 import { sentAssignmentMail } from "@/lib/utils";
@@ -126,6 +127,7 @@ export function CandidateDetailsDialog({
   const [confirmUnassignOpen, setConfirmUnassignOpen] = useState(false);
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
   const [sendEmail] = useSendMailMutation();
+  const [sendUnassignEmail] = useSendUnassignMailMutation();
 
   useEffect(() => {
     (async () => {
@@ -308,7 +310,6 @@ export function CandidateDetailsDialog({
       };
       const result = await updateCandidate(updatedCandidate).unwrap();
       if (result) {
-        // sentUnAssignmentMail(result, sendEmail);
         onUpdate?.(result);
         setLocalCandidate(result);
         if (pathname !== "/dashboard" && pathname !== "/dashboard/calendar") {
@@ -341,12 +342,14 @@ export function CandidateDetailsDialog({
           jobId: localCandidate?.jobId._id || localCandidate?.jobId || "",
           newEntry: newHistoryEntry,
         }).unwrap();
+        console.log("%&^%^&%^&%EMAIL BEING SEND::::");
+        await sendUnassignEmail({ name: result.name });
 
         if (pathname === "/dashboard/calendar") {
           setIsAssigning(false);
           onOpenChange(false);
         }
-
+        // debugger;
         toast({
           title: "Success",
           description: "Interviewer has been unassigned successfully",

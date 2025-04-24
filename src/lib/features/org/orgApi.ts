@@ -129,6 +129,13 @@ export const orgApi = createApi({
         body: data,
       }),
     }),
+    sendUnassignMail: builder.mutation<{ message: string }, any>({
+      query: (data) => ({
+        url: `/event-mail`,
+        method: "PUT",
+        body: data,
+      }),
+    }),
     // New endpoint to fetch batches
     fetchBatches: builder.query<Batch[], string>({
       query: (organizationId) => `/process-cv?organizationId=${organizationId}`,
@@ -153,6 +160,7 @@ export const orgApi = createApi({
 export const {
   useCreateAdminMutation,
   useSendMailMutation,
+  useSendUnassignMailMutation,
   useCreateOrgMutation,
   useUpdateAdminMutation,
   useUpdateCustomFieldsMutation,
