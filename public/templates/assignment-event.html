@@ -1,17 +1,160 @@
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-    <h2>{{eventTitle}}</h2>
-    <p><strong>Meeting time:</strong> {{startDate}}</p>
-    <p>
-      <div>
-        <strong>Job Name:</strong> {{jobName}}<br>
-        <strong>Interviewer Name:</strong> {{interviewerName}}<br>
-        <strong>Candidate Name:</strong> {{candidateName}}<br>
-        <strong>Status:</strong> {{status}}
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  </head>
+  <body style="margin: 0; padding: 0; background-color: #f5f5f5">
+    <div
+      style="
+        max-width: 600px;
+        margin: 40px auto;
+        background-color: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      "
+    >
+      <div style="padding: 40px">
+        <h2
+          style="
+            color: #2c3e50;
+            margin: 0 0 20px 0;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            font-size: 24px;
+            font-weight: 600;
+          "
+        >
+          {{eventTitle}}
+        </h2>
+
+        <p
+          style="
+            color: #34495e;
+            margin: 0 0 20px 0;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            font-size: 16px;
+            line-height: 1.5;
+          "
+        >
+          Hi {{interviewerName}},<br />
+          A new interview has been scheduled for you. Please find the details
+          below:
+        </p>
+
+        <div
+          style="
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 30px;
+          "
+        >
+          <p
+            style="
+              color: #34495e;
+              margin: 0 0 15px 0;
+              font-family: 'Helvetica Neue', Arial, sans-serif;
+              font-size: 16px;
+            "
+          >
+            <strong style="color: #2c3e50">Meeting time:</strong><br />
+            <span style="color: #7f8c8d">{{startDate}}</span>
+          </p>
+
+          <div style="border-top: 1px solid #e9ecef; padding-top: 15px">
+            <p
+              style="
+                color: #34495e;
+                margin: 0 0 10px 0;
+                font-family: 'Helvetica Neue', Arial, sans-serif;
+                font-size: 16px;
+              "
+            >
+              <strong style="color: #2c3e50">Job Name:</strong><br />
+              <span style="color: #7f8c8d">{{jobName}}</span>
+            </p>
+            <p
+              style="
+                color: #34495e;
+                margin: 0 0 10px 0;
+                font-family: 'Helvetica Neue', Arial, sans-serif;
+                font-size: 16px;
+              "
+            >
+              <strong style="color: #2c3e50">Interviewer Name:</strong><br />
+              <span style="color: #7f8c8d">{{interviewerName}}</span>
+            </p>
+            <p
+              style="
+                color: #34495e;
+                margin: 0 0 10px 0;
+                font-family: 'Helvetica Neue', Arial, sans-serif;
+                font-size: 16px;
+              "
+            >
+              <strong style="color: #2c3e50">Candidate Name:</strong><br />
+              <span style="color: #7f8c8d">{{candidateName}}</span>
+            </p>
+            <p
+              style="
+                color: #34495e;
+                margin: 0;
+                font-family: 'Helvetica Neue', Arial, sans-serif;
+                font-size: 16px;
+              "
+            >
+              <strong style="color: #2c3e50">Status:</strong><br />
+              <span style="color: #7f8c8d">{{status}}</span>
+            </p>
+          </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px">
+          <p
+            style="
+              color: #34495e;
+              margin: 0 0 20px 0;
+              font-family: 'Helvetica Neue', Arial, sans-serif;
+              font-size: 16px;
+            "
+          >
+            Add this event to your calendar:
+          </p>
+          <a
+            href="{{googleCalendarLink}}"
+            target="_blank"
+            style="
+              display: inline-block;
+              background-color: #4285f4;
+              color: white;
+              padding: 12px 24px;
+              margin-right: 10px;
+              text-decoration: none;
+              border-radius: 4px;
+              font-family: 'Helvetica Neue', Arial, sans-serif;
+              font-weight: 500;
+              transition: background-color 0.3s;
+            "
+            >Google Calendar</a
+          >
+          <a
+            href="{{outlookCalendarLink}}"
+            target="_blank"
+            style="
+              display: inline-block;
+              background-color: #0078d4;
+              color: white;
+              padding: 12px 24px;
+              text-decoration: none;
+              border-radius: 4px;
+              font-family: 'Helvetica Neue', Arial, sans-serif;
+              font-weight: 500;
+              transition: background-color 0.3s;
+            "
+            >Outlook Calendar</a
+          >
+        </div>
       </div>
-    </p>
-    <div style="margin-top: 20px;">
-      <p>Add this event to your calendar:</p>
-      <a href="{{googleCalendarLink}}" target="_blank" style="display: inline-block; background-color: #4285F4; color: white; padding: 10px 15px; margin-right: 10px; text-decoration: none; border-radius: 4px;">Google Calendar</a>
-      <a href="{{outlookCalendarLink}}" target="_blank" style="display: inline-block; background-color: #0078D4; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px;">Outlook Calendar</a>
     </div>
-</div>
+  </body>
+</html>

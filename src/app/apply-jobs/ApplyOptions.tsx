@@ -97,6 +97,7 @@ export default function ApplyOptions({
                     jobId={job._id as string}
                     isOpen={isFormDialogOpen}
                     setIsOpen={setIsFormDialogOpen}
+                    closeParent={onClose}
                   />
                 </div>
                 {/* <Button onClick={() => setIsJobModelOpen(!isJobModelOpen)}>

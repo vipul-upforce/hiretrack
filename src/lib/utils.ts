@@ -38,6 +38,7 @@ export const sentAssignmentMail = async (
   //sending mail to assignmee after successfully updating candidate
   if (result.assignment) {
     const reqBody: IScheduledMailRequest = {
+      id: result._id,
       email:
         typeof result.assignment.interviewerId === "object"
           ? result.assignment.interviewerId.email

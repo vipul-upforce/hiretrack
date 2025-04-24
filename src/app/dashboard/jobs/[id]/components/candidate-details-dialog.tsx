@@ -127,7 +127,7 @@ export function CandidateDetailsDialog({
   const [confirmUnassignOpen, setConfirmUnassignOpen] = useState(false);
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
   const [sendEmail] = useSendMailMutation();
-  const [sendUnassignEmail] = useSendUnassignMailMutation();
+  const [sendUnassignEmail, { isLoading }] = useSendUnassignMailMutation();
 
   useEffect(() => {
     (async () => {
@@ -268,7 +268,12 @@ export function CandidateDetailsDialog({
         //   candidateName: result.name,
         //   status: result.status,
         // };
-        sentAssignmentMail(result, sendEmail);
+        setTimeout(
+          () => {
+            sentAssignmentMail(result, sendEmail);
+          },
+          2 * 60 * 1000
+        );
       }
       // Update both local and parent state
       setLocalCandidate(result);
@@ -343,7 +348,7 @@ export function CandidateDetailsDialog({
           newEntry: newHistoryEntry,
         }).unwrap();
         console.log("%&^%^&%^&%EMAIL BEING SEND::::");
-        await sendUnassignEmail({ name: result.name });
+        sendUnassignEmail({ name: result.name });
 
         if (pathname === "/dashboard/calendar") {
           setIsAssigning(false);
@@ -1064,7 +1069,9 @@ export function CandidateDetailsDialog({
             >
               Cancel
             </Button>
-            <Button onClick={confirmUnassign}>Confirm</Button>
+            <Button disabled={isLoading} onClick={confirmUnassign}>
+              {isLoading ? "Marking as done..." : "Confirm"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

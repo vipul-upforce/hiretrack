@@ -4,7 +4,7 @@ This document explains the HTML email templates currently in use across the syst
 
 ---
 
-## Template 1: Canidate Application Email
+## Template 1: Candidate Application Email
 
 **Purpose:** Notifies the HR team and Candidate when a new job application is submitted by candidate.
 
@@ -57,3 +57,14 @@ This document explains the HTML email templates currently in use across the syst
 ### Dynamic Variables:
 
 - `{{resetUrl}}` - Secure URL for resetting the user's password. This link is time-sensitive and expires in 1 hour.
+
+---
+
+## Template 5: Marked-as-Done Event
+
+**Purpose:** Used to notify HR and Admins when a candidate's interview process is marked as completed by an interviewer.
+
+### Dynamic Variables:
+
+- `{{candidate_name}}` - Name of the candidate who was marked as done
+- `{{unassigner}}` - Name of the user who marked the candidate as done

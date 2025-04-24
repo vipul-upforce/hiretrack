@@ -38,6 +38,7 @@ export interface CreateOrgRequest {
 }
 
 export interface IScheduledMailRequest {
+  id: string;
   email: string;
   eventTitle: string;
   startTime: string;

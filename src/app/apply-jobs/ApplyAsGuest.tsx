@@ -70,6 +70,7 @@ interface CreateCandidateDialogProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
   resumeFile?: File | null;
+  closeParent: () => void;
 }
 
 const getInitialValues = (customFields: CustomFieldValues) => ({
@@ -137,6 +138,7 @@ export function ApplyAsGuestDialog({
   isOpen,
   setIsOpen,
   resumeFile,
+  closeParent,
 }: CreateCandidateDialogProps) {
   const { toast } = useToast();
   const [createGuestCandidate] = useCreateGuestCandidateMutation();
@@ -300,6 +302,7 @@ export function ApplyAsGuestDialog({
       //   }
 
       setIsOpen(false);
+      closeParent();
       //   if (user?.role === "candidate") {
       //     sendAppliedEventMail(candidateId, applicationEventMailMutation);
       //   }

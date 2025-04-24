@@ -35,7 +35,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Rating } from "@mui/material";
 import Cookies from "js-cookie";
 import { ICandidateHistory } from "@/lib/models/history";
-import { useSendMailMutation } from "@/lib/features/org/orgApi";
+import {
+  useSendMailMutation,
+  useSendUnassignMailMutation,
+} from "@/lib/features/org/orgApi";
 import { sentAssignmentMail } from "@/lib/utils";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 
@@ -99,6 +102,7 @@ export function AssignCandidateDialog({
     useFetchInterviewersQuery();
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
   const [user, setuser] = useState<User | null>(null);
+  const [sendUnassignEmail] = useSendUnassignMailMutation();
 
   useEffect(() => {
     (async () => {
@@ -320,6 +324,7 @@ export function AssignCandidateDialog({
         jobId: candidate.jobId._id || candidate.jobId,
         newEntry: newHistoryEntry,
       }).unwrap();
+      sendUnassignEmail({ name: result.name });
       toast({
         title: "Success",
         description: "Interviewer has been unassigned successfully",
