@@ -109,45 +109,47 @@ export const sentAssignmentMail = async (
 //     }
 //   }
 // };
-// export const sentUnAssignmentMail = async (
-//   result: Candidate,
-//   sendEmail: ReturnType<typeof useSendMailMutation>[0]
-// ) => {
-//   //sending mail to assignmee after successfully updating candidate
-//   if (result.assignment) {
-//     const reqBody: IScheduledMailRequest = {
-//       email:
-//         typeof result.assignment.interviewerId === "object"
-//           ? result.assignment.interviewerId.email
-//           : "",
-//       eventTitle:
-//         result.jobId &&
-//         typeof result.jobId !== "string" &&
-//         (result.jobId as unknown as IJob).title
-//           ? "Interview for " + (result.jobId as unknown as IJob).title
-//           : "Interview for Unknown Position",
-//       startTime: result.assignment?.time,
-//       endTime: result.assignment?.time,
-//       jobName:
-//         result.jobId &&
-//         typeof result.jobId !== "string" &&
-//         (result.jobId as unknown as IJob).title
-//           ? (result.jobId as unknown as IJob).title
-//           : "Unknown Job",
-//       interviewerName:
-//         typeof result.assignment.interviewerId === "object"
-//           ? result.assignment.interviewerId.name
-//           : "",
-//       candidateName: result.name,
-//       status: result.status,
-//     };
-//     const { error } = await sendEmail(reqBody);
-//     if (error) {
-//       // toast({
-//       //   title: "Error",
-//       //   description: "Email not sent.",
-//       //   variant: "destructive",
-//       // });
-//     }
-//   }
-// };
+export const sentUnAssignmentMail = async (
+  result: Candidate,
+  sendUnassignEmail: (data: { name: string }) => Promise<{ error?: string }>
+) => {
+  //sending mail to assignmee after successfully updating candidate
+  // console.log("UYIUYUYU outrside conditions");
+  // if (result.assignment) {
+  const reqBody = {
+    // email:
+    //   typeof result.assignment.interviewerId === "object"
+    //     ? result.assignment.interviewerId.email
+    //     : "",
+    // eventTitle:
+    //   result.jobId &&
+    //   typeof result.jobId !== "string" &&
+    //   (result.jobId as unknown as IJob).title
+    //     ? "Interview for " + (result.jobId as unknown as IJob).title
+    //     : "Interview for Unknown Position",
+    // startTime: result.assignment?.time,
+    // endTime: result.assignment?.time,
+    // jobName:
+    //   result.jobId &&
+    //   typeof result.jobId !== "string" &&
+    //   (result.jobId as unknown as IJob).title
+    //     ? (result.jobId as unknown as IJob).title
+    //     : "Unknown Job",
+    // interviewerName:
+    //   typeof result.assignment.interviewerId === "object"
+    //     ? result.assignment.interviewerId.name
+    //     : "",
+    name: result.name,
+  };
+  console.log("DDDDDDDDDSENDING MAIL>>>");
+  const { error } = await sendUnassignEmail(reqBody);
+  console.log("Mail sent or error:>>>", error);
+  if (error) {
+    // toast({
+    //   title: "Error",
+    //   description: "Email not sent.",
+    //   variant: "destructive",
+    // });
+  }
+  // }
+};
