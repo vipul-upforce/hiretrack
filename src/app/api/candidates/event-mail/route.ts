@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { name, email } = candidateData as ICandidate;
-    let organizationId = candidateData.organizationId;
+    const organizationId = candidateData.organizationId;
 
     if (!organizationId) {
       return NextResponse.json(
@@ -83,10 +83,10 @@ export async function POST(req: NextRequest) {
     // Find all HR users in the organization
     const hrUsers = await User.find({
       organizationId: organizationId,
-      role: { $in: ["hr"] },
+      role: { $in: ["hr", "admin"] },
     });
     const hrEmails: string[] = [];
-    hrUsers.map((user) => {
+    hrUsers?.map((user) => {
       hrEmails.push(user.email);
     });
 
@@ -123,7 +123,6 @@ export async function POST(req: NextRequest) {
       );
     }
   } catch (error: unknown) {
-    console.error("Error sending emails:", error);
     return NextResponse.json(
       {
         error:

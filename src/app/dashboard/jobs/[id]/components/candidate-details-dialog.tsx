@@ -48,6 +48,12 @@ import { AssignJobDialog } from "./assing-job-dialog";
 import { CandidateScoreBadge } from "./candidate-score-badge";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { User } from "@/lib/features/users/usersApi";
+// import { sentAssignmentMail } from "@/lib/utils";
+// import {
+//   // IScheduledMailRequest,
+//   useSendMailMutation,
+// } from "@/lib/features/org/orgApi";
+// import { IJob } from "@/lib/models/job";
 
 interface CandidateDetailsDialogProps {
   candidate: Candidate | null;
@@ -113,6 +119,7 @@ export function CandidateDetailsDialog({
   const [user, setuser] = useState<User | null>(null);
   const [confirmUnassignOpen, setConfirmUnassignOpen] = useState(false);
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
+  // const [sendEmail] = useSendMailMutation();
 
   useEffect(() => {
     (async () => {
@@ -225,6 +232,35 @@ export function CandidateDetailsDialog({
         remarks: [...(localCandidate?.remarks || []), newRemarkObj],
       };
       const result = await updateCandidate(updateData).unwrap();
+      // if(result){
+      //   const reqBody: IScheduledMailRequest = {
+      //     email:
+      //       typeof result.assignment!.interviewerId === "object"
+      //         ? result.assignment!.interviewerId.email
+      //         : "",
+      //     eventTitle:
+      //       result.jobId &&
+      //       typeof result.jobId !== "string" &&
+      //       (result.jobId as unknown as IJob).title
+      //         ? ("Remarks Added by " + result.assignment!.interviewerId .email)
+      //         : "",
+      //     startTime: result.assignment?.time as string,
+      //     endTime: result.assignment?.time as string,
+      //     jobName:
+      //       result.jobId &&
+      //       typeof result.jobId !== "string" &&
+      //       (result.jobId as unknown as IJob).title
+      //         ? (result.jobId as unknown as IJob).title
+      //         : "Unknown Job",
+      //     interviewerName:
+      //       typeof result.assignment!.interviewerId === "object"
+      //         ? result.assignment!.interviewerId.name
+      //         : "",
+      //     candidateName: result.name,
+      //     status: result.status,
+      //   };
+      //   sentAssignmentMail(result, sendEmail);
+      // }
       // Update both local and parent state
       setLocalCandidate(result);
       onUpdate?.(result);
