@@ -17,7 +17,7 @@ console.log("THE MAP: ", emailQueue);
 function scheduleEmail(
   key: string,
   data: any,
-  delayMs: number = 2 * 60 * 1000
+  delayMs: number = 1 * 60 * 1000
 ) {
   if (emailQueue.has(key)) {
     const existingItem = emailQueue.get(key)!;
@@ -259,6 +259,7 @@ export async function POST(req: NextRequest) {
       candidateName,
       status,
       emailList,
+      // changer: decryptedResponse?.user.name,
     };
 
     if (immediate) {
