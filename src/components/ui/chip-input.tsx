@@ -55,7 +55,16 @@ export function ChipInput({
       if (e.key === "Enter" && input.value !== "") {
         e.preventDefault();
         const trimmedValue = input.value.trim();
-        if (trimmedValue !== "") {
+        const hasAlphanumeric = /[a-zA-Z0-9]/.test(trimmedValue);
+        const hasLongSpecialCharSequence = /[^a-zA-Z0-9]{5,}/.test(
+          trimmedValue
+        );
+
+        if (
+          trimmedValue !== "" &&
+          hasAlphanumeric &&
+          !hasLongSpecialCharSequence
+        ) {
           const currentValues = selectedValues || [];
           if (!currentValues.includes(trimmedValue)) {
             const newValues = [...currentValues, trimmedValue];
