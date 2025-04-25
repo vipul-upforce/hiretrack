@@ -289,7 +289,7 @@ const ApplyJobsContent = () => {
                 {job.skills.slice(0, 3).map((skill, i) => (
                   <span
                     key={i}
-                    className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full"
+                    className="break-all bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full"
                   >
                     {skill}
                   </span>

@@ -92,7 +92,7 @@ export default function JobModal({
                   {job.skills.map((skill: string, i: number) => (
                     <span
                       key={i}
-                      className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full"
+                      className="break-all bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full"
                     >
                       {skill}
                     </span>

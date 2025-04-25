@@ -304,7 +304,7 @@ export default function KanbanPage() {
                         ref={provided.innerRef}
                         className="space-y-3 min-h-full"
                       >
-                        {isCreatingJob && column.id === "open" && (
+                        {isCreatingJob && column.id === "draft" && (
                           <div className="animate-pulse bg-muted/50 border rounded-lg p-3 shadow-sm">
                             <div className="h-5 w-2/3 bg-muted rounded mb-2"></div>
                             <div className="h-4 w-1/3 bg-muted rounded"></div>

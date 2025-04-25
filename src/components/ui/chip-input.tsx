@@ -11,7 +11,7 @@ interface ChipInputProps {
   suggestions?: string[];
   onSuggestionClick?: (suggestion: string) => void;
   onBlur?: () => void;
-  fullWidth?:boolean
+  fullWidth?: boolean;
 }
 
 export function ChipInput({
@@ -21,21 +21,20 @@ export function ChipInput({
   suggestions = [],
   onSuggestionClick,
   onBlur,
-  fullWidth
+  fullWidth,
 }: ChipInputProps) {
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [inputValue, setInputValue] = React.useState("");
   const [open, setOpen] = React.useState(false);
   const [selectedValues, setSelectedValues] = React.useState<string[]>([]);
 
-
   React.useEffect(() => {
     // if (value.length > 0) {
-      if (typeof value === "string") {
-        setSelectedValues([value]);
-      } else {
-        setSelectedValues(value);
-      }
+    if (typeof value === "string") {
+      setSelectedValues([value]);
+    } else {
+      setSelectedValues(value);
+    }
     // }
   }, [value]);
 
@@ -70,7 +69,7 @@ export function ChipInput({
   };
 
   return (
-    <div className="relative" style={{width: fullWidth? "100%": ""}}>
+    <div className="relative" style={{ width: fullWidth ? "100%" : "" }}>
       <div className="group border border-input px-3 py-2 text-sm rounded-md focus-within:ring-2 focus-within:ring-ring">
         <div className="flex gap-1 flex-wrap">
           {typeof selectedValues === "string"
@@ -79,7 +78,7 @@ export function ChipInput({
                 <Badge
                   key={item}
                   variant="secondary"
-                  className="bg-muted hover:bg-muted"
+                  className="bg-muted hover:bg-muted break-all"
                 >
                   {item}
                   <button
@@ -106,7 +105,7 @@ export function ChipInput({
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            onBlur={()=>{
+            onBlur={() => {
               onBlur?.();
               setTimeout(() => setOpen(false), 500);
             }}

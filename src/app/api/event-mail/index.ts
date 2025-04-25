@@ -108,7 +108,7 @@ const sendSmtpMail = async (smtpObJ: ISmtpObj) => {
     const mailOptions = {
       from: smtpObJ.settings.smtp_from,
       to: smtpObJ.email,
-      subject: `Event Invitation: ${smtpObJ.eventTitle}`,
+      subject: `${smtpObJ.eventTitle}`,
       html: smtpObJ.htmlContent,
     };
 

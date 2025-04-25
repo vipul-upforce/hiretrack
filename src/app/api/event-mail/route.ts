@@ -13,11 +13,11 @@ const emailQueue = new Map<
     timestamp: number;
   }
 >();
-console.log("THE MAP: ", emailQueue);
+// console.log("THE MAP: ", emailQueue);
 function scheduleEmail(
   key: string,
   data: any,
-  delayMs: number = 1 * 60 * 1000
+  delayMs: number = 2 * 60 * 1000
 ) {
   if (emailQueue.has(key)) {
     const existingItem = emailQueue.get(key)!;
@@ -25,7 +25,7 @@ function scheduleEmail(
       ...existingItem,
       data,
     });
-    console.log("🟢🟢THE MAP-updated: ", emailQueue);
+    // console.log("🟢🟢THE MAP-updated: ", emailQueue);
     return { success: true, message: "Email data updated" };
   }
 
@@ -48,7 +48,7 @@ function scheduleEmail(
     timestamp: Date.now() + delayMs,
   });
 
-  console.log("THE MAP: ", emailQueue);
+  // console.log("THE MAP: ", emailQueue);
   return { success: true, message: "Email scheduled" };
 }
 
@@ -274,7 +274,7 @@ export async function POST(req: NextRequest) {
         );
       }
     } else {
-      console.log("@######Addinbg to queu: ", emailKey, queueData);
+      // console.log("@######Addinbg to queu: ", emailKey, queueData);
       scheduleEmail(emailKey, queueData);
 
       return NextResponse.json({

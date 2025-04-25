@@ -83,7 +83,6 @@ export default function OrgRegisterPage() {
     async function checkAllowance() {
       const data = await fetch("/api/organization");
       const allowance = await data.json();
-      console.log("@@@@@@@@@@@@ ALLOWANCE: ", allowance);
       if (!allowance.allow) {
         router.push("/auth/login");
       }

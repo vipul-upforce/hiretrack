@@ -41,12 +41,10 @@ export async function POST(req: NextRequest) {
       }
     } else {
       const totalOrgs = await Organization.find({}).lean();
-      console.log("&&&&&&&&&&&&&&&&settings: ", totalOrgs);
       if (totalOrgs.length === 1) {
         const settings = await Settings.findOne({
           organizationId: String(totalOrgs[0]._id),
         });
-        console.log("&&&&&&&&&&&&&&&&settings: ", settings);
         if (!settings?.multipleOrg) {
           return NextResponse.json(
             { error: "You cannot create a new organization." },

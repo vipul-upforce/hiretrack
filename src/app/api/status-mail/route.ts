@@ -19,7 +19,7 @@ const emailQueue = new Map<
 function scheduleEmail(
   key: string,
   data: any,
-  delayMs: number = 1 * 60 * 1000
+  delayMs: number = 2 * 60 * 1000
 ) {
   if (emailQueue.has(key)) {
     const existingItem = emailQueue.get(key)!;

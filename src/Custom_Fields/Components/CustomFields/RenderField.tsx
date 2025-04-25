@@ -120,7 +120,7 @@ export const RenderField = ({
             setFieldValue("customFields." + label, e.target.value);
           }}
           onBlur={() => setFieldTouched("customFields." + label, true)}
-          placeholder={`Enter ${label}`}
+          placeholder={`Enter ${label} in numbers`}
         />
       );
 

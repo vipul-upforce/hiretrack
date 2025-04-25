@@ -102,6 +102,7 @@ export default function DashboardPage() {
   const [searchText, setSearchText] = useState("");
   const [filterText, setFilterText] = useState("");
   const shouldShowAssignments = user?.role === "admin" || user?.role === "hr";
+  const isInterviewer = user?.role === "interviewer";
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12; // Adjust this number as needed
 
@@ -156,7 +157,19 @@ export default function DashboardPage() {
     );
   });
 
-  const todayAssignments = filteredAssignments;
+  const interviewerAssignments = filteredAssignments?.filter(
+    (assignment) => assignment.assignment?.interviewerId?.email === user?.email
+  );
+
+  const todayAssignments = interviewerAssignments?.filter((assignment) => {
+    const assignmentDate = new Date(assignment.assignment.time);
+    const today = new Date();
+    return (
+      assignmentDate.getDate() === today.getDate() &&
+      assignmentDate.getMonth() === today.getMonth() &&
+      assignmentDate.getFullYear() === today.getFullYear()
+    );
+  });
 
   const thisWeekAssignments = filteredAssignments?.filter((assignment) => {
     const assignmentDate = new Date(assignment.assignment.time);
@@ -176,7 +189,13 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold flex justify-start">
-              {isLoading ? <LoadingSpinner /> : assignments?.length}
+              {isLoading ? (
+                <LoadingSpinner />
+              ) : isInterviewer ? (
+                interviewerAssignments?.length
+              ) : (
+                assignments?.length
+              )}
             </div>
           </CardContent>
         </Card>
@@ -290,111 +309,224 @@ export default function DashboardPage() {
           )}
         </div>
       ) : (
-        <div className="mt-6">
-          <h2 className="text-2xl font-bold mb-4">Today's Interviews</h2>
-          {isLoading ? (
-            <DashboardLoader />
-          ) : todayAssignments?.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {todayAssignments?.map((assignment) => (
-                <Card key={assignment.id || Math.random().toString()}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg capitalize">
-                      <div className="flex pb-2 flex-row items-center justify-between">
-                        <p>{assignment.name}</p>
-                        <div>
-                          <CandidateStatusBadge
-                            status={assignment.status as CandidateStatus}
-                          />
-                        </div>
-                      </div>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {/* Position */}
-                      <div className="flex items-start gap-2">
-                        <BriefcaseIcon className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="text-sm text-muted-foreground">
-                            Position
-                          </p>
-                          <p className="font-medium">
-                            {assignment?.jobId?.title || "N/A"}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Skills */}
-                      <div className="flex items-start gap-2">
-                        {/* <div className="h-5 w-5 flex-shrink-0" /> */}
-                        <Zap className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="text-sm text-muted-foreground mb-1.5">
-                            Skills
-                          </p>
-                          <div className="flex flex-wrap gap-1.5">
-                            {assignment.skills.slice(0, 3).map((skill) => (
-                              <Badge
-                                key={skill}
-                                variant="secondary"
-                                className="text-xs"
-                              >
-                                {skill}
-                              </Badge>
-                            ))}
-                            {assignment.skills.length > 3 && (
-                              <Badge variant="secondary" className="text-xs">
-                                +{assignment.skills.length - 3}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Date and Time */}
-                      <div className="grid grid-cols-2 gap-4 pt-1">
-                        <div className="flex items-center gap-2">
-                          <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+        <div className="mt-6 space-y-8">
+          <div>
+            <h2 className="text-2xl font-bold mb-4">Today's Interviews</h2>
+            {isLoading ? (
+              <DashboardLoader />
+            ) : todayAssignments?.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {todayAssignments?.map((assignment) => (
+                  <Card key={assignment.id || Math.random().toString()}>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg capitalize">
+                        <div className="flex pb-2 flex-row items-center justify-between">
+                          <p>{assignment.name}</p>
                           <div>
-                            <p className="text-xs text-muted-foreground">
-                              Date
+                            <CandidateStatusBadge
+                              status={assignment.status as CandidateStatus}
+                            />
+                          </div>
+                        </div>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {/* Position */}
+                        <div className="flex items-start gap-2">
+                          <BriefcaseIcon className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                          <div>
+                            <p className="text-sm text-muted-foreground">
+                              Position
                             </p>
-                            <p className="text-sm font-medium">
-                              {assignment.assignment.time
-                                ? formatDate(
-                                    assignment.assignment.time.toLocaleString()
-                                  )
-                                : "N/A"}
+                            <p className="font-medium">
+                              {assignment?.jobId?.title || "N/A"}
                             </p>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                          <ClockIcon className="h-4 w-4 text-muted-foreground" />
+                        {/* Skills */}
+                        <div className="flex items-start gap-2">
+                          <Zap className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
                           <div>
-                            <p className="text-xs text-muted-foreground">
-                              Time
+                            <p className="text-sm text-muted-foreground mb-1.5">
+                              Skills
                             </p>
-                            <p className="text-sm font-medium">
-                              {assignment.assignment.time
-                                ? formatTime(
-                                    assignment.assignment.time.toLocaleString()
-                                  )
-                                : "N/A"}
-                            </p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {assignment.skills.slice(0, 3).map((skill) => (
+                                <Badge
+                                  key={skill}
+                                  variant="secondary"
+                                  className="text-xs"
+                                >
+                                  {skill}
+                                </Badge>
+                              ))}
+                              {assignment.skills.length > 3 && (
+                                <Badge variant="secondary" className="text-xs">
+                                  +{assignment.skills.length - 3}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Date and Time */}
+                        <div className="grid grid-cols-2 gap-4 pt-1">
+                          <div className="flex items-center gap-2">
+                            <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <p className="text-xs text-muted-foreground">
+                                Date
+                              </p>
+                              <p className="text-sm font-medium">
+                                {assignment.assignment.time
+                                  ? formatDate(
+                                      assignment.assignment.time.toLocaleString()
+                                    )
+                                  : "N/A"}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <ClockIcon className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <p className="text-xs text-muted-foreground">
+                                Time
+                              </p>
+                              <p className="text-sm font-medium">
+                                {assignment.assignment.time
+                                  ? formatTime(
+                                      assignment.assignment.time.toLocaleString()
+                                    )
+                                  : "N/A"}
+                              </p>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <p className="text-lg font-semibold text-gray-500 text-center py-10 w-full flex justify-center items-center">
+                No interviews scheduled for today.
+              </p>
+            )}
+          </div>
+
+          {isInterviewer && (
+            <div>
+              <h2 className="text-2xl font-bold mb-4">All My Assignments</h2>
+              {isLoading ? (
+                <DashboardLoader />
+              ) : interviewerAssignments?.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {interviewerAssignments?.map((assignment) => (
+                    <Card key={assignment.id || Math.random().toString()}>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg capitalize">
+                          <div className="flex pb-2 flex-row items-center justify-between">
+                            <p>{assignment.name}</p>
+                            <div>
+                              <CandidateStatusBadge
+                                status={assignment.status as CandidateStatus}
+                              />
+                            </div>
+                          </div>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          {/* Position */}
+                          <div className="flex items-start gap-2">
+                            <BriefcaseIcon className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                            <div>
+                              <p className="text-sm text-muted-foreground">
+                                Position
+                              </p>
+                              <p className="font-medium">
+                                {assignment?.jobId?.title || "N/A"}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Skills */}
+                          <div className="flex items-start gap-2">
+                            <Zap className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                            <div>
+                              <p className="text-sm text-muted-foreground mb-1.5">
+                                Skills
+                              </p>
+                              <div className="flex flex-wrap gap-1.5">
+                                {assignment.skills.slice(0, 3).map((skill) => (
+                                  <Badge
+                                    key={skill}
+                                    variant="secondary"
+                                    className="text-xs"
+                                  >
+                                    {skill}
+                                  </Badge>
+                                ))}
+                                {assignment.skills.length > 3 && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs"
+                                  >
+                                    +{assignment.skills.length - 3}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Date and Time */}
+                          <div className="grid grid-cols-2 gap-4 pt-1">
+                            <div className="flex items-center gap-2">
+                              <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                              <div>
+                                <p className="text-xs text-muted-foreground">
+                                  Date
+                                </p>
+                                <p className="text-sm font-medium">
+                                  {assignment.assignment.time
+                                    ? formatDate(
+                                        assignment.assignment.time.toLocaleString()
+                                      )
+                                    : "N/A"}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <ClockIcon className="h-4 w-4 text-muted-foreground" />
+                              <div>
+                                <p className="text-xs text-muted-foreground">
+                                  Time
+                                </p>
+                                <p className="text-sm font-medium">
+                                  {assignment.assignment.time
+                                    ? formatTime(
+                                        assignment.assignment.time.toLocaleString()
+                                      )
+                                    : "N/A"}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-lg font-semibold text-gray-500 text-center py-10 w-full flex justify-center items-center">
+                  No assignments found.
+                </p>
+              )}
             </div>
-          ) : (
-            <p className="text-lg font-semibold text-gray-500 text-center py-10 w-full flex justify-center items-center">
-              No interviews scheduled for today.
-            </p>
           )}
         </div>
       )}

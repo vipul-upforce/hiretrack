@@ -21,14 +21,50 @@ import { v4 as uuidv4 } from "uuid";
 import useCustomForm, {
   CustomFieldValues,
 } from "@/Custom_Fields/hooks/useCustomForm";
-// import { ICandidateHistory } from "@/lib/models/history";
 import { Resume } from "@/lib/redux/types";
 import { parseResumeFromPdf } from "@/lib/parse-resume-from-pdf";
 import FormUpdater from "../dashboard/jobs/[id]/components/FormUpdater";
-// import Cookies from "js-cookie";
 import * as pdfjs from "pdfjs-dist";
 import { candidateSchema } from "../dashboard/jobs/[id]/schemas/candidate-schema";
-// import { verifyAndDecryptJWTToken } from "@/lib/auth";
+
+// New function to store application status in localStorage
+const storeGuestApplication = (jobId: string, candidateId: string) => {
+  try {
+    // Get existing applications or initialize empty object
+    const existingApplications = JSON.parse(
+      localStorage.getItem("guestApplications") || "{}"
+    );
+
+    // Add this application
+    existingApplications[jobId] = {
+      candidateId,
+      appliedAt: new Date().toISOString(),
+    };
+
+    // Save back to localStorage
+    localStorage.setItem(
+      "guestApplications",
+      JSON.stringify(existingApplications)
+    );
+
+    return true;
+  } catch (error) {
+    console.error("Failed to store guest application status:", error);
+    return false;
+  }
+};
+
+// Function to check if user has already applied to this job
+export const hasAppliedAsGuest = (jobId: string): boolean => {
+  try {
+    const applications = JSON.parse(
+      localStorage.getItem("guestApplications") || "{}"
+    );
+    return !!applications[jobId];
+  } catch {
+    return false;
+  }
+};
 
 // New function to call the evaluate API
 async function evaluateCandidate(
@@ -57,13 +93,6 @@ async function sendAppliedEventMail(
     return null;
   }
 }
-
-// interface User {
-//   id: string;
-//   name: string;
-//   email: string;
-//   role: string;
-// }
 
 interface CreateCandidateDialogProps {
   jobId: string;
@@ -149,9 +178,13 @@ export function ApplyAsGuestDialog({
   const formName = "Candidate";
   const { validationSchema, initialValues: inits } = useCustomForm(formName);
   const [resetForm, setResetForm] = useState(false);
+  const [hasAlreadyApplied, setHasAlreadyApplied] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
+      // Check if user has already applied when dialog opens
+      setHasAlreadyApplied(hasAppliedAsGuest(jobId));
+
       if (resumeFile) {
         setParsedResume(null);
         handleFileParse(resumeFile, setParsedResume);
@@ -160,9 +193,20 @@ export function ApplyAsGuestDialog({
       setParsedResume(null);
       setResetForm((prev) => !prev);
     }
-  }, [isOpen, resumeFile]);
+  }, [isOpen, resumeFile, jobId]);
 
   const handleSubmit = async (values: CandidateFormValues) => {
+    // First check if already applied
+    if (hasAppliedAsGuest(jobId)) {
+      toast({
+        title: "Already Applied",
+        description: "You have already applied for this job as a guest.",
+        variant: "destructive",
+      });
+      setIsOpen(false);
+      return;
+    }
+
     const fileNames = values.attachments.map((file) => file.name);
     const hasDuplicates = new Set(fileNames).size !== fileNames.length;
 
@@ -244,6 +288,10 @@ export function ApplyAsGuestDialog({
       const createdCandidate =
         await createGuestCandidate(candidateData).unwrap();
       const candidateId = createdCandidate._id;
+
+      // Store application status in localStorage
+      storeGuestApplication(jobId, candidateId);
+
       if (values.resume && values.resume.type === "application/pdf") {
         const pageCount = await checkPdfPageCount(values.resume);
         if (pageCount <= 4) {
@@ -251,65 +299,17 @@ export function ApplyAsGuestDialog({
         }
       }
 
-      // Step 3: Handle additional updates (if applicable)
-      // if (user?.role === "candidate") {
+      // Send application confirmation email
       sendAppliedEventMail(candidateId, applicationEventMailMutation);
-      //   try {
-      //     await updateAppliedApplication({ id: jobId });
-      //   } catch (error: unknown) {
-      //     toast({
-      //       title: "Failed",
-      //       description: `${error instanceof Error ? error.message : "Unknown Error Occurred"}`,
-      //     });
-      //   }
-      // }
 
-      //   if (createdCandidate?.assignment?.interviewerId) {
-      //     const newHistoryEntry: ICandidateHistory = {
-      //       dateTime: new Date().toLocaleString() || "",
-      //       title:
-      //         typeof createdCandidate?.assignment?.interviewerId === "object" &&
-      //         createdCandidate?.assignment?.interviewerId?.name
-      //           ? `Assigned to ${createdCandidate.assignment.interviewerId.name} : Assigned by ${user!.name}`
-      //           : "",
-      //       currentInterviewer:
-      //         typeof createdCandidate?.assignment?.interviewerId === "object" &&
-      //         createdCandidate?.assignment?.interviewerId
-      //           ? Object(createdCandidate.assignment.interviewerId._id)
-      //           : null,
-      //       previousInterviewer: null,
-      //       assignmentBy: user && user.id,
-      //       note: {
-      //         description: "",
-      //         date: "",
-      //         rating: 0,
-      //         userId: null,
-      //       },
-      //       attachments:
-      //         createdCandidate.attachments?.map((attachment) => ({
-      //           id: attachment.id,
-      //           name: attachment.name,
-      //           url: attachment.url,
-      //           type: attachment.type,
-      //           size: attachment.size,
-      //         })) || [],
-      //     };
-      //     await updateCandidateHistory({
-      //       candidateId: createdCandidate._id,
-      //       jobId: candidateData.jobId._id,
-      //       newEntry: newHistoryEntry,
-      //     }).unwrap();
-      //   }
+      // Show success message for guest application
+      toast({
+        title: "Application Submitted",
+        description: "Your application has been submitted successfully!",
+      });
 
       setIsOpen(false);
       closeParent();
-      //   if (user?.role === "candidate") {
-      //     sendAppliedEventMail(candidateId, applicationEventMailMutation);
-      //   }
-      // toast({
-      //   title: "Success",
-      //   description: "Candidate added successfully",
-      // });
     } catch (error) {
       if (typeof error === "object" && error !== null && "data" in error) {
         const errorData = (error as { data?: { error?: string } }).data;
@@ -348,59 +348,76 @@ export function ApplyAsGuestDialog({
       <DialogTrigger asChild>
         <button
           type="button"
-          disabled={isSendingEmail}
-          className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+          disabled={isSendingEmail || hasAlreadyApplied}
+          className={`inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${hasAlreadyApplied && "bg-gray-200 text-gray-600"}`}
         >
-          {isSendingEmail ? "Processing..." : "Apply As Guest"}
+          {isSendingEmail
+            ? "Processing..."
+            : hasAlreadyApplied
+              ? "Applied"
+              : "Apply As Guest"}
         </button>
       </DialogTrigger>
       <DialogContent
         className={`sm:max-w-[80vw] xl:max-w-[65vw] h-[90vh] p-0 overflow-hidden flex flex-col justify-center`}
       >
-        <DialogHeader className="px-6 py-2">
+        <DialogHeader className={`px-6 py-2 ${hasAlreadyApplied && "hidden"}`}>
           <DialogTitle>Apply</DialogTitle>
         </DialogHeader>
-        <Formik
-          key={resetForm.toString()}
-          initialValues={{
-            ...getInitialValues(inits as CustomFieldValues),
-            resume: resumeFile || null,
-          }}
-          validationSchema={candidateSchema(validationSchema)}
-          onSubmit={handleSubmit}
-          enableReinitialize={false}
-        >
-          {({ isSubmitting, errors, touched, setFieldValue }) => (
-            <Form className="flex flex-col h-[calc(90vh-80px)] overflow-hidden">
-              <FormUpdater parsedResumeData={parsedResumeData} />
-              <CandidateForm
-                onFileUpload={async (file: File) => {
-                  setFieldValue("resume", file);
-                  await handleFileParse(file, setParsedResume);
-                }}
-              />
-              <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={
-                    isSubmitting ||
-                    Object.keys(errors).length > 0 ||
-                    Object.keys(touched).length === 0
-                  }
-                >
-                  {isSubmitting ? "Saving..." : "Apply"}
-                </Button>
-              </div>
-            </Form>
-          )}
-        </Formik>
+        {hasAlreadyApplied ? (
+          <div className="p-6 text-center">
+            <h3 className="text-lg font-semibold mb-2">
+              Application Already Submitted
+            </h3>
+            <p className="text-muted-foreground mb-4">
+              We've received your application for this job. No further action is
+              needed at this time.
+            </p>
+            <Button onClick={() => setIsOpen(false)}>Close</Button>
+          </div>
+        ) : (
+          <Formik
+            key={resetForm.toString()}
+            initialValues={{
+              ...getInitialValues(inits as CustomFieldValues),
+              resume: resumeFile || null,
+            }}
+            validationSchema={candidateSchema(validationSchema)}
+            onSubmit={handleSubmit}
+            enableReinitialize={false}
+          >
+            {({ isSubmitting, errors, touched, setFieldValue }) => (
+              <Form className="flex flex-col h-[calc(90vh-80px)] overflow-hidden">
+                <FormUpdater parsedResumeData={parsedResumeData} />
+                <CandidateForm
+                  onFileUpload={async (file: File) => {
+                    setFieldValue("resume", file);
+                    await handleFileParse(file, setParsedResume);
+                  }}
+                />
+                <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={
+                      isSubmitting ||
+                      Object.keys(errors).length > 0 ||
+                      Object.keys(touched).length === 0
+                    }
+                  >
+                    {isSubmitting ? "Saving..." : "Apply"}
+                  </Button>
+                </div>
+              </Form>
+            )}
+          </Formik>
+        )}
       </DialogContent>
     </Dialog>
   );

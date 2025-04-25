@@ -43,7 +43,6 @@ export async function GET(request: Request) {
         );
       }
     }
-    console.log("ORG⛔⛔: ", organizationId);
 
     const customFields = await Organization?.findById(organizationId);
     const jobs = await Job!

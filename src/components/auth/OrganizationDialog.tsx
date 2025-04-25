@@ -34,7 +34,6 @@ const OrganizationDialog: React.FC<OrganizationDialogProps> = ({
 
   const handleContinue = () => {
     // debugger;
-    console.log("data: ", data);
     if (selectedOrgId) {
       setLoadingOrg(selectedOrgId);
       setSelectedOrgId(selectedOrgId);

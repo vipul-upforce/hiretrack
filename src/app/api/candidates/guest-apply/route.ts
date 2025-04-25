@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     const organizationId = job.organizationId;
 
-    console.log("ORGID: ", organizationId);
+    // console.log("ORGID: ", organizationId);
 
     const organizationInfo = await Organization?.findById(organizationId);
 
