@@ -245,7 +245,7 @@ export async function POST(req: NextRequest) {
 
     const emailList = users.map((user) => user.email);
 
-    const emailKey = `${decryptedResponse?.user.email}_${id}`;
+    const emailKey = id;
 
     // Queue data for the email
     const queueData = {
