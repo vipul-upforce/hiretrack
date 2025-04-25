@@ -35,7 +35,6 @@ export const getYupSchema = (fields: CustomField[]) => {
 
   fields.forEach((field) => {
     let validator: Yup.Schema<unknown>;
-
     switch (field.type) {
       case "number":
         validator = Yup.number().typeError(`${field.label} must be a number`);

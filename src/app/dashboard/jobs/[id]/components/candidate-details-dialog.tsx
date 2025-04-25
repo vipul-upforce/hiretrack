@@ -50,11 +50,12 @@ import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { User } from "@/lib/features/users/usersApi";
 import {
   // IScheduledMailRequest,
-  useSendMailMutation,
+  // useSendMailMutation,
+  // useSendStatusMailMutation,
   useSendUnassignMailMutation,
 } from "@/lib/features/org/orgApi";
 // import { IJob } from "@/lib/models/job";
-import { sentAssignmentMail } from "@/lib/utils";
+// import { sentAssignmentMail, sentStatusMailHandler } from "@/lib/utils";
 // import { sentAssignmentMail } from "@/lib/utils";
 // import {
 //   // IScheduledMailRequest,
@@ -126,9 +127,9 @@ export function CandidateDetailsDialog({
   const [user, setuser] = useState<User | null>(null);
   const [confirmUnassignOpen, setConfirmUnassignOpen] = useState(false);
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
-  const [sendEmail] = useSendMailMutation();
+  // const [sendEmail] = useSendMailMutation();
   const [sendUnassignEmail, { isLoading }] = useSendUnassignMailMutation();
-
+  // const [sendStatusMail] = useSendStatusMailMutation();
   useEffect(() => {
     (async () => {
       const token = Cookies.get("token");
@@ -268,12 +269,19 @@ export function CandidateDetailsDialog({
         //   candidateName: result.name,
         //   status: result.status,
         // };
-        setTimeout(
-          () => {
-            sentAssignmentMail(result, sendEmail);
-          },
-          2 * 60 * 1000
-        );
+        // setTimeout(
+        //   () => {
+        //     sentAssignmentMail(result, sendEmail);
+        //   },
+        //   2 * 60 * 1000
+        // );
+        // sentStatusMailHandler(
+        //   {
+        //     ...result,
+        //     prev_status: "-1",
+        //   },
+        //   sendStatusMail
+        // );
       }
       // Update both local and parent state
       setLocalCandidate(result);
@@ -347,7 +355,6 @@ export function CandidateDetailsDialog({
           jobId: localCandidate?.jobId._id || localCandidate?.jobId || "",
           newEntry: newHistoryEntry,
         }).unwrap();
-        console.log("%&^%^&%^&%EMAIL BEING SEND::::");
         sendUnassignEmail({ name: result.name });
 
         if (pathname === "/dashboard/calendar") {

@@ -16,6 +16,8 @@ import { Label } from "@/components/ui/label";
 import { Rating } from "@mui/material";
 import { Button } from "@/components/ui/button";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import { sentStatusMailHandler } from "@/lib/utils";
+import { useSendStatusMailMutation } from "@/lib/features/org/orgApi";
 // import { sentRemarkMail } from "@/lib/utils";
 
 const AddRemarksDialog = ({
@@ -34,6 +36,7 @@ const AddRemarksDialog = ({
   const [newRemark, setNewRemark] = useState("");
   const [remarkRating, setRemarkRating] = useState<number | null>(null);
   const [updateCandidate] = useUpdateCandidateMutation();
+  const [sendStatusMail] = useSendStatusMailMutation();
 
   const handleAddRemark = async () => {
     const token = Cookies.get("token");
@@ -72,7 +75,8 @@ const AddRemarksDialog = ({
             description: `Updating ${candidate.name}'s remarks`,
           });
 
-          await updateCandidate(updateData).unwrap();
+          const updatedCandidate = await updateCandidate(updateData).unwrap();
+          sentStatusMailHandler(updatedCandidate, sendStatusMail);
           // sentRemarkMail(result, sendEmail);
 
           await refetch();

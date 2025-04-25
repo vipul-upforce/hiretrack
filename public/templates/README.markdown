@@ -68,3 +68,18 @@ This document explains the HTML email templates currently in use across the syst
 
 - `{{candidate_name}}` - Name of the candidate who was marked as done
 - `{{unassigner}}` - Name of the user who marked the candidate as done
+
+---
+
+## Template 6: Candidate Status Update
+
+**Purpose:** Used to notify HR and Admins when a candidate's status is updated in the system (e.g., from "Scheduled" to "Selected" or "Rejected").
+
+### Dynamic Variables:
+
+- `{{eventTitle}}` - Title of the status update event
+- `{{eventSubTitle}}` - Shows either "Status updated from [previous status] to [new status] for candidate [name]" or "Status updated to [status] for candidate [name]" with highlighted values
+- `{{actionBy}}` - Name of the user who performed the status update
+- `{{status}}` - Current status of the candidate
+- `{{remark}}` - Remarks/comments provided during the status update
+- `{{rating}}` - Rating given during the status update

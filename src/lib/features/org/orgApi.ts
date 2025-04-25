@@ -47,6 +47,17 @@ export interface IScheduledMailRequest {
   interviewerName: string;
   candidateName: string;
   status: string;
+  // remark?: string;
+  // rating?: number;
+}
+export interface IScheduledStatusMailRequest {
+  id: string;
+  eventTitle: string;
+  candidateName: string;
+  prev_status: string;
+  status: string;
+  remark?: string;
+  rating?: string;
 }
 
 export interface CreateOrgResponse {
@@ -130,6 +141,16 @@ export const orgApi = createApi({
         body: data,
       }),
     }),
+    sendStatusMail: builder.mutation<
+      { message: string },
+      IScheduledStatusMailRequest
+    >({
+      query: (data) => ({
+        url: `/status-mail`,
+        method: "POST",
+        body: data,
+      }),
+    }),
     sendUnassignMail: builder.mutation<{ message: string }, any>({
       query: (data) => ({
         url: `/event-mail`,
@@ -161,6 +182,7 @@ export const orgApi = createApi({
 export const {
   useCreateAdminMutation,
   useSendMailMutation,
+  useSendStatusMailMutation,
   useSendUnassignMailMutation,
   useCreateOrgMutation,
   useUpdateAdminMutation,
@@ -168,6 +190,6 @@ export const {
   useGetCustomFieldsQuery,
   useLazyGetCustomFieldsQuery,
   useFetchBatchesQuery, // Hook for fetching batches
-  usePostBatchMutation, // Hook for posting a batch
+  usePostBatchMutation, // Hook for posting a batch,
 } = orgApi;
 // export const { useCreateAdminMutation } = orgApi;
