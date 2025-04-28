@@ -16,9 +16,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Resolve the absolute path while preventing directory traversal
+    // Resolve the absolute path while handling the parent directory reference
+    const projectRoot = path.join(process.cwd(), ".."); // Go one level up from current directory
     const safePath = path.normalize(pathName).replace(/^(\.\.(\/|\\|$))+/, "");
-    const filePath = safePath;
+    const filePath = path.join(projectRoot, safePath);
 
     // Check if file exists
     try {
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "File not found" + (error instanceof Error ? error.message : ""),
+            "File not found: " + (error instanceof Error ? error.message : ""),
         },
         { status: 404 }
       );
@@ -50,7 +51,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "Internal server error" +
+          "Internal server error: " +
           (error instanceof Error ? error.message : ""),
       },
       { status: 500 }

@@ -152,17 +152,15 @@ export async function saveFileLocally(
   base64: string,
   folder: "documents" | "images",
   fileName: string
-  // req: NextRequest
 ) {
-  const publicPath = path.join(process.cwd(), "assets");
+  const publicPath = path.join(process.cwd(), "..", "assets");
   await ensureDirectoryExists(publicPath);
   await ensureDirectoryExists(path.join(publicPath, folder));
 
   const base64Data = base64.replace(/^data:[^;]+;base64,/, "");
-  const filePath = path.join("assets", folder, fileName);
+  const filePath = path.join("..", "assets", folder, fileName);
   await fs.promises.writeFile(filePath, Buffer.from(base64Data, "base64"));
-  // const origin = req.headers.get("origin") || "http://localhost:3000";
-  // return `${origin}/api/files?pathName=${filePath}`;
+
   return `/api/files?pathName=${filePath}`;
 }
 
