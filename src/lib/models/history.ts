@@ -7,6 +7,28 @@ const candidateHistory = {
   title: {
     type: String,
   },
+  remark: {
+    _id: false,
+    description: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    date: {
+      type: String,
+      required: false,
+    },
+    rating: {
+      type: Number,
+      min: 0,
+      max: 5,
+    },
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: false,
+    },
+  },
   previousInterviewer: {
     type: Schema.Types.ObjectId,
     ref: "User",
@@ -67,6 +89,16 @@ export const historySchema = new Schema({
 export interface ICandidateHistory {
   dateTime: string;
   title: string | null;
+  remark?: {
+    description: string;
+    date: string;
+    rating?: number;
+    userId: {
+      _id: string;
+      name: string;
+      email: string;
+    };
+  };
   currentInterviewer:
     | Schema.Types.ObjectId
     | null

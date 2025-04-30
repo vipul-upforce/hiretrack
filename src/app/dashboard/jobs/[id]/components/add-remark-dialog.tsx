@@ -1,4 +1,7 @@
-import { useUpdateCandidateMutation } from "@/lib/features/candidate/candidateApi";
+import {
+  useUpdateCandidateHistoryMutation,
+  useUpdateCandidateMutation,
+} from "@/lib/features/candidate/candidateApi";
 import { Candidate } from "@/types/candidate";
 import { useState } from "react";
 import Cookies from "js-cookie";
@@ -35,7 +38,11 @@ const AddRemarksDialog = ({
 }) => {
   const [newRemark, setNewRemark] = useState("");
   const [remarkRating, setRemarkRating] = useState<number | null>(null);
+  const [remarkRatingHistory, setRemarkRatingHistory] = useState<number | null>(
+    null
+  );
   const [updateCandidate] = useUpdateCandidateMutation();
+  const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
   const [sendStatusMail] = useSendStatusMailMutation();
 
   const handleAddRemark = async () => {
@@ -64,17 +71,56 @@ const AddRemarksDialog = ({
               email: user.email,
             },
           };
+          const newRemarkHistoryObj = {
+            description: String(newRemark).trim(),
+            date: new Date().toISOString(),
+            rating: remarkRatingHistory
+              ? Number(remarkRatingHistory)
+              : undefined,
+            userId: {
+              _id: user.id,
+              name: user.name,
+              email: user.email,
+            },
+          };
+
           // debugger;
+          // const updateData = {
+          //   candidateId: candidate?._id,
+          //   jobId: candidate.jobId,
+          //   remarks: [...(candidate?.remarks || []), newRemarkObj],
+          // };
           const updateData = {
             _id: candidate?._id,
             name: candidate.name,
             remarks: [...(candidate?.remarks || []), newRemarkObj],
+          };
+
+          const newHistoryEntry = {
+            dateTime: new Date().toLocaleString(),
+            currentInterviewer: null,
+            previousInterviewer: null,
+            remark: newRemarkHistoryObj,
+            assignmentBy: user!.id,
+            title: null,
+            note: {
+              description: "",
+              date: "",
+              rating: 0,
+              userId: null,
+            },
+            attachments: [],
           };
           toast({
             title: "Updating",
             description: `Updating ${candidate.name}'s remarks`,
           });
 
+          await updateCandidateHistory({
+            candidateId: candidate?._id,
+            jobId: candidate.jobId,
+            newEntry: newHistoryEntry,
+          }).unwrap();
           const updatedCandidate = await updateCandidate(updateData).unwrap();
           sentStatusMailHandler(updatedCandidate, sendStatusMail);
           // sentRemarkMail(result, sendEmail);
@@ -83,6 +129,7 @@ const AddRemarksDialog = ({
 
           setNewRemark("");
           setRemarkRating(null);
+          setRemarkRatingHistory(null);
           setOpenRemarksFor("");
 
           toast({
@@ -125,7 +172,10 @@ const AddRemarksDialog = ({
               <Label htmlFor="rating">Rating:</Label>
               <Rating
                 name="half-rating"
-                onChange={(e, value) => setRemarkRating(value ? value : null)}
+                onChange={(e, value) => {
+                  setRemarkRating(value ? value : null);
+                  setRemarkRatingHistory(value ? value : null);
+                }}
                 defaultValue={0}
                 precision={0.5}
               />

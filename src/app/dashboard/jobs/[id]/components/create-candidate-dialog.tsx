@@ -119,6 +119,7 @@ type CandidateFormValues = ReturnType<typeof getInitialValues>;
 
 // Add this function before handleSubmit
 const checkPdfPageCount = async (file: File): Promise<number> => {
+  console.log("%%%%%%% ", file);
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = async () => {
@@ -179,6 +180,7 @@ export function CreateCandidateDialog({
   }, [isOpen, resumeFile]);
 
   const handleSubmit = async (values: CandidateFormValues) => {
+    debugger;
     const fileNames = values.attachments.map((file) => file.name);
     const hasDuplicates = new Set(fileNames).size !== fileNames.length;
 
@@ -261,7 +263,7 @@ export function CreateCandidateDialog({
       const candidateId = createdCandidate._id;
       if (values.resume && values.resume.type === "application/pdf") {
         const pageCount = await checkPdfPageCount(values.resume);
-        if (pageCount <= 4) {
+        if (pageCount && pageCount <= 4) {
           evaluateCandidate(candidateId, evaluateCandidateMutation);
         }
       }

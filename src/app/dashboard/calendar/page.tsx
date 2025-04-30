@@ -318,30 +318,20 @@ export default function CalendarPage() {
               eventTextColor="var(--primary-foreground)"
               eventContent={(arg) => {
                 return (
-                  <div
-                    id="assignment-event"
-                    className="bg-white px-2 w-full rounded-xl border-[1px] border-solid border-gray-300 py-2 px-2 shadow-md transition hover:shadow-xl overflow-x-clip cursor-pointer"
-                  >
-                    <div className="flex flex-col">
-                      <p className="text-sm font-bold text-black capitalize">
-                        {arg.event.title}
-                      </p>
-                      <p className="text-sm text-gray-500 font-thin relative">
-                        {arg.event.start ? formatTime(arg.event.start) : ""}
-                      </p>
-                    </div>
-                    <div className="flex flex-row justify-between items-center">
-                      <p className="text-sm text-black capitalize">
-                        {arg.event._def.extendedProps.interviewer.name}
-                      </p>
-                      <p className="text-sm text-gray-500 font-thin">(I)</p>
-                    </div>
-                    <hr className="my-1" />
-                    <div className="flex flex-row justify-between items-center">
-                      <p className="text-sm text-black text-wrap capitalize">
+                  <div className="bg-white w-full rounded-lg border border-gray-200 p-1.5 shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-pointer">
+                    <div className="flex items-baseline gap-1 items-center justify-between">
+                      <span className="font-medium text-sm truncate">
                         {arg.event._def.extendedProps.candidate.name}
-                      </p>
-                      <p className="text-sm text-gray-500 font-thin">(C)</p>
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {arg.event.start ? formatTime(arg.event.start) : ""}
+                      </span>
+                    </div>
+                    <div className="text-xs text-gray-700 truncate">
+                      {arg.event._def.extendedProps.interviewer.name}
+                    </div>
+                    <div className="text-[10px] text-gray-500 truncate">
+                      {arg.event.title}
                     </div>
                   </div>
                 );

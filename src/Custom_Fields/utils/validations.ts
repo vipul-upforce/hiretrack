@@ -4,7 +4,7 @@ import { CustomField } from "../Types/CustomField";
 export const validationSchema = Yup.object({
   label: Yup.string()
     .required("Label is required")
-    .max(50, "Label must be 50 characters or less")
+    .max(300, "Label must be 300 characters or less")
     .trim(),
   type: Yup.string().required("Field type is required"),
   private: Yup.boolean(),

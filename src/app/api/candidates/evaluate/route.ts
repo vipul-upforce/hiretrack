@@ -12,7 +12,7 @@ const generateBase64 = async (url: any) => {
   if (!pathName) {
     return "";
   }
-  const safePath = path.normalize(pathName).replace(/^(\.\.(\/|\\|$))+/, "");
+  const safePath = path.normalize(pathName);
   const filePath = safePath;
   const fileBuffer = await fs.readFile(filePath);
   const base64Resume = fileBuffer.toString("base64");
@@ -189,7 +189,6 @@ export async function PUT(request: NextRequest) {
     // const token = await verifyAndDecryptToken(cookie);
     // const user = (await token).user;
     const fileStorage = settingsData.fileStorage.storageType || "local";
-
     if (fileStorage === "local") {
       base64Resume = await generateBase64(resumeUrl);
     } else {

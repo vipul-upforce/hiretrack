@@ -23,7 +23,7 @@ const RemarksPopover = ({
             e.stopPropagation();
           }}
           variant="secondary"
-          className="mr-1"
+          className="mr-1 w-[55px]"
         >
           {candidate?.remarks?.length}
           <NotebookText className="h-4 w-4 ml-1" />

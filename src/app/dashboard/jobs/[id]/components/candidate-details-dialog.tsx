@@ -17,7 +17,7 @@ import {
   Briefcase,
   Clock,
   IndianRupee,
-  StarIcon,
+  // StarIcon,
   Dot,
   Star,
   Copy,
@@ -121,12 +121,16 @@ export function CandidateDetailsDialog({
   const [newRemark, setNewRemark] = useState("");
   const [showEvalDetails, setShowEvalDetails] = useState(false);
   const [remarkRating, setRemarkRating] = useState<number | null>(null);
+  const [remarkRatingHistory, setRemarkRatingHistory] = useState<number | null>(
+    null
+  );
   const [updateCandidate] = useUpdateCandidateMutation();
   const [isAssigning, setIsAssigning] = useState(false);
   const [isAssigningJob, setIsAssigningJob] = useState(false);
   const [user, setuser] = useState<User | null>(null);
   const [confirmUnassignOpen, setConfirmUnassignOpen] = useState(false);
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
+
   // const [sendEmail] = useSendMailMutation();
   const [sendUnassignEmail, { isLoading }] = useSendUnassignMailMutation();
   // const [sendStatusMail] = useSendStatusMailMutation();
@@ -171,6 +175,7 @@ export function CandidateDetailsDialog({
     return () => {
       setNewRemark("");
       setRemarkRating(0);
+      setRemarkRatingHistory(0);
     };
   }, []);
 
@@ -236,11 +241,48 @@ export function CandidateDetailsDialog({
           email: user.email,
         },
       };
+      const newRemarkHistoryObj = {
+        description: String(newRemark).trim(),
+        date: new Date().toISOString(),
+        rating: remarkRatingHistory ? Number(remarkRatingHistory) : undefined,
+        userId: {
+          _id: user.id,
+          name: user.name,
+          email: user.email,
+        },
+      };
+      // debugger;
+      // const updateData = {
+      //   candidateId: candidate?._id,
+      //   jobId: candidate.jobId,
+      //   remarks: newRemarkObj,
+      // };
+      const newHistoryEntry = {
+        dateTime: new Date().toLocaleString(),
+        remark: newRemarkHistoryObj,
+        currentInterviewer: null,
+        previousInterviewer: null,
+        assignmentBy: user!.id,
+        title: null,
+        note: {
+          description: "",
+          date: "",
+          rating: 0,
+          userId: null,
+        },
+        attachments: [],
+      };
       const updateData = {
         _id: localCandidate?._id,
         name: localCandidate?.name,
         remarks: [...(localCandidate?.remarks || []), newRemarkObj],
       };
+      localCandidate &&
+        (await updateCandidateHistory({
+          candidateId: localCandidate?._id,
+          jobId: localCandidate?.jobId,
+          newEntry: newHistoryEntry,
+        }).unwrap());
       const result = await updateCandidate(updateData).unwrap();
       if (result) {
         // const reqBody: IScheduledMailRequest = {
@@ -284,8 +326,8 @@ export function CandidateDetailsDialog({
         // );
       }
       // Update both local and parent state
-      setLocalCandidate(result);
-      onUpdate?.(result);
+      // setLocalCandidate(result);
+      // onUpdate?.(result);
       if (pathname === "/dashboard") {
         refetchAssignment?.();
       }
@@ -295,6 +337,7 @@ export function CandidateDetailsDialog({
 
       setNewRemark("");
       setRemarkRating(null);
+      setRemarkRatingHistory(null);
 
       toast({
         title: "Success",
@@ -391,6 +434,7 @@ export function CandidateDetailsDialog({
         onOpenChange={(e) => {
           setNewRemark("");
           setRemarkRating(null);
+          setRemarkRatingHistory(null);
           onOpenChange(e);
         }}
       >
@@ -747,7 +791,7 @@ export function CandidateDetailsDialog({
             )}
 
             <div className="space-y-2">
-              <Label className={labelClass}>Assignment History</Label>
+              <Label className={labelClass}>Candidate History</Label>
               <ol className="relative border-s border-gray-200 dark:border-gray-700">
                 {validTimeLineItems.length > 0
                   ? validTimeLineItems.reverse().map((interview, i) => {
@@ -786,6 +830,8 @@ export function CandidateDetailsDialog({
                                         </p>
                                       )}
                                     </>
+                                  ) : interview.remark ? (
+                                    <p>Remark Added</p>
                                   ) : (
                                     <p className="pl-1">
                                       Unassigned from{" "}
@@ -800,7 +846,7 @@ export function CandidateDetailsDialog({
                                 </div>
                                 <div className="flex flex-col items-end">
                                   <p className="text-xs font-light text-gray-400">
-                                    Assigned by
+                                    Updated by
                                   </p>
                                   <p className="font-light text-gray-500 text-sm">
                                     {interview.assignmentBy &&
@@ -818,7 +864,8 @@ export function CandidateDetailsDialog({
                           </h3>
                           <div className="mb-4 text-base font-normal text-gray-500 dark:text-gray-400 flex flex-row justify-between w-full text-wrap break-all">
                             <p>
-                              {interview.note ? interview.note.description : ""}
+                              {interview.note && interview.note.description}
+                              {interview.remark && interview.remark.description}
                             </p>
 
                             {interview.note && interview.note.rating !== 0 && (
@@ -831,6 +878,18 @@ export function CandidateDetailsDialog({
                                 />
                               </div>
                             )}
+                            {interview.remark &&
+                              interview.remark.rating &&
+                              interview.remark.rating !== 0 && (
+                                <div className="flex flex-row items-center">
+                                  {interview.remark.rating}/5
+                                  <Star
+                                    size={"15px"}
+                                    className="mt-[1px]"
+                                    style={{ color: "orange" }}
+                                  />
+                                </div>
+                              )}
                           </div>
                           <AtttachmentsPopover
                             attachments={interview.attachments}
@@ -839,7 +898,7 @@ export function CandidateDetailsDialog({
                         </div>
                       );
                     })
-                  : "No Assignment History Found"}
+                  : "No History"}
               </ol>
             </div>
 
@@ -897,7 +956,7 @@ export function CandidateDetailsDialog({
 
             {/* Remarks Section */}
             <div className="space-y-4 border-t pt-4">
-              <h3 className="font-semibold">Interview Remarks</h3>
+              {/* <h3 className="font-semibold">Interview Remarks</h3>
               <div className="space-y-4">
                 {localCandidate?.remarks &&
                 localCandidate.remarks.length > 0 ? (
@@ -936,7 +995,7 @@ export function CandidateDetailsDialog({
                     No remarks yet
                   </div>
                 )}
-              </div>
+              </div> */}
 
               {/* Add New Remark */}
               <div className="space-y-4">
@@ -952,6 +1011,7 @@ export function CandidateDetailsDialog({
                       name="half-rating"
                       onChange={(e, value) => {
                         setRemarkRating(value ? value : null);
+                        setRemarkRatingHistory(value ? value : null);
                       }}
                       defaultValue={0}
                       precision={0.5}
@@ -994,6 +1054,7 @@ export function CandidateDetailsDialog({
                       onOpenChange(false);
                       setNewRemark("");
                       setRemarkRating(null);
+                      setRemarkRatingHistory(null);
                     }}
                   >
                     Close
