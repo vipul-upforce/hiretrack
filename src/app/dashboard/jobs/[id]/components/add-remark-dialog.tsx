@@ -115,29 +115,30 @@ const AddRemarksDialog = ({
             title: "Updating",
             description: `Updating ${candidate.name}'s remarks`,
           });
-
+          // debugger;
           await updateCandidateHistory({
             candidateId: candidate?._id,
             jobId: candidate.jobId,
             newEntry: newHistoryEntry,
           }).unwrap();
           const updatedCandidate = await updateCandidate(updateData).unwrap();
-          sentStatusMailHandler(updatedCandidate, sendStatusMail);
+          await sentStatusMailHandler(updatedCandidate, sendStatusMail);
           // sentRemarkMail(result, sendEmail);
 
-          await refetch();
+          onOpenChange(false);
 
           setNewRemark("");
           setRemarkRating(null);
           setRemarkRatingHistory(null);
           setOpenRemarksFor("");
 
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          await refetch();
+
           toast({
             title: "Success",
             description: "Remark added successfully",
           });
-
-          onOpenChange(false); // Close dialog after success
         } catch (error: unknown) {
           if (error instanceof Error) {
             toast({
