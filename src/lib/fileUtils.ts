@@ -263,7 +263,7 @@ export async function handleFileAttachments(
           const newName = item.name || originalName;
           if (originalName !== newName) {
             // Get the file path from the URL
-            const publicPath = path.join(process.cwd(), "assets");
+            const publicPath = path.join(process.cwd(), "..", "assets");
             const folder = item.type.startsWith("image/")
               ? "images"
               : "documents";
@@ -359,7 +359,7 @@ export async function handleCustomFieldFiles(
             const newName = file.name || originalName;
             if (originalName !== newName) {
               // Get the file path from the URL
-              const publicPath = path.join(process.cwd(), "assets");
+              const publicPath = path.join(process.cwd(), "..", "assets");
               const folder = file.type.startsWith("image/")
                 ? "images"
                 : "documents";
@@ -422,7 +422,7 @@ export async function handleSingleFile(
       const newName = file.name || originalName;
       if (originalName !== newName) {
         // Get the file path from the URL
-        const publicPath = path.join(process.cwd(), "assets");
+        const publicPath = path.join(process.cwd(), "..", "assets");
         const folder = file.type.startsWith("image/") ? "images" : "documents";
         const oldPath = path.join(publicPath, folder, originalName);
         const newPath = path.join(publicPath, folder, newName);

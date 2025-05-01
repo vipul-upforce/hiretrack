@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Resolve the absolute path while handling the parent directory reference
-    const projectRoot = path.join(process.cwd(), ".."); // Go one level up from current directory
+    const projectRoot = process.cwd();
     const safePath = path.normalize(pathName);
     const filePath = path.join(projectRoot, safePath);
 
