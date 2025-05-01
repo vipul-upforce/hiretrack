@@ -49,14 +49,14 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import {
-  useSendMailMutation,
+  // useSendMailMutation,
   useSendStatusMailMutation,
 } from "@/lib/features/org/orgApi";
-import { sentAssignmentMail, sentStatusMailHandler } from "@/lib/utils";
+import { sentStatusMailHandler } from "@/lib/utils";
 
 export default function JobProgressPage() {
   const { id } = useParams();
-  const [sendEmail] = useSendMailMutation();
+  // const [sendEmail] = useSendMailMutation();
   const [sendStatusMail] = useSendStatusMailMutation();
   const [columns, setColumns] = useState<CandidateColumn[]>(
     initialCandidateColumns
@@ -246,7 +246,8 @@ export default function JobProgressPage() {
           _id: draggableId,
           status: destination.droppableId,
         }).unwrap();
-        sentAssignmentMail(updatedCandidate, sendEmail);
+        // debugger;
+        // sentAssignmentMail(updatedCandidate, sendEmail);
         sentStatusMailHandler(
           {
             ...updatedCandidate,

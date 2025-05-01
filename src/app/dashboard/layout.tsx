@@ -105,6 +105,8 @@ export default function DashboardLayout({
       seHasMultipleOrgs(allowance.allow);
       dispatch(setAllowMultipleOrgs(allowance.allow));
     }
+    // Check if organization exists
+
     checkAllowance();
     // console.log("@@@@@@@@@@@STATE: ", lastUpdated, allowMultipleOrgs);
   }, [dispatch, allowMultipleOrgs]);
@@ -120,6 +122,24 @@ export default function DashboardLayout({
           setUserData(decryptedResponse.user);
           setUserLoggedIn(true);
           refetch();
+
+          try {
+            const response = await fetch(
+              "/api/checkorg?organizationId=" +
+                decryptedResponse.user.organizationId
+            );
+            // debugger
+            const resp = await response.json();
+            if (!resp.exists) {
+              Cookies.remove("token");
+              window.location.href = "/auth/login";
+              return;
+            }
+          } catch (error) {
+            console.error("Error checking organization:", error);
+            Cookies.remove("token");
+            window.location.href = "/auth/login";
+          }
         }
       }
     })();
