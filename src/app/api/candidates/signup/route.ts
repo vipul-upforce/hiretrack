@@ -51,8 +51,8 @@ export async function POST(req: Request) {
     }
 
     const existingUser =
-      (await CandidateAccount.findOne({ email, organizationId })) ||
-      (await User.findOne({ email, organizationId }));
+      (await CandidateAccount.findOne({ email })) ||
+      (await User.findOne({ email }));
 
     if (existingUser) {
       if (existingUser.isDeleted) {
@@ -62,7 +62,7 @@ export async function POST(req: Request) {
         );
       }
       return NextResponse.json(
-        { error: "Candidate already exists in this Organization" },
+        { error: "Candidates cant have multiple org accounts" },
         { status: 400 }
       );
     }

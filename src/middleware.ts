@@ -125,6 +125,12 @@ export async function middleware(request: NextRequest) {
     if (userRole !== "candidate" && pathname.includes("/apply-jobs")) {
       return NextResponse.redirect(new URL("/dashboard", request.url)); // Redirect to an unauthorized page
     }
+    if (userRole !== "admin" && pathname.includes("/backups")) {
+      return NextResponse.redirect(new URL("/auth/login", request.url));
+    }
+  }
+  if (pathname.includes("/backups") && !userData) {
+    return NextResponse.redirect(new URL("/auth/login", request.url));
   }
 
   return NextResponse.next();
@@ -135,6 +141,7 @@ export const config = {
     "/auth/signup",
     "/api/:path*",
     "/:orgName/:path*",
+    "/backups",
   ],
 };
 
