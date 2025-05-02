@@ -8,6 +8,59 @@ import { auth } from "@/lib/auth";
 
 const execAsync = promisify(exec);
 
+// Path to store the last archive timestamp
+const metadataDir = path.join(process.cwd(), "..", "metadata");
+const lastArchiveFile = path.join(metadataDir, "last_archive.json");
+
+// Save the last archive timestamp
+async function saveLastArchiveTimestamp(organizationId: string) {
+  const timestamp = new Date().toISOString();
+  const metadata = { [organizationId]: timestamp };
+
+  try {
+    if (!existsSync(metadataDir)) {
+      await fs.mkdir(metadataDir, { recursive: true });
+    }
+    await fs.writeFile(lastArchiveFile, JSON.stringify(metadata, null, 2));
+  } catch (error) {
+    console.error("Error saving last archive timestamp:", error);
+  }
+}
+
+// Read the last archive timestamp
+async function readLastArchiveTimestamp(
+  organizationId: string
+): Promise<string | null> {
+  try {
+    if (existsSync(lastArchiveFile)) {
+      const data = await fs.readFile(lastArchiveFile, "utf-8");
+      const metadata = JSON.parse(data);
+      return metadata[organizationId] || null;
+    }
+  } catch (error) {
+    console.error("Error reading last archive timestamp:", error);
+  }
+  return null;
+}
+
+// Recursively calculate the total size of all files in a directory
+async function calculateDirectorySize(dirPath: string): Promise<number> {
+  let totalSize = 0;
+  const entries = await fs.readdir(dirPath, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const entryPath = path.join(dirPath, entry.name);
+    if (entry.isDirectory()) {
+      totalSize += await calculateDirectorySize(entryPath);
+    } else if (entry.isFile()) {
+      const stats = await fs.stat(entryPath);
+      totalSize += stats.size;
+    }
+  }
+
+  return totalSize;
+}
+
 export async function GET(req: NextRequest) {
   const session = await auth(req);
   const organizationId = session?.user.organizationId;
@@ -60,6 +113,9 @@ export async function GET(req: NextRequest) {
     // Read the archive into memory
     const archiveBuffer = await fs.readFile(tempArchivePath);
 
+    // Save the last archive timestamp
+    await saveLastArchiveTimestamp(organizationId);
+
     // Clean up temporary directory
     await fs.rm(tempDir, { recursive: true, force: true });
 
@@ -84,24 +140,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// Recursively calculate the total size of all files in a directory
-async function calculateDirectorySize(dirPath: string): Promise<number> {
-  let totalSize = 0;
-  const entries = await fs.readdir(dirPath, { withFileTypes: true });
-
-  for (const entry of entries) {
-    const entryPath = path.join(dirPath, entry.name);
-    if (entry.isDirectory()) {
-      totalSize += await calculateDirectorySize(entryPath);
-    } else if (entry.isFile()) {
-      const stats = await fs.stat(entryPath);
-      totalSize += stats.size;
-    }
-  }
-
-  return totalSize;
-}
-
 export async function POST(req: NextRequest) {
   const session = await auth(req);
   const organizationId = session?.user.organizationId;
@@ -122,14 +160,14 @@ export async function POST(req: NextRequest) {
     }
 
     // Get metadata for the assets directory
-    const stats = await fs.stat(assetsRoot);
     const totalSize = await calculateDirectorySize(assetsRoot);
+    const lastArchivedAt = await readLastArchiveTimestamp(organizationId);
     const assetsData = {
       name: "assets",
       type: "directory",
       path: "assets",
       size: totalSize,
-      createdAt: stats.birthtime.toISOString(),
+      lastArchivedAt: lastArchivedAt || null,
     };
 
     return NextResponse.json(

@@ -11,7 +11,7 @@ interface AssetMetadata {
   type: "directory";
   path: string;
   size: number;
-  createdAt: string;
+  lastArchivedAt: string | null;
 }
 
 export default function AssetsDialog() {
@@ -47,6 +47,7 @@ export default function AssetsDialog() {
       setLoading(false);
     }
   };
+
   useEffect(() => {
     fetchAssetsMetadata();
   }, []);
@@ -82,6 +83,7 @@ export default function AssetsDialog() {
         title: "Assets archived successfully",
         description: "Assets archive has been downloaded.",
       });
+      await fetchAssetsMetadata();
     } catch (err) {
       console.error("Failed to archive assets:", err);
       toast({
@@ -100,7 +102,7 @@ export default function AssetsDialog() {
         <p>Loading...</p>
       ) : (
         <>
-          {assetsMetadata && (
+          {assetsMetadata ? (
             <div className="mb-4">
               <div className="flex items-center space-x-2">
                 <FolderIcon className="h-4 w-4" />
@@ -111,24 +113,31 @@ export default function AssetsDialog() {
                       Size: {formatFileSize(assetsMetadata.size)}
                     </span>
                     <span className="text-xs text-gray-500">
-                      Created:{" "}
-                      {new Date(assetsMetadata.createdAt).toLocaleString()}
+                      Last Archived:{" "}
+                      {assetsMetadata.lastArchivedAt
+                        ? new Date(
+                            assetsMetadata.lastArchivedAt
+                          ).toLocaleString()
+                        : "Never"}
                     </span>
                   </div>
+                  <Button
+                    variant="ghost"
+                    onClick={() => archiveAssets()}
+                    className="text-xs text-blue-500 hover:underline"
+                    disabled={downLoading}
+                  >
+                    {downLoading ? (
+                      <Loader className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <LucideDownload className="w-4 h-4" />
+                    )}
+                  </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  onClick={() => archiveAssets()}
-                  className="text-xs text-blue-500 hover:underline"
-                >
-                  {downLoading ? (
-                    <Loader />
-                  ) : (
-                    <LucideDownload className="text-xs w-4" />
-                  )}
-                </Button>
               </div>
             </div>
+          ) : (
+            <p>No assets metadata available.</p>
           )}
         </>
       )}
