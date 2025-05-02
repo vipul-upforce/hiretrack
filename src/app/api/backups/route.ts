@@ -10,12 +10,20 @@ export async function GET() {
     const entries = await fs.readdir(backupsDir, { withFileTypes: true });
     // console.log("BACKUPDS Entries ", entries);
 
-    const files = entries
-      .filter((entry) => entry.isFile())
-      .map((file) => ({
-        name: file.name,
-        url: `/api/files?pathName=../backups/${encodeURIComponent(file.name)}`,
-      }));
+    const files = await Promise.all(
+      entries
+        .filter((entry) => entry.isFile())
+        .map(async (file) => {
+          const filePath = path.join(backupsDir, file.name);
+          const stats = await fs.stat(filePath);
+          return {
+            name: file.name,
+            url: `/api/files?pathName=../backups/${encodeURIComponent(file.name)}`,
+            createdAt: stats.birthtime.toISOString(),
+            size: stats.size,
+          };
+        })
+    );
 
     return NextResponse.json({ files });
   } catch (error: any) {

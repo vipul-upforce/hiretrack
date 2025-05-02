@@ -142,6 +142,7 @@ export const config = {
     "/api/:path*",
     "/:orgName/:path*",
     "/backups",
+    "/take-snapshot",
   ],
 };
 

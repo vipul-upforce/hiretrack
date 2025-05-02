@@ -33,6 +33,16 @@ export default function Settings() {
       key: "multipleorgs",
       description: "Choose if there could be multiple organizations or not.",
     },
+    {
+      title: "Backups",
+      key: "backups",
+      description: "Create and manage database backups",
+    },
+    {
+      title: "Assets",
+      key: "assets",
+      description: "Download media assets of your server",
+    },
   ];
 
   return (

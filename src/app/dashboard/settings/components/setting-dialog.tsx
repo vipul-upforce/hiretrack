@@ -12,6 +12,8 @@ import FileStorageOptions from "./fileStorage-dialog";
 import PortalConfigs from "./portalConfig-dialog";
 import GeminiConfigs from "./gemini";
 import MultipleOrgsConfigs from "./MultipleOrgsConfigs";
+import BackupsDialog from "./backups-dialog";
+import AssetsDialog from "./assets-dialog";
 // import FileStorageOptions from "./file-storage-dialog"; // Example for another setting
 
 interface SettingComponentProps {
@@ -26,6 +28,8 @@ const settingComponents: Record<
   portal: PortalConfigs,
   gemini: GeminiConfigs,
   multipleorgs: MultipleOrgsConfigs,
+  backups: BackupsDialog,
+  assets: AssetsDialog,
 };
 
 const SettingDialog = ({

@@ -8,7 +8,7 @@ type BackupFile = {
   url: string;
 };
 
-export default function BackupsPage() {
+export default function BackupsDialog() {
   const [files, setFiles] = useState<BackupFile[]>([]);
   const [loading, setLoading] = useState(true);
 
