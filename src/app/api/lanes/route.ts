@@ -3,7 +3,6 @@ import { Lane } from "@/lib/mongodb";
 import connectToDatabase from "@/lib/mongodb";
 import { auth } from "@/lib/auth";
 import { Organization } from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,7 +27,7 @@ export async function GET(request: NextRequest) {
     const organization = (await Organization.findOne({
       _id: organizationId,
     }).lean()) as unknown as {
-      _id: string | ObjectId;
+      _id: string;
       lanes?: string[];
     };
     if (!organization) {
