@@ -112,7 +112,11 @@ export const candidateApi = createApi({
       invalidatesTags: ["Candidate"],
     }),
     evaluateCandidate: builder.mutation<
-      NextResponse,
+      {
+        message: string;
+        candidate: Candidate;
+        error?: string;
+      },
       {
         candidateId: string;
       }

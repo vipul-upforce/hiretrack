@@ -73,6 +73,7 @@ interface CreateCandidateDialogProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
   resumeFile?: File | null;
+  isCreating?: (isCreating: boolean) => void;
 }
 
 const getInitialValues = (customFields: CustomFieldValues) => ({
@@ -119,7 +120,7 @@ type CandidateFormValues = ReturnType<typeof getInitialValues>;
 
 // Add this function before handleSubmit
 const checkPdfPageCount = async (file: File): Promise<number> => {
-  console.log("%%%%%%% ", file);
+  // console.log("%%%%%%% ", file);
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = async () => {
@@ -141,19 +142,24 @@ export function CreateCandidateDialog({
   isOpen,
   setIsOpen,
   resumeFile,
+  // isCreating,
 }: CreateCandidateDialogProps) {
   const { toast } = useToast();
-  const [createCandidate] = useCreateCandidateMutation();
-  const [evaluateCandidateMutation] = useEvaluateCandidateMutation();
+  const [createCandidate, { isLoading: isAdding }] =
+    useCreateCandidateMutation();
+  const [evaluateCandidateMutation, { isLoading: isEvaluating }] =
+    useEvaluateCandidateMutation();
   const [applicationEventMailMutation, { isLoading: isSendingEmail }] =
     useApplicationEventMailMutation();
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
-  const [updateAppliedApplication] = useUpdateAppliedApplicationMutation();
+  const [updateAppliedApplication, { isLoading }] =
+    useUpdateAppliedApplicationMutation();
   const [parsedResumeData, setParsedResume] = useState<Resume | null>(null);
   const formName = "Candidate";
   const { validationSchema, initialValues: inits } = useCustomForm(formName);
   const [resetForm, setResetForm] = useState(false);
   const [user, setuser] = useState<User | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -180,7 +186,7 @@ export function CreateCandidateDialog({
   }, [isOpen, resumeFile]);
 
   const handleSubmit = async (values: CandidateFormValues) => {
-    debugger;
+    // debugger;
     const fileNames = values.attachments.map((file) => file.name);
     const hasDuplicates = new Set(fileNames).size !== fileNames.length;
 
@@ -259,6 +265,7 @@ export function CreateCandidateDialog({
       };
 
       // Step 1: Create the candidate
+      setIsCreating(true);
       const createdCandidate = await createCandidate(candidateData).unwrap();
       const candidateId = createdCandidate._id;
       if (values.resume && values.resume.type === "application/pdf") {
@@ -348,6 +355,7 @@ export function CreateCandidateDialog({
         variant: "destructive",
       });
     }
+    setIsCreating(false);
   };
 
   const convertFileToBase64 = (file: File): Promise<string> => {
@@ -365,10 +373,22 @@ export function CreateCandidateDialog({
         {user && user.role === "candidate" ? (
           <button
             type="button"
-            disabled={isSendingEmail}
+            disabled={
+              isSendingEmail ||
+              isCreating ||
+              isLoading ||
+              isAdding ||
+              isEvaluating
+            }
             className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
           >
-            {isSendingEmail ? "Processing..." : "Apply Now"}
+            {isSendingEmail ||
+            isCreating ||
+            isLoading ||
+            isEvaluating ||
+            isAdding
+              ? "Processing..."
+              : "Apply Now"}
           </button>
         ) : (
           <Button>

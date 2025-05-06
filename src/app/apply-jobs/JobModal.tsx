@@ -4,9 +4,10 @@ import CustomFieldsData from "@/Custom_Fields/Components/CustomFields/customFiel
 import useRoles from "@/hooks/useRoles";
 import { Dialog } from "@headlessui/react";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation";
 import ExpandableDescription from "@/app/dashboard/jobs/[id]/components/expand-collapse-desc";
 import ApplyOptions from "./ApplyOptions";
+import { hasAppliedAsGuest } from "./ApplyAsGuest";
 
 // Define a type for the job object
 interface Job {
@@ -38,8 +39,10 @@ export default function JobModal({
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [isPendingOptionsOpen, setIsPendingOptionsOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [alreadyApplied, setAlreadyApplied] = useState(false);
+
   const roles = useRoles();
-  const router = useRouter();
+  // const router = useRouter();
 
   useEffect(() => {
     if (isPendingOptionsOpen && !isOpen) {
@@ -48,19 +51,18 @@ export default function JobModal({
     }
   }, [isOpen, isPendingOptionsOpen]);
 
-  if (!job) return null;
+  useEffect(() => {
+    const checkApplicationStatus = () => {
+      if (job && job._id) {
+        const applied = hasAppliedAsGuest(job._id);
+        setAlreadyApplied(applied);
+      }
+    };
 
-  const handleSignupRedirect = async () => {
-    const data = await fetch("/api/organization");
-    if (!data.ok) {
-      return;
-    }
-    const allowance = await data.json();
-    if (!allowance.allow) {
-      return router.push("/signup");
-    }
-    router.push("/signup?o=" + orgName);
-  };
+    checkApplicationStatus();
+  }, [job]);
+
+  if (!job) return null;
 
   const handleContinue = () => {
     setIsPendingOptionsOpen(true);
@@ -112,13 +114,26 @@ export default function JobModal({
             <div className="mt-6 flex justify-end gap-3">
               {roles === "" ? (
                 <>
-                  <Button onClick={handleContinue}>Continue</Button>
+                  <Button
+                    onClick={handleContinue}
+                    disabled={alreadyApplied || readOnly}
+                    className={`inline-flex justify-center rounded-md border ${
+                      alreadyApplied || readOnly
+                        ? "border-gray-300 bg-gray-100 text-gray-500"
+                        : "border-transparent bg-blue-100 text-blue-900 hover:bg-blue-200"
+                    } px-4 py-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2`}
+                  >
+                    {alreadyApplied ? "Already Applied" : "Apply Now"}
+                  </Button>
                 </>
               ) : (
                 <>
-                  {readOnly ? (
-                    <Button onClick={handleSignupRedirect} disabled>
-                      Applied
+                  {alreadyApplied || readOnly ? (
+                    <Button
+                      disabled
+                      className="inline-flex justify-center rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-500"
+                    >
+                      Already Applied
                     </Button>
                   ) : (
                     <CreateCandidateDialog
@@ -148,7 +163,7 @@ export default function JobModal({
         isOptionsOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         orgName={orgName}
-        readOnly={false}
+        readOnly={alreadyApplied || readOnly}
       />
     </>
   );

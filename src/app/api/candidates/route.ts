@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Organization } from "@/lib/mongodb";
+import connectToDatabase, { History, Organization } from "@/lib/mongodb";
 import { Candidate } from "@/lib/mongodb";
 import { handleCustomFieldFiles, handleSingleFile } from "@/lib/fileUtils";
 import { handleFileAttachments } from "@/lib/fileUtils";
@@ -160,6 +160,38 @@ export async function POST(request: NextRequest) {
 
         // Populate the interviewer details before sending response
         await candidate.populate("assignment.interviewerId", "name email");
+
+        // const historyExisting =
+        if (userData.role === "candidate") {
+          await History?.create({
+            candidateId: candidate._id,
+            jobId: data.jobId,
+            history: [
+              {
+                dateTime: new Date().toLocaleString(),
+                title: "Self Applied",
+                previousInterviewer: null,
+                currentInterviewer: null,
+                assignmentBy: userData.id,
+              },
+            ],
+          });
+        } else {
+          await History?.create({
+            candidateId: candidate._id,
+            jobId: data.jobId,
+            history: [
+              {
+                dateTime: new Date().toLocaleString(),
+                title: "Candidate Added",
+                previousInterviewer: null,
+                currentInterviewer: null,
+                assignmentBy: userData.id,
+              },
+            ],
+          });
+        }
+        // console.log("⛔⛔ existing history", historyExisting);
 
         return NextResponse.json(candidate, { status: 201 });
       } else {

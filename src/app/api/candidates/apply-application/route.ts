@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth";
-import connectToDatabase, { CandidateAccount } from "@/lib/mongodb";
+import connectToDatabase, { CandidateAccount, History } from "@/lib/mongodb";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -19,9 +19,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Model not found" }, { status: 404 });
     }
 
-    await CandidateAccount.findByIdAndUpdate(user.id, {
+    const candidate = await CandidateAccount.findByIdAndUpdate(user.id, {
       $push: { appliedApplications: jobId },
     }).lean();
+
+    // const historyCreated =
+    await History?.create({
+      candidateId: candidate?._id,
+      jobId,
+      history: [
+        {
+          dateTime: new Date().toLocaleString(),
+          title: "Self Applied",
+          previousInterviewer: null,
+          currentInterviewer: null,
+          assignmentBy: user.id,
+        },
+      ],
+    });
 
     return NextResponse.json(
       { message: "Application submitted successfully" },

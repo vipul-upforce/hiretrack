@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Organization } from "@/lib/mongodb";
+import connectToDatabase, { History, Organization } from "@/lib/mongodb";
 import { Candidate } from "@/lib/mongodb";
 import { handleCustomFieldFiles, handleSingleFile } from "@/lib/fileUtils";
 import { handleFileAttachments } from "@/lib/fileUtils";
@@ -144,6 +144,21 @@ export async function POST(request: NextRequest) {
     if (candidate.assignment && candidate.assignment.interviewerId) {
       await candidate.populate("assignment.interviewerId", "name email");
     }
+
+    // const historyCreated =
+    await History?.create({
+      candidateId: candidate?._id,
+      jobId,
+      history: [
+        {
+          dateTime: new Date().toLocaleString(),
+          title: "Self Applied",
+          previousInterviewer: null,
+          currentInterviewer: null,
+          assignmentBy: null,
+        },
+      ],
+    });
 
     return NextResponse.json(candidate, { status: 201 });
   } catch (error: unknown) {

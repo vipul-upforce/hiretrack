@@ -306,6 +306,9 @@ export function EditCandidateDialog({
         onSuccess();
       }
       onOpenChange(false);
+      if (reopenDetailsDialog) {
+        reopenDetailsDialog();
+      }
       toast({
         title: "Success",
         description: "Candidate updated successfully",

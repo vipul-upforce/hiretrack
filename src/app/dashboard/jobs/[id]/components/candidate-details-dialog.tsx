@@ -21,6 +21,7 @@ import {
   Dot,
   Star,
   Copy,
+  RefreshCwIcon,
 } from "lucide-react";
 import { PDFViewer } from "@/components/ui/pdf-viewer";
 import { Candidate } from "@/types/candidate";
@@ -30,6 +31,7 @@ import { useState, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import {
+  useEvaluateCandidateMutation,
   useLazyFetchCandidatesQuery,
   useUpdateCandidateHistoryMutation,
   useUpdateCandidateMutation,
@@ -48,20 +50,8 @@ import { AssignJobDialog } from "./assing-job-dialog";
 import { CandidateScoreBadge } from "./candidate-score-badge";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { User } from "@/lib/features/users/usersApi";
-import {
-  // IScheduledMailRequest,
-  // useSendMailMutation,
-  // useSendStatusMailMutation,
-  useSendUnassignMailMutation,
-} from "@/lib/features/org/orgApi";
-// import { IJob } from "@/lib/models/job";
-// import { sentAssignmentMail, sentStatusMailHandler } from "@/lib/utils";
-// import { sentAssignmentMail } from "@/lib/utils";
-// import {
-//   // IScheduledMailRequest,
-//   useSendMailMutation,
-// } from "@/lib/features/org/orgApi";
-// import { IJob } from "@/lib/models/job";
+import { useSendUnassignMailMutation } from "@/lib/features/org/orgApi";
+import { evaluateCandidate } from "@/app/apply-jobs/ApplyAsGuest";
 
 interface CandidateDetailsDialogProps {
   candidate: Candidate | null;
@@ -113,10 +103,6 @@ export function CandidateDetailsDialog({
   const [refetchCandidate, { data: candidateData }] =
     useLazyFetchCandidatesQuery();
 
-  const refetch = async () => {
-    await refetchCandidate((id as string) || candidate?.jobId._id || "");
-  };
-
   const [isEditing, setIsEditing] = useState(false);
   const [newRemark, setNewRemark] = useState("");
   const [showEvalDetails, setShowEvalDetails] = useState(false);
@@ -124,16 +110,29 @@ export function CandidateDetailsDialog({
   const [remarkRatingHistory, setRemarkRatingHistory] = useState<number | null>(
     null
   );
+  const [isReEvaluating, setIsReEvaluating] = useState(false);
+  const [evaluationError, setEvaluationError] = useState<string | null>(null);
   const [updateCandidate] = useUpdateCandidateMutation();
   const [isAssigning, setIsAssigning] = useState(false);
   const [isAssigningJob, setIsAssigningJob] = useState(false);
   const [user, setuser] = useState<User | null>(null);
   const [confirmUnassignOpen, setConfirmUnassignOpen] = useState(false);
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
-
-  // const [sendEmail] = useSendMailMutation();
+  const [evaluateCandidateMutation] = useEvaluateCandidateMutation();
+  // Add local state to track remarks
+  const [localCandidate, setLocalCandidate] = useState<Candidate | null>(
+    candidate
+  );
+  const refetch = async () => {
+    const result = await refetchCandidate(
+      (id as string) || candidate?.jobId._id || ""
+    );
+    const updatedCandidate = result.data!.find((c) => {
+      return c._id === localCandidate?._id;
+    });
+    setLocalCandidate(updatedCandidate!);
+  };
   const [sendUnassignEmail, { isLoading }] = useSendUnassignMailMutation();
-  // const [sendStatusMail] = useSendStatusMailMutation();
   useEffect(() => {
     (async () => {
       const token = Cookies.get("token");
@@ -171,6 +170,51 @@ export function CandidateDetailsDialog({
       });
   };
 
+  const handleReEvaluation = async () => {
+    try {
+      setIsReEvaluating(true);
+      setEvaluationError(null);
+
+      const result = await evaluateCandidate(
+        localCandidate?._id as string,
+        evaluateCandidateMutation
+      );
+      if (!result) {
+        return toast({
+          title: "Error",
+          description: "Failed to Re-evaluate the resume",
+          variant: "destructive",
+        });
+      }
+      toast({
+        title: "Success",
+        description: "Candidate re-evaluation completed successfully",
+        variant: "default",
+      });
+
+      setShowEvalDetails(true);
+    } catch (error) {
+      console.error("Re-evaluation error:", error);
+      setEvaluationError(
+        error instanceof Error
+          ? error.message
+          : "Failed to re-evaluate candidate"
+      );
+      toast({
+        title: "Error",
+        description: "Failed to re-evaluate candidate",
+        variant: "destructive",
+      });
+    } finally {
+      setIsReEvaluating(false);
+      if (pathname !== "/dashboard" && pathname !== "/dashboard/calendar") {
+        await refetch();
+      } else {
+        await refetchAssignment?.();
+      }
+    }
+  };
+
   useEffect(() => {
     return () => {
       setNewRemark("");
@@ -184,11 +228,6 @@ export function CandidateDetailsDialog({
       onOpenChange(false); // Close the details dialog only when editing starts
     }
   }, [isEditing, onOpenChange]);
-
-  // Add local state to track remarks
-  const [localCandidate, setLocalCandidate] = useState<Candidate | null>(
-    candidate
-  );
 
   const [timeLineItems, setTimeLineItems] = useState<ICandidateHistory[]>([]);
 
@@ -572,7 +611,7 @@ export function CandidateDetailsDialog({
             {localCandidate.scores && (
               <>
                 <div
-                  className="space-y-2 cursor-pointer "
+                  className="space-y-2 cursor-pointer"
                   onClick={() => setShowEvalDetails(!showEvalDetails)}
                 >
                   <div className="space-y-2 cursor-pointer">
@@ -584,37 +623,58 @@ export function CandidateDetailsDialog({
                       localCandidate.scores.recommendation ||
                       localCandidate.scores.notes) && (
                       <div className="flex flex-row justify-between items-center">
-                        <Label className={labelClass}>Resume Evaluation</Label>
+                        <div className="flex items-center gap-3">
+                          <Label className={labelClass}>AI Evaluation</Label>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleReEvaluation();
+                            }}
+                            disabled={isReEvaluating}
+                            className={
+                              isReEvaluating
+                                ? "animate-spin"
+                                : "hover:text-gray-400 transition duration-300"
+                            }
+                          >
+                            <RefreshCwIcon size={15} />
+                          </button>
+                        </div>
                         <p>
                           {showEvalDetails ? "Hide details" : "Show details"}
                         </p>
                       </div>
                     )}
 
-                    {(localCandidate.scores.overall ||
-                      localCandidate.scores.experience ||
-                      localCandidate.scores.skills) && (
-                      <div className="flex flex-wrap gap-2 flex flex-row items-center">
-                        {localCandidate.scores.overall >= 0 && (
-                          <CandidateScoreBadge
-                            score={localCandidate.scores.overall}
-                            category="Overall"
-                          />
-                        )}
-                        {localCandidate.scores.experience >= 0 && (
-                          <CandidateScoreBadge
-                            score={localCandidate.scores.experience}
-                            category="Experience"
-                          />
-                        )}
-                        {localCandidate.scores.skills >= 0 && (
-                          <CandidateScoreBadge
-                            score={localCandidate.scores.skills}
-                            category="Skills"
-                          />
-                        )}
+                    {evaluationError && (
+                      <div className="text-red-500 text-sm mt-1 mb-2">
+                        {evaluationError}
                       </div>
                     )}
+
+                    {localCandidate.scores &&
+                      localCandidate.scores.overall !== undefined && (
+                        <div className="capitalize flex gap-2 py-2">
+                          {localCandidate.scores.overall >= 0 && (
+                            <CandidateScoreBadge
+                              score={localCandidate.scores.overall}
+                              category="Overall"
+                            />
+                          )}
+                          {localCandidate.scores.experience >= 0 && (
+                            <CandidateScoreBadge
+                              score={localCandidate.scores.experience}
+                              category="Experience"
+                            />
+                          )}
+                          {localCandidate.scores.skills >= 0 && (
+                            <CandidateScoreBadge
+                              score={localCandidate.scores.skills}
+                              category="Skills"
+                            />
+                          )}
+                        </div>
+                      )}
                   </div>
                 </div>
                 {showEvalDetails &&
@@ -832,7 +892,22 @@ export function CandidateDetailsDialog({
                                     </>
                                   ) : interview.remark ? (
                                     <p>Remark Added</p>
-                                  ) : (
+                                  ) : interview.title === "Candidate Added" &&
+                                    interview.assignmentBy ? (
+                                    <p>
+                                      {localCandidate.name} was added by{" "}
+                                      {interview.assignmentBy &&
+                                      typeof interview.assignmentBy ===
+                                        "object" &&
+                                      "name" in interview.assignmentBy
+                                        ? `${interview.assignmentBy.name}`
+                                        : ""}
+                                    </p>
+                                  ) : interview.title == "Self Applied" ? (
+                                    <p>
+                                      {localCandidate.name} applied from portal
+                                    </p>
+                                  ) : interview?.previousInterviewer ? (
                                     <p className="pl-1">
                                       Unassigned from{" "}
                                       {interview?.previousInterviewer &&
@@ -842,11 +917,13 @@ export function CandidateDetailsDialog({
                                           interview.previousInterviewer &&
                                         interview.previousInterviewer.name}
                                     </p>
+                                  ) : (
+                                    <></>
                                   )}
                                 </div>
                                 <div className="flex flex-col items-end">
                                   <p className="text-xs font-light text-gray-400">
-                                    Updated by
+                                    {interview.assignmentBy && "Updated by"}
                                   </p>
                                   <p className="font-light text-gray-500 text-sm">
                                     {interview.assignmentBy &&

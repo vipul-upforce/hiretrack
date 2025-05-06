@@ -67,7 +67,7 @@ export const hasAppliedAsGuest = (jobId: string): boolean => {
 };
 
 // New function to call the evaluate API
-async function evaluateCandidate(
+export async function evaluateCandidate(
   candidateId: string,
   evaluateCandidateMutation: ReturnType<typeof useEvaluateCandidateMutation>[0]
 ) {
@@ -365,15 +365,18 @@ export function ApplyAsGuestDialog({
           <DialogTitle>Apply</DialogTitle>
         </DialogHeader>
         {hasAlreadyApplied ? (
-          <div className="p-6 text-center">
-            <h3 className="text-lg font-semibold mb-2">
-              Application Already Submitted
-            </h3>
-            <p className="text-muted-foreground mb-4">
-              We've received your application for this job. No further action is
-              needed at this time.
-            </p>
-            <Button onClick={() => setIsOpen(false)}>Close</Button>
+          <div className="p-6 pt-0 text-center flex flex-col justify-start items-center ">
+            <div className="w-[400px] h-[400px]  mb-2"></div>
+            <div>
+              <h3 className="text-lg font-semibold mb-2">
+                Application Already Submitted
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                We've received your application for this job. No further action
+                is needed at this time.
+              </p>
+              <Button onClick={() => setIsOpen(false)}>Close</Button>
+            </div>
           </div>
         ) : (
           <Formik
