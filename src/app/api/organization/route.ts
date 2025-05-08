@@ -215,6 +215,7 @@ export async function GET(req: NextRequest) {
   }
   return NextResponse.json({
     allow: false,
+    data: settings,
   });
   // }
 }

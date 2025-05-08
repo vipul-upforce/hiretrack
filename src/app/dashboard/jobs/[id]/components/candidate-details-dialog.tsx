@@ -22,6 +22,8 @@ import {
   Star,
   Copy,
   RefreshCwIcon,
+  EyeOff,
+  Eye,
 } from "lucide-react";
 import { PDFViewer } from "@/components/ui/pdf-viewer";
 import { Candidate } from "@/types/candidate";
@@ -52,6 +54,8 @@ import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { User } from "@/lib/features/users/usersApi";
 import { useSendUnassignMailMutation } from "@/lib/features/org/orgApi";
 import { evaluateCandidate } from "@/app/apply-jobs/ApplyAsGuest";
+import { RemarkOptionsMenu } from "./remark-options-menu";
+import { Switch } from "@/components/ui/switch";
 
 interface CandidateDetailsDialogProps {
   candidate: Candidate | null;
@@ -119,6 +123,18 @@ export function CandidateDetailsDialog({
   const [confirmUnassignOpen, setConfirmUnassignOpen] = useState(false);
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
   const [evaluateCandidateMutation] = useEvaluateCandidateMutation();
+  const [isRemarkOptionsOpen, setIsRemarkOptionsOpen] = useState(false);
+  const [isRemarkOpsOpenFor, setIsRemarkOpsOpenFor] = useState<string | null>();
+  // const [isRemarkPrivate, setIsRemarkPrivate] = useState(false);
+  // const [isRemarkPrivateFor, setIsRemarkPrivateFor] = useState<string>();
+  const [isSubRemarkPrivate, setIsSubRemarkPrivate] = useState(false);
+  const [confirmReEvaluateOpen, setConfirmReEvaluateOpen] = useState(false);
+  const [isEditRemarkDialogOpen, setIsEditRemarkDialogOpen] = useState(false);
+  const [editingRemark, setEditingRemark] = useState<{
+    id: string | undefined;
+    isPrivate: boolean;
+    description: string;
+  } | null>(null);
   // Add local state to track remarks
   const [localCandidate, setLocalCandidate] = useState<Candidate | null>(
     candidate
@@ -169,8 +185,55 @@ export function CandidateDetailsDialog({
         });
       });
   };
+  const handleRemarkUpdate = async (
+    id: string,
+    description: string,
+    isPrivate?: boolean
+  ) => {
+    setIsEditRemarkDialogOpen(false);
+    try {
+      const response = await fetch("/api/candidates/history", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id,
+          isPrivate,
+          description,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to update remark");
+      }
+
+      const result = await response.json();
+      console.log("Remark update successful:", result);
+
+      await refetch();
+
+      if (onUpdate && localCandidate) {
+        onUpdate(localCandidate);
+      }
+
+      toast({
+        title: "Success",
+        description: "Remark status updated successfully",
+      });
+    } catch (e) {
+      console.error("Failed to update remark:", e);
+      toast({
+        title: "Error",
+        description: "Failed to update remark. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleReEvaluation = async () => {
+    setConfirmReEvaluateOpen(false);
     try {
       setIsReEvaluating(true);
       setEvaluationError(null);
@@ -281,6 +344,7 @@ export function CandidateDetailsDialog({
         },
       };
       const newRemarkHistoryObj = {
+        isPrivate: isSubRemarkPrivate,
         description: String(newRemark).trim(),
         date: new Date().toISOString(),
         rating: remarkRatingHistory ? Number(remarkRatingHistory) : undefined,
@@ -367,6 +431,10 @@ export function CandidateDetailsDialog({
       // Update both local and parent state
       // setLocalCandidate(result);
       // onUpdate?.(result);
+      if (onUpdate && result) {
+        onUpdate(result);
+      }
+
       if (pathname === "/dashboard") {
         refetchAssignment?.();
       }
@@ -628,7 +696,7 @@ export function CandidateDetailsDialog({
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleReEvaluation();
+                              setConfirmReEvaluateOpen(true);
                             }}
                             disabled={isReEvaluating}
                             className={
@@ -854,48 +922,185 @@ export function CandidateDetailsDialog({
               <Label className={labelClass}>Candidate History</Label>
               <ol className="relative border-s border-gray-200 dark:border-gray-700">
                 {validTimeLineItems.length > 0
-                  ? validTimeLineItems.reverse().map((interview, i) => {
-                      const timeDate = interview.dateTime.split(",")[0];
-                      const timeTime = interview.dateTime.split(",")[1];
+                  ? validTimeLineItems
+                      .reverse()
+                      .filter((interview) => {
+                        // If the entry is not a remark, include it
+                        if (
+                          !interview.remark ||
+                          !interview.remark.description
+                        ) {
+                          return true;
+                        }
+                        // If the entry is a remark, include it only if:
+                        // - It is not private, OR
+                        // - The user is hr or admin
+                        return (
+                          !interview.remark.isPrivate ||
+                          user?.role === "hr" ||
+                          user?.role === "admin"
+                        );
+                      })
+                      .map((interview, i) => {
+                        const timeDate = interview.dateTime.split(",")[0];
+                        const timeTime = interview.dateTime.split(",")[1];
 
-                      return (
-                        <div key={i} className="mb-10 ms-4">
-                          <div className="absolute w-3 h-3 bg-gray-200 rounded-full mt-1.5 -start-1.5 border border-white dark:border-gray-900 dark:bg-gray-700"></div>
-                          <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500 flex flex-row items-center">
-                            {timeDate} <Dot /> {timeTime}
-                          </time>
-                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white capitalize flex flex-row items-center justify-start">
-                            {(interview.title !== "" || !interview.title) &&
-                            interview.title !== "Assigned to Job" ? (
-                              <div className="flex flex-row items-start justify-between w-full">
-                                <div className="flex flex-row">
-                                  {interview.currentInterviewer &&
-                                  typeof interview.currentInterviewer ===
-                                    "object" &&
-                                  "name" in interview.currentInterviewer ? (
-                                    <>
-                                      {interview.previousInterviewer &&
-                                      typeof interview.previousInterviewer ===
-                                        "object" &&
-                                      "name" in
-                                        interview.previousInterviewer ? (
-                                        <p className="pl-1">
-                                          {interview.previousInterviewer.name +
-                                            " → " +
-                                            interview.currentInterviewer.name}
-                                        </p>
-                                      ) : (
-                                        <p className="pl-1">
-                                          {`Assigned to ${interview.currentInterviewer.name}`}
-                                        </p>
-                                      )}
-                                    </>
-                                  ) : interview.remark ? (
-                                    <p>Remark Added</p>
-                                  ) : interview.title === "Candidate Added" &&
-                                    interview.assignmentBy ? (
-                                    <p>
-                                      {localCandidate.name} was added by{" "}
+                        return (
+                          <div key={i} className="mb-10 ms-4 group">
+                            <div className="absolute w-3 h-3 bg-gray-200 rounded-full mt-1.5 -start-1.5 border border-white dark:border-gray-900 dark:bg-gray-700"></div>
+
+                            <div
+                              className="flex flex-row items-center justify-between group"
+                              onMouseEnter={() => {
+                                setIsRemarkOptionsOpen(true);
+                                setIsRemarkOpsOpenFor(interview.remark?.id);
+                              }}
+                              onMouseLeave={() => {
+                                setIsRemarkOptionsOpen(false);
+                              }}
+                            >
+                              <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500 flex flex-row items-center group">
+                                {timeDate} <Dot /> {timeTime}
+                              </time>
+                              <div className="relative">
+                                {/* <button
+                                onClick={() => {
+                                  setIsRemarkOptionsOpen(!isRemarkOptionsOpen);
+                                  setIsRemarkOpsOpenFor(interview.remark?.id);
+                                }}
+                                className="opacity-0 group-hover:opacity-100 transition duration-300 px-2 py-1 text-lg font-bold rounded hover:bg-gray-200"
+                              >
+                                ⋮
+                              </button> */}
+
+                                {interview.remark?.description &&
+                                  interview.remark?.id === isRemarkOpsOpenFor &&
+                                  (user?.role === "hr" ||
+                                    user?.role === "admin") && (
+                                    <RemarkOptionsMenu
+                                      isOpen={
+                                        isRemarkOptionsOpen &&
+                                        interview.remark?.id ===
+                                          isRemarkOpsOpenFor
+                                      }
+                                      setIsOpen={(open: boolean) => {
+                                        setIsRemarkOptionsOpen(open);
+                                        setIsRemarkOpsOpenFor(
+                                          open ? interview.remark?.id || "" : ""
+                                        );
+                                      }}
+                                      remarkId={interview.remark?.id || ""}
+                                      isPrivate={
+                                        interview.remark?.isPrivate || false
+                                      }
+                                      onTogglePrivacy={async (
+                                        id,
+                                        isPrivate
+                                      ) => {
+                                        try {
+                                          // Optimistically update state
+                                          // setIsRemarkPrivate(isPrivate);
+                                          // setIsRemarkPrivateFor(id);
+
+                                          // Update backend
+                                          await handleRemarkUpdate(
+                                            id,
+                                            interview.remark?.description || "",
+                                            isPrivate
+                                          );
+                                        } catch (error) {
+                                          // Revert state on failure
+                                          // setIsRemarkPrivate(!isPrivate);
+                                          // setIsRemarkPrivateFor("");
+                                          console.error(
+                                            "Failed to toggle privacy:",
+                                            error
+                                          );
+                                        }
+                                      }}
+                                      onEdit={(id) => {
+                                        // This is the handleEditRemark from the previous response
+                                        if (interview.remark) {
+                                          setEditingRemark({
+                                            id: interview.remark.id,
+                                            description:
+                                              interview.remark.description,
+                                            isPrivate:
+                                              interview.remark.isPrivate ||
+                                              false,
+                                          });
+                                          setIsEditRemarkDialogOpen(true);
+                                        }
+                                      }}
+                                    />
+                                  )}
+                              </div>
+                            </div>
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white capitalize flex flex-row items-center justify-start">
+                              {(interview.title !== "" || !interview.title) &&
+                              interview.title !== "Assigned to Job" ? (
+                                <div className="flex flex-row items-start justify-between w-full">
+                                  <div className="flex flex-row">
+                                    {interview.currentInterviewer &&
+                                    typeof interview.currentInterviewer ===
+                                      "object" &&
+                                    "name" in interview.currentInterviewer ? (
+                                      <>
+                                        {interview.previousInterviewer &&
+                                        typeof interview.previousInterviewer ===
+                                          "object" &&
+                                        "name" in
+                                          interview.previousInterviewer ? (
+                                          <p className="pl-1">
+                                            {interview.previousInterviewer
+                                              .name +
+                                              " → " +
+                                              interview.currentInterviewer.name}
+                                          </p>
+                                        ) : (
+                                          <p className="pl-1">
+                                            {`Assigned to ${interview.currentInterviewer.name}`}
+                                          </p>
+                                        )}
+                                      </>
+                                    ) : interview.remark &&
+                                      interview.remark.description ? (
+                                      <p>Remark Added</p>
+                                    ) : interview.title === "Candidate Added" &&
+                                      interview.assignmentBy ? (
+                                      <p>
+                                        {localCandidate.name} was added by{" "}
+                                        {interview.assignmentBy &&
+                                        typeof interview.assignmentBy ===
+                                          "object" &&
+                                        "name" in interview.assignmentBy
+                                          ? `${interview.assignmentBy.name}`
+                                          : ""}
+                                      </p>
+                                    ) : interview.title == "Self Applied" ? (
+                                      <p>
+                                        {localCandidate.name} applied from
+                                        portal
+                                      </p>
+                                    ) : interview?.previousInterviewer ? (
+                                      <p className="pl-1">
+                                        Unassigned from{" "}
+                                        {interview?.previousInterviewer &&
+                                          typeof interview.previousInterviewer ===
+                                            "object" &&
+                                          "name" in
+                                            interview.previousInterviewer &&
+                                          interview.previousInterviewer.name}
+                                      </p>
+                                    ) : (
+                                      <></>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-col items-end">
+                                    <p className="text-xs font-light text-gray-400">
+                                      {interview.assignmentBy && "Updated by"}
+                                    </p>
+                                    <p className="font-light text-gray-500 text-sm">
                                       {interview.assignmentBy &&
                                       typeof interview.assignmentBy ===
                                         "object" &&
@@ -903,78 +1108,50 @@ export function CandidateDetailsDialog({
                                         ? `${interview.assignmentBy.name}`
                                         : ""}
                                     </p>
-                                  ) : interview.title == "Self Applied" ? (
-                                    <p>
-                                      {localCandidate.name} applied from portal
-                                    </p>
-                                  ) : interview?.previousInterviewer ? (
-                                    <p className="pl-1">
-                                      Unassigned from{" "}
-                                      {interview?.previousInterviewer &&
-                                        typeof interview.previousInterviewer ===
-                                          "object" &&
-                                        "name" in
-                                          interview.previousInterviewer &&
-                                        interview.previousInterviewer.name}
-                                    </p>
-                                  ) : (
-                                    <></>
-                                  )}
+                                  </div>
                                 </div>
-                                <div className="flex flex-col items-end">
-                                  <p className="text-xs font-light text-gray-400">
-                                    {interview.assignmentBy && "Updated by"}
-                                  </p>
-                                  <p className="font-light text-gray-500 text-sm">
-                                    {interview.assignmentBy &&
-                                    typeof interview.assignmentBy ===
-                                      "object" &&
-                                    "name" in interview.assignmentBy
-                                      ? `${interview.assignmentBy.name}`
-                                      : ""}
-                                  </p>
-                                </div>
-                              </div>
-                            ) : (
-                              interview.title
-                            )}
-                          </h3>
-                          <div className="mb-4 text-base font-normal text-gray-500 dark:text-gray-400 flex flex-row justify-between w-full text-wrap break-all">
-                            <p>
-                              {interview.note && interview.note.description}
-                              {interview.remark && interview.remark.description}
-                            </p>
-
-                            {interview.note && interview.note.rating !== 0 && (
-                              <div className="flex flex-row items-center">
-                                {interview.note.rating}/5
-                                <Star
-                                  size={"15px"}
-                                  className="mt-[1px]"
-                                  style={{ color: "orange" }}
-                                />
-                              </div>
-                            )}
-                            {interview.remark &&
-                              interview.remark.rating &&
-                              interview.remark.rating !== 0 && (
-                                <div className="flex flex-row items-center">
-                                  {interview.remark.rating}/5
-                                  <Star
-                                    size={"15px"}
-                                    className="mt-[1px]"
-                                    style={{ color: "orange" }}
-                                  />
-                                </div>
+                              ) : (
+                                interview.title
                               )}
+                            </h3>
+                            <div className="mb-4 text-base font-normal text-gray-500 dark:text-gray-400 flex flex-row justify-between w-full text-wrap break-all">
+                              <p>
+                                {interview.note && interview.note.description}
+                                {interview.remark &&
+                                  interview.remark.description}
+                              </p>
+
+                              {interview.note &&
+                                interview.note.rating !== 0 && (
+                                  <div className="flex flex-row items-center">
+                                    {interview.note.rating}/5
+                                    <Star
+                                      size={"15px"}
+                                      className="mt-[1px]"
+                                      style={{ color: "orange" }}
+                                    />
+                                  </div>
+                                )}
+                              {interview.remark &&
+                                interview.remark.rating &&
+                                interview.remark.rating !== 0 && (
+                                  <div className="flex flex-row items-center">
+                                    {interview.remark.rating}/5
+                                    <Star
+                                      size={"15px"}
+                                      className="mt-[1px]"
+                                      style={{ color: "orange" }}
+                                    />
+                                  </div>
+                                )}
+                            </div>
+                            <AtttachmentsPopover
+                              attachments={interview.attachments}
+                              onMoreClick={() => null}
+                            />
                           </div>
-                          <AtttachmentsPopover
-                            attachments={interview.attachments}
-                            onMoreClick={() => null}
-                          />
-                        </div>
-                      );
-                    })
+                        );
+                      })
                   : "No History"}
               </ol>
             </div>
@@ -1093,8 +1270,43 @@ export function CandidateDetailsDialog({
                       defaultValue={0}
                       precision={0.5}
                     />
+                    {/* <Switch
+                      id="privacy-toggle-submit"
+                      checked={isSubRemarkPrivate}
+                      onCheckedChange={() =>
+                        setIsSubRemarkPrivate(!isSubRemarkPrivate)
+                      }
+                      className="w-8 h-4 drop-shadow-lg border border-1 border-solid"
+                    /> */}
                   </div>
-                  <Button onClick={handleAddRemark}>Add Remark</Button>
+                  <div className="flex flex-row items-center justify-evenly">
+                    <div className="flex items-center justify-between px-2 py-2">
+                      {(user?.role === "admin" || user?.role === "hr") && (
+                        <>
+                          <div className="flex items-center space-x-2">
+                            {isSubRemarkPrivate ? (
+                              <EyeOff className="h-4 w-4 text-gray-500" />
+                            ) : (
+                              <Eye className="h-4 w-4 text-gray-500" />
+                            )}
+                            <Label htmlFor="privacy-toggle" className="text-sm">
+                              {isSubRemarkPrivate ? "Private" : "Public"}
+                            </Label>
+                          </div>
+
+                          <Switch
+                            id="privacy-toggle-submit"
+                            checked={isSubRemarkPrivate}
+                            onCheckedChange={() =>
+                              setIsSubRemarkPrivate(!isSubRemarkPrivate)
+                            }
+                            className="w-8 h-4 drop-shadow-lg border border-1 border-solid ml-2"
+                          />
+                        </>
+                      )}
+                    </div>
+                    <Button onClick={handleAddRemark}>Add Remark</Button>
+                  </div>
                 </div>
               </div>
               <CustomFieldsData
@@ -1215,6 +1427,80 @@ export function CandidateDetailsDialog({
               Cancel
             </Button>
             <Button disabled={isLoading} onClick={confirmUnassign}>
+              {isLoading ? "Marking as done..." : "Confirm"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={confirmReEvaluateOpen}
+        onOpenChange={setConfirmReEvaluateOpen}
+      >
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Are you sure?</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p>
+              This will overwrite existing candidate score data with new
+              results.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setConfirmReEvaluateOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button disabled={isLoading} onClick={() => handleReEvaluation()}>
+              {isLoading ? "Marking as done..." : "Confirm"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={isEditRemarkDialogOpen}
+        onOpenChange={setIsEditRemarkDialogOpen}
+      >
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Edit Remark</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Textarea
+              className="min-h-[120px] resize-none focus-visible:ring-offset-1"
+              placeholder="Enter your remark here..."
+              value={editingRemark?.description || ""}
+              onChange={(e) =>
+                setEditingRemark({
+                  id: editingRemark?.id || "",
+                  isPrivate: editingRemark?.isPrivate || false,
+                  description: e.target.value,
+                })
+              }
+            />
+            {/* <div className="mt-2 text-xs text-muted-foreground text-right">
+              {editingRemark?.description?.length || 0} characters
+            </div> */}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditRemarkDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              disabled={isLoading}
+              onClick={() =>
+                handleRemarkUpdate(
+                  editingRemark?.id || "",
+                  editingRemark?.description || "",
+                  editingRemark?.isPrivate
+                )
+              }
+            >
               {isLoading ? "Marking as done..." : "Confirm"}
             </Button>
           </DialogFooter>

@@ -111,6 +111,7 @@ export default function DashboardPage() {
     try {
       const response = await fetch("/api/candidates/assignments");
       const data = await response.json();
+      console.log("➡️➡️Assignments data; ", data);
       setAssignments(data);
     } finally {
       setIsLoading(false);

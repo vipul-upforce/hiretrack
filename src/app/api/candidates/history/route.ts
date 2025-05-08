@@ -6,6 +6,7 @@ import {
   handleFileAttachments,
 } from "@/lib/fileUtils";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { v4 as uuidv4 } from "uuid";
 
 export async function POST(request: NextRequest) {
   //Getting the history data
@@ -52,6 +53,76 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// import { NextResponse } from "next/server";
+// import { connectToDatabase } from "./path-to-your-db-connection"; // Adjust import
+// import History from "./path-to-your-history-model"; // Adjust import
+
+export async function PATCH(request: NextRequest) {
+  try {
+    // Ensure database connection
+    await connectToDatabase();
+
+    const data = await request.json();
+    const { id, description, isPrivate } = data;
+
+    // Validate input
+    if (
+      !id ||
+      typeof isPrivate !== "boolean" ||
+      typeof description !== "string"
+    ) {
+      return NextResponse.json(
+        { error: "Invalid input: id, isPrivate, and description are required" },
+        { status: 400 }
+      );
+    }
+
+    if (!History) {
+      throw new Error("Database not connected");
+    }
+    // Update the remark in the history array
+    const updatedHistory = await History.findOneAndUpdate(
+      { "history.remark.id": id },
+      {
+        $set: {
+          "history.$.remark.description": description,
+          "history.$.remark.isPrivate": isPrivate,
+          "history.$.remark.updatedAt": new Date(),
+        },
+      },
+      { new: true }
+    );
+
+    if (!updatedHistory) {
+      return NextResponse.json({ error: "Remark not found" }, { status: 404 });
+    }
+
+    const updatedItem = updatedHistory.history.find(
+      (item) => item.remark && item.remark.id === id
+    );
+
+    if (!updatedItem) {
+      return NextResponse.json(
+        { error: "Remark not found in updated document" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        message: "Successfully updated the remark",
+        data: updatedItem,
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Error updating remark:", error);
+    return NextResponse.json(
+      { error: "Failed to update remark" },
+      { status: 500 }
+    );
+  }
+}
 export async function PUT(request: NextRequest) {
   if (!History) {
     return NextResponse.json(
@@ -61,7 +132,20 @@ export async function PUT(request: NextRequest) {
   }
   try {
     await connectToDatabase();
-    const data = await request.json();
+    let data = await request.json();
+    // data = { ...data, id: uuidv4() };
+    if (data?.newEntry?.remark?.description) {
+      data = {
+        ...data,
+        newEntry: {
+          ...data.newEntry,
+          remark: {
+            ...data.newEntry.remark,
+            id: uuidv4(),
+          },
+        },
+      };
+    }
     let fileStorage = "local";
     let organizationId;
 

@@ -8,7 +8,11 @@ const candidateHistory = {
     type: String,
   },
   remark: {
-    _id: false,
+    id: String,
+    isPrivate: {
+      type: Boolean,
+      default: false,
+    },
     description: {
       type: String,
       required: false,
@@ -90,6 +94,8 @@ export interface ICandidateHistory {
   dateTime: string;
   title: string | null;
   remark?: {
+    id?: string;
+    isPrivate?: boolean;
     description: string;
     date: string;
     rating?: number;
