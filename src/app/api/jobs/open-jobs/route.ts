@@ -71,7 +71,6 @@ export async function GET(request: Request) {
       })
       .lean();
 
-    console.log("########### PUBLICJOBS: ", jobs);
     const jobPositionFields =
       Object.values(customFields?.customFields || {}).find(
         (field) => field.formName === "Job Position"

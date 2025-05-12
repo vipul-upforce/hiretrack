@@ -29,8 +29,8 @@ export function CandidateScoreBadge({
   const displayScore = score?.toFixed(1);
 
   return (
-    <Badge variant="secondary" className={`${bg} ${text} border-0`}>
-      {category}: {displayScore}
+    <Badge variant="secondary" className={`${bg} ${text} text-xs border-0`}>
+      <p className="text-[11px] mr-1">{category}: </p> {displayScore}
     </Badge>
   );
 }

@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
             jobId: data.jobId,
             history: [
               {
-                dateTime: new Date().toLocaleString(),
+                dateTime: new Date().toISOString(),
                 title: "Self Applied",
                 previousInterviewer: null,
                 currentInterviewer: null,
@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
             jobId: data.jobId,
             history: [
               {
-                dateTime: new Date().toLocaleString(),
+                dateTime: new Date().toISOString(),
                 title: "Candidate Added",
                 previousInterviewer: null,
                 currentInterviewer: null,

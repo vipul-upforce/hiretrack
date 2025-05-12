@@ -65,7 +65,6 @@ export async function GET(req: NextRequest) {
   const session = await auth(req);
   const organizationId = session?.user.organizationId;
   try {
-    console.log("###########ORGID: ", organizationId);
     if (!organizationId) {
       throw new Error("Not Authorized");
     }
@@ -144,7 +143,6 @@ export async function POST(req: NextRequest) {
   const session = await auth(req);
   const organizationId = session?.user.organizationId;
   try {
-    console.log("###########ORGID: ", organizationId);
     if (!organizationId) {
       return NextResponse.json({ message: "Not Authorized" }, { status: 401 });
     }

@@ -12,7 +12,6 @@ export async function GET(req: NextRequest) {
   const session = await auth(req);
   const organizationId = session?.user.organizationId;
   try {
-    console.log("###########ORGID: ", organizationId);
     if (!organizationId) {
       throw new Error("Not Authorized");
     }

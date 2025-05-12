@@ -217,7 +217,7 @@ export function AssignCandidateDialog({
       title = null;
 
       const newHistoryEntry: ICandidateHistory = {
-        dateTime: new Date().toLocaleString(),
+        dateTime: new Date().toISOString(),
         currentInterviewer: nextInterviewerId,
         previousInterviewer: previousInterviewerId,
         assignmentBy: user!.id,
@@ -306,7 +306,7 @@ export function AssignCandidateDialog({
           ? Object(candidate.assignment.interviewerId._id)
           : null;
       const newHistoryEntry: ICandidateHistory = {
-        dateTime: new Date().toLocaleString(),
+        dateTime: new Date().toISOString(),
         currentInterviewer: null,
         previousInterviewer: previousInterviewerId,
         assignmentBy: user!.id,

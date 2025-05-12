@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       jobId,
       history: [
         {
-          dateTime: new Date().toLocaleString(),
+          dateTime: new Date().toISOString(),
           title: "Self Applied",
           previousInterviewer: null,
           currentInterviewer: null,

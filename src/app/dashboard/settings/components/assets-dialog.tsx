@@ -34,7 +34,6 @@ export default function AssetsDialog() {
         throw new Error(error.message || "Failed to fetch assets metadata");
       }
       const data = await res.json();
-      console.log("SMETADATA: ", data);
       setAssetsMetadata(data.data);
     } catch (err) {
       console.error("Failed to load assets metadata:", err);

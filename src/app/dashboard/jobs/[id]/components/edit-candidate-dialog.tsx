@@ -274,7 +274,7 @@ export function EditCandidateDialog({
       title = null;
 
       const newHistoryEntry: ICandidateHistory = {
-        dateTime: new Date().toLocaleString() || "",
+        dateTime: new Date().toISOString() || "",
         title: title,
         currentInterviewer: nextInterviewerId,
         previousInterviewer: previousInterviewerId,

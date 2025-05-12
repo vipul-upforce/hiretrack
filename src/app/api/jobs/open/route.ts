@@ -139,7 +139,7 @@ export async function POST(req: NextRequest) {
 
     // Create a new history entry for the job assignment
     const historyEntry: ICandidateHistory = {
-      dateTime: new Date().toLocaleString(),
+      dateTime: new Date().toISOString(),
       title: "Assigned to Job",
       note: {
         description: `Candidate moved from ${previousJob?.title || "No previous job"} to ${nextJob.title}`,
