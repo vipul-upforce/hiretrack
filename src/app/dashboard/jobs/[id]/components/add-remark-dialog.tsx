@@ -21,6 +21,8 @@ import { Button } from "@/components/ui/button";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { sentStatusMailHandler } from "@/lib/utils";
 import { useSendStatusMailMutation } from "@/lib/features/org/orgApi";
+import { Switch } from "@/components/ui/switch";
+import { Eye, EyeOff } from "lucide-react";
 // import { sentRemarkMail } from "@/lib/utils";
 
 const AddRemarksDialog = ({
@@ -42,6 +44,7 @@ const AddRemarksDialog = ({
     null
   );
   const [updateCandidate] = useUpdateCandidateMutation();
+  const [isSubRemarkPrivate, setIsSubRemarkPrivate] = useState(false);
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
   const [sendStatusMail] = useSendStatusMailMutation();
 
@@ -73,6 +76,7 @@ const AddRemarksDialog = ({
           };
           const newRemarkHistoryObj = {
             description: String(newRemark).trim(),
+            isPrivate: isSubRemarkPrivate,
             date: new Date().toISOString(),
             rating: remarkRatingHistory
               ? Number(remarkRatingHistory)
@@ -97,7 +101,7 @@ const AddRemarksDialog = ({
           };
 
           const newHistoryEntry = {
-            dateTime: new Date().toLocaleString(),
+            dateTime: new Date().toISOString(),
             currentInterviewer: null,
             previousInterviewer: null,
             remark: newRemarkHistoryObj,
@@ -179,6 +183,27 @@ const AddRemarksDialog = ({
                 }}
                 defaultValue={0}
                 precision={0.5}
+              />
+            </div>
+            <div className="flex flex-row items-center justify-evenly">
+              <div className="flex items-center space-x-2">
+                {isSubRemarkPrivate ? (
+                  <EyeOff className="h-4 w-4 text-gray-500" />
+                ) : (
+                  <Eye className="h-4 w-4 text-gray-500" />
+                )}
+                <Label htmlFor="privacy-toggle" className="text-sm">
+                  {isSubRemarkPrivate ? "Private" : "Public"}
+                </Label>
+              </div>
+
+              <Switch
+                id="privacy-toggle-submit"
+                checked={isSubRemarkPrivate}
+                onCheckedChange={() =>
+                  setIsSubRemarkPrivate(!isSubRemarkPrivate)
+                }
+                className="w-8 h-4 drop-shadow-lg border border-1 border-solid ml-2"
               />
             </div>
           </div>

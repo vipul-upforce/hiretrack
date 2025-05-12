@@ -134,6 +134,7 @@ export function CandidateDetailsDialog({
     id: string | undefined;
     isPrivate: boolean;
     description: string;
+    rating?: number;
   } | null>(null);
   // Add local state to track remarks
   const [localCandidate, setLocalCandidate] = useState<Candidate | null>(
@@ -201,6 +202,7 @@ export function CandidateDetailsDialog({
           id,
           isPrivate,
           description,
+          rating: remarkRatingHistory,
         }),
       });
 
@@ -209,10 +211,14 @@ export function CandidateDetailsDialog({
         throw new Error(errorData.error || "Failed to update remark");
       }
 
-      const result = await response.json();
-      console.log("Remark update successful:", result);
+      await response.json();
 
-      await refetch();
+      if (pathname === "/dashboard") {
+        refetchAssignment?.();
+      }
+      if (pathname !== "/dashboard" && pathname !== "/dashboard/calendar") {
+        refetch();
+      }
 
       if (onUpdate && localCandidate) {
         onUpdate(localCandidate);
@@ -361,7 +367,7 @@ export function CandidateDetailsDialog({
       //   remarks: newRemarkObj,
       // };
       const newHistoryEntry = {
-        dateTime: new Date().toLocaleString(),
+        dateTime: new Date().toISOString(),
         remark: newRemarkHistoryObj,
         currentInterviewer: null,
         previousInterviewer: null,
@@ -486,7 +492,7 @@ export function CandidateDetailsDialog({
             ? Object(localCandidate.assignment.interviewerId._id)
             : null;
         const newHistoryEntry: ICandidateHistory = {
-          dateTime: new Date().toLocaleString(),
+          dateTime: new Date().toISOString(),
           currentInterviewer: null,
           previousInterviewer: previousInterviewerId,
           assignmentBy: user!.id,
@@ -923,6 +929,12 @@ export function CandidateDetailsDialog({
               <ol className="relative border-s border-gray-200 dark:border-gray-700">
                 {validTimeLineItems.length > 0
                   ? validTimeLineItems
+                      // .sort((a, b) => {
+                      //   return (
+                      //     new Date(b.dateTime).getTime() -
+                      //     new Date(a.dateTime).getTime()
+                      //   );
+                      // })
                       .reverse()
                       .filter((interview) => {
                         // If the entry is not a remark, include it
@@ -942,8 +954,10 @@ export function CandidateDetailsDialog({
                         );
                       })
                       .map((interview, i) => {
-                        const timeDate = interview.dateTime.split(",")[0];
-                        const timeTime = interview.dateTime.split(",")[1];
+                        // const timeDate = interview.dateTime.split(",")[0];
+                        const timeDate = formatDate(interview.dateTime);
+                        const timeTime = formatTime(interview.dateTime);
+                        // const timeTime = interview.dateTime.split(",")[1];
 
                         return (
                           <div key={i} className="mb-10 ms-4 group">
@@ -1028,6 +1042,8 @@ export function CandidateDetailsDialog({
                                             isPrivate:
                                               interview.remark.isPrivate ||
                                               false,
+                                            rating:
+                                              interview.remark.rating || 0,
                                           });
                                           setIsEditRemarkDialogOpen(true);
                                         }
@@ -1065,7 +1081,7 @@ export function CandidateDetailsDialog({
                                       </>
                                     ) : interview.remark &&
                                       interview.remark.description ? (
-                                      <p>Remark Added</p>
+                                      <p>{interview.title || "Remark Added"}</p>
                                     ) : interview.title === "Candidate Added" &&
                                       interview.assignmentBy ? (
                                       <p>
@@ -1114,8 +1130,8 @@ export function CandidateDetailsDialog({
                                 interview.title
                               )}
                             </h3>
-                            <div className="mb-4 text-base font-normal text-gray-500 dark:text-gray-400 flex flex-row justify-between w-full text-wrap break-all">
-                              <p>
+                            <div className="mb-4 text-base font-normal text-gray-500 dark:text-gray-400 flex flex-row justify-between items-start w-[full] text-wrap break-all">
+                              <p className="max-w-[90%]">
                                 {interview.note && interview.note.description}
                                 {interview.remark &&
                                   interview.remark.description}
@@ -1467,19 +1483,46 @@ export function CandidateDetailsDialog({
           <DialogHeader>
             <DialogTitle>Edit Remark</DialogTitle>
           </DialogHeader>
-          <div className="py-4">
+          <div className="">
             <Textarea
               className="min-h-[120px] resize-none focus-visible:ring-offset-1"
               placeholder="Enter your remark here..."
               value={editingRemark?.description || ""}
-              onChange={(e) =>
+              onChange={(e) => {
+                const input = e.target.value;
+                const trimmed = input.trim();
+
+                // Disallow null/empty/whitespace-only input
+                if (trimmed === "") return;
+
                 setEditingRemark({
                   id: editingRemark?.id || "",
+                  rating: editingRemark?.rating,
                   isPrivate: editingRemark?.isPrivate || false,
-                  description: e.target.value,
-                })
-              }
+                  description: input, // store original input, not trimmed
+                });
+              }}
             />
+            <div className="flex items-center gap-2 mt-2">
+              <Label htmlFor="rating">Rating:</Label>
+              <Rating
+                name="half-rating"
+                onChange={(e, value) => {
+                  setRemarkRating(value ? value : null);
+                  setRemarkRatingHistory(value ? value : null);
+                }}
+                defaultValue={editingRemark?.rating || 0}
+                precision={0.5}
+              />
+              {/* <Switch
+                      id="privacy-toggle-submit"
+                      checked={isSubRemarkPrivate}
+                      onCheckedChange={() =>
+                        setIsSubRemarkPrivate(!isSubRemarkPrivate)
+                      }
+                      className="w-8 h-4 drop-shadow-lg border border-1 border-solid"
+                    /> */}
+            </div>
             {/* <div className="mt-2 text-xs text-muted-foreground text-right">
               {editingRemark?.description?.length || 0} characters
             </div> */}

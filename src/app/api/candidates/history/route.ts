@@ -7,6 +7,8 @@ import {
 } from "@/lib/fileUtils";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
 import { v4 as uuidv4 } from "uuid";
+import { auth } from "@/lib/auth";
+import mongoose from "mongoose";
 
 export async function POST(request: NextRequest) {
   //Getting the history data
@@ -63,7 +65,9 @@ export async function PATCH(request: NextRequest) {
     await connectToDatabase();
 
     const data = await request.json();
-    const { id, description, isPrivate } = data;
+    const { id, description, isPrivate, rating } = data;
+    const { user } = (await auth(request)) || {};
+    // console.log("USERDATA: ", user);
 
     // Validate input
     if (
@@ -87,7 +91,12 @@ export async function PATCH(request: NextRequest) {
         $set: {
           "history.$.remark.description": description,
           "history.$.remark.isPrivate": isPrivate,
+          "history.$.remark.rating": rating,
           "history.$.remark.updatedAt": new Date(),
+
+          "history.$.assignmentBy": new mongoose.Types.ObjectId(user.id),
+          "history.$.title": "Remark Updated",
+          // "history.$.dateTime": new Date().toISOString(),
         },
       },
       { new: true }
