@@ -1,11 +1,11 @@
 import { CreateCandidateDialog } from "@/app/dashboard/jobs/[id]/components/create-candidate-dialog";
-import { Button } from "@/components/ui/button";
+// import { Button } from "@/components/ui/button";
 import CustomFieldsData from "@/Custom_Fields/Components/CustomFields/customFields-details";
 import useRoles from "@/hooks/useRoles";
 import { Dialog } from "@headlessui/react";
 import { useState, useEffect } from "react";
 // import { useRouter } from "next/navigation";
-import ExpandableDescription from "@/app/dashboard/jobs/[id]/components/expand-collapse-desc";
+// import ExpandableDescription from "@/app/dashboard/jobs/[id]/components/expand-collapse-desc";
 import ApplyOptions from "./ApplyOptions";
 import { hasAppliedAsGuest } from "./ApplyAsGuest";
 
@@ -77,64 +77,71 @@ export default function JobModal({
           aria-hidden="true"
         />
         <div className="fixed inset-0 flex items-center justify-center p-4 h-[100vh]">
-          <Dialog.Panel className="w-[50vw] transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all max-h-[80vh] overflow-y-auto ">
-            <Dialog.Title
-              as="h3"
-              className="text-lg font-bold leading-6 text-gray-900 top-0 break-words"
-            >
-              {job.title}
-            </Dialog.Title>
-            <div className="mt-2 ">
-              <ExpandableDescription
-                description={job.description || "No description Found"}
-              />
-              <div className="mt-4">
-                <h4 className="font-bold">Required Skills:</h4>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {job.skills.map((skill: string, i: number) => (
-                    <span
-                      key={i}
-                      className="break-all bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full"
-                    >
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <div className="mt-4">
-                <h4 className="font-bold">Experience Required:</h4>
-                <p className="mt-1">{job.experience} years</p>
-              </div>
-              {roles !== "" && (
-                <div className="mt-4">
-                  <CustomFieldsData customFields={job?.customFields || {}} />
-                </div>
-              )}
+          <Dialog.Panel className="w-full sm:w-[80vw] md:w-[70vw] lg:w-[50vw] transform overflow-hidden rounded-2xl bg-white text-left align-middle shadow-xl transition-all max-h-[80vh] relative">
+            <div className="sticky top-0 bg-white p-4 sm:p-6 sm:py-3 sm:pt-4 sm:pb-2 z-10">
+              <Dialog.Title
+                as="h3"
+                className="text-lg font-bold leading-6 text-gray-900 break-words"
+              >
+                {job.title}
+              </Dialog.Title>
+              {/* <hr className="mt-2" /> */}
             </div>
-            <div className="mt-6 flex justify-end gap-3">
+
+            <div className="p-4 sm:p-6 sm:pt-0 pb-20 overflow-y-auto max-h-[calc(80vh-120px)] border-t border-gray-100">
+              <div className="mt-2 mb-10">
+                <p className="break-words">
+                  {job.description || "No description Found"}
+                </p>
+                <div className="mt-4">
+                  <h4 className="font-bold">Required Skills:</h4>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {job.skills.map((skill: string, i: number) => (
+                      <span
+                        key={i}
+                        className="break-all bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <h4 className="font-bold">Experience Required:</h4>
+                  <p className="mt-1">{job.experience} years</p>
+                </div>
+                {roles !== "" && (
+                  <div className="mt-4">
+                    <CustomFieldsData customFields={job?.customFields || {}} />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="absolute bottom-0 left-0 right-0 bg-white p-4 sm:p-6 sm:py-3 border-t border-gray-100 flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
               {roles === "" ? (
                 <>
-                  <Button
+                  <button
                     onClick={handleContinue}
                     disabled={alreadyApplied || readOnly}
-                    className={`inline-flex justify-center rounded-md border ${
+                    className={`w-full sm:w-auto inline-flex justify-center rounded-md border ${
                       alreadyApplied || readOnly
                         ? "border-gray-300 bg-gray-100 text-gray-500"
                         : "border-transparent bg-blue-100 text-blue-900 hover:bg-blue-200"
                     } px-4 py-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2`}
                   >
                     {alreadyApplied ? "Already Applied" : "Apply Now"}
-                  </Button>
+                  </button>
                 </>
               ) : (
                 <>
                   {alreadyApplied || readOnly ? (
-                    <Button
+                    <button
                       disabled
-                      className="inline-flex justify-center rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-500"
+                      className="w-full sm:w-auto inline-flex justify-center rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-500"
                     >
                       Already Applied
-                    </Button>
+                    </button>
                   ) : (
                     <CreateCandidateDialog
                       jobId={job._id as string}
@@ -147,7 +154,7 @@ export default function JobModal({
 
               <button
                 type="button"
-                className="inline-flex justify-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2"
+                className="w-full sm:w-auto inline-flex justify-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2"
                 onClick={onClose}
               >
                 Close

@@ -137,49 +137,87 @@ This guide provides step-by-step instructions for deploying the `hiretrack` proj
 # If that doesn't work (Gives 502 error) even after everythig is configured correctly, use this config
 
 ```nginx
+# HTTP server block (proxies to Next.js)
 server {
-  listen 80;
-  listen [::]:80;
-  server_name hire-demo.upforce.tech;
-  client_max_body_size 50M;
+    listen 80;
+    listen [::]:80;
+    server_name hire-demo.upforce.tech;
+    client_max_body_size 50M;
 
-  # Redirect HTTP to HTTPS
-  return 301 https://$host$request_uri;
+    # Buffer sizes for large headers
+    proxy_buffer_size 128k;
+    proxy_buffers 4 256k;
+    proxy_busy_buffers_size 256k;
+    large_client_header_buffers 4 16k;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+
+        # Increase timeouts
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+
+    # Logging for debugging
+    error_log /var/log/nginx/hire-demo.error.log;
+    access_log /var/log/nginx/hire-demo.access.log;
 }
 
+# HTTPS server block
 server {
-  listen 443 ssl;
-  listen [::]:443 ssl;
-  server_name hire-demo.upforce.tech;
-  client_max_body_size 50M;
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name hire-demo.upforce.tech;
+    client_max_body_size 50M;
 
-  # SSL configuration (from Let's Encrypt)
-  ssl_certificate /etc/letsencrypt/live/hire-demo.upforce.tech/fullchain.pem;
-  ssl_certificate_key /etc/letsencrypt/live/hire-demo.upforce.tech/privkey.pem;
-  include /etc/letsencrypt/options-ssl-nginx.conf;
-  ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+    # SSL configuration
+    ssl_certificate /etc/letsencrypt/live/hire-demo.upforce.tech/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/hire-demo.upforce.tech/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-SHA384;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_tickets off;
 
-  # Proxy settings
-  location / {
-      proxy_pass http://localhost:3000;
-      proxy_http_version 1.1;
-      proxy_set_header Upgrade $http_upgrade;
-      proxy_set_header Connection 'upgrade';
-      proxy_set_header Host $host;
-      proxy_set_header X-Real-IP $remote_addr;
-      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-      proxy_set_header X-Forwarded-Proto $scheme;
-      proxy_cache_bypass $http_upgrade;
+    # HSTS (optional but recommended)
+    add_header Strict-Transport-Security "max-age=63072000; includeSubdomains; preload";
 
-      # Buffer settings to handle large headers
-      proxy_buffer_size 128k;
-      proxy_buffers 4 256k;
-      proxy_busy_buffers_size 256k;
-  }
+    # Buffer sizes for large headers
+    proxy_buffer_size 128k;
+    proxy_buffers 4 256k;
+    proxy_busy_buffers_size 256k;
+    large_client_header_buffers 4 16k;
 
-  # Error logging for debugging
-  error_log /var/log/nginx/hire-demo.error.log;
-  access_log /var/log/nginx/hire-demo.access.log;
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+
+        # Increase timeouts
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+
+    # Logging for debugging
+    error_log /var/log/nginx/hire-demo.error.log;
+    access_log /var/log/nginx/hire-demo.access.log;
 }
 ```
 

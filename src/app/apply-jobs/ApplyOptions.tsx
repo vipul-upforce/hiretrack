@@ -69,8 +69,16 @@ export default function ApplyOptions({
         className="fixed inset-0 bg-black bg-opacity-25"
         aria-hidden="true"
       />
-      <div className="fixed inset-0 flex items-center justify-center p-4 h-[100vh]">
-        <Dialog.Panel className="w-[30vw] transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all max-h-[80vh] overflow-y-auto ">
+      <div className="fixed inset-0 flex items-center justify-center p-4 sm:p-2 h-[100vh]">
+        <Dialog.Panel className="relative w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw] xl:w-[30vw] transform overflow-hidden rounded-2xl bg-white p-6 sm:p-4 text-left align-middle shadow-xl transition-all max-h-[80vh] overflow-y-auto">
+          <button
+            type="button"
+            className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 w-4 h-4"
+            onClick={onClose}
+          >
+            <X width={15} />
+          </button>
+
           <Dialog.Title
             as="h3"
             className="text-lg font-bold leading-6 text-gray-900 top-0 break-words"
@@ -83,13 +91,11 @@ export default function ApplyOptions({
             continue.
           </p>
 
-          <div className="mt-6 flex justify-end gap-3">
+          <div className="mt-6 flex flex-col sm:flex-row sm:justify-end gap-3">
             {roles === "" ? (
-              <div className="flex justify-between flex-row w-full">
-                <div className="">
-                  <Button className="mr-2" onClick={handleSignupRedirect}>
-                    Sign Up
-                  </Button>
+              <div className="flex flex-col sm:flex-row sm:justify-between w-full gap-3">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button onClick={handleSignupRedirect}>Sign Up</Button>
                   <Button onClick={handleLoginRedirect}>Login</Button>
                 </div>
                 <div>
@@ -100,17 +106,6 @@ export default function ApplyOptions({
                     closeParent={onClose}
                   />
                 </div>
-                {/* <Button onClick={() => setIsJobModelOpen(!isJobModelOpen)}>
-                  Continue Without Signup
-                </Button> */}
-
-                {/* <JobModal
-                  job={job}
-                  isOpen={isJobModelOpen}
-                  onClose={() => setIsJobModelOpen(!isJobModelOpen)}
-                  orgName={orgName}
-                  readOnly={false}
-                /> */}
               </div>
             ) : (
               <>
@@ -127,15 +122,6 @@ export default function ApplyOptions({
                 )}
               </>
             )}
-
-            <button
-              type="button"
-              //   className="inline-flex justify-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2"
-              className="absolute top-4 text-gray-500 hover:text-gray-800 w-4 h-4"
-              onClick={onClose}
-            >
-              <X width={15} />
-            </button>
           </div>
         </Dialog.Panel>
       </div>
