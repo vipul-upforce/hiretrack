@@ -3,16 +3,13 @@
 import {
   DragDropContext,
   Droppable,
-  Draggable,
   DropResult,
   DroppableProvided,
-  DraggableProvided,
 } from "@hello-pangea/dnd";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import { CreateCandidateDialog } from "./components/create-candidate-dialog";
 import { CreateLaneDialog } from "./components/create-lane-dialog";
-import { CandidateCard } from "./components/candidate-card";
 import { CandidateDetailsDialog } from "./components/candidate-details-dialog";
 import { initialCandidateColumns } from "./data/initial-data";
 import { useParams } from "next/navigation";
@@ -24,7 +21,6 @@ import {
 } from "@/lib/features/candidate/candidateApi";
 import { toast } from "@/hooks/use-toast";
 import { Candidate, CandidateColumn, CandidateStatus } from "@/types/candidate";
-import { GripVertical } from "lucide-react";
 import LoaderSkeleton from "./components/loader-skeleton";
 import {
   useGetLanesQuery,
@@ -33,8 +29,6 @@ import {
 import { useDeleteLaneMutation } from "@/lib/features/lane/laneApi";
 import { User } from "@/lib/features/users/usersApi";
 import Cookies from "js-cookie";
-import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
 import { Breadcrumb } from "./components/breadcrumb";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -53,6 +47,7 @@ import {
   useSendStatusMailMutation,
 } from "@/lib/features/org/orgApi";
 import { sentStatusMailHandler } from "@/lib/utils";
+import { KanbanColumn } from "./components/KanbanColumn";
 
 export default function JobProgressPage() {
   const { id } = useParams();
@@ -434,125 +429,27 @@ export default function JobProgressPage() {
             <div
               {...provided.droppableProps}
               ref={provided.innerRef}
-              className="grid grid-flow-col flex flex-row justify-start overflow-x-scroll pb-4 "
+              className="grid grid-flow-col flex flex-row justify-start overflow-x-scroll pb-4"
             >
               {columns.map((column, index) => (
-                // <></>
-                <Draggable
+                <KanbanColumn
                   key={column.id}
-                  draggableId={column.id}
+                  column={column}
                   index={index}
-                >
-                  {(provided: DraggableProvided) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      className="w-[350px] mr-6"
-                    >
-                      <Card className="space-y-4 min-h-[75vh] h-full">
-                        <CardHeader className="pb-3">
-                          <div className="flex items-center justify-between h-full">
-                            <div className="flex items-center space-x-2">
-                              <div {...provided.dragHandleProps}>
-                                <GripVertical className="h-5 w-5 text-muted-foreground" />
-                              </div>
-                              <CardTitle
-                                className="text-lg font-semibold"
-                                style={{ overflowWrap: "anywhere" }}
-                              >
-                                {column.title}
-                                <span className="ml-2 text-sm text-muted-foreground">
-                                  ({column.candidates.length})
-                                </span>
-                              </CardTitle>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                handleDeleteLane();
-                                setLaneToDelete(column.id);
-                              }}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Trash2 className="h-4 w-4 text-muted-foreground" />
-                            </Button>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="h-[89%]">
-                          <Droppable droppableId={column.id} type="candidate">
-                            {(provided: DroppableProvided) => (
-                              <div
-                                {...provided.droppableProps}
-                                ref={provided.innerRef}
-                                className={`space-y-3 min-h-full rounded-lg relative`}
-                                onDragOver={(e) => {
-                                  if (
-                                    e.dataTransfer.types.includes("Files") &&
-                                    column.id === "applied"
-                                  ) {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    setIsFileOver(true);
-                                    e.dataTransfer.dropEffect = "link";
-                                  }
-                                }}
-                                onDragLeave={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  setIsFileOver(false);
-                                  e.dataTransfer.dropEffect = "none";
-                                }}
-                                onDrop={(e) => {
-                                  if (e.dataTransfer.types.includes("Files")) {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    setIsFileOver(false);
-
-                                    const files = Array.from(
-                                      e.dataTransfer.files
-                                    );
-                                    if (files.length > 0)
-                                      handleFileDrop(files[0]);
-                                  }
-                                }}
-                              >
-                                {isFileOver && column.id === "applied" && (
-                                  <div className="absolute bg-gray-200/50 h-full w-full border border-dashed border-gray-500 rounded-lg pointer-events-none">
-                                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black text-white p-2 rounded-md shadow-lg text-lg font-semibold pointer-events-none animate-fade-in">
-                                      Drop file here!
-                                    </div>
-                                  </div>
-                                )}
-                                {column.candidates.map((candidate, index) => (
-                                  <CandidateCard
-                                    key={`${column.id}-${candidate._id}`}
-                                    candidate={candidate}
-                                    index={index}
-                                    refetch={refetch}
-                                    onViewDetails={(candidate) => {
-                                      setSelectedCandidate(candidate);
-                                      setIsDetailsOpen(true);
-                                    }}
-                                    openRemarks={
-                                      openRemarksFor === candidate._id
-                                    }
-                                    setOpenRemarksFor={setOpenRemarksFor}
-                                    onDeleteClick={(id: string) => {
-                                      setSelectedCandidate(candidate);
-                                      handleDeleteClick(id);
-                                    }}
-                                  />
-                                ))}
-                                {provided.placeholder}
-                              </div>
-                            )}
-                          </Droppable>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  )}
-                </Draggable>
+                  isFileOver={isFileOver}
+                  setIsFileOver={setIsFileOver}
+                  handleFileDrop={handleFileDrop}
+                  handleDeleteLane={handleDeleteLane}
+                  setLaneToDelete={setLaneToDelete}
+                  refetch={refetch}
+                  selectedCandidate={selectedCandidate}
+                  setSelectedCandidate={setSelectedCandidate}
+                  isDetailsOpen={isDetailsOpen}
+                  setIsDetailsOpen={setIsDetailsOpen}
+                  openRemarksFor={openRemarksFor}
+                  setOpenRemarksFor={setOpenRemarksFor}
+                  handleDeleteClick={handleDeleteClick}
+                />
               ))}
               {provided.placeholder}
             </div>

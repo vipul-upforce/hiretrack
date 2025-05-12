@@ -1,22 +1,20 @@
 "use client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useFetchAssignedCandidatesQuery } from "@/lib/features/candidate/candidateApi";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
 import { useEffect, useState, useRef } from "react";
 import { EventClickArg } from "@fullcalendar/core";
 import { DateClickArg } from "@fullcalendar/interaction";
-import { Input } from "@/components/ui/input"; // Add Input import
-import { Button } from "@/components/ui/button"; // Add Button import
-import {
-  CandidateDetailsDialog,
-  formatTime,
-} from "../jobs/[id]/components/candidate-details-dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { CandidateDetailsDialog } from "../jobs/[id]/components/candidate-details-dialog";
+import { formatTime } from "../jobs/[id]/hooks/dateTimeFormatting";
 import { CandidateStatus } from "@/types/candidate";
 import { Assignment } from "@/types/assignment";
 import LoaderSkeletonCalender from "./components/loader-skeleton-calender";
+import { RenderEvent } from "./components/renderCalendarEvent"; // Updated import name
 
 interface Interviewer {
   _id: string;
@@ -24,14 +22,14 @@ interface Interviewer {
   email: string;
 }
 
-interface Job {
+export interface Job {
   _id: string;
   title: string;
   description: string;
   skills?: string[];
 }
 
-interface CandidateAssignment {
+export interface CandidateAssignment {
   _id: string;
   name: string;
   jobId: Job | string;
@@ -77,7 +75,7 @@ interface CandidateAssignment {
   };
 }
 
-interface CustomCalendarEvent {
+export interface CustomCalendarEvent {
   id: string;
   title: string;
   start: Date;
@@ -151,48 +149,58 @@ export default function CalendarPage() {
     );
   });
 
-  const events =
-    filteredAssignments?.map((candidate) => ({
-      id: candidate._id,
-      title:
-        candidate?.jobId && typeof candidate.jobId === "object"
-          ? candidate.jobId.title
-          : "Unknown",
-      start: candidate?.assignment?.time
+  const events: CustomCalendarEvent[] =
+    filteredAssignments?.map((candidate) => {
+      const startTime = candidate?.assignment?.time
         ? new Date(candidate.assignment.time)
-        : new Date(),
-      end: candidate?.assignment?.time
+        : new Date();
+      const endTime = candidate?.assignment?.time
         ? new Date(candidate.assignment.time)
-        : new Date(),
-      extendedProps: {
-        candidate: {
-          ...candidate,
-          jobId:
-            typeof candidate.jobId === "string"
-              ? candidate.jobId
-              : (candidate.jobId as unknown as Job)?._id,
-          jobDetails:
-            typeof candidate.jobId === "string"
-              ? undefined
-              : {
-                  title: (candidate.jobId as Job).title,
-                  description: (candidate.jobId as Job).description,
+        : new Date();
+
+      return {
+        id: candidate._id,
+        title:
+          candidate?.jobId && typeof candidate.jobId === "object"
+            ? candidate.jobId.title
+            : "Unknown",
+        start: startTime,
+        end: endTime,
+        allDay: false,
+        startStr: startTime.toISOString(),
+        endStr: endTime.toISOString(),
+        url: "",
+        display: "auto",
+        extendedProps: {
+          candidate: {
+            ...candidate,
+            jobId:
+              typeof candidate.jobId === "string"
+                ? candidate.jobId
+                : (candidate.jobId as Job)?._id,
+            jobDetails:
+              typeof candidate.jobId === "string"
+                ? undefined
+                : {
+                    title: (candidate.jobId as Job).title,
+                    description: (candidate.jobId as Job).description,
+                  },
+          },
+          interviewer:
+            typeof candidate.assignment?.interviewerId === "string"
+              ? {
+                  _id: candidate.assignment.interviewerId,
+                  name: "Unknown",
+                  email: "Unknown",
+                }
+              : candidate.assignment?.interviewerId || {
+                  _id: "",
+                  name: "Unknown",
+                  email: "Unknown",
                 },
         },
-        interviewer:
-          typeof candidate.assignment?.interviewerId === "string"
-            ? {
-                _id: candidate.assignment.interviewerId,
-                name: "Unknown",
-                email: "Unknown",
-              }
-            : candidate.assignment?.interviewerId || {
-                _id: "",
-                name: "Unknown",
-                email: "Unknown",
-              },
-      },
-    })) || [];
+      };
+    }) || [];
 
   const handleEventClick = (arg: EventClickArg) => {
     const event = arg.event;
@@ -215,7 +223,7 @@ export default function CalendarPage() {
         title: eventsOnDate[0].title,
         start: eventDate,
         end: eventDate,
-        allDay: true,
+        allDay: false,
         startStr: eventDate.toISOString(),
         endStr: eventDate.toISOString(),
         url: "",
@@ -352,74 +360,13 @@ export default function CalendarPage() {
                   new Date().toLocaleDateString()
               )
               .map((event, i) => (
-                <div key={i}>
-                  <ScrollArea className="">
-                    <div className="space-y-4">
-                      <div>
-                        <h3 className="font-semibold text-lg">
-                          {event.extendedProps.candidate.name}
-                        </h3>
-                        <p className="text-sm text-muted-foreground capitalize">
-                          {typeof event.extendedProps.candidate.jobId ===
-                          "string"
-                            ? ""
-                            : (event.extendedProps.candidate.jobId as Job)
-                                ?.title}
-                        </p>
-                      </div>
-
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-muted-foreground">
-                            Interviewer:
-                          </span>
-                          <span className="text-sm font-medium capitalize">
-                            {getInterviewerName(event.extendedProps.candidate)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-muted-foreground">
-                            Date:
-                          </span>
-                          <span className="text-sm font-medium">
-                            {event.extendedProps.candidate.assignment?.time
-                              ? new Date(
-                                  event.extendedProps.candidate.assignment.time
-                                ).toLocaleDateString("en-US", {
-                                  year: "numeric",
-                                  month: "long",
-                                  day: "numeric",
-                                })
-                              : "Unknown"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-muted-foreground">
-                            Status:
-                          </span>
-                          <Badge className="capitalize">
-                            {event.extendedProps.candidate.status || "Unknown"}
-                          </Badge>
-                        </div>
-                      </div>
-
-                      {typeof event.extendedProps.candidate.jobId !==
-                        "string" &&
-                        (
-                          event.extendedProps.candidate.jobId as Job
-                        )?.skills?.map((skill: string) => (
-                          <Badge key={skill} variant="secondary">
-                            {skill}
-                          </Badge>
-                        ))}
-                    </div>
-                  </ScrollArea>
-                  {events.filter(
-                    (event) =>
-                      event.start.toISOString().split("T")[0] ===
-                      new Date().toISOString().split("T")[0]
-                  ).length > 1 && <hr className="my-4" />}
-                </div>
+                <RenderEvent
+                  key={i}
+                  event={event}
+                  events={events}
+                  getInterviewerName={getInterviewerName}
+                  index={i}
+                />
               ))}
             <div className="text-center text-muted-foreground py-8">
               {events.filter(

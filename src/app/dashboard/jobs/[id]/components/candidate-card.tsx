@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArchiveRestore, Info, Trash2 } from "lucide-react";
 import { Candidate } from "@/types/candidate";
-import { formatTime } from "./candidate-details-dialog";
+import { formatTime } from "../hooks/dateTimeFormatting";
 import AddRemarksPopover from "./add-remark-dialog";
 import RemarksPopover from "./remarks-popover";
 import { CandidateScoreBadge } from "./candidate-score-badge";

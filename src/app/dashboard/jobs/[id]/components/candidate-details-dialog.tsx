@@ -1,36 +1,14 @@
 "use client";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { format, isValid } from "date-fns";
-import {
-  FileText,
-  MapPin,
-  Briefcase,
-  Clock,
-  IndianRupee,
-  // StarIcon,
-  Dot,
-  Star,
-  Copy,
-  RefreshCwIcon,
-  EyeOff,
-  Eye,
-} from "lucide-react";
+import { FileText } from "lucide-react";
 import { PDFViewer } from "@/components/ui/pdf-viewer";
 import { Candidate } from "@/types/candidate";
-import { CandidateStatusBadge } from "./candidate-status-badge";
 import { EditCandidateDialog } from "./edit-candidate-dialog";
 import { useState, useEffect } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import {
   useEvaluateCandidateMutation,
@@ -40,56 +18,29 @@ import {
 } from "@/lib/features/candidate/candidateApi";
 import { useParams } from "next/navigation";
 import Cookies from "js-cookie";
-import CustomFieldsData from "../../../../../Custom_Fields/Components/CustomFields/customFields-details";
-import Rating from "@mui/material/Rating";
 import { AssignCandidateDialog } from "./assign-candidate-dialog";
 import { usePathname } from "next/navigation";
-import { ImageGallery } from "@/components/ui/image-gallery";
-import AtttachmentsPopover from "./attachments-popover";
 import { ICandidateHistory } from "@/lib/models/history";
 import ExpandableDescription from "./expand-collapse-desc";
 import { AssignJobDialog } from "./assing-job-dialog";
-import { CandidateScoreBadge } from "./candidate-score-badge";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { User } from "@/lib/features/users/usersApi";
 import { useSendUnassignMailMutation } from "@/lib/features/org/orgApi";
 import { evaluateCandidate } from "@/app/apply-jobs/ApplyAsGuest";
-import { RemarkOptionsMenu } from "./remark-options-menu";
-import { Switch } from "@/components/ui/switch";
-
-interface CandidateDetailsDialogProps {
-  candidate: Candidate | null;
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  onUpdate?: (updatedCandidate: Candidate) => void;
-  hideEditButton?: boolean;
-  large?: boolean;
-  refetchAssignment?: () => void;
-  fromFilter?: boolean;
-  refetchCandidates?: () => void;
-}
+import { CandidateDetailsDialogProps } from "../schemas/candidateDetailsDialogProps";
+import { IEditRemark } from "../schemas/EditRemarkDialog";
+import EditRemarkDialog from "./EditRemarkDialog";
+import ConfirmationDialog from "./ConfirmationDialog";
+import handleCandidateInfoCopy from "../hooks/handleCandidateInfoCopy";
+import RenderHistoryEntry from "./HistoryEntry";
+import { RenderAttachments } from "./RenderAttachments";
+import ResumeEvaluationDetails from "./ResumeEvaluationDetails";
+import DetailsDialogHeader from "./candidate-details-header";
+import RemarkInputSection from "./RemarkInputSection";
+import { CandidateInfoSection } from "./CandidateInfoSection";
+import { formatDate, formatTime } from "../hooks/dateTimeFormatting";
 
 const labelClass = "font-semibold text-base";
-
-export const formatDate = (dateString: string | Date | undefined) => {
-  if (!dateString) return "N/A";
-
-  const date = new Date(dateString);
-  if (!isValid(date)) return "Invalid date";
-
-  return format(date, "PPP");
-};
-
-export const formatTime = (timeString: string | Date | undefined) => {
-  if (!timeString) return "N/A";
-  const time = new Date(timeString);
-  const formattedTime = time.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    hour12: true,
-    minute: "2-digit",
-  });
-  return formattedTime;
-};
 
 export function CandidateDetailsDialog({
   candidate,
@@ -103,19 +54,15 @@ export function CandidateDetailsDialog({
 }: CandidateDetailsDialogProps) {
   const pathname = usePathname();
   const { id } = useParams();
-
   const [refetchCandidate, { data: candidateData }] =
     useLazyFetchCandidatesQuery();
-
   const [isEditing, setIsEditing] = useState(false);
   const [newRemark, setNewRemark] = useState("");
-  const [showEvalDetails, setShowEvalDetails] = useState(false);
   const [remarkRating, setRemarkRating] = useState<number | null>(null);
   const [remarkRatingHistory, setRemarkRatingHistory] = useState<number | null>(
     null
   );
   const [isReEvaluating, setIsReEvaluating] = useState(false);
-  const [evaluationError, setEvaluationError] = useState<string | null>(null);
   const [updateCandidate] = useUpdateCandidateMutation();
   const [isAssigning, setIsAssigning] = useState(false);
   const [isAssigningJob, setIsAssigningJob] = useState(false);
@@ -123,23 +70,16 @@ export function CandidateDetailsDialog({
   const [confirmUnassignOpen, setConfirmUnassignOpen] = useState(false);
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
   const [evaluateCandidateMutation] = useEvaluateCandidateMutation();
-  const [isRemarkOptionsOpen, setIsRemarkOptionsOpen] = useState(false);
-  const [isRemarkOpsOpenFor, setIsRemarkOpsOpenFor] = useState<string | null>();
-  // const [isRemarkPrivate, setIsRemarkPrivate] = useState(false);
-  // const [isRemarkPrivateFor, setIsRemarkPrivateFor] = useState<string>();
   const [isSubRemarkPrivate, setIsSubRemarkPrivate] = useState(false);
   const [confirmReEvaluateOpen, setConfirmReEvaluateOpen] = useState(false);
   const [isEditRemarkDialogOpen, setIsEditRemarkDialogOpen] = useState(false);
-  const [editingRemark, setEditingRemark] = useState<{
-    id: string | undefined;
-    isPrivate: boolean;
-    description: string;
-    rating?: number;
-  } | null>(null);
-  // Add local state to track remarks
+  const [editingRemark, setEditingRemark] = useState<IEditRemark | null>(null);
+  const [timeLineItems, setTimeLineItems] = useState<ICandidateHistory[]>([]);
   const [localCandidate, setLocalCandidate] = useState<Candidate | null>(
     candidate
   );
+  const [sendUnassignEmail, { isLoading }] = useSendUnassignMailMutation();
+
   const refetch = async () => {
     const result = await refetchCandidate(
       (id as string) || candidate?.jobId._id || ""
@@ -149,7 +89,6 @@ export function CandidateDetailsDialog({
     });
     setLocalCandidate(updatedCandidate!);
   };
-  const [sendUnassignEmail, { isLoading }] = useSendUnassignMailMutation();
   useEffect(() => {
     (async () => {
       const token = Cookies.get("token");
@@ -167,25 +106,6 @@ export function CandidateDetailsDialog({
     onOpenChange(false); // Close the current dialog
   };
 
-  const handleCandidateInfoCopy = (email: string) => {
-    // e.preventDefault();
-    navigator.clipboard
-      .writeText(email)
-      .then(() => {
-        toast({
-          title: "Success",
-          description: "Candidate Email is copied to your clipboard",
-          variant: "default",
-        });
-      })
-      .catch((err) => {
-        toast({
-          title: "Error",
-          description: err.message || "Failed to copy the candidate email.",
-          variant: "destructive",
-        });
-      });
-  };
   const handleRemarkUpdate = async (
     id: string,
     description: string,
@@ -242,7 +162,6 @@ export function CandidateDetailsDialog({
     setConfirmReEvaluateOpen(false);
     try {
       setIsReEvaluating(true);
-      setEvaluationError(null);
 
       const result = await evaluateCandidate(
         localCandidate?._id as string,
@@ -260,15 +179,8 @@ export function CandidateDetailsDialog({
         description: "Candidate re-evaluation completed successfully",
         variant: "default",
       });
-
-      setShowEvalDetails(true);
     } catch (error) {
       console.error("Re-evaluation error:", error);
-      setEvaluationError(
-        error instanceof Error
-          ? error.message
-          : "Failed to re-evaluate candidate"
-      );
       toast({
         title: "Error",
         description: "Failed to re-evaluate candidate",
@@ -298,8 +210,6 @@ export function CandidateDetailsDialog({
     }
   }, [isEditing, onOpenChange]);
 
-  const [timeLineItems, setTimeLineItems] = useState<ICandidateHistory[]>([]);
-
   useEffect(() => {
     if (candidateData || localCandidate) {
       if (!candidateData && localCandidate) {
@@ -320,11 +230,7 @@ export function CandidateDetailsDialog({
 
   useEffect(() => {
     if (candidate) {
-      // debugger
       setLocalCandidate(candidate);
-      // if(pathname !== "/dashboard"){
-      //   refetch();
-      // }
     }
   }, [candidate, id]);
 
@@ -360,12 +266,6 @@ export function CandidateDetailsDialog({
           email: user.email,
         },
       };
-      // debugger;
-      // const updateData = {
-      //   candidateId: candidate?._id,
-      //   jobId: candidate.jobId,
-      //   remarks: newRemarkObj,
-      // };
       const newHistoryEntry = {
         dateTime: new Date().toISOString(),
         remark: newRemarkHistoryObj,
@@ -393,59 +293,14 @@ export function CandidateDetailsDialog({
           newEntry: newHistoryEntry,
         }).unwrap());
       const result = await updateCandidate(updateData).unwrap();
-      if (result) {
-        // const reqBody: IScheduledMailRequest = {
-        //   email:
-        //     typeof result.assignment!.interviewerId === "object"
-        //       ? result.assignment!.interviewerId.email
-        //       : "",
-        //   eventTitle:
-        //     result.jobId &&
-        //     typeof result.jobId !== "string" &&
-        //     (result.jobId as unknown as IJob).title
-        //       ? "Remarks Added by " + result.assignment!.interviewerId
-        //       : "",
-        //   startTime: result.assignment?.time as string,
-        //   endTime: result.assignment?.time as string,
-        //   jobName:
-        //     result.jobId &&
-        //     typeof result.jobId !== "string" &&
-        //     (result.jobId as unknown as IJob).title
-        //       ? (result.jobId as unknown as IJob).title
-        //       : "Unknown Job",
-        //   interviewerName:
-        //     typeof result.assignment!.interviewerId === "object"
-        //       ? result.assignment!.interviewerId.name
-        //       : "",
-        //   candidateName: result.name,
-        //   status: result.status,
-        // };
-        // setTimeout(
-        //   () => {
-        //     sentAssignmentMail(result, sendEmail);
-        //   },
-        //   2 * 60 * 1000
-        // );
-        // sentStatusMailHandler(
-        //   {
-        //     ...result,
-        //     prev_status: "-1",
-        //   },
-        //   sendStatusMail
-        // );
-      }
-      // Update both local and parent state
-      // setLocalCandidate(result);
-      // onUpdate?.(result);
       if (onUpdate && result) {
-        onUpdate(result);
+        await onUpdate(result);
       }
-
       if (pathname === "/dashboard") {
-        refetchAssignment?.();
+        await refetchAssignment?.();
       }
       if (pathname !== "/dashboard" && pathname !== "/dashboard/calendar") {
-        refetch();
+        await refetch();
       }
 
       setNewRemark("");
@@ -553,61 +408,12 @@ export function CandidateDetailsDialog({
       >
         <DialogContent className="sm:max-w-[80vw] xl:max-w-[50vw] h-[90vh] p-0 overflow-hidden flex flex-col justify-start">
           <DialogHeader className="px-6 pt-6">
-            <DialogTitle className="text-2xl font-semibold">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="flex gap-2 items-center">
-                    {localCandidate.name}{" "}
-                    {localCandidate.isDeleted && (
-                      <Badge className={`bg-red-500`}>Archived</Badge>
-                    )}
-                  </div>
-                  {localCandidate.email && (
-                    <div className="text-gray-500 font-thin text-sm flex flex-row items-center">
-                      {localCandidate.email}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="ml-2 h-6 w-6"
-                        onClick={() =>
-                          handleCandidateInfoCopy(localCandidate.email || "")
-                        }
-                        title="Copy Email"
-                      >
-                        <Copy size={14} />
-                        <span className="sr-only">Copy Email</span>
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-4 pr-8">
-                  <div className="text-right">
-                    {localCandidate?.assignment && (
-                      <div className="flex flex-col items-end">
-                        <div className="text-sm font-bold">
-                          {typeof localCandidate.assignment.interviewerId ===
-                            "object" && localCandidate.assignment.interviewerId
-                            ? localCandidate.assignment.interviewerId.name
-                            : "Unknown Interviewer"}
-                        </div>
-                        <div className="text-xs text-gray-500 flex items-center gap-1">
-                          <span>
-                            {formatDate(localCandidate.assignment.time)}
-                          </span>
-                          <span>•</span>
-                          <span>
-                            {formatTime(localCandidate.assignment.time)}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <CandidateStatusBadge status={localCandidate.status} />
-                </div>
-              </div>
-            </DialogTitle>
+            {candidate && (
+              <DetailsDialogHeader
+                candidate={candidate}
+                handleCandidateInfoCopy={handleCandidateInfoCopy}
+              />
+            )}
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto px-6 py-4 pt-0 space-y-6">
@@ -625,51 +431,13 @@ export function CandidateDetailsDialog({
                 }
               />
             </div>
-
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className={labelClass}>Location</Label>
-                <div className="text-sm flex items-center gap-2">
-                  <MapPin className="h-4 w-4" />
-                  {localCandidate.location}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className={labelClass}>Experience</Label>
-                <div className="text-sm flex items-center gap-2">
-                  <Briefcase className="h-4 w-4" />
-                  {localCandidate.experience} years
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className={labelClass}>Notice Period</Label>
-                <div className="text-sm flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  {localCandidate.noticePeriod} days
-                </div>
-              </div>
-              {user && user.role !== "interviewer" && (
-                <>
-                  <div className="space-y-2">
-                    <Label className={labelClass}>Current CTC</Label>
-                    <div className="text-sm flex items-center gap-2">
-                      <IndianRupee className="h-4 w-4" />
-                      {localCandidate.currentCTC} LPA
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className={labelClass}>Expected CTC</Label>
-                    <div className="text-sm flex items-center gap-2">
-                      <IndianRupee className="h-4 w-4" />
-                      {localCandidate.expectedCTC} LPA
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+            {candidate && (
+              <CandidateInfoSection
+                candidate={candidate}
+                user={user}
+                labelClass={labelClass}
+              />
+            )}
 
             <div className="space-y-2">
               <Label className={labelClass}>Skills</Label>
@@ -683,131 +451,12 @@ export function CandidateDetailsDialog({
             </div>
 
             {localCandidate.scores && (
-              <>
-                <div
-                  className="space-y-2 cursor-pointer"
-                  onClick={() => setShowEvalDetails(!showEvalDetails)}
-                >
-                  <div className="space-y-2 cursor-pointer">
-                    {(localCandidate.scores.overall ||
-                      localCandidate.scores.experience ||
-                      localCandidate.scores.skills ||
-                      localCandidate.scores.strengths?.length > 0 ||
-                      localCandidate.scores.areas_for_improvement?.length > 0 ||
-                      localCandidate.scores.recommendation ||
-                      localCandidate.scores.notes) && (
-                      <div className="flex flex-row justify-between items-center">
-                        <div className="flex items-center gap-3">
-                          <Label className={labelClass}>AI Evaluation</Label>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setConfirmReEvaluateOpen(true);
-                            }}
-                            disabled={isReEvaluating}
-                            className={
-                              isReEvaluating
-                                ? "animate-spin"
-                                : "hover:text-gray-400 transition duration-300"
-                            }
-                          >
-                            <RefreshCwIcon size={15} />
-                          </button>
-                        </div>
-                        <p>
-                          {showEvalDetails ? "Hide details" : "Show details"}
-                        </p>
-                      </div>
-                    )}
-
-                    {evaluationError && (
-                      <div className="text-red-500 text-sm mt-1 mb-2">
-                        {evaluationError}
-                      </div>
-                    )}
-
-                    {localCandidate.scores &&
-                      localCandidate.scores.overall !== undefined && (
-                        <div className="capitalize flex gap-2 py-2">
-                          {localCandidate.scores.overall >= 0 && (
-                            <CandidateScoreBadge
-                              score={localCandidate.scores.overall}
-                              category="Overall"
-                            />
-                          )}
-                          {localCandidate.scores.experience >= 0 && (
-                            <CandidateScoreBadge
-                              score={localCandidate.scores.experience}
-                              category="Experience"
-                            />
-                          )}
-                          {localCandidate.scores.skills >= 0 && (
-                            <CandidateScoreBadge
-                              score={localCandidate.scores.skills}
-                              category="Skills"
-                            />
-                          )}
-                        </div>
-                      )}
-                  </div>
-                </div>
-                {showEvalDetails &&
-                  localCandidate.scores.strengths?.length > 0 && (
-                    <div className="space-y-1">
-                      <Label className={labelClass}>Strengths</Label>
-                      <ExpandableDescription
-                        description={
-                          <ul className="list-disc pl-5">
-                            {localCandidate.scores.strengths.map(
-                              (strength, index) => (
-                                <li key={index}>{strength}</li>
-                              )
-                            )}
-                          </ul>
-                        }
-                        open
-                      />
-                    </div>
-                  )}
-
-                {showEvalDetails &&
-                  localCandidate.scores.areas_for_improvement?.length > 0 && (
-                    <div className="space-y-1">
-                      <Label className={labelClass}>
-                        Areas for Improvement
-                      </Label>
-                      <ExpandableDescription
-                        description={
-                          <ul className="list-disc pl-5">
-                            {localCandidate.scores.areas_for_improvement.map(
-                              (area, index) => (
-                                <li key={index}>{area}</li>
-                              )
-                            )}
-                          </ul>
-                        }
-                        open
-                      />
-                    </div>
-                  )}
-
-                {showEvalDetails && localCandidate.scores.recommendation && (
-                  <div className="space-y-2">
-                    <Label className={labelClass}>Recommendation</Label>
-                    <p>{localCandidate.scores.recommendation}</p>
-                  </div>
-                )}
-
-                {showEvalDetails && localCandidate.scores.notes && (
-                  <div className="space-y-1">
-                    <Label className={labelClass}>Note</Label>
-                    <ExpandableDescription
-                      description={localCandidate.scores.notes}
-                      open
-                    />
-                  </div>
-                )}
-              </>
+              <ResumeEvaluationDetails
+                labelClass={labelClass}
+                localCandidate={localCandidate}
+                isReEvaluating={isReEvaluating}
+                onReEvaluate={() => setConfirmReEvaluateOpen(true)}
+              />
             )}
 
             <div className="space-y-2">
@@ -818,110 +467,10 @@ export function CandidateDetailsDialog({
             </div>
 
             {localCandidate.attachments.length > 0 && (
-              <div className="space-y-2">
-                <div className="space-y-2 contents">
-                  <Label className={labelClass}>Attachments</Label>
-
-                  <div className="flex gap-2 flex-wrap">
-                    <ImageGallery
-                      images={localCandidate.attachments.filter((file) => {
-                        const fileExtension = file.name
-                          .split(".")
-                          .pop()
-                          ?.toLowerCase();
-                        return ["jpg", "jpeg", "png", "gif", "webp"].includes(
-                          fileExtension || ""
-                        );
-                      })}
-                      // maxPreview={3}
-                    />
-                  </div>
-
-                  {/* Filter and render PDF files */}
-                  {localCandidate.attachments
-                    .filter((file) => {
-                      const fileExtension = file.name
-                        .split(".")
-                        .pop()
-                        ?.toLowerCase();
-                      return fileExtension === "pdf";
-                    })
-                    .map((file) => (
-                      <PDFViewer key={file.name} files={[file]} />
-                    ))}
-
-                  {/* Render UI for other file types */}
-                  {localCandidate.attachments
-                    .filter((file) => {
-                      const fileExtension = file.name
-                        .split(".")
-                        .pop()
-                        ?.toLowerCase();
-                      return ![
-                        "jpg",
-                        "jpeg",
-                        "png",
-                        "gif",
-                        "webp",
-                        "pdf",
-                      ].includes(fileExtension || "");
-                    })
-                    .map((file) => (
-                      <div
-                        key={file.name}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors duration-200"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-grey-100 rounded-md">
-                            <svg
-                              className="w-5 h-5"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                              />
-                            </svg>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-sm font-medium text-gray-700">
-                              {file.name}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              {(file.size / 1024).toFixed(1)} KB
-                            </span>
-                          </div>
-                        </div>
-                        <a
-                          href={file.url}
-                          download={file.name}
-                          className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-blue-50 rounded-md hover:bg-blue-100 transition-colors duration-200"
-                        >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                            />
-                          </svg>
-                          Download
-                        </a>
-                      </div>
-                    ))}
-                </div>
-              </div>
+              <RenderAttachments
+                labelClass={labelClass}
+                localCandidate={localCandidate}
+              />
             )}
 
             <div className="space-y-2">
@@ -929,24 +478,14 @@ export function CandidateDetailsDialog({
               <ol className="relative border-s border-gray-200 dark:border-gray-700">
                 {validTimeLineItems.length > 0
                   ? validTimeLineItems
-                      // .sort((a, b) => {
-                      //   return (
-                      //     new Date(b.dateTime).getTime() -
-                      //     new Date(a.dateTime).getTime()
-                      //   );
-                      // })
                       .reverse()
                       .filter((interview) => {
-                        // If the entry is not a remark, include it
                         if (
                           !interview.remark ||
                           !interview.remark.description
                         ) {
                           return true;
                         }
-                        // If the entry is a remark, include it only if:
-                        // - It is not private, OR
-                        // - The user is hr or admin
                         return (
                           !interview.remark.isPrivate ||
                           user?.role === "hr" ||
@@ -954,218 +493,23 @@ export function CandidateDetailsDialog({
                         );
                       })
                       .map((interview, i) => {
-                        // const timeDate = interview.dateTime.split(",")[0];
                         const timeDate = formatDate(interview.dateTime);
                         const timeTime = formatTime(interview.dateTime);
-                        // const timeTime = interview.dateTime.split(",")[1];
-
                         return (
-                          <div key={i} className="mb-10 ms-4 group">
-                            <div className="absolute w-3 h-3 bg-gray-200 rounded-full mt-1.5 -start-1.5 border border-white dark:border-gray-900 dark:bg-gray-700"></div>
-
-                            <div
-                              className="flex flex-row items-center justify-between group"
-                              onMouseEnter={() => {
-                                setIsRemarkOptionsOpen(true);
-                                setIsRemarkOpsOpenFor(interview.remark?.id);
-                              }}
-                              onMouseLeave={() => {
-                                setIsRemarkOptionsOpen(false);
-                              }}
-                            >
-                              <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500 flex flex-row items-center group">
-                                {timeDate} <Dot /> {timeTime}
-                              </time>
-                              <div className="relative">
-                                {/* <button
-                                onClick={() => {
-                                  setIsRemarkOptionsOpen(!isRemarkOptionsOpen);
-                                  setIsRemarkOpsOpenFor(interview.remark?.id);
-                                }}
-                                className="opacity-0 group-hover:opacity-100 transition duration-300 px-2 py-1 text-lg font-bold rounded hover:bg-gray-200"
-                              >
-                                ⋮
-                              </button> */}
-
-                                {interview.remark?.description &&
-                                  interview.remark?.id === isRemarkOpsOpenFor &&
-                                  (user?.role === "hr" ||
-                                    user?.role === "admin") && (
-                                    <RemarkOptionsMenu
-                                      isOpen={
-                                        isRemarkOptionsOpen &&
-                                        interview.remark?.id ===
-                                          isRemarkOpsOpenFor
-                                      }
-                                      setIsOpen={(open: boolean) => {
-                                        setIsRemarkOptionsOpen(open);
-                                        setIsRemarkOpsOpenFor(
-                                          open ? interview.remark?.id || "" : ""
-                                        );
-                                      }}
-                                      remarkId={interview.remark?.id || ""}
-                                      isPrivate={
-                                        interview.remark?.isPrivate || false
-                                      }
-                                      onTogglePrivacy={async (
-                                        id,
-                                        isPrivate
-                                      ) => {
-                                        try {
-                                          // Optimistically update state
-                                          // setIsRemarkPrivate(isPrivate);
-                                          // setIsRemarkPrivateFor(id);
-
-                                          // Update backend
-                                          await handleRemarkUpdate(
-                                            id,
-                                            interview.remark?.description || "",
-                                            isPrivate
-                                          );
-                                        } catch (error) {
-                                          // Revert state on failure
-                                          // setIsRemarkPrivate(!isPrivate);
-                                          // setIsRemarkPrivateFor("");
-                                          console.error(
-                                            "Failed to toggle privacy:",
-                                            error
-                                          );
-                                        }
-                                      }}
-                                      onEdit={(id) => {
-                                        // This is the handleEditRemark from the previous response
-                                        if (interview.remark) {
-                                          setEditingRemark({
-                                            id: interview.remark.id,
-                                            description:
-                                              interview.remark.description,
-                                            isPrivate:
-                                              interview.remark.isPrivate ||
-                                              false,
-                                            rating:
-                                              interview.remark.rating || 0,
-                                          });
-                                          setIsEditRemarkDialogOpen(true);
-                                        }
-                                      }}
-                                    />
-                                  )}
-                              </div>
-                            </div>
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white capitalize flex flex-row items-center justify-start">
-                              {(interview.title !== "" || !interview.title) &&
-                              interview.title !== "Assigned to Job" ? (
-                                <div className="flex flex-row items-start justify-between w-full">
-                                  <div className="flex flex-row">
-                                    {interview.currentInterviewer &&
-                                    typeof interview.currentInterviewer ===
-                                      "object" &&
-                                    "name" in interview.currentInterviewer ? (
-                                      <>
-                                        {interview.previousInterviewer &&
-                                        typeof interview.previousInterviewer ===
-                                          "object" &&
-                                        "name" in
-                                          interview.previousInterviewer ? (
-                                          <p className="pl-1">
-                                            {interview.previousInterviewer
-                                              .name +
-                                              " → " +
-                                              interview.currentInterviewer.name}
-                                          </p>
-                                        ) : (
-                                          <p className="pl-1">
-                                            {`Assigned to ${interview.currentInterviewer.name}`}
-                                          </p>
-                                        )}
-                                      </>
-                                    ) : interview.remark &&
-                                      interview.remark.description ? (
-                                      <p>{interview.title || "Remark Added"}</p>
-                                    ) : interview.title === "Candidate Added" &&
-                                      interview.assignmentBy ? (
-                                      <p>
-                                        {localCandidate.name} was added by{" "}
-                                        {interview.assignmentBy &&
-                                        typeof interview.assignmentBy ===
-                                          "object" &&
-                                        "name" in interview.assignmentBy
-                                          ? `${interview.assignmentBy.name}`
-                                          : ""}
-                                      </p>
-                                    ) : interview.title == "Self Applied" ? (
-                                      <p>
-                                        {localCandidate.name} applied from
-                                        portal
-                                      </p>
-                                    ) : interview?.previousInterviewer ? (
-                                      <p className="pl-1">
-                                        Unassigned from{" "}
-                                        {interview?.previousInterviewer &&
-                                          typeof interview.previousInterviewer ===
-                                            "object" &&
-                                          "name" in
-                                            interview.previousInterviewer &&
-                                          interview.previousInterviewer.name}
-                                      </p>
-                                    ) : (
-                                      <></>
-                                    )}
-                                  </div>
-                                  <div className="flex flex-col items-end">
-                                    <p className="text-xs font-light text-gray-400">
-                                      {interview.assignmentBy && "Updated by"}
-                                    </p>
-                                    <p className="font-light text-gray-500 text-sm">
-                                      {interview.assignmentBy &&
-                                      typeof interview.assignmentBy ===
-                                        "object" &&
-                                      "name" in interview.assignmentBy
-                                        ? `${interview.assignmentBy.name}`
-                                        : ""}
-                                    </p>
-                                  </div>
-                                </div>
-                              ) : (
-                                interview.title
-                              )}
-                            </h3>
-                            <div className="mb-4 text-base font-normal text-gray-500 dark:text-gray-400 flex flex-row justify-between items-start w-[full] text-wrap break-all">
-                              <p className="max-w-[90%]">
-                                {interview.note && interview.note.description}
-                                {interview.remark &&
-                                  interview.remark.description}
-                              </p>
-
-                              {interview.note &&
-                                interview.note.rating !== 0 && (
-                                  <div className="flex flex-row items-center">
-                                    {interview.note.rating}/5
-                                    <Star
-                                      size={"15px"}
-                                      className="mt-[1px]"
-                                      style={{ color: "orange" }}
-                                    />
-                                  </div>
-                                )}
-                              {interview.remark &&
-                                interview.remark.rating &&
-                                interview.remark.rating !== 0 && (
-                                  <div className="flex flex-row items-center">
-                                    {interview.remark.rating}/5
-                                    <Star
-                                      size={"15px"}
-                                      className="mt-[1px]"
-                                      style={{ color: "orange" }}
-                                    />
-                                  </div>
-                                )}
-                            </div>
-                            <AtttachmentsPopover
-                              attachments={interview.attachments}
-                              onMoreClick={() => null}
-                            />
-                          </div>
+                          <RenderHistoryEntry
+                            interview={interview}
+                            indexKey={i}
+                            localCandidate={localCandidate}
+                            user={user}
+                            timeDate={timeDate}
+                            timeTime={timeTime}
+                            handleRemarkUpdate={handleRemarkUpdate}
+                            setEditingRemark={setEditingRemark}
+                            setIsEditRemarkDialogOpen={
+                              setIsEditRemarkDialogOpen
+                            }
+                            key={i}
+                          />
                         );
                       })
                   : "No History"}
@@ -1224,111 +568,18 @@ export function CandidateDetailsDialog({
               )}
             </div>
 
-            {/* Remarks Section */}
-            <div className="space-y-4 border-t pt-4">
-              {/* <h3 className="font-semibold">Interview Remarks</h3>
-              <div className="space-y-4">
-                {localCandidate?.remarks &&
-                localCandidate.remarks.length > 0 ? (
-                  localCandidate.remarks.map((remark) => (
-                    <div
-                      key={remark.date}
-                      className="border rounded-lg p-4 mb-4"
-                    >
-                      <div className="flex justify-between items-start mb-2 break-all text-wrap">
-                        <p className="text-sm">{remark.description}</p>
-                      </div>
-                      <div className="flex justify-between items-center text-sm text-muted-foreground">
-                        <div className="flex flex-col">
-                          <span className="capitalize">
-                            {remark.userId?.name} at &nbsp;
-                          </span>
-                          <span>{formatDate(remark.date)}</span>
-                        </div>
-                        <Rating
-                          name="text-feedback"
-                          value={remark.rating}
-                          readOnly
-                          precision={0.5}
-                          emptyIcon={
-                            <StarIcon
-                              style={{ opacity: 0.55 }}
-                              fontSize="inherit"
-                            />
-                          }
-                        />
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-sm text-muted-foreground">
-                    No remarks yet
-                  </div>
-                )}
-              </div> */}
-
-              {/* Add New Remark */}
-              <div className="space-y-4">
-                <Textarea
-                  placeholder="Add a remark..."
-                  value={newRemark}
-                  onChange={(e) => setNewRemark(e.target.value)}
-                />
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <Label htmlFor="rating">Rating:</Label>
-                    <Rating
-                      name="half-rating"
-                      onChange={(e, value) => {
-                        setRemarkRating(value ? value : null);
-                        setRemarkRatingHistory(value ? value : null);
-                      }}
-                      defaultValue={0}
-                      precision={0.5}
-                    />
-                    {/* <Switch
-                      id="privacy-toggle-submit"
-                      checked={isSubRemarkPrivate}
-                      onCheckedChange={() =>
-                        setIsSubRemarkPrivate(!isSubRemarkPrivate)
-                      }
-                      className="w-8 h-4 drop-shadow-lg border border-1 border-solid"
-                    /> */}
-                  </div>
-                  <div className="flex flex-row items-center justify-evenly">
-                    <div className="flex items-center justify-between px-2 py-2">
-                      {(user?.role === "admin" || user?.role === "hr") && (
-                        <>
-                          <div className="flex items-center space-x-2">
-                            {isSubRemarkPrivate ? (
-                              <EyeOff className="h-4 w-4 text-gray-500" />
-                            ) : (
-                              <Eye className="h-4 w-4 text-gray-500" />
-                            )}
-                            <Label htmlFor="privacy-toggle" className="text-sm">
-                              {isSubRemarkPrivate ? "Private" : "Public"}
-                            </Label>
-                          </div>
-
-                          <Switch
-                            id="privacy-toggle-submit"
-                            checked={isSubRemarkPrivate}
-                            onCheckedChange={() =>
-                              setIsSubRemarkPrivate(!isSubRemarkPrivate)
-                            }
-                            className="w-8 h-4 drop-shadow-lg border border-1 border-solid ml-2"
-                          />
-                        </>
-                      )}
-                    </div>
-                    <Button onClick={handleAddRemark}>Add Remark</Button>
-                  </div>
-                </div>
-              </div>
-              <CustomFieldsData
-                customFields={localCandidate?.customFields || {}}
-              />
-            </div>
+            <RemarkInputSection
+              newRemark={newRemark}
+              setNewRemark={setNewRemark}
+              remarkRating={remarkRating}
+              setRemarkRating={setRemarkRating}
+              setRemarkRatingHistory={setRemarkRatingHistory}
+              isSubRemarkPrivate={isSubRemarkPrivate}
+              setIsSubRemarkPrivate={setIsSubRemarkPrivate}
+              user={user}
+              handleAddRemark={handleAddRemark}
+              customFields={localCandidate?.customFields}
+            />
           </div>
 
           <div className="flex space-x-2 border-t bg-background px-6 py-4">
@@ -1423,132 +674,41 @@ export function CandidateDetailsDialog({
           }}
         />
       )}
-      {/* Add Confirm Unassign Dialog */}
-      <Dialog open={confirmUnassignOpen} onOpenChange={setConfirmUnassignOpen}>
-        <DialogContent className="sm:max-w-[300px]">
-          <DialogHeader>
-            <DialogTitle>Mark as Done</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p>Are you sure you want to mark this assignment as complete?</p>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setConfirmUnassignOpen(false);
-                onOpenChange(true);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button disabled={isLoading} onClick={confirmUnassign}>
-              {isLoading ? "Marking as done..." : "Confirm"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      <Dialog
-        open={confirmReEvaluateOpen}
-        onOpenChange={setConfirmReEvaluateOpen}
-      >
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>Are you sure?</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p>
-              This will overwrite existing candidate score data with new
-              results.
-            </p>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setConfirmReEvaluateOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button disabled={isLoading} onClick={() => handleReEvaluation()}>
-              {isLoading ? "Marking as done..." : "Confirm"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      <Dialog
-        open={isEditRemarkDialogOpen}
-        onOpenChange={setIsEditRemarkDialogOpen}
-      >
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>Edit Remark</DialogTitle>
-          </DialogHeader>
-          <div className="">
-            <Textarea
-              className="min-h-[120px] resize-none focus-visible:ring-offset-1"
-              placeholder="Enter your remark here..."
-              value={editingRemark?.description || ""}
-              onChange={(e) => {
-                const input = e.target.value;
-                const trimmed = input.trim();
+      <ConfirmationDialog
+        title="Mark as Done"
+        message="Are you sure you want to mark this assignment as complete?"
+        isOpen={confirmUnassignOpen}
+        setIsOpen={setConfirmUnassignOpen}
+        onConfirm={confirmUnassign}
+        onCancel={() => setConfirmUnassignOpen(false)}
+        isLoading={isLoading}
+        loadingText="Marking as done..."
+        className="sm:max-w-[300px]"
+      />
 
-                // Disallow null/empty/whitespace-only input
-                if (trimmed === "") return;
+      <ConfirmationDialog
+        title="Are You Sure?"
+        message="This will overwrite existing candidate score data with new
+              results."
+        isOpen={confirmReEvaluateOpen}
+        setIsOpen={setConfirmReEvaluateOpen}
+        onConfirm={() => handleReEvaluation()}
+        onCancel={() => setConfirmReEvaluateOpen(false)}
+        isLoading={isLoading}
+        loadingText="Re-Evaluating"
+        className="sm:max-w-[400px]"
+      />
 
-                setEditingRemark({
-                  id: editingRemark?.id || "",
-                  rating: editingRemark?.rating,
-                  isPrivate: editingRemark?.isPrivate || false,
-                  description: input, // store original input, not trimmed
-                });
-              }}
-            />
-            <div className="flex items-center gap-2 mt-2">
-              <Label htmlFor="rating">Rating:</Label>
-              <Rating
-                name="half-rating"
-                onChange={(e, value) => {
-                  setRemarkRating(value ? value : null);
-                  setRemarkRatingHistory(value ? value : null);
-                }}
-                defaultValue={editingRemark?.rating || 0}
-                precision={0.5}
-              />
-              {/* <Switch
-                      id="privacy-toggle-submit"
-                      checked={isSubRemarkPrivate}
-                      onCheckedChange={() =>
-                        setIsSubRemarkPrivate(!isSubRemarkPrivate)
-                      }
-                      className="w-8 h-4 drop-shadow-lg border border-1 border-solid"
-                    /> */}
-            </div>
-            {/* <div className="mt-2 text-xs text-muted-foreground text-right">
-              {editingRemark?.description?.length || 0} characters
-            </div> */}
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsEditRemarkDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              disabled={isLoading}
-              onClick={() =>
-                handleRemarkUpdate(
-                  editingRemark?.id || "",
-                  editingRemark?.description || "",
-                  editingRemark?.isPrivate
-                )
-              }
-            >
-              {isLoading ? "Marking as done..." : "Confirm"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <EditRemarkDialog
+        isEditRemarkDialogOpen={isEditRemarkDialogOpen}
+        setIsEditRemarkDialogOpen={setIsEditRemarkDialogOpen}
+        editingRemark={editingRemark}
+        setEditingRemark={setEditingRemark}
+        handleRemarkUpdate={handleRemarkUpdate}
+        isLoading={isLoading}
+        setRemarkRating={setRemarkRating}
+        setRemarkRatingHistory={setRemarkRatingHistory}
+      />
     </>
   );
 }

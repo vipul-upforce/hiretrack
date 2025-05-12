@@ -2,13 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { Formik, Form, Field, FormikHelpers, FieldProps } from "formik";
-import * as Yup from "yup";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,7 +17,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Candidate } from "@/types/candidate";
 import { toast } from "@/hooks/use-toast";
 import {
   useUpdateCandidateHistoryMutation,
@@ -30,7 +27,6 @@ import { DateTimePicker } from "@/components/ui/DateTimePicker";
 import dayjs from "dayjs";
 import { usePathname } from "next/navigation";
 import { FileUpload } from "@/components/ui/file-upload";
-import { v4 as uuidv4 } from "uuid";
 import { Textarea } from "@/components/ui/textarea";
 import { Rating } from "@mui/material";
 import Cookies from "js-cookie";
@@ -41,48 +37,14 @@ import {
 } from "@/lib/features/org/orgApi";
 import { sentAssignmentMail } from "@/lib/utils";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
-
-interface AssignCandidateDialogProps {
-  candidate: Candidate;
-  refetch: () => void;
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  onUpdate: (updatedCandidate: Candidate) => void;
-  setLocalCandidate: (candidate: Candidate) => void;
-  refetchAssignment?: () => void;
-  onSuccess: () => void;
-}
-
-interface Attachment {
-  id: string;
-  name: string;
-  url: string;
-  type: string;
-  size: number;
-}
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-}
-
-interface FormValues {
-  interviewerId: string;
-  time: dayjs.Dayjs;
-  remark: string;
-  rating: number | null;
-  attachments: Attachment[];
-}
-
-// Validation schema
-const validationSchema = Yup.object({
-  interviewerId: Yup.string().required("Interviewer is required"),
-  time: Yup.date().min(new Date(), "Past date is not allowed").nullable(),
-  remark: Yup.string(),
-  rating: Yup.number().nullable(),
-  attachments: Yup.array(),
-});
+import ConfirmationDialog from "./ConfirmationDialog";
+import { handleFileSelect, handleSetter } from "../hooks/fileUploadUtils";
+import {
+  validationSchema,
+  FormValues,
+  User,
+  AssignCandidateDialogProps,
+} from "../schemas/AssignCandidateSchema";
 
 export function AssignCandidateDialog({
   candidate,
@@ -132,16 +94,6 @@ export function AssignCandidateDialog({
     remark: "",
     rating: null,
     attachments: [],
-  };
-
-  // Function to convert files to data URLs
-  const readFileAsDataURL = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
   };
 
   const handleSubmit = async (
@@ -439,111 +391,26 @@ export function AssignCandidateDialog({
                     <FileUpload
                       accept={{}}
                       maxFiles={30}
-                      onFileSelect={async (files) => {
-                        const newAttachments = await Promise.all(
-                          files.map(async (file) => {
-                            const dataUrl = await readFileAsDataURL(file);
-                            let newFileName = file.name;
-                            if (
-                              candidate.attachments.some(
-                                (existingFile) =>
-                                  existingFile.name === file.name
-                              ) ||
-                              values.attachments.some(
-                                (existingFile) =>
-                                  existingFile.name === file.name
-                              )
-                            ) {
-                              // const timestamp = Date.now();
-                              const fileExtension = file.name.split(".").pop();
-                              const baseName = file.name.replace(
-                                /\.[^/.]+$/,
-                                ""
-                              );
-                              newFileName = `${baseName}_${uuidv4()}.${fileExtension}`;
-                            }
-                            return {
-                              id: uuidv4(),
-                              name: newFileName,
-                              url: dataUrl,
-                              type: file.type,
-                              size: file.size,
-                            };
-                          })
-                        );
-                        setFieldValue("attachments", [
-                          ...values.attachments,
-                          ...newAttachments,
-                        ]);
-                      }}
+                      onFileSelect={(files) =>
+                        handleFileSelect({
+                          files,
+                          existingAttachments: candidate.attachments,
+                          currentFormAttachments: values.attachments,
+                          setFieldValue,
+                        })
+                      }
                       files={(values.attachments || []).map(
                         (att) =>
                           new File([att.url], att.name, { type: att.type })
                       )}
-                      setter={(uiFiles) => {
-                        // debugger;
-                        const fileIndexMap = new Map();
-                        uiFiles.forEach((file, index) => {
-                          fileIndexMap.set(file, index);
-                        });
-
-                        const updatedAttachments = uiFiles.map(
-                          (file, index) => {
-                            const existingAttachment =
-                              values.attachments[index] ||
-                              values.attachments.find(
-                                (att) => att.size === file.size
-                              );
-
-                            if (existingAttachment) {
-                              return {
-                                ...existingAttachment,
-                                name: file.name,
-                                type: file.type,
-                              };
-                            } else {
-                              return {
-                                id: uuidv4(),
-                                name: file.name,
-                                url: "",
-                                type: file.type,
-                                size: file.size,
-                              };
-                            }
-                          }
-                        );
-                        const duplicateFiles = updatedAttachments.filter(
-                          (newFile) =>
-                            candidate.attachments.some(
-                              (existingFile) =>
-                                existingFile.name === newFile.name
-                            ) ||
-                            values.attachments.some(
-                              (existingFile) =>
-                                existingFile.name === newFile.name
-                            )
-                        );
-
-                        const uniqueRenamedAttachments =
-                          updatedAttachments.filter(
-                            (newFile) =>
-                              !duplicateFiles.some(
-                                (duplicate) => duplicate.name === newFile.name
-                              )
-                          );
-                        const filteredSelecedFiles = values.attachments.filter(
-                          (file) =>
-                            !uniqueRenamedAttachments.some(
-                              (newFile) => newFile.id === file.id
-                            )
-                        );
-                        if (uniqueRenamedAttachments.length > 0) {
-                          setFieldValue("attachments", [
-                            ...filteredSelecedFiles,
-                            ...uniqueRenamedAttachments,
-                          ]);
-                        }
-                      }}
+                      setter={(uiFiles) =>
+                        handleSetter({
+                          uiFiles,
+                          existingAttachments: candidate.attachments,
+                          currentFormAttachments: values.attachments,
+                          setFieldValue,
+                        })
+                      }
                     />
                   </div>
                 </div>
@@ -579,26 +446,15 @@ export function AssignCandidateDialog({
         </Formik>
       </DialogContent>
 
-      {/* Confirm Unassign Dialog */}
-      <Dialog open={confirmUnassignOpen} onOpenChange={setConfirmUnassignOpen}>
-        <DialogContent className="sm:max-w-[300px]">
-          <DialogHeader>
-            <DialogTitle>Confirm Mark As Done</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p>Are you sure you want to Mark As Done this interviewer?</p>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setConfirmUnassignOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button onClick={confirmUnassign}>Confirm</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmationDialog
+        isOpen={confirmUnassignOpen}
+        setIsOpen={setConfirmUnassignOpen}
+        title="Confirm Mark As Done"
+        message="Are you sure you want to Mark As Done this interviewer?"
+        onConfirm={confirmUnassign}
+        onCancel={() => setConfirmUnassignOpen(false)}
+        className="sm:max-w-[300px]"
+      />
     </Dialog>
   );
 }
