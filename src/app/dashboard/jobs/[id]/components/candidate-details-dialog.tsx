@@ -39,6 +39,7 @@ import DetailsDialogHeader from "./candidate-details-header";
 import RemarkInputSection from "./RemarkInputSection";
 import { CandidateInfoSection } from "./CandidateInfoSection";
 import { formatDate, formatTime } from "../hooks/dateTimeFormatting";
+import CustomFieldsData from "@/Custom_Fields/Components/CustomFields/customFields-details";
 
 const labelClass = "font-semibold text-base";
 
@@ -449,6 +450,9 @@ export function CandidateDetailsDialog({
                 ))}
               </div>
             </div>
+            <CustomFieldsData
+              customFields={localCandidate?.customFields || {}}
+            />
 
             {localCandidate.scores && (
               <ResumeEvaluationDetails
@@ -578,7 +582,6 @@ export function CandidateDetailsDialog({
               setIsSubRemarkPrivate={setIsSubRemarkPrivate}
               user={user}
               handleAddRemark={handleAddRemark}
-              customFields={localCandidate?.customFields}
             />
           </div>
 

@@ -6,8 +6,6 @@ import { Eye, EyeOff } from "lucide-react";
 import Rating from "@mui/material/Rating";
 
 import { User } from "@/lib/features/users/usersApi";
-import { Candidate } from "@/types/candidate";
-import CustomFieldsData from "@/Custom_Fields/Components/CustomFields/customFields-details";
 
 interface RemarkInputSectionProps {
   newRemark: string;
@@ -19,7 +17,6 @@ interface RemarkInputSectionProps {
   setIsSubRemarkPrivate: (value: boolean) => void;
   user: User | null;
   handleAddRemark: () => void;
-  customFields: Candidate["customFields"];
 }
 
 export default function RemarkInputSection({
@@ -32,7 +29,6 @@ export default function RemarkInputSection({
   setIsSubRemarkPrivate,
   user,
   handleAddRemark,
-  customFields,
 }: RemarkInputSectionProps) {
   return (
     <div className="space-y-4 border-t pt-4">
@@ -85,7 +81,6 @@ export default function RemarkInputSection({
           </div>
         </div>
       </div>
-      <CustomFieldsData customFields={customFields || {}} />
     </div>
   );
 }

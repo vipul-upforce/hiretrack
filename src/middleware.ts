@@ -170,6 +170,7 @@ const apiExemptPaths = [
   "/api/candidates/guest-apply",
   "/api/candidates/apply-application",
   "/apply-jobs",
+  "/api/organization/cs/",
 ];
 
 const redirectPaths = [

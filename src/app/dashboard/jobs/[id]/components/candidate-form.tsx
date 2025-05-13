@@ -294,6 +294,8 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
           </div>
         </div>
 
+        <CustomFields formName="Candidate" />
+
         {/* Assignment Section */}
         {user && user.role !== "candidate" && (
           <>
@@ -445,7 +447,6 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
             setter={(files) => setFieldValue("attachments", files)}
           />
         </div>
-        <CustomFields formName="Candidate" />
       </div>
       {tempResumeUrl ? (
         <div className="w-full md:w-1/2 h-full mb-4 md:mb-0 sticky top-0">

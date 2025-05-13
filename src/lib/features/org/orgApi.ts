@@ -134,6 +134,12 @@ export const orgApi = createApi({
         method: "GET",
       }),
     }),
+    getCustomFieldsByOrgName: builder.query({
+      query: (orgName) => ({
+        url: orgName ? `/organization/cf/${orgName}` : "/organization/cf",
+        method: "GET",
+      }),
+    }),
     sendMail: builder.mutation<{ message: string }, IScheduledMailRequest>({
       query: (data) => ({
         url: `/event-mail`,
@@ -189,6 +195,7 @@ export const {
   useUpdateCustomFieldsMutation,
   useGetCustomFieldsQuery,
   useLazyGetCustomFieldsQuery,
+  useLazyGetCustomFieldsByOrgNameQuery,
   useFetchBatchesQuery, // Hook for fetching batches
   usePostBatchMutation, // Hook for posting a batch,
 } = orgApi;

@@ -2,7 +2,7 @@ import { PDFViewer } from "@/components/ui/pdf-viewer";
 import { Label } from "@radix-ui/react-label";
 import { Dayjs } from "dayjs";
 import { ImageGallery } from "@/components/ui/image-gallery";
-import useRoles from "@/hooks/useRoles";
+// import useRoles from "@/hooks/useRoles";
 
 interface FileData {
   base64: string;
@@ -26,7 +26,7 @@ interface FormValues {
 }
 
 const CustomFieldsData = ({ customFields }: FormValues) => {
-  const role = useRoles();
+  // const role = useRoles();
   // debugger
   if (
     !customFields ||
@@ -42,12 +42,12 @@ const CustomFieldsData = ({ customFields }: FormValues) => {
 
   return (
     <div className="flex flex-col gap-4">
-      {role !== "candidate" && (
+      {/* {role !== "candidate" && (
         <>
           <hr className="mt-4" />
           <div className="font-bold text-lg">Meta Fields</div>
         </>
-      )}
+      )} */}
       {Object.entries(customFields).map(([key, value]) => {
         if (
           (typeof value === "string" && value.trim() === "") ||

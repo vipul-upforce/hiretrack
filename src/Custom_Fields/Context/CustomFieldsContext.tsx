@@ -14,9 +14,18 @@ import { CustomFieldsContext } from ".";
 import {
   useLazyGetCustomFieldsQuery,
   useUpdateCustomFieldsMutation,
+  useLazyGetCustomFieldsByOrgNameQuery,
 } from "@/lib/features/org/orgApi";
 import Cookies from "js-cookie";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import { usePathname } from "next/navigation";
+
+const getOrgParamFromUrl = (): string | null => {
+  if (typeof window === "undefined") return null;
+  const queryString = window.location.search;
+  const urlParams = new URLSearchParams(queryString);
+  return urlParams.get("o");
+};
 
 // Create a provider component
 export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
@@ -27,7 +36,10 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
       useState<SelectedFormObject | null>(null);
     const [updateCustomFields] = useUpdateCustomFieldsMutation();
     const [getCustomField] = useLazyGetCustomFieldsQuery();
+    const [getCustomFieldsByOrgName] = useLazyGetCustomFieldsByOrgNameQuery();
     const [userLoggedIn, setUserLoggedIn] = useState<boolean>(false);
+    const pathname = usePathname();
+    // const searchParams = useSearchParams();
 
     const postCustomFields = useCallback(async () => {
       const token = Cookies.get("token");
@@ -42,7 +54,7 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
           });
         }
       }
-    }, [customFields]);
+    }, [customFields, updateCustomFields]);
 
     const getCustomFields = useCallback(async () => {
       const token = Cookies.get("token");
@@ -54,8 +66,19 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
           const data = await getCustomField(orgId);
           if (data.data) setCustomFields(data.data);
         }
+      } else if (pathname.includes("/apply-jobs")) {
+        // debugger;
+        const orgParam = getOrgParamFromUrl();
+        // if (orgParam) {
+        try {
+          const data = await getCustomFieldsByOrgName(orgParam);
+          if (data.data) setCustomFields(data.data);
+        } catch (error) {
+          console.error("Error fetching custom fields by org name:", error);
+        }
+        // }
       }
-    }, []);
+    }, [getCustomField, getCustomFieldsByOrgName, pathname]);
 
     const getAndSetCustomFields = useCallback(async () => {
       if (Object.keys(customFields).length === 0) {
@@ -63,15 +86,21 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
       } else {
         postCustomFields();
       }
-    }, [customFields, userLoggedIn]);
+    }, [customFields, userLoggedIn, getCustomFields, postCustomFields]);
 
     useEffect(() => {
-      if (userLoggedIn) {
+      const isApplyJobsPage = pathname.includes("/apply-jobs");
+
+      if (userLoggedIn || isApplyJobsPage) {
         getAndSetCustomFields();
-      } else if (!userLoggedIn && Object.keys(customFields).length > 0) {
+      } else if (
+        !userLoggedIn &&
+        !isApplyJobsPage &&
+        Object.keys(customFields).length > 0
+      ) {
         setCustomFields({});
       }
-    }, [customFields, userLoggedIn]);
+    }, [pathname, userLoggedIn, getAndSetCustomFields]);
 
     const handleAddFormId = useCallback((formName: string) => {
       const randomId = Math.random().toString(36).substr(2, 9);

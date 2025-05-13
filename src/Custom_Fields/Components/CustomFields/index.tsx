@@ -41,7 +41,7 @@ function CustomFields({ formName }: { formName: string }) {
 
   const { formNameObject } = useCustomForm(formName);
   const role = useRoles();
-  const allFields = role !== "interviewer" && role !== "candidate";
+  const allFields = role !== "interviewer";
 
   if (
     !formNameObject ||
@@ -53,12 +53,12 @@ function CustomFields({ formName }: { formName: string }) {
 
   return (
     <div className="flex flex-col gap-2">
-      {role !== "candidate" && (
+      {/* {
         <>
           <hr className="pt-2" />
           <div className="font-bold text-lg py-2">Meta Fields</div>
         </>
-      )}
+      } */}
       {formNameObject?.fields
         ?.filter((field) => allFields || (!allFields && !field.private))
         .map((field) => (
