@@ -333,7 +333,7 @@ export default function KanbanPage() {
                                     {job.company}
                                   </p> */}
                                   <p className="text-sm text-muted-foreground">
-                                    {job.candidateCount} Applied
+                                    {job.candidateCount} Candidates
                                   </p>
                                 </div>
                                 <div className="flex items-center justify-end gap-1">

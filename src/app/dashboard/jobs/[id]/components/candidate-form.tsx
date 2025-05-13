@@ -97,6 +97,13 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
             accept={{ "application/pdf": [".pdf"] }}
             maxFiles={1}
             onFileSelect={async (files) => {
+              if (!user && files[0].size > 3 * 1024 * 1024) {
+                toast({
+                  title: `File "${files[0].name}" exceeds 3MB. Please upload a smaller file.`,
+                  variant: "destructive",
+                });
+                return false;
+              }
               if (
                 user &&
                 user.role === "candidate" &&
@@ -373,6 +380,13 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
 
               const newFiles = files
                 .filter((file) => {
+                  if (!user && file.size > 3 * 1024 * 1024) {
+                    toast({
+                      title: `File "${file.name}" exceeds 3MB. Please upload a smaller file.`,
+                      variant: "destructive",
+                    });
+                    return false;
+                  }
                   if (
                     user &&
                     user.role === "candidate" &&

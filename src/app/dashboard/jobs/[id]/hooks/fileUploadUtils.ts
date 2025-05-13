@@ -110,21 +110,9 @@ export const handleSetter = ({
   );
 
   // Filter out duplicates to keep unique/renamed attachments
-  const uniqueRenamedAttachments = updatedAttachments.filter(
+  updatedAttachments.filter(
     (newFile) =>
       !duplicateFiles.some((duplicate) => duplicate.name === newFile.name)
   );
-
-  // Filter out attachments that are no longer selected
-  const filteredSelectedFiles = currentFormAttachments.filter(
-    (file) =>
-      !uniqueRenamedAttachments.some((newFile) => newFile.id === file.id)
-  );
-
-  if (uniqueRenamedAttachments.length > 0) {
-    setFieldValue("attachments", [
-      ...filteredSelectedFiles,
-      ...uniqueRenamedAttachments,
-    ]);
-  }
+  setFieldValue("attachments", updatedAttachments);
 };
