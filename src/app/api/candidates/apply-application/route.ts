@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(request: NextRequest) {
   try {
     await connectToDatabase();
-    const jobId = request.nextUrl.searchParams.get("jobid");
+    const jobId = request.nextUrl.searchParams?.get("jobid");
     const { user } = (await auth(request)) || {};
 
     if (!user) {

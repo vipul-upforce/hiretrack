@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   try {
     // Get the pathname from query parameters
     const { searchParams } = new URL(request.url);
-    const pathName = searchParams.get("pathName");
+    const pathName = searchParams?.get("pathName");
 
     if (!pathName) {
       return NextResponse.json(

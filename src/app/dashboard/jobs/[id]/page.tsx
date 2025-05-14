@@ -48,9 +48,11 @@ import {
 } from "@/lib/features/org/orgApi";
 import { sentStatusMailHandler } from "@/lib/utils";
 import { KanbanColumn } from "./components/KanbanColumn";
+import withAuthGuard from "@/components/withAuthGuard";
 
-export default function JobProgressPage() {
-  const { id } = useParams();
+function JobProgressPage() {
+  const id = useParams()?.id as string;
+
   // const [sendEmail] = useSendMailMutation();
   const [sendStatusMail] = useSendStatusMailMutation();
   const [columns, setColumns] = useState<CandidateColumn[]>(
@@ -524,3 +526,10 @@ export default function JobProgressPage() {
     </div>
   );
 }
+
+export default withAuthGuard(JobProgressPage, {
+  requiredRoles: ["admin", "hr"],
+  fallbackPath: "/dashboard",
+  checkAllowance: false,
+  allowAuthenticated: true,
+});

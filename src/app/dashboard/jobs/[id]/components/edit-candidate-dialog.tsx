@@ -96,7 +96,7 @@ export function EditCandidateDialog({
   reopenDetailsDialog,
 }: EditCandidateDialogProps) {
   const { toast } = useToast();
-  const { id } = useParams();
+  const id = useParams()?.id as string;
   const [updateCandidate] = useUpdateCandidateMutation();
   const [sendEmail] = useSendMailMutation();
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();

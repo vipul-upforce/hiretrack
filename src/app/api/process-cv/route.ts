@@ -196,7 +196,7 @@ export async function POST(request: NextRequest) {
 
   const formData = await request.formData();
   const { searchParams } = new URL(request.url);
-  const organizationId = searchParams.get("organizationId");
+  const organizationId = searchParams?.get("organizationId");
   if (!organizationId) {
     return NextResponse.json(
       { error: "organizationId is required" },
@@ -404,7 +404,7 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url);
-  const organizationId = searchParams.get("organizationId");
+  const organizationId = searchParams?.get("organizationId");
 
   if (!organizationId) {
     return NextResponse.json(

@@ -17,7 +17,7 @@ export interface Attachment {
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const jobId = searchParams.get("jobId");
+    const jobId = searchParams?.get("jobId");
 
     await connectToDatabase();
     if (!Candidate) {

@@ -13,7 +13,7 @@ async function checkOrgInDatabase(organizationId: string) {
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const organizationId = searchParams.get("organizationId");
+  const organizationId = searchParams?.get("organizationId");
 
   try {
     const exists = await checkOrgInDatabase(organizationId as string);

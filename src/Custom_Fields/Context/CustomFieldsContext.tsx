@@ -66,7 +66,7 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
           const data = await getCustomField(orgId);
           if (data.data) setCustomFields(data.data);
         }
-      } else if (pathname.includes("/apply-jobs")) {
+      } else if (pathname?.includes("/apply-jobs")) {
         // debugger;
         const orgParam = getOrgParamFromUrl();
         // if (orgParam) {
@@ -89,7 +89,7 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
     }, [customFields, userLoggedIn, getCustomFields, postCustomFields]);
 
     useEffect(() => {
-      const isApplyJobsPage = pathname.includes("/apply-jobs");
+      const isApplyJobsPage = pathname?.includes("/apply-jobs");
 
       if (userLoggedIn || isApplyJobsPage) {
         getAndSetCustomFields();

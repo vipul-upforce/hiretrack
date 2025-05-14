@@ -54,7 +54,8 @@ export function CandidateDetailsDialog({
   refetchCandidates,
 }: CandidateDetailsDialogProps) {
   const pathname = usePathname();
-  const { id } = useParams();
+  const id = useParams()?.id as string;
+
   const [refetchCandidate, { data: candidateData }] =
     useLazyFetchCandidatesQuery();
   const [isEditing, setIsEditing] = useState(false);

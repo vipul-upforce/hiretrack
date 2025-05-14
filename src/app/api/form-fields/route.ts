@@ -20,8 +20,8 @@ export async function GET(request: Request) {
   try {
     await connectToDatabase();
     const { searchParams } = new URL(request.url);
-    const moduleType = searchParams.get("moduleType");
-    const isPermanent = searchParams.get("isPermanent");
+    const moduleType = searchParams?.get("moduleType");
+    const isPermanent = searchParams?.get("isPermanent");
 
     const query: Partial<FormField> = {};
     if (moduleType) query.moduleType = moduleType;

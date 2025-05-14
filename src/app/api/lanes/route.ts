@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   try {
     await connectToDatabase();
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
+    const userId = searchParams?.get("userId");
     const session = await auth(request);
     const organizationId = session?.user.organizationId;
 
