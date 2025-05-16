@@ -45,8 +45,9 @@ import { Formik, Form, ErrorMessage, Field, FieldProps } from "formik";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useResetPasswordbyAdminMutation } from "@/lib/features/auth/authApi";
+import withAuthGuard from "@/components/withAuthGuard";
 
-export default function UsersPage() {
+function UsersPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { data: users, isLoading, error, refetch } = useGetUsersQuery();
@@ -579,3 +580,10 @@ export default function UsersPage() {
     </div>
   );
 }
+
+export default withAuthGuard(UsersPage, {
+  requiredRoles: ["admin", "hr"],
+  fallbackPath: "/dashboard",
+  checkAllowance: false,
+  allowAuthenticated: true,
+});

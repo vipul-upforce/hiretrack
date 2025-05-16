@@ -61,10 +61,10 @@ export async function POST(req: Request) {
           { status: 400 }
         );
       }
-      return NextResponse.json(
-        { error: "Candidates cant have multiple org accounts" },
-        { status: 400 }
-      );
+      // return NextResponse.json(
+      //   { error: "Candidates cant have multiple org accounts" },
+      //   { status: 400 }
+      // );
     }
 
     // Hash password

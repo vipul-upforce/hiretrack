@@ -42,7 +42,10 @@ const RemarksPopover = ({
                 .slice(0, 6)
                 .map((remark, index) => (
                   <div key={index} className="border-b pb-2">
-                    <div className="text-sm capitalize align-center w-full break-words">
+                    <div
+                      className="text-sm capitalize align-center w-full whitespace-pre-wrap"
+                      style={{ wordWrap: "break-word" }}
+                    >
                       {remark.description}
                       {remark?.rating && (
                         <div className="flex">

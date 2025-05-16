@@ -13,6 +13,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import Cookies from "js-cookie";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import withAuthGuard from "@/components/withAuthGuard";
 
 export type FileWithPreview = {
   id: string;
@@ -173,3 +174,10 @@ export function CVBatchProcessor() {
     </div>
   );
 }
+
+export default withAuthGuard(CVBatchProcessor, {
+  requiredRoles: ["admin", "hr"],
+  fallbackPath: "/dashboard",
+  checkAllowance: false,
+  allowAuthenticated: true,
+});

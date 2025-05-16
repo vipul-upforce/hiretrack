@@ -1,4 +1,4 @@
-import { CVBatchProcessor } from "./components/cv-batch-processor";
+import CVBatchProcessor from "./components/cv-batch-processor";
 
 export default function Home() {
   return (

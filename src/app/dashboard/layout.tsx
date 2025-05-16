@@ -29,6 +29,7 @@ import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { setAllowMultipleOrgs } from "@/lib/features/org/orgSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/lib/store";
+import PortalHead from "@/components/layouts/PortalHead";
 
 interface SidebarItem {
   title: string;
@@ -105,13 +106,9 @@ export default function DashboardLayout({
       seHasMultipleOrgs(allowance.allow);
       dispatch(setAllowMultipleOrgs(allowance.allow));
     }
-    // Check if organization exists
-
     checkAllowance();
-    // console.log("@@@@@@@@@@@STATE: ", lastUpdated, allowMultipleOrgs);
   }, [dispatch, allowMultipleOrgs]);
 
-  // Use useEffect to set user data from cookies
   useEffect(() => {
     (async () => {
       const user = Cookies.get("token");
@@ -128,7 +125,6 @@ export default function DashboardLayout({
               "/api/checkorg?organizationId=" +
                 decryptedResponse.user.organizationId
             );
-            // debugger
             const resp = await response.json();
             if (!resp.exists) {
               Cookies.remove("token");
@@ -151,7 +147,6 @@ export default function DashboardLayout({
   const { toast } = useToast();
 
   const handleLogout = () => {
-    // Clear user data and token
     Cookies.remove("token");
     setUserData(null);
     setUserLoggedIn(false);
@@ -160,7 +155,6 @@ export default function DashboardLayout({
       title: "Logged out",
       description: "You have been successfully logged out",
     });
-
     router.push("/auth/login");
   };
 
@@ -175,8 +169,6 @@ export default function DashboardLayout({
       }
     }
     if (parsedUser) {
-      // debugger;
-      setUserData(parsedUser);
       let url;
       if (hasMultipleOrgs) {
         url = `${window.location.origin}/apply-jobs?o=${parsedUser.organizationInfo?.name}`;
@@ -312,7 +304,6 @@ export default function DashboardLayout({
           })}
         </div>
       </div>
-      {/* Settings and Logout Buttons */}
       <div className="px-3 pb-4 mt-auto space-y-2">
         <div className="mt-auto space-y-2">
           <div
@@ -330,7 +321,6 @@ export default function DashboardLayout({
                 />
               </div>
             )}
-
             {!isCollapsed && (
               <div className="flex flex-col min-w-0 flex-1">
                 <p className="text-sm font-semibold truncate text-gray-900">
@@ -341,7 +331,6 @@ export default function DashboardLayout({
                 </p>
               </div>
             )}
-
             <Button
               variant="ghost"
               size="icon"
@@ -354,7 +343,6 @@ export default function DashboardLayout({
             </Button>
           </div>
         </div>
-
         <Button
           variant="ghost"
           className={cn(
@@ -372,7 +360,7 @@ export default function DashboardLayout({
 
   return (
     <div className="w-full max-w-full flex" style={{ overflowX: "hidden" }}>
-      {/* Sidebar for desktop */}
+      <PortalHead isLoading={true} />
       <aside
         className={cn(
           "hidden h-screen border-r bg-background md:block transition-all duration-300",
@@ -381,8 +369,6 @@ export default function DashboardLayout({
       >
         <SidebarContent />
       </aside>
-
-      {/* Sidebar for mobile */}
       <Sheet>
         <SheetTrigger asChild>
           <Button
@@ -397,8 +383,6 @@ export default function DashboardLayout({
           <SidebarContent />
         </SheetContent>
       </Sheet>
-
-      {/* Main content */}
       <main className="w-full overflow-x-hidden overflow-y-scroll h-[100vh]">
         <div className="p-8 pt-4 max-w-[100%] mx-auto overflow-x-hidden overflow-y-scroll">
           {children}

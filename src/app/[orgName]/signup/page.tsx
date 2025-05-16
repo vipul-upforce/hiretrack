@@ -80,6 +80,7 @@ export default function Signup() {
       const orgname = decodeURIComponent(
         window.location.pathname.split("/")[1]
       );
+      // debugger;
       setOrgName(orgname);
     }
   }, []);

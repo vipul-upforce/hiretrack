@@ -3,8 +3,9 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import SettingDialog from "./components/setting-dialog";
 import AddCustomFieldButton from "@/Custom_Fields/Components/AddCustomFieldButton";
+import withAuthGuard from "@/components/withAuthGuard";
 
-export default function Settings() {
+function Settings() {
   const [openDialog, setOpenDialog] = useState<string | null>(null);
 
   const settings = [
@@ -73,3 +74,10 @@ export default function Settings() {
     </div>
   );
 }
+
+export default withAuthGuard(Settings, {
+  requiredRoles: ["admin", "hr"],
+  fallbackPath: "/dashboard",
+  checkAllowance: false,
+  allowAuthenticated: true,
+});

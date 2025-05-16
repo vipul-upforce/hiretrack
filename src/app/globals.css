@@ -125,3 +125,28 @@ body {
     opacity: 1;
   }
 }
+
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .animate-progress {
+    animation: progress 1.5s ease-in-out infinite;
+  }
+
+  @keyframes progress {
+    0% {
+      width: 0%;
+      margin-left: 0;
+    }
+    50% {
+      width: 100%;
+    }
+    100% {
+      width: 0%;
+      margin-left: 100%;
+    }
+  }
+}

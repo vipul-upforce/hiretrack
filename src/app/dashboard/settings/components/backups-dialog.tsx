@@ -121,6 +121,12 @@ export default function BackupsDialog() {
       ) : (
         <ul className="space-y-2 max-h-[40vh] overflow-y-auto">
           {files
+            .sort(
+              (a, b) =>
+                new Date(a.createdAt).getTime() -
+                new Date(b.createdAt).getTime()
+            )
+
             .map((file, i) => (
               <div
                 key={i}

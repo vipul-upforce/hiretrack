@@ -4,8 +4,22 @@ import { Organization, User } from "@/lib/mongodb";
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import { verifyAndDecryptToken } from "@/middleware";
+import path from "path";
+import fs from "fs/promises";
 
+const ORG_BASE_DIR = path.join(process.cwd(), "organizations");
 // Handle POST request
+async function ensureBaseDir() {
+  try {
+    await fs.mkdir(ORG_BASE_DIR, { recursive: true });
+  } catch (error) {
+    console.error(
+      `Failed to create base directory ${ORG_BASE_DIR}: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
+    throw new Error("Failed to initialize organization directory");
+  }
+}
+
 export async function POST(req: NextRequest) {
   await connectToDatabase();
   let createdOrg = null;
@@ -53,7 +67,7 @@ export async function POST(req: NextRequest) {
         }
       }
     }
-
+    await ensureBaseDir();
     try {
       // 1. Create organization first
       createdOrg = await Organization.create([
@@ -66,6 +80,17 @@ export async function POST(req: NextRequest) {
           },
         },
       ]);
+      const orgFolder = path.join(ORG_BASE_DIR, name);
+      try {
+        await fs.mkdir(orgFolder, { recursive: true });
+      } catch (error) {
+        console.error(
+          `Failed to create folder for organization ${name}: ${error instanceof Error ? error.message : "Unknown error"}`
+        );
+        // Optionally rollback organization creation
+        await Organization.deleteOne({ _id: createdOrg[0]._id });
+        throw new Error("Failed to create organization folder");
+      }
 
       const hashedPassword = await bcrypt.hash(adminData.password, 10);
 
@@ -116,7 +141,15 @@ export async function POST(req: NextRequest) {
     } catch (adminError) {
       // Manual rollback: Delete the created organization if admin creation fails
       if (createdOrg) {
+        const orgFolder = path.join(ORG_BASE_DIR, name);
         await Organization.deleteOne({ _id: createdOrg[0]._id });
+        try {
+          await fs.rm(orgFolder, { recursive: true, force: true });
+        } catch (cleanupError) {
+          console.warn(
+            `Failed to clean up folder ${orgFolder}: ${cleanupError instanceof Error ? cleanupError.message : "Unknown error"}`
+          );
+        }
       }
       throw adminError; // Re-throw to be caught by outer catch block
     }

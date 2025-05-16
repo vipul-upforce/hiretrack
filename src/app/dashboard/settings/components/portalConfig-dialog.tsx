@@ -106,6 +106,7 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
       };
       await updateSMTPConfigs(dataToSubmit);
       const token = Cookies.get("token");
+      // localStorage.setItem("portalConfig", JSON.stringify(dataToSubmit));
       if (token) {
         const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
         if (decryptedResponse.success && decryptedResponse.user) {

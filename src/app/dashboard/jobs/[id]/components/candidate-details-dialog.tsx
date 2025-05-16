@@ -296,6 +296,7 @@ export function CandidateDetailsDialog({
         }).unwrap());
       const result = await updateCandidate(updateData).unwrap();
       if (onUpdate && result) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
         await onUpdate(result);
       }
       if (pathname === "/dashboard") {

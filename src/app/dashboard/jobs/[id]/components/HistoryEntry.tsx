@@ -171,7 +171,10 @@ const RenderHistoryEntry = ({
       </h3>
 
       <div className="mb-4 text-base font-normal text-gray-500 dark:text-gray-400 flex flex-row justify-between items-start w-[full] text-wrap break-all">
-        <p className="max-w-[90%]">
+        <p
+          className="max-w-[90%] text-sm whitespace-pre-wrap pb-0"
+          style={{ wordWrap: "break-word" }}
+        >
           {interview.note && interview.note.description}
           {interview.remark && interview.remark.description}
         </p>

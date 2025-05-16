@@ -22,6 +22,7 @@ import {
 import { Eye, EyeOff } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import ReCAPTCHA from "react-google-recaptcha";
+import withAuthGuard from "@/components/withAuthGuard";
 
 interface OrgFormValues {
   name: string;
@@ -71,7 +72,7 @@ const OrgSchema = Yup.object().shape({
 
 const lanes: string[] = [];
 
-export default function OrgRegisterPage() {
+function OrgRegisterPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [createOrg, { isLoading: isOrgLoading }] = useCreateOrgMutation();
@@ -351,3 +352,10 @@ export default function OrgRegisterPage() {
     </div>
   );
 }
+
+export default withAuthGuard(OrgRegisterPage, {
+  requiredRoles: [],
+  fallbackPath: "/auth/login",
+  checkAllowance: true,
+  allowAuthenticated: true,
+});

@@ -79,7 +79,7 @@ const SignupForm = () => {
   // Extract orgName from query string
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const orgNameFromQuery = searchParams?.get("orgName");
+      const orgNameFromQuery = searchParams?.get("o");
       if (orgNameFromQuery) {
         setOrgName(decodeURIComponent(orgNameFromQuery));
       }

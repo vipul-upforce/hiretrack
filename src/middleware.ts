@@ -49,7 +49,9 @@ export async function middleware(request: NextRequest) {
   // Handle API routes authentication
   if (
     pathname.startsWith("/api") &&
-    !apiExemptPaths.some((path) => pathname === path || pathname.includes(path))
+    !apiExemptPaths.some(
+      (path) => pathname === path || pathname?.includes(path)
+    )
   ) {
     if (!userData) {
       return NextResponse.json(
@@ -82,7 +84,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Allow access to the Calendar page for all authenticated users
-  if (pathname.includes("/calendar")) {
+  if (pathname?.includes("/calendar")) {
     return NextResponse.next();
   }
 
@@ -95,8 +97,8 @@ export async function middleware(request: NextRequest) {
     }
     if (userRole === "hr") {
       if (
-        pathname.includes("/auth/signup") ||
-        pathname.includes("/dashboard/settings")
+        pathname?.includes("/auth/signup") ||
+        pathname?.includes("/dashboard/settings")
       ) {
         return NextResponse.redirect(new URL("/dashboard", request.url));
       }
@@ -104,8 +106,8 @@ export async function middleware(request: NextRequest) {
     // Redirect candidate role to apply-jobs route
     if (userRole === "candidate") {
       if (
-        pathname.includes("/dashboard") ||
-        pathname.includes("/dashboard/:path*")
+        pathname?.includes("/dashboard") ||
+        pathname?.includes("/dashboard/:path*")
       ) {
         return NextResponse.redirect(
           new URL(`/${pathParts[0]}/apply-jobs`, request.url)
@@ -115,21 +117,21 @@ export async function middleware(request: NextRequest) {
     // Restrict access for interviewer role
     if (userRole === "interviewer") {
       if (
-        unauthorizedInterviewerPages.some((path) => pathname.includes(path))
+        unauthorizedInterviewerPages.some((path) => pathname?.includes(path))
       ) {
         return NextResponse.redirect(new URL("/dashboard", request.url)); // Redirect to an unauthorized page
       }
     }
 
     // Restrict access for candidate role
-    if (userRole !== "candidate" && pathname.includes("/apply-jobs")) {
+    if (userRole !== "candidate" && pathname?.includes("/apply-jobs")) {
       return NextResponse.redirect(new URL("/dashboard", request.url)); // Redirect to an unauthorized page
     }
-    if (userRole !== "admin" && pathname.includes("/backups")) {
+    if (userRole !== "admin" && pathname?.includes("/backups")) {
       return NextResponse.redirect(new URL("/auth/login", request.url));
     }
   }
-  if (pathname.includes("/backups") && !userData) {
+  if (pathname?.includes("/backups") && !userData) {
     return NextResponse.redirect(new URL("/auth/login", request.url));
   }
 

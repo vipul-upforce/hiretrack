@@ -32,6 +32,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import withAuthGuard from "@/components/withAuthGuard";
+import { NextPage } from "next";
 // import AddCustomFieldButton from "@/Custom_Fields/Components/AddCustomFieldButton";
 interface User {
   role: string;
@@ -44,7 +46,7 @@ interface KanbanColumn {
   jobs: Job[];
 }
 
-export default function KanbanPage() {
+const KanbanPage: NextPage<never> = () => {
   const [columns, setColumns] = useState<KanbanColumn[]>(initialColumns);
   const [user, setUser] = useState<User | null>(null);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
@@ -429,4 +431,11 @@ export default function KanbanPage() {
       </AlertDialog>
     </div>
   );
-}
+};
+
+export default withAuthGuard(KanbanPage, {
+  requiredRoles: ["admin", "hr"],
+  fallbackPath: "/dashboard",
+  checkAllowance: false,
+  allowAuthenticated: true,
+});

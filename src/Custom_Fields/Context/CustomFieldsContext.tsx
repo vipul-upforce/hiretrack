@@ -43,18 +43,24 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
 
     const postCustomFields = useCallback(async () => {
       const token = Cookies.get("token");
-      if (token) {
+      if (
+        token &&
+        // pathname?.includes("jobs-board") ||
+        // pathname?.includes("jobs") ||
+        pathname?.includes("settings")
+      ) {
         const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
         if (decryptedResponse.success && decryptedResponse.user) {
           const userObject = decryptedResponse.user;
           const orgId = userObject.organizationId;
+          // debugger;
           updateCustomFields({
             orgId: orgId,
             customFields: customFields,
           });
         }
       }
-    }, [customFields, updateCustomFields]);
+    }, [customFields, updateCustomFields, pathname]);
 
     const getCustomFields = useCallback(async () => {
       const token = Cookies.get("token");

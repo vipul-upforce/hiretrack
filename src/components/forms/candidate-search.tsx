@@ -13,6 +13,7 @@ import Cookies from "js-cookie";
 import { useToast } from "@/hooks/use-toast";
 import { Candidate } from "@/types/candidate";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import withAuthGuard from "../withAuthGuard";
 
 // Define the search filter interface
 export interface SearchFilter {
@@ -158,7 +159,7 @@ const SearchSchema = Yup.object()
       : true;
   });
 
-export default function CandidateSearch() {
+function CandidateSearch() {
   const [searchResults, setSearchResults] = useState<Candidate[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -322,3 +323,10 @@ export default function CandidateSearch() {
     </div>
   );
 }
+
+export default withAuthGuard(CandidateSearch, {
+  requiredRoles: ["admin", "hr"],
+  fallbackPath: "/dashboard",
+  checkAllowance: false,
+  allowAuthenticated: true,
+});
