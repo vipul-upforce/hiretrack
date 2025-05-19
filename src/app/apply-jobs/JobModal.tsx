@@ -1,11 +1,8 @@
 import { CreateCandidateDialog } from "@/app/dashboard/jobs/[id]/components/create-candidate-dialog";
-// import { Button } from "@/components/ui/button";
 import CustomFieldsData from "@/Custom_Fields/Components/CustomFields/customFields-details";
 import useRoles from "@/hooks/useRoles";
 import { Dialog } from "@headlessui/react";
 import { useState, useEffect } from "react";
-// import { useRouter } from "next/navigation";
-// import ExpandableDescription from "@/app/dashboard/jobs/[id]/components/expand-collapse-desc";
 import ApplyOptions from "./ApplyOptions";
 import { hasAppliedAsGuest } from "./ApplyAsGuest";
 

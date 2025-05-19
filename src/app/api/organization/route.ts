@@ -3,7 +3,7 @@ import connectToDatabase, { Settings } from "@/lib/mongodb";
 import { Organization, User } from "@/lib/mongodb";
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
-import { verifyAndDecryptToken } from "@/middleware";
+import { verifyAndDecryptToken } from "../../../../middleware";
 import path from "path";
 import fs from "fs/promises";
 

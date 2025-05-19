@@ -76,7 +76,7 @@ function Settings() {
 }
 
 export default withAuthGuard(Settings, {
-  requiredRoles: ["admin", "hr"],
+  requiredRoles: ["admin"],
   fallbackPath: "/dashboard",
   checkAllowance: false,
   allowAuthenticated: true,

@@ -9,7 +9,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@radix-ui/react-label";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
-import { LoginFormValues } from "@/app/auth/login/page";
+// import { LoginFormValues } from "@/app/auth/login/page";
+import { LoginFormValues } from "@/types/login";
 
 export interface OneOfMulOrganization {
   orgId: string;

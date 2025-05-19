@@ -582,7 +582,7 @@ function UsersPage() {
 }
 
 export default withAuthGuard(UsersPage, {
-  requiredRoles: ["admin", "hr"],
+  requiredRoles: ["admin"],
   fallbackPath: "/dashboard",
   checkAllowance: false,
   allowAuthenticated: true,

@@ -1,11 +1,11 @@
-// src/components/withAuthGuard.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { NextPage } from "next";
-import { useAuth } from "@/app/hooks/useAuth";
 import AuthGuardLoading from "./ui/authGuardLoader";
+import Cookies from "js-cookie";
+import { verifyAndDecryptJWTToken } from "@/lib/auth";
 
 interface AuthGuardOptions {
   requiredRoles?: string[];
@@ -33,55 +33,59 @@ const withAuthGuard = <P extends object>(
       "loading" | "authorized" | "unauthorized"
     >("loading");
     const router = useRouter();
-    const { isAuthenticated, userRole } = useAuth();
+    const [userRole, setUserRole] = useState<string | null>(null);
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+    const [isTokenChecked, setIsTokenChecked] = useState<boolean>(false);
+
+    const getUser = async () => {
+      const userData = Cookies.get("token");
+      if (userData) {
+        const decryptedResponse = await verifyAndDecryptJWTToken(
+          String(userData)
+        );
+        if (decryptedResponse.success && decryptedResponse.user) {
+          setIsAuthenticated(true);
+          setUserRole(decryptedResponse.user.role);
+        }
+      } else {
+        console.log("HOC: No token found");
+      }
+      setIsTokenChecked(true); // Mark token check as complete
+    };
+
+    useEffect(() => {
+      getUser();
+    }, []);
 
     useEffect(() => {
       const checkAuthorization = async () => {
-        // console.log("CHECKING AUTH...", { isAuthenticated, userRole });
+        if (!isTokenChecked) {
+          return;
+        }
 
-        // Check allowance if required
         if (checkAllowance) {
           try {
             const response = await fetch("/api/organization");
             const allowance = await response.json();
-            // console.log("ALLOWANCE CHECK:", allowance);
             if (!allowance.allow) {
-              // console.log(
-              //   "REDIRECTING: Allowance check failed, redirecting to",
-              //   fallbackPath
-              // );
               router.replace(fallbackPath);
               setAuthState("unauthorized");
               return;
             }
           } catch (error) {
-            console.error("Allowance check failed:", error);
-            // console.log(
-            //   "REDIRECTING: Allowance check error, redirecting to",
-            //   fallbackPath
-            // );
             router.replace(fallbackPath);
             setAuthState("unauthorized");
             return;
           }
         }
 
-        // If authenticated users are not allowed
         if (!allowAuthenticated && isAuthenticated) {
-          // console.log(
-          //   "REDIRECTING: Authenticated user not allowed, redirecting to",
-          //   fallbackPath
-          // );
           router.replace(fallbackPath);
           setAuthState("unauthorized");
           return;
         }
 
         if (!isAuthenticated && !checkAllowance) {
-          // console.log(
-          //   "REDIRECTING: User not authenticated, redirecting to",
-          //   fallbackPath
-          // );
           router.replace(fallbackPath);
           setAuthState("unauthorized");
           return;
@@ -89,17 +93,12 @@ const withAuthGuard = <P extends object>(
 
         if (requiredRoles.length > 0 && userRole) {
           if (!requiredRoles.includes(userRole)) {
-            // console.log(
-            //   "REDIRECTING: Role check failed, redirecting to",
-            //   fallbackPath
-            // );
             router.replace(fallbackPath);
             setAuthState("unauthorized");
             return;
           }
         }
 
-        // console.log("AUTHORIZED: User passed all checks");
         setAuthState("authorized");
       };
 
@@ -112,9 +111,10 @@ const withAuthGuard = <P extends object>(
       requiredRoles,
       checkAllowance,
       allowAuthenticated,
+      isTokenChecked,
     ]);
 
-    // console.log("RENDERING AUTH STATE:", authState);
+    console.log("HOC: Rendering auth state:", authState);
 
     if (authState === "loading") {
       return <AuthGuardLoading />;

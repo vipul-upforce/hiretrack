@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import dbConnect, { CandidateAccount } from "@/lib/mongodb";
 import { User } from "@/lib/mongodb";
-import { verifyAndDecryptToken } from "@/middleware";
+import { verifyAndDecryptToken } from "../../../../../middleware";
 
 export async function POST(req: Request) {
   try {
