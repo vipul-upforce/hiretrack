@@ -2,14 +2,10 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
-// import PortalHead from "@/components/layouts/PortalHead";
 import { useEffect, useState } from "react";
 import { IUser } from "@/lib/models/user";
 import Cookies from "js-cookie";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
-
-// import PortalHead from "@/components/layouts/PortalHead";
-// import PortalHead from "@/components/layouts/PortalHead";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -41,6 +37,7 @@ export default function RootLayout({
 }) {
   const [user, setUser] = useState<IUser | null>(null);
   const [uriOrgName, setOrgName] = useState<string>();
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       const orgname = window.location.href.split("=")[1];
@@ -48,6 +45,7 @@ export default function RootLayout({
       setOrgName(orgname);
     }
   }, []);
+
   useEffect(() => {
     (async () => {
       const user = Cookies.get("token");
@@ -59,6 +57,7 @@ export default function RootLayout({
       }
     })();
   }, []);
+
   return (
     <html lang="en">
       <head>

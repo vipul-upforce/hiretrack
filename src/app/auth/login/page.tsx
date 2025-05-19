@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { Formik, Form, Field } from "formik";
-import * as Yup from "yup";
 import {
   Card,
   CardContent,
@@ -14,12 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useLoginMutation } from "@/lib/features/auth/authApi";
 import { FormikErrors, FormikTouched, FieldProps } from "formik";
-import { useToast } from "@/hooks/use-toast";
 import Cookies from "js-cookie";
-import { useCustomFields } from "@/Custom_Fields/hooks/use-customFields";
-import { OrgInfo } from "@/lib/models/user";
 import { Eye, EyeOff } from "lucide-react";
 import { useEffect, useState } from "react";
 import ForgotPasswordDialog from "@/components/auth/ForgotPasswordDialog";
@@ -27,37 +22,12 @@ import OrganizationDialog, {
   OneOfMulOrganization,
 } from "@/components/auth/OrganizationDialog";
 import ReCAPTCHA from "react-google-recaptcha";
-// import { signToken } from "@/app/actions/auth";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
-import * as jose from "jose";
-import CryptoJS from "crypto-js";
-
-export interface LoginFormValues {
-  email: string;
-  password: string;
-}
-export interface UserWithoutCF {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  organizationId?: string;
-  organizationInfo?: OrgInfo;
-}
-const LoginSchema = Yup.object().shape({
-  email: Yup.string()
-    .email("Invalid email address")
-    .required("Email is required"),
-  password: Yup.string()
-    .min(6, "Password must be at least 6 characters")
-    .required("Password is required"),
-});
+import { LoginFormValues } from "@/types/login";
+import { LoginSchema } from "../schema/Login.schema";
+import { useHandleLoginSubmit } from "../hooks/useLoginSubmit";
 
 export default function Login() {
   const router = useRouter();
-  const { toast } = useToast();
-  const [login, { isLoading }] = useLoginMutation();
-  const { setUserLoggedIn } = useCustomFields();
   const [showPassword, setShowPassword] = useState(false);
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const [organizationDialogOpen, setOrganizationDialogOpen] = useState(false);
@@ -72,11 +42,18 @@ export default function Login() {
     email: "",
     password: "",
   };
+  const { handleSubmit, isLoading } = useHandleLoginSubmit({
+    selectedOrg,
+    isMultiple,
+    setOrganizations,
+    setOrganizationDialogOpen,
+    setLoginFormValues,
+  });
 
   useEffect(() => {
     const token = Cookies.get("token");
+    // debugger;
     if (token) {
-      // debugger;
       router.push("/dashboard");
     }
   }, []);
@@ -94,99 +71,7 @@ export default function Login() {
     checkAllowance();
   }, []);
 
-  const signToken = async (payload: unknown) => {
-    const JWT_SECRET = "your_jwt_secret_key";
-    try {
-      // Parse the payload as JSON
-      const parsedPayload = payload;
-      const encryptedPayload = CryptoJS.AES.encrypt(
-        JSON.stringify(parsedPayload),
-        JWT_SECRET
-      ).toString();
-      // Create a secret key for signing
-      const secretKey = new TextEncoder().encode(JWT_SECRET);
-      // Sign the JWT
-      const jwt = await new jose.SignJWT({ user: encryptedPayload })
-        .setProtectedHeader({ alg: "HS256" })
-        .setIssuedAt()
-        .setExpirationTime("30d")
-        .sign(secretKey);
-
-      return jwt;
-    } catch {}
-  };
-
-  const handleSubmit = async (
-    values: LoginFormValues,
-    { setStatus }: { setStatus: (message: string) => void }
-  ) => {
-    setLoginFormValues(values);
-    try {
-      const response = await login({ ...values, orgId: selectedOrg }).unwrap();
-      if (
-        response.organizations &&
-        response.organizations.length > 1 &&
-        !selectedOrg
-      ) {
-        setOrganizations(response.organizations);
-        setOrganizationDialogOpen(true);
-        return;
-      }
-      const decryptedResponse = await verifyAndDecryptJWTToken(
-        String(response.user)
-      );
-      if (decryptedResponse.success && decryptedResponse.user) {
-        const userWithoutCustomFields: UserWithoutCF = {
-          ...decryptedResponse.user,
-        };
-        if (userWithoutCustomFields.organizationInfo) {
-          userWithoutCustomFields.organizationInfo = {
-            ...userWithoutCustomFields.organizationInfo,
-          };
-          delete userWithoutCustomFields.organizationInfo.customFields;
-        }
-        const token = await signToken(userWithoutCustomFields);
-        Cookies.set("token", String(token), { expires: 30 });
-        setUserLoggedIn(true);
-      }
-      toast({
-        title: "Success",
-        description: "Login successful",
-        variant: "default",
-      });
-      // debugger
-      if (decryptedResponse.user.role === "candidate") {
-        // debugger;
-        const url = isMultiple
-          ? `/apply-jobs?o=${decryptedResponse.user.organizationInfo?.name}`
-          : "/apply-jobs";
-
-        router.push(url);
-      } else if (decryptedResponse.user.role === "admin" || "hr") {
-        // debugger;
-        router.push("/dashboard");
-      }
-    } catch (err: unknown) {
-      if (err && typeof err === "object" && "data" in err) {
-        const errorMessage =
-          (err.data as { error: string }).error || "Login failed";
-        setStatus(errorMessage);
-        toast({
-          title: "Error",
-          description: errorMessage,
-          variant: "destructive",
-        });
-      } else {
-        const errorMessage = "An unknown error occurred";
-        setStatus(errorMessage);
-        toast({
-          title: "Error",
-          description: errorMessage,
-          variant: "destructive",
-        });
-      }
-    }
-  };
+  // useEffect;
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">

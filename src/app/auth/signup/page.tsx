@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { Formik, Form, Field } from "formik";
-import * as Yup from "yup";
 import {
   Card,
   CardContent,
@@ -28,46 +27,8 @@ import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
-
-interface SignupFormValues {
-  email: string;
-  password: string;
-  name: string;
-  confirmPassword: string;
-  role: "" | "hr" | "interviewer" | "admin";
-  organizationId: object | string | number;
-}
-
-const SignupSchema = Yup.object().shape({
-  email: Yup.string()
-    .required("Email is required")
-    .matches(
-      /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-      "Invalid Email"
-    ),
-  password: Yup.string()
-    .min(6, "Password must be at least 6 characters long")
-    .matches(/[a-z]/, "Password must contain at least one lowercase letter")
-    .matches(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .matches(/\d/, "Password must contain at least one number")
-    .matches(
-      /[@$!%*?&]/,
-      "Password must contain at least one special character (@$!%*?&)"
-    )
-    .required("Password is required"),
-  name: Yup.string()
-    .required("Name is required")
-    .trim()
-    .matches(/^(?!\s+$).*/, "Name cannot be only spaces")
-    .min(2, "Name must be at least 2 characters long")
-    .max(20, "Name cannot exceed 20 characters"),
-  confirmPassword: Yup.string()
-    .oneOf([Yup.ref("password")], "Passwords must match")
-    .required("Please confirm your password"),
-  role: Yup.string()
-    .oneOf(["hr", "interviewer", "admin"], "Please select a valid role")
-    .required("Role is required"),
-});
+import { SignupSchema } from "../schema/Signup.schema";
+import { SignupFormValues } from "@/types/signup";
 
 export default function Signup() {
   const router = useRouter();

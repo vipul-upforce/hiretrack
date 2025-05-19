@@ -1,8 +1,8 @@
 "use client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DragDropContext } from "@hello-pangea/dnd";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import { CreateJobDialog } from "./components/create-job-dialog";
 import { JobDetailsDialog } from "./components/job-details-dialog";
@@ -15,11 +15,8 @@ import {
   useDeleteJobMutation,
 } from "@/lib/features/job/jobApi";
 import { toast } from "@/hooks/use-toast";
-import { ArchiveRestore, Info, Trash2 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import LoaderSkeleton from "./components/loader-skeleton";
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
@@ -34,7 +31,7 @@ import {
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import withAuthGuard from "@/components/withAuthGuard";
 import { NextPage } from "next";
-// import AddCustomFieldButton from "@/Custom_Fields/Components/AddCustomFieldButton";
+import KanbanColumn from "./components/kanban-column";
 interface User {
   role: string;
   organizationId: string;
@@ -61,7 +58,7 @@ const KanbanPage: NextPage<never> = () => {
   } = useFetchJobsQuery(undefined, {
     skip: !user,
   });
-  const router = useRouter();
+  // const router = useRouter();
   const [updateJobStatus] = useUpdateJobStatusMutation();
   const [deleteJob] = useDeleteJobMutation();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -282,113 +279,14 @@ const KanbanPage: NextPage<never> = () => {
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {columns.map((column) => (
-            <div key={column.id} className="space-y-4 min-h-[50vh] h-full ">
-              <Card className="h-full">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg font-semibold">
-                    {column.title}
-                    <span className="ml-2 text-sm text-muted-foreground">
-                      ({column.jobs.length})
-                    </span>
-                    <span
-                      className="ml-2 cursor-pointer"
-                      onClick={() => alert("Job info")}
-                    >
-                      <i className="fas fa-info-circle" aria-hidden="true"></i>
-                    </span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="h-full">
-                  <Droppable droppableId={column.id}>
-                    {(provided: any) => (
-                      <div
-                        {...provided.droppableProps}
-                        ref={provided.innerRef}
-                        className="space-y-3 min-h-full"
-                      >
-                        {isCreatingJob && column.id === "draft" && (
-                          <div className="animate-pulse bg-muted/50 border rounded-lg p-3 shadow-sm">
-                            <div className="h-5 w-2/3 bg-muted rounded mb-2"></div>
-                            <div className="h-4 w-1/3 bg-muted rounded"></div>
-                          </div>
-                        )}
-
-                        {column.jobs.map((job, index) => (
-                          <Draggable
-                            key={job._id}
-                            draggableId={job._id}
-                            index={index}
-                          >
-                            {(provided: any) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                {...provided.dragHandleProps}
-                                className="bg-card flex justify-between border rounded-lg p-3 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-                                onClick={() => {
-                                  router.push(`/dashboard/jobs/${job._id}`);
-                                }}
-                              >
-                                <div className="text-wrap break-words w-[90%]">
-                                  <h3 className="font-medium">{job.title}</h3>
-                                  {/* <p className="text-sm text-muted-foreground">
-                                    {job.company}
-                                  </p> */}
-                                  <p className="text-sm text-muted-foreground">
-                                    {job.candidateCount} Candidates
-                                  </p>
-                                </div>
-                                <div className="flex items-center justify-end gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedJob(job);
-                                      setIsDetailsOpen(true);
-                                    }}
-                                  >
-                                    <Info className="h-4 w-4" />
-                                  </Button>
-                                  {!job.isDeleted ? (
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="text-destructive hover:text-destructive/90"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDeleteClick(job._id);
-                                      }}
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  ) : (
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="text-blue-500 hover:text-blue-500/90"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDeleteClick(job._id);
-                                        setSelectedJob(job);
-                                      }}
-                                    >
-                                      <ArchiveRestore className="h-4 w-4" />
-                                    </Button>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          </Draggable>
-                        ))}
-                        {provided.placeholder}
-                      </div>
-                    )}
-                  </Droppable>
-                </CardContent>
-              </Card>
-            </div>
+            <KanbanColumn
+              key={column.id}
+              column={column}
+              isCreatingJob={isCreatingJob}
+              setSelectedJob={setSelectedJob}
+              setIsDetailsOpen={setIsDetailsOpen}
+              handleDeleteClick={handleDeleteClick}
+            />
           ))}
         </div>
       </DragDropContext>

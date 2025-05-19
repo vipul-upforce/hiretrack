@@ -54,32 +54,28 @@ export function CompletedBatches({ batches }: { batches: Batch[] }) {
                   </summary>
                   <div className="mt-2 space-y-2 max-h-60 overflow-y-auto">
                     {batch.items.map((item) => (
-                      <>
+                      <div
+                        key={item._id}
+                        className="p-2 border flex items-center justify-between"
+                        style={{ borderRadius: "10px" }}
+                      >
+                        <span className="truncate flex-1">{item.filename}</span>
                         <div
-                          key={item._id}
-                          className="p-2 border flex items-center justify-between"
-                          style={{ borderRadius: "10px" }}
+                          className="flex items-center gap-2 capitalize"
+                          style={{ maxWidth: "50%" }}
                         >
-                          <span className="truncate flex-1">
-                            {item.filename}
-                          </span>
-                          <div
-                            className="flex items-center gap-2 capitalize"
-                            style={{ maxWidth: "50%" }}
+                          <span
+                            className={`px-2 py-1 rounded-xl text-xs ${
+                              item.status === "success"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
                           >
-                            <span
-                              className={`px-2 py-1 rounded-xl text-xs ${
-                                item.status === "success"
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-red-100 text-red-800"
-                              }`}
-                            >
-                              {item.status}
-                              <div>{item.error}</div>
-                            </span>
-                          </div>
+                            {item.status}
+                            <div>{item.error}</div>
+                          </span>
                         </div>
-                      </>
+                      </div>
                     ))}
                   </div>
                 </details>
