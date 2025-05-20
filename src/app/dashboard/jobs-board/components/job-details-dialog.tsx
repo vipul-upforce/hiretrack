@@ -18,7 +18,7 @@ import { ImageGallery } from "@/components/ui/image-gallery";
 import { PDFViewer } from "@/components/ui/pdf-viewer";
 import { Job } from "@/types/job";
 import CustomFieldsData from "../../../../Custom_Fields/Components/CustomFields/customFields-details";
-import ExpandableDescription from "../../jobs/[id]/components/expand-collapse-desc";
+import ExpandableDescription from "../../jobs/[id]/components/Utils/expand-collapse-desc";
 
 interface JobDetailsDialogProps {
   job: Job | null;

@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Dot, Star } from "lucide-react";
-import { RemarkOptionsMenu } from "./remark-options-menu";
-import AttachmentsPopover from "./attachments-popover";
+import { RemarkOptionsMenu } from "../Remarks/remark-options-menu";
+import AttachmentsPopover from "../Remarks/attachments-popover";
 import { ICandidateHistory } from "@/lib/models/history";
 import { Candidate } from "@/types/candidate";
 import { User } from "@/lib/features/users/usersApi";
-import { IEditRemark } from "../schemas/EditRemarkDialog";
+import { IEditRemark } from "../../schemas/EditRemarkDialog";
 
 const RenderHistoryEntry = ({
   interview,

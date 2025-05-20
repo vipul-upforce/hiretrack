@@ -19,26 +19,26 @@ import Cookies from "js-cookie";
 import { AssignCandidateDialog } from "./assign-candidate-dialog";
 import { usePathname } from "next/navigation";
 import { ICandidateHistory } from "@/lib/models/history";
-import ExpandableDescription from "./expand-collapse-desc";
-import { AssignJobDialog } from "./assing-job-dialog";
+import ExpandableDescription from "../Utils/expand-collapse-desc";
+import { AssignJobDialog } from "./assign-job-dialog";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { User } from "@/lib/features/users/usersApi";
 import { evaluateCandidate } from "@/app/apply-jobs/ApplyAsGuest";
-import { CandidateDetailsDialogProps } from "../schemas/candidateDetailsDialogProps";
-import { IEditRemark } from "../schemas/EditRemarkDialog";
+import { CandidateDetailsDialogProps } from "../../schemas/candidateDetailsDialogProps";
+import { IEditRemark } from "../../schemas/EditRemarkDialog";
 import EditRemarkDialog from "./EditRemarkDialog";
 import ConfirmationDialog from "./ConfirmationDialog";
-import handleCandidateInfoCopy from "../hooks/handleCandidateInfoCopy";
-import RenderHistoryEntry from "./HistoryEntry";
-import { RenderAttachments } from "./RenderAttachments";
-import ResumeEvaluationDetails from "./ResumeEvaluationDetails";
-import DetailsDialogHeader from "./candidate-details-header";
-import RemarkInputSection from "./RemarkInputSection";
-import { CandidateInfoSection } from "./CandidateInfoSection";
-import { formatDate, formatTime } from "../hooks/dateTimeFormatting";
+import handleCandidateInfoCopy from "../../hooks/handleCandidateInfoCopy";
+import RenderHistoryEntry from "../Candidate/HistoryEntry";
+import { RenderAttachments } from "../Remarks/RenderAttachments";
+import ResumeEvaluationDetails from "../Candidate/ResumeEvaluationDetails";
+import DetailsDialogHeader from "../Candidate/candidate-details-header";
+import RemarkInputSection from "../Remarks/RemarkInputSection";
+import { CandidateInfoSection } from "../Candidate/CandidateInfoSection";
+import { formatDate, formatTime } from "../../hooks/dateTimeFormatting";
 import CustomFieldsData from "@/Custom_Fields/Components/CustomFields/customFields-details";
-import { useRemarkHandlers } from "../hooks/useRemarkHandlers";
-import { useUnassignHandlers } from "../hooks/useUnassignHandlers";
+import { useRemarkHandlers } from "../../hooks/useRemarkHandlers";
+import { useUnassignHandlers } from "../../hooks/useUnassignHandlers";
 
 const labelClass = "font-semibold text-base";
 
@@ -269,7 +269,7 @@ export function CandidateDetailsDialog({
               customFields={localCandidate?.customFields || {}}
             />
 
-            {localCandidate.scores && (
+            {localCandidate && (
               <ResumeEvaluationDetails
                 labelClass={labelClass}
                 localCandidate={localCandidate}

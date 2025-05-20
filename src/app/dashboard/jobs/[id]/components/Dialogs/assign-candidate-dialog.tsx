@@ -25,14 +25,14 @@ import { Rating } from "@mui/material";
 import Cookies from "js-cookie";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import ConfirmationDialog from "./ConfirmationDialog";
-import { handleFileSelect, handleSetter } from "../hooks/fileUploadUtils";
+import { handleFileSelect, handleSetter } from "../../hooks/fileUploadUtils";
 import {
   validationSchema,
   FormValues,
   User,
   AssignCandidateDialogProps,
-} from "../schemas/AssignCandidateSchema";
-import { useAssignCandidate } from "../hooks/useAssignCandidate";
+} from "../../schemas/AssignCandidateSchema";
+import { useAssignCandidate } from "../../hooks/useAssignCandidate";
 import dayjs from "dayjs";
 
 export function AssignCandidateDialog({

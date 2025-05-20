@@ -9,7 +9,7 @@ import { EventClickArg } from "@fullcalendar/core";
 import { DateClickArg } from "@fullcalendar/interaction";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { CandidateDetailsDialog } from "../jobs/[id]/components/candidate-details-dialog";
+import { CandidateDetailsDialog } from "../jobs/[id]/components/Dialogs/candidate-details-dialog";
 import { formatTime } from "../jobs/[id]/hooks/dateTimeFormatting";
 import { CandidateStatus } from "@/types/candidate";
 import { Assignment } from "@/types/assignment";

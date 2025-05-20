@@ -20,7 +20,7 @@ import LoaderSkeletonUsers from "./components/loader-skeleton-users";
 import { useEffect, useState } from "react";
 import withAuthGuard from "@/components/withAuthGuard";
 import { ResetPasswordDialog } from "./components/passworResetDialog";
-import ConfirmationDialog from "../jobs/[id]/components/ConfirmationDialog";
+import ConfirmationDialog from "../jobs/[id]/components/Dialogs/ConfirmationDialog";
 import { EditUserDialog } from "./components/Edit-user-dialog";
 import { UserTableRow } from "./components/User-Table-Row";
 

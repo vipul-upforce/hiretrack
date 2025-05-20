@@ -7,26 +7,26 @@ import {
 } from "@hello-pangea/dnd";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState, useEffect } from "react";
-import { CreateCandidateDialog } from "./components/create-candidate-dialog";
-import { CreateLaneDialog } from "./components/create-lane-dialog";
-import { CandidateDetailsDialog } from "./components/candidate-details-dialog";
+import { CreateCandidateDialog } from "./components/Dialogs/create-candidate-dialog";
+import { CreateLaneDialog } from "./components/Dialogs/create-lane-dialog";
+import { CandidateDetailsDialog } from "./components/Dialogs/candidate-details-dialog";
 import { initialCandidateColumns } from "./data/initial-data";
 import { useParams } from "next/navigation";
 import { useFetchJobByIdQuery } from "@/lib/features/job/jobApi";
 import { useFetchCandidatesQuery } from "@/lib/features/candidate/candidateApi";
 import { Candidate, CandidateColumn, CandidateStatus } from "@/types/candidate";
-import LoaderSkeleton from "./components/loader-skeleton";
+import LoaderSkeleton from "./components/Lanes/loader-skeleton";
 import { useGetLanesQuery } from "@/lib/features/lane/laneApi";
 import { User } from "@/lib/features/users/usersApi";
 import Cookies from "js-cookie";
-import { Breadcrumb } from "./components/breadcrumb";
+import { Breadcrumb } from "./components/Utils/breadcrumb";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { Checkbox } from "@/components/ui/checkbox";
-import { KanbanColumn } from "./components/KanbanColumn";
+import { KanbanColumn } from "./components/Lanes/KanbanColumn";
 import withAuthGuard from "@/components/withAuthGuard";
 import { useKanbanBoard } from "./hooks/useKanbanBoard";
 import { useCandidate } from "./hooks/useCandidate";
-import ConfirmationDialog from "./components/ConfirmationDialog";
+import ConfirmationDialog from "./components/Dialogs/ConfirmationDialog";
 
 function JobProgressPage() {
   const id = useParams()?.id as string;

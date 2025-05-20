@@ -1,4 +1,4 @@
-import { CreateCandidateDialog } from "@/app/dashboard/jobs/[id]/components/create-candidate-dialog";
+import { CreateCandidateDialog } from "../dashboard/jobs/[id]/components/Dialogs/create-candidate-dialog";
 import CustomFieldsData from "@/Custom_Fields/Components/CustomFields/customFields-details";
 import useRoles from "@/hooks/useRoles";
 import { Dialog } from "@headlessui/react";

@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CandidateStatusBadge } from "../jobs/[id]/components/candidate-status-badge";
+import { CandidateStatusBadge } from "../jobs/[id]/components/Utils/candidate-status-badge";
 import { Assignment } from "../page";
 import { CandidateStatus } from "@/types/candidate";
 import { BriefcaseIcon, CalendarIcon, ClockIcon, Zap } from "lucide-react";

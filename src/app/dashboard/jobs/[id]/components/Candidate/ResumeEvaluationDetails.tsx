@@ -2,8 +2,8 @@ import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { RefreshCwIcon } from "lucide-react";
-import { CandidateScoreBadge } from "./candidate-score-badge";
-import ExpandableDescription from "./expand-collapse-desc";
+import { CandidateScoreBadge } from "../Utils/candidate-score-badge";
+import ExpandableDescription from "../Utils/expand-collapse-desc";
 import { Candidate } from "@/types/candidate";
 
 interface ResumeEvaluationDetailsProps {

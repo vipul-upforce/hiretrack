@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 // import { useState } from "react";
 import Rating from "@mui/material/Rating";
-import { IEditRemark } from "../schemas/EditRemarkDialog";
+import { IEditRemark } from "../../schemas/EditRemarkDialog";
 
 const EditRemarkDialog = ({
   isEditRemarkDialogOpen,
