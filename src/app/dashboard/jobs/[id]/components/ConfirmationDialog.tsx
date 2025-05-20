@@ -18,6 +18,7 @@ const ConfirmationDialog = ({
   isLoading = false,
   loadingText = "Processing...",
   className = "sm:max-w-[400px]",
+  buttonName = "Confirm",
 }: {
   isOpen: boolean;
   setIsOpen: (x: boolean) => void;
@@ -27,7 +28,8 @@ const ConfirmationDialog = ({
   onCancel: () => void;
   isLoading?: boolean;
   loadingText?: string;
-  className: string;
+  className?: string;
+  buttonName?: string;
 }) => {
   const handleCancel = () => {
     if (onCancel) {
@@ -55,7 +57,7 @@ const ConfirmationDialog = ({
             Cancel
           </Button>
           <Button disabled={isLoading} onClick={handleConfirm}>
-            {isLoading ? loadingText : "Confirm"}
+            {isLoading ? loadingText : buttonName}
           </Button>
         </DialogFooter>
       </DialogContent>

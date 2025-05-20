@@ -13,8 +13,6 @@ import { toast } from "@/hooks/use-toast";
 import {
   useEvaluateCandidateMutation,
   useLazyFetchCandidatesQuery,
-  useUpdateCandidateHistoryMutation,
-  useUpdateCandidateMutation,
 } from "@/lib/features/candidate/candidateApi";
 import { useParams } from "next/navigation";
 import Cookies from "js-cookie";
@@ -25,7 +23,6 @@ import ExpandableDescription from "./expand-collapse-desc";
 import { AssignJobDialog } from "./assing-job-dialog";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { User } from "@/lib/features/users/usersApi";
-import { useSendUnassignMailMutation } from "@/lib/features/org/orgApi";
 import { evaluateCandidate } from "@/app/apply-jobs/ApplyAsGuest";
 import { CandidateDetailsDialogProps } from "../schemas/candidateDetailsDialogProps";
 import { IEditRemark } from "../schemas/EditRemarkDialog";
@@ -40,6 +37,8 @@ import RemarkInputSection from "./RemarkInputSection";
 import { CandidateInfoSection } from "./CandidateInfoSection";
 import { formatDate, formatTime } from "../hooks/dateTimeFormatting";
 import CustomFieldsData from "@/Custom_Fields/Components/CustomFields/customFields-details";
+import { useRemarkHandlers } from "../hooks/useRemarkHandlers";
+import { useUnassignHandlers } from "../hooks/useUnassignHandlers";
 
 const labelClass = "font-semibold text-base";
 
@@ -59,20 +58,11 @@ export function CandidateDetailsDialog({
   const [refetchCandidate, { data: candidateData }] =
     useLazyFetchCandidatesQuery();
   const [isEditing, setIsEditing] = useState(false);
-  const [newRemark, setNewRemark] = useState("");
-  const [remarkRating, setRemarkRating] = useState<number | null>(null);
-  const [remarkRatingHistory, setRemarkRatingHistory] = useState<number | null>(
-    null
-  );
   const [isReEvaluating, setIsReEvaluating] = useState(false);
-  const [updateCandidate] = useUpdateCandidateMutation();
   const [isAssigning, setIsAssigning] = useState(false);
   const [isAssigningJob, setIsAssigningJob] = useState(false);
   const [user, setuser] = useState<User | null>(null);
-  const [confirmUnassignOpen, setConfirmUnassignOpen] = useState(false);
-  const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
   const [evaluateCandidateMutation] = useEvaluateCandidateMutation();
-  const [isSubRemarkPrivate, setIsSubRemarkPrivate] = useState(false);
   const [confirmReEvaluateOpen, setConfirmReEvaluateOpen] = useState(false);
   const [isEditRemarkDialogOpen, setIsEditRemarkDialogOpen] = useState(false);
   const [editingRemark, setEditingRemark] = useState<IEditRemark | null>(null);
@@ -80,7 +70,6 @@ export function CandidateDetailsDialog({
   const [localCandidate, setLocalCandidate] = useState<Candidate | null>(
     candidate
   );
-  const [sendUnassignEmail, { isLoading }] = useSendUnassignMailMutation();
 
   const refetch = async () => {
     const result = await refetchCandidate(
@@ -103,61 +92,43 @@ export function CandidateDetailsDialog({
     })();
   }, []);
 
+  const {
+    newRemark,
+    setNewRemark,
+    remarkRating,
+    setRemarkRating,
+    setRemarkRatingHistory,
+    isSubRemarkPrivate,
+    setIsSubRemarkPrivate,
+    handleRemarkUpdate,
+    handleAddRemark,
+  } = useRemarkHandlers(
+    localCandidate,
+    user,
+    refetch,
+    refetchAssignment,
+    onUpdate
+  );
+
+  const {
+    confirmUnassignOpen,
+    setConfirmUnassignOpen,
+    isLoading,
+    handleUnassign,
+    confirmUnassign,
+  } = useUnassignHandlers(
+    localCandidate,
+    user,
+    refetch,
+    setLocalCandidate,
+    onUpdate,
+    refetchAssignment,
+    onOpenChange
+  );
+
   const handleEditClick = () => {
     setIsEditing(true); // Open the edit dialog
     onOpenChange(false); // Close the current dialog
-  };
-
-  const handleRemarkUpdate = async (
-    id: string,
-    description: string,
-    isPrivate?: boolean
-  ) => {
-    setIsEditRemarkDialogOpen(false);
-    try {
-      const response = await fetch("/api/candidates/history", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          id,
-          isPrivate,
-          description,
-          rating: remarkRatingHistory,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to update remark");
-      }
-
-      await response.json();
-
-      if (pathname === "/dashboard") {
-        refetchAssignment?.();
-      }
-      if (pathname !== "/dashboard" && pathname !== "/dashboard/calendar") {
-        refetch();
-      }
-
-      if (onUpdate && localCandidate) {
-        onUpdate(localCandidate);
-      }
-
-      toast({
-        title: "Success",
-        description: "Remark status updated successfully",
-      });
-    } catch (e) {
-      console.error("Failed to update remark:", e);
-      toast({
-        title: "Error",
-        description: "Failed to update remark. Please try again.",
-        variant: "destructive",
-      });
-    }
   };
 
   const handleReEvaluation = async () => {
@@ -236,164 +207,6 @@ export function CandidateDetailsDialog({
     }
   }, [candidate, id]);
 
-  const handleAddRemark = async () => {
-    if (!newRemark.trim() || !user?.id) {
-      toast({
-        title: "Error",
-        description: "Please add remarks",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const newRemarkObj = {
-        description: String(newRemark).trim(),
-        date: new Date().toISOString(),
-        rating: remarkRating ? Number(remarkRating) : undefined,
-        userId: {
-          _id: user.id,
-          name: user.name,
-          email: user.email,
-        },
-      };
-      const newRemarkHistoryObj = {
-        isPrivate: isSubRemarkPrivate,
-        description: String(newRemark).trim(),
-        date: new Date().toISOString(),
-        rating: remarkRatingHistory ? Number(remarkRatingHistory) : undefined,
-        userId: {
-          _id: user.id,
-          name: user.name,
-          email: user.email,
-        },
-      };
-      const newHistoryEntry = {
-        dateTime: new Date().toISOString(),
-        remark: newRemarkHistoryObj,
-        currentInterviewer: null,
-        previousInterviewer: null,
-        assignmentBy: user!.id,
-        title: null,
-        note: {
-          description: "",
-          date: "",
-          rating: 0,
-          userId: null,
-        },
-        attachments: [],
-      };
-      const updateData = {
-        _id: localCandidate?._id,
-        name: localCandidate?.name,
-        remarks: [...(localCandidate?.remarks || []), newRemarkObj],
-      };
-      localCandidate &&
-        (await updateCandidateHistory({
-          candidateId: localCandidate?._id,
-          jobId: localCandidate?.jobId,
-          newEntry: newHistoryEntry,
-        }).unwrap());
-      const result = await updateCandidate(updateData).unwrap();
-      if (onUpdate && result) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        await onUpdate(result);
-      }
-      if (pathname === "/dashboard") {
-        await refetchAssignment?.();
-      }
-      if (pathname !== "/dashboard" && pathname !== "/dashboard/calendar") {
-        await refetch();
-      }
-
-      setNewRemark("");
-      setRemarkRating(null);
-      setRemarkRatingHistory(null);
-
-      toast({
-        title: "Success",
-        description: "Remark added successfully",
-      });
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        toast({
-          title: "Error",
-          description: error.message,
-          variant: "destructive",
-        });
-      }
-    }
-  };
-
-  const handleUnassign = () => {
-    setConfirmUnassignOpen(true);
-  };
-
-  const confirmUnassign = async () => {
-    try {
-      const updatedCandidate = {
-        ...localCandidate,
-        assignment: null,
-      };
-      const result = await updateCandidate(updatedCandidate).unwrap();
-      if (result) {
-        onUpdate?.(result);
-        setLocalCandidate(result);
-        if (pathname !== "/dashboard" && pathname !== "/dashboard/calendar") {
-          await refetch();
-        } else {
-          refetchAssignment?.();
-        }
-
-        const previousInterviewerId =
-          typeof localCandidate?.assignment?.interviewerId === "object"
-            ? Object(localCandidate.assignment.interviewerId._id)
-            : null;
-        const newHistoryEntry: ICandidateHistory = {
-          dateTime: new Date().toISOString(),
-          currentInterviewer: null,
-          previousInterviewer: previousInterviewerId,
-          assignmentBy: user!.id,
-          title: null,
-          note: {
-            description: "",
-            date: "",
-            rating: 0,
-            userId: null,
-          },
-          attachments: [],
-        };
-        // debugger;
-        await updateCandidateHistory({
-          candidateId: updatedCandidate._id || "",
-          jobId: localCandidate?.jobId._id || localCandidate?.jobId || "",
-          newEntry: newHistoryEntry,
-        }).unwrap();
-        sendUnassignEmail({ name: result.name });
-
-        if (pathname === "/dashboard/calendar") {
-          setIsAssigning(false);
-          onOpenChange(false);
-        }
-        // debugger;
-        toast({
-          title: "Success",
-          description: "Interviewer has been unassigned successfully",
-        });
-      }
-    } catch (error: unknown) {
-      toast({
-        title:
-          "Error: " +
-          (error instanceof Error ? error.message : "Unknown error"),
-        description: "Failed to unassign interviewer",
-        variant: "destructive",
-      });
-    } finally {
-      setConfirmUnassignOpen(false);
-    }
-  };
-
   if (!localCandidate) return null;
 
   const validTimeLineItems = timeLineItems.filter((item) => item.title !== "");
@@ -411,9 +224,9 @@ export function CandidateDetailsDialog({
       >
         <DialogContent className="sm:max-w-[80vw] xl:max-w-[50vw] h-[90vh] p-0 overflow-hidden flex flex-col justify-start">
           <DialogHeader className="px-6 pt-6">
-            {candidate && (
+            {localCandidate && (
               <DetailsDialogHeader
-                candidate={candidate}
+                candidate={localCandidate}
                 handleCandidateInfoCopy={handleCandidateInfoCopy}
               />
             )}
@@ -434,9 +247,9 @@ export function CandidateDetailsDialog({
                 }
               />
             </div>
-            {candidate && (
+            {localCandidate && (
               <CandidateInfoSection
-                candidate={candidate}
+                candidate={localCandidate}
                 user={user}
                 labelClass={labelClass}
               />
@@ -671,8 +484,8 @@ export function CandidateDetailsDialog({
           onOpenChange={setIsEditing}
           onUpdate={onUpdate || (() => {})}
           refetchAssignment={refetchAssignment}
-          onSuccess={() => {
-            refetch();
+          onSuccess={async () => {
+            await refetch();
           }}
           reopenDetailsDialog={() => {
             onOpenChange(true);
