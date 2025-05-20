@@ -410,9 +410,9 @@ export function EditCandidateDialog({
                   variant="outline"
                   onClick={() => {
                     onOpenChange(false);
-                    if (reopenDetailsDialog) {
-                      reopenDetailsDialog();
-                    }
+                    // if (reopenDetailsDialog) {
+                    //   reopenDetailsDialog();
+                    // }
                   }}
                 >
                   Cancel

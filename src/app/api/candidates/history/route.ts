@@ -55,13 +55,8 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// import { NextResponse } from "next/server";
-// import { connectToDatabase } from "./path-to-your-db-connection"; // Adjust import
-// import History from "./path-to-your-history-model"; // Adjust import
-
 export async function PATCH(request: NextRequest) {
   try {
-    // Ensure database connection
     await connectToDatabase();
 
     const data = await request.json();

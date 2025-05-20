@@ -91,13 +91,14 @@ const EditRemarkDialog = ({
           </Button>
           <Button
             disabled={isLoading}
-            onClick={() =>
+            onClick={() => {
               handleRemarkUpdate(
                 editingRemark?.id || "",
                 editingRemark?.description || "",
                 editingRemark?.isPrivate
-              )
-            }
+              );
+              setIsEditRemarkDialogOpen(false);
+            }}
           >
             {isLoading ? "Marking as done..." : "Confirm"}
           </Button>

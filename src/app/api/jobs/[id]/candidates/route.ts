@@ -68,7 +68,13 @@ export async function GET(
 
         return {
           ...candidate,
-          history: history ? history.history : [],
+          history: history
+            ? history.history.filter((entry) =>
+                role === "admin" || role === "hr"
+                  ? true
+                  : !entry.remark?.isPrivate
+              )
+            : [],
         };
       })
     );
