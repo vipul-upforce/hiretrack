@@ -138,7 +138,7 @@ export function CandidateCard({
           className="bg-card border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow"
         >
           <div className="flex justify-between items-start">
-            <h3 className="font-medium w-2/3 text-wrap break-words">
+            <h3 className="font-medium w-2/5 text-wrap break-words">
               {candidate.name}
             </h3>
             <div className="flex gap-1">

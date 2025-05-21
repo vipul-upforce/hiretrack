@@ -60,8 +60,10 @@ export default function DetailsDialogHeader({
               </div>
             )}
           </div>
-
-          <CandidateStatusBadge status={candidate.status} />
+          <div className="flex flex-col items-end">
+            <CandidateStatusBadge status={candidate.status} />
+            <p className="text-xs text-gray-500">{candidate.jobId.title}</p>
+          </div>
         </div>
       </div>
     </DialogTitle>

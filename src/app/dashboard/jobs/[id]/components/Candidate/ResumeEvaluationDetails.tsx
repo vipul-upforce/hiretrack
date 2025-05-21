@@ -23,17 +23,6 @@ export default function ResumeEvaluationDetails({
 
   if (!localCandidate.scores) return null;
 
-  const hasEvaluationData =
-    localCandidate.scores.overall ||
-    localCandidate.scores.experience ||
-    localCandidate.scores.skills ||
-    localCandidate.scores.strengths?.length > 0 ||
-    localCandidate.scores.areas_for_improvement?.length > 0 ||
-    localCandidate.scores.recommendation ||
-    localCandidate.scores.notes;
-
-  if (!hasEvaluationData) return null;
-
   return (
     <>
       <div
@@ -49,7 +38,7 @@ export default function ResumeEvaluationDetails({
                 size="icon"
                 onClick={(e) => {
                   e.stopPropagation();
-                  console.log("%%%%%%");
+                  // console.log("%%%%%%");
                   onReEvaluate();
                 }}
                 disabled={isReEvaluating}
@@ -62,10 +51,12 @@ export default function ResumeEvaluationDetails({
                 <RefreshCwIcon size={15} />
               </Button>
             </div>
-            <p>{showEvalDetails ? "Hide details" : "Show details"}</p>
+            {localCandidate.scores.overall !== undefined && (
+              <p>{showEvalDetails ? "Hide details" : "Show details"}</p>
+            )}
           </div>
 
-          {localCandidate.scores.overall !== undefined && (
+          {localCandidate.scores.overall !== undefined ? (
             <div className="capitalize flex gap-2 py-2">
               {localCandidate.scores.overall >= 0 && (
                 <CandidateScoreBadge
@@ -86,6 +77,10 @@ export default function ResumeEvaluationDetails({
                 />
               )}
             </div>
+          ) : (
+            <p className="text-gray-500">
+              This candidate has not been evaluated yet.
+            </p>
           )}
         </div>
       </div>
