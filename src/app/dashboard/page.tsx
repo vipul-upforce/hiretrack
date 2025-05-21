@@ -127,6 +127,8 @@ export default function DashboardPage() {
 
   const applyFilter = () => {
     setFilterText(searchText);
+    setCurrentPage(1)
+
   };
 
   const filteredAssignments = assignments?.filter((assignment) => {
@@ -151,8 +153,10 @@ export default function DashboardPage() {
     );
   });
 
-  const interviewerAssignments = filteredAssignments?.filter(
-    (assignment) => assignment.assignment?.interviewerId?.email === user?.email
+  const interviewerAssignments = filteredAssignments?.filter((assignment) =>
+    isInterviewer
+      ? assignment.assignment?.interviewerId?.email === user?.email
+      : assignment
   );
 
   const todayAssignments = interviewerAssignments?.filter((assignment) => {
@@ -224,7 +228,7 @@ export default function DashboardPage() {
           onChange={(e) => {
             const value = e.target.value;
             const sanitizedValue = value.replace(
-              /[\/\\*+?|\{\}\[\]()^$\.]/g,
+              /[\/\\*+?|\{\}\[\]()^$]/g,
               ""
             );
 

@@ -107,6 +107,7 @@ const SignupForm = () => {
       // debugger;
       const signupData = {
         ...values,
+        email:values.email.toLowerCase().trim(),
         name: values.name.trim(),
         ...(orgName && { orgName: orgName }),
       };

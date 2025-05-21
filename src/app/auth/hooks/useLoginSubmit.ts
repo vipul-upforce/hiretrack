@@ -11,6 +11,7 @@ import CryptoJS from "crypto-js";
 import { LoginFormValues, UserWithoutCF } from "@/types/login";
 import { useCallback } from "react";
 import { OneOfMulOrganization } from "@/components/auth/OrganizationDialog";
+import { emit } from "process";
 
 interface HandleLoginSubmitProps {
   selectedOrg?: string;
@@ -62,6 +63,7 @@ export const useHandleLoginSubmit = ({
       try {
         const response = await login({
           ...values,
+          email:values.email.toLowerCase().trim(),
           orgId: selectedOrg,
         }).unwrap();
         // debugger;

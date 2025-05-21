@@ -591,12 +591,11 @@ export function CandidateDetailsDialog({
             {!fromFilter ? (
               <div className="flex justify-between w-full">
                 <div className="flex gap-2">
-                  <Button
-                    className={user?.role == "interviewer" ? "hidden" : ""}
-                    onClick={() => setIsAssigning(true)}
-                  >
-                    Assign To
-                  </Button>
+                  {user?.role != "interviewer" && (
+                    <Button onClick={() => setIsAssigning(true)}>
+                      Assign To
+                    </Button>
+                  )}
                   <Button
                     onClick={handleUnassign}
                     disabled={!localCandidate.assignment}

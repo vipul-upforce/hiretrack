@@ -115,7 +115,7 @@ export default function CalendarPage() {
   }, [isDetailsOpen]);
 
   const applyFilter = () => {
-    setFilterText(searchText);
+    setFilterText(searchText.trim());
   };
 
   const filteredAssignments = assignments?.filter((assignment) => {
@@ -259,11 +259,9 @@ export default function CalendarPage() {
     }
     return "Unknown";
   };
-
   if (isLoading) {
     return <LoaderSkeletonCalender />;
   }
-
   return (
     <div className="h-[calc(100vh-80px)] flex flex-col gap-6">
       <Card>
@@ -294,7 +292,14 @@ export default function CalendarPage() {
           }}
         />
         <Button onClick={applyFilter}>Filter</Button>
-        <Button onClick={() => setFilterText("")}>Clear</Button>
+        <Button
+          onClick={() => {
+            setFilterText("");
+            setSearchText("");
+          }}
+        >
+          Clear
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-6 flex-1 min-h-0">
