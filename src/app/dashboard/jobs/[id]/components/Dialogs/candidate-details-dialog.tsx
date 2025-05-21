@@ -1,11 +1,8 @@
 "use client";
 
-import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog";
+import { DialogHeader } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { FileText } from "lucide-react";
-import { PDFViewer } from "@/components/ui/pdf-viewer";
 import { Candidate } from "@/types/candidate";
 import { EditCandidateDialog } from "./edit-candidate-dialog";
 import { useState, useEffect } from "react";
@@ -19,7 +16,6 @@ import Cookies from "js-cookie";
 import { AssignCandidateDialog } from "./assign-candidate-dialog";
 import { usePathname } from "next/navigation";
 import { ICandidateHistory } from "@/lib/models/history";
-import ExpandableDescription from "../Utils/expand-collapse-desc";
 import { AssignJobDialog } from "./assign-job-dialog";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { User } from "@/lib/features/users/usersApi";
@@ -29,16 +25,12 @@ import { IEditRemark } from "../../schemas/EditRemarkDialog";
 import EditRemarkDialog from "./EditRemarkDialog";
 import ConfirmationDialog from "./ConfirmationDialog";
 import handleCandidateInfoCopy from "../../hooks/handleCandidateInfoCopy";
-import RenderHistoryEntry from "../Candidate/HistoryEntry";
-import { RenderAttachments } from "../Remarks/RenderAttachments";
-import ResumeEvaluationDetails from "../Candidate/ResumeEvaluationDetails";
 import DetailsDialogHeader from "../Candidate/candidate-details-header";
 import RemarkInputSection from "../Remarks/RemarkInputSection";
-import { CandidateInfoSection } from "../Candidate/CandidateInfoSection";
-import { formatDate, formatTime } from "../../hooks/dateTimeFormatting";
-import CustomFieldsData from "@/Custom_Fields/Components/CustomFields/customFields-details";
 import { useRemarkHandlers } from "../../hooks/useRemarkHandlers";
 import { useUnassignHandlers } from "../../hooks/useUnassignHandlers";
+import { DetailsDialog } from "./DetailsDialog";
+import { candidateDetailsFields } from "./candidate-details-fields";
 
 const labelClass = "font-semibold text-base";
 
@@ -210,10 +202,97 @@ export function CandidateDetailsDialog({
   if (!localCandidate) return null;
 
   const validTimeLineItems = timeLineItems.filter((item) => item.title !== "");
+  const header = (
+    <DialogHeader className="px-6 pt-6">
+      {localCandidate && (
+        <DetailsDialogHeader
+          candidate={localCandidate}
+          handleCandidateInfoCopy={handleCandidateInfoCopy}
+        />
+      )}
+    </DialogHeader>
+  );
+  const body = (
+    <div className="flex-1 overflow-y-auto px-6 py-4 pt-0 space-y-6">
+      {candidateDetailsFields.map((field, index) => {
+        if (field.shouldRender && !field.shouldRender(localCandidate))
+          return null;
+        return (
+          <div key={index} className="space-y-2">
+            <Label className={labelClass}>{field.label}</Label>
+            {field.id === "ai-evaluation"
+              ? field.render(localCandidate, user, isReEvaluating, () =>
+                  setConfirmReEvaluateOpen(true)
+                )
+              : field.render(
+                  localCandidate,
+                  user,
+                  validTimeLineItems,
+                  handleRemarkUpdate,
+                  setEditingRemark,
+                  setIsEditRemarkDialogOpen
+                )}
+          </div>
+        );
+      })}
+      <RemarkInputSection
+        newRemark={newRemark}
+        setNewRemark={setNewRemark}
+        remarkRating={remarkRating}
+        setRemarkRating={setRemarkRating}
+        setRemarkRatingHistory={setRemarkRatingHistory}
+        isSubRemarkPrivate={isSubRemarkPrivate}
+        setIsSubRemarkPrivate={setIsSubRemarkPrivate}
+        user={user}
+        handleAddRemark={handleAddRemark}
+      />
+    </div>
+  );
+  const footer = (
+    <div className="flex space-x-2 border-t bg-background px-6 py-4">
+      {!fromFilter ? (
+        <div className="flex justify-between w-full">
+          <div className="flex gap-2">
+            <Button
+              className={user?.role == "interviewer" ? "hidden" : ""}
+              onClick={() => setIsAssigning(true)}
+            >
+              Assign To
+            </Button>
+            <Button
+              onClick={handleUnassign}
+              disabled={!localCandidate.assignment}
+              variant="outline"
+            >
+              Mark As Done
+            </Button>
+          </div>
+          <div className="flex gap-2">
+            {!hideEditButton && <Button onClick={handleEditClick}>Edit</Button>}
+            <Button
+              variant="outline"
+              onClick={() => {
+                onOpenChange(false);
+                setNewRemark("");
+                setRemarkRating(null);
+                setRemarkRatingHistory(null);
+              }}
+            >
+              Close
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div>
+          <Button onClick={() => setIsAssigningJob(true)}>Assign Job</Button>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <>
-      <Dialog
+      <DetailsDialog
         open={isOpen && !isAssigning}
         onOpenChange={(e) => {
           setNewRemark("");
@@ -222,229 +301,11 @@ export function CandidateDetailsDialog({
           onOpenChange(e);
         }}
       >
-        <DialogContent className="sm:max-w-[80vw] xl:max-w-[50vw] h-[90vh] p-0 overflow-hidden flex flex-col justify-start">
-          <DialogHeader className="px-6 pt-6">
-            {localCandidate && (
-              <DetailsDialogHeader
-                candidate={localCandidate}
-                handleCandidateInfoCopy={handleCandidateInfoCopy}
-              />
-            )}
-          </DialogHeader>
+        {header}
+        {body}
+        {footer}
+      </DetailsDialog>
 
-          <div className="flex-1 overflow-y-auto px-6 py-4 pt-0 space-y-6">
-            <div className="space-y-1 relative">
-              <Label className={labelClass}>
-                {localCandidate.jobId?.title ||
-                  localCandidate.jobDetails?.title ||
-                  "Job Description"}
-              </Label>
-              <ExpandableDescription
-                description={
-                  localCandidate.jobId?.description ||
-                  localCandidate.jobDetails?.description ||
-                  "No description Found"
-                }
-              />
-            </div>
-            {localCandidate && (
-              <CandidateInfoSection
-                candidate={localCandidate}
-                user={user}
-                labelClass={labelClass}
-              />
-            )}
-
-            <div className="space-y-2">
-              <Label className={labelClass}>Skills</Label>
-              <div className="flex flex-wrap gap-2">
-                {localCandidate.skills.map((skill) => (
-                  <Badge key={skill} variant="secondary">
-                    {skill}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-            <CustomFieldsData
-              customFields={localCandidate?.customFields || {}}
-            />
-
-            {localCandidate && (
-              <ResumeEvaluationDetails
-                labelClass={labelClass}
-                localCandidate={localCandidate}
-                isReEvaluating={isReEvaluating}
-                onReEvaluate={() => setConfirmReEvaluateOpen(true)}
-              />
-            )}
-
-            <div className="space-y-2">
-              <Label className={labelClass}>Resume</Label>
-              {localCandidate.resume && (
-                <PDFViewer files={[localCandidate.resume]} />
-              )}
-            </div>
-
-            {localCandidate.attachments.length > 0 && (
-              <RenderAttachments
-                labelClass={labelClass}
-                localCandidate={localCandidate}
-              />
-            )}
-
-            <div className="space-y-2">
-              <Label className={labelClass}>Candidate History</Label>
-              <ol className="relative border-s border-gray-200 dark:border-gray-700">
-                {validTimeLineItems.length > 0
-                  ? validTimeLineItems
-                      .reverse()
-                      .filter((interview) => {
-                        if (
-                          !interview.remark ||
-                          !interview.remark.description
-                        ) {
-                          return true;
-                        }
-                        return (
-                          !interview.remark.isPrivate ||
-                          user?.role === "hr" ||
-                          user?.role === "admin"
-                        );
-                      })
-                      .map((interview, i) => {
-                        const timeDate = formatDate(interview.dateTime);
-                        const timeTime = formatTime(interview.dateTime);
-                        return (
-                          <RenderHistoryEntry
-                            interview={interview}
-                            indexKey={i}
-                            localCandidate={localCandidate}
-                            user={user}
-                            timeDate={timeDate}
-                            timeTime={timeTime}
-                            handleRemarkUpdate={handleRemarkUpdate}
-                            setEditingRemark={setEditingRemark}
-                            setIsEditRemarkDialogOpen={
-                              setIsEditRemarkDialogOpen
-                            }
-                            key={i}
-                          />
-                        );
-                      })
-                  : "No History"}
-              </ol>
-            </div>
-
-            <div className="space-y-2">
-              <Label className={labelClass}>Status History</Label>
-              <div className="space-y-2">
-                <div className="text-sm flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  <span>
-                    Created: {formatDate(localCandidate.tracking?.createdAt)}
-                  </span>
-                </div>
-                {localCandidate.tracking?.assignedToJobDate && (
-                  <div className="text-sm flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    <span>
-                      Job Assigned:{" "}
-                      {formatDate(localCandidate.tracking?.assignedToJobDate)}
-                    </span>
-                  </div>
-                )}
-                <div className="text-sm flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  <span>
-                    Last Updated:{" "}
-                    {formatDate(localCandidate.tracking?.updatedAt)}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Assignment Management */}
-            <div className="space-y-4 border-t pt-4">
-              <h3 className="font-semibold">Interview Assignment</h3>
-              {localCandidate?.assignment ? (
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span>
-                      Interviewer:{" "}
-                      {typeof localCandidate.assignment.interviewerId ===
-                        "object" && localCandidate.assignment.interviewerId
-                        ? localCandidate.assignment.interviewerId.name
-                        : "Unknown"}
-                    </span>
-                  </div>
-                  <div>
-                    Interview Date: {formatDate(localCandidate.assignment.time)}{" "}
-                    on {formatTime(localCandidate.assignment.time)}
-                  </div>
-                </div>
-              ) : (
-                <div>Not assigned to any interviewer</div>
-              )}
-            </div>
-
-            <RemarkInputSection
-              newRemark={newRemark}
-              setNewRemark={setNewRemark}
-              remarkRating={remarkRating}
-              setRemarkRating={setRemarkRating}
-              setRemarkRatingHistory={setRemarkRatingHistory}
-              isSubRemarkPrivate={isSubRemarkPrivate}
-              setIsSubRemarkPrivate={setIsSubRemarkPrivate}
-              user={user}
-              handleAddRemark={handleAddRemark}
-            />
-          </div>
-
-          <div className="flex space-x-2 border-t bg-background px-6 py-4">
-            {!fromFilter ? (
-              <div className="flex justify-between w-full">
-                <div className="flex gap-2">
-                  <Button
-                    className={user?.role == "interviewer" ? "hidden" : ""}
-                    onClick={() => setIsAssigning(true)}
-                  >
-                    Assign To
-                  </Button>
-                  <Button
-                    onClick={handleUnassign}
-                    disabled={!localCandidate.assignment}
-                    variant="outline"
-                  >
-                    Mark As Done
-                  </Button>
-                </div>
-                <div className="flex gap-2">
-                  {!hideEditButton && (
-                    <Button onClick={handleEditClick}>Edit</Button>
-                  )}
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      onOpenChange(false);
-                      setNewRemark("");
-                      setRemarkRating(null);
-                      setRemarkRatingHistory(null);
-                    }}
-                  >
-                    Close
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div>
-                <Button onClick={() => setIsAssigningJob(true)}>
-                  Assign Job
-                </Button>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
       {isAssigning && localCandidate && (
         <AssignCandidateDialog
           candidate={localCandidate}
@@ -455,7 +316,6 @@ export function CandidateDetailsDialog({
           setLocalCandidate={setLocalCandidate}
           refetchAssignment={refetchAssignment}
           onSuccess={() => {
-            // debugger;
             if (pathname === "/dashboard/calendar") {
               setIsAssigning(false);
               onOpenChange(false);

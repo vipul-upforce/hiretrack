@@ -20,21 +20,21 @@ import {
 // import { DatePicker } from "@/components/ui/date-picker";
 import { LinkIcon } from "lucide-react";
 
-export const skillSuggestions = [
-  "JavaScript",
-  "TypeScript",
-  "React",
-  "Node.js",
-  "Python",
-  "Java",
-  "SQL",
-  "AWS",
-  "Docker",
-  "Kubernetes",
-  "DevOps",
-  "Agile",
-  "Scrum",
-];
+// export const skillSuggestions = [
+//   "JavaScript",
+//   "TypeScript",
+//   "React",
+//   "Node.js",
+//   "Python",
+//   "Java",
+//   "SQL",
+//   "AWS",
+//   "Docker",
+//   "Kubernetes",
+//   "DevOps",
+//   "Agile",
+//   "Scrum",
+// ];
 
 interface JobFormProps {
   job?: {
