@@ -56,6 +56,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
+  //✅ UPDATES REMARK ONLY
   try {
     await connectToDatabase();
 
@@ -79,9 +80,20 @@ export async function PATCH(request: NextRequest) {
     if (!History) {
       throw new Error("Database not connected");
     }
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
+    }
+
     // Update the remark in the history array
     const updatedHistory = await History.findOneAndUpdate(
-      { "history.remark.id": id },
+      {
+        "history.remark.id": id,
+        $or: [
+          { "history.assignmentBy": new mongoose.Types.ObjectId(user.id) },
+          { "user.role": { $in: ["admin", "hr"] } },
+        ],
+      },
       {
         $set: {
           "history.$.remark.description": description,
@@ -91,14 +103,16 @@ export async function PATCH(request: NextRequest) {
 
           "history.$.assignmentBy": new mongoose.Types.ObjectId(user.id),
           "history.$.title": "Remark Updated",
-          // "history.$.dateTime": new Date().toISOString(),
         },
       },
       { new: true }
     );
 
     if (!updatedHistory) {
-      return NextResponse.json({ error: "Remark not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Remark not found or unauthorized" },
+        { status: 404 }
+      );
     }
 
     const updatedItem = updatedHistory.history.find(

@@ -87,7 +87,7 @@ export default function JobModal({
 
             <div className="p-4 sm:p-6 sm:pt-0 pb-20 overflow-y-auto max-h-[calc(80vh-120px)] border-t border-gray-100">
               <div className="mt-2 mb-10">
-                <p className="break-words">
+                <p className="w-full whitespace-pre-wrap ">
                   {job.description || "No description Found"}
                 </p>
                 <div className="mt-4">
