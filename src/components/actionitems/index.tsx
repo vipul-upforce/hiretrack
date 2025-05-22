@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { CandidateCard } from "@/app/dashboard/jobs/[id]/components/candidate-card";
-import { CandidateDetailsDialog } from "@/app/dashboard/jobs/[id]/components/candidate-details-dialog";
+import { CandidateCard } from "@/app/dashboard/jobs/[id]/components/Candidate/candidate-card";
+import { CandidateDetailsDialog } from "@/app/dashboard/jobs/[id]/components/Dialogs/candidate-details-dialog";
 import { Assignment } from "@/app/dashboard/page";
 import { Candidate, CandidateStatus } from "@/types/candidate";
 

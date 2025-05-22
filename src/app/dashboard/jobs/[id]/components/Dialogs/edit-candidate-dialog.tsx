@@ -9,8 +9,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Formik, Form } from "formik";
-import { candidateSchema } from "../schemas/candidate-schema";
-import { CandidateForm } from "./candidate-form";
+import { candidateSchema } from "../../schemas/candidate-schema";
+import { CandidateForm } from "../Candidate/candidate-form";
 import {
   useUpdateCandidateMutation,
   useUpdateCandidateHistoryMutation,
@@ -23,7 +23,7 @@ import { ICandidateHistory } from "@/lib/models/history";
 import { useEffect, useState } from "react";
 import { Resume } from "@/lib/redux/types";
 import { parseResumeFromPdf } from "@/lib/parse-resume-from-pdf";
-import FormUpdater from "./FormUpdater";
+import FormUpdater from "../Utils/FormUpdater";
 import Cookies from "js-cookie";
 import { useSendMailMutation } from "@/lib/features/org/orgApi";
 import { sentAssignmentMail } from "@/lib/utils";
@@ -410,9 +410,9 @@ export function EditCandidateDialog({
                   variant="outline"
                   onClick={() => {
                     onOpenChange(false);
-                    if (reopenDetailsDialog) {
-                      reopenDetailsDialog();
-                    }
+                    // if (reopenDetailsDialog) {
+                    //   reopenDetailsDialog();
+                    // }
                   }}
                 >
                   Cancel

@@ -1,6 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-interface Interviewer {
+export interface Interviewer {
   _id: string;
   name: string;
   email: string;

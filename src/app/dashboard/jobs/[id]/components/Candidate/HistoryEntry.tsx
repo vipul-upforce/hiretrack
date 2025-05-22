@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Dot, Star } from "lucide-react";
-import { RemarkOptionsMenu } from "./remark-options-menu";
-import AttachmentsPopover from "./attachments-popover";
+import { RemarkOptionsMenu } from "../Remarks/remark-options-menu";
+import AttachmentsPopover from "../Remarks/attachments-popover";
 import { ICandidateHistory } from "@/lib/models/history";
 import { Candidate } from "@/types/candidate";
 import { User } from "@/lib/features/users/usersApi";
-import { IEditRemark } from "../schemas/EditRemarkDialog";
+import { IEditRemark } from "../../schemas/EditRemarkDialog";
+import useRoles from "@/hooks/useRoles";
 
 const RenderHistoryEntry = ({
   interview,
@@ -34,6 +35,7 @@ const RenderHistoryEntry = ({
 }) => {
   const [isRemarkOptionsOpen, setIsRemarkOptionsOpen] = useState(false);
   const [isRemarkOpsOpenFor, setIsRemarkOpsOpenFor] = useState<string | null>();
+  const role = useRoles();
 
   // Helper function to determine the entry title
   const renderEntryTitle = () => {
@@ -127,7 +129,12 @@ const RenderHistoryEntry = ({
         <div className="relative">
           {interview.remark?.description &&
             interview.remark?.id === isRemarkOpsOpenFor &&
-            (user?.role === "hr" || user?.role === "admin") && (
+            interview.assignmentBy &&
+            typeof interview.assignmentBy === "object" &&
+            "_id" in interview.assignmentBy &&
+            (role !== "interviewer" ||
+              interview.assignmentBy?._id === user?.id) && (
+              // (user?.role === "hr" || user?.role === "admin") && (
               <RemarkOptionsMenu
                 isOpen={
                   isRemarkOptionsOpen &&
@@ -156,7 +163,7 @@ const RenderHistoryEntry = ({
                       id: interview.remark.id,
                       description: interview.remark.description,
                       isPrivate: interview.remark.isPrivate || false,
-                      rating: interview.remark.rating || 0,
+                      rating: interview.remark.rating,
                     });
                     setIsEditRemarkDialogOpen(true);
                   }

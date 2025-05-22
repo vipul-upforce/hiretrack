@@ -31,7 +31,7 @@ export interface FormValues {
 export interface AssignCandidateDialogProps {
   candidate: Candidate;
   refetch: () => void;
-  isOpen: boolean;
+  isOpen?: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdate: (updatedCandidate: Candidate) => void;
   setLocalCandidate: (candidate: Candidate) => void;

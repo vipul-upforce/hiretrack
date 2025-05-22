@@ -9,7 +9,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { GripVertical, Trash2 } from "lucide-react";
-import { CandidateCard } from "./candidate-card";
+import { CandidateCard } from "../Candidate/candidate-card";
 import { Candidate } from "@/types/candidate"; // Adjust path as needed
 
 interface KanbanColumnProps {

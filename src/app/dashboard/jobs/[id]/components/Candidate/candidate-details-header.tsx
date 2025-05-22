@@ -2,9 +2,9 @@ import { DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Copy } from "lucide-react";
-import { CandidateStatusBadge } from "./candidate-status-badge";
+import { CandidateStatusBadge } from "../Utils/candidate-status-badge";
 import { Candidate } from "@/types/candidate";
-import { formatDate, formatTime } from "../hooks/dateTimeFormatting";
+import { formatDate, formatTime } from "../../hooks/dateTimeFormatting";
 
 interface DetailsDialogHeaderProps {
   candidate: Candidate;
@@ -60,8 +60,10 @@ export default function DetailsDialogHeader({
               </div>
             )}
           </div>
-
-          <CandidateStatusBadge status={candidate.status} />
+          <div className="flex flex-col items-end">
+            <CandidateStatusBadge status={candidate.status} />
+            <p className="text-xs text-gray-500">{candidate.jobId.title}</p>
+          </div>
         </div>
       </div>
     </DialogTitle>

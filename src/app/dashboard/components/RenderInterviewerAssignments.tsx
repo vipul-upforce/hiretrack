@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CandidateStatusBadge } from "../jobs/[id]/components/candidate-status-badge";
+import { CandidateStatusBadge } from "../jobs/[id]/components/Utils/candidate-status-badge";
 import { Assignment } from "../page";
 import { CandidateStatus } from "@/types/candidate";
 import { BriefcaseIcon, CalendarIcon, ClockIcon, Zap } from "lucide-react";
@@ -17,8 +17,8 @@ export const RenderInterviewerAssignments = ({
         <Card key={assignment.id || Math.random().toString()}>
           <CardHeader className="pb-2">
             <CardTitle className="text-lg capitalize">
-              <div className="flex pb-2 flex-row items-center justify-between">
-                <p>{assignment.name}</p>
+              <div className="flex pb-2 w-full flex-row items-center justify-between">
+                <p className="w-[70%] break-words">{assignment.name}</p>
                 <div>
                   <CandidateStatusBadge
                     status={assignment.status as CandidateStatus}

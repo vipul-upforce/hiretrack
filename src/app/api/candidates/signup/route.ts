@@ -50,21 +50,29 @@ export async function POST(req: Request) {
       organizationId = organizationInfo._id;
     }
 
-    const existingUser =
-      (await CandidateAccount.findOne({ email })) ||
-      (await User.findOne({ email }));
+    const existingCandidate = await CandidateAccount.findOne({ email });
+    if (existingCandidate) {
+      return NextResponse.json(
+        { error: "Candidate already exists in an organization" },
+        { status: 400 }
+      );
+    }
+    const existingUser = await User.findOne({ email, organizationId });
 
     if (existingUser) {
       if (existingUser.isDeleted) {
         return NextResponse.json(
-          { error: "Candidate already exists, but is deactivated." },
+          {
+            error:
+              "Candidate already exists in this organization, but is deactivated.",
+          },
           { status: 400 }
         );
       }
-      // return NextResponse.json(
-      //   { error: "Candidates cant have multiple org accounts" },
-      //   { status: 400 }
-      // );
+      return NextResponse.json(
+        { error: "Candidate alredy exists in this organization as a Member." },
+        { status: 400 }
+      );
     }
 
     // Hash password

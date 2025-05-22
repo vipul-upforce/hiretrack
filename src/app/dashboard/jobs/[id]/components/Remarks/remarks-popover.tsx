@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { NotebookText, Star } from "lucide-react";
-import { formatTime } from "../hooks/dateTimeFormatting";
+import { formatTime } from "../../hooks/dateTimeFormatting";
 
 const RemarksPopover = ({
   candidate,

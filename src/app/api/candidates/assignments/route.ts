@@ -79,7 +79,13 @@ export async function GET(req: NextRequest) {
 
             return {
               ...candidate._doc,
-              history: history ? history.history : [],
+              history: history
+                ? history.history.filter((entry) =>
+                    userData?.role === "admin" || userData?.role === "hr"
+                      ? true
+                      : !entry.remark?.isPrivate
+                  )
+                : [],
             };
           })
         );

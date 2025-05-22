@@ -5,10 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArchiveRestore, Info, Trash2 } from "lucide-react";
 import { Candidate } from "@/types/candidate";
-import { formatTime } from "../hooks/dateTimeFormatting";
-import AddRemarksPopover from "./add-remark-dialog";
-import RemarksPopover from "./remarks-popover";
-import { CandidateScoreBadge } from "./candidate-score-badge";
+import { formatTime } from "../../hooks/dateTimeFormatting";
+import AddRemarksPopover from "../Dialogs/add-remark-dialog";
+import RemarksPopover from "../Remarks/remarks-popover";
+import { CandidateScoreBadge } from "../Utils/candidate-score-badge";
 
 interface CandidateCardProps {
   candidate: Candidate;
@@ -138,7 +138,7 @@ export function CandidateCard({
           className="bg-card border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow"
         >
           <div className="flex justify-between items-start">
-            <h3 className="font-medium w-2/3 text-wrap break-words">
+            <h3 className="font-medium w-2/5 text-wrap break-words">
               {candidate.name}
             </h3>
             <div className="flex gap-1">

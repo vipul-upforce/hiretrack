@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { format } from "date-fns";
-import { CandidateDetailsDialog } from "@/app/dashboard/jobs/[id]/components/candidate-details-dialog";
+import { CandidateDetailsDialog } from "@/app/dashboard/jobs/[id]/components/Dialogs/candidate-details-dialog";
 import { useState } from "react";
 import { Candidate } from "@/types/candidate";
 

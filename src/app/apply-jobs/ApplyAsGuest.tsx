@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Formik, Form } from "formik";
 import { useState, useEffect } from "react";
-import { CandidateForm } from "../dashboard/jobs/[id]/components/candidate-form";
+import { CandidateForm } from "../dashboard/jobs/[id]/components/Candidate/candidate-form";
 import {
   useApplicationEventMailMutation,
   useCreateGuestCandidateMutation,
@@ -23,7 +23,7 @@ import useCustomForm, {
 } from "@/Custom_Fields/hooks/useCustomForm";
 import { Resume } from "@/lib/redux/types";
 import { parseResumeFromPdf } from "@/lib/parse-resume-from-pdf";
-import FormUpdater from "../dashboard/jobs/[id]/components/FormUpdater";
+import FormUpdater from "../dashboard/jobs/[id]/components/Utils/FormUpdater";
 import * as pdfjs from "pdfjs-dist";
 import { candidateSchema } from "../dashboard/jobs/[id]/schemas/candidate-schema";
 

@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import useRoles from "@/hooks/useRoles";
 
 interface RemarkOptionsMenuProps {
   remarkId: string;
@@ -29,6 +30,7 @@ export function RemarkOptionsMenu({
   const handlePrivacyToggle = (checked: boolean) => {
     return onTogglePrivacy(remarkId, checked);
   };
+  const role = useRoles();
 
   const handleEdit = () => {
     return onEdit(remarkId);
@@ -43,25 +45,30 @@ export function RemarkOptionsMenu({
         <span className="sr-only">Open options</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">
-        <div className="flex items-center justify-between px-2 py-2">
-          <div className="flex items-center space-x-2">
-            {isPrivate ? (
-              <EyeOff className="h-4 w-4 text-gray-500" />
-            ) : (
-              <Eye className="h-4 w-4 text-gray-500" />
-            )}
-            <Label htmlFor="privacy-toggle" className="text-sm">
-              {isPrivate ? "Private" : "Public"}
-            </Label>
-          </div>
-          <Switch
-            id="privacy-toggle"
-            checked={isPrivate}
-            onCheckedChange={handlePrivacyToggle}
-            className="w-8 h-4 drop-shadow-lg border border-1 border-solid"
-          />
-        </div>
-        <DropdownMenuSeparator />
+        {role !== "interviewer" && (
+          <>
+            <div className="flex items-center justify-between px-2 py-2">
+              <div className="flex items-center space-x-2">
+                {isPrivate ? (
+                  <EyeOff className="h-4 w-4 text-gray-500" />
+                ) : (
+                  <Eye className="h-4 w-4 text-gray-500" />
+                )}
+                <Label htmlFor="privacy-toggle" className="text-sm">
+                  {isPrivate ? "Private" : "Public"}
+                </Label>
+              </div>
+              <Switch
+                id="privacy-toggle"
+                checked={isPrivate}
+                onCheckedChange={handlePrivacyToggle}
+                className="w-8 h-4 drop-shadow-lg border border-1 border-solid"
+              />
+            </div>
+            <DropdownMenuSeparator />
+          </>
+        )}
+
         <div
           className="flex items-center justify-between px-2 py-2 cursor-pointer hover:bg-gray-100"
           onClick={handleEdit}

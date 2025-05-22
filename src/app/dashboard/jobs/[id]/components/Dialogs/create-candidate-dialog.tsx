@@ -11,9 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Formik, Form } from "formik";
-import { candidateSchema } from "../schemas/candidate-schema";
+import { candidateSchema } from "../../schemas/candidate-schema";
 import { useState, useEffect } from "react";
-import { CandidateForm } from "./candidate-form";
+import { CandidateForm } from "../Candidate/candidate-form";
 import {
   useApplicationEventMailMutation,
   useCreateCandidateMutation,
@@ -28,7 +28,7 @@ import useCustomForm, {
 import { ICandidateHistory } from "@/lib/models/history";
 import { Resume } from "@/lib/redux/types";
 import { parseResumeFromPdf } from "@/lib/parse-resume-from-pdf";
-import FormUpdater from "./FormUpdater";
+import FormUpdater from "../Utils/FormUpdater";
 import Cookies from "js-cookie";
 import * as pdfjs from "pdfjs-dist";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
