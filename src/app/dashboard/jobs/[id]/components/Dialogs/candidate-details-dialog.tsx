@@ -30,7 +30,7 @@ import RemarkInputSection from "../Remarks/RemarkInputSection";
 import { useRemarkHandlers } from "../../hooks/useRemarkHandlers";
 import { useUnassignHandlers } from "../../hooks/useUnassignHandlers";
 import { DetailsDialog } from "./DetailsDialog";
-import { candidateDetailsFields } from "./candidate-details-fields";
+import { candidateDetailsFields } from "../Candidate/candidate-details-fields";
 
 const labelClass = "font-semibold text-base";
 

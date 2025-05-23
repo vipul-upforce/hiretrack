@@ -86,7 +86,7 @@ async function sendQueuedEmail(data: any) {
     eventSubTitle,
     // eventDescription,
   });
-
+  // console.log(`${email}, ${[...emailList]}`);
   return await sendMail(
     organizationId,
     [email, ...emailList],

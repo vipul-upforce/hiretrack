@@ -95,8 +95,8 @@ async function sendQueuedEmail(data: any) {
 
   const htmlContent = loadTemplate("assignment-event", {
     eventTitle,
-    startDate: startDate.toLocaleString(),
-    endDate: endDate.toLocaleString(),
+    startDate: startDate.toISOString(),
+    endDate: endDate.toISOString(),
     jobName,
     interviewerName,
     candidateName,
@@ -151,7 +151,7 @@ export async function PUT(req: NextRequest) {
     const emailList = users.map((user) => user.email);
     const emailStatus = await sendMail(
       organizationId,
-      [...emailList],
+      [undefined, ...emailList] as string[],
       `Candidate Unassigned`,
       htmlContent
     );
