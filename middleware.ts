@@ -121,6 +121,13 @@ export async function middleware(request: NextRequest) {
       ) {
         return NextResponse.redirect(new URL("/dashboard", request.url)); // Redirect to an unauthorized page
       }
+      if (
+        unauthorizedInterviewerAPIRoutes.some((path) =>
+          pathname?.includes(path)
+        )
+      ) {
+        return new NextResponse("Permission denied", { status: 403 });
+      }
     }
 
     // Restrict access for candidate role
@@ -156,6 +163,8 @@ const unauthorizedInterviewerPages = [
   "/dashboard/search",
   "/dashboard/cv-upload",
 ];
+
+const unauthorizedInterviewerAPIRoutes = ["/api/candidates/filter"];
 
 const apiExemptPaths = [
   "/api/jobs/open-jobs",

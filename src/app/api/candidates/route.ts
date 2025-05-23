@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { History, Organization } from "@/lib/mongodb";
+import connectToDatabase, { History, Job, Organization } from "@/lib/mongodb";
 import { Candidate } from "@/lib/mongodb";
 import { handleCustomFieldFiles, handleSingleFile } from "@/lib/fileUtils";
 import { handleFileAttachments } from "@/lib/fileUtils";
@@ -95,8 +95,13 @@ export async function POST(request: NextRequest) {
           );
           data.customFields = cs;
         }
-
-        // Prepare candidate data with assignment if provided
+        const isJobExisted = await Job?.exists({ _id: data.jobId });
+        if (!isJobExisted) {
+          return NextResponse.json(
+            { error: "JobId not found" },
+            { status: 404 }
+          );
+        }
         const candidateData = {
           jobId: data.jobId,
           organizationId: organizationId,

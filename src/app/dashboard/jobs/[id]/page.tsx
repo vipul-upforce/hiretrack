@@ -27,6 +27,7 @@ import withAuthGuard from "@/components/withAuthGuard";
 import { useKanbanBoard } from "./hooks/useKanbanBoard";
 import { useCandidate } from "./hooks/useCandidate";
 import ConfirmationDialog from "./components/Dialogs/ConfirmationDialog";
+import NoDataFound from "@/app/not-found";
 
 function JobProgressPage() {
   const id = useParams()?.id as string;
@@ -47,9 +48,11 @@ function JobProgressPage() {
   const [isConfirmLaneDeleteOpen, setIsConfirmLaneDeleteOpen] = useState(false);
   const [laneToDelete, setLaneToDelete] = useState<string | null>(null);
 
-  const { data: job, isLoading: isJobLoading } = useFetchJobByIdQuery(
-    id as string
-  );
+  const {
+    data: job,
+    isLoading: isJobLoading,
+    error,
+  } = useFetchJobByIdQuery(id as string);
   const {
     data: candidates,
     isLoading: isCandidatesLoading,
@@ -151,7 +154,9 @@ function JobProgressPage() {
   if (isJobLoading || isCandidatesLoading || isLanesLoading) {
     return <LoaderSkeleton />;
   }
-
+  if (error) {
+    return <NoDataFound name={"Job"} />;
+  }
   return (
     <div className="space-y-6 overflow-x-hidden" style={{ width: "100%" }}>
       <Breadcrumb
