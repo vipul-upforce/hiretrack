@@ -26,7 +26,8 @@ interface IResendObj {
 }
 interface ISmtpObj {
   settings: ISmtp;
-  email: string[];
+  mailTo: string[];
+  bcc?: string[];
   htmlContent: string;
   eventTitle: string;
 }
@@ -78,7 +79,8 @@ export const sendMail = async (
     if (mailConfig.mailProvider === "smtp") {
       const result = await sendSmtpMail({
         settings: mailConfig,
-        email,
+        mailTo,
+        bcc,
         htmlContent,
         eventTitle,
       });
@@ -122,7 +124,8 @@ const sendSmtpMail = async (smtpObJ: ISmtpObj) => {
     // Send email
     const mailOptions = {
       from: smtpObJ.settings.smtp_from,
-      to: smtpObJ.email,
+      to: smtpObJ.mailTo, // Use mailTo instead of email
+      bcc: smtpObJ.bcc,
       subject: `${smtpObJ.eventTitle}`,
       html: smtpObJ.htmlContent,
     };
