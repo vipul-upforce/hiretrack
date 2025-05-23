@@ -26,6 +26,7 @@ import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { SearchFilter } from "./candidate-search";
 import { ChipInput } from "../ui/chip-input";
+import { CalendarClearFooter } from "../calendar/CalendarClearFooter";
 
 // // Mock data for skills
 // const availableSkills = [
@@ -296,6 +297,14 @@ export function SearchFilters() {
                               )
                             }
                             initialFocus
+                            footer={
+                              <CalendarClearFooter
+                                value={values?.createdAfter as string}
+                                onClear={() =>
+                                  setFieldValue("createdAfter", "")
+                                }
+                              />
+                            }
                           />
                         </PopoverContent>
                       </Popover>
@@ -336,6 +345,14 @@ export function SearchFilters() {
                               )
                             }
                             initialFocus
+                            footer={
+                              <CalendarClearFooter
+                                value={values?.createdBefore as string}
+                                onClear={() =>
+                                  setFieldValue("createdBefore", "")
+                                }
+                              />
+                            }
                           />
                         </PopoverContent>
                       </Popover>

@@ -169,18 +169,6 @@ function CandidateSearch() {
   const { toast } = useToast();
   const [OrgID, setOrgID] = useState("");
 
-  useEffect(() => {
-    (async () => {
-      const token = Cookies.get("token");
-      if (token) {
-        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-        if (decryptedResponse.success && decryptedResponse.user) {
-          setOrgID(decryptedResponse.user.organizationId);
-        }
-      }
-    })();
-  }, []);
-
   const initialValues: SearchFilter = {
     name: "",
     skills: [],
@@ -222,7 +210,7 @@ function CandidateSearch() {
     setCurrentFilters(values); // Store the current filters
 
     try {
-      values.organizationId = OrgID;
+      values.organizationId = OrgID ? OrgID : values.organizationId;
       const response = await filterCandidates(values).unwrap();
       setSearchResults(response.candidates || []);
       setCurrentPage(1);
@@ -236,6 +224,31 @@ function CandidateSearch() {
       setIsSearching(false);
     }
   };
+
+  useEffect(() => {
+    (async () => {
+      const token = Cookies.get("token");
+      if (token) {
+        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+        if (decryptedResponse.success && decryptedResponse.user) {
+          setOrgID(decryptedResponse.user.organizationId);
+          console.log(
+            "decryptedResponse.user.organizationId :>> ",
+            decryptedResponse.user.organizationId
+          );
+          handleSearch({
+            name: "",
+            skills: [],
+            location: "",
+            createdAfter: "",
+            createdBefore: "",
+            logicOperator: "$and",
+            organizationId: decryptedResponse.user.organizationId,
+          });
+        }
+      }
+    })();
+  }, []);
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -283,7 +296,14 @@ function CandidateSearch() {
         <Formik
           initialValues={initialValues}
           validationSchema={SearchSchema}
-          onSubmit={handleSearch}
+          onSubmit={(values) => {
+            const trimmedValues = {
+              ...values,
+              name: values.name?.trim() || "",
+              location: values.location?.trim() || "",
+            };
+            handleSearch(trimmedValues);
+          }}
         >
           {({ resetForm, isValid, dirty }) => (
             <Form className="space-y-6">

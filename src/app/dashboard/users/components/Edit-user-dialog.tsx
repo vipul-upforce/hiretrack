@@ -60,8 +60,15 @@ export function EditUserDialog({
       toast({
         title: "Error",
         description:
-          "Failed to update user" +
-          (error instanceof Error ? error.message : ""),
+          "Error: " +
+          (typeof error === "object" &&
+          error !== null &&
+          "data" in error &&
+          typeof error.data === "object" &&
+          error.data &&
+          "error" in error.data
+            ? (error.data as { error: string }).error
+            : "Unknown error"),
         variant: "destructive",
       });
     }

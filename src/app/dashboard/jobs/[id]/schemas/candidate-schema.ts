@@ -4,14 +4,31 @@ export const candidateSchema = (customFields: Yup.Schema<unknown>) =>
     name: Yup.string()
       .required("Name is required")
       .min(2, "Name must be at least 2 characters")
-      .max(25, "Name cannot be longer than 25 charecters"),
-    location: Yup.string().required("Location is required"),
+      .max(25, "Name cannot be longer than 25 charecters")
+      .matches(
+        /^(?=.*[A-Za-z]).+$/,
+        "Name must contain at least one letter and cannot be only numbers or special characters"
+      ),
+    location: Yup.string()
+      .required("Location is required")
+      .matches(
+        /^(?=.*[A-Za-z]).+$/,
+        "Name must contain at least one letter and cannot be only numbers or special characters"
+      ),
     experience: Yup.number()
       .required("Experience is required")
       .min(0, "Experience cannot be negative"),
-    skills: Yup.array()
-      .of(Yup.string())
+      skills: Yup.array()
+      .of(
+        Yup.string()
+          .required("Skill is required")
+          .matches(
+            /^(?=.*[A-Za-z]).+$/,
+            "Each skill must contain at least one letter and cannot be only numbers or special characters"
+          )
+      )
       .min(1, "At least one skill is required"),
+    
     expectedCTC: Yup.number()
       .required("Expected CTC is required")
       .min(0, "CTC cannot be negative")

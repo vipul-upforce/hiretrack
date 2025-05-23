@@ -41,7 +41,11 @@ export function FileUploader({
       <Upload className="h-8 w-8 mx-auto mb-4 text-muted-foreground" />
       <h3 className="text-lg font-medium mb-2">Upload Files</h3>
       {isProcessing && (
-        <p className="text-red-600">Uploads are currently restricted.</p>
+        <div className="flex flex-row  justify-center items-center">
+          <div className="w-48 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mb-6 overflow-hidden">
+            <div className="h-full bg-blue-500 rounded-full animate-progress" />
+          </div>
+        </div>
       )}
       <p className="text-sm text-muted-foreground">
         Drop PDF files or a ZIP containing PDFs here, or click to select

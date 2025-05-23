@@ -23,16 +23,31 @@ export async function DELETE(
         { status: 400 }
       );
     }
+
+    const isUserExisted = await User.findByIdAndUpdate(id);
+
+    const isAdmin = isUserExisted?.role === "admin";
+    if (isAdmin) {
+      const adminCount = await User.countDocuments({
+        role: "admin",
+        organizationId:session?.user?.organizationId,
+        isDeleted: false,
+      });
+      if (adminCount <= 1) {
+        return NextResponse.json(
+          { error: "Cannot delete the last remaining admin" },
+          { status: 400 }
+        );
+      }
+    }
     const user = await User.findByIdAndUpdate(
       id,
       { isDeleted: true },
-      { new: true }
+      { new: false }
     );
-
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
-
     return NextResponse.json({ message: "User deleted successfully" });
   } catch (error: unknown) {
     const errorMessage =
@@ -67,6 +82,30 @@ export async function PUT(
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
+
+    const isUserExisted = await User.findByIdAndUpdate(id);
+
+    const isAdmin = isUserExisted?.role === "admin";
+    if (isAdmin && (userData?.role !== "admin" || userData?.isDeleted)) {
+      const adminCount = await User.countDocuments({
+        role: "admin",
+        isDeleted: false,
+        organizationId:session?.user?.organizationId
+      });
+      if (adminCount <= 1) {
+        user = await User.findByIdAndUpdate(id, {
+          name: userData.name,
+          role: "admin",
+          isDeleted: false,
+          email: userData?.admin,
+        });
+        return NextResponse.json(
+          { error: "Cannot remove last admin" },
+          { status: 400 }
+        );
+      }
+    }
+
     user = await User.findByIdAndUpdate(id, userData);
     return NextResponse.json({ message: "User updated successfully" });
   } catch (error: unknown) {

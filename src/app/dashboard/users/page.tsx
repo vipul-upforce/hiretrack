@@ -57,9 +57,17 @@ function UsersPage() {
       });
     } catch (error: unknown) {
       toast({
-        title:
-          "Error" + (error instanceof Error ? error.message : "Unknown error"),
-        description: "Failed to delete user",
+        description:
+          "Error: " +
+          (typeof error === "object" &&
+          error !== null &&
+          "data" in error &&
+          typeof error.data === "object" &&
+          error.data &&
+          "error" in error.data
+            ? (error.data as { error: string }).error
+            : "Unknown error"),
+         title: "Failed to delete user",
         variant: "destructive",
       });
     }
