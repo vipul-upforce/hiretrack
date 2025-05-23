@@ -124,7 +124,7 @@ export async function PUT(
             isDeleted: false || null,
           }).select("email");
 
-          const emailList = users.map((user) => user.email);
+          const emailList = [undefined, ...users.map((user) => user.email)];
 
           const remark_adder = userData?.name || "user";
           const remark_for = data.name;
@@ -141,7 +141,7 @@ export async function PUT(
 
             sendMail(
               organizationId,
-              emailList,
+              emailList as string[],
               `New Remark Added For ${remark_for}`,
               emailContent
             );

@@ -19,13 +19,15 @@ interface IResend {
 }
 interface IResendObj {
   settings: IResend;
-  email: string[];
+  mailTo: string[];
+  bcc?: string[];
   htmlContent: string;
   eventTitle: string;
 }
 interface ISmtpObj {
   settings: ISmtp;
-  email: string[];
+  mailTo: string[];
+  bcc?: string[];
   htmlContent: string;
   eventTitle: string;
 }
@@ -34,7 +36,8 @@ export const sendMail = async (
   orgID: string,
   email: string[],
   eventTitle: string,
-  htmlContent: string
+  htmlContent: string,
+  bcc?: string[]
 ): Promise<{ status: number; message: string }> => {
   try {
     await connectToDatabase();
@@ -62,22 +65,36 @@ export const sendMail = async (
         message: "SMTP configuration is missing or invalid",
       };
     }
+    console.log("⌛ About to send mail to : ", email);
+    let mailTo = email;
+    if (email[0]) {
+      mailTo = [email[0]];
+      if (email.length > 1) {
+        bcc = [...email].slice(1);
+      }
+    }
+    mailTo = mailTo.filter((mailId) => (mailId ? true : false));
+    console.log("⌛ filtered mails: ", email);
 
     if (mailConfig.mailProvider === "smtp") {
       const result = await sendSmtpMail({
         settings: mailConfig,
-        email,
+        mailTo,
+        bcc,
         htmlContent,
         eventTitle,
       });
+      console.log("✉️ SMTP Mail sent: ", result);
       return result || { status: 500, message: "Failed to send email" };
     } else if (mailConfig.mailProvider === "resend") {
       const result = await sendReSendMail({
         settings: mailConfig,
-        email,
+        mailTo,
+        bcc,
         htmlContent,
         eventTitle,
       });
+      console.log("✉️ ReSend Mail sent: ", result);
       return result || { status: 500, message: "Failed to resend email" };
     }
 
@@ -107,7 +124,8 @@ const sendSmtpMail = async (smtpObJ: ISmtpObj) => {
     // Send email
     const mailOptions = {
       from: smtpObJ.settings.smtp_from,
-      to: smtpObJ.email,
+      to: smtpObJ.mailTo, // Use mailTo instead of email
+      bcc: smtpObJ.bcc,
       subject: `${smtpObJ.eventTitle}`,
       html: smtpObJ.htmlContent,
     };
@@ -136,11 +154,17 @@ const sendSmtpMail = async (smtpObJ: ISmtpObj) => {
 
 const sendReSendMail = async (mailObj: IResendObj) => {
   try {
-    const resend = new Resend("re_a1S4G4yT_FswGxxQhgjDxmsFgG38QXFEs");
+    const resend = new Resend(mailObj.settings.resend_api_key);
+    console.log(
+      "➡️FINAL MAILOBJ just before sending: ",
+      mailObj.mailTo,
+      mailObj.bcc
+    );
     const result = await resend.emails
       .send({
         from: mailObj.settings.resend_from,
-        to: mailObj.email,
+        to: mailObj.mailTo,
+        bcc: mailObj.bcc,
         subject: mailObj.eventTitle,
         replyTo: mailObj.settings.resend_reply_to,
         html: mailObj.htmlContent,

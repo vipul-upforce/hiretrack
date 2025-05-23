@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
       email,
       candidateName,
       jobName,
-      applicationDate: new Date().toLocaleString(),
+      applicationDate: new Date().toLocaleString(), // TODO- Add GMT+offset set by admin
     });
 
     const candidateAndHr = [email, ...hrEmails];
