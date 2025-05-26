@@ -154,7 +154,7 @@ export async function GET(req: NextRequest) {
             $match: {},
           };
         }
-
+        
         const isPagination = searchParams.get("isPagination") || false;
         const page = parseInt(searchParams.get("page") || "1", 10);
         const limit = parseInt(searchParams.get("limit") || "12", 10);

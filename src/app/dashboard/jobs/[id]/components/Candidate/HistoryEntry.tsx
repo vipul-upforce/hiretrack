@@ -92,13 +92,13 @@ const RenderHistoryEntry = ({
           </div>
           <div className="flex flex-col items-end">
             <p className="text-xs font-light text-gray-400">
-              {interview.assignmentBy && "Updated by"}
+              {interview?.assignmentBy && "Updated by"}
             </p>
             <p className="font-light text-gray-500 text-sm">
               {interview.assignmentBy &&
               typeof interview.assignmentBy === "object" &&
-              "name" in interview.assignmentBy
-                ? `${interview.assignmentBy.name}`
+              "name" in interview?.assignmentBy
+                ? `${interview?.assignmentBy.name}`
                 : ""}
             </p>
           </div>
@@ -186,9 +186,9 @@ const RenderHistoryEntry = ({
           {interview.remark && interview.remark.description}
         </p>
 
-        {interview.note && interview.note.rating !== 0 && (
+        {interview?.note && Object.keys(interview.note).length > 0 && interview?.note?.rating !== 0 && (
           <div className="flex flex-row items-center">
-            {interview.note.rating}/5
+            {interview?.note?.rating}/5
             <Star
               size={"15px"}
               className="mt-[1px]"

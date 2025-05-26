@@ -8,6 +8,7 @@ export interface JobDetail {
 }
 
 export interface Candidate {
+  [x: string]: any;
   _id: string;
   jobId: {
     _id: string;

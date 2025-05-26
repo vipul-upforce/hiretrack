@@ -118,7 +118,7 @@ export default function CalendarPage() {
     setFilterText(searchText.trim());
   };
 
-  const filteredAssignments = assignments?.filter((assignment) => {
+  const filteredAssignments = assignments && assignments[0]?.data?.filter((assignment:any) => {
     if (!filterText) return true;
     const searchRegex = new RegExp(filterText, "i");
 
@@ -150,50 +150,50 @@ export default function CalendarPage() {
   });
 
   const events: CustomCalendarEvent[] =
-    filteredAssignments?.map((candidate) => {
+    filteredAssignments?.map((candidate:any) => {
       const startTime = candidate?.assignment?.time
-        ? new Date(candidate.assignment.time)
+        ? new Date(candidate?.assignment?.time)
         : new Date();
       const endTime = candidate?.assignment?.time
-        ? new Date(candidate.assignment.time)
+        ? new Date(candidate?.assignment?.time)
         : new Date();
 
       return {
         id: candidate._id,
         title:
           candidate?.jobId && typeof candidate.jobId === "object"
-            ? candidate.jobId.title
+            ? candidate?.jobId?.title
             : "Unknown",
         start: startTime,
         end: endTime,
         allDay: false,
-        startStr: startTime.toISOString(),
-        endStr: endTime.toISOString(),
+        startStr: startTime?.toISOString(),
+        endStr: endTime?.toISOString(),
         url: "",
         display: "auto",
         extendedProps: {
           candidate: {
             ...candidate,
             jobId:
-              typeof candidate.jobId === "string"
-                ? candidate.jobId
-                : (candidate.jobId as Job)?._id,
+              typeof candidate?.jobId === "string"
+                ? candidate?.jobId
+                : (candidate?.jobId as Job)?._id,
             jobDetails:
-              typeof candidate.jobId === "string"
+              typeof candidate?.jobId === "string"
                 ? undefined
                 : {
-                    title: (candidate.jobId as Job).title,
-                    description: (candidate.jobId as Job).description,
+                    title: (candidate?.jobId as Job)?.title,
+                    description: (candidate?.jobId as Job)?.description,
                   },
           },
           interviewer:
-            typeof candidate.assignment?.interviewerId === "string"
+            typeof candidate?.assignment?.interviewerId === "string"
               ? {
-                  _id: candidate.assignment.interviewerId,
+                  _id: candidate?.assignment?.interviewerId,
                   name: "Unknown",
                   email: "Unknown",
                 }
-              : candidate.assignment?.interviewerId || {
+              : candidate?.assignment?.interviewerId || {
                   _id: "",
                   name: "Unknown",
                   email: "Unknown",
