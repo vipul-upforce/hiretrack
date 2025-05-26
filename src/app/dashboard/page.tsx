@@ -1,10 +1,9 @@
 "use client";
-
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Cookies from "js-cookie";
 import { Input } from "@/components/ui/input";
-import { OrgInfo } from "@/lib/models/user";
+import type { OrgInfo } from "@/lib/models/user";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import DashboardLoader from "./components/dashboard-loader";
 import ActionItems from "@/components/actionitems";
@@ -12,12 +11,15 @@ import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { RenderTodaysInterviews } from "./components/RenderTodaysInterviews";
 import { RenderInterviewerAssignments } from "./components/RenderInterviewerAssignments";
-
+import { MultiSelect } from "@/components/ui/multi-select";
+import { useGetUsersQuery } from "@/lib/features/users/usersApi";
+// import { isThisWeek } from "date-fns";
 interface User {
   name: string;
   email: string;
   role: string;
   organizationInfo: OrgInfo;
+  id?: string;
 }
 
 export interface Assignment {
@@ -90,26 +92,132 @@ export interface Assignment {
 }
 
 export default function DashboardPage() {
+  const {
+    data: userData,
+    // isLoading: isUserLoading,
+    // error,
+    // refetch,
+  } = useGetUsersQuery();
+  const itemsPerPage = 12;
+  const [open, setOpen] = useState(false);
+  const [selectedAssignedTo, setSelectedAssignedTo] = useState("");
   const [user, setUser] = useState<User | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [assignmentsCounts, setAssignmentsCounts] = useState<{[key: string]: number}>({
+    totalInterviews:0,
+    thisWeek:0,
+    today:0,
+  });
+
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [filterText, setFilterText] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMoreData, setHasMoreData] = useState(true);
   const shouldShowAssignments = user?.role === "admin" || user?.role === "hr";
   const isInterviewer = user?.role === "interviewer";
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 12; // Adjust this number as needed
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const loadingRef = useRef(false);
 
-  // Fetch assignments
-  const fetchAssignments = useCallback(async () => {
-    try {
-      const response = await fetch("/api/candidates/assignments");
-      const data = await response.json();
-      setAssignments(data);
-    } finally {
-      setIsLoading(false);
+
+  const fetchAssignments = useCallback(
+    async (page = 1, isAppend = false) => {
+      if (loadingRef.current) return;
+
+      loadingRef.current = true;
+
+      if (!isAppend) {
+        setIsLoading(true);
+      } else {
+        setIsLoadingMore(true);
+      }
+
+      try {
+        const params = new URLSearchParams({
+          isPagination: "true",
+          page: page.toString(),
+          limit: itemsPerPage.toString(),
+          filterValue: filterText.toString(),
+          assignedTo: selectedAssignedTo,
+        });
+
+        const response = await fetch(
+          `/api/candidates/assignments?${params.toString()}`
+        );
+        const data = await response.json();
+        setAssignmentsCounts(prev => ({
+          ...prev,
+          totalInterviews: data[0]?.totalInterviews || 0,
+        }));
+        
+
+        if (isAppend) {
+          setAssignments((prev) => [...prev, ...data[0].data]);
+          
+          
+        } else {
+          setAssignments(data[0]?.data);
+        }
+
+        if (data[0]?.data?.length < itemsPerPage) {
+          setHasMoreData(false);
+        } else {
+          setHasMoreData(true);
+        }
+      } catch (error) {
+        console.error("Error fetching assignments:", error);
+      } finally {
+        setIsLoading(false);
+        setIsLoadingMore(false);
+        loadingRef.current = false;
+      }
+    },
+    [filterText, selectedAssignedTo, itemsPerPage]
+  );
+
+  const loadMoreData = useCallback(() => {
+    if (!hasMoreData || isLoadingMore || loadingRef.current) return;
+
+    const nextPage = currentPage + 1;
+    setCurrentPage(nextPage);
+    fetchAssignments(nextPage, true);
+  }, [currentPage, hasMoreData, isLoadingMore, fetchAssignments]);
+
+  const handleScroll = useCallback(() => {
+    if (!scrollContainerRef.current) return;
+
+    const { scrollTop, scrollHeight, clientHeight } =
+      scrollContainerRef.current;
+    const scrollPercentage = (scrollTop + clientHeight) / scrollHeight;
+
+    if (scrollPercentage > 0.9 && hasMoreData && !isLoadingMore) {
+      loadMoreData();
     }
-  }, []);
+  }, [loadMoreData, hasMoreData, isLoadingMore]);
+
+  const observerRef = useRef<IntersectionObserver>(null);
+  const lastElementRef = useCallback(
+    (node: HTMLDivElement) => {
+      if (isLoadingMore) return;
+      if (observerRef.current) observerRef.current.disconnect();
+
+      observerRef.current = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && hasMoreData) {
+            loadMoreData();
+          }
+        },
+        {
+          threshold: 0.1,
+          rootMargin: "100px",
+        }
+      );
+
+      if (node) observerRef.current.observe(node);
+    },
+    [isLoadingMore, hasMoreData, loadMoreData]
+  );
 
   const checkUser = async () => {
     const user = Cookies.get("token");
@@ -120,66 +228,66 @@ export default function DashboardPage() {
       }
     }
   };
+
   useEffect(() => {
     checkUser();
-    fetchAssignments();
-  }, [fetchAssignments]);
+  }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    setHasMoreData(true);
+    setAssignments([]);
+    fetchAssignments(1, false);
+  }, [selectedAssignedTo, filterText]);
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    container.addEventListener("scroll", handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [handleScroll]);
 
   const applyFilter = () => {
     setFilterText(searchText);
-    setCurrentPage(1)
-
   };
 
-  const filteredAssignments = assignments?.filter((assignment) => {
-    if (!filterText) return true;
-    const searchRegex = new RegExp(filterText, "i");
-
-    const jobSkills = assignment.jobId?.skills || [];
-    const assignmentSkills = assignment.skills || [];
-    const assignmentJobSkills = assignment.assignment?.jobId?.skills || [];
-    const allSkills = [
-      ...jobSkills,
-      ...assignmentSkills,
-      ...assignmentJobSkills,
-    ];
-
-    return (
-      searchRegex.test(assignment.name || "") ||
-      searchRegex.test(assignment?.assignment?.interviewerId?.name || "") ||
-      searchRegex.test(assignment.jobId?.title || "") ||
-      (allSkills.length > 0 &&
-        allSkills.some((skill) => searchRegex.test(skill || "")))
-    );
-  });
-
-  const interviewerAssignments = filteredAssignments?.filter((assignment) =>
+  const interviewerAssignments = assignments?.filter((assignment) =>
     isInterviewer
       ? assignment.assignment?.interviewerId?.email === user?.email
       : assignment
   );
 
   const todayAssignments = interviewerAssignments?.filter((assignment) => {
-    const assignmentDate = new Date(assignment.assignment.time);
-    const today = new Date();
+    const assignmentDate = new Date(assignment.assignment.time)
+    const today = new Date()
     return (
       assignmentDate.getDate() === today.getDate() &&
       assignmentDate.getMonth() === today.getMonth() &&
       assignmentDate.getFullYear() === today.getFullYear()
-    );
-  });
+    )
+  })
 
-  const thisWeekAssignments = filteredAssignments?.filter((assignment) => {
-    const assignmentDate = new Date(assignment.assignment.time);
-    const startOfWeek = new Date();
-    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(endOfWeek.getDate() + 6);
-    return assignmentDate >= startOfWeek && assignmentDate <= endOfWeek;
-  });
+  const thisWeekAssignments = assignments?.filter((assignment) => {
+    const assignmentDate = new Date(assignment.assignment.time)
+    const startOfWeek = new Date()
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay())
+    const endOfWeek = new Date(startOfWeek)
+    endOfWeek.setDate(endOfWeek.getDate() + 6)
+    return assignmentDate >= startOfWeek && assignmentDate <= endOfWeek
+  })
 
+  const options = userData
+    ?.map((usr) => ({
+      label: usr._id === user?.id ? "Me" : usr.name,
+      value: usr._id,
+    }))
+    ?.sort((a) => (a.label === "Me" ? -1 : 1));
   return (
-    <div className="space-y-6">
+    <div
+      ref={scrollContainerRef}
+      className="space-y-6 h-screen overflow-y-auto"
+    >
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardHeader>
@@ -187,13 +295,16 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold flex justify-start">
-              {isLoading ? (
+              {
+                isLoading ? <LoadingSpinner />: assignmentsCounts?.totalInterviews
+              }
+              {/* {isLoading ? (
                 <LoadingSpinner />
               ) : isInterviewer ? (
                 interviewerAssignments?.length
               ) : (
                 assignments?.length
-              )}
+              )} */}
             </div>
           </CardContent>
         </Card>
@@ -208,6 +319,7 @@ export default function DashboardPage() {
             </div>
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Today</CardTitle>
@@ -227,11 +339,7 @@ export default function DashboardPage() {
           value={searchText}
           onChange={(e) => {
             const value = e.target.value;
-            const sanitizedValue = value.replace(
-              /[\/\\*+?|\{\}\[\]()^$]/g,
-              ""
-            );
-
+            const sanitizedValue = value.replace(/[/\\*+?|{}[\]()^$]/g, "");
             setSearchText(sanitizedValue);
           }}
           className="max-w-md"
@@ -242,6 +350,16 @@ export default function DashboardPage() {
           }}
         />
         <Button onClick={applyFilter}>Filter</Button>
+        {(user?.role === "admin" || user?.role === "hr") && (
+          <MultiSelect
+            placeholder="Assign to"
+            open={open}
+            setOpen={setOpen}
+            value={selectedAssignedTo}
+            setValue={setSelectedAssignedTo}
+            options={options}
+          />
+        )}
       </div>
 
       {shouldShowAssignments ? (
@@ -249,61 +367,47 @@ export default function DashboardPage() {
           <h2 className="text-2xl font-bold mb-4">All Assignments</h2>
           {isLoading ? (
             <DashboardLoader />
-          ) : filteredAssignments?.length > 0 ? (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredAssignments
-                  ?.slice(
-                    (currentPage - 1) * itemsPerPage,
-                    currentPage * itemsPerPage
-                  )
-                  .map((assignment) => (
-                    <ActionItems
-                      key={assignment.id || assignment._id}
-                      assignment={assignment}
-                      fetchAssignments={fetchAssignments}
-                    />
-                  ))}
-              </div>
-
-              {/* Pagination Controls */}
-              <div className="flex justify-center items-center gap-4 mt-6">
-                <Button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
-                  }
-                  disabled={currentPage === 1}
-                  variant="outline"
-                >
-                  Previous
-                </Button>
-                <span className="text-sm">
-                  Page {currentPage} of{" "}
-                  {Math.ceil(filteredAssignments.length / itemsPerPage)}
-                </span>
-                <Button
-                  onClick={() =>
-                    setCurrentPage((prev) =>
-                      Math.min(
-                        prev + 1,
-                        Math.ceil(filteredAssignments.length / itemsPerPage)
-                      )
-                    )
-                  }
-                  disabled={
-                    currentPage ===
-                    Math.ceil(filteredAssignments.length / itemsPerPage)
-                  }
-                  variant="outline"
-                >
-                  Next
-                </Button>
-              </div>
-            </>
           ) : (
-            <p className="text-lg font-semibold text-gray-500 text-center py-10 w-full flex justify-center items-center">
-              No assignments found.
-            </p>
+            <>
+              {assignments?.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {assignments.map((assignment, index) => (
+                    <div
+                      key={assignment.id || assignment._id}
+                      ref={
+                        index === assignments.length - 1 ? lastElementRef : null
+                      }
+                    >
+                      <ActionItems
+                        assignment={assignment}
+                        fetchAssignments={() => fetchAssignments(1, false)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-lg font-semibold text-gray-500 text-center py-10 w-full flex justify-center items-center">
+                  No assignments found.
+                </p>
+              )}
+
+              {/* Loading indicator for infinite scroll */}
+              {isLoadingMore && (
+                <div className="flex justify-center items-center py-8">
+                  <LoadingSpinner />
+                  <span className="ml-2 text-gray-500">
+                    Loading more assignments...
+                  </span>
+                </div>
+              )}
+
+              {/* End of data indicator */}
+              {!hasMoreData && assignments.length > 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <p>You've reached the end of the list</p>
+                </div>
+              )}
+            </>
           )}
         </div>
       ) : (

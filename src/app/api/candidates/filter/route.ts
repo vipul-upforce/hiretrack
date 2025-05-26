@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { History } from "@/lib/mongodb";
 import { Candidate } from "@/lib/mongodb";
-import { auth } from "@/lib/auth";
 
 interface QueryCondition {
   $regex?: string;

@@ -29,7 +29,7 @@ interface CandidateFormProps {
 }
 
 export function CandidateForm({ onFileUpload }: CandidateFormProps) {
-  const { setFieldValue, values,setTouched, errors ,touched} =
+  const { setFieldValue, values, errors } =
     useFormikContext<CandidateFormValues>();
   const { data: interviewers } = useFetchInterviewersQuery();
   const [nameField, nameMeta] = useField("name");
@@ -49,10 +49,6 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
       ? values.assignment.interviewerId
       : values.assignment?.interviewerId?._id || "";
   const [user, setuser] = useState<User | null>(null);
-
-  console.log('values :>> ', values);
-  console.log('errors :>> ', errors);
-  console.log('touched :>> ', touched);
 
   useEffect(() => {
     (async () => {
@@ -137,10 +133,6 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
               if (onFileUpload) {
                 await onFileUpload(files[0]);
               }
-              setTimeout(()=>
-              {
-                setTouched(Object.fromEntries(Object.keys(values).map(key => [key, true])), true);
-              },100)
             }}
             files={resumeField.value ? [resumeField.value] : []}
             setter={(files) => setFieldValue("resume", files[0])}
