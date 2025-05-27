@@ -1,5 +1,6 @@
 "use client"
 import type React from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useEditor, EditorContent } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import Underline from "@tiptap/extension-underline"
@@ -10,7 +11,7 @@ import Color from "@tiptap/extension-color"
 import TextStyle from "@tiptap/extension-text-style"
 import FontFamily from "@tiptap/extension-font-family"
 import Highlight from "@tiptap/extension-highlight"
-import { useCallback, useEffect, useState } from "react"
+import { Extension } from "@tiptap/core"
 import "./rteStyles.css"
 
 import {
@@ -69,7 +70,19 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        paragraph: {
+          HTMLAttributes: {
+            class: "my-paragraph",
+          },
+        },
+        hardBreak: {
+          keepMarks: false,
+          HTMLAttributes: {
+            class: "hard-break",
+          },
+        },
+      }),
       Underline,
       Link.configure({
         openOnClick: false,
@@ -83,6 +96,19 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       FontFamily,
       Highlight.configure({
         multicolor: true,
+      }),
+      Extension.create({
+        name: "customEnterKeymap",
+        addKeyboardShortcuts() {
+          return {
+            Enter: ({ editor }) => {
+              return editor.commands.setHardBreak()
+            },
+            "Shift-Enter": ({ editor }) => {
+              return editor.commands.splitBlock()
+            },
+          }
+        },
       }),
     ],
     content: value,
@@ -173,7 +199,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   }
 
   // const hasError = touched && error
-  const borderColor =  isFocused ? "border-primary" : "border-input"
+  const borderColor = isFocused ? "border-primary" : "border-input"
 
   return (
     <div className={`border rounded-md ${borderColor} ${className}`}>
