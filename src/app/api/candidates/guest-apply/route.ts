@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     const data = await request.json();
     // console.log("&&&&&&&&&&&&&&DATAPAYLOAD: ", data);
 
-    const { jobId } = data;
+    const { jobId, dateTime } = data;
     if (!Job) {
       throw new Error("Database not connected");
     }
@@ -145,13 +145,15 @@ export async function POST(request: NextRequest) {
       await candidate.populate("assignment.interviewerId", "name email");
     }
 
+    // console.log("✅✅✅ DATETIME: ", dateTime);
+
     // const historyCreated =
     await History?.create({
       candidateId: candidate?._id,
       jobId,
       history: [
         {
-          dateTime: new Date().toISOString(),
+          dateTime: dateTime,
           title: "Self Applied",
           previousInterviewer: null,
           currentInterviewer: null,

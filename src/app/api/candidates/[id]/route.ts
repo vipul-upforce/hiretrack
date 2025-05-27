@@ -11,6 +11,7 @@ import mongoose from "mongoose";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
 import { sendMail } from "../../event-mail";
 import { loadTemplate } from "@/lib/templateLoader";
+import { auth } from "@/lib/auth";
 
 interface UpdateObject {
   $set: Record<string, unknown>;
@@ -246,12 +247,15 @@ export async function GET(
 }
 
 export async function DELETE(
-  _request: Request,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectToDatabase();
     const { id } = await params;
+    const { dateTime } = await _request.json();
+    const userCookie = await auth(_request);
+    console.log("$$$⌛⌛ DATE TIME: ", dateTime);
     if (!Candidate) {
       return NextResponse.json(
         { error: "Candidate not found" },
@@ -267,6 +271,42 @@ export async function DELETE(
         { status: 404 }
       );
     }
+
+    const historyEntry = {
+      dateTime: dateTime,
+      title: candidate.isDeleted ? "Unarchived" : "Archived",
+      previousInterviewer: null,
+      currentInterviewer: null,
+      assignmentBy: userCookie?.user.id,
+      // note: {
+      //   description: `${candidate.name} was archived.`,
+      // },
+    };
+    // const entry_created = await History?.create({
+    //   candidateId: candidate?._id,
+    //   jobId: candidate.jobId,
+    //   history: [
+    //     {
+    //       dateTime: dateTime,
+    //       title: "Archived",
+    //       previousInterviewer: null,
+    //       currentInterviewer: null,
+    //       assignmentBy: null,
+    //       // note: {
+    //       //   description: `${candidate.name} was archived.`,
+    //       // },
+    //     },
+    //   ],
+    // });
+    const updatedHistory = await History?.findOneAndUpdate(
+      { candidateId: candidate._id, jobId: candidate.jobId },
+      {
+        $push: { history: historyEntry },
+      },
+      { new: true }
+    );
+
+    console.log("🎉🎉🎉entry created: ", updatedHistory);
 
     // const deletedCandidate = await Candidate.findByIdAndUpdate(id, { isDeleted : });
     const deletedCandidate = await Candidate.findByIdAndUpdate(
