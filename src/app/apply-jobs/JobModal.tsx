@@ -5,7 +5,7 @@ import { Dialog } from "@headlessui/react";
 import { useState, useEffect } from "react";
 import ApplyOptions from "./ApplyOptions";
 import { hasAppliedAsGuest } from "./ApplyAsGuest";
-
+import '../../components/ui/rte/rteStyles.css'
 // Define a type for the job object
 interface Job {
   title: string;
@@ -88,7 +88,10 @@ export default function JobModal({
             <div className="p-4 sm:p-6 sm:pt-0 pb-20 overflow-y-auto max-h-[calc(80vh-120px)] border-t border-gray-100">
               <div className="mt-2 mb-10">
                 <p
-                  className="w-full whitespace-pre-wrap"
+                  // className="w-full whitespace-pre-wrap"
+                  className="text-sm whitespace-pre-wrap pb-0 ml-[1rem]"
+                  style={{ wordWrap: "break-word" }}
+                  
                   dangerouslySetInnerHTML={{
                     __html: job?.description || "No description found",
                   }}
