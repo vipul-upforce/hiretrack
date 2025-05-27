@@ -18,6 +18,7 @@ import {
 } from "../schemas/AssignCandidateSchema";
 import { usePathname } from "next/navigation";
 import { Interviewer } from "@/lib/features/user/userApi";
+import { Candidate } from "@/types/candidate";
 
 export const useAssignCandidate = ({
   candidate,
@@ -85,7 +86,7 @@ export const useAssignCandidate = ({
             : candidate.remarks,
         assignment: {
           interviewerId: values.interviewerId,
-          time: values.time.toString(),
+          time: values?.time?.toString(),
           assignedAt: new Date().toISOString(),
         },
         attachments: [...candidate.attachments, ...values.attachments],
@@ -127,7 +128,7 @@ export const useAssignCandidate = ({
         attachments: values.attachments,
       };
 
-      const { data: result, error } = await updateCandidate(updatedCandidate);
+      const { data: result, error } = await updateCandidate(updatedCandidate as Candidate);
       if (!error) {
         sentAssignmentMail(result, sendEmail);
       }
