@@ -388,7 +388,7 @@ export async function GET(req: NextRequest) {
               createdAt: "$candidates.createdAt",
               updatedAt: "$candidates.updatedAt",
               history: "$histories.history",
-              customFields: "$organization.customFields",
+              customFields: "$candidates.customFields",
             },
           },
           {
