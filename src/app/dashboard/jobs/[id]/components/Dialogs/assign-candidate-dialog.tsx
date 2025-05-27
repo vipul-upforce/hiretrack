@@ -87,7 +87,7 @@ export function AssignCandidateDialog({
       typeof candidate.assignment?.interviewerId === "string"
         ? candidate.assignment.interviewerId
         : candidate.assignment?.interviewerId?._id || "",
-    time: candidate.assignment ? dayjs(candidate.assignment.time) : dayjs(),
+    time: candidate.assignment?.time ? dayjs(candidate?.assignment?.time) : null,
     remark: "",
     rating: null,
     attachments: [],

@@ -118,45 +118,48 @@ export default function CalendarPage() {
     setFilterText(searchText.trim());
   };
 
-  const filteredAssignments = assignments && assignments[0]?.data?.filter((assignment:any) => {
-    if (!filterText) return true;
-    const searchRegex = new RegExp(filterText, "i");
+  const filteredAssignments =
+    assignments &&
+    assignments[0]?.data?.filter((assignment: any) => {
+      if (!filterText) return true;
+      const searchRegex = new RegExp(filterText, "i");
 
-    const jobSkills =
-      (typeof assignment.jobId === "object" && assignment.jobId?.skills) || [];
-    const assignmentSkills = assignment.skills || [];
-    const assignmentJobSkills = assignment.assignment?.jobId?.skills || [];
-    const allSkills = [
-      ...jobSkills,
-      ...assignmentSkills,
-      ...assignmentJobSkills,
-    ];
+      const jobSkills =
+        (typeof assignment.jobId === "object" && assignment.jobId?.skills) ||
+        [];
+      const assignmentSkills = assignment.skills || [];
+      const assignmentJobSkills = assignment.assignment?.jobId?.skills || [];
+      const allSkills = [
+        ...jobSkills,
+        ...assignmentSkills,
+        ...assignmentJobSkills,
+      ];
 
-    return (
-      searchRegex.test(assignment.name || "") ||
-      searchRegex.test(
-        assignment.jobId && typeof assignment.jobId === "object"
-          ? assignment.jobId.title
-          : ""
-      ) ||
-      searchRegex.test(
-        (typeof assignment?.assignment?.interviewerId === "object" &&
-          assignment?.assignment?.interviewerId?.name) ||
-          ""
-      ) ||
-      (allSkills.length > 0 &&
-        allSkills.some((skill) => searchRegex.test(skill || "")))
-    );
-  });
+      return (
+        searchRegex.test(assignment.name || "") ||
+        searchRegex.test(
+          assignment.jobId && typeof assignment.jobId === "object"
+            ? assignment.jobId.title
+            : ""
+        ) ||
+        searchRegex.test(
+          (typeof assignment?.assignment?.interviewerId === "object" &&
+            assignment?.assignment?.interviewerId?.name) ||
+            ""
+        ) ||
+        (allSkills.length > 0 &&
+          allSkills.some((skill) => searchRegex.test(skill || "")))
+      );
+    });
 
   const events: CustomCalendarEvent[] =
-    filteredAssignments?.map((candidate:any) => {
+    filteredAssignments?.map((candidate: any) => {
       const startTime = candidate?.assignment?.time
         ? new Date(candidate?.assignment?.time)
-        : new Date();
+        : null;
       const endTime = candidate?.assignment?.time
         ? new Date(candidate?.assignment?.time)
-        : new Date();
+        : null;
 
       return {
         id: candidate._id,
@@ -213,7 +216,7 @@ export default function CalendarPage() {
 
   const handleDateClick = (arg: DateClickArg) => {
     const eventsOnDate = events.filter(
-      (event) => event.start.toISOString().split("T")[0] === arg.dateStr
+      (event) => event?.start?.toISOString().split("T")[0] === arg?.dateStr
     );
 
     if (eventsOnDate.length === 1) {
@@ -376,7 +379,7 @@ export default function CalendarPage() {
             <div className="text-center text-muted-foreground py-8">
               {events.filter(
                 (event) =>
-                  event.start.toISOString().split("T")[0] ===
+                  event?.start?.toISOString().split("T")[0] ===
                   new Date().toISOString().split("T")[0]
               ).length > 0
                 ? ""

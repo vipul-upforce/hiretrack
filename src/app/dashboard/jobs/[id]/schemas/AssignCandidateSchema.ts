@@ -21,7 +21,7 @@ export interface User {
 // Interface for form values
 export interface FormValues {
   interviewerId: string;
-  time: Dayjs;
+  time: Dayjs | null;
   remark: string;
   rating: number | null;
   attachments: Attachment[];
