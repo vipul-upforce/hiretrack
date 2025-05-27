@@ -265,8 +265,12 @@ const ApplyJobsContent = () => {
               }}
             >
               <h2 className="text-xl font-semibold mb-2">{job.title}</h2>
-              <p className="text-gray-600 mb-4 line-clamp-2">
-                {job.description}
+              <p className="text-gray-600 mb-4 line-clamp-2"
+               dangerouslySetInnerHTML={{
+                __html: job?.description || "No description found",
+              }}
+              >
+                {/* {job.description} */}
               </p>
               <div className="flex flex-wrap gap-2">
                 {job.skills.slice(0, 3).map((skill, i) => (

@@ -18,6 +18,7 @@ export const jobSchema = new mongoose.Schema({
     enum: ["open", "closed", "draft"],
     default: "open",
   },
+  isPublished:{ type: Boolean, default:false},
   attachments: {
     files: [
       {

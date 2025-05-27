@@ -50,6 +50,7 @@ export async function GET(request: Request) {
         {
           organizationId: organizationId,
           status: "open",
+          isPublished:true,
           ...(title && {
             title: {
               $regex: title,

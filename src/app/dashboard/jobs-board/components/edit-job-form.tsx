@@ -11,6 +11,7 @@ import useCustomForm, {
   CustomFieldValues,
 } from "@/Custom_Fields/hooks/useCustomForm";
 import CustomFields from "@/Custom_Fields/Components/CustomFields";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Job {
   _id: string;
@@ -20,6 +21,7 @@ interface Job {
   skills: string[];
   experience: number;
   links: string[];
+  isPublished?: boolean;
   // validTill: Date;
   status: "open" | "closed" | "draft";
   candidateCount?: number;
@@ -111,7 +113,6 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
     customFields: { ...getDefaultValues(job.customFields || {}) },
   };
 
-  // console.log(job, "job");
 
   const onSubmit = async (values: JobFormValues) => {
     const fileNames = values.files.map((file) => file.name);
@@ -220,7 +221,24 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
             />
             <CustomFields formName={formName} />
           </div>
+
           <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4">
+            <div className="items-top flex space-x-2 items-center">
+              <Checkbox
+                id="publish"
+                name="publish"
+                checked={values?.isPublished}
+                onCheckedChange={(checked) => setFieldValue("isPublished", checked)}
+              />
+              <div className="grid gap-1.5 leading-none ">
+                <label
+                  htmlFor="publish"
+                  className="text-sm font-semibold leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Publish
+                </label>
+              </div>
+            </div>
             <Button type="button" variant="outline" onClick={onCancel}>
               Cancel
             </Button>
