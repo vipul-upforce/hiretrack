@@ -18,6 +18,17 @@ export const laneApi = createApi({
       }),
       invalidatesTags: ["Lane"],
     }),
+    editLane: builder.mutation<
+      ILane,
+      { organizationId: string; prevLaneId: string; newLaneId: string }
+    >({
+      query: (data) => ({
+        url: `lanes/${data.prevLaneId || ""}`,
+        method: "PATCH",
+        body: data,
+      }),
+      invalidatesTags: ["Lane"],
+    }),
     deleteLane: builder.mutation<
       void,
       { laneId: string; organizationId: string | object }
@@ -37,5 +48,6 @@ export const laneApi = createApi({
 export const {
   useGetLanesQuery,
   useUpdateLanesMutation,
+  useEditLaneMutation,
   useDeleteLaneMutation,
 } = laneApi;

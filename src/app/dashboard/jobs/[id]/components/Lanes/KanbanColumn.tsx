@@ -7,10 +7,11 @@ import {
   DraggableProvided,
 } from "@hello-pangea/dnd";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { GripVertical, Trash2 } from "lucide-react";
+import { GripVertical } from "lucide-react";
 import { CandidateCard } from "../Candidate/candidate-card";
 import { Candidate } from "@/types/candidate"; // Adjust path as needed
+import { LaneOptionsMenu } from "./lanes-options-menu";
+import { useState } from "react";
 
 interface KanbanColumnProps {
   column: {
@@ -23,7 +24,9 @@ interface KanbanColumnProps {
   setIsFileOver: (value: boolean) => void;
   handleFileDrop: (file: File) => void;
   handleDeleteLane: () => void;
+  handleEditLane: () => void;
   setLaneToDelete: (laneId: string) => void;
+  setLaneToEdit: (laneId: string) => void;
   refetch: () => void;
   selectedCandidate: Candidate | null;
   setSelectedCandidate: (candidate: Candidate | null) => void;
@@ -41,7 +44,9 @@ export function KanbanColumn({
   setIsFileOver,
   handleFileDrop,
   handleDeleteLane,
+  handleEditLane,
   setLaneToDelete,
+  setLaneToEdit,
   refetch,
   selectedCandidate,
   setSelectedCandidate,
@@ -51,6 +56,8 @@ export function KanbanColumn({
   setOpenRemarksFor,
   handleDeleteClick,
 }: KanbanColumnProps) {
+  const [isLaneOptionsOpen, setIsLaneOptionsOpen] = useState(false);
+  const [isLaneOpsOpenFor, setIsLaneOpsOpenFor] = useState<string | null>();
   return (
     <Draggable key={column.id} draggableId={column.id} index={index}>
       {(provided: DraggableProvided) => (
@@ -76,7 +83,7 @@ export function KanbanColumn({
                     </span>
                   </CardTitle>
                 </div>
-                <Button
+                {/* <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => {
@@ -86,7 +93,19 @@ export function KanbanColumn({
                   className="h-8 w-8 p-0"
                 >
                   <Trash2 className="h-4 w-4 text-muted-foreground" />
-                </Button>
+                </Button> */}
+                <LaneOptionsMenu
+                  laneId={column.id}
+                  handleDeleteLane={handleDeleteLane}
+                  setLaneToDelete={setLaneToDelete}
+                  setLaneToEdit={setLaneToEdit}
+                  onEdit={handleEditLane}
+                  isOpen={isLaneOptionsOpen && column.id === isLaneOpsOpenFor}
+                  setIsOpen={(open) => {
+                    setIsLaneOptionsOpen(open);
+                    setIsLaneOpsOpenFor(open ? column.id || "" : "");
+                  }}
+                />
               </div>
             </CardHeader>
             <CardContent className="h-[89%]">
