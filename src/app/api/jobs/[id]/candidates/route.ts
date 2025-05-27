@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { History } from "@/lib/mongodb";
 import { Candidate } from "@/lib/mongodb";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { ICandidate } from "@/lib/models/candidate";
+import { ProjectionType } from "mongoose";
 
 export async function GET(
   _request: NextRequest,
@@ -29,7 +31,7 @@ export async function GET(
       );
     }
     let candidates = null;
-    const projection =
+    const projection: ProjectionType<ICandidate> =
       role === "interviewer"
         ? {
             currentCTC: 0,
