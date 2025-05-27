@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import { User } from "@/lib/mongodb";
 import { auth } from "@/lib/auth";
+import { verifyAndDecryptToken } from "@/lib/utils";
+import { signToken } from "@/app/actions/auth";
 
 export async function DELETE(
   req: NextRequest,
@@ -30,7 +32,7 @@ export async function DELETE(
     if (isAdmin) {
       const adminCount = await User.countDocuments({
         role: "admin",
-        organizationId:session?.user?.organizationId,
+        organizationId: session?.user?.organizationId,
         isDeleted: false,
       });
       if (adminCount <= 1) {
@@ -83,22 +85,22 @@ export async function PUT(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const isUserExisted = await User.findByIdAndUpdate(id);
-
-    const isAdmin = isUserExisted?.role === "admin";
+    const isAdmin = user.role === "admin";
     if (isAdmin && (userData?.role !== "admin" || userData?.isDeleted)) {
       const adminCount = await User.countDocuments({
         role: "admin",
         isDeleted: false,
-        organizationId:session?.user?.organizationId
+        organizationId: session?.user?.organizationId,
       });
+
       if (adminCount <= 1) {
-        user = await User.findByIdAndUpdate(id, {
+        await User.findByIdAndUpdate(id, {
           name: userData.name,
           role: "admin",
           isDeleted: false,
           email: userData?.admin,
         });
+
         return NextResponse.json(
           { error: "Cannot remove last admin" },
           { status: 400 }
@@ -106,7 +108,35 @@ export async function PUT(
       }
     }
 
-    user = await User.findByIdAndUpdate(id, userData);
+    await User.findByIdAndUpdate(id, userData);
+
+    const token = req.cookies.get("token");
+    if (token) {
+      const data = verifyAndDecryptToken(token.value);
+      if (data.email === userData?.email) {
+        const updatedData = {
+          ...data,
+          name: userData?.name,
+          email: userData?.email,
+        };
+
+        // const newToken = await signToken(updatedData);
+
+        // const response = NextResponse.json({
+        //   message: "User updated successfully",
+        // });
+
+        // response.cookies.set("token", newToken, {
+        //   httpOnly: false,
+        //   sameSite: "strict",
+        //   maxAge: 30 * 24 * 60 * 60, // 30 days
+        // });
+       const response= refreshAndReAssignToken(updatedData);
+
+        return response;
+      }
+    }
+
     return NextResponse.json({ message: "User updated successfully" });
   } catch (error: unknown) {
     const errorMessage =
@@ -114,3 +144,16 @@ export async function PUT(
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
+
+const refreshAndReAssignToken = async (data: unknown) => {
+  const newToken = await signToken(data);
+
+  const response = NextResponse.json({ message: "User updated successfully" });
+
+  response.cookies.set("token", newToken, {
+    httpOnly: false,
+    sameSite: "strict",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  });
+  return response;
+};
