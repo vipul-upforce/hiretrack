@@ -1,0 +1,7 @@
+ol,
+menu {
+  list-style: decimal;
+}
+ul{
+  list-style: unset;
+}

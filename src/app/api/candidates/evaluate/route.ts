@@ -4,6 +4,7 @@ import connectToDatabase, { Candidate, Settings } from "@/lib/mongodb";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { promises as fs } from "fs";
 import path from "path";
+import { stripHtml } from "@/app/dashboard/jobs-board/schemas/job-schema";
 // import { verifyAndDecryptToken } from "@/app/actions/auth";
 
 const generateBase64 = async (url: any) => {
@@ -45,7 +46,7 @@ async function evaluateResume(
   try {
     const genAI = new GoogleGenerativeAI(api_key);
     const data = resumeText;
-    const jobDescription = jobData.description;
+    const jobDescription =  await stripHtml(jobData?.description);
     const jobTitle = jobData.title;
     const jobSkills = jobData.skills.join(", ");
 
