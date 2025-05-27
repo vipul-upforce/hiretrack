@@ -4,6 +4,9 @@ import { FileData } from "@/Custom_Fields/hooks/useCustomForm";
 import { Dayjs } from "dayjs";
 import * as Yup from "yup";
 
+export const stripHtml = (html: string) =>
+  html.replace(/<[^>]*>?/gm, "").replace(/\s+/g, " ").trim();
+
 // export const jobSchema = (customFields: Yup.Schema<unknown>)=>{
 export const jobSchema = (customFields: Yup.Schema<unknown>) => {
   return Yup.object().shape({
@@ -15,10 +18,17 @@ export const jobSchema = (customFields: Yup.Schema<unknown>) => {
     //   .required("Company name is required")
     //   .min(2, "Company name must be at least 2 characters")
     //   .trim("Title should not have leading or trailing spaces"),
+    // description: Yup.string()
+    //   .required("Job description is required")
+    //   .min(50, "Description must be at least 50 characters")
+    //   .trim("Title should not have leading or trailing spaces"),
     description: Yup.string()
-      .required("Job description is required")
-      .min(50, "Description must be at least 50 characters")
-      .trim("Title should not have leading or trailing spaces"),
+    .required("Job description is required")
+    .test("min-text-length", "Description must be at least 50 characters", value => {
+      if (!value) return false;
+      const plainText = stripHtml(value);
+      return plainText.length >= 50;
+    }),
     skills: Yup.array()
       .of(Yup.string())
       .min(1, "At least one skill is required"),

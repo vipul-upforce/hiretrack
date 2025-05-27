@@ -3,7 +3,6 @@
 import { useFormikContext } from "formik";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { ChipInput } from "@/components/ui/chip-input";
 import { FileUpload } from "@/components/ui/file-upload";
 import { Button } from "@/components/ui/button";
@@ -19,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 // import { DatePicker } from "@/components/ui/date-picker";
 import { LinkIcon } from "lucide-react";
+import RichTextEditor from "@/components/ui/rte/RichTextEditor";
 
 // export const skillSuggestions = [
 //   "JavaScript",
@@ -110,14 +110,23 @@ export function JobForm(props: JobFormProps) {
         <Label htmlFor="description">
           Description <span className="text-red-500">*</span>
         </Label>
-        <Textarea
+        <RichTextEditor
           id="description"
           name="description"
-          value={values.description}
-          onChange={handleChange}
-          onBlur={handleBlur}
           placeholder="Enter job description..."
-          className="min-h-[100px]"
+          className="min-h-[100px] p-3"
+          maxLength={2000}
+          value={values?.description || ""}
+          onChange={(data) => {
+            handleChange?.(data);
+            setFieldValue?.("description", data);
+          }}
+          onBlur={(data) => {
+            handleBlur?.(data);
+            setFieldTouched("description", true);
+          }}
+          error={errors.description}
+          touched={touched.description}
         />
         {touched.description && errors.description && (
           <p className="text-sm text-red-500">{String(errors.description)}</p>

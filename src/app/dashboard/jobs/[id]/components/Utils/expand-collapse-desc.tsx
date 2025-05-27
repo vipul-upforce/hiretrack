@@ -35,13 +35,25 @@ const ExpandableDescription = ({
         className={`text-sm whitespace-pre-wrap flex  break-words transition-all duration-200 ease-in-out 
           ${isExpanded ? "max-h-full pb-5" : `max-h-[60px] h-auto overflow-hidden`}`}
       >
-        {typeof description === "string" ? (
+        {/* {typeof description === "string" ? (
           <p
             className="text-sm whitespace-pre-wrap pb-0"
             style={{ wordWrap: "break-word" }}
           >
             {description || "No description found"}
           </p>
+        ) : (
+          (description ?? <p>No description found</p>)
+        )} */}
+
+        {typeof description === "string" ? (
+          <div
+            className="text-sm whitespace-pre-wrap pb-0 ml-[1rem]"
+            style={{ wordWrap: "break-word" }}
+            dangerouslySetInnerHTML={{
+              __html: description || "No description found",
+            }}
+          />
         ) : (
           (description ?? <p>No description found</p>)
         )}
