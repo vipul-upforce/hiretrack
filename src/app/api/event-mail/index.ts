@@ -1,5 +1,5 @@
 import { ISettings } from "@/lib/models/settings";
-import connectToDatabase, { Settings } from "@/lib/mongodb";
+import connectToDatabase, { Settings, User } from "@/lib/mongodb";
 import { createTransport, TransportOptions } from "nodemailer";
 import { Resend } from "resend";
 
@@ -41,9 +41,24 @@ export const sendMail = async (
 ): Promise<{ status: number; message: string }> => {
   try {
     await connectToDatabase();
-    if (!Settings) {
+    if (!Settings || !User) {
       return { status: 404, message: "Setting Model not found" };
     }
+
+    const users = await User.find(
+      { email: { $in: email } },
+      { email: 1, isDeleted: 1 }
+    ).lean();
+
+    const deletedEmails = new Set(
+      users.filter((user) => user.isDeleted).map((user) => user.email)
+    );
+    const validEmails = email.filter((e) => !deletedEmails.has(e));
+
+    if (validEmails.length === 0) {
+      return { status: 400, message: "No valid recipients found" };
+    }
+
     const settingInfo = (await Settings?.find({
       organizationId: orgID,
     })) as ISettings[];
@@ -65,16 +80,16 @@ export const sendMail = async (
         message: "SMTP configuration is missing or invalid",
       };
     }
-    console.log("⌛ About to send mail to : ", email);
-    let mailTo = email;
-    if (email[0]) {
-      mailTo = [email[0]];
-      if (email.length > 1) {
-        bcc = [...email].slice(1);
+    console.log("⌛ About to send mail to : ", validEmails);
+    let mailTo = validEmails;
+    if (validEmails[0]) {
+      mailTo = [validEmails[0]];
+      if (validEmails.length > 1) {
+        bcc = [...validEmails].slice(1);
       }
     }
     mailTo = mailTo.filter((mailId) => (mailId ? true : false));
-    console.log("⌛ filtered mails: ", email);
+    console.log("⌛ filtered mails: ", validEmails);
 
     if (mailConfig.mailProvider === "smtp") {
       const result = await sendSmtpMail({

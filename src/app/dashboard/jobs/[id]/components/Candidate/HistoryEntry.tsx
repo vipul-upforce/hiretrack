@@ -78,6 +78,10 @@ const RenderHistoryEntry = ({
               </p>
             ) : interview.title === "Self Applied" ? (
               <p>{localCandidate.name} applied from portal</p>
+            ) : interview.title === "Archived" ? (
+              <p>{localCandidate.name} was Archived</p>
+            ) : interview.title === "Unarchived" ? (
+              <p>{localCandidate.name} was Unarchived</p>
             ) : interview?.previousInterviewer ? (
               <p className="pl-1">
                 Unassigned from{" "}
@@ -186,16 +190,18 @@ const RenderHistoryEntry = ({
           {interview.remark && interview.remark.description}
         </p>
 
-        {interview?.note && Object.keys(interview.note).length > 0 && interview?.note?.rating !== 0 && (
-          <div className="flex flex-row items-center">
-            {interview?.note?.rating}/5
-            <Star
-              size={"15px"}
-              className="mt-[1px]"
-              style={{ color: "orange" }}
-            />
-          </div>
-        )}
+        {interview?.note &&
+          Object.keys(interview.note).length > 0 &&
+          interview?.note?.rating !== 0 && (
+            <div className="flex flex-row items-center">
+              {interview?.note?.rating}/5
+              <Star
+                size={"15px"}
+                className="mt-[1px]"
+                style={{ color: "orange" }}
+              />
+            </div>
+          )}
         {interview.remark &&
           interview.remark.rating &&
           interview.remark.rating !== 0 && (

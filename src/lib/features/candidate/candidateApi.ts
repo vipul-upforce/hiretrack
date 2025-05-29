@@ -48,7 +48,7 @@ export const candidateApi = createApi({
       query: (newCandidate) => ({
         url: "/candidates/guest-apply",
         method: "POST",
-        body: newCandidate,
+        body: { ...newCandidate, dateTime: new Date().toISOString() },
       }),
       invalidatesTags: ["Candidate"],
     }),
@@ -132,6 +132,9 @@ export const candidateApi = createApi({
       query: (id) => ({
         url: `/candidates/${id}`,
         method: "DELETE",
+        body: {
+          dateTime: new Date().toISOString(),
+        },
       }),
       invalidatesTags: ["Candidate"],
     }),
