@@ -135,16 +135,16 @@ export const useRemarkHandlers = (
           jobId: localCandidate?.jobId,
           newEntry: newHistoryEntry,
         }).unwrap());
-      const result = await updateCandidate(updateData).unwrap();
-      if (onUpdate && result) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        onUpdate(result);
+      if (pathname !== "/dashboard") {
+        await refetch();
       }
       if (pathname === "/dashboard") {
         await refetchAssignment?.();
       }
-      if (pathname !== "/dashboard" && pathname !== "/dashboard/calendar") {
-        await refetch();
+      const result = await updateCandidate(updateData).unwrap();
+      if (onUpdate && result && pathname !== "/dashboard/calendar") {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        onUpdate(result);
       }
 
       setNewRemark("");

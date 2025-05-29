@@ -293,7 +293,7 @@ export async function PUT(
             const users = await User.find({
               organizationId,
               role: { $in: ["hr", "admin"] },
-              isDeleted: false || null,
+              $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
             }).select("email");
 
             const emailList = [undefined, ...users.map((user) => user.email)];

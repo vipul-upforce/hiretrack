@@ -47,22 +47,22 @@ export default function DetailsDialogHeader({
             {candidate?.assignment && (
               <div className="flex flex-col items-end">
                 <div className="text-sm font-bold">
-                  {typeof candidate.assignment.interviewerId === "object" &&
+                  {typeof candidate?.assignment?.interviewerId === "object" &&
                   candidate.assignment.interviewerId
                     ? candidate.assignment.interviewerId.name
                     : "Unknown Interviewer"}
                 </div>
                 <div className="text-xs text-gray-500 flex items-center gap-1">
-                  <span>{formatDate(candidate.assignment.time)}</span>
+                  <span>{formatDate(candidate?.assignment?.time)}</span>
                   <span>•</span>
-                  <span>{formatTime(candidate.assignment.time)}</span>
+                  <span>{formatTime(candidate?.assignment?.time)}</span>
                 </div>
               </div>
             )}
           </div>
           <div className="flex flex-col items-end">
-            <CandidateStatusBadge status={candidate.status} />
-            <p className="text-xs text-gray-500">{candidate.jobId.title}</p>
+            <CandidateStatusBadge status={candidate?.status} />
+            <p className="text-xs text-gray-500">{candidate?.jobId?.title}</p>
           </div>
         </div>
       </div>

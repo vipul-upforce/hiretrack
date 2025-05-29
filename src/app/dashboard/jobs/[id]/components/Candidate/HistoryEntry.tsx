@@ -45,7 +45,7 @@ const RenderHistoryEntry = ({
     ) {
       return (
         <div className="flex flex-row items-start justify-between w-full">
-          <div className="flex flex-row">
+          <div className="flex flex-row w-[85%]">
             {interview.currentInterviewer &&
             typeof interview.currentInterviewer === "object" &&
             "name" in interview.currentInterviewer ? (
@@ -96,7 +96,7 @@ const RenderHistoryEntry = ({
               <></>
             )}
           </div>
-          <div className="flex flex-col items-end">
+          <div className="flex flex-col items-end text-right">
             <p className="text-xs font-light text-gray-400">
               {interview?.assignmentBy && "Updated by"}
             </p>
