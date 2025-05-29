@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { User } from "@/lib/mongodb";
 import { Candidate } from "@/lib/mongodb";
-import { handleCustomFieldFiles } from "@/lib/fileUtils";
+import { handleCustomFieldFiles, handleFileAttachments } from "@/lib/fileUtils";
 import { handleSingleFile } from "@/lib/fileUtils";
-import { handleFileAttachments } from "@/lib/fileUtils";
-import { Attachment } from "../route";
-import { History } from "@/lib/mongodb"; // Import History model
-import { ICandidate as IExternalCandidate } from "@/lib/models/candidate"; // Import existing ICandidate
+import { History } from "@/lib/mongodb";
+import { ICandidate as IExternalCandidate } from "@/lib/models/candidate";
 import mongoose from "mongoose";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
 import { sendMail } from "../../event-mail";
 import { loadTemplate } from "@/lib/templateLoader";
 import { auth } from "@/lib/auth";
+import { Attachment } from "../route";
 
 interface UpdateObject {
   $set: Record<string, unknown>;
@@ -20,14 +19,15 @@ interface UpdateObject {
 }
 
 interface IFJob {
-  _id: mongoose.Schema.Types.ObjectId;
+  _id: string | mongoose.Types.ObjectId;
   title: string;
   description: string;
 }
 
 type ICandidate = IExternalCandidate & {
-  // Extend the existing ICandidate
-  jobId?: IFJob | mongoose.Schema.Types.ObjectId | null; // Make jobId optional
+  _id?: string | mongoose.Types.ObjectId;
+  jobId?: IFJob | mongoose.Types.ObjectId | null;
+  [key: string]: unknown;
 };
 
 export async function PUT(
@@ -37,12 +37,33 @@ export async function PUT(
   let fileStorage = "local";
   let organizationId;
   let userData;
+  const updates: {
+    title: string;
+    previousValue?: unknown;
+    currentValue?: unknown;
+    attachments?: File[];
+  }[] = [];
+
+  const fieldsToTrack = [
+    "name",
+    "email",
+    "location",
+    "experience",
+    "currentCTC",
+    "expectedCTC",
+    "atttachments",
+    "noticePeriod",
+    "customFields",
+    "resume",
+    "status",
+  ];
 
   try {
     await connectToDatabase();
     const data = await request.json();
-
+    console.log("🟢🟢🟢 INCOMING DATA: ", data);
     const token = request.cookies.get("token");
+
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
         String(token?.value)
@@ -53,7 +74,36 @@ export async function PUT(
         organizationId = userData.organizationId || "";
       }
     }
+
     const { id } = await params;
+
+    const existingCandidate: ICandidate | null = (await Candidate!
+      .findById(id)
+      .lean()) as ICandidate | null;
+    if (!existingCandidate) {
+      return NextResponse.json(
+        { error: "Candidate not found" },
+        { status: 404 }
+      );
+    }
+
+    if (data.resume) {
+      data.resume = await handleSingleFile(
+        data.resume,
+        fileStorage,
+        organizationId
+      );
+      if (
+        JSON.stringify(existingCandidate.resume) !== JSON.stringify(data.resume)
+      ) {
+        updates.push({
+          title: "Updated Resume",
+          previousValue: existingCandidate.resume,
+          currentValue: data.resume,
+          attachments: data.resume,
+        });
+      }
+    }
 
     if (data.attachments) {
       const images = data.attachments.filter((attachment: Attachment) =>
@@ -73,23 +123,108 @@ export async function PUT(
         organizationId
       );
       data.attachments = [...f, ...i];
+      if (
+        JSON.stringify(existingCandidate.attachments) !==
+        JSON.stringify(data.attachments)
+      ) {
+        updates.push({
+          title: "Updated Attachments",
+          previousValue: existingCandidate.attachments,
+          currentValue: data.attachments,
+          attachments: data.attachments.filter(
+            (file: Attachment) =>
+              !existingCandidate.attachments.some(
+                (existingFile: Attachment) => existingFile.url === file.url
+              )
+          ),
+        });
+      }
     }
 
-    if (data.resume) {
-      data.resume = await handleSingleFile(
-        data.resume,
-        fileStorage,
-        organizationId
-      );
-    }
+    // if (data.customFields) {
+    //   const cs = await handleCustomFieldFiles(
+    //     data.customFields,
+    //     fileStorage,
+    //     organizationId
+    //   );
+    //   data.customFields = cs;
+    //   if (
+    //     JSON.stringify(existingCandidate.customFields) !==
+    //     JSON.stringify(data.customFields)
+    //   ) {
+    //     const allKeys = Object.keys({
+    //       ...existingCandidate.customFields,
+    //       ...data.customFields,
+    //     });
 
+    //     allKeys.forEach((key) => {
+    //       const prev = existingCandidate.customFields[key];
+    //       const curr = data.customFields[key];
+    //       const csAttachments =
+    //         Array(data.customFields) &&
+    //         data.customFields.length > 0 &&
+    //         "base64" in data.customFields[0]
+    //           ? data.customFields[key]
+    //           : null;
+    //       if (prev !== curr) {
+    //         updates.push({
+    //           title: `Updated ${key}`,
+    //           previousValue: prev || "~",
+    //           currentValue: curr || "~",
+    //           attachments: csAttachments,
+    //         });
+    //       }
+    //     });
+    //   }
+    // }
     if (data.customFields) {
+      // Process uploaded custom field files
       const cs = await handleCustomFieldFiles(
         data.customFields,
         fileStorage,
         organizationId
       );
       data.customFields = cs;
+
+      // Check for changes
+      if (
+        JSON.stringify(existingCandidate.customFields) !==
+        JSON.stringify(data.customFields)
+      ) {
+        const allKeys = Object.keys({
+          ...existingCandidate.customFields,
+          ...data.customFields,
+        });
+
+        allKeys.forEach((key) => {
+          const prev = existingCandidate.customFields?.[key];
+          const curr = data.customFields?.[key];
+
+          let attachments = undefined;
+
+          if (typeof curr === "object" && curr !== null) {
+            if ("base64" in curr) {
+              attachments = [curr];
+            } else if (
+              Array.isArray(curr) &&
+              curr.some((v) => v && typeof v === "object" && "base64" in v)
+            ) {
+              attachments = curr.filter(
+                (v) => v && typeof v === "object" && "base64" in v
+              );
+            }
+          }
+
+          if (JSON.stringify(prev) !== JSON.stringify(curr)) {
+            updates.push({
+              title: `Updated ${key}`,
+              previousValue: prev || "~",
+              currentValue: curr || "~",
+              attachments,
+            });
+          }
+        });
+      }
     }
 
     const updateObj: UpdateObject = {
@@ -97,7 +232,6 @@ export async function PUT(
       $currentDate: { "tracking.updatedAt": true },
     };
 
-    // Handle assignment separately
     if ("assignment" in data) {
       if (data.assignment === null) {
         updateObj.$unset = { assignment: 1 };
@@ -105,69 +239,127 @@ export async function PUT(
         updateObj.$set.assignment = data.assignment;
       }
     }
+    const whatWasUpdated: string[] = [];
+    if ("attachments" in data) {
+      if (data.attachment === null) {
+        updateObj.$unset = { attachments: 1 };
+      } else {
+        if (
+          JSON.stringify(existingCandidate.attachments) !==
+          JSON.stringify(data.attachments)
+        ) {
+          whatWasUpdated.push("attachments");
+        }
+        updateObj.$set.attachments = data.attachments;
+      }
+    }
+    if ("resume" in data) {
+      if (data.resume === null) {
+        updateObj.$unset = { resume: 1 };
+      } else {
+        updateObj.$set.resume = data.resume;
+      }
+    }
+    if ("customFields" in data) {
+      if (data.customFields === null) {
+        updateObj.$unset = { customFields: 1 };
+      } else {
+        updateObj.$set.customFields = data.customFields;
+      }
+    }
+
+    if ("skills" in data) {
+      updateObj.$set.skills = data.skills;
+    }
+    if ("scores" in data) {
+      updateObj.$set.scores = data.scores;
+    }
 
     if (
       "remarks" in data &&
       Array.isArray(data.remarks) &&
       data.remarks.length > 0
     ) {
-      const existingCandidate = await Candidate!.findById(id);
-      const existingRemarks = existingCandidate?.remarks || [];
-
-      if (data.remarks.length > existingRemarks.length) {
+      const existingRemarks = existingCandidate.remarks || [];
+      if (JSON.stringify(existingRemarks) !== JSON.stringify(data.remarks)) {
         updateObj.$set.remarks = data.remarks;
-        const latestRemark = data.remarks[data.remarks.length - 1];
-
-        if (organizationId && User && latestRemark?.description) {
-          const users = await User.find({
-            organizationId,
-            role: { $in: ["hr", "admin"] },
-            isDeleted: false || null,
-          }).select("email");
-
-          const emailList = [undefined, ...users.map((user) => user.email)];
-
-          const remark_adder = userData?.name || "user";
-          const remark_for = data.name;
-          const remark = latestRemark.description.trim();
-          const rating = latestRemark.rating || "None";
-
-          if (emailList.length > 0 && remark !== "") {
-            const emailContent = loadTemplate("remark-add", {
-              remark_adder,
-              remark_for,
-              rating,
-              remark,
-            });
-
-            sendMail(
+        if (
+          data.remarks.length > existingRemarks.length &&
+          organizationId &&
+          User
+        ) {
+          const latestRemark = data.remarks[data.remarks.length - 1];
+          if (latestRemark?.description) {
+            const users = await User.find({
               organizationId,
-              emailList as string[],
-              `New Remark Added For ${remark_for}`,
-              emailContent
-            );
+              role: { $in: ["hr", "admin"] },
+              isDeleted: false || null,
+            }).select("email");
+
+            const emailList = [undefined, ...users.map((user) => user.email)];
+            const remark_adder = userData?.name || "user";
+            const remark_for = data.name || existingCandidate.name;
+            const remark = latestRemark.description.trim();
+            const rating = latestRemark.rating || "None";
+
+            if (emailList.length > 0 && remark !== "") {
+              const emailContent = loadTemplate("remark-add", {
+                remark_adder,
+                remark_for,
+                rating,
+                remark,
+              });
+
+              sendMail(
+                organizationId,
+                emailList as string[],
+                `New Remark Added For ${remark_for}`,
+                emailContent
+              );
+            }
           }
         }
-      } else {
-        updateObj.$set.remarks = data.remarks;
       }
     }
 
-    // Handle email separately
-    if ("email" in data) {
-      updateObj.$set.email = data.email;
-    }
-
-    // Handle other fields
-    Object.entries(data).forEach(([key, value]) => {
+    fieldsToTrack.forEach((key) => {
       if (
-        key !== "assignment" &&
-        key !== "remarks" &&
-        key !== "_id" &&
-        key !== "tracking" &&
-        key !== "email"
+        key in data &&
+        key == "resume" &&
+        JSON.stringify(existingCandidate[key]) !== JSON.stringify(data[key])
       ) {
-        updateObj.$set[key] = value;
+        whatWasUpdated.push(key);
+      }
+      if (
+        key in data &&
+        key == "customFields" &&
+        JSON.stringify(existingCandidate[key]) !== JSON.stringify(data[key])
+      ) {
+        console.log("######### CUSTOM FIELDS: ", data.customFields);
+        // const customKeys = Object.keys(data.customFields);
+        // whatWasUpdated.push(...customKeys);
+        const customKeys = Object.keys(data.customFields);
+
+        customKeys.forEach((key) => {
+          const oldValue = existingCandidate.customFields?.[key];
+          const newValue = data.customFields[key];
+          if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+            whatWasUpdated.push(key);
+          }
+        });
+      }
+      if (key in data && key !== "resume" && key !== "customFields") {
+        if (
+          JSON.stringify(existingCandidate[key]) !== JSON.stringify(data[key])
+        ) {
+          whatWasUpdated.push(key);
+          updateObj.$set[key] = data[key];
+          updates.push({
+            title: `Updated ${key.charAt(0).toUpperCase() + key.slice(1)}`,
+            previousValue: existingCandidate[key],
+            currentValue: data[key],
+          });
+        }
       }
     });
 
@@ -178,34 +370,80 @@ export async function PUT(
       );
     }
 
-    const updatedCandidate = (await Candidate.findByIdAndUpdate(id, updateObj, {
-      new: true,
-      runValidators: true,
-    })
-      .populate([
+    if (Object.keys(updateObj.$set).length > 0 || updateObj.$unset) {
+      const updatedCandidate = (await Candidate.findByIdAndUpdate(
+        id,
+        updateObj,
         {
-          path: "assignment.interviewerId",
-          select: "_id name email",
-        },
-        {
-          path: "remarks.userId",
-          select: "name email",
-        },
-        {
-          path: "jobId",
-          select: "_id description title",
-        },
-      ])
-      .lean()) as ICandidate | null;
+          new: true,
+          runValidators: true,
+        }
+      )
+        .populate([
+          {
+            path: "assignment.interviewerId",
+            select: "_id name email",
+          },
+          {
+            path: "remarks.userId",
+            select: "name email",
+          },
+          {
+            path: "jobId",
+            select: "_id description title",
+          },
+        ])
+        .lean()) as ICandidate;
 
-    if (!updatedCandidate) {
-      return NextResponse.json(
-        { error: "Candidate not found" },
-        { status: 404 }
-      );
+      if (!updatedCandidate) {
+        return NextResponse.json(
+          { error: "Candidate not found" },
+          { status: 404 }
+        );
+      }
+
+      if (updates.length > 0) {
+        let combined_Description = updates
+          .map((item) => {
+            if (item.attachments) return;
+            const label = item.title?.startsWith("Updated ")
+              ? item.title.slice("Updated ".length)
+              : item.title;
+
+            return `${label.charAt(0).toUpperCase() + label.slice(1)}: ${JSON.stringify(item.previousValue).replaceAll('"', "")} → ${JSON.stringify(item.currentValue).replaceAll('"', "")}`;
+          })
+          .join("\n");
+
+        const historyEntry = {
+          dateTime: data.dateTime || new Date(),
+          title: `Updated ${whatWasUpdated.join(" & ")}`,
+          previousInterviewer: null,
+          currentInterviewer: null,
+          assignmentBy: userData?.id,
+          note: {
+            description: combined_Description,
+          },
+          attachments: updates
+            .filter((item) => item.attachments)
+            .flatMap((item) => item.attachments!),
+        };
+
+        await History?.findOneAndUpdate(
+          {
+            candidateId: updatedCandidate._id,
+            jobId: updatedCandidate.jobId?._id,
+          },
+          {
+            $push: { history: historyEntry },
+          },
+          { new: true }
+        );
+      }
+
+      return NextResponse.json(updatedCandidate);
     }
 
-    return NextResponse.json(updatedCandidate);
+    return NextResponse.json(existingCandidate);
   } catch (error) {
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

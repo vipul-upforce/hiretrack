@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { sendMail } from "../event-mail";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
 import { loadTemplate } from "@/lib/templateLoader";
-import { User } from "@/lib/mongodb";
+import connectToDatabase, { User } from "@/lib/mongodb";
+import mongoose from "mongoose";
 
 // Email queue to track pending emails
 const emailQueue = new Map<
@@ -86,7 +87,7 @@ async function sendQueuedEmail(data: any) {
     eventSubTitle,
     // eventDescription,
   });
-  // console.log(`${email}, ${[...emailList]}`);
+  console.log(`>>> ${email}, ${[...emailList]}`);
   return await sendMail(
     organizationId,
     [email, ...emailList],
@@ -97,8 +98,8 @@ async function sendQueuedEmail(data: any) {
 
 export async function POST(req: NextRequest) {
   try {
+    await connectToDatabase();
     const {
-      //   email,
       eventTitle,
       candidateName,
       status,
@@ -109,15 +110,15 @@ export async function POST(req: NextRequest) {
       prev_status,
     } = await req.json();
 
-    // console.log("@@@@@@@@@@ PREV_STATUS: ", prev_status);
     let organizationId;
     const token = req.cookies.get("token");
     let decryptedResponse;
     if (token?.value) {
       decryptedResponse = await verifyAndDecryptToken(String(token?.value));
-      const userData = decryptedResponse.user;
       if (decryptedResponse.success) {
-        organizationId = userData.organizationId || "";
+        organizationId = decryptedResponse.user?.organizationId;
+      } else {
+        return NextResponse.json({ error: "Invalid token." }, { status: 401 });
       }
     }
 
@@ -130,20 +131,32 @@ export async function POST(req: NextRequest) {
 
     if (!eventTitle) {
       return NextResponse.json(
-        { error: "Event title are required." },
+        { error: "Event title is required." },
         { status: 400 }
       );
     }
 
     if (!User) {
-      throw new Error("Database not connected");
+      throw new Error("User model not defined. Database may not be connected.");
     }
 
     const users = await User.find({
-      organizationId,
+      organizationId: new mongoose.Types.ObjectId(organizationId),
       role: { $in: ["hr", "admin"] },
-      isDeleted: false || null,
-    }).select("email");
+      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
+    })
+      .select("email")
+      .lean();
+
+    // console.log("FETCHED USERS: ", users);
+    // console.log("USER COUNT: ", users.length);
+
+    if (!users || users.length === 0) {
+      return NextResponse.json(
+        { error: "No active users found for this organization." },
+        { status: 404 }
+      );
+    }
 
     const actionBy = decryptedResponse?.user.name;
     const emailList = users.map((user) => user.email);
@@ -152,19 +165,11 @@ export async function POST(req: NextRequest) {
         ? `Status updated from <strong>${prev_status}</strong> to <strong>${status}</strong> for candidate: <strong>${candidateName}</strong><br>`
         : `Status updated to <strong>${status}</strong> for candidate: <strong>${candidateName}</strong><br>`;
 
-    // const shouldSkipEmail = prev_status === "-1" || prev_status === -1;
-    // if (shouldSkipEmail && !emailQueue.has(id)) {
-    //     return NextResponse.json({
-    //         message: "No need to send status-update message",
-    //     });
-    // }
-
     const emailKey = id;
 
     // Queue data for the email
     const queueData = {
       organizationId,
-      //   email,
       eventTitle,
       eventSubTitle,
       candidateName,
@@ -188,6 +193,7 @@ export async function POST(req: NextRequest) {
         );
       }
     } else {
+      console.log("QUEUED DATA: ", queueData);
       scheduleEmail(emailKey, queueData);
 
       return NextResponse.json({
@@ -196,6 +202,7 @@ export async function POST(req: NextRequest) {
       });
     }
   } catch (error: unknown) {
+    console.error("ERROR IN POST: ", error);
     return NextResponse.json(
       {
         error:

@@ -9,6 +9,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { toast } from "@/hooks/use-toast";
 
 interface EditLaneDialogProps {
   isEditLaneDialogOpen: boolean;
@@ -51,6 +52,7 @@ const EditLaneDialog = ({
               onChange={(e) => {
                 const newValue = e.target.value;
                 const regex = /^[a-zA-Z0-9\s]*$/;
+                console.log("@Changed the value: ", newValue);
                 if (regex.test(newValue)) {
                   setEditingLane(newValue);
                 }
@@ -68,8 +70,20 @@ const EditLaneDialog = ({
           <Button
             disabled={!editingLane?.trim()}
             onClick={() => {
-              //   debugger;
-              handleLaneUpdate(prevLane || "", editingLane || "");
+              if (
+                prevLane &&
+                prevLane.length > 0 &&
+                editingLane &&
+                editingLane.length > 0
+              ) {
+                handleLaneUpdate(prevLane, editingLane);
+              } else {
+                toast({
+                  title: "Error",
+                  description: "Something is missing...",
+                  variant: "destructive",
+                });
+              }
               setIsEditLaneDialogOpen(false);
             }}
           >

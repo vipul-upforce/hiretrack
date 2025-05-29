@@ -106,7 +106,7 @@ export const candidateDetailsFields: FieldConfig[] = [
     shouldRender: (candidate) => !!candidate.resume,
   },
   {
-    label: "Attachments",
+    label: "",
     id: "attachments",
     render: (candidate: Candidate) => (
       <RenderAttachments labelClass={labelClass} localCandidate={candidate} />
@@ -147,6 +147,31 @@ export const candidateDetailsFields: FieldConfig[] = [
               .map((interview, i) => {
                 const timeDate = formatDate(interview.dateTime);
                 const timeTime = formatTime(interview.dateTime);
+                // console.log("INTERVEW: ", interview);
+
+                // console.log(
+                //   "⛔⛔⛔",
+                //   JSON.stringify(
+                //     typeof interview.currentInterviewer === "object" &&
+                //       interview.currentInterviewer &&
+                //       "email" in interview.currentInterviewer &&
+                //       interview.currentInterviewer?.email
+                //   )
+                // );
+                if (
+                  typeof interview.currentInterviewer === "object" &&
+                  interview.currentInterviewer &&
+                  "email" in interview.currentInterviewer &&
+                  typeof interview.previousInterviewer === "object" &&
+                  interview.previousInterviewer &&
+                  "email" in interview.previousInterviewer &&
+                  interview.currentInterviewer !== null &&
+                  interview.currentInterviewer?.email ==
+                    interview.previousInterviewer?.email &&
+                  (!interview.note || !interview.note.description)
+                ) {
+                  return;
+                }
                 return (
                   <RenderHistoryEntry
                     interview={interview}

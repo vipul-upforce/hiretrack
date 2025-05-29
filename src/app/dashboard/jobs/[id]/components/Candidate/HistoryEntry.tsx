@@ -78,6 +78,8 @@ const RenderHistoryEntry = ({
               </p>
             ) : interview.title === "Self Applied" ? (
               <p>{localCandidate.name} applied from portal</p>
+            ) : interview.title?.includes("Updated") ? (
+              <p>{interview.title}</p>
             ) : interview.title === "Archived" ? (
               <p>{localCandidate.name} was Archived</p>
             ) : interview.title === "Unarchived" ? (
@@ -186,25 +188,51 @@ const RenderHistoryEntry = ({
           className="max-w-[90%] text-sm whitespace-pre-wrap pb-0"
           style={{ wordWrap: "break-word" }}
         >
+          {/* {interview.note &&
+            !interview.currentInterviewer &&
+            interview.note.description &&
+            (() => {
+              const description = interview.note.description || "";
+              const index = description.indexOf(":");
+
+              const title =
+                index !== -1 ? description.slice(0, index).trim() : "";
+              const rest =
+                index !== -1
+                  ? description.slice(index + 1).trim()
+                  : description;
+
+              return (
+                <>
+                  <span className="text-black text-lg">
+                    {title.charAt(0).toUpperCase() + title.slice(1)}
+                  </span>
+                  <span>{rest}</span>
+                </>
+              );
+            })()} */}
+
           {interview.note && interview.note.description}
           {interview.remark && interview.remark.description}
         </p>
 
         {interview?.note &&
-          Object.keys(interview.note).length > 0 &&
-          interview?.note?.rating !== 0 && (
-            <div className="flex flex-row items-center">
-              {interview?.note?.rating}/5
-              <Star
-                size={"15px"}
-                className="mt-[1px]"
-                style={{ color: "orange" }}
-              />
-            </div>
-          )}
+        Object.keys(interview.note).length > 0 &&
+        // interview?.note?.rating &&
+        interview?.note?.rating !== 0 &&
+        interview?.note?.rating ? (
+          <div className="flex flex-row items-center">
+            {interview?.note?.rating}/5
+            <Star
+              size={"15px"}
+              className="mt-[1px]"
+              style={{ color: "orange" }}
+            />
+          </div>
+        ) : null}
         {interview.remark &&
           interview.remark.rating &&
-          interview.remark.rating !== 0 && (
+          interview.remark.rating != 0 && (
             <div className="flex flex-row items-center">
               {interview.remark.rating}/5
               <Star

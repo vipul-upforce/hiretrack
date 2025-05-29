@@ -3,6 +3,7 @@ import { sendMail } from "@/app/api/event-mail";
 import { Candidate, Organization, User } from "@/lib/mongodb"; // Add User import
 import { ICandidate } from "@/lib/models/candidate";
 import { loadTemplate } from "@/lib/templateLoader";
+import mongoose from "mongoose";
 
 export async function POST(req: NextRequest) {
   try {
@@ -82,9 +83,13 @@ export async function POST(req: NextRequest) {
 
     // Find all HR users in the organization
     const hrUsers = await User.find({
-      organizationId: organizationId,
+      organizationId: new mongoose.Types.ObjectId(organizationId),
       role: { $in: ["hr", "admin"] },
-    });
+      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
+    })
+      .select("email")
+      .lean();
+
     const hrEmails: string[] = [];
     hrUsers?.map((user) => {
       hrEmails.push(user.email);
