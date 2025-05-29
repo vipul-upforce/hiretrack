@@ -56,7 +56,7 @@ export const candidateApi = createApi({
       query: (candidate) => ({
         url: `/candidates/${candidate._id}`,
         method: "PUT",
-        body: candidate,
+        body: { ...candidate, dateTime: new Date().toISOString() },
       }),
       // invalidatesTags: ['Candidate'],
     }),

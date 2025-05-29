@@ -174,6 +174,7 @@ function JobProgressPage() {
   useEffect(() => {
     if (!isLaneEditOpen) {
       setInitialLaneToEdit(null);
+      setLaneToEdit(null);
     }
   }, [isLaneEditOpen]);
 

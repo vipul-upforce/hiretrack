@@ -53,7 +53,7 @@ export function LaneOptionsMenu({
       },
     },
     {
-      icon: <Trash2 className="h-4 w-4 text-muted-foreground" />,
+      icon: <Trash2 className="mr-2 h-4 w-4" />,
       label: "Delete",
       onClick: () => {
         handleDeleteLane();

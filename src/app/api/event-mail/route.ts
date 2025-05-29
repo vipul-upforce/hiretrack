@@ -3,6 +3,7 @@ import { sendMail } from ".";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
 import { loadTemplate } from "@/lib/templateLoader";
 import { User } from "@/lib/mongodb";
+import mongoose from "mongoose";
 
 // Email queue to track pending emails
 const emailQueue = new Map<
@@ -143,10 +144,14 @@ export async function PUT(req: NextRequest) {
       unassigner: decryptedResponse?.user.name,
     });
     const users = await User.find({
-      organizationId,
+      organizationId: new mongoose.Types.ObjectId(organizationId),
       role: { $in: ["hr", "admin"] },
-      isDeleted: false || null,
-    }).select("email");
+      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
+    })
+      .select("email")
+      .lean();
+
+    console.log("%%EMAILS: ", users);
 
     const emailList = users.map((user) => user.email);
     const emailStatus = await sendMail(
@@ -238,10 +243,14 @@ export async function POST(req: NextRequest) {
     }
 
     const users = await User.find({
-      organizationId,
+      organizationId: new mongoose.Types.ObjectId(organizationId),
       role: { $in: ["hr", "admin"] },
-      isDeleted: false || null,
-    }).select("email");
+      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
+    })
+      .select("email")
+      .lean();
+
+    console.log("%%EMAILS: ", users);
 
     const emailList = users.map((user) => user.email);
 
