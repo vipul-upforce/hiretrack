@@ -51,7 +51,7 @@ const EditLaneDialog = ({
               value={editingLane || ""}
               onChange={(e) => {
                 const newValue = e.target.value;
-                const regex = /^[a-zA-Z0-9\s]*$/;
+                const regex = /^[a-z0-9\s]*$/;
                 console.log("@Changed the value: ", newValue);
                 if (regex.test(newValue)) {
                   setEditingLane(newValue);
