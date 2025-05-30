@@ -427,18 +427,17 @@ export async function PUT(req: NextRequest) {
     let uploadedLogo = null;
     let uploadedHeader = null;
     let uploadedFooter = null;
-
-    if (data.portalLogo) {
+    if (data?.portalLogo) {
       try {
-        console.log(`[PUT] Processing portalLogo: ${data.portalLogo}`);
+        // console.log(`[PUT] Processing portalLogo: ${data.portalLogo}`);
         uploadedLogo = await handleSingleFile(
           data.portalLogo,
           fileStorage,
           organizationId
         );
-        console.log(
-          `[PUT] File upload result: ${JSON.stringify(uploadedLogo)}`
-        );
+        // console.log(
+        //   `[PUT] File upload result: ${JSON.stringify(uploadedLogo)}`
+        // );
       } catch (fileError) {
         console.error(
           `File upload failed: ${fileError instanceof Error ? fileError.message : "Unknown error"}`
@@ -507,9 +506,9 @@ export async function PUT(req: NextRequest) {
       }
     }
 
-    if (data.portalHeader) {
+    if (data.portalHeader ) {
       try {
-        console.log(`[PUT] Processing portalLogo: ${data.portalHeader}`);
+        console.log(`[PUT] Processing portalHeader: ${data.portalHeader}`);
         uploadedHeader = await handleSingleFile(
           data.portalHeader,
           fileStorage,
@@ -540,7 +539,7 @@ export async function PUT(req: NextRequest) {
         "header.html"
       );
       console.log(
-        `[PUT] No portalLogo provided, checking favicon at: ${headerPath}`
+        `[PUT] No portalHeader provided, checking favicon at: ${headerPath}`
       );
 
       if (fs.existsSync(headerPath)) {
@@ -614,6 +613,7 @@ export async function PUT(req: NextRequest) {
     };
 
     console.log("❓❓❓❓ ", updatedPortal);
+    debugger;
 
     await Organization?.findByIdAndUpdate(organizationId, {
       name: updatedPortal.portalName,
@@ -624,6 +624,7 @@ export async function PUT(req: NextRequest) {
       { portalConfigs: updatedPortal },
       { new: true, runValidators: true, upsert: true }
     );
+    console.log("updatedSettings :>> ", updatedSettings);
 
     if (!updatedSettings) {
       return NextResponse.json(

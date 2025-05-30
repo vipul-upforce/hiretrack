@@ -31,18 +31,19 @@ export default function FileUploadDialog({
   setFieldValue,
   values,
 }: FileUploadDialogProps) {
-  const initialHeaderFile = values?.existingHeaderFile || [];
-  const initialFooterFile = values?.existingFooterFile || [];
-  const [headerFiles, setHeaderFiles] = useState<File[] | PortalHeader[] >(
-    initialHeaderFile instanceof File ? [initialHeaderFile] : []
+  const initialHeaderFile = values?.existingHeaderFile || null;
+  const initialFooterFile = values?.existingFooterFile || null;
+  const [headerFiles, setHeaderFiles] = useState<File[] | PortalHeader[] | null>(
+    initialHeaderFile instanceof File ? [initialHeaderFile] : null
   );
-  const [footerFiles, setFooterFiles] = useState<File[]  | PortalHeader[]>(
-    initialFooterFile instanceof File ? [initialFooterFile] : []
+  const [footerFiles, setFooterFiles] = useState<File[]  | PortalHeader[] | null>(
+    initialFooterFile instanceof File ? [initialFooterFile] : null
   );
+  
 
   useEffect(() => {
-    setHeaderFiles([values?.existingHeaderFile] as File[]);
-    setFooterFiles([values?.existingFooterFile] as File[]);
+    setHeaderFiles( values?.existingHeaderFile ? [values?.existingHeaderFile] as File[]: null);
+    setFooterFiles(values?.existingFooterFile ? [values?.existingFooterFile] as File[]:null);
   }, []);
 
   const readFileContent = (file: File): Promise<string> =>
@@ -50,7 +51,6 @@ export default function FileUploadDialog({
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as string);
       reader.onerror = reject;
-      console.log('file :>> ', file);
       reader.readAsText(file);
     });
     const readFileContentFromUrl = async (url: string): Promise<string> => {
@@ -69,8 +69,8 @@ export default function FileUploadDialog({
       let headerContent: string | undefined;
       let footerContent: string | undefined;
     
-      const headerFile = headerFiles[0];
-      const footerFile = footerFiles[0];
+      const headerFile = headerFiles?.[0];
+      const footerFile = footerFiles?.[0];
     
       if (headerFile) {
         if ('url' in headerFile) {

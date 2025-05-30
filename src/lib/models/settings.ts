@@ -1,5 +1,17 @@
 import { Schema, Document } from "mongoose";
 
+const fileMetaSchema = new Schema(
+  {
+    id: { type: String, required: true },
+    name: { type: String, required: true },
+    url: { type: String, required: true },
+    type: { type: String, default: null },
+    size: { type: Number, required: true },
+  },
+  { _id: false, strict: true } // No automatic _id, disallow extra fields
+);
+
+
 const settingsSchema = new Schema({
   organizationId: { type: String, required: true },
   multipleOrg: { type: Boolean, default: false, requred: true },
@@ -29,26 +41,32 @@ const settingsSchema = new Schema({
     resend_reply_to: { type: String, default: "" },
   },
   portalConfigs: {
+    // portalLogo: {
+    //   id: String,
+    //   name: String,
+    //   url: String,
+    //   type: { type: String, default: null },
+    //   size: Number,
+    // },
+    // portalHeader: { type:'object',default:null},
+    // portalFooter: {
+    //   id: String,
+    //   name: String,
+    //   url: String,
+    //   type: { type: String, default: null},
+    //   size: Number,
+    // },
     portalLogo: {
-      id: String,
-      name: String,
-      url: String,
-      type: { type: String, default: "image" },
-      size: Number,
+      type: fileMetaSchema,
+      default: null,
     },
     portalHeader: {
-      id: String,
-      name: String,
-      url: String,
-      type: { type: String, default: "html" },
-      size: Number,
+      type: fileMetaSchema,
+      default: null,
     },
     portalFooter: {
-      id: String,
-      name: String,
-      url: String,
-      type: { type: String, default: "html" },
-      size: Number,
+      type: fileMetaSchema,
+      default: null,
     },
     portalName: {
       type: String,
