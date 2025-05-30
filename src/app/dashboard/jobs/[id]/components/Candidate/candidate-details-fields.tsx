@@ -3,18 +3,18 @@
 import { Badge } from "@/components/ui/badge";
 import { FileText } from "lucide-react";
 import { PDFViewer } from "@/components/ui/pdf-viewer";
-// import ExpandableDescription from "../Utils/expand-collapse-desc";
 import CustomFieldsData from "@/Custom_Fields/Components/CustomFields/customFields-details";
 import { RenderAttachments } from "../Utils/RenderAttachments";
 import ResumeEvaluationDetails from "../Candidate/ResumeEvaluationDetails";
 import { CandidateInfoSection } from "../Candidate/CandidateInfoSection";
-import RenderHistoryEntry from "../Candidate/HistoryEntry";
+
 import { formatDate, formatTime } from "../../hooks/dateTimeFormatting";
 import { Candidate } from "@/types/candidate";
 import { User } from "@/lib/features/users/usersApi";
 import { ICandidateHistory } from "@/lib/models/history";
 import { IEditRemark } from "../../schemas/EditRemarkDialog";
 import React from "react";
+import { HistoryAndLogTable } from "./HisotryAndLogTable";
 
 interface FieldConfig {
   label: string;
@@ -29,21 +29,9 @@ interface FieldConfig {
 
 const labelClass = "font-semibold text-base";
 
+// New HistorySection component to handle toggle
+
 export const candidateDetailsFields: FieldConfig[] = [
-  //   {
-  //     label: "Job Description",
-  //     render: (candidate: Candidate) => (
-  //       <ExpandableDescription
-  //         description={
-  //           candidate.jobId?.description ||
-  //           candidate.jobDetails?.description ||
-  //           "No description Found"
-  //         }
-  //       />
-  //     ),
-  //     shouldRender: (candidate) =>
-  //       !!candidate.jobId?.description || !!candidate.jobDetails?.description,
-  //   },
   {
     label: "",
     id: "candidate-info",
@@ -114,7 +102,7 @@ export const candidateDetailsFields: FieldConfig[] = [
     shouldRender: (candidate) => candidate.attachments.length > 0,
   },
   {
-    label: "Candidate History",
+    label: "",
     id: "candidate-history",
     render: (
       candidate: Candidate,
@@ -130,65 +118,14 @@ export const candidateDetailsFields: FieldConfig[] = [
       >,
       setIsEditRemarkDialogOpen: React.Dispatch<React.SetStateAction<boolean>>
     ) => (
-      <ol className="relative border-s border-gray-200 dark:border-gray-700">
-        {timeLineItems.length > 0
-          ? timeLineItems
-              .reverse()
-              .filter((interview) => {
-                if (!interview.remark || !interview.remark.description) {
-                  return true;
-                }
-                return (
-                  !interview.remark.isPrivate ||
-                  user?.role === "hr" ||
-                  user?.role === "admin"
-                );
-              })
-              .map((interview, i) => {
-                const timeDate = formatDate(interview.dateTime);
-                const timeTime = formatTime(interview.dateTime);
-                // console.log("INTERVEW: ", interview);
-
-                // console.log(
-                //   "⛔⛔⛔",
-                //   JSON.stringify(
-                //     typeof interview.currentInterviewer === "object" &&
-                //       interview.currentInterviewer &&
-                //       "email" in interview.currentInterviewer &&
-                //       interview.currentInterviewer?.email
-                //   )
-                // );
-                if (
-                  typeof interview.currentInterviewer === "object" &&
-                  interview.currentInterviewer &&
-                  "email" in interview.currentInterviewer &&
-                  typeof interview.previousInterviewer === "object" &&
-                  interview.previousInterviewer &&
-                  "email" in interview.previousInterviewer &&
-                  interview.currentInterviewer !== null &&
-                  interview.currentInterviewer?.email ==
-                    interview.previousInterviewer?.email &&
-                  (!interview.note || !interview.note.description)
-                ) {
-                  return;
-                }
-                return (
-                  <RenderHistoryEntry
-                    interview={interview}
-                    indexKey={i}
-                    localCandidate={candidate}
-                    user={user}
-                    timeDate={timeDate}
-                    timeTime={timeTime}
-                    handleRemarkUpdate={handleRemarkUpdate}
-                    setEditingRemark={setEditingRemark}
-                    setIsEditRemarkDialogOpen={setIsEditRemarkDialogOpen}
-                    key={i}
-                  />
-                );
-              })
-          : "No History"}
-      </ol>
+      <HistoryAndLogTable
+        candidate={candidate}
+        user={user}
+        timeLineItems={timeLineItems}
+        handleRemarkUpdate={handleRemarkUpdate}
+        setEditingRemark={setEditingRemark}
+        setIsEditRemarkDialogOpen={setIsEditRemarkDialogOpen}
+      />
     ),
     shouldRender: (candidate) =>
       candidate.history?.length && candidate.history?.length > 0 ? true : false,

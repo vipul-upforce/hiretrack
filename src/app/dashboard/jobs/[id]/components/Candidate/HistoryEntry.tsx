@@ -36,6 +36,10 @@ const RenderHistoryEntry = ({
   const [isRemarkOptionsOpen, setIsRemarkOptionsOpen] = useState(false);
   const [isRemarkOpsOpenFor, setIsRemarkOpsOpenFor] = useState<string | null>();
   const role = useRoles();
+  const isLogTableEntry =
+    interview.note &&
+    interview.note.description &&
+    typeof interview.note.description !== "string";
 
   // Helper function to determine the entry title
   const renderEntryTitle = () => {
@@ -114,7 +118,9 @@ const RenderHistoryEntry = ({
       return interview.title;
     }
   };
-
+  if (isLogTableEntry) {
+    return;
+  }
   return (
     <div key={indexKey} className="mb-10 ms-4 group">
       <div className="absolute w-3 h-3 bg-gray-200 rounded-full mt-1.5 -start-1.5 border border-white dark:border-gray-900 dark:bg-gray-700"></div>
@@ -212,7 +218,9 @@ const RenderHistoryEntry = ({
               );
             })()} */}
 
-          {interview.note && interview.note.description}
+          {interview.note &&
+            typeof interview.note.description === "string" &&
+            interview.note.description}
           {interview.remark && interview.remark.description}
         </p>
 

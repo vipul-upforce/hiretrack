@@ -39,15 +39,15 @@ async function saveFavicon(
       const parentDir = path.dirname(destDir);
       const oldDir = path.join(parentDir, oldPortalName);
       if (fs.existsSync(oldDir) && oldDir !== destDir) {
-        console.log(
-          `[saveFavicon] Renaming directory from ${oldDir} to ${destDir}`
-        );
+        // console.log(
+        //   `[saveFavicon] Renaming directory from ${oldDir} to ${destDir}`
+        // );
         await fs.promises.rename(oldDir, destDir);
       }
     }
 
     if (!fs.existsSync(destDir)) {
-      console.log(`[saveFavicon] Creating directory: ${destDir}`);
+      // console.log(`[saveFavicon] Creating directory: ${destDir}`);
       fs.mkdirSync(destDir, { recursive: true });
     }
 
@@ -63,17 +63,17 @@ async function saveFavicon(
           headers: authToken ? { Cookie: `token=${authToken}` } : {}, // Pass token in Cookie header
         };
 
-        console.log(`[downloadImage] Requesting URL: ${url}`);
-        console.log(
-          `[downloadImage] Headers: ${JSON.stringify(options.headers)}`
-        );
+        // console.log(`[downloadImage] Requesting URL: ${url}`);
+        // console.log(
+        //   `[downloadImage] Headers: ${JSON.stringify(options.headers)}`
+        // );
 
         protocol
           .get(url, options, (res) => {
-            console.log(`[downloadImage] Status Code: ${res.statusCode}`);
-            console.log(
-              `[downloadImage] Response Headers: ${JSON.stringify(res.headers)}`
-            );
+            // console.log(`[downloadImage] Status Code: ${res.statusCode}`);
+            // console.log(
+            //   `[downloadImage] Response Headers: ${JSON.stringify(res.headers)}`
+            // );
             if (res.statusCode !== 200) {
               reject(
                 new Error(
@@ -131,11 +131,11 @@ async function saveFavicon(
 
       const tempDir = path.dirname(tempImagePath);
       if (!fs.existsSync(tempDir)) {
-        console.log(`[saveFavicon] Creating temp directory: ${tempDir}`);
+        // console.log(`[saveFavicon] Creating temp directory: ${tempDir}`);
         fs.mkdirSync(tempDir, { recursive: true });
       }
 
-      console.log(`[saveFavicon] Downloading from: ${fullUrl}`);
+      // console.log(`[saveFavicon] Downloading from: ${fullUrl}`);
       await downloadImage(fullUrl, tempImagePath, token);
       inputImagePath = tempImagePath;
     } else {
@@ -145,7 +145,7 @@ async function saveFavicon(
       }
     }
 
-    console.log(`[saveFavicon] Saving favicon to: ${finalDestPath}`);
+    // console.log(`[saveFavicon] Saving favicon to: ${finalDestPath}`);
     await sharp(inputImagePath)
       .resize(48, 48, {
         fit: "contain",
@@ -155,7 +155,7 @@ async function saveFavicon(
       .toFile(finalDestPath);
 
     if (isRemote && fs.existsSync(tempImagePath)) {
-      console.log(`[saveFavicon] Cleaning up temp file: ${tempImagePath}`);
+      // console.log(`[saveFavicon] Cleaning up temp file: ${tempImagePath}`);
       await fs.promises.unlink(tempImagePath);
     }
   } catch (error) {
@@ -224,15 +224,15 @@ export async function PUT(req: NextRequest) {
     await dbConnect();
 
     const token = req.cookies.get("token")?.value;
-    console.log(`[PUT] Token received: ${token ? "provided" : "not provided"}`);
+    // console.log(`[PUT] Token received: ${token ? "provided" : "not provided"}`);
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const decryptedResponse = await verifyAndDecryptToken(token);
-    console.log(
-      `[PUT] Token verification: ${decryptedResponse.success ? "successful" : "failed"}`
-    );
+    // console.log(
+    //   `[PUT] Token verification: ${decryptedResponse.success ? "successful" : "failed"}`
+    // );
     if (!decryptedResponse.success) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -256,7 +256,7 @@ export async function PUT(req: NextRequest) {
     const currentOrgName =
       org.name?.toLowerCase().replace(/\s+/g, "-") || organizationId;
     const data = await req.json();
-    console.log(`[PUT] Request data: ${JSON.stringify(data)}`);
+    // console.log(`[PUT] Request data: ${JSON.stringify(data)}`);
     const newPortalName = data.portalName
       ? data.portalName.toLowerCase().replace(/\s+/g, "-")
       : currentOrgName;
@@ -271,15 +271,15 @@ export async function PUT(req: NextRequest) {
     let uploadedLogo = null;
     if (data.portalLogo) {
       try {
-        console.log(`[PUT] Processing portalLogo: ${data.portalLogo}`);
+        // console.log(`[PUT] Processing portalLogo: ${data.portalLogo}`);
         uploadedLogo = await handleSingleFile(
           data.portalLogo,
           fileStorage,
           organizationId
         );
-        console.log(
-          `[PUT] File upload result: ${JSON.stringify(uploadedLogo)}`
-        );
+        // console.log(
+        //   `[PUT] File upload result: ${JSON.stringify(uploadedLogo)}`
+        // );
       } catch (fileError) {
         console.error(
           `File upload failed: ${fileError instanceof Error ? fileError.message : "Unknown error"}`
@@ -303,7 +303,7 @@ export async function PUT(req: NextRequest) {
       const source = uploadedLogo?.url;
 
       if (source) {
-        console.log(`[PUT] Saving favicon from source: ${source}`);
+        // console.log(`[PUT] Saving favicon from source: ${source}`);
         try {
           await saveFavicon(source, faviconTargetPath, oldPortalName, token);
         } catch (faviconError) {
@@ -333,14 +333,14 @@ export async function PUT(req: NextRequest) {
         newPortalName,
         "favicon.png"
       );
-      console.log(
-        `[PUT] No portalLogo provided, checking favicon at: ${faviconPath}`
-      );
+      // console.log(
+      //   `[PUT] No portalLogo provided, checking favicon at: ${faviconPath}`
+      // );
 
       if (fs.existsSync(faviconPath)) {
-        console.log(`[PUT] Favicon found at ${faviconPath}, removing...`);
+        // console.log(`[PUT] Favicon found at ${faviconPath}, removing...`);
         fs.unlinkSync(faviconPath);
-        console.log(`[PUT] Favicon removed successfully from ${faviconPath}`);
+        // console.log(`[PUT] Favicon removed successfully from ${faviconPath}`);
       } else {
         console.log(
           `[PUT] No favicon found at ${faviconPath}, skipping removal.`
@@ -354,7 +354,7 @@ export async function PUT(req: NextRequest) {
         data.portalName || currentSettings?.portalConfigs?.portalName || "",
     };
 
-    console.log("❓❓❓❓ ", updatedPortal);
+    // console.log("❓❓❓❓ ", updatedPortal);
 
     await Organization?.findByIdAndUpdate(organizationId, {
       name: updatedPortal.portalName,
