@@ -44,6 +44,8 @@ export const sendMail = async (
     if (!Settings) {
       return { status: 404, message: "Setting Model not found" };
     }
+    // const validEmails = email;
+
     const settingInfo = (await Settings?.find({
       organizationId: orgID,
     })) as ISettings[];
@@ -75,6 +77,24 @@ export const sendMail = async (
     }
     mailTo = mailTo.filter((mailId) => (mailId ? true : false));
     console.log("⌛ filtered mails: ", email);
+
+    // const allEmails = [...(email || []), ...(bcc || [])];
+    console.log("BCC: ", bcc);
+    // const users = await User.find(
+    //   { email: { $in: allEmails } },
+    //   { email: 1, isDeleted: 1 }
+    // ).lean();
+
+    // const deletedEmails = new Set(
+    //   users.filter((user) => user.isDeleted).map((user) => user.email)
+    // );
+    // console.log("ISDELETED EMAIL: ", deletedEmails);
+    // const validEmails = allEmails.filter((e) => !deletedEmails.has(e));
+    // console.log("VALID EMAIL: ", validEmails);
+
+    // if (validEmails.length === 0) {
+    //   return { status: 400, message: "No valid recipients found" };
+    // }
 
     if (mailConfig.mailProvider === "smtp") {
       const result = await sendSmtpMail({

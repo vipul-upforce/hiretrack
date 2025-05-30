@@ -45,7 +45,7 @@ const RenderHistoryEntry = ({
     ) {
       return (
         <div className="flex flex-row items-start justify-between w-full">
-          <div className="flex flex-row">
+          <div className="flex flex-row w-[85%]">
             {interview.currentInterviewer &&
             typeof interview.currentInterviewer === "object" &&
             "name" in interview.currentInterviewer ? (
@@ -78,6 +78,12 @@ const RenderHistoryEntry = ({
               </p>
             ) : interview.title === "Self Applied" ? (
               <p>{localCandidate.name} applied from portal</p>
+            ) : interview.title?.includes("Updated") ? (
+              <p>{interview.title}</p>
+            ) : interview.title === "Archived" ? (
+              <p>{localCandidate.name} was Archived</p>
+            ) : interview.title === "Unarchived" ? (
+              <p>{localCandidate.name} was Unarchived</p>
             ) : interview?.previousInterviewer ? (
               <p className="pl-1">
                 Unassigned from{" "}
@@ -90,7 +96,7 @@ const RenderHistoryEntry = ({
               <></>
             )}
           </div>
-          <div className="flex flex-col items-end">
+          <div className="flex flex-col items-end text-right">
             <p className="text-xs font-light text-gray-400">
               {interview?.assignmentBy && "Updated by"}
             </p>
@@ -182,11 +188,39 @@ const RenderHistoryEntry = ({
           className="max-w-[90%] text-sm whitespace-pre-wrap pb-0"
           style={{ wordWrap: "break-word" }}
         >
+          {/* {interview.note &&
+            !interview.currentInterviewer &&
+            interview.note.description &&
+            (() => {
+              const description = interview.note.description || "";
+              const index = description.indexOf(":");
+
+              const title =
+                index !== -1 ? description.slice(0, index).trim() : "";
+              const rest =
+                index !== -1
+                  ? description.slice(index + 1).trim()
+                  : description;
+
+              return (
+                <>
+                  <span className="text-black text-lg">
+                    {title.charAt(0).toUpperCase() + title.slice(1)}
+                  </span>
+                  <span>{rest}</span>
+                </>
+              );
+            })()} */}
+
           {interview.note && interview.note.description}
           {interview.remark && interview.remark.description}
         </p>
 
-        {interview?.note && Object.keys(interview.note).length > 0 && interview?.note?.rating !== 0 && (
+        {interview?.note &&
+        Object.keys(interview.note).length > 0 &&
+        // interview?.note?.rating &&
+        interview?.note?.rating !== 0 &&
+        interview?.note?.rating ? (
           <div className="flex flex-row items-center">
             {interview?.note?.rating}/5
             <Star
@@ -195,10 +229,10 @@ const RenderHistoryEntry = ({
               style={{ color: "orange" }}
             />
           </div>
-        )}
+        ) : null}
         {interview.remark &&
           interview.remark.rating &&
-          interview.remark.rating !== 0 && (
+          interview.remark.rating != 0 && (
             <div className="flex flex-row items-center">
               {interview.remark.rating}/5
               <Star

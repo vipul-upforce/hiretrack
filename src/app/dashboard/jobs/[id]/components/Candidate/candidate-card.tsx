@@ -34,7 +34,7 @@ export function CandidateCard({
 }) {
   if (onDashboard) {
     return (
-      <div className="bg-card border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow">
+      <div className="bg-card border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow h-full">
         <div className="flex justify-between items-start">
           <h3 className="font-medium w-2/3 text-wrap break-words">
             {candidate.name}
@@ -88,6 +88,23 @@ export function CandidateCard({
             </Badge>
           )}
         </div>
+        {/* <div className="mt-2 flex flex-wrap gap-1">
+          {candidate.skills.slice(0, 3).map((skill) => (
+            <Badge
+              key={skill}
+              variant="secondary"
+              className="text-xs max-w-[80px] overflow-hidden text-ellipsis whitespace-nowrap"
+            >
+              {skill}
+            </Badge>
+          ))}
+          {candidate.skills.length > 3 && (
+            <Badge variant="secondary" className="text-xs">
+              +{candidate.skills.length - 3}
+            </Badge>
+          )}
+        </div> */}
+
         {candidate.assignment && (
           <div className="capitalize flex gap-2 py-2">
             <Badge>

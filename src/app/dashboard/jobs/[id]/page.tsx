@@ -28,6 +28,7 @@ import { useKanbanBoard } from "./hooks/useKanbanBoard";
 import { useCandidate } from "./hooks/useCandidate";
 import ConfirmationDialog from "./components/Dialogs/ConfirmationDialog";
 import NoDataFound from "@/app/not-found";
+import EditLaneDialog from "./components/Lanes/edit-lane-dialog";
 
 function JobProgressPage() {
   const id = useParams()?.id as string;
@@ -47,6 +48,10 @@ function JobProgressPage() {
   );
   const [isConfirmLaneDeleteOpen, setIsConfirmLaneDeleteOpen] = useState(false);
   const [laneToDelete, setLaneToDelete] = useState<string | null>(null);
+  const [laneToEdit, setLaneToEdit] = useState<string | null>(null);
+  const [initialLaneToEdit, setInitialLaneToEdit] = useState<string | null>(
+    null
+  ); // New state for initial lane value
 
   const {
     data: job,
@@ -66,16 +71,23 @@ function JobProgressPage() {
   );
   const [droppedFileData, setDroppedFileData] = useState<File | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isLaneEditOpen, setIsLaneEditOpen] = useState(false);
   const [isFileOver, setIsFileOver] = useState(false);
 
-  const { handleAddLane, handleDeleteLane, handleConfirmDeleteLane } =
-    useKanbanBoard({
-      columns,
-      setColumns,
-      user,
-      setIsConfirmLaneDeleteOpen,
-      refetch,
-    });
+  const {
+    handleAddLane,
+    handleDeleteLane,
+    handleEditLaneClick,
+    handleEditLane,
+    handleConfirmDeleteLane,
+  } = useKanbanBoard({
+    columns,
+    setColumns,
+    user,
+    setIsConfirmLaneDeleteOpen,
+    setIsLaneEditOpen,
+    refetch,
+  });
 
   const {
     onDragEnd,
@@ -151,6 +163,21 @@ function JobProgressPage() {
     }
   }, [candidates, lanes, showArchived]);
 
+  // Update initialLaneToEdit when laneToEdit is set
+  useEffect(() => {
+    if (laneToEdit && initialLaneToEdit === null) {
+      setInitialLaneToEdit(laneToEdit);
+    }
+  }, [laneToEdit]);
+
+  // Reset initialLaneToEdit when the edit dialog is closed
+  useEffect(() => {
+    if (!isLaneEditOpen) {
+      setInitialLaneToEdit(null);
+      setLaneToEdit(null);
+    }
+  }, [isLaneEditOpen]);
+
   if (isJobLoading || isCandidatesLoading || isLanesLoading) {
     return <LoaderSkeleton />;
   }
@@ -213,7 +240,9 @@ function JobProgressPage() {
                   setIsFileOver={setIsFileOver}
                   handleFileDrop={handleFileDrop}
                   handleDeleteLane={handleDeleteLane}
+                  handleEditLane={handleEditLaneClick}
                   setLaneToDelete={setLaneToDelete}
+                  setLaneToEdit={setLaneToEdit}
                   refetch={refetch}
                   selectedCandidate={selectedCandidate}
                   setSelectedCandidate={setSelectedCandidate}
@@ -235,6 +264,16 @@ function JobProgressPage() {
         isOpen={isDetailsOpen}
         onOpenChange={setIsDetailsOpen}
         onUpdate={handleCandidateUpdate}
+      />
+
+      <EditLaneDialog
+        isEditLaneDialogOpen={isLaneEditOpen}
+        setIsEditLaneDialogOpen={setIsLaneEditOpen}
+        editingLane={laneToEdit ? laneToEdit : ""}
+        prevLane={initialLaneToEdit || ""} // Use initialLaneToEdit as prevLane
+        setEditingLane={setLaneToEdit}
+        handleLaneUpdate={handleEditLane}
+        isLoading={false}
       />
 
       <ConfirmationDialog

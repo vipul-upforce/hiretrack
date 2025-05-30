@@ -4,12 +4,14 @@ import { User } from "@/lib/features/users/usersApi";
 import {
   useUpdateLanesMutation,
   useDeleteLaneMutation,
+  useEditLaneMutation,
 } from "@/lib/features/lane/laneApi";
 interface UseKanbanBoardProps {
   columns: CandidateColumn[];
   setColumns: (columns: CandidateColumn[]) => void;
   user: User | null;
   setIsConfirmLaneDeleteOpen: (open: boolean) => void;
+  setIsLaneEditOpen: (open: boolean) => void;
   refetch: () => Promise<any>;
 }
 
@@ -18,9 +20,11 @@ export const useKanbanBoard = ({
   setColumns,
   user,
   setIsConfirmLaneDeleteOpen,
+  setIsLaneEditOpen,
   refetch,
 }: UseKanbanBoardProps) => {
   const [updateLanes] = useUpdateLanesMutation();
+  const [editLane] = useEditLaneMutation();
   const [deleteLane] = useDeleteLaneMutation();
 
   const updateLanesOrder = async (newColumns: CandidateColumn[]) => {
@@ -64,6 +68,9 @@ export const useKanbanBoard = ({
   const handleDeleteLane = () => {
     setIsConfirmLaneDeleteOpen(true);
   };
+  const handleEditLaneClick = () => {
+    setIsLaneEditOpen(true);
+  };
 
   const handleConfirmDeleteLane = async (laneId: string) => {
     if (!user?.id) return;
@@ -102,10 +109,51 @@ export const useKanbanBoard = ({
     await refetch();
   };
 
+  const handleEditLane = async (prevLaneId: string, laneId: string) => {
+    if (!user?.id || !prevLaneId || !laneId) return;
+    // alert("THIS WILL BE THE EDIT DIALOG FOR " + laneId);
+    try {
+      await editLane({
+        organizationId: user.organizationId as string,
+        prevLaneId: prevLaneId,
+        newLaneId: laneId,
+      }).unwrap();
+      // debugger;
+      toast({
+        title: "Success",
+        description: "Lane edited successfully",
+        variant: "default",
+      });
+      // const newColumns = columns.filter((col) => col.id !== laneId);
+      // setColumns(newColumns);
+    } catch (err: unknown) {
+      if (err && typeof err === "object" && "data" in err) {
+        const errorMessage =
+          (err.data as { error: string }).error || "Failed to delete the lane";
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      } else {
+        const errorMessage = "An unknown error occurred";
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
+    }
+    setIsLaneEditOpen(false);
+    await refetch();
+  };
+
   return {
     updateLanesOrder,
     handleAddLane,
     handleDeleteLane,
+    handleEditLaneClick,
+    handleEditLane,
     handleConfirmDeleteLane,
   };
 };
