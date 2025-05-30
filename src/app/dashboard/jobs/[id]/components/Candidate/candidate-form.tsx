@@ -347,14 +347,14 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
                     onDateChange={(date) =>
                       setFieldValue("assignment.time", date)
                     }
-                    onBlur={() => {
-                      if (values.assignment?.time) {
-                        setFieldValue(
-                          "assignment.time",
-                          new Date(values.assignment.time)
-                        );
-                      }
-                    }}
+                    // onBlur={() => {
+                    //   if (values.assignment?.time) {
+                    //     setFieldValue(
+                    //       "assignment.time",
+                    //       new Date(values.assignment.time)
+                    //     );
+                    //   }
+                    // }}
                     placeholder="Select time"
                   />
                   {errors?.assignment && (

@@ -86,7 +86,7 @@ export  default function ApplyJobsContent({ showHeaderFooter = true }: { showHea
       if (allowance.allow) {
         setInvalidPage(true);
       }
-      const config = allowance.data[0].portalConfigs;
+      const config = allowance?.data[0]?.portalConfigs;
       if (config?.portalHeader?.url && config?.portalFooter?.url) {
         const [headerRes, footerRes] = await Promise.all([
           fetch(config.portalHeader.url),
