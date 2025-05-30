@@ -349,7 +349,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
             <AlignRight className="h-4 w-4" />
           </Toggle>
 
-          <Button
+          {/* <Button
             variant="ghost"
             size="sm"
             onClick={setLink}
@@ -361,7 +361,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
           <Button variant="ghost" size="sm" onClick={addImage} aria-label="Image">
             <ImageIcon className="h-4 w-4" />
-          </Button>
+          </Button> */}
 
           <div className="ml-auto flex gap-1">
             <Button
