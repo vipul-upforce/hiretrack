@@ -1,18 +1,18 @@
-"use client"
-import type React from "react"
-import { useCallback, useEffect, useState } from "react"
-import { useEditor, EditorContent } from "@tiptap/react"
-import StarterKit from "@tiptap/starter-kit"
-import Underline from "@tiptap/extension-underline"
-import Link from "@tiptap/extension-link"
-import Image from "@tiptap/extension-image"
-import TextAlign from "@tiptap/extension-text-align"
-import Color from "@tiptap/extension-color"
-import TextStyle from "@tiptap/extension-text-style"
-import FontFamily from "@tiptap/extension-font-family"
-import Highlight from "@tiptap/extension-highlight"
-import { Extension } from "@tiptap/core"
-import "./rteStyles.css"
+"use client";
+import type React from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Underline from "@tiptap/extension-underline";
+import Link from "@tiptap/extension-link";
+import Image from "@tiptap/extension-image";
+import TextAlign from "@tiptap/extension-text-align";
+import Color from "@tiptap/extension-color";
+import TextStyle from "@tiptap/extension-text-style";
+import FontFamily from "@tiptap/extension-font-family";
+import Highlight from "@tiptap/extension-highlight";
+import { Extension } from "@tiptap/core";
+import "./rteStyles.css";
 
 import {
   Bold,
@@ -30,25 +30,30 @@ import {
   Palette,
   Type,
   Highlighter,
-} from "lucide-react"
-import { Toggle } from "../toggle"
-import { Button } from "../button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../dropdown-menu"
-import { Popover, PopoverContent, PopoverTrigger } from "../popover"
-import { colorOptions, fontFamilies, highlightColors } from "@/lib/rteUtils"
+} from "lucide-react";
+import { Toggle } from "../toggle";
+import { Button } from "../button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "../popover";
+import { colorOptions, fontFamilies, highlightColors } from "@/lib/rteUtils";
 
 interface RichTextEditorProps {
-  value: string
-  onChange: (data: string) => void
-  onBlur?: (data: string) => void
-  placeholder?: string
-  readOnly?: boolean
-  className?: string
-  maxLength?: number
-  id?: string
-  name?: string
-  error?: string
-  touched?: boolean
+  value: string;
+  onChange: (data: string) => void;
+  onBlur?: (data: string) => void;
+  placeholder?: string;
+  readOnly?: boolean;
+  className?: string;
+  maxLength?: number;
+  id?: string;
+  name?: string;
+  error?: string;
+  touched?: boolean;
 }
 
 const RichTextEditor: React.FC<RichTextEditorProps> = ({
@@ -65,8 +70,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   touched,
   ...props
 }) => {
-  const [currentFont, setCurrentFont] = useState("Default")
-  const [isFocused, setIsFocused] = useState(false)
+  const [currentFont, setCurrentFont] = useState("Default");
+  const [isFocused, setIsFocused] = useState(false);
 
   const editor = useEditor({
     extensions: [
@@ -102,104 +107,105 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         addKeyboardShortcuts() {
           return {
             Enter: ({ editor }) => {
-              return editor.commands.setHardBreak()
+              return editor.commands.setHardBreak();
             },
             "Shift-Enter": ({ editor }) => {
-              return editor.commands.splitBlock()
+              return editor.commands.splitBlock();
             },
-          }
+          };
         },
       }),
     ],
     content: value,
     editable: !readOnly,
     onUpdate: ({ editor }) => {
-      const text = editor.getText()
+      const text = editor.getText();
       if (maxLength && text.length > maxLength) {
-        return
+        return;
       }
-      const html = editor.getHTML()
-      onChange(html)
+      const html = editor.getHTML();
+      onChange(html);
     },
     onFocus: () => {
-      setIsFocused(true)
+      setIsFocused(true);
     },
     onBlur: ({ editor }) => {
-      setIsFocused(false)
-      const html = editor.getHTML()
+      setIsFocused(false);
+      const html = editor.getHTML();
       if (onBlur) {
-        onBlur(html)
+        onBlur(html);
       }
     },
     editorProps: {
       attributes: {
-        class: "prose prose-sm sm:prose dark:prose-invert focus:outline-none min-h-[150px] max-w-none p-4",
+        class:
+          "prose prose-sm sm:prose dark:prose-invert focus:outline-none min-h-[150px] max-w-none p-4",
         placeholder,
       },
     },
-  })
+  });
 
   useEffect(() => {
     if (editor && value !== editor.getHTML()) {
-      editor.commands.setContent(value)
+      editor.commands.setContent(value);
     }
-  }, [editor, value])
+  }, [editor, value]);
 
-  const addImage = useCallback(() => {
-    if (!editor) return
+  // const addImage = useCallback(() => {
+  //   if (!editor) return
 
-    const url = window.prompt("URL")
-    if (url) {
-      editor.chain().focus().setImage({ src: url }).run()
-    }
-  }, [editor])
+  //   const url = window.prompt("URL")
+  //   if (url) {
+  //     editor.chain().focus().setImage({ src: url }).run()
+  //   }
+  // }, [editor])
 
-  const setLink = useCallback(() => {
-    if (!editor) return
+  // const setLink = useCallback(() => {
+  //   if (!editor) return
 
-    const previousUrl = editor.getAttributes("link").href
-    const url = window.prompt("URL", previousUrl)
+  //   const previousUrl = editor.getAttributes("link").href
+  //   const url = window.prompt("URL", previousUrl)
 
-    if (url === null) return
+  //   if (url === null) return
 
-    if (url === "") {
-      editor.chain().focus().extendMarkRange("link").unsetLink().run()
-      return
-    }
-    editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run()
-  }, [editor])
+  //   if (url === "") {
+  //     editor.chain().focus().extendMarkRange("link").unsetLink().run()
+  //     return
+  //   }
+  //   editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run()
+  // }, [editor])
 
   const setFontFamily = useCallback(
     (fontFamily: string, fontName: string) => {
-      if (!editor) return
-      editor.chain().focus().setFontFamily(fontFamily).run()
-      setCurrentFont(fontName)
+      if (!editor) return;
+      editor.chain().focus().setFontFamily(fontFamily).run();
+      setCurrentFont(fontName);
     },
-    [editor],
-  )
+    [editor]
+  );
 
   const setColor = useCallback(
     (color: string) => {
-      if (!editor) return
-      editor.chain().focus().setColor(color).run()
+      if (!editor) return;
+      editor.chain().focus().setColor(color).run();
     },
-    [editor],
-  )
+    [editor]
+  );
 
   const setHighlight = useCallback(
     (color: string) => {
-      if (!editor) return
-      editor.chain().focus().toggleHighlight({ color }).run()
+      if (!editor) return;
+      editor.chain().focus().toggleHighlight({ color }).run();
     },
-    [editor],
-  )
+    [editor]
+  );
 
   if (!editor) {
-    return <div className="h-64 w-full animate-pulse bg-muted rounded-md" />
+    return <div className="h-64 w-full animate-pulse bg-muted rounded-md" />;
   }
 
   // const hasError = touched && error
-  const borderColor = isFocused ? "border-primary" : "border-input"
+  const borderColor = isFocused ? "border-primary" : "border-input";
 
   return (
     <div className={`border rounded-md ${borderColor} ${className}`}>
@@ -226,7 +232,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           <Toggle
             size="sm"
             pressed={editor.isActive("underline")}
-            onPressedChange={() => editor.chain().focus().toggleUnderline().run()}
+            onPressedChange={() =>
+              editor.chain().focus().toggleUnderline().run()
+            }
             aria-label="Underline"
           >
             <UnderlineIcon className="h-4 w-4" />
@@ -244,7 +252,11 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
                 <DropdownMenuItem
                   key={font.value}
                   onClick={() => setFontFamily(font.value, font.name)}
-                  className={editor.isActive("textStyle", { fontFamily: font.value }) ? "bg-accent" : ""}
+                  className={
+                    editor.isActive("textStyle", { fontFamily: font.value })
+                      ? "bg-accent"
+                      : ""
+                  }
                 >
                   <span style={{ fontFamily: font.value }}>{font.name}</span>
                 </DropdownMenuItem>
@@ -307,7 +319,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           <Toggle
             size="sm"
             pressed={editor.isActive("bulletList")}
-            onPressedChange={() => editor.chain().focus().toggleBulletList().run()}
+            onPressedChange={() =>
+              editor.chain().focus().toggleBulletList().run()
+            }
             aria-label="Bullet List"
           >
             <List className="h-4 w-4" />
@@ -316,7 +330,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           <Toggle
             size="sm"
             pressed={editor.isActive("orderedList")}
-            onPressedChange={() => editor.chain().focus().toggleOrderedList().run()}
+            onPressedChange={() =>
+              editor.chain().focus().toggleOrderedList().run()
+            }
             aria-label="Ordered List"
           >
             <ListOrdered className="h-4 w-4" />
@@ -325,7 +341,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           <Toggle
             size="sm"
             pressed={editor.isActive({ textAlign: "left" })}
-            onPressedChange={() => editor.chain().focus().setTextAlign("left").run()}
+            onPressedChange={() =>
+              editor.chain().focus().setTextAlign("left").run()
+            }
             aria-label="Align Left"
           >
             <AlignLeft className="h-4 w-4" />
@@ -334,7 +352,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           <Toggle
             size="sm"
             pressed={editor.isActive({ textAlign: "center" })}
-            onPressedChange={() => editor.chain().focus().setTextAlign("center").run()}
+            onPressedChange={() =>
+              editor.chain().focus().setTextAlign("center").run()
+            }
             aria-label="Align Center"
           >
             <AlignCenter className="h-4 w-4" />
@@ -343,7 +363,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           <Toggle
             size="sm"
             pressed={editor.isActive({ textAlign: "right" })}
-            onPressedChange={() => editor.chain().focus().setTextAlign("right").run()}
+            onPressedChange={() =>
+              editor.chain().focus().setTextAlign("right").run()
+            }
             aria-label="Align Right"
           >
             <AlignRight className="h-4 w-4" />
@@ -390,18 +412,25 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       {!readOnly && maxLength && (
         <p
           className={`text-right text-sm mt-1 mx-1 ${
-            editor?.getText().length >= maxLength ? "text-red-500" : "text-gray-400"
+            editor?.getText().length >= maxLength
+              ? "text-red-500"
+              : "text-gray-400"
           }`}
         >
           {editor?.getText().length || 0} / {maxLength}
         </p>
       )}
 
-      <EditorContent {...props} editor={editor} className={className} id={id} placeholder={placeholder} name={name} />
-
+      <EditorContent
+        {...props}
+        editor={editor}
+        className={className}
+        id={id}
+        placeholder={placeholder}
+        name={name}
+      />
     </div>
-  )
-}
+  );
+};
 
-export default RichTextEditor
-
+export default RichTextEditor;

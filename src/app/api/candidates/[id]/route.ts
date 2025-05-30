@@ -96,7 +96,7 @@ export async function PUT(
           title: "Updated Resume",
           previousValue: existingCandidate.resume,
           currentValue: data.resume,
-          attachments: data.resume,
+          attachments: [data.resume],
         });
       }
     }
@@ -429,7 +429,7 @@ export async function PUT(
           note: {
             description: updates,
           },
-          attachments: updates
+          attachments: [...updates]
             .filter((item) => item.attachments)
             .flatMap((item) => item.attachments!),
         };
