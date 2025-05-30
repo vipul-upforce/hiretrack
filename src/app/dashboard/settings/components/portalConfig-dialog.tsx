@@ -74,8 +74,8 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
     portalLogo: null,
     portalName: data?.portalName ?? "",
     existingLogo: data?.portalLogo ?? null,
-    existingHeaderFile: data?.portalHeader ?? [],
-    existingFooterFile: data?.portalFooter ?? [],
+    existingHeaderFile: data?.portalHeader ?? null,
+    existingFooterFile: data?.portalFooter ?? null,
     headerFile: null,
     footerFile: null,
   };
@@ -161,7 +161,6 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
         portalFooter: portalFooterData,
       };
 
-      debugger;
       await updateSMTPConfigs(dataToSubmit);
       const token = Cookies.get("token");
       // localStorage.setItem("portalConfig", JSON.stringify(dataToSubmit));

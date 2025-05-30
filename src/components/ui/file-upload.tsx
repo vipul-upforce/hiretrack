@@ -17,7 +17,7 @@ interface FileUploadProps {
       size: number;
     }>
   ) => void;
-  isEdit?:boolean
+  isEdit?: boolean;
   accept: Record<string, string[]>;
   maxFiles?: number;
   files: File[];
@@ -29,7 +29,7 @@ interface FileUploadProps {
     type: string;
     size: number;
   }>;
-  id?:string;
+  id?: string;
 }
 
 interface RenameFileState {
@@ -67,9 +67,9 @@ export function FileUpload({
   maxFiles = 1,
   files,
   existingFiles = [],
-  id='',
+  id = "",
   setter,
-  isEdit=true
+  isEdit = true,
 }: FileUploadProps) {
   const [renameFile, setRenameFile] = useState<RenameFileState>({
     file: null,
@@ -77,7 +77,6 @@ export function FileUpload({
   });
   const [user, setuser] = useState<User | null>(null);
   const [droppedFiles, setDroppedFiles] = useState<string[]>();
-
 
   useEffect(() => {
     (async () => {
@@ -116,7 +115,9 @@ export function FileUpload({
   };
 
   const handleRemoveFile = (fileNameToRemove: string) => {
-    const updatedFiles = files.filter((file) => file.name !== fileNameToRemove);
+    const updatedFiles = files.filter(
+      (file) => file?.name !== fileNameToRemove
+    );
     setter(updatedFiles);
   };
 
@@ -124,7 +125,7 @@ export function FileUpload({
     (acceptedFiles: File[]) => {
       onFileSelect(acceptedFiles);
       setDroppedFiles((prev = []) => {
-        const combined = [...prev, ...acceptedFiles.map((file) => file.name)];
+        const combined = [...prev, ...acceptedFiles.map((file) => file?.name)];
         return Array.from(new Set(combined));
       });
     },
@@ -162,7 +163,7 @@ export function FileUpload({
         </p>
       </div>
 
-      <div className="space-y-2 overflow-y-auto" >
+      <div className="space-y-2 overflow-y-auto">
         {existingFiles.map((file) => (
           <div
             key={file.id}
@@ -170,9 +171,9 @@ export function FileUpload({
           >
             <div className="flex items-center space-x-2">
               <FileIcon className="h-4 w-4" />
-              <span className="text-sm">{file.name}</span>
+              <span className="text-sm">{file?.name}</span>
               <span className="text-xs text-gray-500">
-                ({formatFileSize(file.size)})
+                ({ formatFileSize(file?.size)})
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -195,34 +196,36 @@ export function FileUpload({
 
         {files?.map((file) => (
           <div
-            key={file.name}
+            key={file?.name}
             className="flex items-center justify-between p-2 border rounded"
           >
             <div className="flex items-center space-x-2">
               <FileIcon className="h-4 w-4" />
-              <span className="text-sm">{file.name}</span>
+              <span className="text-sm">{file?.name}</span>
               <span className="text-xs text-gray-500">
-                ({formatFileSize(file.size)})
+                ({formatFileSize(file?.size)})
               </span>
             </div>
             <div className="flex items-center gap-2">
-             {isEdit && <button
-                type="button"
-                className="p-2 hover:bg-muted rounded-md"
-                onClick={() =>
-                  setRenameFile({
-                    file,
-                    isExisting: false,
-                  })
-                }
-              >
-                <Pencil className="h-4 w-4 text-muted-foreground" />
-              </button>}
-              {droppedFiles?.includes(file.name) && (
+              {isEdit && (
+                <button
+                  type="button"
+                  className="p-2 hover:bg-muted rounded-md"
+                  onClick={() =>
+                    setRenameFile({
+                      file,
+                      isExisting: false,
+                    })
+                  }
+                >
+                  <Pencil className="h-4 w-4 text-muted-foreground" />
+                </button>
+              )}
+              {droppedFiles?.includes(file?.name) && (
                 <button
                   type="button"
                   className="p-2 hover:bg-muted rounded-md hover:text-red-500"
-                  onClick={() => handleRemoveFile(file.name)}
+                  onClick={() => handleRemoveFile(file?.name)}
                   aria-label="Remove file"
                 >
                   <X className="h-4 w-4 text-muted-foreground" />

@@ -1,12 +1,12 @@
 
 "use client"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Editor from "@monaco-editor/react"
 import type { PortalConfigValues } from "./portalConfig-dialog"
 import type { FormikHelpers } from "formik"
-import { ApplyJobsContent } from "@/app/apply-jobs/page"
+import ApplyJobsContent from "@/app/apply-jobs/ApplyJobContent"
 
 export interface ILivePreviewAndCodeEditor {
   headerHtml?: string
@@ -51,6 +51,13 @@ const LivePreviewAndCodeEditor = ({
     setCurrentTab(value)
     setActiveTab?.(value)
   }
+
+useEffect(()=>
+{
+    setFieldValue?.('headerFile',headerHtml);
+    setFieldValue?.('footerFile',footerHtml)
+
+},[])
 
   return (
     <div className="flex flex-col h-full">

@@ -166,159 +166,159 @@ async function saveFavicon(
   }
 }
 
-async function saveHeaderFile(
-  sourceUrl: string,
-  destPath: string,
-  oldPortalName?: string,
-  token?: string // Add token parameter
-): Promise<void> {
-  try {
-    console.log(
-      `[saveHeaderFile] Starting with sourceUrl: ${sourceUrl}, destPath: ${destPath}, token: ${token ? "provided" : "not provided"}`
-    );
-    if (!sourceUrl || typeof sourceUrl !== "string") {
-      throw new Error("Invalid or missing source URL");
-    }
-    if (!destPath || typeof destPath !== "string") {
-      throw new Error("Invalid or missing destination path");
-    }
+// async function saveHeaderFile(
+//   sourceUrl: string,
+//   destPath: string,
+//   oldPortalName?: string,
+//   token?: string // Add token parameter
+// ): Promise<void> {
+//   try {
+//     console.log(
+//       `[saveHeaderFile] Starting with sourceUrl: ${sourceUrl}, destPath: ${destPath}, token: ${token ? "provided" : "not provided"}`
+//     );
+//     if (!sourceUrl || typeof sourceUrl !== "string") {
+//       throw new Error("Invalid or missing source URL");
+//     }
+//     if (!destPath || typeof destPath !== "string") {
+//       throw new Error("Invalid or missing destination path");
+//     }
 
-    const finalDestPath = destPath.endsWith(".html")
-      ? destPath
-      : path.join(path.dirname(destPath), "headerFile.html");
-    console.log("finalDestPath :>> ", finalDestPath);
+//     const finalDestPath = destPath.endsWith(".html")
+//       ? destPath
+//       : path.join(path.dirname(destPath), "headerFile.html");
+//     console.log("finalDestPath :>> ", finalDestPath);
 
-    // const destDir = path.dirname(finalDestPath);
-    // if (oldPortalName) {
-    //   const parentDir = path.dirname(destDir);
-    //   const oldDir = path.join(parentDir, oldPortalName);
-    //   if (fs.existsSync(oldDir) && oldDir !== destDir) {
-    //     console.log(
-    //       `[saveFavicon] Renaming directory from ${oldDir} to ${destDir}`
-    //     );
-    //     await fs.promises.rename(oldDir, destDir);
-    //   }
-    // }
+//     // const destDir = path.dirname(finalDestPath);
+//     // if (oldPortalName) {
+//     //   const parentDir = path.dirname(destDir);
+//     //   const oldDir = path.join(parentDir, oldPortalName);
+//     //   if (fs.existsSync(oldDir) && oldDir !== destDir) {
+//     //     console.log(
+//     //       `[saveFavicon] Renaming directory from ${oldDir} to ${destDir}`
+//     //     );
+//     //     await fs.promises.rename(oldDir, destDir);
+//     //   }
+//     // }
 
-    // if (!fs.existsSync(destDir)) {
-    //   console.log(`[saveFavicon] Creating directory: ${destDir}`);
-    //   fs.mkdirSync(destDir, { recursive: true });
-    // }
+//     // if (!fs.existsSync(destDir)) {
+//     //   console.log(`[saveFavicon] Creating directory: ${destDir}`);
+//     //   fs.mkdirSync(destDir, { recursive: true });
+//     // }
 
-    // const downloadImage = async (
-    //   url: string,
-    //   outputPath: string,
-    //   authToken?: string
-    // ): Promise<void> => {
-    //   const protocol = url.startsWith("https") ? https : http;
+//     // const downloadImage = async (
+//     //   url: string,
+//     //   outputPath: string,
+//     //   authToken?: string
+//     // ): Promise<void> => {
+//     //   const protocol = url.startsWith("https") ? https : http;
 
-    //   return new Promise((resolve, reject) => {
-    //     const options = {
-    //       headers: authToken ? { Cookie: `token=${authToken}` } : {}, // Pass token in Cookie header
-    //     };
+//     //   return new Promise((resolve, reject) => {
+//     //     const options = {
+//     //       headers: authToken ? { Cookie: `token=${authToken}` } : {}, // Pass token in Cookie header
+//     //     };
 
-    //     console.log(`[downloadImage] Requesting URL: ${url}`);
-    //     console.log(
-    //       `[downloadImage] Headers: ${JSON.stringify(options.headers)}`
-    //     );
+//     //     console.log(`[downloadImage] Requesting URL: ${url}`);
+//     //     console.log(
+//     //       `[downloadImage] Headers: ${JSON.stringify(options.headers)}`
+//     //     );
 
-    //     protocol
-    //       .get(url, options, (res) => {
-    //         console.log(`[downloadImage] Status Code: ${res.statusCode}`);
-    //         console.log(
-    //           `[downloadImage] Response Headers: ${JSON.stringify(res.headers)}`
-    //         );
-    //         if (res.statusCode !== 200) {
-    //           reject(
-    //             new Error(
-    //               `Failed to download image: HTTP status ${res.statusCode}`
-    //             )
-    //           );
-    //           return;
-    //         }
+//     //     protocol
+//     //       .get(url, options, (res) => {
+//     //         console.log(`[downloadImage] Status Code: ${res.statusCode}`);
+//     //         console.log(
+//     //           `[downloadImage] Response Headers: ${JSON.stringify(res.headers)}`
+//     //         );
+//     //         if (res.statusCode !== 200) {
+//     //           reject(
+//     //             new Error(
+//     //               `Failed to download image: HTTP status ${res.statusCode}`
+//     //             )
+//     //           );
+//     //           return;
+//     //         }
 
-    //         const contentType = res.headers["content-type"]?.toLowerCase();
-    //         if (!contentType?.startsWith("image/")) {
-    //           reject(
-    //             new Error(`Invalid content type: ${contentType || "unknown"}`)
-    //           );
-    //           return;
-    //         }
+//     //         const contentType = res.headers["content-type"]?.toLowerCase();
+//     //         if (!contentType?.startsWith("image/")) {
+//     //           reject(
+//     //             new Error(`Invalid content type: ${contentType || "unknown"}`)
+//     //           );
+//     //           return;
+//     //         }
 
-    //         const writeStream = fs.createWriteStream(outputPath);
-    //         streamPipeline(res, writeStream)
-    //           .then(resolve)
-    //           .catch((err) =>
-    //             reject(new Error(`Failed to write image: ${err.message}`))
-    //           );
-    //       })
-    //       .on("error", (err) =>
-    //         reject(new Error(`Network error: ${err.message}`))
-    //       );
-    //   });
-    // };
+//     //         const writeStream = fs.createWriteStream(outputPath);
+//     //         streamPipeline(res, writeStream)
+//     //           .then(resolve)
+//     //           .catch((err) =>
+//     //             reject(new Error(`Failed to write image: ${err.message}`))
+//     //           );
+//     //       })
+//     //       .on("error", (err) =>
+//     //         reject(new Error(`Network error: ${err.message}`))
+//     //       );
+//     //   });
+//     // };
 
-    // const isRemote =
-    //   sourceUrl.startsWith("http") || sourceUrl.startsWith("/api/");
-    // const tempImagePath = path.join(
-    //   process.cwd(),
-    //   "temp",
-    //   `favicon-${Date.now()}.tmp`
-    // );
+//     // const isRemote =
+//     //   sourceUrl.startsWith("http") || sourceUrl.startsWith("/api/");
+//     // const tempImagePath = path.join(
+//     //   process.cwd(),
+//     //   "temp",
+//     //   `favicon-${Date.now()}.tmp`
+//     // );
 
-    // let inputImagePath = sourceUrl;
-    // if (isRemote) {
-    //   const parsedUrl = parse(sourceUrl, true);
-    //   const pathName = parsedUrl.query.pathName as string | undefined;
+//     // let inputImagePath = sourceUrl;
+//     // if (isRemote) {
+//     //   const parsedUrl = parse(sourceUrl, true);
+//     //   const pathName = parsedUrl.query.pathName as string | undefined;
 
-    //   const baseUrl =
-    //     process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    //   let fullUrl = sourceUrl;
-    //   if (pathName) {
-    //     const normalizedPath = path.posix
-    //       .normalize(decodeURI(pathName))
-    //       .replace(/\\/g, "/");
-    //     fullUrl = `${baseUrl}/api/files?pathName=${encodeURIComponent(normalizedPath)}`;
-    //   } else if (!sourceUrl.startsWith("http")) {
-    //     fullUrl = `${baseUrl}${sourceUrl}`;
-    //   }
+//     //   const baseUrl =
+//     //     process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+//     //   let fullUrl = sourceUrl;
+//     //   if (pathName) {
+//     //     const normalizedPath = path.posix
+//     //       .normalize(decodeURI(pathName))
+//     //       .replace(/\\/g, "/");
+//     //     fullUrl = `${baseUrl}/api/files?pathName=${encodeURIComponent(normalizedPath)}`;
+//     //   } else if (!sourceUrl.startsWith("http")) {
+//     //     fullUrl = `${baseUrl}${sourceUrl}`;
+//     //   }
 
-    //   const tempDir = path.dirname(tempImagePath);
-    //   if (!fs.existsSync(tempDir)) {
-    //     console.log(`[saveFavicon] Creating temp directory: ${tempDir}`);
-    //     fs.mkdirSync(tempDir, { recursive: true });
-    //   }
+//     //   const tempDir = path.dirname(tempImagePath);
+//     //   if (!fs.existsSync(tempDir)) {
+//     //     console.log(`[saveFavicon] Creating temp directory: ${tempDir}`);
+//     //     fs.mkdirSync(tempDir, { recursive: true });
+//     //   }
 
-    //   console.log(`[saveFavicon] Downloading from: ${fullUrl}`);
-    //   await downloadImage(fullUrl, tempImagePath, token);
-    //   inputImagePath = tempImagePath;
-    // } else {
-    //   inputImagePath = path.resolve(process.cwd(), decodeURI(sourceUrl));
-    //   if (!fs.existsSync(inputImagePath)) {
-    //     throw new Error(`Local source file does not exist: ${inputImagePath}`);
-    //   }
-    // }
+//     //   console.log(`[saveFavicon] Downloading from: ${fullUrl}`);
+//     //   await downloadImage(fullUrl, tempImagePath, token);
+//     //   inputImagePath = tempImagePath;
+//     // } else {
+//     //   inputImagePath = path.resolve(process.cwd(), decodeURI(sourceUrl));
+//     //   if (!fs.existsSync(inputImagePath)) {
+//     //     throw new Error(`Local source file does not exist: ${inputImagePath}`);
+//     //   }
+//     // }
 
-    // console.log(`[saveFavicon] Saving favicon to: ${finalDestPath}`);
-    // await sharp(inputImagePath)
-    //   .resize(48, 48, {
-    //     fit: "contain",
-    //     background: { r: 0, g: 0, b: 0, alpha: 0 },
-    //   })
-    //   .png({ quality: 80 })
-    //   .toFile(finalDestPath);
+//     // console.log(`[saveFavicon] Saving favicon to: ${finalDestPath}`);
+//     // await sharp(inputImagePath)
+//     //   .resize(48, 48, {
+//     //     fit: "contain",
+//     //     background: { r: 0, g: 0, b: 0, alpha: 0 },
+//     //   })
+//     //   .png({ quality: 80 })
+//     //   .toFile(finalDestPath);
 
-    // if (isRemote && fs.existsSync(tempImagePath)) {
-    //   console.log(`[saveFavicon] Cleaning up temp file: ${tempImagePath}`);
-    //   await fs.promises.unlink(tempImagePath);
-    // }
-  } catch (error) {
-    console.error(
-      `saveFavicon error: ${error instanceof Error ? error.message : "Unknown error"}`
-    );
-    throw error;
-  }
-}
+//     // if (isRemote && fs.existsSync(tempImagePath)) {
+//     //   console.log(`[saveFavicon] Cleaning up temp file: ${tempImagePath}`);
+//     //   await fs.promises.unlink(tempImagePath);
+//     // }
+//   } catch (error) {
+//     console.error(
+//       `saveFavicon error: ${error instanceof Error ? error.message : "Unknown error"}`
+//     );
+//     throw error;
+//   }
+// }
 
 export async function GET(req: NextRequest) {
   try {
@@ -427,8 +427,7 @@ export async function PUT(req: NextRequest) {
     let uploadedLogo = null;
     let uploadedHeader = null;
     let uploadedFooter = null;
-
-    if (data.portalLogo) {
+    if (data?.portalLogo) {
       try {
         // console.log(`[PUT] Processing portalLogo: ${data.portalLogo}`);
         uploadedLogo = await handleSingleFile(
@@ -509,7 +508,7 @@ export async function PUT(req: NextRequest) {
 
     if (data.portalHeader) {
       try {
-        console.log(`[PUT] Processing portalLogo: ${data.portalHeader}`);
+        console.log(`[PUT] Processing portalHeader: ${data.portalHeader}`);
         uploadedHeader = await handleSingleFile(
           data.portalHeader,
           fileStorage,
@@ -540,7 +539,7 @@ export async function PUT(req: NextRequest) {
         "header.html"
       );
       console.log(
-        `[PUT] No portalLogo provided, checking favicon at: ${headerPath}`
+        `[PUT] No portalHeader provided, checking favicon at: ${headerPath}`
       );
 
       if (fs.existsSync(headerPath)) {
@@ -624,6 +623,7 @@ export async function PUT(req: NextRequest) {
       { portalConfigs: updatedPortal },
       { new: true, runValidators: true, upsert: true }
     );
+    console.log("updatedSettings :>> ", updatedSettings);
 
     if (!updatedSettings) {
       return NextResponse.json(
