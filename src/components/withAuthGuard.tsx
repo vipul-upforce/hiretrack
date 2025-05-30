@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { NextPage } from "next";
 import AuthGuardLoading from "./ui/authGuardLoader";
 import Cookies from "js-cookie";
@@ -31,7 +31,7 @@ const withAuthGuard = <P extends object>(
 ): NextPage<P> => {
   const {
     requiredRoles = [],
-    fallbackPath = "/login",
+    fallbackPath = "/dashbaord",
     checkAllowance = false,
     allowAuthenticated = true,
   } = options;
@@ -44,10 +44,70 @@ const withAuthGuard = <P extends object>(
       "loading" | "authorized" | "unauthorized"
     >("loading");
     const router = useRouter();
+    const pathname = usePathname();
 
     useEffect(() => {
+      const checkOrgAllowance = async () => {
+        if (checkAllowance) {
+          if (cachedAuthState.allowance !== null) {
+            if (!cachedAuthState.allowance) {
+              router.replace(fallbackPath);
+              setAuthState("unauthorized");
+              return;
+            }
+            setAuthState("authorized");
+            return;
+          }
+
+          try {
+            const response = await fetch("/api/organization");
+            const allowance = await response.json();
+            cachedAuthState.allowance = allowance.allow;
+            if (!allowance.allow) {
+              router.replace(fallbackPath);
+              setAuthState("unauthorized");
+              return;
+            }
+            setAuthState("authorized");
+          } catch (error) {
+            console.error("Allowance check failed:", error);
+            router.replace(fallbackPath);
+            setAuthState("unauthorized");
+          }
+        } else {
+          setAuthState("authorized");
+        }
+      };
+
       const checkAuth = async () => {
-        // Uses cached auth state if available
+        // Check allowance if required (independent of authentication)
+        if (checkAllowance) {
+          if (cachedAuthState.allowance !== null) {
+            if (!cachedAuthState.allowance) {
+              router.replace(fallbackPath);
+              setAuthState("unauthorized");
+              return;
+            }
+          } else {
+            try {
+              const response = await fetch("/api/organization");
+              const allowance = await response.json();
+              cachedAuthState.allowance = allowance.allow;
+              if (!allowance.allow) {
+                router.replace(fallbackPath);
+                setAuthState("unauthorized");
+                return;
+              }
+            } catch (error) {
+              console.error("Allowance check failed:", error);
+              router.replace(fallbackPath);
+              setAuthState("unauthorized");
+              return;
+            }
+          }
+        }
+
+        // Handle authentication
         if (cachedAuthState.isAuthenticated && cachedAuthState.userRole) {
           if (!allowAuthenticated) {
             router.replace(fallbackPath);
@@ -64,27 +124,6 @@ const withAuthGuard = <P extends object>(
             return;
           }
 
-          if (checkAllowance && cachedAuthState.allowance === null) {
-            try {
-              const response = await fetch("/api/organization");
-              const allowance = await response.json();
-              cachedAuthState.allowance = allowance.allow;
-              if (!allowance.allow) {
-                router.replace(fallbackPath);
-                setAuthState("unauthorized");
-                return;
-              }
-            } catch (error) {
-              router.replace(fallbackPath);
-              setAuthState("unauthorized");
-              return;
-            }
-          } else if (checkAllowance && !cachedAuthState.allowance) {
-            router.replace(fallbackPath);
-            setAuthState("unauthorized");
-            return;
-          }
-
           setAuthState("authorized");
           return;
         }
@@ -92,10 +131,12 @@ const withAuthGuard = <P extends object>(
         // No cached auth, check token
         const token = Cookies.get("token");
         if (!token) {
-          if (!allowAuthenticated) {
+          if (allowAuthenticated) {
             router.replace(fallbackPath);
+            setAuthState("unauthorized");
+          } else {
+            setAuthState("authorized"); // Allow unauthenticated users
           }
-          setAuthState("unauthorized");
           return;
         }
 
@@ -104,7 +145,7 @@ const withAuthGuard = <P extends object>(
           cachedAuthState = {
             isAuthenticated: true,
             userRole: decryptedResponse.user.role,
-            allowance: null, // Reset allowance to check if needed
+            allowance: cachedAuthState.allowance, // Preserve allowance state
           };
 
           if (!allowAuthenticated) {
@@ -122,37 +163,24 @@ const withAuthGuard = <P extends object>(
             return;
           }
 
-          if (checkAllowance) {
-            try {
-              const response = await fetch("/api/organization");
-              const allowance = await response.json();
-              cachedAuthState.allowance = allowance.allow;
-              if (!allowance.allow) {
-                router.replace(fallbackPath);
-                setAuthState("unauthorized");
-                return;
-              }
-            } catch (error) {
-              router.replace(fallbackPath);
-              setAuthState("unauthorized");
-              return;
-            }
-          }
-
           setAuthState("authorized");
         } else {
           cachedAuthState = {
             isAuthenticated: false,
             userRole: null,
-            allowance: null,
+            allowance: cachedAuthState.allowance,
           };
           router.replace(fallbackPath);
           setAuthState("unauthorized");
         }
       };
 
-      checkAuth();
-    }, []); // Empty dependency array to run only once per session
+      if (pathname === "/register/org") {
+        checkOrgAllowance();
+      } else {
+        checkAuth();
+      }
+    }, [pathname]);
 
     if (authState === "loading") {
       return <AuthGuardLoading />;

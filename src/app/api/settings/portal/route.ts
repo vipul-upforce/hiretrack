@@ -60,20 +60,11 @@ async function saveFavicon(
 
       return new Promise((resolve, reject) => {
         const options = {
-          headers: authToken ? { Cookie: `token=${authToken}` } : {}, // Pass token in Cookie header
+          headers: authToken ? { Cookie: `token=${authToken}` } : {},
         };
-
-        // console.log(`[downloadImage] Requesting URL: ${url}`);
-        // console.log(
-        //   `[downloadImage] Headers: ${JSON.stringify(options.headers)}`
-        // );
 
         protocol
           .get(url, options, (res) => {
-            // console.log(`[downloadImage] Status Code: ${res.statusCode}`);
-            // console.log(
-            //   `[downloadImage] Response Headers: ${JSON.stringify(res.headers)}`
-            // );
             if (res.statusCode !== 200) {
               reject(
                 new Error(
@@ -92,11 +83,18 @@ async function saveFavicon(
             }
 
             const writeStream = fs.createWriteStream(outputPath);
-            streamPipeline(res, writeStream)
-              .then(resolve)
-              .catch((err) =>
-                reject(new Error(`Failed to write image: ${err.message}`))
-              );
+            writeStream.on("finish", () => {
+              writeStream.close(() => resolve());
+            });
+            writeStream.on("error", (err) => {
+              writeStream.close();
+              reject(new Error(`Failed to write image: ${err.message}`));
+            });
+
+            streamPipeline(res, writeStream).catch((err) => {
+              writeStream.close();
+              reject(new Error(`Stream pipeline error: ${err.message}`));
+            });
           })
           .on("error", (err) =>
             reject(new Error(`Network error: ${err.message}`))
@@ -162,7 +160,6 @@ async function saveFavicon(
     console.error(
       `saveFavicon error: ${error instanceof Error ? error.message : "Unknown error"}`
     );
-    throw error;
   }
 }
 
@@ -271,7 +268,7 @@ export async function PUT(req: NextRequest) {
     let uploadedLogo = null;
     if (data.portalLogo) {
       try {
-        // console.log(`[PUT] Processing portalLogo: ${data.portalLogo}`);
+        console.log(`[PUT] Processing portalLogo: ${data.portalLogo}`);
         uploadedLogo = await handleSingleFile(
           data.portalLogo,
           fileStorage,
@@ -303,7 +300,7 @@ export async function PUT(req: NextRequest) {
       const source = uploadedLogo?.url;
 
       if (source) {
-        // console.log(`[PUT] Saving favicon from source: ${source}`);
+        console.log(`[PUT] Saving favicon from source: ${source}`);
         try {
           await saveFavicon(source, faviconTargetPath, oldPortalName, token);
         } catch (faviconError) {
@@ -333,14 +330,14 @@ export async function PUT(req: NextRequest) {
         newPortalName,
         "favicon.png"
       );
-      // console.log(
-      //   `[PUT] No portalLogo provided, checking favicon at: ${faviconPath}`
-      // );
+      console.log(
+        `[PUT] No portalLogo provided, checking favicon at: ${faviconPath}`
+      );
 
       if (fs.existsSync(faviconPath)) {
-        // console.log(`[PUT] Favicon found at ${faviconPath}, removing...`);
+        console.log(`[PUT] Favicon found at ${faviconPath}, removing...`);
         fs.unlinkSync(faviconPath);
-        // console.log(`[PUT] Favicon removed successfully from ${faviconPath}`);
+        console.log(`[PUT] Favicon removed successfully from ${faviconPath}`);
       } else {
         console.log(
           `[PUT] No favicon found at ${faviconPath}, skipping removal.`
