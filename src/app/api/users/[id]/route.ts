@@ -19,6 +19,12 @@ export async function DELETE(
     await dbConnect();
 
     const { id } = await params;
+    if (session.user.id === id) {
+      return NextResponse.json(
+        { error: "You cannot delete yourself" },
+        { status: 401 }
+      );
+    }
     if (!User) {
       return NextResponse.json(
         { error: "User Model not found" },
@@ -131,7 +137,7 @@ export async function PUT(
         //   sameSite: "strict",
         //   maxAge: 30 * 24 * 60 * 60, // 30 days
         // });
-       const response= refreshAndReAssignToken(updatedData);
+        const response = refreshAndReAssignToken(updatedData);
 
         return response;
       }

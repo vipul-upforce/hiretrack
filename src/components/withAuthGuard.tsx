@@ -7,6 +7,17 @@ import AuthGuardLoading from "./ui/authGuardLoader";
 import Cookies from "js-cookie";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 
+// In-memory cache for auth state (persists across navigations)
+let cachedAuthState: {
+  isAuthenticated: boolean;
+  userRole: string | null;
+  allowance: boolean | null;
+} = {
+  isAuthenticated: false,
+  userRole: null,
+  allowance: null,
+};
+
 interface AuthGuardOptions {
   requiredRoles?: string[];
   fallbackPath?: string;
@@ -33,94 +44,123 @@ const withAuthGuard = <P extends object>(
       "loading" | "authorized" | "unauthorized"
     >("loading");
     const router = useRouter();
-    const [userRole, setUserRole] = useState<string | null>(null);
-    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-    const [isTokenChecked, setIsTokenChecked] = useState<boolean>(false);
-
-    const getUser = async () => {
-      const userData = Cookies.get("token");
-      if (userData) {
-        const decryptedResponse = await verifyAndDecryptJWTToken(
-          String(userData)
-        );
-        if (decryptedResponse.success && decryptedResponse.user) {
-          setIsAuthenticated(true);
-          setUserRole(decryptedResponse.user.role);
-        }
-      } else {
-        console.log("HOC: No token found");
-      }
-      setIsTokenChecked(true); // Mark token check as complete
-    };
 
     useEffect(() => {
-      getUser();
-    }, []);
+      const checkAuth = async () => {
+        // Uses cached auth state if available
+        if (cachedAuthState.isAuthenticated && cachedAuthState.userRole) {
+          if (!allowAuthenticated) {
+            router.replace(fallbackPath);
+            setAuthState("unauthorized");
+            return;
+          }
 
-    useEffect(() => {
-      const checkAuthorization = async () => {
-        if (!isTokenChecked) {
-          return;
-        }
+          if (
+            requiredRoles.length > 0 &&
+            !requiredRoles.includes(cachedAuthState.userRole)
+          ) {
+            router.replace(fallbackPath);
+            setAuthState("unauthorized");
+            return;
+          }
 
-        if (checkAllowance) {
-          try {
-            const response = await fetch("/api/organization");
-            const allowance = await response.json();
-            if (!allowance.allow) {
+          if (checkAllowance && cachedAuthState.allowance === null) {
+            try {
+              const response = await fetch("/api/organization");
+              const allowance = await response.json();
+              cachedAuthState.allowance = allowance.allow;
+              if (!allowance.allow) {
+                router.replace(fallbackPath);
+                setAuthState("unauthorized");
+                return;
+              }
+            } catch (error) {
               router.replace(fallbackPath);
               setAuthState("unauthorized");
               return;
             }
-          } catch (error) {
+          } else if (checkAllowance && !cachedAuthState.allowance) {
             router.replace(fallbackPath);
             setAuthState("unauthorized");
             return;
           }
+
+          setAuthState("authorized");
+          return;
         }
 
-        if (!allowAuthenticated && isAuthenticated) {
-          router.replace(fallbackPath);
+        // No cached auth, check token
+        const token = Cookies.get("token");
+        if (!token) {
+          if (!allowAuthenticated) {
+            router.replace(fallbackPath);
+          }
           setAuthState("unauthorized");
           return;
         }
 
-        if (!isAuthenticated && !checkAllowance) {
-          router.replace(fallbackPath);
-          setAuthState("unauthorized");
-          return;
-        }
+        const decryptedResponse = await verifyAndDecryptJWTToken(token);
+        if (decryptedResponse.success && decryptedResponse.user) {
+          cachedAuthState = {
+            isAuthenticated: true,
+            userRole: decryptedResponse.user.role,
+            allowance: null, // Reset allowance to check if needed
+          };
 
-        if (requiredRoles.length > 0 && userRole) {
-          if (!requiredRoles.includes(userRole)) {
+          if (!allowAuthenticated) {
             router.replace(fallbackPath);
             setAuthState("unauthorized");
             return;
           }
-        }
 
-        setAuthState("authorized");
+          if (
+            requiredRoles.length > 0 &&
+            !requiredRoles.includes(decryptedResponse.user.role)
+          ) {
+            router.replace(fallbackPath);
+            setAuthState("unauthorized");
+            return;
+          }
+
+          if (checkAllowance) {
+            try {
+              const response = await fetch("/api/organization");
+              const allowance = await response.json();
+              cachedAuthState.allowance = allowance.allow;
+              if (!allowance.allow) {
+                router.replace(fallbackPath);
+                setAuthState("unauthorized");
+                return;
+              }
+            } catch (error) {
+              router.replace(fallbackPath);
+              setAuthState("unauthorized");
+              return;
+            }
+          }
+
+          setAuthState("authorized");
+        } else {
+          cachedAuthState = {
+            isAuthenticated: false,
+            userRole: null,
+            allowance: null,
+          };
+          router.replace(fallbackPath);
+          setAuthState("unauthorized");
+        }
       };
 
-      checkAuthorization();
-    }, [
-      isAuthenticated,
-      userRole,
-      router,
-      fallbackPath,
-      requiredRoles,
-      checkAllowance,
-      allowAuthenticated,
-      isTokenChecked,
-    ]);
-
-    console.log("HOC: Rendering auth state:", authState);
+      checkAuth();
+    }, []); // Empty dependency array to run only once per session
 
     if (authState === "loading") {
       return <AuthGuardLoading />;
     }
 
-    return authState === "authorized" ? <WrappedComponent {...props} /> : null;
+    return authState === "authorized" ? (
+      <WrappedComponent {...props} user={{ role: cachedAuthState.userRole }} />
+    ) : null;
   };
 
   AuthGuardComponent.displayName = `withAuthGuard(${displayName})`;

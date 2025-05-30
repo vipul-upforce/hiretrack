@@ -11,6 +11,7 @@ import { sendMail } from "../../event-mail";
 import { loadTemplate } from "@/lib/templateLoader";
 import { auth } from "@/lib/auth";
 import { Attachment } from "../route";
+import { IinfoUpdateLog } from "@/lib/models/history";
 
 interface UpdateObject {
   $set: Record<string, unknown>;
@@ -37,12 +38,7 @@ export async function PUT(
   let fileStorage = "local";
   let organizationId;
   let userData;
-  const updates: {
-    title: string;
-    previousValue?: unknown;
-    currentValue?: unknown;
-    attachments?: File[];
-  }[] = [];
+  const updates: IinfoUpdateLog[] = [];
 
   const fieldsToTrack = [
     "name",
@@ -61,7 +57,7 @@ export async function PUT(
   try {
     await connectToDatabase();
     const data = await request.json();
-    console.log("🟢🟢🟢 INCOMING DATA: ", data);
+    // console.log("🟢🟢🟢 INCOMING DATA: ", data);
     const token = request.cookies.get("token");
 
     if (token?.value) {
@@ -335,7 +331,7 @@ export async function PUT(
         key == "customFields" &&
         JSON.stringify(existingCandidate[key]) !== JSON.stringify(data[key])
       ) {
-        console.log("######### CUSTOM FIELDS: ", data.customFields);
+        // console.log("######### CUSTOM FIELDS: ", data.customFields);
         // const customKeys = Object.keys(data.customFields);
         // whatWasUpdated.push(...customKeys);
         const customKeys = Object.keys(data.customFields);
@@ -403,16 +399,26 @@ export async function PUT(
       }
 
       if (updates.length > 0) {
-        let combined_Description = updates
-          .map((item) => {
-            if (item.attachments) return;
-            const label = item.title?.startsWith("Updated ")
-              ? item.title.slice("Updated ".length)
-              : item.title;
+        // let combined_Description = updates
+        //   .map((item) => {
+        //     if (item.attachments) return;
+        //     const label = item.title?.startsWith("Updated ")
+        //       ? item.title.slice("Updated ".length)
+        //       : item.title;
 
-            return `${label.charAt(0).toUpperCase() + label.slice(1)}: ${JSON.stringify(item.previousValue).replaceAll('"', "")} → ${JSON.stringify(item.currentValue).replaceAll('"', "")}`;
-          })
-          .join("\n");
+        //     return `${label.charAt(0).toUpperCase() + label.slice(1)}: ${JSON.stringify(item.previousValue).replaceAll('"', "")} → ${JSON.stringify(item.currentValue).replaceAll('"', "")}`;
+        //   })
+        //   .join("\n");
+        // let combined_Description = updates
+        //   .map((item) => {
+        //     if (item.attachments) return;
+        //     const label = item.title?.startsWith("Updated ")
+        //       ? item.title.slice("Updated ".length)
+        //       : item.title;
+
+        //     return `${label.charAt(0).toUpperCase() + label.slice(1)}: ${JSON.stringify(item.previousValue).replaceAll('"', "")} → ${JSON.stringify(item.currentValue).replaceAll('"', "")}`;
+        //   })
+        //   .join("\n");
 
         const historyEntry = {
           dateTime: data.dateTime || new Date(),
@@ -421,7 +427,7 @@ export async function PUT(
           currentInterviewer: null,
           assignmentBy: userData?.id,
           note: {
-            description: combined_Description,
+            description: updates,
           },
           attachments: updates
             .filter((item) => item.attachments)
@@ -493,7 +499,7 @@ export async function DELETE(
     const { id } = await params;
     const { dateTime } = await _request.json();
     const userCookie = await auth(_request);
-    console.log("$$$⌛⌛ DATE TIME: ", dateTime);
+    // console.log("$$$⌛⌛ DATE TIME: ", dateTime);
     if (!Candidate) {
       return NextResponse.json(
         { error: "Candidate not found" },

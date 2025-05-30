@@ -55,6 +55,7 @@ export default function AssetsDialog() {
     setDownloading(true);
     try {
       const res = await fetch("/api/download/assets");
+      setDownloading(false);
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || "Failed to create assets archive");

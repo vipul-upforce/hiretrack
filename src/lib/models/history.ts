@@ -1,4 +1,11 @@
+import { Attachment } from "@/app/dashboard/jobs/[id]/schemas/AssignCandidateSchema";
 import { Schema } from "mongoose";
+export interface IinfoUpdateLog {
+  title: string;
+  previousValue?: unknown;
+  currentValue?: unknown;
+  attachments?: Attachment[];
+}
 
 const candidateHistory = {
   dateTime: {
@@ -51,7 +58,7 @@ const candidateHistory = {
   note: {
     _id: false,
     description: {
-      type: String,
+      type: Schema.Types.Mixed,
       trim: true,
     },
     date: {
@@ -131,7 +138,7 @@ export interface ICandidateHistory {
         email: string;
       };
   note: {
-    description: string;
+    description: string | IinfoUpdateLog[];
     date: string;
     rating: number;
     userId:
