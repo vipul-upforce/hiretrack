@@ -118,6 +118,8 @@ export default function FileUploadDialog({
             setFieldValue?.("headerFile", txt);
             setFieldValue?.("existingHeaderFile", null);
           }}
+          isEdit={false}
+
         />
 
         <FileUpload

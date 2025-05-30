@@ -77,7 +77,7 @@ export function FileUpload({
   });
   const [user, setuser] = useState<User | null>(null);
   const [droppedFiles, setDroppedFiles] = useState<string[]>();
-
+console.log('files :>> ', files);
 
   useEffect(() => {
     (async () => {
