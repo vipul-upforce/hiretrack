@@ -136,6 +136,7 @@ export default function FileUploadDialog({
             setFieldValue?.("footerFile", txt);
             setFieldValue?.("existingFooterFile", null);
           }}
+          isEdit={false}
         />
 
         <div className="flex justify-between mt-6">

@@ -215,12 +215,11 @@ export const ApplyJobsContent = ({
 
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className={ showHeaderFooter ? "flex flex-col min-h-screen":''}>
       {showHeaderFooter && (
         <div dangerouslySetInnerHTML={{ __html: layoutState?.headerHTML }} />
       )}
-      <main className="flex-1 p-4">
-        {" "}
+      <main  className={ showHeaderFooter ? "flex-1 p-4":''}>
         <div className="container mx-auto p-2">
           <div className="px-3 py-6 flex flex-row justify-between items-center">
             <div>

@@ -33,7 +33,6 @@ export interface PortalHeader {
   type: string;
   size: number;
   url: string;
-
 }
 
 export interface PortalConfigValues {
@@ -66,7 +65,7 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
     headerHtml?: string;
     footerHtml?: string;
   }>({});
-  
+
   React.useEffect(() => {
     refetch();
   }, [refetch]);
@@ -117,12 +116,10 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
 
   const handleSubmit = async (values: typeof initialValues) => {
     try {
-      console.log("values :>> ", values);
       let portalLogoData = values.existingLogo;
       let portalHeaderData = values?.existingHeaderFile;
       let portalFooterData = values?.existingFooterFile;
 
-      console.log("portalHeaderData :>> ", portalHeaderData);
       if (values.portalLogo) {
         const portalLogoBase64 = await convertFileToBase64(values.portalLogo);
         portalLogoData = {

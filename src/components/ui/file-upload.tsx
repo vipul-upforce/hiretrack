@@ -17,6 +17,7 @@ interface FileUploadProps {
       size: number;
     }>
   ) => void;
+  isEdit?:boolean
   accept: Record<string, string[]>;
   maxFiles?: number;
   files: File[];
@@ -68,6 +69,7 @@ export function FileUpload({
   existingFiles = [],
   id='',
   setter,
+  isEdit=true
 }: FileUploadProps) {
   const [renameFile, setRenameFile] = useState<RenameFileState>({
     file: null,
@@ -204,7 +206,7 @@ export function FileUpload({
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <button
+             {isEdit && <button
                 type="button"
                 className="p-2 hover:bg-muted rounded-md"
                 onClick={() =>
@@ -215,7 +217,7 @@ export function FileUpload({
                 }
               >
                 <Pencil className="h-4 w-4 text-muted-foreground" />
-              </button>
+              </button>}
               {droppedFiles?.includes(file.name) && (
                 <button
                   type="button"
