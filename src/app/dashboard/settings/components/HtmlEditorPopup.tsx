@@ -21,48 +21,9 @@ interface HtmlEditorPopupProps {
   setFieldValue?: FormikHelpers<any>["setFieldValue"];
 }
 
-const defaultHeaderHtml = `<header style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1rem 0;">
-  <div style="max-width: 1200px; margin: 0 auto; padding: 0 1rem; display: flex; justify-content: space-between; align-items: center;">
-    <div style="font-size: 1.5rem; font-weight: bold;">Your Logo</div>
-    <nav style="display: flex; gap: 2rem;">
-      <a href="#" style="color: white; text-decoration: none; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">Home</a>
-      <a href="#" style="color: white; text-decoration: none; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">About</a>
-      <a href="#" style="color: white; text-decoration: none; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">Services</a>
-      <a href="#" style="color: white; text-decoration: none; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">Contact</a>
-    </nav>
-  </div>
-</header>`;
+const defaultHeaderHtml = `<p>Header</p>`;
 
-const defaultFooterHtml = `<footer style="background: #1a202c; color: white; padding: 3rem 0 1rem;">
-  <div style="max-width: 1200px; margin: 0 auto; padding: 0 1rem;">
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; margin-bottom: 2rem;">
-      <div>
-        <h3 style="font-size: 1.25rem; font-weight: bold; margin-bottom: 1rem;">Company</h3>
-        <p style="color: #a0aec0; line-height: 1.6;">Building amazing web experiences with modern technology and innovative design solutions.</p>
-      </div>
-      <div>
-        <h4 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem;">Quick Links</h4>
-        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-          <a href="#" style="color: #a0aec0; text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='#a0aec0'">About Us</a>
-          <a href="#" style="color: #a0aec0; text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='#a0aec0'">Services</a>
-          <a href="#" style="color: #a0aec0; text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='#a0aec0'">Contact</a>
-        </div>
-      </div>
-      <div>
-        <h4 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem;">Contact Info</h4>
-        <div style="color: #a0aec0; line-height: 1.8;">
-          <p>123 Business Street</p>
-          <p>City, State 12345</p>
-          <p>Phone: (555) 123-4567</p>
-          <p>Email: info@company.com</p>
-        </div>
-      </div>
-    </div>
-    <div style="border-top: 1px solid #2d3748; padding-top: 1rem; text-align: center; color: #a0aec0;">
-      <p>&copy; 2024 Your Company. All rights reserved.</p>
-    </div>
-  </div>
-</footer>`;
+const defaultFooterHtml = `<p>Footer</p>`;
 
 export default function HtmlEditorPopup({
   isOpen,

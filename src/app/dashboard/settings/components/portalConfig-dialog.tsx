@@ -60,7 +60,13 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
   const { data, isLoading, refetch } = useGetPortalConfigsQuery(undefined);
   const [updateSMTPConfigs, { isLoading: isUpdating }] =
     useUpdatePortalConfigsMutation();
-
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<{
+    headerHtml?: string;
+    footerHtml?: string;
+  }>({});
+  
   React.useEffect(() => {
     refetch();
   }, [refetch]);
@@ -71,8 +77,8 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
     existingLogo: data?.portalLogo ?? null,
     existingHeaderFile: data?.portalHeader ?? [],
     existingFooterFile: data?.portalFooter ?? [],
-    headerFile:  null,
-    footerFile:  null,
+    headerFile: null,
+    footerFile: null,
   };
 
   const validationSchema = Yup.object({
@@ -111,13 +117,12 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
 
   const handleSubmit = async (values: typeof initialValues) => {
     try {
-      console.log('values :>> ', values);
+      console.log("values :>> ", values);
       let portalLogoData = values.existingLogo;
       let portalHeaderData = values?.existingHeaderFile;
       let portalFooterData = values?.existingFooterFile;
 
-      
-console.log('portalHeaderData :>> ', portalHeaderData);
+      console.log("portalHeaderData :>> ", portalHeaderData);
       if (values.portalLogo) {
         const portalLogoBase64 = await convertFileToBase64(values.portalLogo);
         portalLogoData = {
@@ -130,7 +135,6 @@ console.log('portalHeaderData :>> ', portalHeaderData);
       }
       if (values.headerFile) {
         const headerFile = createHtmlFile(values?.headerFile, "header.html");
-        console.log('headerFile :>> ', headerFile);
         const headerBase64 = await convertFileToBase64(headerFile);
 
         portalHeaderData = {
@@ -160,9 +164,7 @@ console.log('portalHeaderData :>> ', portalHeaderData);
         portalFooter: portalFooterData,
       };
 
-      console.log('dataToSubmit :>> ', dataToSubmit);
-
-      debugger
+      debugger;
       await updateSMTPConfigs(dataToSubmit);
       const token = Cookies.get("token");
       // localStorage.setItem("portalConfig", JSON.stringify(dataToSubmit));
@@ -225,13 +227,6 @@ console.log('portalHeaderData :>> ', portalHeaderData);
     },
   ];
 
-  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
-  const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<{
-    headerHtml?: string;
-    footerHtml?: string;
-  }>({});
-
   const handleOpenEditor = () => {
     setIsUploadDialogOpen(true);
   };
@@ -240,7 +235,6 @@ console.log('portalHeaderData :>> ', portalHeaderData);
     headerHtml?: string;
     footerHtml?: string;
   }) => {
-
     setUploadedFiles(files);
     setIsUploadDialogOpen(false);
     setIsEditorOpen(true);
