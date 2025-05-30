@@ -11,11 +11,13 @@ import {
 } from "@/lib/features/settings/settingsApi";
 import { FileUpload } from "@/components/ui/file-upload";
 import { v4 as uuidv4 } from "uuid";
-import React from "react";
+import React, { useState } from "react";
 import Cookies from "js-cookie";
 import * as jose from "jose";
 import CryptoJS from "crypto-js";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import HtmlEditorPopup from "./HtmlEditorPopup";
+import FileUploadDialog from "./FileUploadDialog";
 
 export interface PortalLogo {
   id: string;
@@ -25,10 +27,23 @@ export interface PortalLogo {
   size: number;
 }
 
+export interface PortalHeader {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  url: string;
+
+}
+
 export interface PortalConfigValues {
   portalLogo: File | null;
   portalName: string;
   existingLogo: PortalLogo | null;
+  existingHeaderFile: PortalHeader | null | File;
+  existingFooterFile: PortalHeader | null | File;
+  headerFile?: string | null;
+  footerFile?: string | null;
 }
 
 interface User {
@@ -54,6 +69,10 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
     portalLogo: null,
     portalName: data?.portalName ?? "",
     existingLogo: data?.portalLogo ?? null,
+    existingHeaderFile: data?.portalHeader ?? [],
+    existingFooterFile: data?.portalFooter ?? [],
+    headerFile:  null,
+    footerFile:  null,
   };
 
   const validationSchema = Yup.object({
@@ -85,10 +104,20 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
       return jwt;
     } catch {}
   };
+  const createHtmlFile = (htmlString: string, fileName: string): File => {
+    const blob = new Blob([htmlString], { type: "text/html" });
+    return new File([blob], fileName, { type: "text/html" });
+  };
 
   const handleSubmit = async (values: typeof initialValues) => {
     try {
+      console.log('values :>> ', values);
       let portalLogoData = values.existingLogo;
+      let portalHeaderData = values?.existingHeaderFile;
+      let portalFooterData = values?.existingFooterFile;
+
+      
+console.log('portalHeaderData :>> ', portalHeaderData);
       if (values.portalLogo) {
         const portalLogoBase64 = await convertFileToBase64(values.portalLogo);
         portalLogoData = {
@@ -99,11 +128,41 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
           size: values.portalLogo.size,
         };
       }
+      if (values.headerFile) {
+        const headerFile = createHtmlFile(values?.headerFile, "header.html");
+        console.log('headerFile :>> ', headerFile);
+        const headerBase64 = await convertFileToBase64(headerFile);
 
+        portalHeaderData = {
+          id: uuidv4(),
+          name: headerFile.name.trim(),
+          url: headerBase64,
+          type: headerFile.type,
+          size: headerFile.size,
+        };
+      }
+      if (values.footerFile) {
+        const footerFile = createHtmlFile(values?.footerFile, "footer.html");
+        const footerBase64 = await convertFileToBase64(footerFile);
+
+        portalFooterData = {
+          id: uuidv4(),
+          name: footerFile.name.trim(),
+          url: footerBase64,
+          type: footerFile.type,
+          size: footerFile.size,
+        };
+      }
       const dataToSubmit = {
         portalName: values.portalName.trim(),
         portalLogo: portalLogoData,
+        portalHeader: portalHeaderData,
+        portalFooter: portalFooterData,
       };
+
+      console.log('dataToSubmit :>> ', dataToSubmit);
+
+      debugger
       await updateSMTPConfigs(dataToSubmit);
       const token = Cookies.get("token");
       // localStorage.setItem("portalConfig", JSON.stringify(dataToSubmit));
@@ -166,93 +225,153 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
     },
   ];
 
-  return (
-    <Formik<PortalConfigValues>
-      initialValues={initialValues}
-      validationSchema={validationSchema}
-      onSubmit={handleSubmit}
-      enableReinitialize
-    >
-      {({
-        values,
-        handleChange,
-        handleBlur,
-        handleSubmit,
-        setFieldValue,
-        isSubmitting,
-        errors,
-        touched,
-      }) => (
-        <Form onSubmit={handleSubmit} className="space-y-4">
-          {formFields.map(({ label, name, placeholder, type }) => (
-            <div key={name} className="space-y-2">
-              <Label htmlFor={name}>{label}</Label>
-              {type === "file" ? (
-                <>
-                  <FileUpload
-                    accept={{ "image/*": [".png", ".jpg", ".jpeg"] }}
-                    maxFiles={1}
-                    onFileSelect={(files) => {
-                      setFieldValue(name, files[0]);
-                      setFieldValue("existingLogo", null);
-                    }}
-                    files={values[name] ? [values[name] as File] : []}
-                    setter={(files) => {
-                      setFieldValue(name, files[0]);
-                      setFieldValue("existingLogo", null);
-                    }}
-                  />
-                  {!values.portalLogo && values.existingLogo?.url && (
-                    <div className="mt-2">
-                      <img
-                        src={values.existingLogo.url}
-                        alt="Current logo"
-                        className="max-h-20 object-contain"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFieldValue("existingLogo", null);
-                        }}
-                        className="mt-2 text-gray-500 hover:underline"
-                      >
-                        Remove Logo
-                      </button>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <Input
-                  id={name}
-                  name={name}
-                  value={
-                    typeof values[name] === "string"
-                      ? (values[name] as string)
-                      : ""
-                  }
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  placeholder={placeholder}
-                  className={
-                    errors[name] && touched[name] ? "border-red-500" : ""
-                  }
-                />
-              )}
-              <ErrorMessage
-                name={name}
-                component="div"
-                className="text-red-500 text-sm"
-              />
-            </div>
-          ))}
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<{
+    headerHtml?: string;
+    footerHtml?: string;
+  }>({});
 
-          <div className="w-full flex justify-end">
-            <Button type="submit" disabled={isSubmitting || isUpdating}>
-              {isSubmitting || isUpdating ? "Saving..." : "Save Settings"}
-            </Button>
-          </div>
-        </Form>
-      )}
-    </Formik>
+  const handleOpenEditor = () => {
+    setIsUploadDialogOpen(true);
+  };
+
+  const handleFilesUploaded = (files: {
+    headerHtml?: string;
+    footerHtml?: string;
+  }) => {
+
+    setUploadedFiles(files);
+    setIsUploadDialogOpen(false);
+    setIsEditorOpen(true);
+  };
+
+  const handleSkipUpload = () => {
+    setUploadedFiles({});
+    setIsUploadDialogOpen(false);
+    setIsEditorOpen(true);
+  };
+
+  return (
+    <>
+      <Formik<PortalConfigValues>
+        initialValues={initialValues}
+        validationSchema={validationSchema}
+        onSubmit={handleSubmit}
+        enableReinitialize
+      >
+        {({
+          values,
+          handleChange,
+          handleBlur,
+          handleSubmit,
+          setFieldValue,
+          isSubmitting,
+          errors,
+          touched,
+        }) => (
+          <Form onSubmit={handleSubmit} className="space-y-4">
+            {formFields.map(({ label, name, placeholder, type }) => (
+              <div key={name} className="space-y-2">
+                <Label htmlFor={name}>{label}</Label>
+                {type === "file" ? (
+                  <>
+                    <FileUpload
+                      accept={{ "image/*": [".png", ".jpg", ".jpeg"] }}
+                      maxFiles={1}
+                      onFileSelect={(files) => {
+                        setFieldValue(name, files[0]);
+                        setFieldValue("existingLogo", null);
+                      }}
+                      files={values[name] ? [values[name] as File] : []}
+                      setter={(files) => {
+                        setFieldValue(name, files[0]);
+                        setFieldValue("existingLogo", null);
+                      }}
+                    />
+                    {!values.portalLogo && values.existingLogo?.url && (
+                      <div className="mt-2">
+                        <img
+                          src={values.existingLogo.url}
+                          alt="Current logo"
+                          className="max-h-20 object-contain"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFieldValue("existingLogo", null);
+                          }}
+                          className="mt-2 text-gray-500 hover:underline"
+                        >
+                          Remove Logo
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <Input
+                    id={name}
+                    name={name}
+                    value={
+                      typeof values[name] === "string"
+                        ? (values[name] as string)
+                        : ""
+                    }
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    placeholder={placeholder}
+                    className={
+                      errors[name] && touched[name] ? "border-red-500" : ""
+                    }
+                  />
+                )}
+                <ErrorMessage
+                  name={name}
+                  component="div"
+                  className="text-red-500 text-sm"
+                />
+              </div>
+            ))}
+
+            <div className="w-full flex justify-end ">
+              <Button type="button" className="m-1" onClick={handleOpenEditor}>
+                Add Header and Footer
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting || isUpdating}
+                className="m-1"
+              >
+                {isSubmitting || isUpdating ? "Saving..." : "Save Settings"}
+              </Button>
+            </div>
+            <FileUploadDialog
+              isOpen={isUploadDialogOpen}
+              onClose={() => {
+                setIsUploadDialogOpen(false);
+                setFieldValue("headerFile", null);
+                setFieldValue("footerFile", null);
+              }}
+              onFilesUploaded={handleFilesUploaded}
+              onSkip={handleSkipUpload}
+              setFieldValue={setFieldValue}
+              values={values}
+            />
+            <HtmlEditorPopup
+              isOpen={isEditorOpen}
+              onClose={() => {
+                setIsEditorOpen(false);
+                setFieldValue("headerFile", null);
+                setFieldValue("footerFile", null);
+              }}
+              setFieldValue={setFieldValue}
+              handleSubmit={handleSubmit}
+              initialHeaderHtml={uploadedFiles.headerHtml}
+              initialFooterHtml={uploadedFiles.footerHtml}
+            />
+          </Form>
+        )}
+      </Formik>
+    </>
   );
 }

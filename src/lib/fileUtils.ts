@@ -14,7 +14,7 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 export const uploadFile = async (
   base64: string,
-  type: "images" | "documents",
+  type: "images" | "documents" | "organizations" | string,
   organizationId: string,
   fileName?: string
 ) => {
@@ -70,7 +70,7 @@ export const uploadFile = async (
 
 export const uploadFileToS3 = async (
   base64: string,
-  type: "images" | "documents",
+  type: "images" | "documents" | "organizations" | string,
   organizationId: string,
   fileName?: string
 ) => {
@@ -150,7 +150,7 @@ export const uploadFileToS3 = async (
 
 export async function saveFileLocally(
   base64: string,
-  folder: "documents" | "images",
+  folder: "documents" | "images" | "organizations" | string,
   fileName: string
 ) {
   const publicPath = path.join(process.cwd(), "..", "assets");
@@ -390,13 +390,21 @@ export async function handleCustomFieldFiles(
 export async function handleSingleFile(
   file: SingleFileField | null,
   fileStorage: string,
-  organizationId: string
+  organizationId: string,
+  orgName?: string
   // req: NextRequest
 ) {
   if (!file) return null;
   if (file.url?.startsWith("data:")) {
     const isImage = file.type.startsWith("image/");
-    const folder = isImage ? "images" : "documents";
+
+    const isHtml = file.type === "text/html";
+
+    const folder = isImage
+      ? "images"
+      : isHtml
+        ? `organizations/${orgName}`
+        : "documents";
     let url = "";
     switch (fileStorage) {
       case "cloudinary":

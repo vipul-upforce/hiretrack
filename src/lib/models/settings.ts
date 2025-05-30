@@ -36,6 +36,20 @@ const settingsSchema = new Schema({
       type: { type: String, default: "image" },
       size: Number,
     },
+    portalHeader: {
+      id: String,
+      name: String,
+      url: String,
+      type: { type: String, default: "html" },
+      size: Number,
+    },
+    portalFooter: {
+      id: String,
+      name: String,
+      url: String,
+      type: { type: String, default: "html" },
+      size: Number,
+    },
     portalName: {
       type: String,
       default: "",
@@ -54,6 +68,8 @@ export interface ISettings {
   gemini: IGemini;
   portalConfigs?: {
     portalLogo: string | null;
+    portalHeader: string | null;
+    portalFooter: string | null;
     portalName: string;
   };
 }

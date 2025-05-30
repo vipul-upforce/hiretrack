@@ -28,6 +28,7 @@ interface FileUploadProps {
     type: string;
     size: number;
   }>;
+  id?:string;
 }
 
 interface RenameFileState {
@@ -65,6 +66,7 @@ export function FileUpload({
   maxFiles = 1,
   files,
   existingFiles = [],
+  id='',
   setter,
 }: FileUploadProps) {
   const [renameFile, setRenameFile] = useState<RenameFileState>({
@@ -73,6 +75,7 @@ export function FileUpload({
   });
   const [user, setuser] = useState<User | null>(null);
   const [droppedFiles, setDroppedFiles] = useState<string[]>();
+
 
   useEffect(() => {
     (async () => {
@@ -131,9 +134,8 @@ export function FileUpload({
     accept,
     maxFiles,
   });
-
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" id={id}>
       <div
         {...getRootProps()}
         className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer
@@ -158,7 +160,7 @@ export function FileUpload({
         </p>
       </div>
 
-      <div className="space-y-2 overflow-y-auto">
+      <div className="space-y-2 overflow-y-auto" >
         {existingFiles.map((file) => (
           <div
             key={file.id}
