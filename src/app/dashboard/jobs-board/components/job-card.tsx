@@ -4,7 +4,7 @@ import { Draggable } from "@hello-pangea/dnd";
 import { Job } from "@/types/job";
 import { Button } from "@/components/ui/button";
 import { Info, Trash2, ArchiveRestore } from "lucide-react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface JobCardProps {
   job: Job;
@@ -21,8 +21,6 @@ const JobCard = ({
   setIsDetailsOpen,
   handleDeleteClick,
 }: JobCardProps) => {
-  const router = useRouter();
-
   return (
     <Draggable key={job._id} draggableId={job._id} index={index}>
       {(provided: any) => (
@@ -31,16 +29,16 @@ const JobCard = ({
           {...provided.draggableProps}
           {...provided.dragHandleProps}
           className="bg-card flex justify-between border rounded-lg p-3 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => {
-            router.push(`/dashboard/jobs/${job._id}`);
-          }}
         >
-          <div className="text-wrap break-words w-[90%]">
+          <Link
+            href={`/dashboard/jobs/${job._id}`}
+            className="text-wrap break-words w-[90%]"
+          >
             <h3 className="font-medium">{job.title}</h3>
             <p className="text-sm text-muted-foreground">
               {job.candidateCount} Candidates
             </p>
-          </div>
+          </Link>
           <div className="flex items-center justify-end gap-1">
             <Button
               variant="ghost"
