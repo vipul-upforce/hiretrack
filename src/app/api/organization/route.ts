@@ -235,15 +235,23 @@ export async function GET(req: NextRequest) {
   //     allow: false,
   //   };
   // } else {
-  const settings = await Settings.find({});
+  const settings = await Settings.find(
+    {},
+    {
+      fileStorage: 0,
+      mailConfig: 0,
+    }
+  );
   // console.log("⛔⛔⛔ ", settings);
   if (settings.length > 1 || settings.length === 0) {
     return NextResponse.json({
       allow: true,
+      data: settings,
     });
   } else if (settings.length === 1 && settings[0].multipleOrg !== false) {
     return NextResponse.json({
       allow: true,
+      data: settings,
     });
   }
   return NextResponse.json({

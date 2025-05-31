@@ -23,14 +23,14 @@ import { Breadcrumb } from "./components/Utils/breadcrumb";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { Checkbox } from "@/components/ui/checkbox";
 import { KanbanColumn } from "./components/Lanes/KanbanColumn";
-import withAuthGuard from "@/components/withAuthGuard";
+// import withAuthGuard from "@/components/withAuthGuard";
 import { useKanbanBoard } from "./hooks/useKanbanBoard";
 import { useCandidate } from "./hooks/useCandidate";
 import ConfirmationDialog from "./components/Dialogs/ConfirmationDialog";
 import NoDataFound from "@/app/not-found";
 import EditLaneDialog from "./components/Lanes/edit-lane-dialog";
 
-function JobProgressPage() {
+export default function JobProgressPage() {
   const id = useParams()?.id as string;
   const [columns, setColumns] = useState<CandidateColumn[]>(
     initialCandidateColumns
@@ -301,9 +301,9 @@ function JobProgressPage() {
   );
 }
 
-export default withAuthGuard(JobProgressPage, {
-  requiredRoles: ["admin", "hr"],
-  fallbackPath: "/dashboard",
-  checkAllowance: false,
-  allowAuthenticated: true,
-});
+// export default withAuthGuard(JobProgressPage, {
+//   requiredRoles: ["admin", "hr"],
+//   fallbackPath: "/dashboard",
+//   checkAllowance: false,
+//   allowAuthenticated: true,
+// });
