@@ -11,8 +11,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Download, RefreshCw, SaveAll } from "lucide-react";
 import LivePreviewAndCodeEditor from "./LivePreviewAndCodeEditor";
-import type { FormikHelpers } from "formik";
+import type { FormikErrors, FormikHelpers } from "formik";
 import { defaultFooterHtml, defaultHeaderHtml } from "@/lib/rteUtils";
+import { PortalConfigValues } from "./portalConfig-dialog";
+import { toast } from "@/hooks/use-toast";
 
 interface HtmlEditorPopupProps {
   isOpen: boolean;
@@ -21,6 +23,7 @@ interface HtmlEditorPopupProps {
   initialFooterHtml?: string;
   handleSubmit?: (e?: React.FormEvent<HTMLFormElement>) => void;
   setFieldValue?: FormikHelpers<any>["setFieldValue"];
+  errors: FormikErrors<PortalConfigValues>;
 }
 
 // function FullScreenEditor({
@@ -116,6 +119,7 @@ export default function HtmlEditorPopup({
   initialFooterHtml,
   handleSubmit,
   setFieldValue,
+  errors,
 }: HtmlEditorPopupProps) {
   const [headerHtml, setHeaderHtml] = useState(defaultHeaderHtml);
   const [footerHtml, setFooterHtml] = useState(defaultFooterHtml);
@@ -338,7 +342,17 @@ export default function HtmlEditorPopup({
                 </Button>
 
                 <Button
-                  onClick={() => handleSubmit?.()}
+                  onClick={() => {
+                    // debugger;
+                    if (errors && Object.keys(errors).length > 0) {
+                      toast({
+                        title: "Failed To Save Portal Configs",
+                        description: Object.values(errors).map((e) => e),
+                        variant: "destructive",
+                      });
+                    }
+                    return handleSubmit?.();
+                  }}
                   variant="outline"
                   size="sm"
                 >

@@ -358,6 +358,7 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
               handleSubmit={handleSubmit}
               initialHeaderHtml={uploadedFiles.headerHtml}
               initialFooterHtml={uploadedFiles.footerHtml}
+              errors={errors}
             />
           </Form>
         )}
