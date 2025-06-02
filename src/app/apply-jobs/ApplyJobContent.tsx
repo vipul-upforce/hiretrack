@@ -81,7 +81,7 @@ export default function ApplyJobsContent({
     if (!data.ok) {
       return;
     }
-    const allowance = await data.json();
+    const allowance = await data?.json();
 
     if (urlOrgName) {
       setInvalidPage(false);

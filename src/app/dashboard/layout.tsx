@@ -102,7 +102,7 @@ export default function DashboardLayout({
   useEffect(() => {
     async function checkAllowance() {
       const data = await fetch("/api/organization");
-      const allowance = await data.json();
+      const allowance = await data?.json();
       seHasMultipleOrgs(allowance.allow);
       dispatch(setAllowMultipleOrgs(allowance.allow));
     }
