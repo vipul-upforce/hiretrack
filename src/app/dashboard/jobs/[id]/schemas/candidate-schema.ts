@@ -1,6 +1,7 @@
 import * as Yup from "yup";
 export const candidateSchema = (customFields: Yup.Schema<unknown>) =>
   Yup.object().shape({
+    resume: Yup.mixed().required("Resume is required"),
     name: Yup.string()
       .required("Name is required")
       .min(2, "Name must be at least 2 characters")
@@ -8,6 +9,12 @@ export const candidateSchema = (customFields: Yup.Schema<unknown>) =>
       .matches(
         /^(?=.*[A-Za-z]).+$/,
         "Name must contain at least one letter and cannot be only numbers or special characters"
+      ),
+      email: Yup.string()
+      .required("Email is required")
+      .matches(
+        /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+        "Invalid Email"
       ),
     location: Yup.string()
       .required("Location is required")
@@ -43,7 +50,6 @@ export const candidateSchema = (customFields: Yup.Schema<unknown>) =>
       .min(0, "Notice period cannot be negative")
       .max(180, "Can not be more then 180 days(6 months)"),
     // currentLocation: Yup.string().required("Current location is required"),
-    resume: Yup.mixed().required("Resume is required"),
     // remarks: Yup.string(),
     attachments: Yup.array().of(Yup.mixed()),
     assignee: Yup.string().nullable(),
@@ -71,12 +77,7 @@ export const candidateSchema = (customFields: Yup.Schema<unknown>) =>
         }
       ),
     customFields: customFields,
-    email: Yup.string()
-      .required("Email is required")
-      .matches(
-        /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-        "Invalid Email"
-      ),
+    
   });
 
 export interface CandidateFormValues {

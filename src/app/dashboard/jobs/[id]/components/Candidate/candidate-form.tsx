@@ -29,7 +29,7 @@ interface CandidateFormProps {
 }
 
 export function CandidateForm({ onFileUpload }: CandidateFormProps) {
-  const { setFieldValue, values, errors } =
+  const { setFieldValue, values, errors, setTouched } =
     useFormikContext<CandidateFormValues>();
   const { data: interviewers } = useFetchInterviewersQuery();
   const [nameField, nameMeta] = useField("name");
@@ -94,6 +94,7 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
             Resume <span className="text-red-500">*</span>
           </Label>
           <FileUpload
+            id="resume"
             accept={{ "application/pdf": [".pdf"] }}
             maxFiles={1}
             onFileSelect={async (files) => {
@@ -133,6 +134,19 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
               if (onFileUpload) {
                 await onFileUpload(files[0]);
               }
+              setTimeout(() => {
+                setTouched({
+                  name: true,
+                  location: true,
+                  experience: true,
+                  skills: true,
+                  expectedCTC: true,
+                  currentCTC: true,
+                  noticePeriod: true,
+                  resume: true,
+                  email: true,
+                });
+              }, 100);
             }}
             files={resumeField.value ? [resumeField.value] : []}
             setter={(files) => setFieldValue("resume", files[0])}
@@ -337,7 +351,7 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>time</Label>
+                  <Label>Time</Label>
                   <DatePicker
                     date={
                       values.assignment?.time
