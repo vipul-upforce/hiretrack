@@ -33,8 +33,8 @@ export async function verifyAndDecryptToken(token: string) {
 }
 
 export async function middleware(request: NextRequest) {
-  const { pathname ,searchParams} = request.nextUrl;
- 
+  const { pathname } = request.nextUrl;
+
   let userData: { role: string } | undefined;
   const token = request.cookies.get("token");
   if (token?.value) {
@@ -60,7 +60,7 @@ export async function middleware(request: NextRequest) {
     ) &&
     !isFileApiWithAllowedFile
   ) {
-    if (!userData ) {
+    if (!userData) {
       return NextResponse.json(
         { error: "Authentication required" },
         { status: 401 }
