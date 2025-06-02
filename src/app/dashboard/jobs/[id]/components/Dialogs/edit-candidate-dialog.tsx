@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Formik, Form } from "formik";
-import { CandidateFormValues, candidateSchema } from "../../schemas/candidate-schema";
+import {  candidateSchema } from "../../schemas/candidate-schema";
 import { CandidateForm } from "../Candidate/candidate-form";
 import {
   useUpdateCandidateMutation,

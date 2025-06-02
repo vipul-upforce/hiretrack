@@ -9,8 +9,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Formik, Form, FormikProps } from "formik";
-import { useState, useEffect, useRef } from "react";
+import { Formik, Form } from "formik";
+import { useState, useEffect } from "react";
 import { CandidateForm } from "../dashboard/jobs/[id]/components/Candidate/candidate-form";
 import {
   useApplicationEventMailMutation,
