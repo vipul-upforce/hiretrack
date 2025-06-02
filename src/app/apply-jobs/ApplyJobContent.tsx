@@ -86,7 +86,6 @@ export default function ApplyJobsContent({
     if (urlOrgName) {
       // If orgName exists in URL, search for matching portalName
       setInvalidPage(false);
-      debugger;
       const config = allowance?.data?.find(
         (org: ISettings) => org.portalConfigs?.portalName === urlOrgName
       ).portalConfigs;

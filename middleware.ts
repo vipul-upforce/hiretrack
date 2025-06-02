@@ -47,11 +47,18 @@ export async function middleware(request: NextRequest) {
   }
 
   // Handle API routes authentication
+  const isFileApiWithAllowedFile =
+    pathname.startsWith("/api/files") &&
+    (request.nextUrl.searchParams.get("pathName")?.endsWith("header.html") ||
+      request.nextUrl.searchParams.get("pathName")?.endsWith("footer.html") ||
+      request.nextUrl.searchParams.get("pathName")?.endsWith("favicon.png"));
+
   if (
     pathname.startsWith("/api") &&
     !apiExemptPaths.some(
       (path) => pathname === path || pathname?.includes(path)
-    )
+    ) &&
+    !isFileApiWithAllowedFile
   ) {
     if (!userData) {
       return NextResponse.json(

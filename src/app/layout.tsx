@@ -41,7 +41,6 @@ export default function RootLayout({
   useEffect(() => {
     if (typeof window !== "undefined") {
       const orgname = window.location.href.split("=")[1];
-
       setOrgName(orgname);
     }
   }, []);
