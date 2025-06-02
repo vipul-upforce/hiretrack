@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase from "@/lib/mongodb";
+import connectToDatabase, { Organization } from "@/lib/mongodb";
 import { Job } from "@/lib/mongodb";
 import { Candidate } from "@/lib/mongodb";
 import { auth } from "@/lib/auth";
@@ -7,41 +7,65 @@ import { handleCustomFieldFiles, handleFileAttachments } from "@/lib/fileUtils";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
 
 export async function GET(request: NextRequest) {
-  // console.log("ENV TEST: ",process.env.MONGODB_URI)
   try {
     await connectToDatabase();
-    const session = await auth(request);
-    const organizationId = session?.user.organizationId;
-    if (!Job) {
-      return NextResponse.json(
-        { error: "Job or Candidate not found" },
-        { status: 404 }
-      );
-    }
-    const jobs = await Job.find({ organizationId: organizationId }).sort({
-      "tracking.createdAt": -1,
-    });
 
-    if (!Candidate) {
+    // Check authentication
+    const session = await auth(request);
+    if (!session || !session.user?.organizationId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (!Organization || !Job || !Candidate) {
       return NextResponse.json(
-        { error: "Candidate not found" },
+        { error: "Database not connected" },
+        { status: 400 }
+      );
+    }
+    const organizationId = session.user.organizationId;
+
+    // Fetch organization
+    const organization = await Organization.findById(organizationId);
+    if (!organization) {
+      return NextResponse.json(
+        { error: "Organization not found" },
         { status: 404 }
       );
     }
-    // Add candidate count to each job
-    const jobsWithCount = await Promise.all(
-      jobs.map(async (job) => {
-        const candidateCount = await Candidate!.countDocuments({
-          jobId: job._id,
-        });
-        return { ...job.toObject(), candidateCount }; // Convert job to plain object and add count
-      })
+
+    const jobs = await Job.find({ organizationId });
+    if (!jobs.length) {
+      return NextResponse.json([]);
+    }
+
+    const openJobCardsOrder = organization.openJobCards || [];
+    const openJobIds = new Set(openJobCardsOrder.map((id) => id.toString()));
+    const jobsMap = new Map(jobs.map((job) => [job._id.toString(), job]));
+
+    const sortedJobs = openJobCardsOrder
+      .map((id) => jobsMap.get(id.toString()))
+      .filter((job): job is NonNullable<typeof job> => !!job);
+    const otherJobs = jobs.filter((job) => !openJobIds.has(job._id.toString()));
+
+    const candidateCounts = await Candidate.aggregate([
+      { $match: { jobId: { $in: jobs.map((job) => job._id) } } },
+      { $group: { _id: "$jobId", count: { $sum: 1 } } },
+    ]);
+    const candidateCountMap = new Map(
+      candidateCounts.map((item) => [item._id.toString(), item.count])
     );
+
+    const jobsWithCount = [...sortedJobs, ...otherJobs].map((job) => ({
+      ...job.toObject(),
+      candidateCount: candidateCountMap.get(job._id.toString()) || 0,
+    }));
+
     return NextResponse.json(jobsWithCount);
   } catch (error: unknown) {
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+    console.error("Error fetching jobs:", error);
+    const errorMessage =
+      error instanceof Error ? error.message : "Internal server error";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 

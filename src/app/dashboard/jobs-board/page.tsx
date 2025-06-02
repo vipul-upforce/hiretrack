@@ -180,6 +180,10 @@ const KanbanPage: NextPage<never> = () => {
       await updateJobStatus({
         id: draggableId,
         status: destination.droppableId,
+        openJobCardsOrder:
+          newColumns
+            .find((col) => col.id === "open")
+            ?.jobs.map((job) => job._id) || [],
       }).unwrap();
     } catch {
       // Revert the local state if the API call fails

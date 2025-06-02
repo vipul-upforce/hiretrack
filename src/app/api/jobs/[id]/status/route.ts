@@ -1,18 +1,28 @@
-import { NextResponse } from "next/server";
-import connectToDatabase from "@/lib/mongodb";
+import { NextRequest, NextResponse } from "next/server";
+import connectToDatabase, { Organization } from "@/lib/mongodb";
 import { Job } from "@/lib/mongodb";
+import { auth } from "@/lib/auth";
 
 export async function PATCH(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectToDatabase();
-    const { status } = await request.json();
+    const { status, openJobCardsOrder } = await request.json();
     const { id } = await params;
     if (!Job) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
+
+    const userCookie = await auth(request);
+    const organizationId = userCookie?.user.organizationId;
+
+    await Organization?.findByIdAndUpdate(organizationId, {
+      $set: {
+        openJobCards: openJobCardsOrder,
+      },
+    });
     const updatedJob = await Job.findByIdAndUpdate(
       id,
       {
