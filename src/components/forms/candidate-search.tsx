@@ -159,13 +159,14 @@ const SearchSchema = Yup.object()
       : true;
   });
 
+  export const itemsPerPage = 100;
 function CandidateSearch() {
   const [searchResults, setSearchResults] = useState<Candidate[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-  const itemsPerPage = 10;
+  
   const { toast } = useToast();
   const [OrgID, setOrgID] = useState("");
 
@@ -331,6 +332,7 @@ function CandidateSearch() {
 
       <SearchResults
         results={paginatedResults}
+        totalResultsCount={searchResults?.length}
         isLoading={isSearching}
         currentPage={currentPage}
         totalPages={totalPages}

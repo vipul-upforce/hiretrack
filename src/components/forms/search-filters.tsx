@@ -54,36 +54,35 @@ export function SearchFilters() {
     useFormikContext<SearchFilter>();
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {/* Basic Filters */}
-      <div className="space-y-4">
-        <div>
-          <Label htmlFor="name">Candidate Name</Label>
-          <Input
-            id="name"
-            name="name"
-            placeholder="Search by name"
-            value={values.name || ""}
-            onChange={handleChange}
-            onBlur={handleBlur}
-          />
-        </div>
+    <>
+      <div className="flex flex-wrap gap-6 mb-6">
+        <div className="flex flex-col-3 gap-4 min-w-[250px]">
+          <div>
+            <Label htmlFor="name">Candidate Name</Label>
+            <Input
+              id="name"
+              name="name"
+              placeholder="Search by name"
+              value={values.name || ""}
+              onChange={handleChange}
+              onBlur={handleBlur}
+            />
+          </div>
 
-        <div>
-          <Label htmlFor="location">Location</Label>
-          <Input
-            id="location"
-            name="location"
-            placeholder="City, State"
-            value={values.location || ""}
-            onChange={handleChange}
-            onBlur={handleBlur}
-          />
-        </div>
+          <div>
+            <Label htmlFor="location">Location</Label>
+            <Input
+              id="location"
+              name="location"
+              placeholder="City, State"
+              value={values.location || ""}
+              onChange={handleChange}
+              onBlur={handleBlur}
+            />
+          </div>
 
-        <div>
-          <Label>Skills (Hit Enter to add)</Label>
-          <div className="flex gap-2">
+          <div>
+            <Label>Skills (Hit Enter to add)</Label>
             <ChipInput
               placeholder="Hit Enter to Add"
               fullWidth={true}
@@ -92,29 +91,69 @@ export function SearchFilters() {
               onSuggestionClick={(suggestion) => {
                 setFieldValue("skills", [...(values.skills || []), suggestion]);
               }}
-              // suggestions={
-              //   availableSkills.filter(
-              //     (skill) => !values?.skills?.includes(skill)
-              //   ) || []
-              // }
-              // error={skillsMeta.touched && skillsMeta.error}
             />
           </div>
         </div>
+
+        <div className="flex-1 min-w-[300px]">
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="advanced-filters">
+              <AccordionTrigger>Advanced Filters</AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-4 pt-2">
+                  <div>
+                    <Label>Created Date Range</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-xs">From</Label>
+                        {/* FROM Date Picker */}
+                      </div>
+                      <div>
+                        <Label className="text-xs">To</Label>
+                        {/* TO Date Picker */}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="logicOperator">Logic Operator</Label>
+                    <Select
+                      name="logicOperator"
+                      value={values.logicOperator || "$and"}
+                      onValueChange={(value) =>
+                        setFieldValue("logicOperator", value)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select logic operator" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="$and">
+                          AND (Match all filters)
+                        </SelectItem>
+                        <SelectItem value="$or">
+                          OR (Match any filter)
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </div>
       </div>
 
-      {/* Numeric Filters */}
-      <div className="space-y-4">
-        <div>
-          <Label>Expected CTC Range</Label>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
+      <div className="flex flex-row gap-6">
+        <div className="flex flex-col-3 gap-4 min-w-[180px]">
+          <div className="space-y-2 min-w-[180px]">
+            <Label>Expected CTC Range</Label>
+            <div className="grid grid-cols-2 gap-2">
               <Input
-                id="minExpectedCTC"
                 name="minExpectedCTC"
+                placeholder="Min"
                 type="number"
                 step="0.01"
-                placeholder="Min"
                 value={values.minExpectedCTC || ""}
                 onChange={handleChange}
                 onBlur={handleBlur}
@@ -124,19 +163,11 @@ export function SearchFilters() {
                     : ""
                 }
               />
-              {errors.minExpectedCTC && touched.minExpectedCTC && (
-                <p className="text-xs text-destructive mt-1">
-                  {errors.minExpectedCTC}
-                </p>
-              )}
-            </div>
-            <div>
               <Input
-                id="maxExpectedCTC"
                 name="maxExpectedCTC"
+                placeholder="Max"
                 type="number"
                 step="0.01"
-                placeholder="Max"
                 value={values.maxExpectedCTC || ""}
                 onChange={handleChange}
                 onBlur={handleBlur}
@@ -146,25 +177,17 @@ export function SearchFilters() {
                     : ""
                 }
               />
-              {errors.maxExpectedCTC && touched.maxExpectedCTC && (
-                <p className="text-xs text-destructive mt-1">
-                  {errors.maxExpectedCTC}
-                </p>
-              )}
             </div>
           </div>
-        </div>
 
-        <div>
-          <Label>Current CTC Range</Label>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
+          <div className="space-y-2 min-w-[250px]">
+            <Label>Current CTC Range</Label>
+            <div className="grid grid-cols-2 gap-2">
               <Input
-                id="minCurrentCTC"
                 name="minCurrentCTC"
+                placeholder="Min"
                 type="number"
                 step="0.01"
-                placeholder="Min"
                 value={values.minCurrentCTC || ""}
                 onChange={handleChange}
                 onBlur={handleBlur}
@@ -174,19 +197,11 @@ export function SearchFilters() {
                     : ""
                 }
               />
-              {errors.minCurrentCTC && touched.minCurrentCTC && (
-                <p className="text-xs text-destructive mt-1">
-                  {errors.minCurrentCTC}
-                </p>
-              )}
-            </div>
-            <div>
               <Input
-                id="maxCurrentCTC"
                 name="maxCurrentCTC"
+                placeholder="Max"
                 type="number"
                 step="0.01"
-                placeholder="Max"
                 value={values.maxCurrentCTC || ""}
                 onChange={handleChange}
                 onBlur={handleBlur}
@@ -196,25 +211,17 @@ export function SearchFilters() {
                     : ""
                 }
               />
-              {errors.maxCurrentCTC && touched.maxCurrentCTC && (
-                <p className="text-xs text-destructive mt-1">
-                  {errors.maxCurrentCTC}
-                </p>
-              )}
             </div>
           </div>
-        </div>
 
-        <div>
-          <Label>Experience Range (Years)</Label>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
+          <div className="space-y-2 min-w-[180px]">
+            <Label>Experience Range (Years)</Label>
+            <div className="grid grid-cols-2 gap-2">
               <Input
-                id="minExperience"
                 name="minExperience"
+                placeholder="Min"
                 type="number"
                 step="0.01"
-                placeholder="Min"
                 value={values.minExperience || ""}
                 onChange={handleChange}
                 onBlur={handleBlur}
@@ -224,19 +231,11 @@ export function SearchFilters() {
                     : ""
                 }
               />
-              {errors.minExperience && touched.minExperience && (
-                <p className="text-xs text-destructive mt-1">
-                  {errors.minExperience}
-                </p>
-              )}
-            </div>
-            <div>
               <Input
-                id="maxExperience"
                 name="maxExperience"
+                placeholder="Max"
                 type="number"
                 step="0.01"
-                placeholder="Max"
                 value={values.maxExperience || ""}
                 onChange={handleChange}
                 onBlur={handleBlur}
@@ -246,150 +245,10 @@ export function SearchFilters() {
                     : ""
                 }
               />
-              {errors.maxExperience && touched.maxExperience && (
-                <p className="text-xs text-destructive mt-1">
-                  {errors.maxExperience}
-                </p>
-              )}
             </div>
           </div>
         </div>
       </div>
-
-      {/* Advanced Filters */}
-      <div className="space-y-4 lg:col-span-1 md:col-span-2">
-        <Accordion type="single" collapsible className="w-full">
-          <AccordionItem value="advanced-filters">
-            <AccordionTrigger>Advanced Filters</AccordionTrigger>
-            <AccordionContent>
-              <div className="space-y-4 pt-2">
-                <div>
-                  <Label>Created Date Range</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <Label className="text-xs">From</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className="w-full justify-start text-left font-normal"
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {values.createdAfter ? (
-                              format(new Date(values.createdAfter), "PPP")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                          <Calendar
-                            mode="single"
-                            selected={
-                              values.createdAfter
-                                ? new Date(values.createdAfter)
-                                : undefined
-                            }
-                            onSelect={(date) =>
-                              setFieldValue(
-                                "createdAfter",
-                                date ? date.toISOString() : ""
-                              )
-                            }
-                            initialFocus
-                            footer={
-                              <CalendarClearFooter
-                                value={values?.createdAfter as string}
-                                onClear={() =>
-                                  setFieldValue("createdAfter", "")
-                                }
-                              />
-                            }
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      {errors.createdAfter && (
-                        <p className="text-xs text-destructive mt-1">
-                          {errors.createdAfter}
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <Label className="text-xs">To</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className="w-full justify-start text-left font-normal"
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {values.createdBefore ? (
-                              format(new Date(values.createdBefore), "PPP")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                          <Calendar
-                            mode="single"
-                            selected={
-                              values.createdBefore
-                                ? new Date(values.createdBefore)
-                                : undefined
-                            }
-                            onSelect={(date) =>
-                              setFieldValue(
-                                "createdBefore",
-                                date ? date.toISOString() : ""
-                              )
-                            }
-                            initialFocus
-                            footer={
-                              <CalendarClearFooter
-                                value={values?.createdBefore as string}
-                                onClear={() =>
-                                  setFieldValue("createdBefore", "")
-                                }
-                              />
-                            }
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      {errors.createdBefore && (
-                        <p className="text-xs text-destructive mt-1">
-                          {errors.createdBefore}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="logicOperator">Logic Operator</Label>
-                  <Select
-                    name="logicOperator"
-                    value={values.logicOperator || "$and"}
-                    onValueChange={(value) =>
-                      setFieldValue("logicOperator", value)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select logic operator" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="$and">
-                        AND (Match all filters)
-                      </SelectItem>
-                      <SelectItem value="$or">OR (Match any filter)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      </div>
-    </div>
+    </>
   );
 }
