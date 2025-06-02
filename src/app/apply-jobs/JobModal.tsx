@@ -91,7 +91,7 @@ export default function JobModal({
                   // className="w-full whitespace-pre-wrap"
                   className="text-sm whitespace-pre-wrap pb-0 ml-[1rem]"
                   style={{ wordWrap: "break-word" }}
-                  
+
                   dangerouslySetInnerHTML={{
                     __html: job?.description || "No description found",
                   }}
@@ -129,11 +129,10 @@ export default function JobModal({
                   <button
                     onClick={handleContinue}
                     disabled={alreadyApplied || readOnly}
-                    className={`w-full sm:w-auto inline-flex justify-center rounded-md border ${
-                      alreadyApplied || readOnly
+                    className={`w-full sm:w-auto inline-flex justify-center rounded-md border ${alreadyApplied || readOnly
                         ? "border-gray-300 bg-gray-100 text-gray-500"
                         : "border-transparent bg-blue-100 text-blue-900 hover:bg-blue-200"
-                    } px-4 py-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2`}
+                      } px-4 py-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2`}
                   >
                     {alreadyApplied ? "Already Applied" : "Apply Now"}
                   </button>
