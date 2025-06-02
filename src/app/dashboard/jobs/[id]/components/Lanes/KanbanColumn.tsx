@@ -11,7 +11,7 @@ import { GripVertical } from "lucide-react";
 import { CandidateCard } from "../Candidate/candidate-card";
 import { Candidate } from "@/types/candidate"; // Adjust path as needed
 import { LaneOptionsMenu } from "./lanes-options-menu";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 interface KanbanColumnProps {
   column: {
@@ -37,6 +37,9 @@ interface KanbanColumnProps {
   handleDeleteClick: (candidateId: string) => void;
 }
 
+type SortField = string;
+type SortDirection = "asc" | "desc";
+
 export function KanbanColumn({
   column,
   index,
@@ -58,6 +61,123 @@ export function KanbanColumn({
 }: KanbanColumnProps) {
   const [isLaneOptionsOpen, setIsLaneOptionsOpen] = useState(false);
   const [isLaneOpsOpenFor, setIsLaneOpsOpenFor] = useState<string | null>();
+  const [sortField, setSortField] = useState<SortField | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+
+  // Sorting function
+  const sortCandidates = (
+    candidates: Candidate[],
+    field: SortField,
+    direction: SortDirection
+  ): Candidate[] => {
+    return [...candidates].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      console.log("🙂🙂🙂🙂 FIELD TO SORT: ", field);
+
+      switch (field) {
+        case "name":
+          aValue = a.name?.toLowerCase() || "";
+          bValue = b.name?.toLowerCase() || "";
+          break;
+        case "email":
+          aValue = a.email?.toLowerCase() || "";
+          bValue = b.email?.toLowerCase() || "";
+          break;
+        case "ctc":
+          aValue = a.currentCTC || 0;
+          bValue = b.currentCTC || 0;
+          break;
+        case "expectedCtc":
+          aValue = a.expectedCTC || 0;
+          bValue = b.expectedCTC || 0;
+          break;
+        case "experience":
+          // Assuming experience is stored as a number (years) or string
+          aValue =
+            typeof a.experience === "number"
+              ? a.experience
+              : parseInt(a.experience as string) || 0;
+          bValue =
+            typeof b.experience === "number"
+              ? b.experience
+              : parseInt(b.experience as string) || 0;
+          break;
+        case "skills":
+          // Sort by number of skills or first skill alphabetically
+          aValue = Array.isArray(a.skills) ? a.skills.length : 0;
+          bValue = Array.isArray(b.skills) ? b.skills.length : 0;
+          break;
+        case "appliedDate":
+          aValue = a.appliedDate ? new Date(a.appliedDate).getTime() : 0;
+          bValue = b.appliedDate ? new Date(b.appliedDate).getTime() : 0;
+          break;
+        case "assignmentDate":
+          aValue = a.assignment?.time
+            ? new Date(a.assignment?.time).getTime()
+            : 0;
+          bValue = b.assignment?.time
+            ? new Date(b.assignment?.time).getTime()
+            : 0;
+          break;
+        case "noticePeriod":
+          aValue = a.noticePeriod ? new Date(a.noticePeriod).getTime() : 0;
+          bValue = b.noticePeriod ? new Date(b.noticePeriod).getTime() : 0;
+          break;
+        case "aiScore":
+          aValue = a.scores?.overall ? new Date(a.scores.overall).getTime() : 0;
+          bValue = b.scores?.overall ? new Date(b.scores.overall).getTime() : 0;
+          break;
+        case "createdAt":
+          aValue = a.tracking?.createdAt
+            ? new Date(a.tracking?.createdAt).getTime()
+            : 0;
+          bValue = b.tracking?.createdAt
+            ? new Date(b.tracking?.createdAt).getTime()
+            : 0;
+          break;
+        case "lastModified":
+          aValue = a.updatedAt
+            ? new Date(a.updatedAt).getTime()
+            : a.createdAt
+              ? new Date(a.createdAt).getTime()
+              : 0;
+          bValue = b.updatedAt
+            ? new Date(b.updatedAt).getTime()
+            : b.createdAt
+              ? new Date(b.createdAt).getTime()
+              : 0;
+          break;
+        default:
+          return 0;
+      }
+
+      // Handle comparison
+      if (aValue < bValue) {
+        return direction === "asc" ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return direction === "asc" ? 1 : -1;
+      }
+      return 0;
+    });
+  };
+
+  // Memoized sorted candidates
+  const sortedCandidates = useMemo(() => {
+    if (!sortField) {
+      return column.candidates;
+    }
+    return sortCandidates(column.candidates, sortField, sortDirection);
+  }, [column.candidates, sortField, sortDirection]);
+
+  // Handle sort from LaneOptionsMenu
+  const handleSort = (field: SortField, direction: SortDirection) => {
+    setSortField(field);
+    setSortDirection(direction);
+  };
+
   return (
     <Draggable key={column.id} draggableId={column.id} index={index}>
       {(provided: DraggableProvided) => (
@@ -81,21 +201,16 @@ export function KanbanColumn({
                     <span className="ml-2 text-sm text-muted-foreground">
                       ({column.candidates.length})
                     </span>
+                    {/* {sortField && (
+                      <span className="ml-1 text-xs text-blue-600">
+                        ↑{sortDirection === "asc" ? "↑" : "↓"}
+                      </span>
+                    )} */}
                   </CardTitle>
                 </div>
-                {/* <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    handleDeleteLane();
-                    setLaneToDelete(column.id);
-                  }}
-                  className="h-8 w-8 p-0"
-                >
-                  <Trash2 className="h-4 w-4 text-muted-foreground" />
-                </Button> */}
                 <LaneOptionsMenu
                   laneId={column.id}
+                  onSort={handleSort}
                   handleDeleteLane={handleDeleteLane}
                   setLaneToDelete={setLaneToDelete}
                   setLaneToEdit={setLaneToEdit}
@@ -150,7 +265,7 @@ export function KanbanColumn({
                         </div>
                       </div>
                     )}
-                    {column.candidates.map((candidate, index) => (
+                    {sortedCandidates.map((candidate, index) => (
                       <CandidateCard
                         key={`${column.id}-${candidate._id}`}
                         candidate={candidate}

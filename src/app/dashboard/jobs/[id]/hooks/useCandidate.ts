@@ -96,6 +96,9 @@ export const useCandidate = ({
     const destColumnIndex = columns.findIndex(
       (col) => col.id === destination.droppableId
     );
+    if (sourceColumnIndex === destColumnIndex) {
+      return;
+    }
 
     const newSourceCandidates = [...sourceColumn.candidates];
     const newDestCandidates =

@@ -85,8 +85,9 @@ export default function ApplyJobsContent({
 
     if (urlOrgName) {
       setInvalidPage(false);
+      // debugger;
       const config = allowance?.data?.find(
-        (org: ISettings) => org.portalConfigs?.portalName === urlOrgName
+        (org: ISettings) => org?.portalConfigs?.portalName === urlOrgName
       ).portalConfigs;
       if (config?.portalHeader?.url && config?.portalFooter?.url) {
         const [headerRes, footerRes] = await Promise.all([
