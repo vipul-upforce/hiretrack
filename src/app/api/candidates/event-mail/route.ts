@@ -97,6 +97,7 @@ export async function POST(req: NextRequest) {
 
     // Prepare HR notification email content
     const hrNotificationTitle = `${candidateName} applied for ${jobName}`;
+    const candidateDetails = `${req.headers.get("Origin")}/candidate/${candidateId}`;
     const hrHtmlContent = loadTemplate("job-application-(hr)", {
       orgName,
       hrNotificationTitle,
@@ -105,6 +106,7 @@ export async function POST(req: NextRequest) {
       candidateName,
       jobName,
       applicationDate: new Date().toUTCString(),
+      candidateDetails,
     });
 
     const candidateAndHr = [email, ...hrEmails];

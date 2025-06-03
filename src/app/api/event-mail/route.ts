@@ -66,6 +66,7 @@ async function sendQueuedEmail(data: any) {
     candidateName,
     status,
     emailList,
+    candidateDetailsPage,
   } = data;
 
   const startDate = new Date(startTime);
@@ -94,16 +95,19 @@ async function sendQueuedEmail(data: any) {
     eventDescription || ""
   )}`;
 
+  // Use the request's host header to determine the client's base URI
+
   const htmlContent = loadTemplate("assignment-event", {
     eventTitle,
-    startDate: startDate.toISOString(),
-    endDate: endDate.toISOString(),
+    startDate: startDate.toUTCString(),
+    endDate: endDate.toUTCString(),
     jobName,
     interviewerName,
     candidateName,
     status,
     googleCalendarLink,
     outlookCalendarLink,
+    candidateDetailsPage,
   });
 
   return await sendMail(
@@ -117,7 +121,7 @@ async function sendQueuedEmail(data: any) {
 export async function PUT(req: NextRequest) {
   try {
     let organizationId;
-    const { name } = await req.json();
+    const data = await req.json();
     const token = req.cookies.get("token");
     let decryptedResponse;
     if (token?.value) {
@@ -139,9 +143,12 @@ export async function PUT(req: NextRequest) {
       throw new Error("Database not connected");
     }
 
+    const candidateDetails = `${req.headers.get("Origin")}/candidate/${data.id}`;
+
     const htmlContent = loadTemplate("marked-as-done", {
-      candidate_name: name,
+      candidate_name: data.name,
       unassigner: decryptedResponse?.user.name,
+      candidateDetails,
     });
     const users = await User.find({
       organizationId: new mongoose.Types.ObjectId(organizationId),
@@ -195,6 +202,9 @@ export async function POST(req: NextRequest) {
       immediate = false,
       id,
     } = await req.json();
+    console.log("ID IN EVENT_MAIL ROUTE: ", id);
+    const candidateDetailsPage = `${req.headers.get("origin")}/candidate/${id}`;
+    console.log("~~~~~~~~~~~ ", candidateDetailsPage);
 
     let organizationId;
     const token = req.cookies.get("token");
@@ -268,6 +278,7 @@ export async function POST(req: NextRequest) {
       candidateName,
       status,
       emailList,
+      candidateDetailsPage,
       // changer: decryptedResponse?.user.name,
     };
 

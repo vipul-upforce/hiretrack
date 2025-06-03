@@ -17,6 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import useRoles from "@/hooks/useRoles";
 
 export const HistoryAndLogTable: React.FC<{
   candidate: Candidate;
@@ -38,6 +39,7 @@ export const HistoryAndLogTable: React.FC<{
   setIsEditRemarkDialogOpen,
 }) => {
   const [showLogTable, setShowLogTable] = useState(false);
+
   const tableRows = timeLineItems
     .sort(
       (a, b) =>
@@ -76,6 +78,7 @@ export const HistoryAndLogTable: React.FC<{
         interview.note.description &&
         Array.isArray(interview.note.description);
       if (!isLogTableEntry) return [];
+
       return (interview.note.description as IinfoUpdateLog[]).map(
         (log: IinfoUpdateLog, logIndex) => (
           <TableRow
@@ -146,6 +149,7 @@ export const HistoryAndLogTable: React.FC<{
         )
       );
     });
+  if (user?.role === "candidate") return null;
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -165,7 +169,7 @@ export const HistoryAndLogTable: React.FC<{
           ) : (
             <>
               <TableIcon className="h-4 w-4 mr-2" />
-              Show Log Table
+              Show Logs
             </>
           )}
         </Button>

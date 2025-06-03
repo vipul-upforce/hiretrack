@@ -182,7 +182,6 @@ export function ApplyAsGuestDialog({
   const [hasAlreadyApplied, setHasAlreadyApplied] = useState(false);
   const { formikRef, handleApply } = useApplyHandler<CandidateFormValues>();
 
-
   useEffect(() => {
     if (isOpen) {
       // Check if user has already applied when dialog opens
@@ -199,6 +198,7 @@ export function ApplyAsGuestDialog({
   }, [isOpen, resumeFile, jobId]);
 
   const handleSubmit = async (values: CandidateFormValues) => {
+    console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
     // First check if already applied
     if (hasAppliedAsGuest(jobId)) {
       toast({
@@ -347,7 +347,7 @@ export function ApplyAsGuestDialog({
   };
   // const handleApply = async () => {
   //   if (!formikRef.current) return;
-  
+
   //   const errors = await formikRef.current.validateForm();
   //   formikRef.current.setTouched({
   //     name: true,
@@ -360,7 +360,7 @@ export function ApplyAsGuestDialog({
   //     noticePeriod: true,
   //     resume: true,
   //   });
-  
+
   //   const firstErrorKey = Object.keys(errors)[0];
   //   if (firstErrorKey) {
   //     const el = document.querySelector(`[id="${firstErrorKey}"]`);
@@ -368,10 +368,10 @@ export function ApplyAsGuestDialog({
   //     (el as HTMLElement)?.focus();
   //     return;
   //   }
-  
-  //   formikRef.current.handleSubmit(); 
+
+  //   formikRef.current.handleSubmit();
   // };
-  
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>

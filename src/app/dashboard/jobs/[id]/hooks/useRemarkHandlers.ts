@@ -52,10 +52,14 @@ export const useRemarkHandlers = (
 
       await response.json();
 
-      if (pathname === "/dashboard") {
+      if (pathname === "/dashboard" && !pathname?.startsWith("/candidate")) {
         refetchAssignment?.();
       }
-      if (pathname !== "/dashboard" && pathname !== "/dashboard/calendar") {
+      if (
+        pathname !== "/dashboard" &&
+        pathname !== "/dashboard/calendar" &&
+        !pathname?.startsWith("/candidate")
+      ) {
         await refetch();
       }
 
@@ -135,10 +139,10 @@ export const useRemarkHandlers = (
           jobId: localCandidate?.jobId,
           newEntry: newHistoryEntry,
         }).unwrap());
-      if (pathname !== "/dashboard") {
+      if (pathname !== "/dashboard" && !pathname?.startsWith("/candidate")) {
         await refetch();
       }
-      if (pathname === "/dashboard") {
+      if (pathname === "/dashboard" && !pathname?.startsWith("/candidate")) {
         await refetchAssignment?.();
       }
       const result = await updateCandidate(updateData).unwrap();

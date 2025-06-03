@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Formik, Form } from "formik";
-import {  candidateSchema } from "../../schemas/candidate-schema";
+import { candidateSchema } from "../../schemas/candidate-schema";
 import { CandidateForm } from "../Candidate/candidate-form";
 import {
   useUpdateCandidateMutation,
@@ -125,6 +125,7 @@ export function EditCandidateDialog({
     const fileNames = values.attachments.map((file) => file.name);
     const hasDuplicates = new Set(fileNames).size !== fileNames.length;
 
+    console.log("------- ", user);
     if (hasDuplicates) {
       toast({
         title: "Alert",
