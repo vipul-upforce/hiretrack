@@ -94,8 +94,7 @@ export function SearchFilters() {
             />
           </div>
         </div>
-
-        <div className="flex-1 min-w-[300px]">
+        <div className="flex-1 ">
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="advanced-filters">
               <AccordionTrigger>Advanced Filters</AccordionTrigger>
@@ -144,9 +143,9 @@ export function SearchFilters() {
         </div>
       </div>
 
-      <div className="flex flex-row gap-6">
-        <div className="flex flex-col-3 gap-4 min-w-[180px]">
-          <div className="space-y-2 min-w-[180px]">
+      <div className="flex flex-row gap-6 w-[50%]">
+        <div className="flex flex-col-3 gap-4 justify-between">
+          <div className="space-y-2 ">
             <Label>Expected CTC Range</Label>
             <div className="grid grid-cols-2 gap-2">
               <Input
@@ -180,7 +179,7 @@ export function SearchFilters() {
             </div>
           </div>
 
-          <div className="space-y-2 min-w-[250px]">
+          <div className="space-y-2 ">
             <Label>Current CTC Range</Label>
             <div className="grid grid-cols-2 gap-2">
               <Input
@@ -214,7 +213,7 @@ export function SearchFilters() {
             </div>
           </div>
 
-          <div className="space-y-2 min-w-[180px]">
+          <div className="space-y-2 ">
             <Label>Experience Range (Years)</Label>
             <div className="grid grid-cols-2 gap-2">
               <Input
@@ -248,7 +247,9 @@ export function SearchFilters() {
             </div>
           </div>
         </div>
+        
       </div>
+      
     </>
   );
 }
