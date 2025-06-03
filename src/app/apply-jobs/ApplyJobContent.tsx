@@ -130,7 +130,7 @@ export default function ApplyJobsContent({
 
   useEffect(() => {
     checkAllowance();
-  }, [searchParams]);
+  }, [searchParams,orgName]);
 
   const pageInit = async () => {
     // debugger;
