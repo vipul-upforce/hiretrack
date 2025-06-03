@@ -249,11 +249,7 @@ export function TermsAndConditionsDialog({
               </li>
               <li>Integrated interview scheduling with calendar sync.</li>
               <li>Email templates and communication tracking.</li>
-              <li>Custom job application forms and assessments.</li>
-              <li>
-                Analytics dashboard for hiring metrics (time-to-hire, source
-                tracking, etc.).
-              </li>
+              <li>Custom job application forms and evaluation.</li>
               <li>Branded career portal and job posting management.</li>
             </ul>
 

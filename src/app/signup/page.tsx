@@ -53,7 +53,7 @@ const SignupForm = () => {
     password: "",
     name: "",
     confirmPassword: "",
-    termsAccepted:false
+    termsAccepted: false,
   };
 
   // Extract orgName from query string
@@ -160,7 +160,6 @@ const SignupForm = () => {
                 setFieldValue: (field: string, value: any) => void;
               }) => {
                 useEffect(() => {
-                  console.log('values :>> ', values);
                   setSetFieldValueFn(() => setFieldValue);
                 }, [setFieldValue]);
                 return (
@@ -335,6 +334,11 @@ const SignupForm = () => {
                                 href="/terms"
                                 target="_blank"
                                 className="underline"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setShowTermsDialog(true);
+                                  form.setFieldValue("termsAccepted", false);
+                                }}
                               >
                                 Terms
                               </a>{" "}
@@ -343,6 +347,11 @@ const SignupForm = () => {
                                 href="/privacy"
                                 target="_blank"
                                 className="underline"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setShowTermsDialog(true);
+                                  form.setFieldValue("termsAccepted", false);
+                                }}
                               >
                                 Privacy Policy
                               </a>
@@ -393,8 +402,8 @@ const SignupForm = () => {
         open={showTermsDialog}
         onOpenChange={setShowTermsDialog}
         onAccept={(accepted: boolean) => {
-            setFieldValueFn?.("termsAccepted", accepted);
-            setShowTermsDialog(false);
+          setFieldValueFn?.("termsAccepted", accepted);
+          setShowTermsDialog(false);
         }}
       />
     </>

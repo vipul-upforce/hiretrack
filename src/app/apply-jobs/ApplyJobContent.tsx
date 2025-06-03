@@ -75,7 +75,7 @@ export default function ApplyJobsContent({
   };
 
   async function checkAllowance() {
-    const urlOrgName = searchParams?.get("o");
+    const urlOrgName = searchParams?.get("o") || orgName;
 
     const data = await fetch("/api/organization");
     if (!data.ok) {
@@ -85,7 +85,6 @@ export default function ApplyJobsContent({
 
     if (urlOrgName) {
       setInvalidPage(false);
-      // debugger;
       const config = allowance?.data?.find(
         (org: ISettings) => org?.portalConfigs?.portalName === urlOrgName
       ).portalConfigs;
@@ -107,7 +106,6 @@ export default function ApplyJobsContent({
       return;
     }
 
-    // Fallback if no urlOrgName
     if (allowance.allow) {
       setInvalidPage(true);
     }
