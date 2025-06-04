@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Formik, Form } from "formik";
-import * as Yup from "yup";
 import { SearchFilters } from "@/components/forms/search-filters";
 import { SearchResults } from "@/components/forms/search-results";
 import { Button } from "@/components/ui/button";
@@ -14,8 +13,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Candidate } from "@/types/candidate";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import withAuthGuard from "../withAuthGuard";
+import { SearchSchema } from "./searchSchema";
 
-// Define the search filter interface
 export interface SearchFilter {
   name?: string;
   skills?: string[];
@@ -30,140 +29,16 @@ export interface SearchFilter {
   createdBefore?: string;
   organizationId?: string;
   logicOperator?: "$and" | "$or";
+  page:number
 }
-
-// Define the validation schema
-const SearchSchema = Yup.object()
-  .shape({
-    name: Yup.string(),
-    skills: Yup.array().of(Yup.string()),
-    location: Yup.string(),
-    minExpectedCTC: Yup.number().nullable(),
-    maxExpectedCTC: Yup.number()
-      .nullable()
-      .when("minExpectedCTC", ([minExpectedCTC], schema) =>
-        minExpectedCTC !== undefined
-          ? schema.moreThan(
-              minExpectedCTC,
-              "Max Expected CTC must be greater than Min Expected CTC"
-            )
-          : schema
-      ),
-    minExperience: Yup.number()
-      .nullable()
-      .min(0, "Minimum experience cannot be negative"),
-    maxExperience: Yup.number()
-      .nullable()
-      .min(
-        Yup.ref("minExperience"),
-        "Max experience must be greater than min experience"
-      ),
-    minCurrentCTC: Yup.number().nullable(),
-    maxCurrentCTC: Yup.number()
-      .nullable()
-      .when("minCurrentCTC", ([minCurrentCTC], schema) =>
-        minCurrentCTC !== undefined
-          ? schema.moreThan(
-              minCurrentCTC,
-              "Max Current CTC must be greater than Min Current CTC"
-            )
-          : schema
-      ),
-    createdAfter: Yup.string(),
-    createdBefore: Yup.string().when(
-      "createdAfter",
-      ([createdAfter], schema) =>
-        createdAfter
-          ? schema.test(
-              "is-after",
-              "To date must be after From date",
-              (value) => !value || new Date(value) > new Date(createdAfter)
-            )
-          : schema
-    ),
-    organizationId: Yup.string(),
-    logicOperator: Yup.string().oneOf(["$and", "$or"]),
-  })
-  .test("paired-fields", "Invalid field pairing", (values) => {
-    const errors: {
-      minExpectedCTC: string;
-      maxExpectedCTC: string;
-      minExperience: string;
-      maxExperience: string;
-      minCurrentCTC: string;
-      maxCurrentCTC: string;
-      createdAfter?: string;
-      createdBefore?: string;
-    } = {
-      minExpectedCTC: "",
-      maxExpectedCTC: "",
-      minExperience: "",
-      maxExperience: "",
-      minCurrentCTC: "",
-      maxCurrentCTC: "",
-      createdAfter: "",
-      createdBefore: "",
-    };
-
-    // Check Expected CTC pair
-    if (
-      (values.minExpectedCTC && !values.maxExpectedCTC) ||
-      (!values.minExpectedCTC && values.maxExpectedCTC)
-    ) {
-      errors.minExpectedCTC =
-        "Both min and max Expected CTC must be provided together";
-      errors.maxExpectedCTC =
-        "Both min and max Expected CTC must be provided together";
-    }
-
-    // Check Experience pair
-    if (
-      (values.minExperience && !values.maxExperience) ||
-      (!values.minExperience && values.maxExperience)
-    ) {
-      errors.minExperience =
-        "Both min and max Experience must be provided together";
-      errors.maxExperience =
-        "Both min and max Experience must be provided together";
-    }
-
-    // Check Current CTC pair
-    if (
-      (values.minCurrentCTC && !values.maxCurrentCTC) ||
-      (!values.minCurrentCTC && values.maxCurrentCTC)
-    ) {
-      errors.minCurrentCTC =
-        "Both min and max Current CTC must be provided together";
-      errors.maxCurrentCTC =
-        "Both min and max Current CTC must be provided together";
-    }
-
-    // FIX: Correct error messages for date fields
-    if (
-      (values.createdAfter && !values.createdBefore) ||
-      (!values.createdAfter && values.createdBefore)
-    ) {
-      errors.createdAfter =
-        "Both Created After and Created Before dates must be provided together";
-      errors.createdBefore =
-        "Both Created After and Created Before dates must be provided together";
-    }
-
-    const errorMessages = Object.keys(errors)
-      .filter((key) => errors[key as keyof typeof errors])
-      .map((key) => errors[key as keyof typeof errors])
-      .join(", ");
-
-    return errorMessages
-      ? new Yup.ValidationError(errorMessages, values)
-      : true;
-  });
 
   export const itemsPerPage = 100;
 function CandidateSearch() {
   const [searchResults, setSearchResults] = useState<Candidate[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalRecordsCount, setTotalRecordsCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   
@@ -183,6 +58,7 @@ function CandidateSearch() {
     createdAfter: "",
     createdBefore: "",
     logicOperator: "$and",
+    page:1
   };
 
   const [currentFilters, setCurrentFilters] =
@@ -195,6 +71,7 @@ function CandidateSearch() {
     try {
       const response = await filterCandidates(currentFilters).unwrap();
       setSearchResults(response.candidates || []);
+
     } catch (error) {
       toast({
         title: "Error",
@@ -208,13 +85,15 @@ function CandidateSearch() {
 
   const handleSearch = async (values: SearchFilter) => {
     setIsSearching(true);
-    setCurrentFilters(values); // Store the current filters
+    setCurrentFilters(values); 
 
     try {
       values.organizationId = OrgID ? OrgID : values.organizationId;
       const response = await filterCandidates(values).unwrap();
       setSearchResults(response.candidates || []);
-      setCurrentPage(1);
+      setCurrentPage(response?.pagination?.page ||1);
+      setTotalPages(response?.pagination?.totalPages ||0);
+      setTotalRecordsCount(response?.pagination?.total)
     } catch (error) {
       toast({
         title: "Error",
@@ -233,10 +112,6 @@ function CandidateSearch() {
         const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
         if (decryptedResponse.success && decryptedResponse.user) {
           setOrgID(decryptedResponse.user.organizationId);
-          console.log(
-            "decryptedResponse.user.organizationId :>> ",
-            decryptedResponse.user.organizationId
-          );
           handleSearch({
             name: "",
             skills: [],
@@ -245,6 +120,7 @@ function CandidateSearch() {
             createdBefore: "",
             logicOperator: "$and",
             organizationId: decryptedResponse.user.organizationId,
+            page:currentPage
           });
         }
       }
@@ -260,6 +136,27 @@ function CandidateSearch() {
     }
   };
 
+
+  const onPageChange= async (pageNumber:number)=>
+  {
+    const token = Cookies.get("token");
+      if (token) {
+        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+        if (decryptedResponse.success && decryptedResponse.user) {
+          setOrgID(decryptedResponse.user.organizationId);
+          handleSearch({
+            name: "",
+            skills: [],
+            location: "",
+            createdAfter: "",
+            createdBefore: "",
+            logicOperator: "$and",
+            organizationId: decryptedResponse.user.organizationId,
+            page:pageNumber
+          });
+        }
+      }
+  }
   const sortedResults = sortField
     ? [...searchResults].sort((a, b) => {
         const aValue = a[sortField as keyof Candidate];
@@ -278,18 +175,11 @@ function CandidateSearch() {
         }
 
         // Handle cases where one value is a string and the other is a number
-        return typeof aValue === "string" ? 1 : -1; // Adjust as needed for your sorting logic
+        return typeof aValue === "string" ? 1 : -1; 
       })
     : searchResults;
 
-  const paginatedResults = Array.isArray(sortedResults)
-    ? sortedResults.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-      )
-    : [];
 
-  const totalPages = Math.ceil(sortedResults.length / itemsPerPage);
 
   return (
     <div className="space-y-6">
@@ -329,14 +219,13 @@ function CandidateSearch() {
           )}
         </Formik>
       </Card>
-
       <SearchResults
-        results={paginatedResults}
-        totalResultsCount={searchResults?.length}
+        results={sortedResults}
+        totalResultsCount={totalRecordsCount}
         isLoading={isSearching}
         currentPage={currentPage}
         totalPages={totalPages}
-        onPageChange={setCurrentPage}
+        onPageChange={onPageChange}
         sortField={sortField}
         sortDirection={sortDirection}
         onSort={handleSort}
@@ -352,3 +241,12 @@ export default withAuthGuard(CandidateSearch, {
   checkAllowance: false,
   allowAuthenticated: true,
 });
+
+  // const paginatedResults = Array.isArray(sortedResults)
+  //   ? sortedResults.slice(
+  //       (currentPage - 1) * itemsPerPage,
+  //       currentPage * itemsPerPage
+  //     )
+  //   : [];
+
+  // const totalPages = Math.ceil(sortedResults.length / itemsPerPage);

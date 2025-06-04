@@ -114,7 +114,6 @@ export function SearchFilters() {
       prev.map((col) => (col.id === id ? { ...col, value: value } : col))
     );
   };
-   console.log('cols :>> ', cols);
   return (
     <>
       <div className="p-6 mx-auto">

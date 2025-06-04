@@ -91,7 +91,7 @@ export const candidateApi = createApi({
     }),
     filterCandidates: builder.mutation({
       query: (data) => ({
-        url: "/candidates/filter",
+        url: `/candidates/filter?page=${data.page}`,
         method: "POST",
         body: data,
       }),
