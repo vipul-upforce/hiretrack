@@ -362,6 +362,7 @@ export const RenderFieldInFilter = ({
                 .filter((option) => option.length > 0)
             );
           }}
+        //   onBlur={onBlur}
           placeholder={`Enter ${label}`}
           onSuggestionClick={(suggestion) => {
             const currentValues = (value as string[]) || [];

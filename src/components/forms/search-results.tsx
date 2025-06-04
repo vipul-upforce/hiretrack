@@ -129,7 +129,7 @@ export function SearchResults({
                     }))
                   }
                 >
-                  {key}
+                  {key.toLocaleUpperCase()}
                 </DropdownMenuCheckboxItem>
               ))}
             </DropdownMenuContent>

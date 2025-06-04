@@ -22,130 +22,148 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { v4 as uuidv4 } from "uuid";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Plus, X, Settings } from "lucide-react";
 import { SearchFilter } from "./candidate-search";
 import { ChipInput } from "../ui/chip-input";
 import { CalendarClearFooter } from "../calendar/CalendarClearFooter";
-
-// // Mock data for skills
-// const availableSkills = [
-//   "JavaScript",
-//   "TypeScript",
-//   "React",
-//   "Angular",
-//   "Vue",
-//   "Node.js",
-//   "Python",
-//   "Java",
-//   "C#",
-//   "PHP",
-//   "Ruby",
-//   "Go",
-//   "Rust",
-//   "Swift",
-//   "Kotlin",
-//   "MATLAB",
-//   "R",
-// ];
+import useCookie from "@/hooks/useCookie";
+import { useLazyGetCustomFieldsQuery } from "@/lib/features/org/orgApi";
+import { useEffect, useState } from "react";
+import { CustomField, FormObject } from "@/Custom_Fields/Types/CustomField";
+import { RenderFieldInFilter } from "@/Custom_Fields/Components/CustomFields/RenderFieldInFilter";
+import { Dayjs } from "dayjs";
 
 export function SearchFilters() {
+  const [metaFields, setMetaFields] = useState<CustomField[] | []>([]);
+  const [cols, setCols] = useState<
+    Record<string, string | number | boolean | string[]>[]
+  >([]);
+  const [isMetaFieldsModalOpen, setIsMetaFieldsModalOpen] = useState(false);
+
   const { values, errors, touched, setFieldValue, handleChange, handleBlur } =
     useFormikContext<SearchFilter>();
+  const user = useCookie();
+  const [getCustomField] = useLazyGetCustomFieldsQuery();
 
+  useEffect(() => {
+    (async () => {
+      if (user?.organizationId) {
+        const data = await getCustomField(user?.organizationId);
+        const metaFieldsData =
+          (Object.values(data?.data || {}) as FormObject[]).find(
+            (form) => form.formName === "Candidate"
+          )?.fields || [];
+        setMetaFields(metaFieldsData as CustomField[] | []);
+      }
+    })();
+  }, [user]);
+
+  const updateSelectedMetaFields = (fieldId: string, colId: string) => {
+    if (!fieldId) return;
+
+    const selectedField = metaFields.find((field) => field.id === fieldId);
+    if (!selectedField) return;
+
+    setCols((prevCols) => {
+      const existsElsewhere = prevCols.some(
+        (col) => col.fieldId === fieldId && col.id !== colId
+      );
+      if (existsElsewhere) {
+        console.log(`FieldId "${fieldId}" already assigned to another column.`);
+        return prevCols;
+      }
+      return prevCols.map((col) =>
+        col.id === colId
+          ? {
+              ...col,
+              fieldId: fieldId,
+              label: selectedField.label,
+              type: selectedField.type,
+              options: selectedField.options as string[],
+              name: selectedField.label,
+            }
+          : col
+      );
+    });
+  };
+
+  const addMetaField = () => {
+    setCols((prev) => [
+      ...prev,
+      { id: uuidv4(), fieldId: "", value: "", type: "" },
+    ]);
+  };
+
+  const removeMetaField = (id: string) => {
+    setCols((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const updateColValue = (id: string, value: string) => {
+    setCols((prev) =>
+      prev.map((col) => (col.id === id ? { ...col, value: value } : col))
+    );
+  };
+   console.log('cols :>> ', cols);
   return (
     <>
-      <div className="flex flex-wrap gap-6 mb-6">
-        <div className="flex flex-col-3 gap-4 min-w-[250px]">
-          <div>
-            <Label htmlFor="name">Candidate Name</Label>
-            <Input
-              id="name"
-              name="name"
-              placeholder="Search by name"
-              value={values.name || ""}
-              onChange={handleChange}
-              onBlur={handleBlur}
-            />
-          </div>
+      <div className="p-6 mx-auto">
+        <div className="flex gap-6 mb-6">
+          <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="name">Candidate Name</Label>
+              <Input
+                id="name"
+                name="name"
+                placeholder="Search by name"
+                value={values.name || ""}
+                onChange={handleChange}
+                onBlur={handleBlur}
+              />
+            </div>
 
-          <div>
-            <Label htmlFor="location">Location</Label>
-            <Input
-              id="location"
-              name="location"
-              placeholder="City, State"
-              value={values.location || ""}
-              onChange={handleChange}
-              onBlur={handleBlur}
-            />
-          </div>
+            <div>
+              <Label htmlFor="location">Location</Label>
+              <Input
+                id="location"
+                name="location"
+                placeholder="City, State"
+                value={values.location || ""}
+                onChange={handleChange}
+                onBlur={handleBlur}
+              />
+            </div>
 
-          <div>
-            <Label>Skills (Hit Enter to add)</Label>
-            <ChipInput
-              placeholder="Hit Enter to Add"
-              fullWidth={true}
-              value={values.skills}
-              onChange={(skills) => setFieldValue("skills", skills)}
-              onSuggestionClick={(suggestion) => {
-                setFieldValue("skills", [...(values.skills || []), suggestion]);
-              }}
-            />
+            <div>
+              <Label>Skills (Hit Enter to add)</Label>
+              <ChipInput
+                placeholder="Hit Enter to Add"
+                fullWidth={true}
+                value={values.skills}
+                onChange={(skills: any) => setFieldValue("skills", skills)}
+                onSuggestionClick={(suggestion: any) => {
+                  setFieldValue("skills", [
+                    ...(values.skills || []),
+                    suggestion,
+                  ]);
+                }}
+              />
+            </div>
           </div>
         </div>
-        <div className="flex-1 ">
-          <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="advanced-filters">
-              <AccordionTrigger>Advanced Filters</AccordionTrigger>
-              <AccordionContent>
-                <div className="space-y-4 pt-2">
-                  <div>
-                    <Label>Created Date Range</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <Label className="text-xs">From</Label>
-                        {/* FROM Date Picker */}
-                      </div>
-                      <div>
-                        <Label className="text-xs">To</Label>
-                        {/* TO Date Picker */}
-                      </div>
-                    </div>
-                  </div>
 
-                  <div>
-                    <Label htmlFor="logicOperator">Logic Operator</Label>
-                    <Select
-                      name="logicOperator"
-                      value={values.logicOperator || "$and"}
-                      onValueChange={(value) =>
-                        setFieldValue("logicOperator", value)
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select logic operator" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="$and">
-                          AND (Match all filters)
-                        </SelectItem>
-                        <SelectItem value="$or">
-                          OR (Match any filter)
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </div>
-      </div>
-
-      <div className="flex flex-row gap-6 w-[50%]">
-        <div className="flex flex-col-3 gap-4 justify-between">
-          <div className="space-y-2 ">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-3">
+          <div className="space-y-2">
             <Label>Expected CTC Range</Label>
             <div className="grid grid-cols-2 gap-2">
               <Input
@@ -179,7 +197,7 @@ export function SearchFilters() {
             </div>
           </div>
 
-          <div className="space-y-2 ">
+          <div className="space-y-2">
             <Label>Current CTC Range</Label>
             <div className="grid grid-cols-2 gap-2">
               <Input
@@ -213,7 +231,7 @@ export function SearchFilters() {
             </div>
           </div>
 
-          <div className="space-y-2 ">
+          <div className="space-y-2">
             <Label>Experience Range (Years)</Label>
             <div className="grid grid-cols-2 gap-2">
               <Input
@@ -247,9 +265,295 @@ export function SearchFilters() {
             </div>
           </div>
         </div>
-        
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-3">
+          <div className="relative">
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="advanced-filters">
+                <AccordionTrigger>Advanced Filters</AccordionTrigger>
+                <AccordionContent>
+                  <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg p-4 z-10">
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Created Date Range</Label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-xs">From</Label>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  className="w-full justify-start text-left font-normal"
+                                >
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
+                                  {values.createdAfter ? (
+                                    format(new Date(values.createdAfter), "PPP")
+                                  ) : (
+                                    <span>Pick a date</span>
+                                  )}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                  mode="single"
+                                  selected={
+                                    values.createdAfter
+                                      ? new Date(values.createdAfter)
+                                      : undefined
+                                  }
+                                  onSelect={(date) =>
+                                    setFieldValue(
+                                      "createdAfter",
+                                      date ? date.toISOString() : ""
+                                    )
+                                  }
+                                  initialFocus
+                                  footer={
+                                    <CalendarClearFooter
+                                      value={values?.createdAfter as string}
+                                      onClear={() =>
+                                        setFieldValue("createdAfter", "")
+                                      }
+                                    />
+                                  }
+                                />
+                              </PopoverContent>
+                            </Popover>
+                            {errors.createdAfter && (
+                              <p className="text-xs text-destructive mt-1">
+                                {errors.createdAfter}
+                              </p>
+                            )}
+                          </div>
+                          <div>
+                            <Label className="text-xs">To</Label>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  className="w-full justify-start text-left font-normal"
+                                >
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
+                                  {values.createdBefore ? (
+                                    format(
+                                      new Date(values.createdBefore),
+                                      "PPP"
+                                    )
+                                  ) : (
+                                    <span>Pick a date</span>
+                                  )}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                  mode="single"
+                                  selected={
+                                    values.createdBefore
+                                      ? new Date(values.createdBefore)
+                                      : undefined
+                                  }
+                                  onSelect={(date) =>
+                                    setFieldValue(
+                                      "createdBefore",
+                                      date ? date.toISOString() : ""
+                                    )
+                                  }
+                                  initialFocus
+                                  footer={
+                                    <CalendarClearFooter
+                                      value={values?.createdBefore as string}
+                                      onClear={() =>
+                                        setFieldValue("createdBefore", "")
+                                      }
+                                    />
+                                  }
+                                />
+                              </PopoverContent>
+                            </Popover>
+                            {errors.createdBefore && (
+                              <p className="text-xs text-destructive mt-1">
+                                {errors.createdBefore}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="logicOperator">Logic Operator</Label>
+                        <Select
+                          name="logicOperator"
+                          value={values.logicOperator || "$and"}
+                          onValueChange={(value) =>
+                            setFieldValue("logicOperator", value)
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select logic operator" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="$and">
+                              AND (Match all filters)
+                            </SelectItem>
+                            <SelectItem value="$or">
+                              OR (Match any filter)
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
+
+          <div className="space-y-2 mt-3">
+            <div className="flex items-center justify-between">
+              <Dialog
+                open={isMetaFieldsModalOpen}
+                onOpenChange={setIsMetaFieldsModalOpen}
+              >
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Settings className="h-4 w-4" />
+                    Configure Meta Fields
+                    {cols.length > 0 && (
+                      <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                        {cols.length}
+                      </span>
+                    )}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-5xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Configure Meta Fields</DialogTitle>
+                    <DialogDescription>
+                      Add and configure custom fields for advanced filtering.
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  <div className="space-y-4 py-4">
+                    <div className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
+                      <div>
+                        <Label className="text-sm font-medium">Field</Label>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium">Value</Label>
+                      </div>
+                    </div>
+
+                    {cols.length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        <Settings className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>No meta fields configured yet.</p>
+                        <p className="text-sm">
+                          Click the + button to add your first field.
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="space-y-4">
+                      {cols.map((col) => (
+                        <div key={col.id as any}>
+                          <div className="grid grid-cols-[200px_1fr_auto] gap-4 items-start">
+                            {/* Field dropdown */}
+                            <Select
+                              value={col.fieldId as string}
+                              onValueChange={(fieldId) =>
+                                updateSelectedMetaFields(
+                                  fieldId as string,
+                                  col.id as string
+                                )
+                              }
+                            >
+                              <SelectTrigger className="h-9">
+                                <SelectValue placeholder="Select field" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {metaFields?.map((field) => (
+                                  <SelectItem key={field.id} value={field.id}>
+                                    {field.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+
+                            {/* Value input */}
+                            <div className="flex items-center min-h-9 w-full">
+                              <RenderFieldInFilter
+                                label={col.label as string}
+                                type={col?.type as string}
+                                options={col?.options as string[]}
+                                value={
+                                  col.value as
+                                    | string
+                                    | string[]
+                                    | boolean
+                                    | Dayjs
+                                    | [Dayjs, Dayjs]
+                                    | undefined
+                                }
+                                onChange={(value) =>
+                                  updateColValue(
+                                    col.id as string,
+                                    value as string
+                                  )
+                                }
+                                onBlur={(value) =>
+                                  updateColValue(
+                                    col.id as string,
+                                    value as string
+                                  )
+                                }
+                                
+
+                              />
+                            </div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-8 w-8 p-0 text-red-500 hover:text-red-700 self-start"
+                              onClick={() => removeMetaField(col.id as string)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <DialogFooter className="gap-2">
+                    <Button type="button" size="sm" onClick={addMetaField}>
+                      Add Fields <Plus className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setCols([])}
+                      disabled={cols.length === 0}
+                    >
+                      Clear All
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsMetaFieldsModalOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    {/* <Button type="button" onClick={applyMetaFields}>
+                      Apply Filters
+                    </Button> */}
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
+        </div>
       </div>
-      
     </>
   );
 }
