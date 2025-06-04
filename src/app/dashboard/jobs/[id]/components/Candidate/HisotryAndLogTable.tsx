@@ -17,7 +17,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import useRoles from "@/hooks/useRoles";
 
 export const HistoryAndLogTable: React.FC<{
   candidate: Candidate;
