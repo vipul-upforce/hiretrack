@@ -333,7 +333,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Search Input and Filter Button */}
-      <div className="mt-6 flex gap-2 items-center">
+      <div className="mt-6 flex gap-2 items-center justify-end gap-4" >
         <Input
           placeholder="Search assignments..."
           value={searchText}
@@ -349,10 +349,11 @@ export default function DashboardPage() {
             }
           }}
         />
+        <div className="flex gap-4">
         <Button onClick={applyFilter}>Filter</Button>
         {(user?.role === "admin" || user?.role === "hr") && (
           <MultiSelect
-            placeholder="Assign to"
+            placeholder="Assigned"
             open={open}
             setOpen={setOpen}
             value={selectedAssignedTo}
@@ -360,6 +361,7 @@ export default function DashboardPage() {
             options={options}
           />
         )}
+        </div>
       </div>
 
       {shouldShowAssignments ? (
