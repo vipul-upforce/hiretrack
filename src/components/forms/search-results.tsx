@@ -44,7 +44,7 @@ interface SearchResultsProps {
   sortDirection: "asc" | "desc";
   onSort: (field: string) => void;
   refetch: () => Promise<void>;
-  totalResultsCount?:number
+  totalResultsCount?: number;
 }
 
 export function SearchResults({
@@ -57,20 +57,24 @@ export function SearchResults({
   sortDirection,
   onSort,
   refetch,
-  totalResultsCount
+  totalResultsCount,
 }: SearchResultsProps) {
-  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
+  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(
+    null
+  );
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
-    name: true,
-    skills: true,
-    location: true,
-    expectedCTC: true,
-    currentCTC: true,
-    experience: true,
-    createdAt: true,
-  });
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
+    {
+      name: true,
+      skills: true,
+      location: true,
+      expectedCTC: true,
+      currentCTC: true,
+      experience: true,
+      createdAt: true,
+    }
+  );
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat("en-US", {
@@ -141,7 +145,10 @@ export function SearchResults({
             <TableHeader>
               <TableRow>
                 {visibleColumns.name && (
-                  <TableHead className="cursor-pointer" onClick={() => onSort("name")}>
+                  <TableHead
+                    className="cursor-pointer"
+                    onClick={() => onSort("name")}
+                  >
                     <div className="flex items-center">
                       Name
                       {getSortIcon("name")}
@@ -150,7 +157,10 @@ export function SearchResults({
                 )}
                 {visibleColumns.skills && <TableHead>Skills</TableHead>}
                 {visibleColumns.location && (
-                  <TableHead className="cursor-pointer" onClick={() => onSort("location")}>
+                  <TableHead
+                    className="cursor-pointer"
+                    onClick={() => onSort("location")}
+                  >
                     <div className="flex items-center">
                       Location
                       {getSortIcon("location")}
@@ -158,7 +168,10 @@ export function SearchResults({
                   </TableHead>
                 )}
                 {visibleColumns.expectedCTC && (
-                  <TableHead className="cursor-pointer" onClick={() => onSort("expectedCTC")}>
+                  <TableHead
+                    className="cursor-pointer"
+                    onClick={() => onSort("expectedCTC")}
+                  >
                     <div className="flex items-center">
                       ECTC
                       {getSortIcon("expectedCTC")}
@@ -166,7 +179,10 @@ export function SearchResults({
                   </TableHead>
                 )}
                 {visibleColumns.currentCTC && (
-                  <TableHead className="cursor-pointer" onClick={() => onSort("currentCTC")}>
+                  <TableHead
+                    className="cursor-pointer"
+                    onClick={() => onSort("currentCTC")}
+                  >
                     <div className="flex items-center">
                       CCTC
                       {getSortIcon("currentCTC")}
@@ -174,7 +190,10 @@ export function SearchResults({
                   </TableHead>
                 )}
                 {visibleColumns.experience && (
-                  <TableHead className="cursor-pointer" onClick={() => onSort("experience")}>
+                  <TableHead
+                    className="cursor-pointer"
+                    onClick={() => onSort("experience")}
+                  >
                     <div className="flex items-center">
                       Exp
                       {getSortIcon("experience")}
@@ -182,7 +201,10 @@ export function SearchResults({
                   </TableHead>
                 )}
                 {visibleColumns.createdAt && (
-                  <TableHead className="cursor-pointer" onClick={() => onSort("createdAt")}>
+                  <TableHead
+                    className="cursor-pointer"
+                    onClick={() => onSort("createdAt")}
+                  >
                     <div className="flex items-center">
                       Applied
                       {getSortIcon("createdAt")}
@@ -201,25 +223,37 @@ export function SearchResults({
                   }}
                 >
                   {visibleColumns.name && (
-                    <TableCell className="font-medium">{candidate.name}</TableCell>
+                    <TableCell className="font-medium">
+                      {candidate.name}
+                    </TableCell>
                   )}
                   {visibleColumns.skills && (
                     <TableCell className="w-[50%]">
                       <div className="flex flex-wrap gap-1">
                         {candidate.skills.map((skill: string) => (
-                          <Badge key={skill} variant="outline" className="text-xs">
+                          <Badge
+                            key={skill}
+                            variant="outline"
+                            className="text-xs"
+                          >
                             {skill}
                           </Badge>
                         ))}
                       </div>
                     </TableCell>
                   )}
-                  {visibleColumns.location && <TableCell>{candidate.location}</TableCell>}
+                  {visibleColumns.location && (
+                    <TableCell>{candidate.location}</TableCell>
+                  )}
                   {visibleColumns.expectedCTC && (
-                    <TableCell>{formatCurrency(candidate?.expectedCTC ?? 0)}</TableCell>
+                    <TableCell>
+                      {formatCurrency(candidate?.expectedCTC ?? 0)}
+                    </TableCell>
                   )}
                   {visibleColumns.currentCTC && (
-                    <TableCell>{formatCurrency(candidate?.currentCTC ?? 0)}</TableCell>
+                    <TableCell>
+                      {formatCurrency(candidate?.currentCTC ?? 0)}
+                    </TableCell>
                   )}
                   {visibleColumns.experience && (
                     <TableCell>{candidate.experience} years</TableCell>
@@ -259,7 +293,10 @@ export function SearchResults({
                     1,
                     currentPage - Math.floor(maxPagesToShow / 2)
                   );
-                  const endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+                  const endPage = Math.min(
+                    totalPages,
+                    startPage + maxPagesToShow - 1
+                  );
 
                   const pages = [];
                   for (let i = startPage; i <= endPage; i++) {
@@ -280,7 +317,9 @@ export function SearchResults({
 
                 <PaginationItem>
                   <PaginationNext
-                    onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+                    onClick={() =>
+                      onPageChange(Math.min(totalPages, currentPage + 1))
+                    }
                     className={
                       currentPage === totalPages
                         ? "pointer-events-none opacity-50"
@@ -290,8 +329,12 @@ export function SearchResults({
                 </PaginationItem>
               </PaginationContent>
             </Pagination>
-            <PaginationInfo total={totalResultsCount as number} page={currentPage} perPage={itemsPerPage} className="flex justify-center mt-3"/>
-
+            <PaginationInfo
+              total={totalResultsCount as number}
+              page={currentPage}
+              perPage={itemsPerPage}
+              className="flex justify-center mt-3"
+            />
           </div>
         )}
       </Card>

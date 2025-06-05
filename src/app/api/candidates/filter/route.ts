@@ -1,17 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { History } from "@/lib/mongodb";
+import connectToDatabase from "@/lib/mongodb";
 import { Candidate } from "@/lib/mongodb";
+import dayjs from "dayjs";
 
-interface QueryCondition {
-  $regex?: string;
-  $options?: string;
-  $gte?: number | Date;
-  $lte?: number | Date;
-}
 
-interface Query {
-  [key: string]: Array<Record<string, QueryCondition | string>>;
-}
 
 // export async function POST(request: NextRequest) {
 //   try {
@@ -267,19 +259,43 @@ export async function POST(request: NextRequest) {
     if (customFields && typeof customFields === "object") {
       Object.entries(customFields).forEach(([key, value]) => {
         const fieldPath = `customFields.${key}`;
-        
-        if (typeof value === "string" && value.trim() !== "") {
+
+        // ✅ Handle value as a date/time range
+        if (
+          Array.isArray(value) &&
+          value.length === 2 &&
+          value[0] &&
+          value[1] &&
+          dayjs(value[0]).isValid() &&
+          dayjs(value[1]).isValid()
+        ) {
+          const start = dayjs(value[0]).toDate();
+          const end = dayjs(value[1]).toDate();
+
+          query[logicOperator].push({
+            [fieldPath]: {
+              $gte: start.toISOString(),
+              $lte: end.toISOString(),
+            },
+          });
+        }
+
+        // ✅ Handle single string (text match)
+        else if (typeof value === "string" && value.trim() !== "") {
           query[logicOperator].push({
             [fieldPath]: {
               $regex: value,
-              $options: "i", // case-insensitive
+              $options: "i",
             },
           });
-        } else if (Array.isArray(value) && value.length > 0) {
+        }
+
+        // ✅ Handle multi-select (array of strings)
+        else if (Array.isArray(value) && value.length > 0) {
           const regexArray = value
             .filter((v) => typeof v === "string" && v.trim() !== "")
             .map((v) => new RegExp(v, "i"));
-    
+
           if (regexArray.length > 0) {
             query[logicOperator].push({
               [fieldPath]: {
@@ -291,16 +307,14 @@ export async function POST(request: NextRequest) {
       });
     }
 
-   console.log('query :>> ', query);
-    
     if (!Candidate) {
       throw new Error("Candidate model is not available");
     }
-   
+
     const candidatesResult = await Candidate.aggregate([
       { $match: query },
       { $sort: { "tracking.createdAt": -1 } },
-    
+
       // 🧠 Use $facet to run two pipelines: paginated data and total count
       {
         $facet: {
@@ -351,7 +365,9 @@ export async function POST(request: NextRequest) {
                   jobId: { $toString: "$jobId" },
                   candidateId: { $toString: "$_id" },
                 },
-                pipeline: [/* your full pipeline for histories */],
+                pipeline: [
+                  /* your full pipeline for histories */
+                ],
                 as: "history",
               },
             },
@@ -373,7 +389,7 @@ export async function POST(request: NextRequest) {
                 attachments: 1,
                 currentCTC: 1,
                 expectedCTC: 1,
-                customFields:1,
+                customFields: 1,
                 tracking: 1,
                 history: { $arrayElemAt: ["$history.history", 0] },
                 assignment: {
@@ -391,14 +407,11 @@ export async function POST(request: NextRequest) {
               },
             },
           ],
-          totalCount: [
-            { $count: "count" }
-          ],
+          totalCount: [{ $count: "count" }],
         },
       },
     ]);
-    
-    
+
     // const candidates = await Candidate.aggregate([
     //   { $match: query },
     //   { $sort: { "tracking.createdAt": -1 } },
@@ -418,11 +431,11 @@ export async function POST(request: NextRequest) {
     //       as: "interviewer",
     //     },
     //   },
-    //   { 
-    //     $unwind: { 
+    //   {
+    //     $unwind: {
     //       path: "$interviewer",
-    //       preserveNullAndEmptyArrays: true 
-    //     } 
+    //       preserveNullAndEmptyArrays: true
+    //     }
     //   },
     //   {
     //     $lookup: {
@@ -432,11 +445,11 @@ export async function POST(request: NextRequest) {
     //       as: "job",
     //     },
     //   },
-    //   { 
-    //     $unwind: { 
+    //   {
+    //     $unwind: {
     //       path: "$job",
     //       preserveNullAndEmptyArrays: true
-    //     } 
+    //     }
     //   },
     //   {
     //     $lookup: {
@@ -569,11 +582,11 @@ export async function POST(request: NextRequest) {
     //             _id: "$_id",
     //             jobId: { $first: "$jobId" },
     //             candidateId: { $first: "$candidateId" },
-    //             history: { 
+    //             history: {
     //               $push: {
     //                 $mergeObjects: [
     //                   "$history",
-    //                   { title: "$history.title" } 
+    //                   { title: "$history.title" }
     //                 ]
     //               }
     //             },
@@ -583,7 +596,7 @@ export async function POST(request: NextRequest) {
     //       as: "history",
     //     },
     //   },
-    
+
     //   {
     //     $project: {
     //       _id: 1,
@@ -619,12 +632,10 @@ export async function POST(request: NextRequest) {
     //     },
     //   },
     // ]);
-    
-  
 
     const paginatedData = candidatesResult[0]?.paginatedData || [];
     const totalCount = candidatesResult[0]?.totalCount[0]?.count || 0;
-    
+
     return NextResponse.json({
       candidates: paginatedData,
       pagination: {
@@ -634,7 +645,6 @@ export async function POST(request: NextRequest) {
         totalPages: Math.ceil(totalCount / limit),
       },
     });
-    
   } catch (error: unknown) {
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

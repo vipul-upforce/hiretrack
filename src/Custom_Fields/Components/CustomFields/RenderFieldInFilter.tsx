@@ -4,8 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import Radio from "@mui/material/Radio";
 import RadioGroup from "@mui/material/RadioGroup";
 import FormControlLabel from "@mui/material/FormControlLabel";
-import FormControl from "@mui/material/FormControl";
-import { Checkbox, FormGroup } from "@mui/material";
+import { Checkbox } from "@mui/material";
 import dayjs, { Dayjs } from "dayjs";
 import { FileDropZone } from "@/components/ui/file-drop-zone";
 import { ChipInput } from "@/components/ui/chip-input";
@@ -19,8 +18,16 @@ import {
 import { DateTimePicker } from "@/components/ui/DateTimePicker";
 import PasswordField from "@/components/ui/PasswordField";
 import TimePicker from "@/components/ui/time-picker";
-import DatePicker from "@/components/ui/datepicker";
 import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Label } from "@/components/ui/label";
 
 interface FileData {
   base64: string;
@@ -32,14 +39,32 @@ interface FileData {
 interface RenderFieldProps {
   label: string;
   type: string;
-  value: string | string[] | boolean | FileData[] | Dayjs | [Dayjs, Dayjs] | undefined;
-  onChange?: (value: string | string[] | boolean | FileData[] | Dayjs | [Dayjs, Dayjs]) => void;
-  onBlur?: (value: string | string[] | boolean | FileData[] | Dayjs | [Dayjs, Dayjs] |Date) => void;
+  value:
+    | string
+    | string[]
+    | boolean
+    | FileData[]
+    | Dayjs
+    | [Dayjs, Dayjs]
+    | undefined;
+  onChange?: (
+    value: string | string[] | boolean | FileData[] | Dayjs | [Dayjs, Dayjs]
+  ) => void;
+  onBlur?: (
+    value:
+      | string
+      | string[]
+      | boolean
+      | FileData[]
+      | Dayjs
+      | [Dayjs, Dayjs]
+      | Date
+  ) => void;
   options?: string[];
   error?: string;
   min?: Dayjs | [Dayjs, Dayjs] | undefined;
   max?: Dayjs | [Dayjs, Dayjs] | undefined;
-  name?:string
+  name?: string;
 }
 
 const fileToBase64 = (file: File): Promise<string> => {
@@ -57,21 +82,24 @@ export const RenderFieldInFilter = ({
   value,
   onChange,
   onBlur,
-  options=[],
+  options = [],
   error,
   min,
   max,
-  name
+  name,
 }: RenderFieldProps) => {
-    console.log('type :>> ', type);
   switch (type) {
     case "text":
       return (
         <Input
           id={label}
           value={value as string}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange?.(e.target.value)}
-          onBlur={(e: React.ChangeEvent<HTMLInputElement>) => onBlur?.(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            onChange?.(e.target.value)
+          }
+          onBlur={(e: React.ChangeEvent<HTMLInputElement>) =>
+            onBlur?.(e.target.value)
+          }
           placeholder={`Enter ${label}`}
         />
       );
@@ -80,8 +108,12 @@ export const RenderFieldInFilter = ({
       return (
         <PasswordField
           value={value as string}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange?.(e.target.value)}
-          onBlur={(e: React.ChangeEvent<HTMLInputElement>) => onBlur?.(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            onChange?.(e.target.value)
+          }
+          onBlur={(e: React.ChangeEvent<HTMLInputElement>) =>
+            onBlur?.(e.target.value)
+          }
           name={name as string}
         />
       );
@@ -92,8 +124,12 @@ export const RenderFieldInFilter = ({
           type="number"
           id={label}
           value={value as string}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange?.(e.target.value)}
-         onBlur={(e: React.ChangeEvent<HTMLInputElement>) => onBlur?.(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            onChange?.(e.target.value)
+          }
+          onBlur={(e: React.ChangeEvent<HTMLInputElement>) =>
+            onBlur?.(e.target.value)
+          }
           placeholder={`Enter ${label} in numbers`}
         />
       );
@@ -103,8 +139,12 @@ export const RenderFieldInFilter = ({
         <Textarea
           id={label}
           value={value as string}
-          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => onChange?.(e.target.value)}
-          onBlur={(e: React.ChangeEvent<HTMLTextAreaElement>) => onBlur?.(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+            onChange?.(e.target.value)
+          }
+          onBlur={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+            onBlur?.(e.target.value)
+          }
           placeholder={`Enter ${label}`}
         />
       );
@@ -144,63 +184,99 @@ export const RenderFieldInFilter = ({
 
     case "checkbox":
       return (
-        <FormControl component="fieldset">
-          <FormGroup
-            style={{ display: "flex", flexDirection: "row", gap: "10px" }}
-          >
-            {options?.map((option) => (
-              <FormControlLabel
-                key={option}
-                control={
-                  <Checkbox
-                    checked={(value as string[])?.includes(option)}
-                    className="capitalize"
-                    onChange={(e) => {
-                      const currentValues = (value as string[]) || [];
-                      const newValues = currentValues.includes(option)
-                        ? currentValues.filter((val) => val !== option)
-                        : [...currentValues, option];
-                      onChange?.(newValues);
-                    }}
-                    name={option}
-                  />
-                }
-                label={option}
+        <div className="flex flex-row gap-4">
+          {options?.map((option, index) => (
+            <div className="flex items-center space-x-2" key={option}>
+              <Checkbox
+                name={option}
+                checked={(value as string[])?.includes(option)}
+                className="capitalize"
+                onChange={(e) => {
+                  const currentValues = (value as string[]) || [];
+                  const newValues = currentValues.includes(option)
+                    ? currentValues.filter((val) => val !== option)
+                    : [...currentValues, option];
+                  onChange?.(newValues);
+                }}
               />
-            ))}
-          </FormGroup>
-        </FormControl>
+              <Label htmlFor={`${option}-${option}-${index}`}>{option}</Label>
+            </div>
+          ))}
+        </div>
       );
 
     case "date":
       return (
         <div className="flex gap-2">
-          <DatePicker
-            value={value ? (value as [Dayjs, Dayjs])[0]?.toDate() || new Date() : new Date()}
-            onChange={(date) => {
-              const newRange = [
-                date ? dayjs(date) : undefined,
-                (value as [Dayjs, Dayjs])?.[1],
-              ] as [Dayjs, Dayjs];
-              onChange?.(newRange);
-            }}
-            onBlur={() => {}}
-            // min={min}
-            // max={max}
-          />
-          <DatePicker
-            value={value ? (value as [Dayjs, Dayjs])[1]?.toDate() || new Date() : new Date()}
-            onChange={(date) => {
-              const newRange = [
-                (value as [Dayjs, Dayjs])?.[0],
-                date ? dayjs(date) : undefined,
-              ] as [Dayjs, Dayjs];
-              onChange?.(newRange);
-            }}
-            onBlur={() => {}}
-            // min={min}
-            // max={max}
-          />
+          {/* Start Date */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full justify-start text-left font-normal"
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {value && (value as [Dayjs, Dayjs])[0] ? (
+                  format((value as [Dayjs, Dayjs])[0].toDate(), "PPP")
+                ) : (
+                  <span>Start date</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={
+                  value && (value as [Dayjs, Dayjs])[0]
+                    ? (value as [Dayjs, Dayjs])[0].toDate()
+                    : undefined
+                }
+                onSelect={(date) => {
+                  const newRange = [
+                    date ? dayjs(date) : undefined,
+                    (value as [Dayjs, Dayjs])?.[1],
+                  ] as [Dayjs, Dayjs];
+                  onChange?.(newRange);
+                }}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+
+          {/* End Date */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full justify-start text-left font-normal"
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {value && (value as [Dayjs, Dayjs])[1] ? (
+                  format((value as [Dayjs, Dayjs])[1].toDate(), "PPP")
+                ) : (
+                  <span>End date</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={
+                  value && (value as [Dayjs, Dayjs])[1]
+                    ? (value as [Dayjs, Dayjs])[1].toDate()
+                    : undefined
+                }
+                onSelect={(date) => {
+                  const newRange = [
+                    (value as [Dayjs, Dayjs])?.[0],
+                    date ? dayjs(date) : undefined,
+                  ] as [Dayjs, Dayjs];
+                  onChange?.(newRange);
+                }}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
         </div>
       );
 
@@ -210,7 +286,10 @@ export const RenderFieldInFilter = ({
           <TimePicker
             value={(value as [string, string])?.[0] || ""}
             onChange={(time) => {
-              const newRange = [time, (value as [string, string])?.[1] || ""] as [string, string];
+              const newRange = [
+                time,
+                (value as [string, string])?.[1] || "",
+              ] as [string, string];
               onChange?.(newRange);
             }}
             onBlur={() => {}}
@@ -219,12 +298,14 @@ export const RenderFieldInFilter = ({
           <TimePicker
             value={(value as [string, string])?.[1] || ""}
             onChange={(time) => {
-              const newRange = [(value as [string, string])?.[0] || "", time] as [string, string];
+              const newRange = [
+                (value as [string, string])?.[0] || "",
+                time,
+              ] as [string, string];
               onChange?.(newRange);
             }}
             onBlur={() => {}}
             name={name as string}
-
           />
         </div>
       );
@@ -235,10 +316,10 @@ export const RenderFieldInFilter = ({
           <DateTimePicker
             value={value ? (value as [Dayjs, Dayjs])[0] : undefined}
             onChange={(date) => {
-              const newRange = [
-                date,
-                (value as [Dayjs, Dayjs])?.[1],
-              ] as [Dayjs, Dayjs];
+              const newRange = [date, (value as [Dayjs, Dayjs])?.[1]] as [
+                Dayjs,
+                Dayjs,
+              ];
               onChange?.(newRange);
             }}
             onBlur={() => {}}
@@ -248,10 +329,10 @@ export const RenderFieldInFilter = ({
           <DateTimePicker
             value={value ? (value as [Dayjs, Dayjs])[1] : undefined}
             onChange={(date) => {
-              const newRange = [
-                (value as [Dayjs, Dayjs])?.[0],
-                date,
-              ] as [Dayjs, Dayjs];
+              const newRange = [(value as [Dayjs, Dayjs])?.[0], date] as [
+                Dayjs,
+                Dayjs,
+              ];
               onChange?.(newRange);
             }}
             onBlur={() => {}}
@@ -263,43 +344,27 @@ export const RenderFieldInFilter = ({
 
     case "radio":
       return (
-        <FormControl className="flex">
-          <RadioGroup
-            value={value as string}
-            onChange={(e) => onChange?.(e.target.value)}
-            onBlur={() => {}}
-            name={label}
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              gap: "10px",
-            }}
-          >
-            {options?.map((option) => (
-              <FormControlLabel
-                key={option}
-                className="capitalize"
-                value={option}
-                control={<Radio />}
-                label={option}
-              />
-            ))}
-          </RadioGroup>
-          <Button
-            style={{
-              marginLeft: "-10px",
-              color: "rgb(121, 121, 121)",
-              display: "contents",
-            }}
-            variant="link"
-            onClick={(e) => {
-              e.preventDefault();
-              onChange?.("");
-            }}
-          >
-            Clear
-          </Button>
-        </FormControl>
+        <RadioGroup
+          value={value as string}
+          onChange={(e) => onChange?.(e.target.value)}
+          onBlur={() => {}}
+          name={label}
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            gap: "10px",
+          }}
+        >
+          {options?.map((option) => (
+            <FormControlLabel
+              key={option}
+              className="capitalize"
+              value={option}
+              control={<Radio />}
+              label={option}
+            />
+          ))}
+        </RadioGroup>
       );
 
     case "file":
@@ -329,7 +394,8 @@ export const RenderFieldInFilter = ({
                 })
               );
               const fileNames = base64Files.map((file) => file.name);
-              const hasDuplicates = new Set(fileNames).size !== fileNames.length;
+              const hasDuplicates =
+                new Set(fileNames).size !== fileNames.length;
               if (hasDuplicates) {
                 return;
               }
@@ -362,7 +428,7 @@ export const RenderFieldInFilter = ({
                 .filter((option) => option.length > 0)
             );
           }}
-        //   onBlur={onBlur}
+          //   onBlur={onBlur}
           placeholder={`Enter ${label}`}
           onSuggestionClick={(suggestion) => {
             const currentValues = (value as string[]) || [];

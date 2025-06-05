@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/dialog";
 import { v4 as uuidv4 } from "uuid";
 import { format } from "date-fns";
-import { CalendarIcon, Plus, X, Settings } from "lucide-react";
+import { CalendarIcon, Plus, Settings, Trash2 } from "lucide-react";
 import { SearchFilter } from "./candidate-search";
 import { ChipInput } from "../ui/chip-input";
 import { CalendarClearFooter } from "../calendar/CalendarClearFooter";
@@ -44,7 +44,11 @@ import { CustomField, FormObject } from "@/Custom_Fields/Types/CustomField";
 import { RenderFieldInFilter } from "@/Custom_Fields/Components/CustomFields/RenderFieldInFilter";
 import { Dayjs } from "dayjs";
 
-export function SearchFilters() {
+export function SearchFilters({
+  handleSearch,
+}: {
+  handleSearch: (values: SearchFilter) => void;
+}) {
   const [metaFields, setMetaFields] = useState<CustomField[] | []>([]);
   const [cols, setCols] = useState<
     Record<string, string | number | boolean | string[]>[]
@@ -69,42 +73,10 @@ export function SearchFilters() {
     })();
   }, [user]);
 
-  // const updateSelectedMetaFields = (fieldId: string, colId: string) => {
-  //   if (!fieldId) return;
-
-  //   const selectedField = metaFields.find((field) => field.id === fieldId);
-  //   if (!selectedField) return;
-
-  //   setCols((prevCols) => {
-  //     const existsElsewhere = prevCols.some(
-  //       (col) => col.fieldId === fieldId && col.id !== colId
-  //     );
-  //     if (existsElsewhere) {
-  //       console.log(`FieldId "${fieldId}" already assigned to another column.`);
-  //       return prevCols;
-  //     }
-  //     return prevCols.map((col) =>
-  //       col.id === colId
-  //         ? {
-  //             ...col,
-  //             fieldId: fieldId,
-  //             label: selectedField.label,
-  //             type: selectedField.type,
-  //             options: selectedField.options as string[],
-  //             name: selectedField.label,
-  //           }
-  //         : col
-  //     );
-  //   });
-  // };
-  
   const updateSelectedMetaFields = (fieldId: string, colId: string) => {
     if (!fieldId) return;
-  
     const selectedField = metaFields.find((f) => f.id === fieldId);
     if (!selectedField) return;
-  
-    // First check if fieldId already assigned to another column
     const existsElsewhere = cols.some(
       (col) => col.fieldId === fieldId && col.id !== colId
     );
@@ -112,8 +84,6 @@ export function SearchFilters() {
       console.log(`FieldId "${fieldId}" already assigned elsewhere.`);
       return;
     }
-  
-    // Compute newCols before calling setCols
     const newCols = cols.map((col) =>
       col.id === colId
         ? {
@@ -129,16 +99,11 @@ export function SearchFilters() {
     );
     setCols(newCols);
     setFieldValue(
-    "customFields",
-    Object.fromEntries(newCols.map(({ label, value }) => [label, value]))
-  );
+      "customFields",
+      Object.fromEntries(newCols.map(({ label, value }) => [label, value]))
+    );
   };
-  
 
-
-  console.log('values :>> ', values);
-  console.log('cols :>> ', cols);
-  
   const addMetaField = () => {
     setCols((prev) => [
       ...prev,
@@ -150,7 +115,6 @@ export function SearchFilters() {
     setCols((prev) => prev.filter((item) => item.id !== id));
   };
 
-
   const updateColValue = (id: string, value: string) => {
     const newCols = cols.map((col) =>
       col.id === id ? { ...col, value: value } : col
@@ -161,7 +125,7 @@ export function SearchFilters() {
       Object.fromEntries(newCols.map(({ label, value }) => [label, value]))
     );
   };
-  
+
   return (
     <>
       <div className="p-6 mx-auto">
@@ -462,9 +426,9 @@ export function SearchFilters() {
                 onOpenChange={setIsMetaFieldsModalOpen}
               >
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2">
+                  <Button variant="outline" className="gap-2">
                     <Settings className="h-4 w-4" />
-                    Configure Meta Fields
+                    Advance filter with Meta Fields
                     {cols.length > 0 && (
                       <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
                         {cols.length}
@@ -472,7 +436,7 @@ export function SearchFilters() {
                     )}
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-5xl max-h-[80vh] overflow-y-auto">
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
                   <DialogHeader>
                     <DialogTitle>Configure Meta Fields</DialogTitle>
                     <DialogDescription>
@@ -480,101 +444,120 @@ export function SearchFilters() {
                     </DialogDescription>
                   </DialogHeader>
 
-                  <div className="space-y-4 py-4">
-                    <div className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
-                      <div>
-                        <Label className="text-sm font-medium">Field</Label>
+                  <div className="flex-1 overflow-y-auto">
+                    <hr />
+                    <div className="rounded-lg p-4">
+                      <div className="grid grid-cols-[200px_1fr_2px_0px] gap-4 mb-4">
+                        <Label className="font-semibold">Field</Label>
+                        <Label className="font-semibold">Value</Label>
+                        <div></div>
                       </div>
-                      <div>
-                        <Label className="text-sm font-medium">Value</Label>
-                      </div>
-                    </div>
 
-                    {cols.length === 0 && (
-                      <div className="text-center py-8 text-gray-500">
-                        <Settings className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p>No meta fields configured yet.</p>
-                        <p className="text-sm">
-                          Click the + button to add your first field.
-                        </p>
-                      </div>
-                    )}
-
-                    <div className="space-y-4">
-                      {cols.map((col) => (
-                        <div key={col.id as any}>
-                          <div className="grid grid-cols-[200px_1fr_auto] gap-4 items-start">
-                            <Select
-                              value={col.fieldId as string}
-                              onValueChange={(fieldId) =>
-                                updateSelectedMetaFields(
-                                  fieldId as string,
-                                  col.id as string
-                                )
-                              }
+                      <div className="space-y-4">
+                        {cols.map((col, index) => (
+                          <div key={col.id as string}>
+                            <div
+                              key={col.id as string}
+                              className="grid grid-cols-[200px_1fr_2px_0px] gap-4 items-start"
                             >
-                              <SelectTrigger className="h-9">
-                                <SelectValue placeholder="Select field" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {metaFields?.map((field) => (
-                                  <SelectItem key={field.id} value={field.id}>
-                                    {field.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <div className="flex items-center min-h-9 w-full">
-                              <RenderFieldInFilter
-                                label={col.label as string}
-                                type={col?.type as string}
-                                options={col?.options as string[]}
-                                value={
-                                  col.value as
-                                    | string
-                                    | string[]
-                                    | boolean
-                                    | Dayjs
-                                    | [Dayjs, Dayjs]
-                                    | undefined
-                                }
-                                onChange={(value) =>
-                                  updateColValue(
-                                    col.id as string,
-                                    value as string
+                              <Select
+                                key={index}
+                                value={col.fieldId as string}
+                                onValueChange={(fieldId) =>
+                                  updateSelectedMetaFields(
+                                    fieldId as string,
+                                    col.id as string
                                   )
                                 }
-                                onBlur={(value) =>
-                                  updateColValue(
-                                    col.id as string,
-                                    value as string
-                                  )
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select field" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {metaFields?.map((field) => (
+                                    <SelectItem key={field.id} value={field.id}>
+                                      {field.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+
+                              <div className="min-h-[40px] flex items-center">
+                                <RenderFieldInFilter
+                                  label={col.label as string}
+                                  type={col?.type as string}
+                                  options={col?.options as string[]}
+                                  value={
+                                    col.value as
+                                      | string
+                                      | string[]
+                                      | boolean
+                                      | Dayjs
+                                      | [Dayjs, Dayjs]
+                                      | undefined
+                                  }
+                                  onChange={(value) =>
+                                    updateColValue(
+                                      col.id as string,
+                                      value as string
+                                    )
+                                  }
+                                  onBlur={(value) =>
+                                    updateColValue(
+                                      col.id as string,
+                                      value as string
+                                    )
+                                  }
+                                />
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 "
+                                onClick={() =>
+                                  removeMetaField(col.id as string)
                                 }
-                              />
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             </div>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-red-500 hover:text-red-700 self-start"
-                              onClick={() => removeMetaField(col.id as string)}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
+                            {index < metaFields.length - 1 && (
+                              <hr className="mt-4 border-gray-200" />
+                            )}
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   </div>
 
-                  <DialogFooter className="gap-2">
+                  <DialogFooter className="gap-2 mt-4 ">
                     <Button type="button" size="sm" onClick={addMetaField}>
                       Add Fields <Plus className="h-4 w-4" />
                     </Button>
                     <Button
                       type="button"
+                      size="sm"
                       variant="outline"
-                      onClick={() => setCols([])}
+                      onClick={() => {
+                        const trimmedValues = {
+                          ...values,
+                          name: values.name?.trim() || "",
+                          location: values.location?.trim() || "",
+                          customFields: values.customFields,
+                        };
+                        handleSearch(trimmedValues);
+                        setIsMetaFieldsModalOpen(false);
+                      }}
+                    >
+                      Apply Filter
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setCols([]);
+                        setFieldValue("customFields", {});
+                      }}
                       disabled={cols.length === 0}
                     >
                       Clear All
@@ -586,9 +569,6 @@ export function SearchFilters() {
                     >
                       Cancel
                     </Button>
-                    {/* <Button type="button" onClick={applyMetaFields}>
-                      Apply Filters
-                    </Button> */}
                   </DialogFooter>
                 </DialogContent>
               </Dialog>

@@ -14,13 +14,10 @@ import { Candidate } from "@/types/candidate";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import withAuthGuard from "../withAuthGuard";
 import { SearchSchema } from "./searchSchema";
-import CustomField from "@/Custom_Fields/Components/List/CustomField";
-
 
 export interface CandidateField {
   [key: string]: any;
 }
-
 
 export interface SearchFilter {
   name?: string;
@@ -36,11 +33,11 @@ export interface SearchFilter {
   createdBefore?: string;
   organizationId?: string;
   logicOperator?: "$and" | "$or";
-  page:number;
-  customFields?:CandidateField| null
+  page: number;
+  customFields?: CandidateField | null;
 }
 
-  export const itemsPerPage = 100;
+export const itemsPerPage = 100;
 function CandidateSearch() {
   const [searchResults, setSearchResults] = useState<Candidate[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -49,11 +46,9 @@ function CandidateSearch() {
   const [totalPages, setTotalPages] = useState(0);
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-  
+
   const { toast } = useToast();
   const [OrgID, setOrgID] = useState("");
-
-
 
   const initialValues: SearchFilter = {
     name: "",
@@ -68,8 +63,8 @@ function CandidateSearch() {
     createdAfter: "",
     createdBefore: "",
     logicOperator: "$and",
-    page:1,
-    customFields: null 
+    page: 1,
+    customFields: null,
   };
 
   const [currentFilters, setCurrentFilters] =
@@ -82,7 +77,6 @@ function CandidateSearch() {
     try {
       const response = await filterCandidates(currentFilters).unwrap();
       setSearchResults(response.candidates || []);
-
     } catch (error) {
       toast({
         title: "Error",
@@ -96,15 +90,15 @@ function CandidateSearch() {
 
   const handleSearch = async (values: SearchFilter) => {
     setIsSearching(true);
-    setCurrentFilters(values); 
+    setCurrentFilters(values);
 
     try {
       values.organizationId = OrgID ? OrgID : values.organizationId;
       const response = await filterCandidates(values).unwrap();
       setSearchResults(response.candidates || []);
-      setCurrentPage(response?.pagination?.page ||1);
-      setTotalPages(response?.pagination?.totalPages ||0);
-      setTotalRecordsCount(response?.pagination?.total)
+      setCurrentPage(response?.pagination?.page || 1);
+      setTotalPages(response?.pagination?.totalPages || 0);
+      setTotalRecordsCount(response?.pagination?.total);
     } catch (error) {
       toast({
         title: "Error",
@@ -131,7 +125,7 @@ function CandidateSearch() {
             createdBefore: "",
             logicOperator: "$and",
             organizationId: decryptedResponse.user.organizationId,
-            page:currentPage,
+            page: currentPage,
           });
         }
       }
@@ -147,27 +141,25 @@ function CandidateSearch() {
     }
   };
 
-
-  const onPageChange= async (pageNumber:number)=>
-  {
+  const onPageChange = async (pageNumber: number) => {
     const token = Cookies.get("token");
-      if (token) {
-        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-        if (decryptedResponse.success && decryptedResponse.user) {
-          setOrgID(decryptedResponse.user.organizationId);
-          handleSearch({
-            name: "",
-            skills: [],
-            location: "",
-            createdAfter: "",
-            createdBefore: "",
-            logicOperator: "$and",
-            organizationId: decryptedResponse.user.organizationId,
-            page:pageNumber
-          });
-        }
+    if (token) {
+      const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+      if (decryptedResponse.success && decryptedResponse.user) {
+        setOrgID(decryptedResponse.user.organizationId);
+        handleSearch({
+          name: "",
+          skills: [],
+          location: "",
+          createdAfter: "",
+          createdBefore: "",
+          logicOperator: "$and",
+          organizationId: decryptedResponse.user.organizationId,
+          page: pageNumber,
+        });
       }
-  }
+    }
+  };
   const sortedResults = sortField
     ? [...searchResults].sort((a, b) => {
         const aValue = a[sortField as keyof Candidate];
@@ -186,11 +178,9 @@ function CandidateSearch() {
         }
 
         // Handle cases where one value is a string and the other is a number
-        return typeof aValue === "string" ? 1 : -1; 
+        return typeof aValue === "string" ? 1 : -1;
       })
     : searchResults;
-
-
 
   return (
     <div className="space-y-6">
@@ -203,14 +193,14 @@ function CandidateSearch() {
               ...values,
               name: values.name?.trim() || "",
               location: values.location?.trim() || "",
-              customFields:values.customFields
+              customFields: values.customFields,
             };
             handleSearch(trimmedValues);
           }}
         >
           {({ resetForm, isValid, dirty }) => (
             <Form className="space-y-6">
-              <SearchFilters />
+              <SearchFilters handleSearch={handleSearch} />
 
               <div className="flex justify-end gap-3">
                 <Button
@@ -253,12 +243,3 @@ export default withAuthGuard(CandidateSearch, {
   checkAllowance: false,
   allowAuthenticated: true,
 });
-
-  // const paginatedResults = Array.isArray(sortedResults)
-  //   ? sortedResults.slice(
-  //       (currentPage - 1) * itemsPerPage,
-  //       currentPage * itemsPerPage
-  //     )
-  //   : [];
-
-  // const totalPages = Math.ceil(sortedResults.length / itemsPerPage);
