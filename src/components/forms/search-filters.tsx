@@ -69,35 +69,76 @@ export function SearchFilters() {
     })();
   }, [user]);
 
+  // const updateSelectedMetaFields = (fieldId: string, colId: string) => {
+  //   if (!fieldId) return;
+
+  //   const selectedField = metaFields.find((field) => field.id === fieldId);
+  //   if (!selectedField) return;
+
+  //   setCols((prevCols) => {
+  //     const existsElsewhere = prevCols.some(
+  //       (col) => col.fieldId === fieldId && col.id !== colId
+  //     );
+  //     if (existsElsewhere) {
+  //       console.log(`FieldId "${fieldId}" already assigned to another column.`);
+  //       return prevCols;
+  //     }
+  //     return prevCols.map((col) =>
+  //       col.id === colId
+  //         ? {
+  //             ...col,
+  //             fieldId: fieldId,
+  //             label: selectedField.label,
+  //             type: selectedField.type,
+  //             options: selectedField.options as string[],
+  //             name: selectedField.label,
+  //           }
+  //         : col
+  //     );
+  //   });
+  // };
+  
   const updateSelectedMetaFields = (fieldId: string, colId: string) => {
     if (!fieldId) return;
-
-    const selectedField = metaFields.find((field) => field.id === fieldId);
+  
+    const selectedField = metaFields.find((f) => f.id === fieldId);
     if (!selectedField) return;
-
-    setCols((prevCols) => {
-      const existsElsewhere = prevCols.some(
-        (col) => col.fieldId === fieldId && col.id !== colId
-      );
-      if (existsElsewhere) {
-        console.log(`FieldId "${fieldId}" already assigned to another column.`);
-        return prevCols;
-      }
-      return prevCols.map((col) =>
-        col.id === colId
-          ? {
-              ...col,
-              fieldId: fieldId,
-              label: selectedField.label,
-              type: selectedField.type,
-              options: selectedField.options as string[],
-              name: selectedField.label,
-            }
-          : col
-      );
-    });
+  
+    // First check if fieldId already assigned to another column
+    const existsElsewhere = cols.some(
+      (col) => col.fieldId === fieldId && col.id !== colId
+    );
+    if (existsElsewhere) {
+      console.log(`FieldId "${fieldId}" already assigned elsewhere.`);
+      return;
+    }
+  
+    // Compute newCols before calling setCols
+    const newCols = cols.map((col) =>
+      col.id === colId
+        ? {
+            ...col,
+            fieldId,
+            label: selectedField.label,
+            type: selectedField.type,
+            options: selectedField.options as string[],
+            name: selectedField.label,
+            value: col.value ?? "",
+          }
+        : col
+    );
+    setCols(newCols);
+    setFieldValue(
+    "customFields",
+    Object.fromEntries(newCols.map(({ label, value }) => [label, value]))
+  );
   };
+  
 
+
+  console.log('values :>> ', values);
+  console.log('cols :>> ', cols);
+  
   const addMetaField = () => {
     setCols((prev) => [
       ...prev,
@@ -109,11 +150,18 @@ export function SearchFilters() {
     setCols((prev) => prev.filter((item) => item.id !== id));
   };
 
+
   const updateColValue = (id: string, value: string) => {
-    setCols((prev) =>
-      prev.map((col) => (col.id === id ? { ...col, value: value } : col))
+    const newCols = cols.map((col) =>
+      col.id === id ? { ...col, value: value } : col
+    );
+    setCols(newCols);
+    setFieldValue(
+      "customFields",
+      Object.fromEntries(newCols.map(({ label, value }) => [label, value]))
     );
   };
+  
   return (
     <>
       <div className="p-6 mx-auto">
@@ -456,7 +504,6 @@ export function SearchFilters() {
                       {cols.map((col) => (
                         <div key={col.id as any}>
                           <div className="grid grid-cols-[200px_1fr_auto] gap-4 items-start">
-                            {/* Field dropdown */}
                             <Select
                               value={col.fieldId as string}
                               onValueChange={(fieldId) =>
@@ -477,8 +524,6 @@ export function SearchFilters() {
                                 ))}
                               </SelectContent>
                             </Select>
-
-                            {/* Value input */}
                             <div className="flex items-center min-h-9 w-full">
                               <RenderFieldInFilter
                                 label={col.label as string}
@@ -505,8 +550,6 @@ export function SearchFilters() {
                                     value as string
                                   )
                                 }
-                                
-
                               />
                             </div>
                             <Button

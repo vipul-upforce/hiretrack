@@ -14,6 +14,13 @@ import { Candidate } from "@/types/candidate";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import withAuthGuard from "../withAuthGuard";
 import { SearchSchema } from "./searchSchema";
+import CustomField from "@/Custom_Fields/Components/List/CustomField";
+
+
+export interface CandidateField {
+  [key: string]: any;
+}
+
 
 export interface SearchFilter {
   name?: string;
@@ -29,7 +36,8 @@ export interface SearchFilter {
   createdBefore?: string;
   organizationId?: string;
   logicOperator?: "$and" | "$or";
-  page:number
+  page:number;
+  customFields?:CandidateField| null
 }
 
   export const itemsPerPage = 100;
@@ -45,6 +53,8 @@ function CandidateSearch() {
   const { toast } = useToast();
   const [OrgID, setOrgID] = useState("");
 
+
+
   const initialValues: SearchFilter = {
     name: "",
     skills: [],
@@ -58,7 +68,8 @@ function CandidateSearch() {
     createdAfter: "",
     createdBefore: "",
     logicOperator: "$and",
-    page:1
+    page:1,
+    customFields: null 
   };
 
   const [currentFilters, setCurrentFilters] =
@@ -120,7 +131,7 @@ function CandidateSearch() {
             createdBefore: "",
             logicOperator: "$and",
             organizationId: decryptedResponse.user.organizationId,
-            page:currentPage
+            page:currentPage,
           });
         }
       }
@@ -192,6 +203,7 @@ function CandidateSearch() {
               ...values,
               name: values.name?.trim() || "",
               location: values.location?.trim() || "",
+              customFields:values.customFields
             };
             handleSearch(trimmedValues);
           }}

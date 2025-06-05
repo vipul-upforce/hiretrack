@@ -192,10 +192,11 @@ export async function POST(request: NextRequest) {
       createdAfter,
       createdBefore,
       organizationId,
+      customFields,
       logicOperator = "$or",
     } = body;
 
-    const query: Query = { [logicOperator]: [] };
+    const query: Record<string, any> = { [logicOperator]: [] };
 
     if (organizationId) {
       if (!query.$and) query.$and = [];
@@ -207,7 +208,7 @@ export async function POST(request: NextRequest) {
     if (name) {
       query[logicOperator].push({
         name: {
-          $regex: name,
+          $regex: name.trim(),
           $options: "i",
         },
       });
@@ -262,6 +263,36 @@ export async function POST(request: NextRequest) {
       if (createdBefore) dateQuery.$lte = new Date(createdBefore);
       query[logicOperator].push({ "tracking.createdAt": dateQuery });
     }
+
+    if (customFields && typeof customFields === "object") {
+      Object.entries(customFields).forEach(([key, value]) => {
+        const fieldPath = `customFields.${key}`;
+        
+        if (typeof value === "string" && value.trim() !== "") {
+          query[logicOperator].push({
+            [fieldPath]: {
+              $regex: value,
+              $options: "i", // case-insensitive
+            },
+          });
+        } else if (Array.isArray(value) && value.length > 0) {
+          const regexArray = value
+            .filter((v) => typeof v === "string" && v.trim() !== "")
+            .map((v) => new RegExp(v, "i"));
+    
+          if (regexArray.length > 0) {
+            query[logicOperator].push({
+              [fieldPath]: {
+                $in: regexArray,
+              },
+            });
+          }
+        }
+      });
+    }
+
+   console.log('query :>> ', query);
+    
     if (!Candidate) {
       throw new Error("Candidate model is not available");
     }
@@ -342,6 +373,7 @@ export async function POST(request: NextRequest) {
                 attachments: 1,
                 currentCTC: 1,
                 expectedCTC: 1,
+                customFields:1,
                 tracking: 1,
                 history: { $arrayElemAt: ["$history.history", 0] },
                 assignment: {
