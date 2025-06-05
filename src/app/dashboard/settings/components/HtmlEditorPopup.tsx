@@ -1,7 +1,6 @@
 "use client";
 import React from "react";
 import { useState, useEffect, useRef } from "react";
-// import { createRoot } from "react-dom/client";
 import {
   Dialog,
   DialogContent,
@@ -26,91 +25,6 @@ interface HtmlEditorPopupProps {
   errors: FormikErrors<PortalConfigValues>;
 }
 
-// function FullScreenEditor({
-//   headerHtml,
-//   footerHtml,
-//   initialHeaderHtml,
-//   initialFooterHtml,
-//   onHeaderChange,
-//   onFooterChange,
-//   setFieldValue,
-//   onClose,
-// }: {
-//   headerHtml: string;
-//   footerHtml: string;
-//   initialHeaderHtml?: string;
-//   initialFooterHtml?: string;
-//   onHeaderChange: (html: string) => void;
-//   onFooterChange: (html: string) => void;
-//   setFieldValue?: FormikHelpers<any>["setFieldValue"];
-//   onClose: () => void;
-// }) {
-//   const [localHeaderHtml, setLocalHeaderHtml] = useState(headerHtml);
-//   const [localFooterHtml, setLocalFooterHtml] = useState(footerHtml);
-
-//   useEffect(() => {
-//     onHeaderChange(localHeaderHtml);
-//   }, [localHeaderHtml, onHeaderChange]);
-
-//   useEffect(() => {
-//     onFooterChange(localFooterHtml);
-//   }, [localFooterHtml, onFooterChange]);
-
-//   return (
-//     <div
-//       style={{
-//         width: "100vw",
-//         height: "100vh",
-//         padding: "20px",
-//         boxSizing: "border-box",
-//         fontFamily: "system-ui, -apple-system, sans-serif",
-//       }}
-//     >
-//       <div
-//         style={{
-//           display: "flex",
-//           justifyContent: "space-between",
-//           alignItems: "center",
-//           marginBottom: "20px",
-//           paddingBottom: "10px",
-//           borderBottom: "1px solid #e2e8f0",
-//         }}
-//       >
-//         <h1 style={{ margin: 0, fontSize: "24px", fontWeight: "bold" }}>
-//           HTML Editor - Full Screen
-//         </h1>
-//         <button
-//           onClick={onClose}
-//           style={{
-//             padding: "8px 16px",
-//             backgroundColor: "#ef4444",
-//             color: "white",
-//             border: "none",
-//             borderRadius: "6px",
-//             cursor: "pointer",
-//             fontSize: "14px",
-//           }}
-//         >
-//           Close Window
-//         </button>
-//       </div>
-
-//       <div style={{ height: "calc(100vh - 100px)" }}>
-//         <LivePreviewAndCodeEditor
-//           // activeTab={activeTab}
-//           // setActiveTab={setActiveTab}
-//           headerHtml={localHeaderHtml}
-//           footerHtml={localFooterHtml}
-//           initialHeaderHtml={initialHeaderHtml}
-//           initialFooterHtml={initialFooterHtml}
-//           setHeaderHtml={setLocalHeaderHtml}
-//           setFooterHtml={setLocalFooterHtml}
-//           setFieldValue={setFieldValue}
-//         />
-//       </div>
-//     </div>
-//   );
-// }
 
 export default function HtmlEditorPopup({
   isOpen,
@@ -156,16 +70,8 @@ export default function HtmlEditorPopup({
     setFieldValue?.("footerFile", defaultFooterHtml);
   };
 
-  // const handleCopyCode = () => {
-  //   const combinedCode = `<!-- Header -->\n${headerHtml}\n\n<!-- Your Content Here -->\n<main style="min-height: 400px; padding: 2rem; background: #f7fafc;">\n  <div style="max-width: 1200px; margin: 0 auto; text-align: center;">\n    <h1>Your Content Goes Here</h1>\n    <p>This is where your main content will be displayed.</p>\n  </div>\n</main>\n\n<!-- Footer -->\n${footerHtml}`;
-
-  //   navigator.clipboard.writeText(combinedCode).then(() => {
-  //     alert("Code copied to clipboard!");
-  //   });
-  // };
 
   const handleDownload = () => {
-    // Create and download header.html
     const headerBlob = new Blob([headerHtml || ""], { type: "text/html" });
     const headerUrl = URL.createObjectURL(headerBlob);
     const headerLink = document.createElement("a");
@@ -176,7 +82,6 @@ export default function HtmlEditorPopup({
     document.body.removeChild(headerLink);
     URL.revokeObjectURL(headerUrl);
 
-    // Create and download footer.html
     const footerBlob = new Blob([footerHtml || ""], { type: "text/html" });
     const footerUrl = URL.createObjectURL(footerBlob);
     const footerLink = document.createElement("a");
@@ -188,138 +93,6 @@ export default function HtmlEditorPopup({
     URL.revokeObjectURL(footerUrl);
   };
 
-  // const handleOpenFullScreen = () => {
-  //   // Close existing window if open
-  //   if (newWindowRef.current && !newWindowRef.current.closed) {
-  //     newWindowRef.current.close();
-  //   }
-
-  //   // Open new window
-  //   const newWindow = window.open(
-  //     "",
-  //     "_blank",
-  //     "width=1400,height=900,scrollbars=yes,resizable=yes,menubar=no,toolbar=no,location=no,status=no"
-  //   );
-
-  //   if (!newWindow) {
-  //     alert("Popup blocked! Please allow popups for this website.");
-  //     return;
-  //   }
-
-  //   newWindowRef.current = newWindow;
-
-  //   // Set up the new window document
-  //   newWindow.document.write(`
-  //   <!DOCTYPE html>
-  //   <html lang="en">
-  //   <head>
-  //     <meta charset="UTF-8">
-  //     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  //     <title>HTML Editor - Full Screen</title>
-  //     <style>
-  //       * { box-sizing: border-box; }
-  //       body { margin: 0; font-family: system-ui, -apple-system, sans-serif; }
-  //     </style>
-  //   </head>
-  //   <body>
-  //     <div id="root"></div>
-  //   </body>
-  //   </html>
-  // `);
-  //   newWindow.document.close();
-
-  //   // Wait for the document to be ready
-  //   const setupReactApp = () => {
-  //     const rootElement = newWindow.document.getElementById("root");
-  //     if (rootElement) {
-  //       try {
-  //         // Copy necessary globals with proper typing
-  //         const windowWithReact = newWindow as any;
-  //         const parentWindow = window as any;
-
-  //         windowWithReact.React = parentWindow.React;
-  //         windowWithReact.ReactDOM = parentWindow.ReactDOM;
-
-  //         // Create root and render
-  //         if (!rootRef.current) {
-  //           rootRef.current = createRoot(rootElement);
-  //         }
-
-  //         renderFullScreenEditor();
-  //       } catch (error) {
-  //         console.error("Error setting up React in new window:", error);
-  //         // Fallback: render a simple HTML version
-  //         renderSimpleVersion();
-  //       }
-  //     }
-  //   };
-
-  //   const renderFullScreenEditor = () => {
-  //     if (
-  //       rootRef.current &&
-  //       newWindowRef.current &&
-  //       !newWindowRef.current.closed
-  //     ) {
-  //       try {
-  //         rootRef.current.render(
-  //           React.createElement(FullScreenEditor, {
-  //             headerHtml,
-  //             footerHtml,
-  //             initialHeaderHtml,
-  //             initialFooterHtml,
-  //             onHeaderChange: setHeaderHtml,
-  //             onFooterChange: setFooterHtml,
-  //             setFieldValue,
-  //             onClose: () => {
-  //               if (newWindowRef.current) {
-  //                 newWindowRef.current.close();
-  //                 newWindowRef.current = null;
-  //                 rootRef.current = null;
-  //               }
-  //             },
-  //           })
-  //         );
-  //       } catch (error) {
-  //         console.error("Error rendering React component:", error);
-  //         renderSimpleVersion();
-  //       }
-  //     }
-  //   };
-
-  //   const renderSimpleVersion = () => {
-  //     // Fallback: render a simple HTML preview
-  //     const combinedHtml = `
-  //     <div style="padding: 20px; font-family: system-ui, -apple-system, sans-serif;">
-  //       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0;">
-  //         <h1 style="margin: 0; font-size: 24px;">HTML Preview - Full Screen</h1>
-  //         <button onclick="window.close()" style="padding: 8px 16px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer;">Close Window</button>
-  //       </div>
-  //       <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
-  //         ${headerHtml}
-  //         <main style="min-height: 400px; padding: 2rem; background: #f7fafc;">
-  //           <div style="max-width: 1200px; margin: 0 auto; text-align: center;">
-  //             <h1>Your Content Goes Here</h1>
-  //             <p>This is where your main content will be displayed.</p>
-  //           </div>
-  //         </main>
-  //         ${footerHtml}
-  //       </div>
-  //     </div>
-  //   `;
-
-  //     if (newWindowRef.current && !newWindowRef.current.closed) {
-  //       newWindowRef.current.document.body.innerHTML = combinedHtml;
-  //     }
-  //   };
-
-  //   // Handle window close
-  //   newWindow.addEventListener("beforeunload", () => {
-  //     newWindowRef.current = null;
-  //     rootRef.current = null;
-  //   });
-
-  //   setTimeout(setupReactApp, 100);
-  // };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -343,7 +116,6 @@ export default function HtmlEditorPopup({
 
                 <Button
                   onClick={() => {
-                    // debugger;
                     if (errors && Object.keys(errors).length > 0) {
                       toast({
                         title: "Failed To Save Portal Configs",
@@ -365,8 +137,6 @@ export default function HtmlEditorPopup({
         </DialogHeader>
 
         <LivePreviewAndCodeEditor
-          // activeTab={activeTab}
-          // setActiveTab={setActiveTab}
           headerHtml={headerHtml}
           footerHtml={footerHtml}
           initialHeaderHtml={initialHeaderHtml}

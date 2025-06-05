@@ -61,7 +61,6 @@ useEffect(()=>
 
   return (
     <div className="flex flex-col h-full">
-      {/* Tabs moved outside - controls both editor and preview */}
       <Tabs value={currentTab} onValueChange={handleTabChange} className="flex flex-col h-full">
         <TabsList className="w-full mb-4">
           <TabsTrigger value="header" className="flex-1">
@@ -72,10 +71,8 @@ useEffect(()=>
           </TabsTrigger>
         </TabsList>
 
-        {/* Header Tab Content */}
         <TabsContent value="header" className="flex-1 min-h-0">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
-            {/* Editor Section */}
             <div className="flex flex-col h-[calc(85vh-60px)]">
               <Label htmlFor="header-editor" className="text-sm font-medium mb-2">
                 Header HTML Code
@@ -96,7 +93,6 @@ useEffect(()=>
               </div>
             </div>
 
-            {/* Preview Section */}
             <div className="flex flex-col h-[calc(85vh-60px)]">
               <Label className="text-sm font-medium mb-2">Live Preview</Label>
               <div className="flex flex-col flex-1 min-h-0 border rounded-md overflow-y-scroll bg-white">
@@ -110,10 +106,8 @@ useEffect(()=>
           </div>
         </TabsContent>
 
-        {/* Footer Tab Content */}
         <TabsContent value="footer" className="flex-1 min-h-0">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
-            {/* Editor Section */}
             <div className="flex flex-col h-full">
               <Label htmlFor="footer-editor" className="text-sm font-medium mb-2">
                 Footer HTML Code
@@ -134,7 +128,6 @@ useEffect(()=>
               </div>
             </div>
 
-            {/* Preview Section */}
             <div className="flex flex-col h-full">
               <Label className="text-sm font-medium mb-2">Live Preview</Label>
               <div className="flex flex-col flex-1 min-h-0 border rounded-md overflow-hidden bg-white">
