@@ -16,7 +16,8 @@ interface SettingsDoc {
 export async function getFormattedDate(
   req: NextRequest,
   date: Date | string,
-  iso?: boolean
+  iso?: boolean,
+  directOrganizationId?: string
 ): Promise<string | Date> {
   try {
     // Get user data from auth (server-side, using cookies)
@@ -25,22 +26,22 @@ export async function getFormattedDate(
     const userData = cookies?.user;
     const organizationId = userData?.organizationId;
 
-    if (!organizationId) {
+    if (!organizationId && !directOrganizationId) {
       throw new Error("User not authenticated or organizationId missing");
     }
 
+    const orgId = organizationId || directOrganizationId;
+
     // Fetch settings from MongoDB
     const settings: SettingsDoc[] | undefined = await Settings?.find({
-      organizationId,
+      organizationId: orgId,
     });
 
     if (!settings || settings.length === 0) {
       throw new Error("Settings not found");
     }
 
-    const orgSettings = settings.find(
-      (s) => s.organizationId === organizationId
-    );
+    const orgSettings = settings.find((s) => s.organizationId === orgId);
     const timeZone = orgSettings?.timeZone?.name || "UTC";
 
     // Convert date to Date object
@@ -54,7 +55,7 @@ export async function getFormattedDate(
     if (iso) {
       return zonedDate;
     }
-    console.log("BEFORE FORMATINGL: ", zonedDate);
+    // console.log("BEFORE FORMATINGL: ", zonedDate);
     // Format date using Intl.DateTimeFormat
     const formatter = new Intl.DateTimeFormat("en-IN", {
       year: "numeric",
@@ -66,6 +67,7 @@ export async function getFormattedDate(
       timeZone,
     });
     const dateTime = formatter.format(zonedDate);
+    // console.log(">>>>>>>>>>>> 🥳🥳 ", dateTime);
     return dateTime;
   } catch (err) {
     console.error("Error formatting date:", err);

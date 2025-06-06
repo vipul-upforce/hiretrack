@@ -96,8 +96,14 @@ export async function POST(req: NextRequest) {
       hrEmails.push(user.email);
     });
 
-    const applicationDate = (await getFormattedDate(req, new Date())) as string;
+    const applicationDate = (await getFormattedDate(
+      req,
+      new Date(),
+      false,
+      organizationId
+    )) as string;
 
+    // console.log("⛔⛔⛔ APLPICTION DATE: ", applicationDate);
     // Prepare HR notification email content
     const hrNotificationTitle = `${candidateName} applied for ${jobName}`;
     const candidateDetails = `${req.headers.get("Origin")}/candidate/${candidateId}`;
