@@ -185,14 +185,14 @@ function CandidateSearch() {
       })
     : searchResults;
 
-  const paginatedResults = Array.isArray(sortedResults)
-    ? sortedResults.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-      )
-    : [];
+  // const paginatedResults = Array.isArray(sortedResults)
+  //   ? sortedResults.slice(
+  //       (currentPage - 1) * itemsPerPage,
+  //       currentPage * itemsPerPage
+  //     )
+  //   : [];
 
-  const totalPages = Math.ceil(sortedResults.length / itemsPerPage);
+  // const totalPages = Math.ceil(sortedResults.length / itemsPerPage);
   return (
     <div className="space-y-6">
       <Card className="p-6">
