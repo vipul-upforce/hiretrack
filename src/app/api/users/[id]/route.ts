@@ -39,7 +39,7 @@ export async function DELETE(
       const adminCount = await User.countDocuments({
         role: "admin",
         organizationId: session?.user?.organizationId,
-        isDeleted: false,
+        $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
       });
       if (adminCount <= 1) {
         return NextResponse.json(

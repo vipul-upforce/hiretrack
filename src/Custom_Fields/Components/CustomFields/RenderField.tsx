@@ -8,7 +8,6 @@ import FormControl from "@mui/material/FormControl";
 import { Checkbox, FormGroup } from "@mui/material";
 import dayjs, { Dayjs } from "dayjs";
 import { FileDropZone } from "@/components/ui/file-drop-zone";
-// import { toast } from "@/Custom_Fields/hooks/use-toast";
 import { ChipInput } from "@/components/ui/chip-input";
 import {
   SelectValue,
@@ -22,8 +21,7 @@ import PasswordField from "@/components/ui/PasswordField";
 import TimePicker from "@/components/ui/time-picker";
 import DatePicker from "@/components/ui/datepicker";
 import { Button } from "@/components/ui/button";
-// import { toast } from "@/hooks/use-toast";
-// import { useToast } from "@/hooks/use-toast";
+
 interface FileData {
   base64: string;
   name: string;
@@ -57,6 +55,10 @@ interface RenderFieldProps {
   setFieldTouched: (field: string, value: boolean) => void;
   options: string[] | undefined;
   setFieldError: (field: string, error: string) => void;
+  fieldHook?: {
+    fieldProps: any;
+    fieldMeta: any;
+  };
 }
 
 const fileToBase64 = (file: File): Promise<string> => {
@@ -76,13 +78,21 @@ export const RenderField = ({
   setFieldTouched,
   options,
   setFieldError,
+  fieldHook,
 }: RenderFieldProps) => {
-  // const { toast } = useToast();
+  // Common props for focus handling
+  const commonProps = {
+    id: `customFields.${label}`,
+    "data-field-name": label,
+    autoFocus: fieldHook?.fieldMeta.error && fieldHook?.fieldMeta.touched,
+    className: fieldHook?.fieldMeta.touched && fieldHook?.fieldMeta.error && 'border-2 border-red-500'
+  };
+
   switch (type) {
     case "text":
       return (
         <Input
-          id={label}
+          {...commonProps}
           name={"customFields." + label}
           value={values.customFields[label] as string}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
@@ -97,6 +107,7 @@ export const RenderField = ({
       return (
         <div>
           <PasswordField
+            {...commonProps}
             name={"customFields." + label}
             value={values.customFields[label] as string}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
@@ -112,8 +123,8 @@ export const RenderField = ({
     case "number":
       return (
         <Input
+          {...commonProps}
           type="number"
-          id={label}
           name={"customFields." + label}
           value={values.customFields[label] as string}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
@@ -127,7 +138,7 @@ export const RenderField = ({
     case "textarea":
       return (
         <Textarea
-          id={label}
+          {...commonProps}
           name={"customFields." + label}
           value={values.customFields[label] as string}
           onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -146,7 +157,7 @@ export const RenderField = ({
             setFieldValue("customFields." + label, value)
           }
         >
-          <SelectTrigger>
+          <SelectTrigger {...commonProps}>
             <SelectValue placeholder={`Select ${label}`} />
           </SelectTrigger>
           <SelectContent>
@@ -184,6 +195,7 @@ export const RenderField = ({
                 key={option}
                 control={
                   <Checkbox
+                    {...commonProps}
                     checked={(values.customFields[label] as string[])?.includes(
                       option
                     )}
@@ -226,6 +238,7 @@ export const RenderField = ({
     case "date":
       return (
         <DatePicker
+          {...commonProps}
           value={new Date(values.customFields[label] as string)}
           onChange={(e) =>
             setFieldValue("customFields." + label, e?.toISOString() || "")
@@ -237,6 +250,7 @@ export const RenderField = ({
     case "time":
       return (
         <TimePicker
+          {...commonProps}
           name={"customFields." + label}
           value={values.customFields[label] as string}
           onChange={(e) => {
@@ -249,6 +263,7 @@ export const RenderField = ({
     case "datetime":
       return (
         <DateTimePicker
+          {...commonProps}
           value={dayjs(values.customFields[label] as string)}
           onChange={(e) =>
             setFieldValue("customFields." + label, e?.toISOString() || "")
@@ -261,6 +276,7 @@ export const RenderField = ({
       return (
         <FormControl className="flex">
           <RadioGroup
+            {...commonProps}
             value={values.customFields[label] as string}
             onChange={(e) =>
               setFieldValue("customFields." + label, e.target.value)
@@ -305,76 +321,39 @@ export const RenderField = ({
       return (
         <div>
           <FileDropZone
+            {...commonProps}
             value={values.customFields[label] as FileData[]}
             onFilesChange={async (files: File[] | FileData[]) => {
               try {
                 const base64Files = await Promise.all(
-                  files
-                    // .filter((file) => {
-                    //   if (
-                    //     user.role === "candidate" &&
-                    //     file.size > 3 * 1024 * 1024
-                    //   ) {
-                    //     toast({
-                    //       title: `File "${file.name}" exceeds 3MB. Please upload a smaller file.`,
-                    //       variant: "destructive",
-                    //     });
-                    //     return false;
-                    //   }
-
-                    //   if (
-                    //     ["hr", "admin", "interviewer"].includes(user.role) &&
-                    //     file.size > 50 * 1024 * 1024
-                    //   ) {
-                    //     toast({
-                    //       title: `File "${file.name}" exceeds 50MB. Please upload a smaller file.`,
-                    //       variant: "destructive",
-                    //     });
-                    //     return false;
-                    //   }
-                    //   return true;
-                    // })
-                    .map(async (file) => {
-                      let fileurl;
-                      if ((file as FileData).base64) {
-                        fileurl = (file as FileData).base64;
+                  files.map(async (file) => {
+                    let fileurl;
+                    if ((file as FileData).base64) {
+                      fileurl = (file as FileData).base64;
+                    } else {
+                      if ((file as FileData).base64 === "") {
+                        fileurl = "";
                       } else {
-                        if ((file as FileData).base64 === "") {
-                          fileurl = "";
-                        } else {
-                          fileurl = await fileToBase64(file as File);
-                        }
+                        fileurl = await fileToBase64(file as File);
                       }
-                      return {
-                        base64: fileurl,
-                        name: file.name,
-                        type: file.type,
-                        size: file.size,
-                      };
-                    })
+                    }
+                    return {
+                      base64: fileurl,
+                      name: file.name,
+                      type: file.type,
+                      size: file.size,
+                    };
+                  })
                 );
                 const fileNames = base64Files.map((file) => file.name);
                 const hasDuplicates =
                   new Set(fileNames).size !== fileNames.length;
                 if (hasDuplicates) {
-                  // toast({
-                  //   title: "Alert",
-                  //   description: `Duplicate file names detected! Rename files to save changes for Meta field "${label}".`,
-                  //   variant: "destructive",
-                  //   duration: 5000,
-                  // });
                   return;
                 }
                 setFieldValue("customFields." + label, base64Files);
               } catch {
-                // toast({
-                //   title:
-                //     "Error processing files" +
-                //     (error instanceof Error ? error.message : "Unknown error"),
-                //   description:
-                //     "There was an error processing the selected files",
-                //   variant: "destructive",
-                // });
+                // Handle error
               }
             }}
             existingFiles={
@@ -395,6 +374,7 @@ export const RenderField = ({
       return (
         <div className="space-y-2">
           <ChipInput
+            {...commonProps}
             value={(values.customFields[label] as string[]) || []}
             onChange={(newOptions) => {
               setFieldValue(
@@ -425,5 +405,8 @@ export const RenderField = ({
           />
         </div>
       );
+
+    default:
+      return null;
   }
 };
