@@ -4,6 +4,7 @@ import { Candidate } from "@/lib/mongodb";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
 import { ICandidate } from "@/lib/models/candidate";
 import { ProjectionType } from "mongoose";
+// import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
 
 export async function GET(
   _request: NextRequest,
@@ -80,6 +81,7 @@ export async function GET(
         };
       })
     );
+
     // console.log("Candidate with History: ",candidatesWithHistory)
     return NextResponse.json(candidatesWithHistory);
   } catch (error) {

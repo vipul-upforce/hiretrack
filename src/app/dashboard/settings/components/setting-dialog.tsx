@@ -14,6 +14,7 @@ import GeminiConfigs from "./gemini";
 import MultipleOrgsConfigs from "./MultipleOrgsConfigs";
 import BackupsDialog from "./backups-dialog";
 import AssetsDialog from "./assets-dialog";
+import TimeZoneSelect from "./TimeZone-Dialog";
 // import FileStorageOptions from "./file-storage-dialog"; // Example for another setting
 
 interface SettingComponentProps {
@@ -30,6 +31,7 @@ const settingComponents: Record<
   multipleorgs: MultipleOrgsConfigs,
   backups: BackupsDialog,
   assets: AssetsDialog,
+  timezone: TimeZoneSelect,
 };
 
 const SettingDialog = ({

@@ -5,6 +5,7 @@ import path from "path";
 import fs from "fs/promises";
 import { existsSync } from "fs";
 import { auth } from "@/lib/auth";
+import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
 
 const execAsync = promisify(exec);
 
@@ -160,12 +161,13 @@ export async function POST(req: NextRequest) {
     // Get metadata for the assets directory
     const totalSize = await calculateDirectorySize(assetsRoot);
     const lastArchivedAt = await readLastArchiveTimestamp(organizationId);
+    const formattedDate = await getFormattedDate(req, lastArchivedAt as string);
     const assetsData = {
       name: "assets",
       type: "directory",
       path: "assets",
       size: totalSize,
-      lastArchivedAt: lastArchivedAt || null,
+      lastArchivedAt: formattedDate || null,
     };
 
     return NextResponse.json(

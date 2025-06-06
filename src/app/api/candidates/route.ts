@@ -5,6 +5,7 @@ import { handleCustomFieldFiles, handleSingleFile } from "@/lib/fileUtils";
 import { handleFileAttachments } from "@/lib/fileUtils";
 import mongoose from "mongoose";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
+// import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
 
 export interface Attachment {
   id: string;
@@ -166,14 +167,19 @@ export async function POST(request: NextRequest) {
         // Populate the interviewer details before sending response
         await candidate.populate("assignment.interviewerId", "name email");
 
+        // const dateTime = await getFormattedDate(request, new Date());
         // const historyExisting =
+
         if (userData.role === "candidate") {
           await History?.create({
             candidateId: candidate._id,
             jobId: data.jobId,
             history: [
               {
-                dateTime: new Date().toISOString(),
+                dateTime: data.dateTime,
+                // dateTime: dayjs(new Date().toISOString()).format(
+                //   "DD MMM YYYY [at] hh:mm a"
+                // ),
                 title: "Self Applied",
                 previousInterviewer: null,
                 currentInterviewer: null,
@@ -187,7 +193,10 @@ export async function POST(request: NextRequest) {
             jobId: data.jobId,
             history: [
               {
-                dateTime: new Date().toISOString(),
+                dateTime: data.dateTime,
+                // dateTime: dayjs(new Date().toISOString()).format(
+                //   "DD MMM YYYY [at] hh:mm a"
+                // ),
                 title: "Candidate Added",
                 previousInterviewer: null,
                 currentInterviewer: null,

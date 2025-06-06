@@ -4,6 +4,7 @@ import { Candidate, Organization, User } from "@/lib/mongodb"; // Add User impor
 import { ICandidate } from "@/lib/models/candidate";
 import { loadTemplate } from "@/lib/templateLoader";
 import mongoose from "mongoose";
+import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
 
 export async function POST(req: NextRequest) {
   try {
@@ -95,6 +96,8 @@ export async function POST(req: NextRequest) {
       hrEmails.push(user.email);
     });
 
+    const applicationDate = (await getFormattedDate(req, new Date())) as string;
+
     // Prepare HR notification email content
     const hrNotificationTitle = `${candidateName} applied for ${jobName}`;
     const candidateDetails = `${req.headers.get("Origin")}/candidate/${candidateId}`;
@@ -105,7 +108,7 @@ export async function POST(req: NextRequest) {
       email,
       candidateName,
       jobName,
-      applicationDate: new Date().toUTCString(),
+      applicationDate,
       candidateDetails,
     });
 
