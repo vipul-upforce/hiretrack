@@ -437,7 +437,7 @@ export function ApplyAsGuestDialog({
                     Cancel
                   </Button>
                   <Button
-                    type="submit"
+                    type={!errors ? "submit" : "button"}
                     onClick={handleApply}
                     // disabled={
                     //   isSubmitting ||
