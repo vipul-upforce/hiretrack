@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { Upload, File as FileIcon, Pencil, X } from "lucide-react";
+import { Upload, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { RenameFileDialog } from "./rename-file-dialog";
 import Cookies from "js-cookie";
@@ -54,12 +54,12 @@ interface RenameFileState {
   };
 }
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-}
+// interface User {
+//   id: string;
+//   name: string;
+//   email: string;
+//   role: string;
+// }
 
 export const formatFileSize = (bytes: number): string => {
   if (bytes === 0) return "0 Bytes";
@@ -85,8 +85,8 @@ export function PortalFileUpload({
     file: null,
     isExisting: false,
   });
-  const [user, setuser] = useState<User | null>(null);
-  const [droppedFiles, setDroppedFiles] = useState<string[]>();
+  // const [user, setuser] = useState<User | null>(null);
+  // const [droppedFiles, setDroppedFiles] = useState<string[]>();
 
   useEffect(() => {
     (async () => {
@@ -94,7 +94,7 @@ export function PortalFileUpload({
       if (token) {
         const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
         if (decryptedResponse.success && decryptedResponse.user) {
-          setuser(decryptedResponse.user);
+          // setuser(decryptedResponse.user);
         }
       }
     })();
@@ -109,7 +109,7 @@ export function PortalFileUpload({
         f === renameFile.file ? newFile : f
       );
       setter?.(updatedFiles);
-      setDroppedFiles((prev = []) => [...new Set([...prev, newName])]);
+      // setDroppedFiles((prev = []) => [...new Set([...prev, newName])]);
     }
   };
 
@@ -123,9 +123,9 @@ export function PortalFileUpload({
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
       onFileSelect(acceptedFiles);
-      setDroppedFiles((prev = []) => [
-        ...new Set([...prev, ...acceptedFiles.map((file) => file.name)]),
-      ]);
+      // setDroppedFiles((prev = []) => [
+      //   ...new Set([...prev, ...acceptedFiles.map((file) => file.name)]),
+      // ]);
     },
     [onFileSelect]
   );
