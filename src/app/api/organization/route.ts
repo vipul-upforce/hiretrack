@@ -240,6 +240,7 @@ export async function GET(req: NextRequest) {
     {
       fileStorage: 0,
       mailConfig: 0,
+      gemini: 0,
     }
   );
   // console.log("⛔⛔⛔ ", settings);

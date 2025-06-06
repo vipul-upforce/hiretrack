@@ -9,7 +9,6 @@ import { verifyAndDecryptToken } from "@/app/actions/auth";
 import { v4 as uuidv4 } from "uuid";
 import { auth } from "@/lib/auth";
 import mongoose from "mongoose";
-
 export async function POST(request: NextRequest) {
   //Getting the history data
   try {
@@ -100,6 +99,10 @@ export async function PATCH(request: NextRequest) {
           "history.$.remark.isPrivate": isPrivate,
           "history.$.remark.rating": rating,
           "history.$.remark.updatedAt": new Date(),
+          // "history.$.remark.updatedAt": await getFormattedDate(
+          //   request,
+          //   new Date()
+          // ),
 
           "history.$.assignmentBy": new mongoose.Types.ObjectId(user.id),
           "history.$.title": "Remark Updated",
@@ -153,16 +156,20 @@ export async function PUT(request: NextRequest) {
     let data = await request.json();
     // data = { ...data, id: uuidv4() };
     if (data?.newEntry?.remark?.description) {
+      // console.log("⏹️⏹️⏹️⏹️ ", data);
       data = {
         ...data,
         newEntry: {
           ...data.newEntry,
+          // dateTime: new Date().toISOString(),
+          dateTime: data.dateTime,
           remark: {
             ...data.newEntry.remark,
             id: uuidv4(),
           },
         },
       };
+      // console.log("⏭️⏭️⏭️⏭️ ", data);
     }
     let fileStorage = "local";
     let organizationId;

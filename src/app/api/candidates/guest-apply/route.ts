@@ -6,6 +6,7 @@ import { handleFileAttachments } from "@/lib/fileUtils";
 import mongoose from "mongoose";
 import { Job } from "@/lib/mongodb"; // Add import for Job model
 import { Attachment } from "../route";
+// import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
 
 export async function POST(request: NextRequest) {
   try {
@@ -146,6 +147,7 @@ export async function POST(request: NextRequest) {
     }
 
     // console.log("✅✅✅ DATETIME: ", dateTime);
+    // const dateTime = await getFormattedDate(request, new Date());
 
     // const historyCreated =
     await History?.create({

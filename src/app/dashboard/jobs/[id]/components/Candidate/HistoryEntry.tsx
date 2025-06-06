@@ -7,6 +7,7 @@ import { Candidate } from "@/types/candidate";
 import { User } from "@/lib/features/users/usersApi";
 import { IEditRemark } from "../../schemas/EditRemarkDialog";
 import useRoles from "@/hooks/useRoles";
+// import { useDateFormatter } from "@/components/timezoneFormat/useGetFormattedTZ";
 
 const RenderHistoryEntry = ({
   interview,
@@ -40,6 +41,13 @@ const RenderHistoryEntry = ({
     interview.note &&
     interview.note.description &&
     typeof interview.note.description !== "string";
+  // const { formatTZDate } = useDateFormatter();
+
+  // Convert timeDate string to Date object for formatTZDate
+  // const dateObj = new Date(timeDate);
+
+  // Format the date using the user's timezone
+  // const formattedDate = formatTZDate(dateObj);
 
   // Helper function to determine the entry title
   const renderEntryTitle = () => {
@@ -136,6 +144,10 @@ const RenderHistoryEntry = ({
         }}
       >
         <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500 flex flex-row items-center group">
+          {/* {typeof formattedDate === "string"
+            ? formattedDate
+            : formattedDate.toString()}{" "}
+          <Dot /> {timeTime} */}
           {timeDate} <Dot /> {timeTime}
         </time>
         <div className="relative">

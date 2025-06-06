@@ -130,7 +130,7 @@ export default function ApplyJobsContent({
 
   useEffect(() => {
     checkAllowance();
-  }, [searchParams,orgName]);
+  }, [searchParams, orgName]);
 
   const pageInit = async () => {
     // debugger;
@@ -179,7 +179,7 @@ export default function ApplyJobsContent({
   };
 
   if (invalidPage) {
-    return <InvalidPage message="Page Doesn't Exists" />;
+    return <InvalidPage message="Page Doesn't Exist" />;
   }
 
   if (isLoading)

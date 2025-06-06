@@ -4,6 +4,7 @@ import { verifyAndDecryptToken } from "@/app/actions/auth";
 import { loadTemplate } from "@/lib/templateLoader";
 import { User } from "@/lib/mongodb";
 import mongoose from "mongoose";
+import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
 
 // Email queue to track pending emails
 const emailQueue = new Map<
@@ -18,7 +19,8 @@ const emailQueue = new Map<
 function scheduleEmail(
   key: string,
   data: any,
-  delayMs: number = 2 * 60 * 1000
+  delayMs: number = 2 * 60 * 1000,
+  req: NextRequest
 ) {
   if (emailQueue.has(key)) {
     const existingItem = emailQueue.get(key)!;
@@ -34,7 +36,7 @@ function scheduleEmail(
     const queueItem = emailQueue.get(key);
     if (queueItem) {
       try {
-        await sendQueuedEmail(queueItem.data);
+        await sendQueuedEmail(queueItem.data, req);
       } catch (error) {
         console.error(`Failed to send email for ${key}:`, error);
       } finally {
@@ -54,7 +56,7 @@ function scheduleEmail(
 }
 
 // Sends the actual email based on queue data
-async function sendQueuedEmail(data: any) {
+async function sendQueuedEmail(data: any, req: NextRequest) {
   const {
     organizationId,
     email,
@@ -69,8 +71,20 @@ async function sendQueuedEmail(data: any) {
     candidateDetailsPage,
   } = data;
 
-  const startDate = new Date(startTime);
-  const endDate = new Date(endTime);
+  const startDateString = await getFormattedDate(req, new Date(startTime));
+  const startDate = (await getFormattedDate(
+    req,
+    new Date(startTime),
+    true
+  )) as Date;
+  // const startDate = new Date(startTime);
+  const endDateString = await getFormattedDate(req, new Date(endTime));
+  const endDate = (await getFormattedDate(
+    req,
+    new Date(endTime),
+    true
+  )) as Date;
+  // const endDate = new Date(endTime);
   const formattedStartTime = startDate.toISOString().replace(/-|:|\.\d+/g, "");
   const formattedEndTime = endDate.toISOString().replace(/-|:|\.\d+/g, "");
 
@@ -99,8 +113,8 @@ async function sendQueuedEmail(data: any) {
 
   const htmlContent = loadTemplate("assignment-event", {
     eventTitle,
-    startDate: startDate.toUTCString(),
-    endDate: endDate.toUTCString(),
+    startDate: startDateString as string,
+    endDate: endDateString as string,
     jobName,
     interviewerName,
     candidateName,
@@ -283,7 +297,7 @@ export async function POST(req: NextRequest) {
     };
 
     if (immediate) {
-      const emailStatus = await sendQueuedEmail(queueData);
+      const emailStatus = await sendQueuedEmail(queueData, req);
 
       if (emailStatus.status === 200) {
         return NextResponse.json({ message: "Email sent successfully." });
@@ -295,7 +309,7 @@ export async function POST(req: NextRequest) {
       }
     } else {
       // console.log("@######Addinbg to queu: ", emailKey, queueData);
-      scheduleEmail(emailKey, queueData);
+      scheduleEmail(emailKey, queueData, 2 * 60 * 1000, req);
 
       return NextResponse.json({
         message:

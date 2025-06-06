@@ -190,8 +190,10 @@ function CandidateSearch() {
   const [filterCandidates] = useFilterCandidatesMutation();
 
   const refetchResults = async () => {
+    // debugger;
     setIsSearching(true);
     try {
+      // await new Promise((resolve) => setTimeout(resolve, 3000));
       const response = await filterCandidates(currentFilters).unwrap();
       setSearchResults(response.candidates || []);
     } catch (error) {
@@ -211,6 +213,7 @@ function CandidateSearch() {
 
     try {
       values.organizationId = OrgID ? OrgID : values.organizationId;
+
       const response = await filterCandidates(values).unwrap();
       setSearchResults(response.candidates || []);
       setCurrentPage(1);
@@ -289,7 +292,6 @@ function CandidateSearch() {
     : [];
 
   const totalPages = Math.ceil(sortedResults.length / itemsPerPage);
-
   return (
     <div className="space-y-6">
       <Card className="p-6">
@@ -338,7 +340,10 @@ function CandidateSearch() {
         sortField={sortField}
         sortDirection={sortDirection}
         onSort={handleSort}
-        refetch={refetchResults}
+        refetch={async () => {
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+          refetchResults;
+        }}
       />
     </div>
   );

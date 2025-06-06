@@ -100,7 +100,8 @@ export function CandidateDetailsDialog({
     user,
     refetch,
     refetchAssignment,
-    onUpdate
+    onUpdate,
+    refetchCandidates
   );
 
   const {

@@ -14,7 +14,8 @@ export const useRemarkHandlers = (
   user: User | null,
   refetch: () => Promise<void>,
   refetchAssignment?: () => void,
-  onUpdate?: (candidate: Candidate) => void
+  onUpdate?: (candidate: Candidate) => void,
+  refetchCandidates?: () => void
 ) => {
   const pathname = usePathname();
   const [updateCandidate] = useUpdateCandidateMutation();
@@ -150,7 +151,15 @@ export const useRemarkHandlers = (
         await new Promise((resolve) => setTimeout(resolve, 500));
         onUpdate(result);
       }
+      if (onUpdate && localCandidate) {
+        await onUpdate(localCandidate);
+      }
 
+      if (pathname === "/dashboard/search") {
+        // debugger;
+        await refetchCandidates?.();
+        await refetch();
+      }
       setNewRemark("");
       setRemarkRating(null);
       setRemarkRatingHistory(null);

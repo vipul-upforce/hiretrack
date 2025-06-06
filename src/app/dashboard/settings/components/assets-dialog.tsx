@@ -115,9 +115,7 @@ export default function AssetsDialog() {
                     <span className="text-xs text-gray-500">
                       Last Archived:{" "}
                       {assetsMetadata.lastArchivedAt
-                        ? new Date(
-                            assetsMetadata.lastArchivedAt
-                          ).toLocaleString()
+                        ? assetsMetadata.lastArchivedAt
                         : "Never"}
                     </span>
                   </div>

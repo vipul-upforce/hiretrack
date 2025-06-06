@@ -249,7 +249,11 @@ export const RenderField = ({
     case "datetime":
       return (
         <DateTimePicker
-          value={dayjs(values.customFields[label] as string)}
+          value={
+            values.customFields[label]
+              ? dayjs(values.customFields[label] as string)
+              : null
+          }
           onChange={(e) =>
             setFieldValue("customFields." + label, e?.toISOString() || "")
           }
