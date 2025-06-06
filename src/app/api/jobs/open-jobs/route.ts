@@ -45,12 +45,15 @@ export async function GET(request: Request) {
     }
 
     const customFields = await Organization?.findById(organizationId);
+
+    const organization = await Organization?.findById(organizationId);
+    const openJobCardsOrder = organization?.openJobCards;
     const jobs = await Job!
       .find(
         {
           organizationId: organizationId,
           status: "open",
-          isPublished:true,
+          isPublished: true,
           ...(title && {
             title: {
               $regex: title,
@@ -67,10 +70,15 @@ export async function GET(request: Request) {
           status: 0,
         }
       )
-      .sort({
-        "tracking.createdAt": -1,
-      })
+      // .sort({
+      //   "tracking.createdAt": -1,
+      // })
       .lean();
+    const jobsMap = new Map(jobs.map((job) => [job._id.toString(), job]));
+    const sortedJobs =
+      openJobCardsOrder
+        ?.map((id) => jobsMap.get(id.toString()))
+        .filter(Boolean) || [];
 
     const jobPositionFields =
       Object.values(customFields?.customFields || {}).find(
@@ -81,10 +89,10 @@ export async function GET(request: Request) {
       ?.filter((field: CustomField) => !field.private)
       ?.map((data: CustomField) => data.label);
 
-    const filteredJobs = jobs?.map((job) => ({
+    const filteredJobs = sortedJobs?.map((job) => ({
       ...job,
       customFields: Object.fromEntries(
-        job.customFields
+        job?.customFields
           ? Object.entries(job.customFields).filter(([key]) =>
               publicFieldLabels.includes(key)
             )

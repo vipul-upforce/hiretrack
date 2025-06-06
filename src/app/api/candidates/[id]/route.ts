@@ -5,7 +5,7 @@ import { handleCustomFieldFiles, handleFileAttachments } from "@/lib/fileUtils";
 import { handleSingleFile } from "@/lib/fileUtils";
 import { History } from "@/lib/mongodb";
 import { ICandidate as IExternalCandidate } from "@/lib/models/candidate";
-import mongoose from "mongoose";
+import mongoose, { ProjectionType } from "mongoose";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
 import { sendMail } from "../../event-mail";
 import { loadTemplate } from "@/lib/templateLoader";
@@ -297,13 +297,16 @@ export async function PUT(
             const remark_for = data.name || existingCandidate.name;
             const remark = latestRemark.description.trim();
             const rating = latestRemark.rating || "None";
-
+            console.log("DATA: ", data);
+            const candidateDetails = `${request.headers.get("origin")}/candidate/${data._id}`;
+            console.log("CNADIATE DETAILS:: ", candidateDetails);
             if (emailList.length > 0 && remark !== "") {
               const emailContent = loadTemplate("remark-add", {
                 remark_adder,
                 remark_for,
                 rating,
                 remark,
+                candidateDetails,
               });
 
               sendMail(
@@ -434,6 +437,8 @@ export async function PUT(
             .flatMap((item) => item.attachments!),
         };
 
+        console.log("USERDATA>ID:", userData.id);
+
         await History?.findOneAndUpdate(
           {
             candidateId: updatedCandidate._id,
@@ -458,11 +463,22 @@ export async function PUT(
 }
 
 export async function GET(
-  _request: Request,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectToDatabase();
+    let role = "";
+    const token = _request.cookies.get("token");
+    if (token?.value) {
+      const decryptedResponse = await verifyAndDecryptToken(
+        String(token?.value)
+      );
+      const userData = decryptedResponse.user;
+      if (decryptedResponse.success) {
+        role = userData.role;
+      }
+    }
     const { id } = await params;
     if (!Candidate) {
       return NextResponse.json(
@@ -470,19 +486,56 @@ export async function GET(
         { status: 404 }
       );
     }
-    const candidate = await Candidate.findById(id).populate({
-      path: "assignment.interviewerId",
-      select: "_id name email",
-    });
+    const projection: ProjectionType<ICandidate> =
+      role === "interviewer"
+        ? {
+            currentCTC: 0,
+            expectedCTC: 0,
+            customFields: 0,
+          }
+        : {};
+    const candidate = await Candidate.findById(id, projection)
+      .populate([
+        {
+          path: "assignment.interviewerId",
+          select: "_id name email",
+        },
+        {
+          path: "jobId",
+          select: "title description ",
+        },
+      ])
+      .lean();
+    if (!History) return;
+    const history = await History?.findOne({
+      jobId:
+        typeof candidate?.jobId === "object" &&
+        "_id" in candidate?.jobId &&
+        candidate?.jobId?._id,
+      candidateId: candidate?._id.toString(),
+    })
+      .populate("history.currentInterviewer", "_id name email")
+      .populate("history.previousInterviewer", "_id name email")
+      .populate("history.assignmentBy", "_id name email")
+      .populate("history.note.userId", "_id name email")
+      .lean();
 
-    if (!candidate) {
+    const candidateWithHisotry = {
+      ...candidate,
+      history: history!.history,
+    };
+
+    console.log("HISOTYER:L ", history);
+    console.log("CANDIDET WITH HISTORY:L ", candidateWithHisotry);
+
+    if (!candidateWithHisotry) {
       return NextResponse.json(
         { error: "Candidate not found" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(candidate);
+    return NextResponse.json(candidateWithHisotry);
   } catch (error) {
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

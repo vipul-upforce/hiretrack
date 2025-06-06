@@ -43,6 +43,7 @@ export function CandidateDetailsDialog({
   refetchAssignment,
   fromFilter,
   refetchCandidates,
+  hideCloseButtons = false,
 }: CandidateDetailsDialogProps) {
   const pathname = usePathname();
   const id = useParams()?.id as string;
@@ -235,51 +236,59 @@ export function CandidateDetailsDialog({
           </div>
         );
       })}
-      <RemarkInputSection
-        newRemark={newRemark}
-        setNewRemark={setNewRemark}
-        remarkRating={remarkRating}
-        setRemarkRating={setRemarkRating}
-        setRemarkRatingHistory={setRemarkRatingHistory}
-        isSubRemarkPrivate={isSubRemarkPrivate}
-        setIsSubRemarkPrivate={setIsSubRemarkPrivate}
-        user={user}
-        handleAddRemark={handleAddRemark}
-      />
+      {user?.role !== "candidate" && (
+        <RemarkInputSection
+          newRemark={newRemark}
+          setNewRemark={setNewRemark}
+          remarkRating={remarkRating}
+          setRemarkRating={setRemarkRating}
+          setRemarkRatingHistory={setRemarkRatingHistory}
+          isSubRemarkPrivate={isSubRemarkPrivate}
+          setIsSubRemarkPrivate={setIsSubRemarkPrivate}
+          user={user}
+          handleAddRemark={handleAddRemark}
+        />
+      )}
     </div>
   );
   const footer = (
     <div className="flex space-x-2 border-t bg-background px-6 py-4">
       {!fromFilter ? (
         <div className="flex justify-between w-full">
+          {user?.role !== "candidate" && (
+            <div className="flex gap-2">
+              <Button
+                // className={user?.role == "interviewer" ? "hidden" : ""}
+                onClick={() => setIsAssigning(true)}
+              >
+                Assign To
+              </Button>
+              <Button
+                onClick={handleUnassign}
+                disabled={!localCandidate.assignment}
+                variant="outline"
+              >
+                Mark As Done
+              </Button>
+            </div>
+          )}
           <div className="flex gap-2">
-            <Button
-              className={user?.role == "interviewer" ? "hidden" : ""}
-              onClick={() => setIsAssigning(true)}
-            >
-              Assign To
-            </Button>
-            <Button
-              onClick={handleUnassign}
-              disabled={!localCandidate.assignment}
-              variant="outline"
-            >
-              Mark As Done
-            </Button>
-          </div>
-          <div className="flex gap-2">
-            {!hideEditButton && <Button onClick={handleEditClick}>Edit</Button>}
-            <Button
-              variant="outline"
-              onClick={() => {
-                onOpenChange(false);
-                setNewRemark("");
-                setRemarkRating(null);
-                setRemarkRatingHistory(null);
-              }}
-            >
-              Close
-            </Button>
+            {!hideEditButton && user?.role !== "interviewer" && (
+              <Button onClick={handleEditClick}>Edit</Button>
+            )}
+            {!hideCloseButtons && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  onOpenChange(false);
+                  setNewRemark("");
+                  setRemarkRating(null);
+                  setRemarkRatingHistory(null);
+                }}
+              >
+                Close
+              </Button>
+            )}
           </div>
         </div>
       ) : (

@@ -21,6 +21,10 @@ const organizationSchema = new Schema({
     type: [String],
     default: DEFAULT_LANES,
   },
+  openJobCards: {
+    type: [String],
+    // default: DEFAULT_LANES,
+  },
   customFields: {
     type: Schema.Types.Mixed,
     default: {},
@@ -33,6 +37,7 @@ export interface IOrganization {
   name: string;
   adminId: Schema.Types.ObjectId;
   lanes: string[];
+  openJobCards: string[];
   customFields: Schema.Types.Mixed;
 }
 

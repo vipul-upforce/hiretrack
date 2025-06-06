@@ -29,6 +29,7 @@ import { useSendMailMutation } from "@/lib/features/org/orgApi";
 import { sentAssignmentMail } from "@/lib/utils";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
+import { useApplyHandler } from "@/app/apply-jobs/useApplyHandler";
 
 interface EditCandidateDialogProps {
   candidate: Candidate;
@@ -106,6 +107,7 @@ export function EditCandidateDialog({
   const pathname = usePathname();
   const [parsedResumeData, setParsedResume] = useState<Resume | null>(null);
   const [user, setuser] = useState<User | null>(null);
+  const { formikRef, handleApply } = useApplyHandler<any>();
 
   useEffect(() => {
     (async () => {
@@ -123,6 +125,7 @@ export function EditCandidateDialog({
     const fileNames = values.attachments.map((file) => file.name);
     const hasDuplicates = new Set(fileNames).size !== fileNames.length;
 
+    console.log("------- ", user);
     if (hasDuplicates) {
       toast({
         title: "Alert",
@@ -391,6 +394,7 @@ export function EditCandidateDialog({
           <DialogTitle>Edit Candidate</DialogTitle>
         </DialogHeader>
         <Formik
+          innerRef={formikRef}
           initialValues={initialValues}
           validationSchema={candidateSchema(validationSchema)}
           onSubmit={handleSubmit}
@@ -418,10 +422,11 @@ export function EditCandidateDialog({
                   Cancel
                 </Button>
                 <Button
+                  onClick={handleApply}
                   type="submit"
-                  disabled={
-                    !dirty || isSubmitting || Object.keys(errors).length > 0
-                  }
+                  // disabled={
+                  //   !dirty || isSubmitting || Object.keys(errors).length > 0
+                  // }
                 >
                   {isSubmitting ? "Saving..." : "Save Changes"}
                 </Button>

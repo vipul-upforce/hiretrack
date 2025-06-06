@@ -10,4 +10,5 @@ export interface CandidateDetailsDialogProps {
   refetchAssignment?: () => void;
   fromFilter?: boolean;
   refetchCandidates?: () => void;
+  hideCloseButtons?: boolean;
 }

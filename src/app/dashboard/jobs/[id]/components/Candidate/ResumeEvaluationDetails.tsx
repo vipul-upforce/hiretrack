@@ -5,6 +5,7 @@ import { RefreshCwIcon } from "lucide-react";
 import { CandidateScoreBadge } from "../Utils/candidate-score-badge";
 import ExpandableDescription from "../Utils/expand-collapse-desc";
 import { Candidate } from "@/types/candidate";
+import useRoles from "@/hooks/useRoles";
 
 interface ResumeEvaluationDetailsProps {
   labelClass: string;
@@ -20,7 +21,7 @@ export default function ResumeEvaluationDetails({
   onReEvaluate,
 }: ResumeEvaluationDetailsProps) {
   const [showEvalDetails, setShowEvalDetails] = useState(false);
-
+  const role = useRoles();
   if (!localCandidate.scores) return null;
 
   return (
@@ -33,23 +34,25 @@ export default function ResumeEvaluationDetails({
           <div className="flex flex-row justify-between items-center">
             <div className="flex items-center gap-3">
               <Label className={labelClass}>AI Evaluation</Label>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // console.log("%%%%%%");
-                  onReEvaluate();
-                }}
-                disabled={isReEvaluating}
-                className={
-                  isReEvaluating
-                    ? "animate-spin"
-                    : "hover:text-gray-400 transition duration-300"
-                }
-              >
-                <RefreshCwIcon size={15} />
-              </Button>
+              {role !== "candidate" && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // console.log("%%%%%%");
+                    onReEvaluate();
+                  }}
+                  disabled={isReEvaluating}
+                  className={
+                    isReEvaluating
+                      ? "animate-spin"
+                      : "hover:text-gray-400 transition duration-300"
+                  }
+                >
+                  <RefreshCwIcon size={15} />
+                </Button>
+              )}
             </div>
             {localCandidate.scores.overall !== undefined && (
               <p>{showEvalDetails ? "Hide details" : "Show details"}</p>

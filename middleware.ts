@@ -32,6 +32,15 @@ export async function verifyAndDecryptToken(token: string) {
   }
 }
 
+//creates login redirect URL
+function createLoginRedirectUrl(request: NextRequest, targetPath: string) {
+  const loginUrl = new URL("/auth/login", request.url);
+  if (targetPath !== "/auth/login") {
+    loginUrl.searchParams.set("redirect", targetPath);
+  }
+  return loginUrl;
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -86,22 +95,25 @@ export async function middleware(request: NextRequest) {
         return pathname.startsWith(path);
       })
     ) {
-      return NextResponse.redirect(new URL("/auth/login", request.url));
+      return NextResponse.redirect(createLoginRedirectUrl(request, pathname));
     }
   }
 
-  // Allow access to the Calendar page for all authenticated users
+  if (pathname?.includes("/backups") && !userData) {
+    return NextResponse.redirect(createLoginRedirectUrl(request, pathname));
+  }
+
   if (pathname?.includes("/calendar")) {
     return NextResponse.next();
   }
 
-  // Role-based access control
   if (userData) {
     const userRole = userData.role;
-    // Allow all pages for admin and hr roles
+
     if (userRole === "admin") {
       return NextResponse.next();
     }
+
     if (userRole === "hr") {
       if (
         pathname?.includes("/auth/signup") ||
@@ -110,23 +122,26 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL("/dashboard", request.url));
       }
     }
-    // Redirect candidate role to apply-jobs route
+
+    // Candidate role - redirect to apply-jobs if trying to access dashboard
     if (userRole === "candidate") {
       if (
         pathname?.includes("/dashboard") ||
         pathname?.includes("/dashboard/:path*")
       ) {
-        return NextResponse.redirect(
-          new URL(`/${pathParts[0]}/apply-jobs`, request.url)
-        );
+        const redirectUrl = isOrgPath
+          ? new URL(`/${pathParts[0]}/apply-jobs`, request.url)
+          : new URL("/apply-jobs", request.url);
+        return NextResponse.redirect(redirectUrl);
       }
     }
-    // Restrict access for interviewer role
+
+    // Interviewer role restrictions
     if (userRole === "interviewer") {
       if (
         unauthorizedInterviewerPages.some((path) => pathname?.includes(path))
       ) {
-        return NextResponse.redirect(new URL("/dashboard", request.url)); // Redirect to an unauthorized page
+        return NextResponse.redirect(new URL("/dashboard", request.url));
       }
       if (
         unauthorizedInterviewerAPIRoutes.some((path) =>
@@ -137,20 +152,20 @@ export async function middleware(request: NextRequest) {
       }
     }
 
-    // Restrict access for candidate role
+    // Restrict access to apply-jobs for non-candidate roles
     if (userRole !== "candidate" && pathname?.includes("/apply-jobs")) {
-      return NextResponse.redirect(new URL("/dashboard", request.url)); // Redirect to an unauthorized page
+      return NextResponse.redirect(new URL("/dashboard", request.url));
     }
+
+    // Admin-only access to backups
     if (userRole !== "admin" && pathname?.includes("/backups")) {
-      return NextResponse.redirect(new URL("/auth/login", request.url));
+      return NextResponse.redirect(createLoginRedirectUrl(request, pathname));
     }
-  }
-  if (pathname?.includes("/backups") && !userData) {
-    return NextResponse.redirect(new URL("/auth/login", request.url));
   }
 
   return NextResponse.next();
 }
+
 export const config = {
   matcher: [
     "/dashboard/:path*",

@@ -41,11 +41,14 @@ export const jobApi = createApi({
       query: (id) => `/jobs/${id}`,
       providesTags: ["Job"],
     }),
-    updateJobStatus: builder.mutation<Job, { id: string; status: string }>({
-      query: ({ id, status }) => ({
+    updateJobStatus: builder.mutation<
+      Job,
+      { id: string; status: string; openJobCardsOrder: string[] }
+    >({
+      query: ({ id, status, openJobCardsOrder }) => ({
         url: `/jobs/${id}/status`,
         method: "PATCH",
-        body: { status },
+        body: { status, openJobCardsOrder },
       }),
       invalidatesTags: ["Job"],
     }),

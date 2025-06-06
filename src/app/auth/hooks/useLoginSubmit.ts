@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { useLoginMutation } from "@/lib/features/auth/authApi";
 import { useCustomFields } from "@/Custom_Fields/hooks/use-customFields";
@@ -28,6 +28,7 @@ export const useHandleLoginSubmit = ({
   setLoginFormValues,
 }: HandleLoginSubmitProps) => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [login, { isLoading }] = useLoginMutation();
   const { setUserLoggedIn } = useCustomFields();
@@ -52,20 +53,47 @@ export const useHandleLoginSubmit = ({
     }
   };
 
+  const getRedirectUrl = (userRole: string, organizationName?: string) => {
+    const redirectTo =
+      searchParams?.get("redirect") || searchParams?.get("returnUrl");
+
+    if (redirectTo) {
+      try {
+        const decodedUrl = decodeURIComponent(redirectTo);
+        if (decodedUrl.startsWith("/") && !decodedUrl.startsWith("//")) {
+          return decodedUrl;
+        }
+      } catch (error) {
+        console.warn("Invalid redirect URL:", redirectTo);
+      }
+    }
+
+    if (userRole === "candidate") {
+      return isMultiple ? `/apply-jobs?o=${organizationName}` : "/apply-jobs";
+    } else if (
+      userRole === "admin" ||
+      userRole === "interviewer" ||
+      userRole === "hr"
+    ) {
+      return "/dashboard";
+    }
+
+    return "/";
+  };
+
   const handleSubmit = useCallback(
     async (
       values: LoginFormValues,
       { setStatus }: { setStatus: (message: string) => void }
     ) => {
-      //   debugger;
       setLoginFormValues(values);
       try {
         const response = await login({
           ...values,
-          email:values.email.toLowerCase().trim(),
+          email: values.email.toLowerCase().trim(),
           orgId: selectedOrg,
         }).unwrap();
-        // debugger;
+
         if (
           response.organizations &&
           response.organizations.length > 1 &&
@@ -75,9 +103,11 @@ export const useHandleLoginSubmit = ({
           setOrganizationDialogOpen(true);
           return;
         }
+
         const decryptedResponse = await verifyAndDecryptJWTToken(
           String(response.user)
         );
+
         if (decryptedResponse.success && decryptedResponse.user) {
           const userWithoutCustomFields: UserWithoutCF = {
             ...decryptedResponse.user,
@@ -92,23 +122,20 @@ export const useHandleLoginSubmit = ({
           Cookies.set("token", String(token), { expires: 30 });
           setUserLoggedIn(true);
         }
+
         toast({
           title: "Success",
           description: "Login successful",
           variant: "default",
         });
-        if (decryptedResponse.user.role === "candidate") {
-          const url = isMultiple
-            ? `/apply-jobs?o=${decryptedResponse.user.organizationInfo?.name}`
-            : "/apply-jobs";
-          router.push(url);
-        } else if (
-          decryptedResponse.user.role === "admin" ||
-          decryptedResponse.user.role === "interviewer" ||
-          decryptedResponse.user.role === "hr"
-        ) {
-          router.push("/dashboard");
-        }
+
+        // Get the appropriate redirect URL
+        const redirectUrl = getRedirectUrl(
+          decryptedResponse.user.role,
+          decryptedResponse.user.organizationInfo?.name
+        );
+
+        router.push(redirectUrl);
       } catch (err: unknown) {
         const errorMessage =
           err &&
@@ -134,6 +161,7 @@ export const useHandleLoginSubmit = ({
       setUserLoggedIn,
       router,
       toast,
+      searchParams,
     ]
   );
 

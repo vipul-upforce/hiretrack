@@ -145,7 +145,8 @@ const RenderHistoryEntry = ({
             typeof interview.assignmentBy === "object" &&
             "_id" in interview.assignmentBy &&
             (role !== "interviewer" ||
-              interview.assignmentBy?._id === user?.id) && (
+              interview.assignmentBy?._id === user?.id) &&
+            user?.role !== "candidate" && (
               // (user?.role === "hr" || user?.role === "admin") && (
               <RemarkOptionsMenu
                 isOpen={

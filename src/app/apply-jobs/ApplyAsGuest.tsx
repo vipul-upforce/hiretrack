@@ -26,6 +26,7 @@ import { parseResumeFromPdf } from "@/lib/parse-resume-from-pdf";
 import FormUpdater from "../dashboard/jobs/[id]/components/Utils/FormUpdater";
 import * as pdfjs from "pdfjs-dist";
 import { candidateSchema } from "../dashboard/jobs/[id]/schemas/candidate-schema";
+import { useApplyHandler } from "./useApplyHandler";
 
 // New function to store application status in localStorage
 const storeGuestApplication = (jobId: string, candidateId: string) => {
@@ -179,6 +180,7 @@ export function ApplyAsGuestDialog({
   const { validationSchema, initialValues: inits } = useCustomForm(formName);
   const [resetForm, setResetForm] = useState(false);
   const [hasAlreadyApplied, setHasAlreadyApplied] = useState(false);
+  const { formikRef, handleApply } = useApplyHandler<CandidateFormValues>();
 
   useEffect(() => {
     if (isOpen) {
@@ -196,6 +198,7 @@ export function ApplyAsGuestDialog({
   }, [isOpen, resumeFile, jobId]);
 
   const handleSubmit = async (values: CandidateFormValues) => {
+    console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
     // First check if already applied
     if (hasAppliedAsGuest(jobId)) {
       toast({
@@ -342,6 +345,32 @@ export function ApplyAsGuestDialog({
       reader.onerror = (error) => reject(error);
     });
   };
+  // const handleApply = async () => {
+  //   if (!formikRef.current) return;
+
+  //   const errors = await formikRef.current.validateForm();
+  //   formikRef.current.setTouched({
+  //     name: true,
+  //     email: true,
+  //     location: true,
+  //     experience: true,
+  //     skills: [],
+  //     expectedCTC: true,
+  //     currentCTC: true,
+  //     noticePeriod: true,
+  //     resume: true,
+  //   });
+
+  //   const firstErrorKey = Object.keys(errors)[0];
+  //   if (firstErrorKey) {
+  //     const el = document.querySelector(`[id="${firstErrorKey}"]`);
+  //     el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  //     (el as HTMLElement)?.focus();
+  //     return;
+  //   }
+
+  //   formikRef.current.handleSubmit();
+  // };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -380,6 +409,7 @@ export function ApplyAsGuestDialog({
           </div>
         ) : (
           <Formik
+            innerRef={formikRef}
             key={resetForm.toString()}
             initialValues={{
               ...getInitialValues(inits as CustomFieldValues),
@@ -408,11 +438,12 @@ export function ApplyAsGuestDialog({
                   </Button>
                   <Button
                     type="submit"
-                    disabled={
-                      isSubmitting ||
-                      Object.keys(errors).length > 0 ||
-                      Object.keys(touched).length === 0
-                    }
+                    onClick={handleApply}
+                    // disabled={
+                    //   isSubmitting ||
+                    //   Object.keys(errors).length > 0 ||
+                    //   Object.keys(touched).length === 0
+                    // }
                   >
                     {isSubmitting ? "Saving..." : "Apply"}
                   </Button>

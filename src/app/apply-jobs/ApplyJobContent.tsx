@@ -75,7 +75,7 @@ export default function ApplyJobsContent({
   };
 
   async function checkAllowance() {
-    const urlOrgName = searchParams?.get("o");
+    const urlOrgName = searchParams?.get("o") || orgName;
 
     const data = await fetch("/api/organization");
     if (!data.ok) {
@@ -86,7 +86,7 @@ export default function ApplyJobsContent({
     if (urlOrgName) {
       setInvalidPage(false);
       const config = allowance?.data?.find(
-        (org: ISettings) => org.portalConfigs?.portalName === urlOrgName
+        (org: ISettings) => org?.portalConfigs?.portalName === urlOrgName
       ).portalConfigs;
       if (config?.portalHeader?.url && config?.portalFooter?.url) {
         const [headerRes, footerRes] = await Promise.all([
@@ -106,7 +106,6 @@ export default function ApplyJobsContent({
       return;
     }
 
-    // Fallback if no urlOrgName
     if (allowance.allow) {
       setInvalidPage(true);
     }
@@ -131,7 +130,7 @@ export default function ApplyJobsContent({
 
   useEffect(() => {
     checkAllowance();
-  }, [searchParams]);
+  }, [searchParams,orgName]);
 
   const pageInit = async () => {
     // debugger;

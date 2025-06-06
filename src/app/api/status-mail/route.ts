@@ -67,6 +67,7 @@ async function sendQueuedEmail(data: any) {
     actionBy,
     prev_status,
     eventSubTitle,
+    candidateDetails,
   } = data;
 
   //   const eventDescription: string = `<div>
@@ -85,6 +86,7 @@ async function sendQueuedEmail(data: any) {
     actionBy,
     prev_status,
     eventSubTitle,
+    candidateDetails,
     // eventDescription,
   });
   console.log(`>>> ${email}, ${[...emailList]}`);
@@ -167,6 +169,8 @@ export async function POST(req: NextRequest) {
 
     const emailKey = id;
 
+    const candidateDetails = `${req.headers.get("Origin")}/candidate/${id}`;
+
     // Queue data for the email
     const queueData = {
       organizationId,
@@ -179,6 +183,7 @@ export async function POST(req: NextRequest) {
       emailList,
       actionBy,
       prev_status,
+      candidateDetails,
     };
 
     if (immediate) {
