@@ -1,24 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { History } from "@/lib/mongodb";
+import connectToDatabase, { Organization } from "@/lib/mongodb";
 import { Candidate } from "@/lib/mongodb";
-
-interface QueryCondition {
-  $regex?: string;
-  $options?: string;
-  $gte?: number | Date;
-  $lte?: number | Date;
-}
-
-interface Query {
-  [key: string]: Array<Record<string, QueryCondition | string>>;
-}
+import dayjs from "dayjs";
+import { Types } from "mongoose";
+import { CustomField } from "@/Custom_Fields/Types/CustomField";
 
 export async function POST(request: NextRequest) {
   try {
     await connectToDatabase();
 
-    // Get query parameters
     const body = await request.json();
+    const page = parseInt(request.nextUrl.searchParams.get("page") || "1");
+    const limit = 100;
+    const skip = (page - 1) * limit;
     const {
       name,
       skills,
@@ -32,13 +26,12 @@ export async function POST(request: NextRequest) {
       createdAfter,
       createdBefore,
       organizationId,
-      logicOperator = "$or", // Default to $or if not specified
+      customFields,
+      logicOperator = "$or",
     } = body;
 
-    // Build query using the specified logic operator
-    const query: Query = { [logicOperator]: [] };
+    const query: Record<string, any> = { [logicOperator]: [] };
 
-    // Add organization filter if provided
     if (organizationId) {
       if (!query.$and) query.$and = [];
       query.$and.push({ organizationId: organizationId });
@@ -49,7 +42,7 @@ export async function POST(request: NextRequest) {
     if (name) {
       query[logicOperator].push({
         name: {
-          $regex: name,
+          $regex: name.trim(),
           $options: "i",
         },
       });
@@ -91,7 +84,6 @@ export async function POST(request: NextRequest) {
       query[logicOperator].push({ currentCTC: currentCTCQuery });
     }
 
-    // Handle experience ranges
     if (minExperience || maxExperience) {
       const experienceQuery: { $gte?: number; $lte?: number } = {};
       if (minExperience) experienceQuery.$gte = parseFloat(minExperience);
@@ -99,7 +91,6 @@ export async function POST(request: NextRequest) {
       query[logicOperator].push({ experience: experienceQuery });
     }
 
-    // Handle date ranges for tracking.createdAt
     if (createdAfter || createdBefore) {
       const dateQuery: { $gte?: Date; $lte?: Date } = {};
       if (createdAfter) dateQuery.$gte = new Date(createdAfter);
@@ -107,62 +98,204 @@ export async function POST(request: NextRequest) {
       query[logicOperator].push({ "tracking.createdAt": dateQuery });
     }
 
-    // Execute query with pagination
+    if (customFields && typeof customFields === "object") {
+      const types = await getKeysType(organizationId);
+
+      await Promise.all(
+        Object.entries(customFields).map(async ([key, value]) => {
+          const fieldPath = `customFields.${key}`;
+          const matchedType = types.find(
+            (type: CustomField) => type.label === key
+          );
+          const isDateTime = matchedType?.type === "datetime";
+
+          if (
+            Array.isArray(value) &&
+            (dayjs(value[0]).isValid() || dayjs(value[1]).isValid())
+          ) {
+            const start =
+              value[0] && dayjs(value[0]).isValid()
+                ? (!isDateTime
+                    ? dayjs(value[0]).add(1, "day")
+                    : dayjs(value[0])
+                  ).toDate()
+                : null;
+
+            const end =
+              value[1] && dayjs(value[1]).isValid()
+                ? (!isDateTime
+                    ? dayjs(value[1]).add(1, "day")
+                    : dayjs(value[1])
+                  ).toDate()
+                : null;
+
+            if (start && end) {
+              query[logicOperator].push({
+                [fieldPath]: {
+                  $gte: start.toISOString(),
+                  $lte: end.toISOString(),
+                },
+              });
+            } else if (start) {
+              console.log("osnide start", start);
+              console.log("start.toISOString() :>> ", start.toISOString());
+              query[logicOperator].push({
+                [fieldPath]: {
+                  $gte: start.toISOString(),
+                },
+              });
+            } else if (end) {
+              query[logicOperator].push({
+                [fieldPath]: {
+                  $lte: end.toISOString(),
+                },
+              });
+            }
+          }
+
+          // ✅ Handle single string (text input)
+          else if (typeof value === "string" && value.trim() !== "") {
+            query[logicOperator].push({
+              [fieldPath]: {
+                $regex: value,
+                $options: "i",
+              },
+            });
+          }
+
+          // ✅ Handle multi-select (array of strings, not date)
+          else if (Array.isArray(value) && value.length > 0) {
+            const regexArray = value
+              .filter((v) => typeof v === "string" && v.trim() !== "")
+              .map((v) => new RegExp(v, "i"));
+
+            if (regexArray.length > 0) {
+              query[logicOperator].push({
+                [fieldPath]: {
+                  $in: regexArray,
+                },
+              });
+            }
+          }
+        })
+      );
+    }
+
     if (!Candidate) {
       throw new Error("Candidate model is not available");
     }
 
-    const candidates_WO_history = await Candidate.find(query)
-      .sort({ "tracking.createdAt": -1 })
-      .populate("remarks.userId", "name email")
-      .populate([
-        {
-          path: "assignment.interviewerId",
-          select: "_id name email",
+    const candidatesResult = await Candidate.aggregate([
+      { $match: query },
+      { $sort: { "tracking.createdAt": -1 } },
+
+      // $facet to run two pipelines: paginated data and total count
+      {
+        $facet: {
+          paginatedData: [
+            { $skip: skip },
+            { $limit: limit },
+            // all your existing lookups and projections go here
+            {
+              $lookup: {
+                from: "users",
+                localField: "remarks.userId",
+                foreignField: "_id",
+                as: "remarksUser",
+              },
+            },
+            {
+              $lookup: {
+                from: "users",
+                localField: "assignment.interviewerId",
+                foreignField: "_id",
+                as: "interviewer",
+              },
+            },
+            {
+              $unwind: {
+                path: "$interviewer",
+                preserveNullAndEmptyArrays: true,
+              },
+            },
+            {
+              $lookup: {
+                from: "jobs",
+                localField: "jobId",
+                foreignField: "_id",
+                as: "job",
+              },
+            },
+            {
+              $unwind: {
+                path: "$job",
+                preserveNullAndEmptyArrays: true,
+              },
+            },
+            {
+              $lookup: {
+                from: "histories",
+                let: {
+                  jobId: { $toString: "$jobId" },
+                  candidateId: { $toString: "$_id" },
+                },
+                pipeline: [
+                  /* your full pipeline for histories */
+                ],
+                as: "history",
+              },
+            },
+            {
+              $project: {
+                _id: 1,
+                jobId: "$job",
+                organizationId: 1,
+                name: 1,
+                location: 1,
+                experience: 1,
+                skills: 1,
+                email: 1,
+                scores: 1,
+                status: 1,
+                createdAt: 1,
+                updatedAt: 1,
+                remarksUser: 1,
+                attachments: 1,
+                currentCTC: 1,
+                expectedCTC: 1,
+                customFields: 1,
+                tracking: 1,
+                history: { $arrayElemAt: ["$history.history", 0] },
+                assignment: {
+                  $mergeObjects: [
+                    "$assignment",
+                    {
+                      interviewerId: {
+                        _id: "$interviewer._id",
+                        name: "$interviewer.name",
+                        email: "$interviewer.email",
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          ],
+          totalCount: [{ $count: "count" }],
         },
-        {
-          path: "jobId",
-          select: "title description ",
-        },
-      ])
-      .lean();
+      },
+    ]);
 
-    if (!History) return;
-
-    const candidates = await Promise.all(
-      candidates_WO_history.map(async (candidate) => {
-        if (
-          !candidate.jobId ||
-          typeof candidate.jobId !== "object" ||
-          !("_id" in candidate.jobId)
-        ) {
-          return candidate;
-        }
-
-        const history = await History?.findOne({
-          jobId: (candidate.jobId as { _id: string })._id.toString(),
-          candidateId: candidate._id.toString(),
-        })
-          .populate("history.currentInterviewer", "_id name email")
-          .populate("history.previousInterviewer", "_id name email")
-          .populate("history.assignmentBy", "_id name email")
-          .populate("history.note.userId", "_id name email")
-          .lean();
-
-        return {
-          ...candidate,
-          history: history ? history.history : [],
-        };
-      })
-    );
-
-    // Get total count for pagination
-    const totalCount = candidates.length || 0;
+    const paginatedData = candidatesResult[0]?.paginatedData || [];
+    const totalCount = candidatesResult[0]?.totalCount[0]?.count || 0;
 
     return NextResponse.json({
-      candidates,
+      candidates: paginatedData,
       pagination: {
         total: totalCount,
+        page,
+        limit,
+        totalPages: Math.ceil(totalCount / limit),
       },
     });
   } catch (error: unknown) {
@@ -175,3 +308,33 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+const getKeysType = async (orgId: string) => {
+  const keys = await Organization?.aggregate([
+    {
+      $match: {
+        _id: new Types.ObjectId(orgId),
+      },
+    },
+    {
+      $project: {
+        customFieldsArray: { $objectToArray: "$customFields" },
+      },
+    },
+    {
+      $unwind: "$customFieldsArray",
+    },
+    {
+      $match: {
+        "customFieldsArray.v.formName": "Candidate",
+      },
+    },
+    {
+      $project: {
+        fields: "$customFieldsArray.v.fields",
+        _id: 0,
+      },
+    },
+  ]);
+  return keys?.[0].fields;
+};

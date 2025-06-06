@@ -47,7 +47,13 @@ const SettingDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent
+        className={`${
+          setting.title === "Portal"
+            ? "max-w-7xl w-[90vw] h-[95vh] flex flex-col p-4"
+            : ""
+        }`}
+      >
         <DialogHeader>
           <DialogTitle>{setting.title}</DialogTitle>
           <DialogDescription>{setting.description}</DialogDescription>
@@ -58,10 +64,6 @@ const SettingDialog = ({
         ) : (
           <p> No settings available for this option.</p>
         )}
-
-        {/* <DialogClose asChild>
-          <Button onClick={onClose}>Close</Button>
-        </DialogClose> */}
       </DialogContent>
     </Dialog>
   );

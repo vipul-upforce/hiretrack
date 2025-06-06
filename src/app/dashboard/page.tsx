@@ -416,13 +416,6 @@ export default function DashboardPage() {
                   </span>
                 </div>
               )}
-
-              {/* End of data indicator */}
-              {!hasMoreData && assignments.length > 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  <p>You've reached the end of the list</p>
-                </div>
-              )}
             </>
           )}
         </div>
