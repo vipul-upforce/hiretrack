@@ -772,7 +772,7 @@ export async function GET(req: NextRequest) {
                     },
                   },
                 },
-                interviewerFilter,
+                // interviewerFilter,
               ],
               as: "candidates",
             },
