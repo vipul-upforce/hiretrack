@@ -5,9 +5,9 @@ import {
   Edit,
   Trash2,
   ArrowUpDown,
-  ChevronLeft,
   SortAsc,
   SortDesc,
+  X,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -83,8 +83,8 @@ export function LaneOptionsMenu({
 
   const handleSortApply = useCallback(() => {
     onSort(selectedSortField, sortDirection);
-    setShowSortMenu(false);
-    setIsOpen(false);
+    //setShowSortMenu(false);
+    //setIsOpen(false);
   }, [selectedSortField, sortDirection, onSort, setIsOpen]);
 
   const handleSortFieldSelect = useCallback((field: string) => {
@@ -132,7 +132,11 @@ export function LaneOptionsMenu({
           isOpen ? "bg-gray-200" : ""
         )}
       >
-        <Button variant="ghost" size="icon">
+        <Button
+          onClick={() => setShowSortMenu(false)}
+          variant="ghost"
+          size="icon"
+        >
           <MoreVertical className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
@@ -152,21 +156,23 @@ export function LaneOptionsMenu({
           </>
         }
         {showSortMenu && (
-          <div className="w-64 animate-fade-in absolute top-[117%] left-[185%] bg-white border border-gray-200 rounded-lg shadow-lg p-4 overflow-x-scroll">
-            <div className="flex items-center mb-4">
+          <div className="w-64 animate-fade-in-right absolute top-0  bg-white border border-gray-200 rounded-lg shadow-lg p-4 overflow-x-scroll sort-menu pb-0">
+            <div className="flex items-center justify-between ">
+              <span className="font-thin text-muted-foreground ml-2">
+                Sort Candidates by
+              </span>
               <Button
                 variant="ghost"
                 size="icon"
-                className="mr-2"
+                className="ml-2"
                 onClick={() => setShowSortMenu(false)}
                 aria-label="Back to main menu"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <X className="h-4 w-4" />
               </Button>
-              <span className="font-semibold text-base">Sort Candidates</span>
             </div>
             <div className="mb-4">
-              <div className="text-xs text-muted-foreground mb-2">Sort by</div>
+              {/* <div className="text-xs text-muted-foreground mb-2">by</div> */}
               <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
                 {SORT_FIELDS.map((field) => (
                   <button
@@ -179,6 +185,7 @@ export function LaneOptionsMenu({
                     )}
                     onClick={() => {
                       handleSortFieldSelect(field.value);
+                      handleSortApply();
                     }}
                     aria-pressed={selectedSortField === field.value}
                   >
@@ -235,11 +242,11 @@ export function LaneOptionsMenu({
                 </Button>
               </div>
             </div> */}
-            <div className="flex justify-end">
+            {/* <div className="flex justify-end">
               <Button size="sm" onClick={handleSortApply}>
                 Apply
               </Button>
-            </div>
+            </div> */}
           </div>
         )}
       </DropdownMenuContent>

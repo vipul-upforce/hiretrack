@@ -195,7 +195,18 @@ export async function PUT(
         allKeys.forEach((key) => {
           const prev = existingCandidate.customFields?.[key];
           const curr = data.customFields?.[key];
-
+          if (
+            (prev === "" ||
+              prev === null ||
+              prev === undefined ||
+              !((prev as string[]).length > 0)) &&
+            (curr === "" ||
+              curr === null ||
+              curr === undefined ||
+              !((curr as string[]).length > 0))
+          ) {
+            return;
+          }
           let attachments = undefined;
 
           if (typeof curr === "object" && curr !== null) {
@@ -214,8 +225,8 @@ export async function PUT(
           if (JSON.stringify(prev) !== JSON.stringify(curr)) {
             updates.push({
               title: `Updated ${key}`,
-              previousValue: prev || "~",
-              currentValue: curr || "~",
+              previousValue: prev || "",
+              currentValue: curr || "",
               attachments,
             });
           }
@@ -232,6 +243,21 @@ export async function PUT(
       if (data.assignment === null) {
         updateObj.$unset = { assignment: 1 };
       } else {
+        // // const tzFormattedTime = await getFormattedDate(
+        // //   request,
+        // //   new Date(data.assignment.time)
+        // // );
+        // // const tzFormattedAssignedAt = await getFormattedDate(
+        // //   request,
+        // //   new Date(data.assignment.assignedAt)
+        // // );
+
+        // // console.log("~~~~~~~~~ ", tzFormattedAssignedAt, tzFormattedTime);
+        // const updateAssignment = {
+        //   ...data.assignment,
+        //   // "assignment.time": tzFormattedTime,
+        //   // "assignment.assignedAt": tzFormattedAssignedAt,
+        // };
         updateObj.$set.assignment = data.assignment;
       }
     }
@@ -270,6 +296,41 @@ export async function PUT(
     if ("scores" in data) {
       updateObj.$set.scores = data.scores;
     }
+    // const whatWasUpdated: string[] = [];
+    // if ("attachments" in data) {
+    //   if (data.attachment === null) {
+    //     updateObj.$unset = { attachments: 1 };
+    //   } else {
+    //     if (
+    //       JSON.stringify(existingCandidate.attachments) !==
+    //       JSON.stringify(data.attachments)
+    //     ) {
+    //       whatWasUpdated.push("attachments");
+    //     }
+    //     updateObj.$set.attachments = data.attachments;
+    //   }
+    // }
+    // if ("resume" in data) {
+    //   if (data.resume === null) {
+    //     updateObj.$unset = { resume: 1 };
+    //   } else {
+    //     updateObj.$set.resume = data.resume;
+    //   }
+    // }
+    // if ("customFields" in data) {
+    //   if (data.customFields === null) {
+    //     updateObj.$unset = { customFields: 1 };
+    //   } else {
+    //     updateObj.$set.customFields = data.customFields;
+    //   }
+    // }
+
+    // if ("skills" in data) {
+    //   updateObj.$set.skills = data.skills;
+    // }
+    // if ("scores" in data) {
+    //   updateObj.$set.scores = data.scores;
+    // }
 
     if (
       "remarks" in data &&
@@ -299,7 +360,7 @@ export async function PUT(
             const rating = latestRemark.rating || "None";
             console.log("DATA: ", data);
             const candidateDetails = `${request.headers.get("origin")}/candidate/${data._id}`;
-            console.log("CNADIATE DETAILS:: ", candidateDetails);
+            // console.log("CNADIATE DETAILS:: ", candidateDetails);
             if (emailList.length > 0 && remark !== "") {
               const emailContent = loadTemplate("remark-add", {
                 remark_adder,
@@ -369,13 +430,15 @@ export async function PUT(
       );
     }
 
+    console.log("$$$$$$$ UPDATED OBJ: ", updateObj);
+
     if (Object.keys(updateObj.$set).length > 0 || updateObj.$unset) {
       const updatedCandidate = (await Candidate.findByIdAndUpdate(
         id,
         updateObj,
         {
           new: true,
-          runValidators: true,
+          // runValidators: true,
         }
       )
         .populate([

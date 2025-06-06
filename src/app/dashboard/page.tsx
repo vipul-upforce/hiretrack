@@ -12,8 +12,6 @@ import { Button } from "@/components/ui/button";
 import { RenderTodaysInterviews } from "./components/RenderTodaysInterviews";
 import { RenderInterviewerAssignments } from "./components/RenderInterviewerAssignments";
 import { MultiSelect } from "@/components/ui/multi-select";
-import { useGetUsersQuery } from "@/lib/features/users/usersApi";
-// import { isThisWeek } from "date-fns";
 interface User {
   name: string;
   email: string;
@@ -91,22 +89,34 @@ export interface Assignment {
   updatedAt: string;
 }
 
+interface Interviewer {
+  count: number;
+  interviewerId: string;
+  name: string;
+  email: string;
+}
+
 export default function DashboardPage() {
-  const {
-    data: userData,
-    // isLoading: isUserLoading,
-    // error,
-    // refetch,
-  } = useGetUsersQuery();
+  // const {
+  //   data: userData,
+  //   // isLoading: isUserLoading,
+  //   // error,
+  //   // refetch,
+  // } = useGetUsersQuery();
   const itemsPerPage = 12;
   const [open, setOpen] = useState(false);
   const [selectedAssignedTo, setSelectedAssignedTo] = useState("");
   const [user, setUser] = useState<User | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [assignmentsCounts, setAssignmentsCounts] = useState<{[key: string]: number}>({
-    totalInterviews:0,
-    thisWeek:0,
-    today:0,
+  const [assignedInterviewers, setAssignedInterviewers] = useState<
+    Interviewer[]
+  >([]);
+  const [assignmentsCounts, setAssignmentsCounts] = useState<{
+    [key: string]: number;
+  }>({
+    totalInterviews: 0,
+    thisWeek: 0,
+    today: 0,
   });
 
   const [isLoading, setIsLoading] = useState(true);
@@ -119,7 +129,6 @@ export default function DashboardPage() {
   const isInterviewer = user?.role === "interviewer";
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef(false);
-
 
   const fetchAssignments = useCallback(
     async (page = 1, isAppend = false) => {
@@ -146,16 +155,15 @@ export default function DashboardPage() {
           `/api/candidates/assignments?${params.toString()}`
         );
         const data = await response.json();
-        setAssignmentsCounts(prev => ({
+        setAssignmentsCounts((prev) => ({
           ...prev,
           totalInterviews: data[0]?.totalInterviews || 0,
+          todaysInterviews: data[0]?.todaysInterviews || 0,
+          thisweeksInterviews: data[0]?.thisweeksInterviews || 0,
         }));
-        
-
+        setAssignedInterviewers([...data[0].assignmentCount]);
         if (isAppend) {
           setAssignments((prev) => [...prev, ...data[0].data]);
-          
-          
         } else {
           setAssignments(data[0]?.data);
         }
@@ -259,28 +267,22 @@ export default function DashboardPage() {
   );
 
   const todayAssignments = interviewerAssignments?.filter((assignment) => {
-    const assignmentDate = new Date(assignment.assignment.time)
-    const today = new Date()
+    const assignmentDate = new Date(assignment.assignment.time);
+    const today = new Date();
     return (
       assignmentDate.getDate() === today.getDate() &&
       assignmentDate.getMonth() === today.getMonth() &&
       assignmentDate.getFullYear() === today.getFullYear()
-    )
-  })
+    );
+  });
 
-  const thisWeekAssignments = assignments?.filter((assignment) => {
-    const assignmentDate = new Date(assignment.assignment.time)
-    const startOfWeek = new Date()
-    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay())
-    const endOfWeek = new Date(startOfWeek)
-    endOfWeek.setDate(endOfWeek.getDate() + 6)
-    return assignmentDate >= startOfWeek && assignmentDate <= endOfWeek
-  })
-
-  const options = userData
+  const options = assignedInterviewers
     ?.map((usr) => ({
-      label: usr._id === user?.id ? "Me" : usr.name,
-      value: usr._id,
+      label:
+        usr.interviewerId === user?.id
+          ? `Me (${usr.count})`
+          : `${usr.name} (${usr.count})`,
+      value: usr.interviewerId,
     }))
     ?.sort((a) => (a.label === "Me" ? -1 : 1));
   return (
@@ -295,9 +297,11 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold flex justify-start">
-              {
-                isLoading ? <LoadingSpinner />: assignmentsCounts?.totalInterviews
-              }
+              {isLoading ? (
+                <LoadingSpinner />
+              ) : (
+                assignmentsCounts?.totalInterviews
+              )}
               {/* {isLoading ? (
                 <LoadingSpinner />
               ) : isInterviewer ? (
@@ -315,7 +319,12 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold flex justify-start">
-              {isLoading ? <LoadingSpinner /> : thisWeekAssignments?.length}
+              {isLoading ? (
+                <LoadingSpinner />
+              ) : (
+                assignmentsCounts?.thisweeksInterviews
+              )}
+              {/* {isLoading ? <LoadingSpinner /> : thisWeekAssignments?.length} */}
             </div>
           </CardContent>
         </Card>
@@ -326,7 +335,12 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold flex justify-start">
-              {isLoading ? <LoadingSpinner /> : todayAssignments?.length}
+              {isLoading ? (
+                <LoadingSpinner />
+              ) : (
+                assignmentsCounts?.todaysInterviews
+              )}
+              {/* {isLoading ? <LoadingSpinner /> : todayAssignments?.length} */}
             </div>
           </CardContent>
         </Card>

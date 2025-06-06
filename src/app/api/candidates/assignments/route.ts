@@ -1,7 +1,7 @@
 // @ts-nocheck
 
 import { NextResponse, NextRequest } from "next/server";
-import connectToDatabase, { History } from "@/lib/mongodb";
+import connectToDatabase, { History, Settings } from "@/lib/mongodb";
 import { Candidate } from "@/lib/mongodb";
 import { User } from "@/lib/mongodb";
 import { Job } from "@/lib/mongodb";
@@ -110,6 +110,17 @@ import { Types } from "mongoose";
 //   }
 // }
 
+function parseGMTOffset(offset) {
+  if (!offset || offset === "GMT+00:00") return 0;
+  const sign = offset.startsWith("GMT+") ? 1 : -1;
+  const [hours, minutes] = offset
+    .replace("GMT+", "")
+    .replace("GMT-", "")
+    .split(":")
+    .map(Number);
+  return sign * (hours * 60 * 60 * 1000 + minutes * 60 * 1000);
+}
+
 export async function GET(req: NextRequest) {
   try {
     await connectToDatabase();
@@ -154,15 +165,166 @@ export async function GET(req: NextRequest) {
             $match: {},
           };
         }
-        
+
         const isPagination = searchParams.get("isPagination") || false;
         const page = parseInt(searchParams.get("page") || "1", 10);
         const limit = parseInt(searchParams.get("limit") || "12", 10);
         const skip = (page - 1) * limit;
 
+        // const today = new Date();
+        // const startOfToday = new Date(
+        //   Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())
+        // );
+        // const endOfToday = new Date(
+        //   Date.UTC(today.getFullYear(), today.getMonth(), today.getDate() + 1)
+        // );
+        // const startOfWeek = new Date(
+        //   Date.UTC(
+        //     today.getFullYear(),
+        //     today.getMonth(),
+        //     today.getDate() - today.getDay() + 1
+        //   )
+        // );
+        // const endOfWeek = new Date(
+        //   Date.UTC(
+        //     today.getFullYear(),
+        //     today.getMonth(),
+        //     today.getDate() - today.getDay() + 8
+        //   )
+        // );
+
+        const settings = await Settings.findOne({
+          organizationId: new Types.ObjectId(userData.organizationId),
+        }).lean();
+        const userTimeZoneOffset = settings?.timeZone?.offset
+          ? parseGMTOffset(settings.timeZone.offset)
+          : 0;
+
+        console.log("MY OFFSET: ", userTimeZoneOffset);
+        // const now = new Date();
+        // const nowInUserTimeZone = new Date(now.getTime() + userTimeZoneOffset);
+        // const startOfToday = new Date(
+        //   nowInUserTimeZone.getFullYear(),
+        //   nowInUserTimeZone.getMonth(),
+        //   nowInUserTimeZone.getDate(),
+        //   0,
+        //   0,
+        //   0,
+        //   0
+        // );
+        // const endOfToday = new Date(
+        //   nowInUserTimeZone.getFullYear(),
+        //   nowInUserTimeZone.getMonth(),
+        //   nowInUserTimeZone.getDate(),
+        //   23,
+        //   59,
+        //   59,
+        //   999
+        // );
+        // const startOfTodayUTC = new Date(
+        //   startOfToday.getTime() - userTimeZoneOffset
+        // );
+        // const endOfTodayUTC = new Date(
+        //   endOfToday.getTime() - userTimeZoneOffset
+        // );
+
+        // const dayOfWeek = nowInUserTimeZone.getDay();
+        // console.log("$$$$$$$$$$$ DAYOFWEEK: ", dayOfWeek);
+        // const startOfWeek = new Date(nowInUserTimeZone);
+        // console.log("$$$$$$$$$$$ startOfEWEEK: ", startOfWeek);
+        // startOfWeek.setDate(
+        //   nowInUserTimeZone.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1)
+        // );
+        // startOfWeek.setHours(0, 0, 0, 0);
+        // const endOfWeek = new Date(startOfWeek);
+        // console.log("$$$$$$$$$$$ ENDOFWEEK: ", endOfWeek);
+        // endOfWeek.setDate(startOfWeek.getDate() + 6);
+        // endOfWeek.setHours(23, 59, 59, 999);
+        // const startOfWeekUTC = new Date(
+        //   startOfWeek.getTime() - userTimeZoneOffset
+        // );
+        // console.log("$$$$$$$$$$$ STARTOFWEEKUTC: ", startOfWeekUTC);
+        // const endOfWeekUTC = new Date(endOfWeek.getTime() - userTimeZoneOffset);
+        // console.log("$$$$$$$$$$$ ENDOFWEEKUTC: ", endOfWeekUTC);
+
+        // Calculate timezone-aware dates
+        const now = new Date();
+        console.log("$$$$$$$$$$$ Server UTC Time:", now);
+        // Adjust to IST (GMT+05:30)
+        const nowInUserTimeZone = new Date(now.getTime() + userTimeZoneOffset);
+        console.log("$$$$$$$$$$$ Now in IST:", nowInUserTimeZone);
+
+        // Start and end of today in IST
+        const startOfToday = new Date(
+          nowInUserTimeZone.getFullYear(),
+          nowInUserTimeZone.getMonth(),
+          nowInUserTimeZone.getDate(),
+          0,
+          0,
+          0,
+          0
+        );
+        const endOfToday = new Date(
+          nowInUserTimeZone.getFullYear(),
+          nowInUserTimeZone.getMonth(),
+          nowInUserTimeZone.getDate(),
+          23,
+          59,
+          59,
+          999
+        );
+        // Convert to UTC
+        const startOfTodayUTC = new Date(
+          startOfToday.getTime() - userTimeZoneOffset
+        );
+        const endOfTodayUTC = new Date(
+          endOfToday.getTime() - userTimeZoneOffset
+        );
+        console.log("$$$$$$$$$$$ StartOfTodayUTC:", startOfTodayUTC);
+        console.log("$$$$$$$$$$$ EndOfTodayUTC:", endOfTodayUTC);
+
+        // Start and end of week (Monday to Sunday) in IST
+        const dayOfWeek = nowInUserTimeZone.getDay(); // 0 for Sunday, ..., 6 for Saturday
+        console.log("$$$$$$$$$$$ DayOfWeek:", dayOfWeek);
+
+        // Start of week: Sunday
+        const startOfWeek = new Date(
+          nowInUserTimeZone.getFullYear(),
+          nowInUserTimeZone.getMonth(),
+          nowInUserTimeZone.getDate() - dayOfWeek,
+          0,
+          0,
+          0,
+          0
+        );
+        console.log("$$$$$$$$$$$ StartOfWeek (IST):", startOfWeek);
+
+        // End of week: Saturday (6 days after Sunday)
+        const endOfWeek = new Date(
+          startOfWeek.getFullYear(),
+          startOfWeek.getMonth(),
+          startOfWeek.getDate() + 6,
+          23,
+          59,
+          59,
+          999
+        );
+        console.log("$$$$$$$$$$$ EndOfWeek (IST):", endOfWeek);
+
+        // Convert to UTC
+        const startOfWeekUTC = new Date(
+          startOfWeek.getTime() - userTimeZoneOffset
+        );
+        const endOfWeekUTC = new Date(endOfWeek.getTime() - userTimeZoneOffset);
+        console.log("$$$$$$$$$$$ StartOfWeekUTC:", startOfWeekUTC);
+        console.log("$$$$$$$$$$$ EndOfWeekUTC:", endOfWeekUTC);
+
         const pipeline = [
           {
-            $match: { status: "open",organizationId:  new Types.ObjectId(userData?.organizationId) },
+            $match: {
+              status: "open",
+              organizationId: new Types.ObjectId(userData?.organizationId),
+            },
           },
           {
             $lookup: {
@@ -492,13 +654,194 @@ export async function GET(req: NextRequest) {
             },
           });
         }
-        const candidates = await Job.aggregate(pipeline);
-        const filteredCandidates = candidates[0]?.data?.filter(
+
+        // Separate aggregation for todaysInterviews
+        const todaysInterviewsPipeline = [
+          {
+            $match: {
+              status: "open",
+              organizationId: new Types.ObjectId(userData?.organizationId),
+            },
+          },
+          {
+            $lookup: {
+              from: "candidates",
+              let: { jobId: "$_id" },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: {
+                      $and: [
+                        { $eq: ["$jobId", "$$jobId"] },
+                        { $gte: ["$assignment.time", startOfToday] },
+                        { $lt: ["$assignment.time", endOfToday] },
+                        ...(isInterviewer
+                          ? [
+                              {
+                                $eq: [
+                                  "$assignment.interviewerId",
+                                  new Types.ObjectId(userData.id),
+                                ],
+                              },
+                            ]
+                          : []),
+                      ],
+                    },
+                  },
+                },
+                interviewerFilter,
+              ],
+              as: "candidates",
+            },
+          },
+          {
+            $unwind: {
+              path: "$candidates",
+            },
+          },
+          {
+            $count: "count",
+          },
+        ];
+
+        // Separate aggregation for thisweeksInterviews
+        const thisweeksInterviewsPipeline = [
+          {
+            $match: {
+              status: "open",
+              organizationId: new Types.ObjectId(userData?.organizationId),
+            },
+          },
+          {
+            $lookup: {
+              from: "candidates",
+              let: { jobId: "$_id" },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: {
+                      $and: [
+                        { $eq: ["$jobId", "$$jobId"] },
+                        { $gte: ["$assignment.time", startOfWeek] },
+                        { $lt: ["$assignment.time", endOfWeek] },
+                        ...(isInterviewer
+                          ? [
+                              {
+                                $eq: [
+                                  "$assignment.interviewerId",
+                                  new Types.ObjectId(userData.id),
+                                ],
+                              },
+                            ]
+                          : []),
+                      ],
+                    },
+                  },
+                },
+                interviewerFilter,
+              ],
+              as: "candidates",
+            },
+          },
+          {
+            $unwind: {
+              path: "$candidates",
+            },
+          },
+          {
+            $count: "count",
+          },
+        ];
+
+        const assignmentsCountPipeline = [
+          {
+            $match: {
+              status: "open",
+              organizationId: new Types.ObjectId(userData?.organizationId),
+            },
+          },
+          {
+            $lookup: {
+              from: "candidates",
+              let: { jobId: "$_id" },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: {
+                      $eq: ["$jobId", "$$jobId"],
+                    },
+                  },
+                },
+                interviewerFilter,
+              ],
+              as: "candidates",
+            },
+          },
+          {
+            $unwind: {
+              path: "$candidates",
+            },
+          },
+          {
+            $group: {
+              _id: "$candidates.assignment.interviewerId",
+              count: { $sum: 1 },
+              name: { $first: "$candidates.assignment.interviewerId.name" },
+              email: { $first: "$candidates.assignment.interviewerId.email" },
+            },
+          },
+          {
+            $lookup: {
+              from: "users",
+              localField: "_id",
+              foreignField: "_id",
+              as: "user",
+            },
+          },
+          {
+            $unwind: {
+              path: "$user",
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              interviewerId: "$_id",
+              name: "$user.name",
+              email: "$user.email",
+              count: 1,
+            },
+          },
+          {
+            $sort: {
+              name: 1,
+            },
+          },
+        ];
+
+        const [
+          mainResult,
+          todaysInterviewsResult,
+          thisweeksInterviewsResult,
+          assignmentCountsResult,
+        ] = await Promise.all([
+          Job.aggregate(pipeline),
+          Job.aggregate(todaysInterviewsPipeline),
+          Job.aggregate(thisweeksInterviewsPipeline),
+          Job.aggregate(assignmentsCountPipeline),
+        ]);
+        const candidates = mainResult[0] || { data: [], totalInterviews: 0 };
+        const todaysInterviews = todaysInterviewsResult[0]?.count || 0;
+        const thisweeksInterviews = thisweeksInterviewsResult[0]?.count || 0;
+        const assignmentCount = assignmentCountsResult || [];
+        const filteredCandidates = candidates.data?.filter(
           (candidate) =>
             candidate.jobId?.organizationId?.toString() ===
               userData.organizationId && candidate.status !== "rejected"
         );
+
         if (!History) return;
+
         const candidatesWithHistory = await Promise.all(
           filteredCandidates.map(async (candidate) => {
             const history = await History?.findOne({
@@ -512,7 +855,7 @@ export async function GET(req: NextRequest) {
               .lean();
 
             return {
-              ...candidate._doc,
+              ...candidate,
               history: history
                 ? history.history.filter((entry) =>
                     userData?.role === "admin" || userData?.role === "hr"
@@ -523,7 +866,16 @@ export async function GET(req: NextRequest) {
             };
           })
         );
-        return NextResponse.json(candidates);
+
+        return NextResponse.json([
+          {
+            data: candidatesWithHistory,
+            totalInterviews: candidates.totalInterviews,
+            todaysInterviews,
+            thisweeksInterviews,
+            assignmentCount,
+          },
+        ]);
       } else {
         return NextResponse.json(
           { message: "Unauthorised Access" },

@@ -218,7 +218,7 @@ export function KanbanColumn({
                   isOpen={isLaneOptionsOpen && column.id === isLaneOpsOpenFor}
                   setIsOpen={(open) => {
                     setIsLaneOptionsOpen(open);
-                    setIsLaneOpsOpenFor(open ? column.id || "" : "");
+                    setIsLaneOpsOpenFor(open ? column.id || null : null);
                   }}
                 />
               </div>
