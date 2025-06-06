@@ -261,10 +261,7 @@ export function SearchResults({
           candidate={selectedCandidate}
           isOpen={isDialogOpen}
           fromFilter={true}
-          onOpenChange={() => {
-            setSelectedCandidate(null);
-            setIsDialogOpen(false);
-          }}
+          onOpenChange={setIsDialogOpen}
           refetchCandidates={refetch}
         />
       )}

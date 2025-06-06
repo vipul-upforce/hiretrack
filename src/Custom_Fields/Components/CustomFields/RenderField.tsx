@@ -85,7 +85,10 @@ export const RenderField = ({
     id: `customFields.${label}`,
     "data-field-name": label,
     autoFocus: fieldHook?.fieldMeta.error && fieldHook?.fieldMeta.touched,
-    className: fieldHook?.fieldMeta.touched && fieldHook?.fieldMeta.error && 'border-2 border-red-500'
+    className:
+      fieldHook?.fieldMeta.touched &&
+      fieldHook?.fieldMeta.error &&
+      "border-2 border-red-500",
   };
 
   switch (type) {
@@ -263,8 +266,11 @@ export const RenderField = ({
     case "datetime":
       return (
         <DateTimePicker
-          {...commonProps}
-          value={dayjs(values.customFields[label] as string)}
+          value={
+            values.customFields[label]
+              ? dayjs(values.customFields[label] as string)
+              : null
+          }
           onChange={(e) =>
             setFieldValue("customFields." + label, e?.toISOString() || "")
           }

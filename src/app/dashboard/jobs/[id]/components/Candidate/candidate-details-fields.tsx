@@ -15,7 +15,7 @@ import { ICandidateHistory } from "@/lib/models/history";
 import { IEditRemark } from "../../schemas/EditRemarkDialog";
 import React from "react";
 import { HistoryAndLogTable } from "./HisotryAndLogTable";
-
+// import { useDateFormatter } from "@/components/timezoneFormat/useGetFormattedTZ";
 interface FieldConfig {
   label: string;
   id: string;
@@ -174,7 +174,7 @@ export const candidateDetailsFields: FieldConfig[] = [
             <div>
               Interview Date: {formatDate(candidate.assignment.time)} on{" "}
               {formatTime(candidate.assignment.time)}
-            </div>
+            </div>{" "}
           </div>
         ) : (
           <div>Not assigned to any interviewer</div>

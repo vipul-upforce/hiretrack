@@ -95,7 +95,11 @@ export async function PUT(
     if (isAdmin && (userData?.role !== "admin" || userData?.isDeleted)) {
       const adminCount = await User.countDocuments({
         role: "admin",
-        isDeleted: false,
+        // isDeleted: false ,
+        $or: [
+          { isDeleted: { $exists: false } },
+          { $and: [{ isDeleted: { $exists: true } }, { isDeleted: false }] },
+        ],
         organizationId: session?.user?.organizationId,
       });
 

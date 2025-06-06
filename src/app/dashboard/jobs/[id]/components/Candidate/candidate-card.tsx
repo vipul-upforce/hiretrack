@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArchiveRestore, Info, Trash2 } from "lucide-react";
 import { Candidate } from "@/types/candidate";
-import { formatTime } from "../../hooks/dateTimeFormatting";
+import { formatDate, formatTime } from "../../hooks/dateTimeFormatting";
 import AddRemarksPopover from "../Dialogs/add-remark-dialog";
 import RemarksPopover from "../Remarks/remarks-popover";
 import { CandidateScoreBadge } from "../Utils/candidate-score-badge";
@@ -243,7 +243,7 @@ export function CandidateCard({
                   candidate.assignment?.interviewerId?.name}
               </Badge>
               {candidate.assignment?.time && (
-                <Badge>{candidate.assignment?.time.split("T")[0]}</Badge>
+                <Badge>{formatDate(candidate.assignment?.time)} </Badge>
               )}
               {candidate.assignment?.time && (
                 <Badge>{formatTime(candidate.assignment?.time)} </Badge>

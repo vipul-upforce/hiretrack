@@ -40,6 +40,12 @@ export const settingsApi = createApi({
         method: "GET",
       }),
     }),
+    getTimeZone: builder.query({
+      query: () => ({
+        url: `/settings/timezone`,
+        method: "GET",
+      }),
+    }),
     getMultipleOrgConfigs: builder.query({
       query: () => ({
         url: `/settings/multipleorg`,
@@ -65,6 +71,14 @@ export const settingsApi = createApi({
         url: "/settings/gemini",
         method: "PUT",
         body: genimiConfig,
+      }),
+      invalidatesTags: ["Settings"],
+    }),
+    updateTimeZone: builder.mutation({
+      query: (timezone) => ({
+        url: "/settings/timezone",
+        method: "PUT",
+        body: timezone,
       }),
       invalidatesTags: ["Settings"],
     }),
@@ -131,7 +145,9 @@ export const {
   useUpdatePortalConfigsMutation,
   useTestConnectionMutation,
   useGetGeminiConfigsQuery,
+  useGetTimeZoneQuery,
   useUpdateGeminiMutation,
+  useUpdateTimeZoneMutation,
   useUpdateMultipleOrgMutation,
   useGetMultipleOrgConfigsQuery,
 } = settingsApi;

@@ -140,7 +140,11 @@ export default function BackupsDialog() {
                     </span>
                     <div className="flex flex-row justify-start items-center">
                       <span className="text-xs text-gray-500">
-                        {new Date(file.createdAt).toLocaleString()}
+                        {file.createdAt}
+                        {/* {new Date(file.createdAt).toDateString()}{" "}
+                        {new Date(file.createdAt).toTimeString()} */}
+                        {/* {formatTime(new Date(file.createdAt))}{" "}
+                        {formatDate(new Date(file.createdAt))} */}
                       </span>
                       <span className="text-xs ml-6 text-gray-500">
                         {formatFileSize(file.size)}

@@ -44,6 +44,11 @@ function Settings() {
       key: "assets",
       description: "Download media assets of your server",
     },
+    {
+      title: "Time Zone",
+      key: "timezone",
+      description: "Select the Time Zone for your organization.",
+    },
   ];
 
   return (

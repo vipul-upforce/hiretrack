@@ -11,7 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DatePicker } from "@/components/ui/date-picker";
+// import { DatePicker } from "@/components/ui/date-picker";
+import { DateTimePicker } from "@/components/ui/DateTimePicker";
 import { useField, useFormikContext } from "formik";
 import { CandidateFormValues } from "../../schemas/candidate-schema";
 import { useFetchInterviewersQuery } from "@/lib/features/user/userApi";
@@ -23,6 +24,8 @@ import { useEffect, useState } from "react";
 import { toast } from "@/hooks/use-toast";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { User } from "@/lib/features/org/orgApi";
+import dayjs from "dayjs";
+// import { isValidDate } from "@fullcalendar/core/internal";
 
 interface CandidateFormProps {
   onFileUpload?: (file: File) => void;
@@ -352,15 +355,19 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
 
                 <div className="space-y-2">
                   <Label>Time</Label>
-                  <DatePicker
+                  {/* <DatePicker
                     date={
                       values.assignment?.time
-                        ? new Date(values.assignment.time)
+                        ? // isValidDate(new Date(values.assignment.time).toLocaleString())
+                          new Date(
+                            new Date(values.assignment.time).toLocaleString()
+                          )
                         : undefined
                     }
-                    onDateChange={(date) =>
-                      setFieldValue("assignment.time", date)
-                    }
+                    onDateChange={(date) => {
+                      // debugger;
+                      return setFieldValue("assignment.time", new Date(date));
+                    }}
                     // onBlur={() => {
                     //   if (values.assignment?.time) {
                     //     setFieldValue(
@@ -369,6 +376,15 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
                     //     );
                     //   }
                     // }}
+                    placeholder="Select time"
+                  /> */}
+                  <DateTimePicker
+                    value={
+                      values.assignment?.time
+                        ? dayjs(values.assignment?.time)
+                        : null
+                    }
+                    onChange={(date) => setFieldValue("assignment.time", date)}
                     placeholder="Select time"
                   />
                   {errors?.assignment && (

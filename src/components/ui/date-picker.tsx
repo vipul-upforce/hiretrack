@@ -21,7 +21,12 @@ interface DatePickerProps {
   onBlur?: () => void;
 }
 
-export function DatePicker({ date, onDateChange, placeholder, onBlur }: DatePickerProps) {
+export function DatePicker({
+  date,
+  onDateChange,
+  placeholder,
+  onBlur,
+}: DatePickerProps) {
   const [open, setOpen] = useState(false);
   const { setFieldTouched } = useFormikContext();
   const hours = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -38,16 +43,23 @@ export function DatePicker({ date, onDateChange, placeholder, onBlur }: DatePick
     }
   };
 
-  const handleTimeChange = (type: "hour" | "minute" | "ampm", value: string) => {
+  const handleTimeChange = (
+    type: "hour" | "minute" | "ampm",
+    value: string
+  ) => {
     if (date) {
       const newDate = new Date(date);
       if (type === "hour") {
-        newDate.setHours((parseInt(value) % 12) + (newDate.getHours() >= 12 ? 12 : 0));
+        newDate.setHours(
+          (parseInt(value) % 12) + (newDate.getHours() >= 12 ? 12 : 0)
+        );
       } else if (type === "minute") {
         newDate.setMinutes(parseInt(value));
       } else if (type === "ampm") {
         const currentHours = newDate.getHours();
-        newDate.setHours(value === "PM" ? currentHours + 12 : currentHours - 12);
+        newDate.setHours(
+          value === "PM" ? currentHours + 12 : currentHours - 12
+        );
       }
       onDateChange(newDate);
     }
@@ -58,10 +70,14 @@ export function DatePicker({ date, onDateChange, placeholder, onBlur }: DatePick
   };
 
   return (
-    <Popover open={open} modal={true} onOpenChange={(open)=>{
-      setOpen(open)
-      setFieldTouched("validTill", true);
-    }}>
+    <Popover
+      open={open}
+      modal={true}
+      onOpenChange={(open) => {
+        setOpen(open);
+        setFieldTouched("validTill", true);
+      }}
+    >
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -72,13 +88,20 @@ export function DatePicker({ date, onDateChange, placeholder, onBlur }: DatePick
           onBlur={handleBlur}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {date ? format(date, "MM/dd/yyyy hh:mm aa") : placeholder || "Select date & time"}
+          {date
+            ? format(date, "MM/dd/yyyy hh:mm aa")
+            : placeholder || "Select date & time"}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0">
         <div className="sm:flex">
           {/* Date Picker */}
-          <Calendar mode="single" selected={date} onSelect={handleDateSelect} initialFocus />
+          <Calendar
+            mode="single"
+            selected={date}
+            onSelect={handleDateSelect}
+            initialFocus
+          />
 
           {/* Time Picker */}
           <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
@@ -89,7 +112,11 @@ export function DatePicker({ date, onDateChange, placeholder, onBlur }: DatePick
                   <Button
                     key={hour}
                     size="icon"
-                    variant={date && date.getHours() % 12 === hour % 12 ? "default" : "ghost"}
+                    variant={
+                      date && date.getHours() % 12 === hour % 12
+                        ? "default"
+                        : "ghost"
+                    }
                     className="sm:w-full shrink-0 aspect-square"
                     onClick={() => handleTimeChange("hour", hour.toString())}
                   >
@@ -107,9 +134,13 @@ export function DatePicker({ date, onDateChange, placeholder, onBlur }: DatePick
                   <Button
                     key={minute}
                     size="icon"
-                    variant={date && date.getMinutes() === minute ? "default" : "ghost"}
+                    variant={
+                      date && date.getMinutes() === minute ? "default" : "ghost"
+                    }
                     className="sm:w-full shrink-0 aspect-square"
-                    onClick={() => handleTimeChange("minute", minute.toString())}
+                    onClick={() =>
+                      handleTimeChange("minute", minute.toString())
+                    }
                   >
                     {minute.toString().padStart(2, "0")}
                   </Button>

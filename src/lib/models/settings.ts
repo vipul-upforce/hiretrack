@@ -11,7 +11,6 @@ const fileMetaSchema = new Schema(
   { _id: false, strict: true } // No automatic _id, disallow extra fields
 );
 
-
 const settingsSchema = new Schema({
   organizationId: { type: String, required: true },
   multipleOrg: { type: Boolean, default: false, requred: true },
@@ -76,6 +75,14 @@ const settingsSchema = new Schema({
   gemini: {
     gemini_key: String,
   },
+  timeZone: {
+    name: {
+      type: String,
+    },
+    offset: {
+      type: String,
+    },
+  },
 });
 
 export interface ISettings {
@@ -89,6 +96,10 @@ export interface ISettings {
     portalHeader: string | null;
     portalFooter: string | null;
     portalName: string;
+  };
+  timeZone: {
+    name: string;
+    offset: string;
   };
 }
 

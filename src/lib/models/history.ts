@@ -1,6 +1,5 @@
 import { Attachment } from "@/app/dashboard/jobs/[id]/schemas/AssignCandidateSchema";
 import { Schema } from "mongoose";
-
 export interface IinfoUpdateLog {
   title: string;
   previousValue?: unknown;
@@ -53,12 +52,7 @@ const candidateHistory = {
   },
   assignmentBy: {
     type: Schema.Types.ObjectId,
-    refPath: "history.assignmentByType",
-    default: null,
-  },
-  assignmentByType: {
-    type: String,
-    enum: ["User", "candidateaccounts"],
+    ref: "User",
     default: null,
   },
   note: {
@@ -143,7 +137,6 @@ export interface ICandidateHistory {
         name: string;
         email: string;
       };
-  assignmentByType?: "User" | "CandidateAccount" | null;
   note: {
     description: string | IinfoUpdateLog[];
     date: string;
@@ -165,7 +158,6 @@ export interface ICandidateHistory {
     size: number;
   }[];
 }
-
 export interface IHistory {
   jobId: string;
   candidateId: string;

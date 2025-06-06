@@ -1,3 +1,4 @@
+import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
 import { auth } from "@/lib/auth";
 import connectToDatabase, { CandidateAccount, History } from "@/lib/mongodb";
 import { NextRequest, NextResponse } from "next/server";
@@ -23,13 +24,14 @@ export async function POST(request: NextRequest) {
       $push: { appliedApplications: jobId },
     }).lean();
 
+    const dateTime = await getFormattedDate(request, new Date());
     // const historyCreated =
     await History?.create({
       candidateId: candidate?._id,
       jobId,
       history: [
         {
-          dateTime: new Date().toISOString(),
+          dateTime: dateTime,
           title: "Self Applied",
           previousInterviewer: null,
           currentInterviewer: null,
