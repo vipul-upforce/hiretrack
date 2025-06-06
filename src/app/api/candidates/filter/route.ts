@@ -3,8 +3,6 @@ import connectToDatabase from "@/lib/mongodb";
 import { Candidate } from "@/lib/mongodb";
 import dayjs from "dayjs";
 
-
-
 // export async function POST(request: NextRequest) {
 //   try {
 //     await connectToDatabase();
@@ -260,26 +258,33 @@ export async function POST(request: NextRequest) {
       Object.entries(customFields).forEach(([key, value]) => {
         const fieldPath = `customFields.${key}`;
 
-        // ✅ Handle value as a date/time range
         if (
           Array.isArray(value) &&
           value.length === 2 &&
           value[0] &&
-          value[1] &&
-          dayjs(value[0]).isValid() &&
-          dayjs(value[1]).isValid()
+          dayjs(value[0]).isValid()
         ) {
-          const start = dayjs(value[0]).toDate();
-          const end = dayjs(value[1]).toDate();
+          const start = dayjs(value[0]).add(1, "day").toDate();
 
-          query[logicOperator].push({
-            [fieldPath]: {
-              $gte: start.toISOString(),
-              $lte: end.toISOString(),
-            },
-          });
+          // Case 1: Only start date is present (fetch from start date onward)
+          if (!value[1] || !dayjs(value[1]).isValid()) {
+            query[logicOperator].push({
+              [fieldPath]: {
+                $gte: start.toISOString(),
+              },
+            });
+          }
+          // Case 2: Both start and end dates are present (fetch within range)
+          else {
+            const end = dayjs(value[1]).add(1, "day").toDate();
+            query[logicOperator].push({
+              [fieldPath]: {
+                $gte: start.toISOString(),
+                $lte: end.toISOString(),
+              },
+            });
+          }
         }
-
         // ✅ Handle single string (text match)
         else if (typeof value === "string" && value.trim() !== "") {
           query[logicOperator].push({
