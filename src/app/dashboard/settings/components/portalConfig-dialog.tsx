@@ -90,8 +90,8 @@ const formFields: Array<{
 
 export default function PortalConfig({ onClose }: { onClose: () => void }) {
   const { toast } = useToast();
-  const { data, isLoading, refetch } = useGetPortalConfigsQuery(undefined);
-  const [updateSMTPConfigs, { isLoading: isUpdating }] =
+  const { data, refetch } = useGetPortalConfigsQuery(undefined);
+  const [updateSMTPConfigs] =
     useUpdatePortalConfigsMutation();
   const [activeTab, setActiveTab] = useState("header");
   const headerFileInputRef = useRef<HTMLInputElement>(null);
