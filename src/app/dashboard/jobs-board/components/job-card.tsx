@@ -5,6 +5,12 @@ import { Job } from "@/types/job";
 import { Button } from "@/components/ui/button";
 import { Info, Trash2, ArchiveRestore } from "lucide-react";
 import Link from "next/link";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface JobCardProps {
   job: Job;
@@ -34,7 +40,26 @@ const JobCard = ({
             href={`/dashboard/jobs/${job._id}`}
             className="text-wrap break-words w-[90%]"
           >
-            <h3 className="font-medium">{job.title}</h3>
+            {/* <h3 className="font-medium">{job.title}</h3> */}
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="font-medium">{job.title}</h3>
+
+              {!job.isPublished && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400 cursor-default">
+                        Not Published
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-red-500">
+                      <p>This job is not visible to candidates.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+            </div>
+
             <p className="text-sm text-muted-foreground">
               {job.candidateCount} Candidates
             </p>

@@ -14,6 +14,7 @@ export interface Job {
   description: string;
   skills: string[];
   experience: number;
+  isPublished?: boolean;
   links: string[];
   // validTill?: Date;
   status: "open" | "closed" | "draft";
