@@ -407,6 +407,7 @@ export function EditCandidateDialog({
                   setFieldValue("resume", file);
                   await handleFileParse(file, setParsedResume);
                 }}
+                isEditMode={true}
               />
               <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4">
                 <Button

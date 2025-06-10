@@ -1,4 +1,5 @@
 "use client";
+import { useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import Radio from "@mui/material/Radio";
@@ -41,6 +42,7 @@ interface RenderFieldProps {
     ) => void;
     error?: string;
   };
+  isEditMode?:boolean
   label: string;
   setFieldValue: (
     field: string,
@@ -79,8 +81,17 @@ export const RenderField = ({
   options,
   setFieldError,
   fieldHook,
+  isEditMode=false
 }: RenderFieldProps) => {
-  // Common props for focus handling
+  console.log('isEditMode :>> ', isEditMode);
+  useEffect(() => {
+    if(isEditMode)
+    {
+      setFieldTouched("customFields." + label, true);
+    }
+    
+  }, []);
+
   const commonProps = {
     id: `customFields.${label}`,
     "data-field-name": label,

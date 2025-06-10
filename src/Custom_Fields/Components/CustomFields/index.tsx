@@ -28,7 +28,7 @@ interface FileData {
   size: number;
 }
 
-function CustomFields({ formName }: { formName: string }) {
+function CustomFields({ formName,isEditMode=false }: { formName: string, isEditMode?:boolean }) {
   const {
     values,
     // touched,
@@ -131,6 +131,7 @@ function CustomFields({ formName }: { formName: string }) {
                   .filter((opt) => opt !== ""),
                 setFieldError,
                 fieldHook, // Pass the field hook for additional functionality
+                isEditMode
               })}
               {fieldHook?.fieldMeta.touched && fieldHook?.fieldMeta.error && (
                 <div

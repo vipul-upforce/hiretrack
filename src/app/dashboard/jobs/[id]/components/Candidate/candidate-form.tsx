@@ -29,9 +29,10 @@ import dayjs from "dayjs";
 
 interface CandidateFormProps {
   onFileUpload?: (file: File) => void;
+  isEditMode?:boolean
 }
 
-export function CandidateForm({ onFileUpload }: CandidateFormProps) {
+export function CandidateForm({ onFileUpload,isEditMode=false }: CandidateFormProps) {
   const { setFieldValue, values, errors, setTouched } =
     useFormikContext<CandidateFormValues>();
   const { data: interviewers } = useFetchInterviewersQuery();
@@ -311,7 +312,7 @@ export function CandidateForm({ onFileUpload }: CandidateFormProps) {
           </div>
         </div>
 
-        <CustomFields formName="Candidate" />
+        <CustomFields formName="Candidate" isEditMode={isEditMode}/>
 
         {/* Assignment Section */}
         {user && user.role !== "candidate" && (
