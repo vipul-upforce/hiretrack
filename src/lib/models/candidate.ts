@@ -2,7 +2,9 @@ import mongoose, { Schema } from "mongoose";
 import { CustomFieldFile } from "../fileUtils";
 
 export interface ICandidate {
-  jobId?: mongoose.Schema.Types.ObjectId;
+  jobId?:
+    | mongoose.Schema.Types.ObjectId
+    | { _id: string; title: string; description: string };
   name: string;
   location: string;
   organizationId: string;

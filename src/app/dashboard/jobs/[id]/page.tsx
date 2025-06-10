@@ -23,12 +23,12 @@ import { Breadcrumb } from "./components/Utils/breadcrumb";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { Checkbox } from "@/components/ui/checkbox";
 import { KanbanColumn } from "./components/Lanes/KanbanColumn";
-// import withAuthGuard from "@/components/withAuthGuard";
 import { useKanbanBoard } from "./hooks/useKanbanBoard";
 import { useCandidate } from "./hooks/useCandidate";
 import ConfirmationDialog from "./components/Dialogs/ConfirmationDialog";
 import NoDataFound from "@/app/not-found";
 import EditLaneDialog from "./components/Lanes/edit-lane-dialog";
+import { useSSE } from "@/hooks/useSSE";
 
 export default function JobProgressPage() {
   const id = useParams()?.id as string;
@@ -51,7 +51,14 @@ export default function JobProgressPage() {
   const [laneToEdit, setLaneToEdit] = useState<string | null>(null);
   const [initialLaneToEdit, setInitialLaneToEdit] = useState<string | null>(
     null
-  ); // New state for initial lane value
+  );
+
+  // Initialize useSSE hook with hardcoded role "admin" and jobId
+  const {
+    candidates: sseCandidates,
+    // clients,
+    lanes: updatedLanes,
+  } = useSSE(user?.role || "", setSelectedCandidate, selectedCandidate, id);
 
   const {
     data: job,
@@ -59,15 +66,13 @@ export default function JobProgressPage() {
     error,
   } = useFetchJobByIdQuery(id as string);
   const {
-    data: candidates,
+    data: candidatesFromQuery,
     isLoading: isCandidatesLoading,
     refetch,
   } = useFetchCandidatesQuery(id as string);
   const { data: lanes, isLoading: isLanesLoading } = useGetLanesQuery(
     user?.id || undefined,
-    {
-      skip: !user?.id,
-    }
+    { skip: !user?.id }
   );
   const [droppedFileData, setDroppedFileData] = useState<File | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -129,10 +134,37 @@ export default function JobProgressPage() {
     }
   }, [isDialogOpen]);
 
-  // Update columns when candidates data changes
+  // Combine candidates from useFetchCandidatesQuery and useSSE
   useEffect(() => {
-    if (candidates && lanes) {
-      const lanesArray = [...lanes.lanes];
+    if (candidatesFromQuery && lanes) {
+      // Merge candidates from query and SSE
+      const mergedCandidates = [...candidatesFromQuery];
+      // sseCandidates.forEach((sseCandidate) => {
+      //   const index = mergedCandidates.findIndex(
+      //     (c) => c._id === sseCandidate._id
+      //   );
+      //   if (index >= 0) {
+      //     mergedCandidates[index] = sseCandidate;
+      //   } else {
+      //     mergedCandidates.push(sseCandidate);
+      //   }
+      // });
+      sseCandidates.forEach((sseCandidate) => {
+        const index = mergedCandidates.findIndex(
+          (c) => c._id === sseCandidate._id
+        );
+        if (index >= 0) {
+          // Update existing candidate
+          mergedCandidates[index] = sseCandidate;
+        } else {
+          // Add new candidate if not deleted or if showArchived is true
+          if (showArchived || !sseCandidate.isDeleted) {
+            mergedCandidates.push(sseCandidate);
+          }
+        }
+      });
+
+      const lanesArray = updatedLanes || [...lanes.lanes];
 
       // Ensure all lanes exist in initialCandidateColumns
       lanesArray.forEach((lane) => {
@@ -151,7 +183,7 @@ export default function JobProgressPage() {
         return {
           id: lane as CandidateStatus,
           title: column?.title || lane,
-          candidates: candidates.filter(
+          candidates: mergedCandidates.filter(
             (candidate) =>
               candidate.status === lane &&
               (showArchived ? candidate.isDeleted : !candidate.isDeleted)
@@ -161,7 +193,7 @@ export default function JobProgressPage() {
 
       setColumns(updatedColumns);
     }
-  }, [candidates, lanes, showArchived]);
+  }, [candidatesFromQuery, sseCandidates, lanes, updatedLanes, showArchived]);
 
   // Update initialLaneToEdit when laneToEdit is set
   useEffect(() => {
@@ -184,6 +216,7 @@ export default function JobProgressPage() {
   if (error) {
     return <NoDataFound name={"Job"} />;
   }
+
   return (
     <div className="space-y-6 overflow-x-hidden" style={{ width: "100%" }}>
       <Breadcrumb
@@ -195,6 +228,9 @@ export default function JobProgressPage() {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Candidates for {job?.title}</CardTitle>
           <div className="flex items-center space-x-4">
+            {/* <p className="">
+              {clients} Member{clients == 1 ? "" : "s"} Online
+            </p> */}
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="showArchived"
@@ -270,7 +306,7 @@ export default function JobProgressPage() {
         isEditLaneDialogOpen={isLaneEditOpen}
         setIsEditLaneDialogOpen={setIsLaneEditOpen}
         editingLane={laneToEdit ? laneToEdit : ""}
-        prevLane={initialLaneToEdit || ""} // Use initialLaneToEdit as prevLane
+        prevLane={initialLaneToEdit || ""}
         setEditingLane={setLaneToEdit}
         handleLaneUpdate={handleEditLane}
         isLoading={false}
@@ -300,10 +336,3 @@ export default function JobProgressPage() {
     </div>
   );
 }
-
-// export default withAuthGuard(JobProgressPage, {
-//   requiredRoles: ["admin", "hr"],
-//   fallbackPath: "/dashboard",
-//   checkAllowance: false,
-//   allowAuthenticated: true,
-// });

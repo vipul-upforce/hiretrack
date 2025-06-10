@@ -49,6 +49,10 @@ export async function GET(
           select: "_id name email",
         },
         {
+          path: "remarks.userId",
+          select: "name email",
+        },
+        {
           path: "jobId",
           select: "title description ",
         },

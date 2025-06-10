@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Candidate, Settings } from "@/lib/mongodb";
+import connectToDatabase, { Candidate, History, Settings } from "@/lib/mongodb";
 // import fetch from "node-fetch";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { promises as fs } from "fs";
 import path from "path";
 import { stripHtml } from "@/app/dashboard/jobs-board/schemas/job-schema";
+import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
+import { ICandidate } from "@/lib/models/candidate";
 // import { verifyAndDecryptToken } from "@/app/actions/auth";
 
 const generateBase64 = async (url: any) => {
@@ -46,7 +48,7 @@ async function evaluateResume(
   try {
     const genAI = new GoogleGenerativeAI(api_key);
     const data = resumeText;
-    const jobDescription =  await stripHtml(jobData?.description);
+    const jobDescription = await stripHtml(jobData?.description);
     const jobTitle = jobData.title;
     const jobSkills = jobData.skills.join(", ");
 
@@ -230,6 +232,41 @@ export async function PUT(request: NextRequest) {
 
     candidate.scores = scores;
     await candidate.save();
+
+    const fullCandidate = (await Candidate.findById(candidate._id)
+      .populate([
+        {
+          path: "assignment.interviewerId",
+          select: "_id name email",
+        },
+        {
+          path: "remarks.userId",
+          select: "name email",
+        },
+        {
+          path: "jobId",
+          select: "_id description title",
+        },
+      ])
+      .lean()) as ICandidate;
+
+    const candidateHistory = await History?.findOne({
+      candidateId: candidate._id,
+      jobId:
+        typeof fullCandidate.jobId === "object" &&
+        "_id" in fullCandidate.jobId &&
+        fullCandidate.jobId?._id,
+    });
+    const candidateHistoryPopulated = await candidateHistory?.populate([
+      { path: "history.assignmentBy", select: "_id name email" },
+      { path: "history.currentInterviewer", select: "_id name email" },
+      { path: "history.previousInterviewer", select: "_id name email" },
+      { path: "history.note.userId", select: "_id name email" },
+    ]);
+    broadcastCandidateUpdate({
+      ...fullCandidate,
+      history: candidateHistoryPopulated?.history,
+    });
 
     return NextResponse.json(
       {

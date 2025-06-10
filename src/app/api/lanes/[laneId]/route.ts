@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
-import connectToDatabase, { Candidate } from "@/lib/mongodb";
+import connectToDatabase, { Candidate, History } from "@/lib/mongodb";
 import { Organization } from "@/lib/mongodb";
+import {
+  broadcastLaneUpdate,
+  broadcastMultipleCandidateUpdate,
+} from "@/lib/broadcast/broadCastCandidate";
+import { IHistory } from "@/lib/models/history";
 
 export async function DELETE(
   request: Request,
@@ -45,7 +50,59 @@ export async function DELETE(
         },
       }
     );
+    broadcastLaneUpdate(org.lanes);
+    if (!Candidate) {
+      throw new Error("Database not connected");
+    }
+    const updatedCandidates = await Candidate.find({
+      organizationId,
+      status: newLaneId,
+    }).populate([
+      {
+        path: "assignment.interviewerId",
+        select: "_id name email",
+      },
+      {
+        path: "remarks.userId",
+        select: "name email",
+      },
+      {
+        path: "jobId",
+        select: "_id description title",
+      },
+    ]);
+    if (!History) {
+      throw new Error("Database not connected");
+    }
+    const candidateIds = updatedCandidates.map((c) => c._id);
 
+    const candidateHistories: IHistory[] = await History.find({
+      candidateId: {
+        $in: candidateIds,
+      },
+    }).populate([
+      { path: "history.assignmentBy", select: "_id name email" },
+      { path: "history.currentInterviewer", select: "_id name email" },
+      { path: "history.previousInterviewer", select: "_id name email" },
+      { path: "history.note.userId", select: "_id name email" },
+    ]);
+    const candidatesWithHistory = updatedCandidates.map((candidate) => {
+      const history = candidateHistories.filter(
+        (h) => h.candidateId.toString() === candidate._id.toString()
+      );
+      console.log("🟢🟢🟢 HISTORY: ", history);
+      return {
+        ...candidate.toObject(),
+        history: history[0]?.history || [],
+      };
+    });
+    // .populate([
+    //   { path: "history.assignmentBy", select: "_id name email" },
+    //   { path: "history.currentInterviewer", select: "_id name email" },
+    //   { path: "history.previousInterviewer", select: "_id name email" },
+    //   { path: "history.note.userId", select: "_id name email" },
+    // ]);
+    broadcastMultipleCandidateUpdate(candidatesWithHistory);
     return NextResponse.json({ data: updated });
   } catch (err) {
     const error = err as Error;
@@ -130,10 +187,61 @@ export async function PATCH(
     org.lanes[laneIndex] = newLaneId;
     await org.save();
 
-    const updatedCandidates = await Candidate.updateMany(
+    await Candidate.updateMany(
       { organizationId, status: laneId },
       { $set: { status: newLaneId } }
     );
+    broadcastLaneUpdate(org.lanes);
+
+    const updatedCandidates = await Candidate.find({
+      organizationId,
+      status: newLaneId,
+    }).populate([
+      {
+        path: "assignment.interviewerId",
+        select: "_id name email",
+      },
+      {
+        path: "remarks.userId",
+        select: "name email",
+      },
+      {
+        path: "jobId",
+        select: "_id description title",
+      },
+    ]);
+    if (!History) {
+      throw new Error("Database not connected");
+    }
+    const candidateIds = updatedCandidates.map((c) => c._id);
+
+    const candidateHistories: IHistory[] = await History.find({
+      candidateId: {
+        $in: candidateIds,
+      },
+    }).populate([
+      { path: "history.assignmentBy", select: "_id name email" },
+      { path: "history.currentInterviewer", select: "_id name email" },
+      { path: "history.previousInterviewer", select: "_id name email" },
+      { path: "history.note.userId", select: "_id name email" },
+    ]);
+    const candidatesWithHistory = updatedCandidates.map((candidate) => {
+      const history = candidateHistories.filter(
+        (h) => h.candidateId.toString() === candidate._id.toString()
+      );
+      console.log("🟢🟢🟢 HISTORY: ", history);
+      return {
+        ...candidate.toObject(), // Convert Mongoose document to plain object
+        history: history[0]?.history || [],
+      };
+    });
+    // .populate([
+    //   { path: "history.assignmentBy", select: "_id name email" },
+    //   { path: "history.currentInterviewer", select: "_id name email" },
+    //   { path: "history.previousInterviewer", select: "_id name email" },
+    //   { path: "history.note.userId", select: "_id name email" },
+    // ]);
+    broadcastMultipleCandidateUpdate(candidatesWithHistory);
 
     return NextResponse.json({
       message: "Lane updated successfully",

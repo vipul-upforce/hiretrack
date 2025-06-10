@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { History } from "@/lib/mongodb";
+import connectToDatabase, { Candidate, History } from "@/lib/mongodb";
 import {
   Attachments,
   FileAttachment,
@@ -8,7 +8,10 @@ import {
 import { verifyAndDecryptToken } from "@/app/actions/auth";
 import { v4 as uuidv4 } from "uuid";
 import { auth } from "@/lib/auth";
-import mongoose from "mongoose";
+import mongoose, { Types } from "mongoose";
+import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
+import { ICandidate } from "@/lib/models/candidate";
+import { ICandidateHistory } from "@/lib/models/history";
 export async function POST(request: NextRequest) {
   //Getting the history data
   try {
@@ -214,22 +217,73 @@ export async function PUT(request: NextRequest) {
       ];
     }
 
+    if (!Candidate) {
+      throw new Error("Database not connceted");
+    }
+
+    const candidateId = new Types.ObjectId(data.candidateId);
+    const candidateData = await Candidate.findById(candidateId)
+      .populate([
+        {
+          path: "assignment.interviewerId",
+          select: "_id name email",
+        },
+        {
+          path: "remarks.userId",
+          select: "name email",
+        },
+        {
+          path: "jobId",
+          select: "title description ",
+        },
+      ])
+      .lean();
+    // const candidateDataJSON = candidateData?.toObject();
     const historyEntry = await History.findOneAndUpdate(
       { jobId: data.jobId, candidateId: data.candidateId },
       { $push: { history: data.newEntry } },
       { upsert: true, new: true, runValidators: true }
     );
 
-    if (!historyEntry) {
+    console.log("🎊🎊🎊 DATA>JOBID: ", data.jobId);
+    const jobId = new Types.ObjectId(
+      typeof data.jobId === "object" && "_id" in data.jobId
+        ? data.jobId._id
+        : data.jobId || ""
+    );
+    const historyData = await History.findOne({
+      candidateId: candidateId,
+      jobId: jobId,
+    })
+      .populate("history.currentInterviewer", "_id name email")
+      .populate("history.previousInterviewer", "_id name email")
+      .populate("history.assignmentBy", "_id name email")
+      .populate("history.note.userId", "_id name email")
+      .lean();
+    console.log("$⌛⌛⌛⌛⌛ CANDIDATEDATA: ", historyData);
+    // const hisotryJSON = historyData?.toObject();
+    if (!historyEntry || !historyData) {
       return NextResponse.json(
         { error: "No Assignment History Found" },
         { status: 404 }
       );
     }
+    if (!candidateData?.name) {
+      return NextResponse.json(
+        { error: "Candidate data is incomplete" },
+        { status: 400 }
+      );
+    }
+
+    broadcastCandidateUpdate({
+      ...candidateData,
+      history: historyData.history || [],
+    } as ICandidate & { history?: ICandidateHistory[] });
     return NextResponse.json(historyEntry.history);
     // return NextResponse.json({});
   } catch (error) {
     if (error instanceof Error) {
+      console.error(error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
   }

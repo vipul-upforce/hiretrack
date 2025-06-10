@@ -12,6 +12,7 @@ import { loadTemplate } from "@/lib/templateLoader";
 import { auth } from "@/lib/auth";
 import { Attachment } from "../route";
 import { IinfoUpdateLog } from "@/lib/models/history";
+import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
 
 interface UpdateObject {
   $set: Record<string, unknown>;
@@ -464,6 +465,8 @@ export async function PUT(
         );
       }
 
+      // let candidateHistory = null;
+
       if (updates.length > 0) {
         // let combined_Description = updates
         //   .map((item) => {
@@ -513,7 +516,23 @@ export async function PUT(
           { new: true }
         );
       }
+      const candidateHistory = await History?.findOne({
+        candidateId: updatedCandidate._id,
+        jobId: updatedCandidate.jobId?._id,
+      });
+      const candidateHistoryPopulated = await candidateHistory?.populate([
+        { path: "history.assignmentBy", select: "_id name email" },
+        { path: "history.currentInterviewer", select: "_id name email" },
+        { path: "history.previousInterviewer", select: "_id name email" },
+        { path: "history.note.userId", select: "_id name email" },
+      ]);
 
+      console.log("UPDATED SCRE: ", updatedCandidate.scores);
+
+      broadcastCandidateUpdate({
+        ...updatedCandidate,
+        history: candidateHistoryPopulated?.history,
+      });
       return NextResponse.json(updatedCandidate);
     }
 
@@ -564,6 +583,10 @@ export async function GET(
           select: "_id name email",
         },
         {
+          path: "remarks.userId",
+          select: "name email",
+        },
+        {
           path: "jobId",
           select: "title description ",
         },
@@ -585,7 +608,7 @@ export async function GET(
 
     const candidateWithHisotry = {
       ...candidate,
-      history: history!.history,
+      history: history?.history || [],
     };
 
     console.log("HISOTYER:L ", history);
@@ -664,23 +687,47 @@ export async function DELETE(
         $push: { history: historyEntry },
       },
       { new: true }
-    );
-
-    console.log("🎉🎉🎉entry created: ", updatedHistory);
+    )
+      .populate("history.currentInterviewer", "_id name email")
+      .populate("history.previousInterviewer", "_id name email")
+      .populate("history.assignmentBy", "_id name email")
+      .populate("history.note.userId", "_id name email");
+    // console.log("🎉🎉🎉entry created: ", updatedHistory);
 
     // const deletedCandidate = await Candidate.findByIdAndUpdate(id, { isDeleted : });
     const deletedCandidate = await Candidate.findByIdAndUpdate(
       id,
       { isDeleted: !candidate.isDeleted },
       { new: true }
-    );
+    ).populate([
+      {
+        path: "assignment.interviewerId",
+        select: "_id name email",
+      },
+      {
+        path: "remarks.userId",
+        select: "name email",
+      },
+      {
+        path: "jobId",
+        select: "title description ",
+      },
+    ]);
 
-    if (!deletedCandidate) {
+    const readableJSON = deletedCandidate?.toObject();
+    const readableHistory = updatedHistory?.toObject();
+
+    if (!readableJSON) {
       return NextResponse.json(
         { error: "Candidate not found" },
         { status: 404 }
       );
     }
+
+    broadcastCandidateUpdate({
+      ...readableJSON,
+      history: readableHistory?.history,
+    });
 
     return NextResponse.json({ message: "Candidate deleted successfully" });
   } catch (error) {

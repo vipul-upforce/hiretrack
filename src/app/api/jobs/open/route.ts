@@ -3,6 +3,7 @@ import connectToDatabase from "@/lib/mongodb";
 import { Job, Candidate, History } from "@/lib/mongodb";
 import { auth } from "@/lib/auth";
 import { ICandidateHistory } from "@/lib/models/history";
+import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
 
 export async function GET(request: NextRequest) {
   try {
@@ -99,7 +100,7 @@ export async function POST(req: NextRequest) {
 
     const lane = session?.user?.organizationInfo?.lanes[0];
     // Update candidate with new job assignment and set status to "applied"
-    await Candidate!.findByIdAndUpdate(candidateId, {
+    const latestCandidate = await Candidate!.findByIdAndUpdate(candidateId, {
       jobId: jobId,
       status: lane,
       $set: {
@@ -159,6 +160,42 @@ export async function POST(req: NextRequest) {
       { $push: { history: historyEntry } },
       { upsert: true }
     );
+    const updatedHistory = await History!
+      .findOne({
+        jobId,
+        candidateId,
+      })
+      .populate("history.currentInterviewer", "_id name email")
+      .populate("history.previousInterviewer", "_id name email")
+      .populate("history.assignmentBy", "_id name email")
+      .populate("history.note.userId", "_id name email");
+
+    console.log("LATEST JOB: ", latestCandidate?.jobId);
+    const populatedCandidate = await candidate.populate([
+      {
+        path: "assignment.interviewerId",
+        select: "_id name email",
+      },
+      {
+        path: "remarks.userId",
+        select: "name email",
+      },
+      {
+        path: "jobId",
+        select: "title description ",
+      },
+    ]);
+    const candidateObj = populatedCandidate.toObject();
+    delete candidateObj.jobId;
+    broadcastCandidateUpdate({
+      ...candidateObj,
+      jobId: {
+        _id: jobId,
+        title: nextJob.title,
+        description: nextJob.description,
+      },
+      history: updatedHistory?.history,
+    });
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
