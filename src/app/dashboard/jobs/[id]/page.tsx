@@ -59,7 +59,10 @@ export default function JobProgressPage() {
     // clients,
     lanes: updatedLanes,
   } = useSSE(user?.role || "", setSelectedCandidate, selectedCandidate, id);
-
+  // useEffect(() => {
+  //   // debugger;
+  //   console.log("SELECTED: ", selectedCandidate?.name, selectedCandidate?._id);
+  // }, [selectedCandidate]);
   const {
     data: job,
     isLoading: isJobLoading,
