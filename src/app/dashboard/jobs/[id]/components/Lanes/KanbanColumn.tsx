@@ -12,6 +12,7 @@ import { CandidateCard } from "../Candidate/candidate-card";
 import { Candidate } from "@/types/candidate"; // Adjust path as needed
 import { LaneOptionsMenu } from "./lanes-options-menu";
 import { useState, useMemo } from "react";
+import { usePathname } from "next/navigation";
 
 interface KanbanColumnProps {
   column: {
@@ -63,8 +64,10 @@ export function KanbanColumn({
   const [isLaneOpsOpenFor, setIsLaneOpsOpenFor] = useState<string | null>();
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
-
+  // const [jobId, setJobId] = useState<string>();
   // Sorting function
+  const pathname = usePathname();
+  const jobId = pathname?.split("/")[3];
   const sortCandidates = (
     candidates: Candidate[],
     field: SortField,
@@ -199,7 +202,15 @@ export function KanbanColumn({
                   >
                     {column.title}
                     <span className="ml-2 text-sm text-muted-foreground">
-                      ({column.candidates.length})
+                      {/* ({column.candidates.length}) */}(
+                      {
+                        column.candidates.filter(
+                          (candidate) =>
+                            candidate?.jobId?._id?.toString() ===
+                            jobId?.toString()
+                        ).length
+                      }
+                      )
                     </span>
                     {/* {sortField && (
                       <span className="ml-1 text-xs text-blue-600">
@@ -265,24 +276,32 @@ export function KanbanColumn({
                         </div>
                       </div>
                     )}
-                    {sortedCandidates.map((candidate, index) => (
-                      <CandidateCard
-                        key={`${column.id}-${candidate._id}`}
-                        candidate={candidate}
-                        index={index}
-                        refetch={refetch}
-                        onViewDetails={(candidate) => {
-                          setSelectedCandidate(candidate);
-                          setIsDetailsOpen(true);
-                        }}
-                        openRemarks={openRemarksFor === candidate._id}
-                        setOpenRemarksFor={setOpenRemarksFor}
-                        onDeleteClick={(id: string) => {
-                          setSelectedCandidate(candidate);
-                          handleDeleteClick(id);
-                        }}
-                      />
-                    ))}
+                    {sortedCandidates.map((candidate, index) => {
+                      // debugger;
+                      if (
+                        // typeof candidate.jobId._id === "string" &&
+                        candidate?.jobId?._id?.toString() !== jobId?.toString()
+                      )
+                        return;
+                      return (
+                        <CandidateCard
+                          key={`${column.id}-${candidate._id}`}
+                          candidate={candidate}
+                          index={index}
+                          refetch={refetch}
+                          onViewDetails={(candidate) => {
+                            setSelectedCandidate(candidate);
+                            setIsDetailsOpen(true);
+                          }}
+                          openRemarks={openRemarksFor === candidate._id}
+                          setOpenRemarksFor={setOpenRemarksFor}
+                          onDeleteClick={(id: string) => {
+                            setSelectedCandidate(candidate);
+                            handleDeleteClick(id);
+                          }}
+                        />
+                      );
+                    })}
                     {provided.placeholder}
                   </div>
                 )}

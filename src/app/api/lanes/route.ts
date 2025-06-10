@@ -3,6 +3,7 @@ import { Lane } from "@/lib/mongodb";
 import connectToDatabase from "@/lib/mongodb";
 import { auth } from "@/lib/auth";
 import { Organization } from "@/lib/mongodb";
+import { broadcastLaneUpdate } from "@/lib/broadcast/broadCastCandidate";
 
 export async function GET(request: NextRequest) {
   try {
@@ -101,6 +102,7 @@ export async function PUT(request: NextRequest) {
       { $set: { lanes: newLanes } },
       { new: true }
     );
+    broadcastLaneUpdate(updatedOrganization?.lanes || []);
     return NextResponse.json(updatedOrganization);
   } catch (err: unknown) {
     const error = err as Error;

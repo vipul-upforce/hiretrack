@@ -5,6 +5,7 @@ import { handleCustomFieldFiles, handleSingleFile } from "@/lib/fileUtils";
 import { handleFileAttachments } from "@/lib/fileUtils";
 import mongoose from "mongoose";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
 // import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
 
 export interface Attachment {
@@ -165,13 +166,18 @@ export async function POST(request: NextRequest) {
         const candidate = await Candidate.create(candidateData);
 
         // Populate the interviewer details before sending response
-        await candidate.populate("assignment.interviewerId", "name email");
+        const candidateCreated = await candidate.populate(
+          "assignment.interviewerId",
+          "name email"
+        );
+
+        const sanitizedCandidate = candidateCreated.toObject();
 
         // const dateTime = await getFormattedDate(request, new Date());
         // const historyExisting =
-
+        let candidateHistory = null;
         if (userData.role === "candidate") {
-          await History?.create({
+          candidateHistory = await History?.create({
             candidateId: candidate._id,
             jobId: data.jobId,
             history: [
@@ -187,8 +193,12 @@ export async function POST(request: NextRequest) {
               },
             ],
           });
+          candidateHistory = await candidateHistory?.populate(
+            "history.assignmentBy",
+            "_id name email"
+          );
         } else {
-          await History?.create({
+          candidateHistory = await History?.create({
             candidateId: candidate._id,
             jobId: data.jobId,
             history: [
@@ -204,9 +214,16 @@ export async function POST(request: NextRequest) {
               },
             ],
           });
+          candidateHistory = await candidateHistory?.populate(
+            "history.assignmentBy",
+            "_id name email"
+          );
         }
-        // console.log("⛔⛔ existing history", historyExisting);
-
+        // console.log("⛔⛔ CANDIDATE CERATED", sanitizedCandidate);
+        broadcastCandidateUpdate({
+          ...sanitizedCandidate,
+          history: candidateHistory?.history,
+        });
         return NextResponse.json(candidate, { status: 201 });
       } else {
         return NextResponse.json(
