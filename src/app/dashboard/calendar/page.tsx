@@ -14,7 +14,9 @@ import { formatTime } from "../jobs/[id]/hooks/dateTimeFormatting";
 import { CandidateStatus } from "@/types/candidate";
 import { Assignment } from "@/types/assignment";
 import LoaderSkeletonCalender from "./components/loader-skeleton-calender";
-import { RenderEvent } from "./components/renderCalendarEvent"; // Updated import name
+import { RenderEvent } from "./components/renderCalendarEvent";
+import { useSSE } from "@/hooks/useSSE";
+import useRoles from "@/hooks/useRoles";
 
 interface Interviewer {
   _id: string;
@@ -104,6 +106,13 @@ export default function CalendarPage() {
   const [searchText, setSearchText] = useState("");
   const [filterText, setFilterText] = useState("");
 
+  const role = useRoles();
+  const { candidates: sseCandidates } = useSSE(
+    role || "",
+    setSelectedEvent,
+    selectedEvent
+  );
+
   useEffect(() => {
     refetch();
   }, []);
@@ -118,9 +127,28 @@ export default function CalendarPage() {
     setFilterText(searchText.trim());
   };
 
-  const filteredAssignments =
-    assignments &&
-    assignments[0]?.data?.filter((assignment: any) => {
+  // Merge assignments with sseCandidates, prioritizing sseCandidates for updates
+  const mergedAssignments = (
+    assignments && assignments[0]?.data ? [...assignments[0].data] : []
+  ).map((assignment: CandidateAssignment) => {
+    const sseCandidate = sseCandidates.find(
+      (c: CandidateAssignment) => c._id === assignment._id
+    );
+    return sseCandidate || assignment;
+  });
+  // Add any new candidates from sseCandidates that aren't in assignments
+  sseCandidates.forEach((sseCandidate: CandidateAssignment) => {
+    if (
+      !mergedAssignments.some(
+        (a: CandidateAssignment) => a._id === sseCandidate._id
+      )
+    ) {
+      mergedAssignments.push(sseCandidate);
+    }
+  });
+
+  const filteredAssignments = mergedAssignments.filter(
+    (assignment: CandidateAssignment) => {
       if (!filterText) return true;
       const searchRegex = new RegExp(filterText, "i");
 
@@ -128,7 +156,10 @@ export default function CalendarPage() {
         (typeof assignment.jobId === "object" && assignment.jobId?.skills) ||
         [];
       const assignmentSkills = assignment.skills || [];
-      const assignmentJobSkills = assignment.assignment?.jobId?.skills || [];
+      const assignmentJobSkills =
+        (typeof assignment.assignment?.jobId !== "string" &&
+          assignment.assignment?.jobId?.skills) ||
+        [];
       const allSkills = [
         ...jobSkills,
         ...assignmentSkills,
@@ -150,16 +181,17 @@ export default function CalendarPage() {
         (allSkills.length > 0 &&
           allSkills.some((skill) => searchRegex.test(skill || "")))
       );
-    });
+    }
+  );
 
   const events: CustomCalendarEvent[] =
-    filteredAssignments?.map((candidate: any) => {
+    filteredAssignments?.map((candidate: CandidateAssignment) => {
       const startTime = candidate?.assignment?.time
         ? new Date(candidate?.assignment?.time)
-        : null;
+        : new Date();
       const endTime = candidate?.assignment?.time
         ? new Date(candidate?.assignment?.time)
-        : null;
+        : new Date();
 
       return {
         id: candidate._id,
@@ -170,8 +202,8 @@ export default function CalendarPage() {
         start: startTime,
         end: endTime,
         allDay: false,
-        startStr: startTime?.toISOString(),
-        endStr: endTime?.toISOString(),
+        startStr: startTime?.toISOString() || "",
+        endStr: endTime?.toISOString() || "",
         url: "",
         display: "auto",
         extendedProps: {
@@ -262,9 +294,11 @@ export default function CalendarPage() {
     }
     return "Unknown";
   };
+
   if (isLoading) {
     return <LoaderSkeletonCalender />;
   }
+
   return (
     <div className="h-[calc(100vh-80px)] flex flex-col gap-6">
       <Card>
@@ -284,7 +318,6 @@ export default function CalendarPage() {
               /[\/\\*+\?|\{\}\[\]()^$\.]/g,
               ""
             );
-
             setSearchText(sanitizedValue);
           }}
           className="max-w-md"
