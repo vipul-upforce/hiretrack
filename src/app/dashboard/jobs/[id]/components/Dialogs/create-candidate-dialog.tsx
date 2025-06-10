@@ -32,6 +32,7 @@ import FormUpdater from "../Utils/FormUpdater";
 import Cookies from "js-cookie";
 import * as pdfjs from "pdfjs-dist";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import { useApplyHandler } from "@/app/apply-jobs/useApplyHandler";
 
 // New function to call the evaluate API
 async function evaluateCandidate(
@@ -145,6 +146,7 @@ export function CreateCandidateDialog({
   // isCreating,
 }: CreateCandidateDialogProps) {
   const { toast } = useToast();
+  const { formikRef, handleApply } = useApplyHandler<any>();
   const [createCandidate, { isLoading: isAdding }] =
     useCreateCandidateMutation();
   const [evaluateCandidateMutation, { isLoading: isEvaluating }] =
@@ -186,7 +188,6 @@ export function CreateCandidateDialog({
   }, [isOpen, resumeFile]);
 
   const handleSubmit = async (values: CandidateFormValues) => {
-    // debugger;
     const fileNames = values.attachments.map((file) => file.name);
     const hasDuplicates = new Set(fileNames).size !== fileNames.length;
 
@@ -408,6 +409,7 @@ export function CreateCandidateDialog({
           </DialogTitle>
         </DialogHeader>
         <Formik
+          innerRef={formikRef}
           key={resetForm.toString()}
           initialValues={{
             ...getInitialValues(inits as CustomFieldValues),
@@ -417,13 +419,16 @@ export function CreateCandidateDialog({
           onSubmit={handleSubmit}
           enableReinitialize={false}
         >
-          {({ isSubmitting, errors, touched, setFieldValue }) => (
+          {({ isSubmitting, errors, touched,setTouched, values,setFieldValue }) => (
             <Form className="flex flex-col h-[calc(90vh-80px)] overflow-hidden">
               <FormUpdater parsedResumeData={parsedResumeData} />
               <CandidateForm
                 onFileUpload={async (file: File) => {
                   setFieldValue("resume", file);
                   await handleFileParse(file, setParsedResume);
+                  Object?.entries(values?.customFields).forEach(([key, value]) => {
+                    setTouched({ [key]  : true});
+                });
                 }}
               />
               <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4">
@@ -436,11 +441,12 @@ export function CreateCandidateDialog({
                 </Button>
                 <Button
                   type="submit"
-                  disabled={
-                    isSubmitting ||
-                    Object.keys(errors).length > 0 ||
-                    Object.keys(touched).length === 0
-                  }
+                  // disabled={
+                  //   isSubmitting ||
+                  //   Object.keys(errors).length > 0 ||
+                  //   Object.keys(touched).length === 0
+                  // }
+                  onClick={handleApply}
                 >
                   {isSubmitting
                     ? "Saving..."

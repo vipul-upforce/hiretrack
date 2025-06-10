@@ -100,6 +100,7 @@ const FormUpdater = ({
 
   useEffect(() => {
     if (parsedResumeData && parsedResumeData.profile) {
+     
       const { profile } = parsedResumeData;
       if (!values.name && profile.name) {
         setFieldValue("name", profile.name);
