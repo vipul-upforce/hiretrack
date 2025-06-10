@@ -21,10 +21,9 @@ export const useSSE = (
     null
   );
 
-  // Separated useEffect to track selectedCandidate changes
   useEffect(() => {
     setCurrentCandidate(selectedCandidate);
-  }, [selectedCandidate]);
+  }, [selectedCandidate, jobId, role]);
 
   useEffect(() => {
     const eventSource = new EventSource(
@@ -39,9 +38,11 @@ export const useSSE = (
       try {
         const data = JSON.parse(event.data);
         if (data.type === "candidateUpdate") {
-          if (currentCandidate?._id === data.candidate._id) {
-            setSelectedCandidate(data.candidate);
-          }
+          //   debugger;
+          //   setTimeout(() => {
+          //     setSelectedCandidate(data.candidate);
+          //   }, 4000);
+
           setCandidates((prev) => {
             const updatedCandidate = data.candidate;
             const index = prev.findIndex((c) => c._id === updatedCandidate._id);
@@ -54,6 +55,10 @@ export const useSSE = (
             }
             return [...prev, updatedCandidate];
           });
+
+          if (currentCandidate?._id === data.candidate._id) {
+            setSelectedCandidate(data.candidate);
+          }
         } else if (data.type === "clients") {
           setClients(data.clients);
         } else if (data.type === "lanesUpdate") {
@@ -87,7 +92,7 @@ export const useSSE = (
       eventSource.close();
       console.log("SSE connection closed");
     };
-  }, [role, jobId]); // Keep original dependencies
+  }, [role, jobId]);
 
   return { candidates, setCandidates, clients, lanes };
 };

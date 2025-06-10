@@ -538,6 +538,7 @@ export async function PUT(
 
     return NextResponse.json(existingCandidate);
   } catch (error) {
+    console.error(error);
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
