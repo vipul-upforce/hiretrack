@@ -241,27 +241,92 @@ export async function POST(request: NextRequest) {
                 },
                 pipeline: [
                   {
-                    $unwind: "$history"
+                    $unwind: "$history",
                   },
+                  {
+                    $match: {
+                      $expr: {
+                        $and: [
+                          { $eq: [{ $toString: "$jobId" }, "$$jobId"] },
+                          {
+                            $eq: [
+                              { $toString: "$candidateId" },
+                              "$$candidateId",
+                            ],
+                          },
+                        ],
+                      },
+                    },
+                  },
+                  { $unwind: "$history" },
                   {
                     $lookup: {
                       from: "users",
                       localField: "history.assignmentBy",
                       foreignField: "_id",
-                      as: "history.assignmentBy"
-                    }
+                      as: "history.assignmentBy",
+                    },
                   },
-                  { $unwind: "$history.assignmentBy" },
+                  {
+                    $unwind: {
+                      path: "$history.assignmentBy",
+                      preserveNullAndEmptyArrays: true,
+                    },
+                  },
+                  {
+                    $lookup: {
+                      from: "users",
+                      localField: "history.currentInterviewer",
+                      foreignField: "_id",
+                      as: "history.currentInterviewer",
+                    },
+                  },
+                  {
+                    $unwind: {
+                      path: "$history.currentInterviewer",
+                    },
+                  },
+                  {
+                    $lookup: {
+                      from: "users",
+                      localField: "history.previousInterviewer",
+                      foreignField: "_id",
+                      as: "history.previousInterviewer",
+                    },
+                  },
+                  {
+                    $unwind: {
+                      path: "$history.previousInterviewer",
+                    },
+                  },
+                  {
+                    $unwind: {
+                      path: "$history.note",
+                    },
+                  },
+                  {
+                    $lookup: {
+                      from: "users",
+                      localField: "history.note.userId",
+                      foreignField: "_id",
+                      as: "history.note.userId",
+                    },
+                  },
+                  {
+                    $unwind: {
+                      path: "$history.note.userId",
+                      preserveNullAndEmptyArrays: true,
+                    },
+                  },
                   {
                     $group: {
                       _id: "$_id",
                       jobId: { $first: "$jobId" },
                       candidateId: { $first: "$candidateId" },
-                      history: { $push: "$history" }
-                    }
-                  }
-                ]
-                ,
+                      history: { $push: "$history" },
+                    },
+                  },
+                ],
                 as: "history",
               },
             },
