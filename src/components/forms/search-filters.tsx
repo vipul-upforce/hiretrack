@@ -93,7 +93,8 @@ export function SearchFilters({
             type: selectedField.type,
             options: selectedField.options as string[],
             name: selectedField.label,
-            value: col.value ?? "",
+            value: selectedField? '':(col.value ?? ""),
+
           }
         : col
     );
