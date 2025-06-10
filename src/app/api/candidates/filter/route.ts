@@ -270,7 +270,6 @@ export async function POST(request: NextRequest) {
                   {
                     $unwind: {
                       path: "$history.assignmentBy",
-                      preserveNullAndEmptyArrays: true,
                     },
                   },
                   {
@@ -315,7 +314,6 @@ export async function POST(request: NextRequest) {
                   {
                     $unwind: {
                       path: "$history.note.userId",
-                      preserveNullAndEmptyArrays: true,
                     },
                   },
                   {
