@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { RenderTodaysInterviews } from "./components/RenderTodaysInterviews";
 import { RenderInterviewerAssignments } from "./components/RenderInterviewerAssignments";
 import { MultiSelect } from "@/components/ui/multi-select";
+// import useRoles from "@/hooks/useRoles";
 interface User {
   name: string;
   email: string;
@@ -129,6 +130,13 @@ export default function DashboardPage() {
   const isInterviewer = user?.role === "interviewer";
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef(false);
+
+  // const role = useRoles();
+  // const { candidates: sseCandidates } = useSSE(
+  //   role || "",
+  //   setSelectedEvent,
+  //   selectedEvent
+  // );
 
   const fetchAssignments = useCallback(
     async (page = 1, isAppend = false) => {
@@ -347,7 +355,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Search Input and Filter Button */}
-      <div className="mt-6 flex gap-2 items-center justify-end gap-4" >
+      <div className="mt-6 flex gap-2 items-center justify-end gap-4">
         <Input
           placeholder="Search assignments..."
           value={searchText}
@@ -364,17 +372,17 @@ export default function DashboardPage() {
           }}
         />
         <div className="flex gap-4">
-        <Button onClick={applyFilter}>Filter</Button>
-        {(user?.role === "admin" || user?.role === "hr") && (
-          <MultiSelect
-            placeholder="Assigned"
-            open={open}
-            setOpen={setOpen}
-            value={selectedAssignedTo}
-            setValue={setSelectedAssignedTo}
-            options={options}
-          />
-        )}
+          <Button onClick={applyFilter}>Filter</Button>
+          {(user?.role === "admin" || user?.role === "hr") && (
+            <MultiSelect
+              placeholder="Assigned"
+              open={open}
+              setOpen={setOpen}
+              value={selectedAssignedTo}
+              setValue={setSelectedAssignedTo}
+              options={options}
+            />
+          )}
         </div>
       </div>
 
