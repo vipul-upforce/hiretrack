@@ -270,6 +270,7 @@ export async function POST(request: NextRequest) {
                   {
                     $unwind: {
                       path: "$history.assignmentBy",
+                      preserveNullAndEmptyArrays: true 
                     },
                   },
                   {
@@ -283,6 +284,7 @@ export async function POST(request: NextRequest) {
                   {
                     $unwind: {
                       path: "$history.currentInterviewer",
+                      preserveNullAndEmptyArrays: true 
                     },
                   },
                   {
@@ -296,11 +298,14 @@ export async function POST(request: NextRequest) {
                   {
                     $unwind: {
                       path: "$history.previousInterviewer",
+                      preserveNullAndEmptyArrays: true 
                     },
                   },
                   {
                     $unwind: {
                       path: "$history.note",
+                      preserveNullAndEmptyArrays: true 
+                      
                     },
                   },
                   {
@@ -314,6 +319,7 @@ export async function POST(request: NextRequest) {
                   {
                     $unwind: {
                       path: "$history.note.userId",
+                      preserveNullAndEmptyArrays: true 
                     },
                   },
                   {
