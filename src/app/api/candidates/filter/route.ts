@@ -240,8 +240,28 @@ export async function POST(request: NextRequest) {
                   candidateId: { $toString: "$_id" },
                 },
                 pipeline: [
-                  /* your full pipeline for histories */
-                ],
+                  {
+                    $unwind: "$history"
+                  },
+                  {
+                    $lookup: {
+                      from: "users",
+                      localField: "history.assignmentBy",
+                      foreignField: "_id",
+                      as: "history.assignmentBy"
+                    }
+                  },
+                  { $unwind: "$history.assignmentBy" },
+                  {
+                    $group: {
+                      _id: "$_id",
+                      jobId: { $first: "$jobId" },
+                      candidateId: { $first: "$candidateId" },
+                      history: { $push: "$history" }
+                    }
+                  }
+                ]
+                ,
                 as: "history",
               },
             },
