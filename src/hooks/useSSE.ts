@@ -77,7 +77,7 @@ export const useSSE = (
                 startStr: startTime.toISOString(),
                 endStr: endTime.toISOString(),
                 extendedProps: {
-                  ...currentEvent.extendedProps,
+                  ...currentEvent?.extendedProps,
                   candidate: {
                     ...updatedCandidate,
                     jobId:
@@ -109,7 +109,7 @@ export const useSSE = (
                 },
               });
             }
-          }, 800);
+          }, 1000);
           if (
             !pathname?.includes("/calendar") &&
             currentCandidate?._id === data.candidate._id
