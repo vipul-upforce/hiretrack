@@ -36,7 +36,7 @@ export function JobDetailsDialog({
     onOpenChange(false);
   };
   const header = (
-    <DialogHeader className="px-6 pt-6">
+    <DialogHeader className="px-6 pt-6 ">
       <DialogTitle className="text-lg font-semibold">Job Details</DialogTitle>
     </DialogHeader>
   );
@@ -52,7 +52,7 @@ export function JobDetailsDialog({
       onCancel={() => setIsEditing(false)}
     />
   ) : (
-    <div className="flex-1 overflow-y-auto px-6 py-4 pt-0 space-y-6">
+    <div className="flex-1 overflow-y-auto px-6 py-4 pt-4 space-y-6 border-t">
       {jobDetailsFields.map((field, index) => {
         if (field.shouldRender && !field.shouldRender(job)) return null;
         return (

@@ -31,7 +31,7 @@ export function Breadcrumb({ jobTitle, links }: BreadcrumbProps) {
         </React.Fragment>
       ))}
       <ChevronRight className="h-4 w-4 mx-2" />
-      <span className="text-foreground">{jobTitle}</span>
+      <span className="text-foreground line-clamp-1">{jobTitle}</span>
     </nav>
   );
 }

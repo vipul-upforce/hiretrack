@@ -307,31 +307,37 @@ export default function ApplyJobsContent({
               jobs.map((job, index) => (
                 <div
                   key={index}
-                  className="bg-white break-words rounded-lg border-2 inset-shadow-sm p-6 cursor-pointer hover:shadow-lg transition-shadow"
+                  className="bg-white break-words rounded-lg border-2 inset-shadow-sm p-6 cursor-pointer hover:shadow-lg transition-shadow flex flex-col justify-between"
                   onClick={() => {
                     setSelectedJob(job);
                     setIsJobModalOpen(true);
                   }}
                 >
-                  <h2 className="text-xl font-semibold mb-2">{job.title}</h2>
-                  <p
-                    className="text-gray-600 mb-4 line-clamp-2"
-                    dangerouslySetInnerHTML={{
-                      __html: job?.description || "No description found",
-                    }}
-                  ></p>
-                  <div className="flex flex-wrap gap-2">
-                    {job.skills.slice(0, 3).map((skill, i) => (
-                      <span
-                        key={i}
-                        className="break-all bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full"
-                      >
-                        {skill}
-                      </span>
-                    ))}
+                  <div className="h-full">
+                    <h2 className="text-xl font-semibold mb-2 line-clamp-3">
+                      {job.title}
+                    </h2>
+                    <p
+                      className="text-gray-600 mb-4 line-clamp-2 "
+                      dangerouslySetInnerHTML={{
+                        __html: job?.description || "No description found",
+                      }}
+                    ></p>
                   </div>
-                  <div className="mt-4 text-sm text-gray-500">
-                    Experience: {job.experience} years
+                  <div>
+                    <div className="flex flex-wrap gap-2">
+                      {job.skills.slice(0, 3).map((skill, i) => (
+                        <span
+                          key={i}
+                          className="break-all bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full h-7 max-w-[30%] overflow-clip"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="mt-4 text-sm text-gray-500">
+                      Experience: {job.experience} years
+                    </div>
                   </div>
                 </div>
               ))

@@ -113,7 +113,6 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
     customFields: { ...getDefaultValues(job.customFields || {}) },
   };
 
-
   const onSubmit = async (values: JobFormValues) => {
     const fileNames = values.files.map((file) => file.name);
     const hasDuplicates = new Set(fileNames).size !== fileNames.length;
@@ -202,7 +201,7 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
       onSubmit={onSubmit}
     >
       {({ isSubmitting, setFieldValue, values, errors }) => (
-        <Form className="flex flex-col h-[calc(90vh-80px)] overflow-hidden">
+        <Form className="flex flex-col h-[calc(90vh-80px)] overflow-hidden border-t pt-4">
           <div className="flex-1 overflow-y-auto px-6 py-4 pt-0 space-y-4">
             <JobForm
               job={job}
@@ -228,7 +227,9 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
                 id="publish"
                 name="publish"
                 checked={values?.isPublished}
-                onCheckedChange={(checked) => setFieldValue("isPublished", checked)}
+                onCheckedChange={(checked) =>
+                  setFieldValue("isPublished", checked)
+                }
               />
               <div className="grid gap-1.5 leading-none ">
                 <label

@@ -439,11 +439,11 @@ export function ApplyAsGuestDialog({
                   <Button
                     type={!errors ? "submit" : "button"}
                     onClick={handleApply}
-                  // disabled={
-                  //   isSubmitting ||
-                  //   Object.keys(errors).length > 0 ||
-                  //   Object.keys(touched).length === 0
-                  // }
+                    // disabled={
+                    //   isSubmitting ||
+                    //   Object.keys(errors).length > 0 ||
+                    //   Object.keys(touched).length === 0
+                    // }
                   >
                     {isSubmitting ? "Saving..." : "Apply"}
                   </Button>

@@ -33,6 +33,7 @@ import Cookies from "js-cookie";
 import * as pdfjs from "pdfjs-dist";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { useApplyHandler } from "@/app/apply-jobs/useApplyHandler";
+import { scrollToError } from "./edit-candidate-dialog";
 
 // New function to call the evaluate API
 async function evaluateCandidate(
@@ -419,16 +420,25 @@ export function CreateCandidateDialog({
           onSubmit={handleSubmit}
           enableReinitialize={false}
         >
-          {({ isSubmitting, errors, touched,setTouched, values,setFieldValue }) => (
+          {({
+            isSubmitting,
+            errors,
+            touched,
+            setTouched,
+            values,
+            setFieldValue,
+          }) => (
             <Form className="flex flex-col h-[calc(90vh-80px)] overflow-hidden">
               <FormUpdater parsedResumeData={parsedResumeData} />
               <CandidateForm
                 onFileUpload={async (file: File) => {
                   setFieldValue("resume", file);
                   await handleFileParse(file, setParsedResume);
-                  Object?.entries(values?.customFields).forEach(([key, value]) => {
-                    setTouched({ [key]  : true});
-                });
+                  Object?.entries(values?.customFields).forEach(
+                    ([key, value]) => {
+                      setTouched({ [key]: true });
+                    }
+                  );
                 }}
               />
               <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4">
@@ -440,13 +450,19 @@ export function CreateCandidateDialog({
                   Cancel
                 </Button>
                 <Button
-                  type="submit"
+                  // type={!errors ? "submit" : "button"}
                   // disabled={
                   //   isSubmitting ||
                   //   Object.keys(errors).length > 0 ||
                   //   Object.keys(touched).length === 0
                   // }
-                  onClick={handleApply}
+                  // onClick={handleApply}
+                  onClick={() => {
+                    // debugger;
+                    scrollToError(errors);
+                    handleApply();
+                  }}
+                  type={!errors ? "submit" : "button"}
                 >
                   {isSubmitting
                     ? "Saving..."

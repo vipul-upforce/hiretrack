@@ -42,7 +42,7 @@ export default function DetailsDialogHeader({
           )}
         </div>
 
-        <div className="flex items-center gap-4 pr-8">
+        <div className="flex items-center gap-4 px-8">
           <div className="text-right">
             {candidate?.assignment && (
               <div className="flex flex-col items-end">
@@ -62,7 +62,9 @@ export default function DetailsDialogHeader({
           </div>
           <div className="flex flex-col items-end">
             <CandidateStatusBadge status={candidate?.status} />
-            <p className="text-xs text-gray-500">{candidate?.jobId?.title}</p>
+            <p className="text-xs text-gray-500 line-clamp-2">
+              {candidate?.jobId?.title}
+            </p>
           </div>
         </div>
       </div>

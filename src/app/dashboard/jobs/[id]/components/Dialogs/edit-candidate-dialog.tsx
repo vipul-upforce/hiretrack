@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Formik, Form } from "formik";
+import { Formik, Form, FormikErrors } from "formik";
 import { candidateSchema } from "../../schemas/candidate-schema";
 import { CandidateForm } from "../Candidate/candidate-form";
 import {
@@ -87,6 +87,30 @@ const isFetchBaseQueryError = (
   );
 };
 
+export const scrollToError = async (errors: FormikErrors<any>) => {
+  // const formik = formikRef.current;
+  // if (!formik) return;
+
+  // debugger;
+  // const errors = await formik.validateForm();
+  const firstErrorKey = Object.keys(errors)[0];
+  if (firstErrorKey) {
+    // debugger;
+    if (firstErrorKey === "customFields") {
+      if (!errors.customFields) return;
+      const cfKey = Object.keys(errors.customFields)[0];
+      const el = document.querySelector(`[id="${firstErrorKey}.${cfKey}"]`);
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      (el as HTMLElement)?.focus();
+      return;
+    }
+    const el = document.querySelector(`[id="${firstErrorKey}"]`);
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    (el as HTMLElement)?.focus();
+    return;
+  }
+};
+
 export function EditCandidateDialog({
   candidate,
   isOpen,
@@ -125,7 +149,6 @@ export function EditCandidateDialog({
     const fileNames = values.attachments.map((file) => file.name);
     const hasDuplicates = new Set(fileNames).size !== fileNames.length;
 
-    console.log("------- ", user);
     if (hasDuplicates) {
       toast({
         title: "Alert",
@@ -390,7 +413,7 @@ export function EditCandidateDialog({
           candidate.resume ? "xl:max-w-[65vw]" : "xl:max-w-[50vw]"
         } h-[90vh] p-0 flex flex-col justify-between overflow-hidden`}
       >
-        <DialogHeader className="px-6 pt-6">
+        <DialogHeader className="px-6 pt-8 ">
           <DialogTitle>Edit Candidate</DialogTitle>
         </DialogHeader>
         <Formik
@@ -400,7 +423,7 @@ export function EditCandidateDialog({
           onSubmit={handleSubmit}
         >
           {({ isSubmitting, errors, setFieldValue, dirty }) => (
-            <Form className="flex flex-col h-[calc(90vh-80px)] overflow-hidden">
+            <Form className="flex flex-col h-[calc(90vh-80px)] overflow-hidden border-t ">
               <FormUpdater parsedResumeData={parsedResumeData} />
               <CandidateForm
                 onFileUpload={async (file: File) => {
@@ -423,7 +446,11 @@ export function EditCandidateDialog({
                   Cancel
                 </Button>
                 <Button
-                  onClick={handleApply}
+                  onClick={() => {
+                    // debugger;
+                    scrollToError(errors);
+                    handleApply();
+                  }}
                   type={!errors ? "submit" : "button"}
                   // disabled={
                   //   !dirty || isSubmitting || Object.keys(errors).length > 0

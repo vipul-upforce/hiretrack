@@ -215,7 +215,7 @@ export function CandidateDetailsDialog({
     </DialogHeader>
   );
   const body = (
-    <div className="flex-1 overflow-y-auto px-6 py-4 pt-0 space-y-6">
+    <div className="flex-1 overflow-y-auto px-6 py-4 pt-4 border-y space-y-6">
       {candidateDetailsFields.map((field, index) => {
         if (field.shouldRender && !field.shouldRender(localCandidate))
           return null;
@@ -253,7 +253,7 @@ export function CandidateDetailsDialog({
     </div>
   );
   const footer = (
-    <div className="flex space-x-2 border-t bg-background px-6 py-4">
+    <div className="flex space-x-2  bg-background px-6 py-4 pt-0">
       {!fromFilter ? (
         <div className="flex justify-between w-full">
           {user?.role !== "candidate" && (

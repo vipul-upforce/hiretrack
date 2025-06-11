@@ -229,7 +229,9 @@ export default function JobProgressPage() {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Candidates for {job?.title}</CardTitle>
+          <CardTitle className="line-clamp-2 mr-2">
+            Candidates for {job?.title}
+          </CardTitle>
           <div className="flex items-center space-x-4">
             {/* <p className="">
               {clients} Member{clients == 1 ? "" : "s"} Online
