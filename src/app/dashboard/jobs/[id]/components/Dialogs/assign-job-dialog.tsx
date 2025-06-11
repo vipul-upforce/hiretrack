@@ -122,12 +122,16 @@ export function AssignJobDialog({
                             setFieldValue("jobId", value)
                           }
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="w-[400px]">
                             <SelectValue placeholder="Select Job" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="w-[500px]">
                             {jobs?.map((job) => (
-                              <SelectItem key={job._id} value={job._id}>
+                              <SelectItem
+                                className="w-full hover:bg-gray-100 cursor-pointer"
+                                key={job._id}
+                                value={job._id}
+                              >
                                 {job.title}
                               </SelectItem>
                             ))}
