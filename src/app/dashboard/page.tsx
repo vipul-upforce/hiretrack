@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { RenderTodaysInterviews } from "./components/RenderTodaysInterviews";
 import { RenderInterviewerAssignments } from "./components/RenderInterviewerAssignments";
 import { MultiSelect } from "@/components/ui/multi-select";
+import useRoles from "@/hooks/useRoles";
+import { useSSE } from "@/hooks/useSSE";
 // import useRoles from "@/hooks/useRoles";
 interface User {
   name: string;
@@ -130,6 +132,9 @@ export default function DashboardPage() {
   const isInterviewer = user?.role === "interviewer";
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef(false);
+
+  const role = useRoles();
+  const { candidates: sseCandidates } = useSSE(role || "", () => {}, null);
 
   // const role = useRoles();
   // const { candidates: sseCandidates } = useSSE(
@@ -393,27 +398,56 @@ export default function DashboardPage() {
             <DashboardLoader />
           ) : (
             <>
-              {assignments?.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {assignments.map((assignment, index) => (
-                    <div
-                      key={assignment.id || assignment._id}
-                      ref={
-                        index === assignments.length - 1 ? lastElementRef : null
-                      }
-                    >
-                      <ActionItems
-                        assignment={assignment}
-                        fetchAssignments={() => fetchAssignments(1, false)}
-                      />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-lg font-semibold text-gray-500 text-center py-10 w-full flex justify-center items-center">
-                  No assignments found.
-                </p>
-              )}
+              {
+                // sseCandidates?.length > 0 ? (
+                //   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                //     {sseCandidates.map((assignment, index) => (
+                //       <div
+                //         key={assignment.id || assignment._id}
+                //         ref={
+                //           index === sseCandidates.length - 1
+                //             ? lastElementRef
+                //             : null
+                //         }
+                //       >
+                //         <ActionItems
+                //           assignment={assignment}
+                //           fetchAssignments={() => fetchAssignments(1, false)}
+                //         />
+                //       </div>
+                //     ))}
+                //   </div>
+                // ) :
+
+                assignments?.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {assignments.map((assignment, index) => (
+                      <div
+                        key={assignment.id || assignment._id}
+                        ref={
+                          index === assignments.length - 1
+                            ? lastElementRef
+                            : null
+                        }
+                      >
+                        <ActionItems
+                          assignment={
+                            sseCandidates.length > 0 &&
+                            assignment._id === sseCandidates[0]._id
+                              ? sseCandidates[0]
+                              : assignment
+                          }
+                          fetchAssignments={() => fetchAssignments(1, false)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-lg font-semibold text-gray-500 text-center py-10 w-full flex justify-center items-center">
+                    No assignments found.
+                  </p>
+                )
+              }
 
               {/* Loading indicator for infinite scroll */}
               {isLoadingMore && (

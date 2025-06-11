@@ -1,11 +1,16 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
 import { Organization } from "@/lib/mongodb";
+import { auth } from "@/lib/auth";
 
 // Handle POST request
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   await connectToDatabase();
-
+  const user = await auth(req);
+  console.log("USER: ", user);
+  if (!user) {
+    return NextResponse.json({ error: "Not Authorized" }, { status: 401 });
+  }
   try {
     const { orgId, customFields } = await req.json();
     if (!Organization) {
