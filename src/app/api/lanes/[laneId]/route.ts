@@ -50,7 +50,7 @@ export async function DELETE(
         },
       }
     );
-    broadcastLaneUpdate(org.lanes);
+    broadcastLaneUpdate(organizationId, org.lanes);
     if (!Candidate) {
       throw new Error("Database not connected");
     }
@@ -191,7 +191,7 @@ export async function PATCH(
       { organizationId, status: laneId },
       { $set: { status: newLaneId } }
     );
-    broadcastLaneUpdate(org.lanes);
+    broadcastLaneUpdate(organizationId, org.lanes);
 
     const updatedCandidates = await Candidate.find({
       organizationId,

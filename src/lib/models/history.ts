@@ -18,7 +18,7 @@ const candidateHistory = {
     id: String,
     isPrivate: {
       type: Boolean,
-      default: false,
+      default: true,
     },
     description: {
       type: String,

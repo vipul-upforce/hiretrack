@@ -14,6 +14,7 @@ import { RenderInterviewerAssignments } from "./components/RenderInterviewerAssi
 import { MultiSelect } from "@/components/ui/multi-select";
 import useRoles from "@/hooks/useRoles";
 import { useSSE } from "@/hooks/useSSE";
+import { Candidate } from "@/types/candidate";
 // import useRoles from "@/hooks/useRoles";
 interface User {
   name: string;
@@ -136,6 +137,31 @@ export default function DashboardPage() {
   const role = useRoles();
   const { candidates: sseCandidates } = useSSE(role || "", () => {}, null);
 
+  const isToday = (assignment: Assignment) => {
+    const assignmentDate = new Date(
+      assignment.assignment?.time || assignment.interviewDate
+    );
+    const today = new Date();
+    return (
+      assignmentDate.getDate() === today.getDate() &&
+      assignmentDate.getMonth() === today.getMonth() &&
+      assignmentDate.getFullYear() === today.getFullYear()
+    );
+  };
+
+  const isThisWeek = (assignment: Assignment) => {
+    const assignmentDate = new Date(
+      assignment.assignment?.time || assignment.interviewDate
+    );
+    const today = new Date();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+    return assignmentDate >= startOfWeek && assignmentDate <= endOfWeek;
+  };
   // const role = useRoles();
   // const { candidates: sseCandidates } = useSSE(
   //   role || "",
@@ -180,7 +206,7 @@ export default function DashboardPage() {
         } else {
           setAssignments(data[0]?.data);
         }
-
+        // debugger;
         if (data[0]?.data?.length < itemsPerPage) {
           setHasMoreData(false);
         } else {
@@ -225,6 +251,7 @@ export default function DashboardPage() {
 
       observerRef.current = new IntersectionObserver(
         (entries) => {
+          // debugger;
           if (entries[0].isIntersecting && hasMoreData) {
             loadMoreData();
           }
@@ -255,6 +282,7 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
+    // debugger;
     setCurrentPage(1);
     setHasMoreData(true);
     setAssignments([]);
@@ -280,7 +308,7 @@ export default function DashboardPage() {
   );
 
   const todayAssignments = interviewerAssignments?.filter((assignment) => {
-    const assignmentDate = new Date(assignment.assignment.time);
+    const assignmentDate = new Date(assignment?.assignment?.time);
     const today = new Date();
     return (
       assignmentDate.getDate() === today.getDate() &&
@@ -288,6 +316,160 @@ export default function DashboardPage() {
       assignmentDate.getFullYear() === today.getFullYear()
     );
   });
+
+  // useEffect(() => {
+  //   if (sseCandidates && sseCandidates.length > 0) {
+  //     setAssignments((prevAssignments) => {
+  //       let updatedAssignments: Candidate[] | Assignment[] = [
+  //         ...prevAssignments,
+  //       ];
+  //       (sseCandidates as Candidate[] | Assignment[]).forEach(
+  //         (sseCandidate) => {
+  //           // debugger;
+  //           const candidateId = sseCandidate._id;
+  //           const existingIndex = updatedAssignments.findIndex(
+  //             (assignment) => (assignment._id || assignment.id) === candidateId
+  //           );
+
+  //           if (!sseCandidate.assignment) {
+  //             if (existingIndex !== -1) {
+  //               updatedAssignments = updatedAssignments.filter(
+  //                 (_, index) => index !== existingIndex
+  //               );
+  //             }
+  //           } else {
+  //             if (existingIndex !== -1) {
+  //               updatedAssignments[existingIndex] = {
+  //                 ...updatedAssignments[existingIndex],
+  //                 ...sseCandidate,
+  //               };
+  //             } else {
+  //               updatedAssignments.push(sseCandidate);
+  //             }
+  //           }
+  //         }
+  //       );
+
+  //       setAssignmentsCounts({
+  //         totalInterviews: updatedAssignments.length,
+  //         todaysInterviews: updatedAssignments.filter(isToday).length,
+  //         thisweeksInterviews: updatedAssignments.filter(isThisWeek).length,
+  //       });
+
+  //       return updatedAssignments;
+  //     });
+  //   }
+  // }, [sseCandidates]);
+
+  useEffect(() => {
+    if (sseCandidates && sseCandidates.length > 0) {
+      setAssignments((prevAssignments) => {
+        let updatedAssignments: Assignment[] = [...prevAssignments];
+
+        (sseCandidates as (Candidate | Assignment)[]).forEach(
+          (sseCandidate) => {
+            // debugger;
+            // Ensure the candidate has the required Assignment properties
+            if ("assignment" in sseCandidate && sseCandidate._id) {
+              const candidateId = sseCandidate._id;
+              const existingIndex = updatedAssignments.findIndex(
+                (assignment) =>
+                  (assignment._id || assignment.id) === candidateId
+              );
+
+              if (!sseCandidate.assignment) {
+                // Remove if assignment is null/undefined
+                if (existingIndex !== -1) {
+                  updatedAssignments = updatedAssignments.filter(
+                    (_, index) => index !== existingIndex
+                  );
+                }
+              } else {
+                // Convert Candidate to Assignment or use directly if already Assignment
+                const assignment: Assignment = {
+                  id: sseCandidate._id!,
+                  _id: sseCandidate._id,
+                  candidateName: sseCandidate.name,
+                  jobTitle: sseCandidate.jobId.title,
+                  interviewDate: sseCandidate.assignment.time,
+                  status: sseCandidate.status || "pending",
+                  assignment: (sseCandidate as Assignment).assignment,
+                  jobId: (sseCandidate as Assignment).jobId,
+                  name: (sseCandidate as Assignment).name,
+                  resume: (sseCandidate as Assignment).resume,
+                  tracking: (sseCandidate as Assignment).tracking,
+                  organizationId: sseCandidate.organizationId,
+                  location: sseCandidate.location,
+                  experience: sseCandidate.experience,
+                  skills: sseCandidate.skills,
+                  expectedCTC: sseCandidate.expectedCTC,
+                  currentCTC: sseCandidate.currentCTC,
+                  noticePeriod: sseCandidate.noticePeriod,
+                  remarks: (() => {
+                    const candidateRemarks = (sseCandidate as Candidate)
+                      .remarks;
+                    if (Array.isArray(candidateRemarks)) {
+                      // If remarks is an array, take the first remark or provide a default
+                      return (
+                        candidateRemarks[0] || {
+                          description: "",
+                          date: new Date().toISOString(),
+                          userId: { _id: "", name: "", email: "" },
+                        }
+                      );
+                    }
+                    // If remarks is a single object or undefined, return it or a default
+                    return (
+                      candidateRemarks || {
+                        description: "",
+                        date: new Date().toISOString(),
+                        userId: { _id: "", name: "", email: "" },
+                      }
+                    );
+                  })(),
+                  attachments: (sseCandidate as Assignment).attachments,
+                  customFields: (sseCandidate as Assignment).customFields,
+                  createdAt: sseCandidate.createdAt,
+                  updatedAt: sseCandidate.updatedAt,
+                };
+
+                if (existingIndex !== -1) {
+                  updatedAssignments[existingIndex] = {
+                    ...updatedAssignments[existingIndex],
+                    ...assignment,
+                  };
+                } else {
+                  if (filterText) updatedAssignments.push(assignment);
+                }
+              }
+            } else {
+              if (!sseCandidate.assignment) {
+                // Remove if assignment is null/undefined
+                const candidateId = sseCandidate._id;
+                const existingIndex = updatedAssignments.findIndex(
+                  (assignment) =>
+                    (assignment._id || assignment.id) === candidateId
+                );
+                if (existingIndex !== -1) {
+                  updatedAssignments = updatedAssignments.filter(
+                    (_, index) => index !== existingIndex
+                  );
+                }
+              }
+            }
+          }
+        );
+
+        setAssignmentsCounts({
+          totalInterviews: updatedAssignments.length,
+          todaysInterviews: updatedAssignments.filter(isToday).length,
+          thisweeksInterviews: updatedAssignments.filter(isThisWeek).length,
+        });
+
+        return updatedAssignments;
+      });
+    }
+  }, [sseCandidates]);
 
   const options = assignedInterviewers
     ?.map((usr) => ({
@@ -380,7 +562,7 @@ export default function DashboardPage() {
           <Button onClick={applyFilter}>Filter</Button>
           {(user?.role === "admin" || user?.role === "hr") && (
             <MultiSelect
-              placeholder="Assigned"
+              placeholder="Assigned to"
               open={open}
               setOpen={setOpen}
               value={selectedAssignedTo}
@@ -468,7 +650,78 @@ export default function DashboardPage() {
             {isLoading ? (
               <DashboardLoader />
             ) : todayAssignments?.length > 0 ? (
-              <RenderTodaysInterviews todayAssignments={todayAssignments} />
+              // <RenderTodaysInterviews
+              //   todayAssignments={
+              //     sseCandidates.length > 0
+              //       ? ([
+              //           ...sseCandidates.filter((candidate) => {
+              //             // debugger;
+              //             return (
+              //               candidate.assignment &&
+              //               typeof candidate.assignment.interviewerId ===
+              //                 "object" &&
+              //               "_id" in candidate.assignment.interviewerId &&
+              //               candidate.assignment.interviewerId._id.toString() ===
+              //                 user?.id?.toString()
+              //             );
+              //           }),
+
+              //           ...todayAssignments.filter(
+              //             (older) =>
+              //               older.assignment &&
+              //               !sseCandidates.some(
+              //                 (latest) => latest._id === older._id
+              //               )
+              //           ),
+              //         ] as (Candidate & Assignment)[])
+              //       : todayAssignments
+              //   }
+              // />
+              <RenderTodaysInterviews
+                todayAssignments={
+                  sseCandidates.length > 0
+                    ? ([
+                        ...sseCandidates.filter((candidate) => {
+                          // Check if the interview is scheduled for today
+                          const isToday =
+                            candidate.assignment?.time &&
+                            new Date(
+                              candidate.assignment.time
+                            ).toDateString() === new Date().toDateString();
+
+                          // Keep existing conditions for interviewerId
+                          return (
+                            isToday &&
+                            candidate.assignment &&
+                            typeof candidate.assignment.interviewerId ===
+                              "object" &&
+                            "_id" in candidate.assignment.interviewerId &&
+                            candidate.assignment.interviewerId._id.toString() ===
+                              user?.id?.toString()
+                          );
+                        }),
+
+                        ...todayAssignments.filter(
+                          (older) =>
+                            older.assignment &&
+                            !sseCandidates.some(
+                              (latest) => latest._id === older._id
+                            ) &&
+                            older.assignment?.time &&
+                            new Date(older.assignment.time).toDateString() ===
+                              new Date().toDateString()
+                        ),
+                      ] as (Candidate & Assignment)[])
+                    : todayAssignments.filter((assignment) => {
+                        return (
+                          assignment.assignment?.time &&
+                          new Date(
+                            assignment.assignment.time
+                          ).toDateString() === new Date().toDateString()
+                        );
+                      })
+                }
+              />
             ) : (
               <p className="text-lg font-semibold text-gray-500 text-center py-10 w-full flex justify-center items-center">
                 No interviews scheduled for today.
@@ -483,7 +736,31 @@ export default function DashboardPage() {
                 <DashboardLoader />
               ) : interviewerAssignments?.length > 0 ? (
                 <RenderInterviewerAssignments
-                  interviewerAssignments={interviewerAssignments}
+                  interviewerAssignments={
+                    sseCandidates.length > 0
+                      ? ([
+                          ...sseCandidates.filter((candidate) => {
+                            // debugger;
+                            return (
+                              candidate.assignment &&
+                              typeof candidate.assignment.interviewerId ===
+                                "object" &&
+                              "_id" in candidate.assignment.interviewerId &&
+                              candidate.assignment.interviewerId._id.toString() ===
+                                user.id?.toString()
+                            );
+                          }),
+
+                          ...interviewerAssignments.filter(
+                            (older) =>
+                              older.assignment &&
+                              !sseCandidates.some(
+                                (latest) => latest._id === older._id
+                              )
+                          ),
+                        ] as (Candidate & Assignment)[])
+                      : interviewerAssignments
+                  }
                 />
               ) : (
                 <p className="text-lg font-semibold text-gray-500 text-center py-10 w-full flex justify-center items-center">

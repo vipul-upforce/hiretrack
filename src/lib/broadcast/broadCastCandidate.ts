@@ -5,8 +5,12 @@ import { ICandidateHistory } from "../models/history";
 export function broadcastCandidateUpdate(
   candidate: ICandidate & { history?: ICandidateHistory[] }
 ) {
+  const orgId = candidate.organizationId;
+  const orgClients = global.sseClients?.get(orgId);
+  if (!orgClients) return;
+
   const encoder = new TextEncoder();
-  global.sseClients?.forEach((client: any) => {
+  orgClients?.forEach((client: any) => {
     const data = `data: ${JSON.stringify({ type: "candidateUpdate", candidate })}\n\n`;
     const clientsCount = Array.from(global.sseClients.entries()).length;
 
@@ -21,15 +25,22 @@ export function broadcastCandidateUpdate(
 export function broadcastMultipleCandidateUpdate(
   candidates: (ICandidate & { history?: ICandidateHistory[] })[]
 ) {
+  const orgId = candidates[0]?.organizationId;
+  const orgClients = global.sseClients?.get(orgId);
+  if (!orgClients) return;
   const encoder = new TextEncoder();
-  global.sseClients?.forEach((client: any) => {
+  orgClients?.forEach((client: any) => {
     const data = `data: ${JSON.stringify({ type: "multipleCandidateUpdate", candidates })}\n\n`;
     client.controller.enqueue(encoder.encode(data));
   });
 }
-export function broadcastLaneUpdate(lanes: string[]) {
+export function broadcastLaneUpdate(orgId: string, lanes: string[]) {
+  console.log("ORGID: ", orgId);
+  const orgClients = global.sseClients?.get(orgId);
+  console.log("ORGID: ", orgId, orgClients);
+  if (!orgClients) return;
   const encoder = new TextEncoder();
-  global.sseClients?.forEach((client: any) => {
+  orgClients?.forEach((client: any) => {
     const data = `data: ${JSON.stringify({ type: "lanesUpdate", lanes })}\n\n`;
     const clientsCount = Array.from(global.sseClients.entries()).length;
 

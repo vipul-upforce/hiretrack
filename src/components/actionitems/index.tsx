@@ -3,7 +3,7 @@ import { CandidateCard } from "@/app/dashboard/jobs/[id]/components/Candidate/ca
 import { CandidateDetailsDialog } from "@/app/dashboard/jobs/[id]/components/Dialogs/candidate-details-dialog";
 import { Assignment } from "@/app/dashboard/page";
 import { Candidate, CandidateStatus, Remark } from "@/types/candidate";
-// import useRoles from "@/hooks/useRoles";
+// import { ICandidateHistory } from "@/lib/models/history";
 
 function ActionItems({
   assignment,
@@ -15,7 +15,6 @@ function ActionItems({
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [openRemarksFor, setOpenRemarksFor] = useState<string | null>(null);
   const [candidate, setCandidate] = useState<Candidate | null>(null);
-  // const role = useRoles();
 
   useEffect(() => {
     if (assignment) {
@@ -51,7 +50,12 @@ function ActionItems({
           },
           createdAt: assignment.createdAt,
           updatedAt: assignment.updatedAt,
-          assignment: null,
+          assignment: (assignment as Candidate).assignment || null,
+          history: (assignment as Candidate).history || [], // Temporary workaround, update Assignment type
+          email: (assignment as Candidate).email || undefined,
+          scores: (assignment as Candidate).scores || undefined,
+          organizationId: assignment.organizationId || undefined,
+          isDeleted: (assignment as Candidate).isDeleted || false,
         };
         setCandidate(transformedCandidate);
       }

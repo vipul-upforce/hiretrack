@@ -121,7 +121,8 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const updatedItem = updatedHistory.history.find(
+    // console.log("🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢 ", updatedHistory);
+    const updatedItem = updatedHistory?.history?.find(
       (item) => item.remark && item.remark.id === id
     );
 
@@ -131,7 +132,10 @@ export async function PATCH(request: NextRequest) {
         { status: 404 }
       );
     }
-
+    // broadcastCandidateUpdate({
+    //       ...candidateData,
+    //       history: historyData.history || [],
+    //     } as ICandidate & { history?: ICandidateHistory[] });
     return NextResponse.json(
       {
         message: "Successfully updated the remark",
@@ -164,8 +168,8 @@ export async function PUT(request: NextRequest) {
         ...data,
         newEntry: {
           ...data.newEntry,
-          // dateTime: new Date().toISOString(),
-          dateTime: data.dateTime,
+          dateTime: new Date().toISOString(),
+          // dateTime: data.dateTime,
           remark: {
             ...data.newEntry.remark,
             id: uuidv4(),
@@ -245,7 +249,7 @@ export async function PUT(request: NextRequest) {
       { upsert: true, new: true, runValidators: true }
     );
 
-    console.log("🎊🎊🎊 DATA>JOBID: ", data.jobId);
+    // console.log("🎊🎊🎊 DATA>JOBID: ", data.jobId);
     const jobId = new Types.ObjectId(
       typeof data.jobId === "object" && "_id" in data.jobId
         ? data.jobId._id
@@ -260,7 +264,7 @@ export async function PUT(request: NextRequest) {
       .populate("history.assignmentBy", "_id name email")
       .populate("history.note.userId", "_id name email")
       .lean();
-    console.log("$⌛⌛⌛⌛⌛ CANDIDATEDATA: ", historyData);
+    // console.log("$⌛⌛⌛⌛⌛ CANDIDATEDATA: ", historyData);
     // const hisotryJSON = historyData?.toObject();
     if (!historyEntry || !historyData) {
       return NextResponse.json(
@@ -282,6 +286,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json(historyEntry.history);
     // return NextResponse.json({});
   } catch (error) {
+    console.error(error);
     if (error instanceof Error) {
       console.error(error);
       return NextResponse.json({ error: error.message }, { status: 500 });

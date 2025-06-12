@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "@/hooks/use-toast";
 import {
   useUpdateCandidateMutation,
@@ -25,8 +25,15 @@ export const useRemarkHandlers = (
   const [remarkRatingHistory, setRemarkRatingHistory] = useState<number | null>(
     null
   );
-  const [isSubRemarkPrivate, setIsSubRemarkPrivate] = useState(false);
+  const [isSubRemarkPrivate, setIsSubRemarkPrivate] = useState(true);
 
+  useEffect(() => {
+    if (user?.role === "interviewer") {
+      setIsSubRemarkPrivate(false);
+    }
+  }, [user]);
+
+  // alert(`${user?.role!} + ${isSubRemarkPrivate}`);
   const handleRemarkUpdate = async (
     id: string,
     description: string,
@@ -83,6 +90,7 @@ export const useRemarkHandlers = (
   };
 
   const handleAddRemark = async () => {
+    // debugger;
     if (!newRemark.trim() || !user?.id) {
       toast({
         title: "Error",
@@ -140,7 +148,11 @@ export const useRemarkHandlers = (
           jobId: localCandidate?.jobId,
           newEntry: newHistoryEntry,
         }).unwrap());
-      if (pathname !== "/dashboard" && !pathname?.startsWith("/candidate")) {
+      if (
+        pathname !== "/dashboard" &&
+        !pathname?.endsWith("calendar") &&
+        !pathname?.startsWith("/candidate")
+      ) {
         await refetch();
       }
       if (pathname === "/dashboard" && !pathname?.startsWith("/candidate")) {

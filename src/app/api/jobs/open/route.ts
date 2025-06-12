@@ -138,6 +138,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 
+    console.log("ASSINGMENTBY: ", session);
     // Create a new history entry for the job assignment
     const historyEntry: ICandidateHistory = {
       dateTime: new Date().toISOString(),
@@ -146,14 +147,14 @@ export async function POST(req: NextRequest) {
         description: `Candidate moved from ${previousJob?.title || "No previous job"} to ${nextJob.title}`,
         date: new Date().toISOString(),
         rating: 0,
-        userId: session?.user._id || null,
+        userId: session?.user.id || null,
       },
       attachments: [],
       currentInterviewer: null,
       previousInterviewer: null,
-      assignmentBy: session?.user._id || null,
+      assignmentBy: session?.user.id || null,
     };
-
+    console.log("entrrey assignemtnby: ", historyEntry.assignmentBy);
     // Add this entry to history collection
     await History!.findOneAndUpdate(
       { jobId, candidateId },
@@ -199,6 +200,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
+    console.error(error);
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }

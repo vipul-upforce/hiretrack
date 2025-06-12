@@ -71,9 +71,9 @@ export const RenderInterviewerAssignments = ({
                   <div>
                     <p className="text-xs text-muted-foreground">Date</p>
                     <p className="text-sm font-medium">
-                      {assignment.assignment.time
+                      {assignment?.assignment?.time
                         ? formatDate(
-                            assignment.assignment.time.toLocaleString()
+                            assignment?.assignment?.time.toLocaleString()
                           )
                         : "N/A"}
                     </p>
@@ -85,9 +85,9 @@ export const RenderInterviewerAssignments = ({
                   <div>
                     <p className="text-xs text-muted-foreground">Time</p>
                     <p className="text-sm font-medium">
-                      {assignment.assignment.time
+                      {assignment?.assignment?.time
                         ? formatTime(
-                            assignment.assignment.time.toLocaleString()
+                            assignment?.assignment?.time.toLocaleString()
                           )
                         : "N/A"}
                     </p>

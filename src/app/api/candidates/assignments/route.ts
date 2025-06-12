@@ -200,7 +200,7 @@ export async function GET(req: NextRequest) {
           ? parseGMTOffset(settings.timeZone.offset)
           : 0;
 
-        console.log("MY OFFSET: ", userTimeZoneOffset);
+        // console.log("MY OFFSET: ", userTimeZoneOffset);
         // const now = new Date();
         // const nowInUserTimeZone = new Date(now.getTime() + userTimeZoneOffset);
         // const startOfToday = new Date(
@@ -834,16 +834,18 @@ export async function GET(req: NextRequest) {
         const todaysInterviews = todaysInterviewsResult[0]?.count || 0;
         const thisweeksInterviews = thisweeksInterviewsResult[0]?.count || 0;
         const assignmentCount = assignmentCountsResult || [];
-        const filteredCandidates = candidates.data?.filter(
-          (candidate) =>
-            candidate.jobId?.organizationId?.toString() ===
-              userData.organizationId && candidate.status !== "rejected"
-        );
+        console.log("befire filter: ", candidates.data.length);
+        // const filteredCandidates = candidates.data?.filter(
+        //   (candidate) =>
+        //     candidate.jobId?.organizationId?.toString() ===
+        //       userData.organizationId && candidate.status !== "rejected"
+        // );
+        // console.log("after filter: ", filteredCandidates.length);
 
         if (!History) return;
-
+        console.log("befire history: ", candidates.data.length);
         const candidatesWithHistory = await Promise.all(
-          filteredCandidates.map(async (candidate) => {
+          candidates.data.map(async (candidate) => {
             const history = await History?.findOne({
               jobId: candidate.jobId._id,
               candidateId: candidate._id.toString(),
@@ -867,6 +869,7 @@ export async function GET(req: NextRequest) {
           })
         );
 
+        console.log("aftetr history: ", candidatesWithHistory.length);
         return NextResponse.json([
           {
             data: candidatesWithHistory,

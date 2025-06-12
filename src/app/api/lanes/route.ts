@@ -102,7 +102,7 @@ export async function PUT(request: NextRequest) {
       { $set: { lanes: newLanes } },
       { new: true }
     );
-    broadcastLaneUpdate(updatedOrganization?.lanes || []);
+    broadcastLaneUpdate(organizationId, updatedOrganization?.lanes || []);
     return NextResponse.json(updatedOrganization);
   } catch (err: unknown) {
     const error = err as Error;

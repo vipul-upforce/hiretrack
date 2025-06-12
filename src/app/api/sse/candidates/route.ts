@@ -1,55 +1,83 @@
 // import { Candidate } from "@/lib/mongodb";
+import { auth } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
-// import { Candidate } from "../../../server"; // From server.ts
 
 // Define types for SSE client management
 interface SSEClient {
   id: number;
+  orgId: string; // Added to track organization
   controller: ReadableStreamDefaultController;
 }
 
-// Global store for SSE clients (use Redis in production)
+// Global store for SSE clients, grouped by organization
 declare global {
-  var sseClients: Map<number, any>;
+  var sseClients: Map<string, Map<number, SSEClient>>; // Map<orgId, Map<clientId, SSEClient>>
 }
 
 // Initialize global sseClients
-global.sseClients = global.sseClients || new Map<number, SSEClient>();
+global.sseClients =
+  global.sseClients || new Map<string, Map<number, SSEClient>>();
 
 export async function GET(req: NextRequest) {
+  // Authenticate user and get organization info
+  const cookie = await auth(req);
+  const user = cookie?.user;
+  if (!user || !user.organizationId) {
+    return new NextResponse("Unauthorized or no organization specified", {
+      status: 401,
+    });
+  }
+
+  const orgId = user.organizationId;
+
+  // Initialize organization-specific client map if it doesn't exist
+  if (!global.sseClients.has(orgId)) {
+    global.sseClients.set(orgId, new Map<number, SSEClient>());
+  }
+
+  const orgClients = global.sseClients?.get(orgId)!;
+
   const stream = new ReadableStream({
     start(controller) {
       const encoder = new TextEncoder();
-      controller.enqueue(
-        encoder.encode(`data: ${JSON.stringify({ type: "connected" })}\n\n`)
-      );
-      const clientsCount = Array.from(global.sseClients.entries()).length;
+      // Send connection confirmation
       controller.enqueue(
         encoder.encode(
-          `data: ${JSON.stringify({ type: "clients", clients: clientsCount })}\n\n`
+          `data: ${JSON.stringify({ type: "connected", orgId })}\n\n`
+        )
+      );
+
+      // Send current client count for this organization
+      const clientsCount = orgClients.size;
+      controller.enqueue(
+        encoder.encode(
+          `data: ${JSON.stringify({ type: "clients", clients: clientsCount, orgId })}\n\n`
         )
       );
 
       const clientId = Date.now();
-      global.sseClients.set(clientId, { id: clientId, controller });
+      orgClients.set(clientId, { id: clientId, orgId, controller });
 
-      // Send heartbeat every 3 seconds
-      //   const clients = setInterval(() => {
-      //     const clientsCount = Array.from(global.sseClients.entries()).length;
-      //     controller.enqueue(
-      //       encoder.encode(
-      //         `data: ${JSON.stringify({ type: "clients", clients: clientsCount })}\n\n`
-      //       )
-      //     );
-      //   }, 3000);
+      // Send heartbeat every 3 seconds for this organization
+      // const heartbeat = setInterval(() => {
+      //   const clientsCount = orgClients.size;
+      //   controller.enqueue(
+      //     encoder.encode(
+      //       `data: ${JSON.stringify({ type: "clients", clients: clientsCount, orgId })}\n\n`
+      //     )
+      //   );
+      // }, 3000);
 
       // Handle disconnect
       req.signal.addEventListener("abort", () => {
-        global.sseClients.delete(clientId);
-        // clearInterval(clients);
+        orgClients.delete(clientId);
+        if (orgClients.size === 0) {
+          global.sseClients.delete(orgId); // Clean up empty organization maps
+        }
+        // clearInterval(heartbeat);
         controller.enqueue(
           encoder.encode(
-            `data: ${JSON.stringify({ type: "clients", clients: clientsCount })}\n\n`
+            `data: ${JSON.stringify({ type: "clients", clients: orgClients.size, orgId })}\n\n`
           )
         );
         controller.close();
@@ -62,49 +90,79 @@ export async function GET(req: NextRequest) {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
       Connection: "keep-alive",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "Cache-Control",
     },
   });
 }
 
-// // Broadcast candidate updates to all SSE clients
-// export function broadcastCandidateUpdate(
-//   candidate: ICandidate & { history?: ICandidateHistory[] }
-// ) {
-//   const encoder = new TextEncoder();
-//   global.sseClients.forEach((client: any) => {
-//     const data = `data: ${JSON.stringify({ type: "candidateUpdate", candidate })}\n\n`;
-//     const clientsCount = Array.from(global.sseClients.entries()).length;
+// // import { Candidate } from "@/lib/mongodb";
+// import { auth } from "@/lib/auth";
+// import { NextRequest, NextResponse } from "next/server";
+// // import { Candidate } from "../../../server"; // From server.ts
 
-//     client.controller.enqueue(encoder.encode(data));
-//     client.controller.enqueue(
-//       encoder.encode(
-//         `data: ${JSON.stringify({ type: "clients", clients: clientsCount })}\n\n`
-//       )
-//     );
-//   });
+// // Define types for SSE client management
+// interface SSEClient {
+//   id: number;
+//   controller: ReadableStreamDefaultController;
 // }
-// export function broadcastMultipleCandidateUpdate(
-//   candidates: (ICandidate & { history?: ICandidateHistory[] })[]
-// ) {
-//   const encoder = new TextEncoder();
-//   global.sseClients.forEach((client: any) => {
-//     const data = `data: ${JSON.stringify({ type: "multipleCandidateUpdate", candidates })}\n\n`;
-//     client.controller.enqueue(encoder.encode(data));
-//   });
-// }
-// export function broadcastLaneUpdate(lanes: string[]) {
-//   const encoder = new TextEncoder();
-//   global.sseClients.forEach((client: any) => {
-//     const data = `data: ${JSON.stringify({ type: "lanesUpdate", lanes })}\n\n`;
-//     const clientsCount = Array.from(global.sseClients.entries()).length;
 
-//     client.controller.enqueue(encoder.encode(data));
-//     client.controller.enqueue(
-//       encoder.encode(
-//         `data: ${JSON.stringify({ type: "clients", clients: clientsCount })}\n\n`
-//       )
-//     );
+// // Global store for SSE clients
+// declare global {
+//   var sseClients: Map<number, any>;
+// }
+
+// // Initialize global sseClients
+// global.sseClients = global.sseClients || new Map<number, SSEClient>();
+
+// export async function GET(req: NextRequest) {
+//   // const user = await auth(req);
+
+//   const stream = new ReadableStream({
+//     start(controller) {
+//       const encoder = new TextEncoder();
+//       controller.enqueue(
+//         encoder.encode(`data: ${JSON.stringify({ type: "connected" })}\n\n`)
+//       );
+//       const clientsCount = Array.from(global.sseClients.entries()).length;
+//       controller.enqueue(
+//         encoder.encode(
+//           `data: ${JSON.stringify({ type: "clients", clients: clientsCount })}\n\n`
+//         )
+//       );
+
+//       const clientId = Date.now();
+//       global.sseClients.set(clientId, { id: clientId, controller });
+
+//       // Send heartbeat every 3 seconds
+//       //   const clients = setInterval(() => {
+//       //     const clientsCount = Array.from(global.sseClients.entries()).length;
+//       //     controller.enqueue(
+//       //       encoder.encode(
+//       //         `data: ${JSON.stringify({ type: "clients", clients: clientsCount })}\n\n`
+//       //       )
+//       //     );
+//       //   }, 3000);
+
+//       // Handle disconnect
+//       req.signal.addEventListener("abort", () => {
+//         global.sseClients.delete(clientId);
+//         // clearInterval(clients);
+//         controller.enqueue(
+//           encoder.encode(
+//             `data: ${JSON.stringify({ type: "clients", clients: clientsCount })}\n\n`
+//           )
+//         );
+//         controller.close();
+//       });
+//     },
+//   });
+
+//   return new NextResponse(stream, {
+//     headers: {
+//       "Content-Type": "text/event-stream",
+//       "Cache-Control": "no-cache",
+//       Connection: "keep-alive",
+//       "Access-Control-Allow-Origin": "*",
+//       "Access-Control-Allow-Headers": "Cache-Control",
+//     },
 //   });
 // }

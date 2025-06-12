@@ -44,7 +44,7 @@ const AddRemarksDialog = ({
     null
   );
   const [updateCandidate] = useUpdateCandidateMutation();
-  const [isSubRemarkPrivate, setIsSubRemarkPrivate] = useState(false);
+  const [isSubRemarkPrivate, setIsSubRemarkPrivate] = useState(true);
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
   const [sendStatusMail] = useSendStatusMailMutation();
 

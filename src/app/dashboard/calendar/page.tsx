@@ -80,8 +80,8 @@ export interface CandidateAssignment {
 export interface CustomCalendarEvent {
   id: string;
   title: string;
-  start: Date;
-  end: Date;
+  start?: Date;
+  end?: Date;
   allDay: boolean;
   startStr: string;
   endStr: string;
@@ -188,10 +188,10 @@ export default function CalendarPage() {
     filteredAssignments?.map((candidate: CandidateAssignment) => {
       const startTime = candidate?.assignment?.time
         ? new Date(candidate?.assignment?.time)
-        : new Date();
+        : undefined;
       const endTime = candidate?.assignment?.time
         ? new Date(candidate?.assignment?.time)
-        : new Date();
+        : undefined;
 
       return {
         id: candidate._id,
@@ -252,7 +252,7 @@ export default function CalendarPage() {
     );
 
     if (eventsOnDate.length === 1) {
-      const eventDate = new Date(eventsOnDate[0].start);
+      const eventDate = new Date(eventsOnDate[0].start!);
       const event: CustomCalendarEvent = {
         id: eventsOnDate[0].id,
         title: eventsOnDate[0].title,
@@ -397,7 +397,7 @@ export default function CalendarPage() {
             {events
               .filter(
                 (event) =>
-                  new Date(event.start).toLocaleDateString() ===
+                  new Date(event.start!).toLocaleDateString() ===
                   new Date().toLocaleDateString()
               )
               .map((event, i) => (
