@@ -198,7 +198,7 @@ export function ApplyAsGuestDialog({
   }, [isOpen, resumeFile, jobId]);
 
   const handleSubmit = async (values: CandidateFormValues) => {
-    console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+    // console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
     // First check if already applied
     if (hasAppliedAsGuest(jobId)) {
       toast({

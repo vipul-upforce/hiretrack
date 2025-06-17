@@ -88,6 +88,8 @@ async function sendQueuedEmail(data: any, req: NextRequest) {
   const formattedStartTime = startDate.toISOString().replace(/-|:|\.\d+/g, "");
   const formattedEndTime = endDate.toISOString().replace(/-|:|\.\d+/g, "");
 
+  console.log("START TIME: BEFORE: : ", startTime);
+  console.log("DATE TO BE RECORDED in EMail: ", startDate);
   const eventDescription: string = `<div><strong>Job Name:</strong> ${
     jobName || "N/A"
   }<br>
@@ -97,6 +99,11 @@ async function sendQueuedEmail(data: any, req: NextRequest) {
 </div>
   `;
 
+  // const googleCalendarLink = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
+  //   eventTitle
+  // )}&dates=${formattedStartTime}/${formattedEndTime}&details=${encodeURIComponent(
+  //   eventDescription || ""
+  // )}`;
   const googleCalendarLink = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
     eventTitle
   )}&dates=${formattedStartTime}/${formattedEndTime}&details=${encodeURIComponent(

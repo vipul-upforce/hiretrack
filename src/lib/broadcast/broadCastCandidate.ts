@@ -35,9 +35,9 @@ export function broadcastMultipleCandidateUpdate(
   });
 }
 export function broadcastLaneUpdate(orgId: string, lanes: string[]) {
-  console.log("ORGID: ", orgId);
+  // console.log("ORGID: ", orgId);
   const orgClients = global.sseClients?.get(orgId);
-  console.log("ORGID: ", orgId, orgClients);
+  // console.log("ORGID: ", orgId, orgClients);
   if (!orgClients) return;
   const encoder = new TextEncoder();
   orgClients?.forEach((client: any) => {

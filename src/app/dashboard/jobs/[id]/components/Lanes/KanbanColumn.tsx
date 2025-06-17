@@ -77,8 +77,6 @@ export function KanbanColumn({
       let aValue: any;
       let bValue: any;
 
-      console.log("🙂🙂🙂🙂 FIELD TO SORT: ", field);
-
       switch (field) {
         case "name":
           aValue = a.name?.toLowerCase() || "";

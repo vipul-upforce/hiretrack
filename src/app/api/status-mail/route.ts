@@ -198,7 +198,7 @@ export async function POST(req: NextRequest) {
         );
       }
     } else {
-      console.log("QUEUED DATA: ", queueData);
+      // console.log("QUEUED DATA: ", queueData);
       scheduleEmail(emailKey, queueData);
 
       return NextResponse.json({

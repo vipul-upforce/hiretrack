@@ -43,7 +43,14 @@ function createLoginRedirectUrl(request: NextRequest, targetPath: string) {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const allowedOrigins = (
+    process.env.ALLOWED_ORIGINS || "https://hire.upforce.tech"
+  ).split(",");
+  const origin = request.nextUrl.hostname;
+  // console.log("ORIGINS: ", request, origin, allowedOrigins);
 
+  if (!allowedOrigins.includes(origin))
+    return NextResponse.json({ error: "Origin Not Allowed" }, { status: 401 });
   let userData: { role: string } | undefined;
   const token = request.cookies.get("token");
   if (token?.value) {
@@ -164,6 +171,21 @@ export async function middleware(request: NextRequest) {
   }
 
   return NextResponse.next();
+  // const res = NextResponse.next();
+
+  // res.headers.set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,PATCH,");
+  // res.headers.set("Access-Control-Allow-Headers", "Content-Type");
+  // res.headers.set("Access-Control-Allow-Credentials", "true");
+
+  // // Handle preflight request
+  // if (req.method === "OPTIONS") {
+  //   return new Response(null, {
+  //     headers: res.headers,
+  //     status: 204,
+  //   });
+  // }
+
+  // return res;
 }
 
 export const config = {

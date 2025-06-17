@@ -38,6 +38,7 @@ export const sentAssignmentMail = async (
   sendEmail: ReturnType<typeof useSendMailMutation>[0]
 ) => {
   //sending mail to assignmee after successfully updating candidate
+  debugger;
   if (result.assignment) {
     const reqBody: IScheduledMailRequest = {
       id: result._id,

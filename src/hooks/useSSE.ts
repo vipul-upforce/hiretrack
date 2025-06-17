@@ -3,12 +3,6 @@ import { Candidate } from "@/types/candidate";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
-// interface ClientInfo {
-//   id: number;
-//   connectedAt: string;
-//   role?: string;
-// }
-
 export const useSSE = (
   role: string,
   setSelectedCandidate: any,
@@ -18,13 +12,7 @@ export const useSSE = (
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [clients, setClients] = useState<number>();
   const [lanes, setLanes] = useState<string[]>();
-
-  const [currentCandidate, setCurrentCandidate] = useState<any>(null);
   const pathname = usePathname();
-
-  useEffect(() => {
-    setCurrentCandidate(selectedCandidate);
-  }, [selectedCandidate, jobId, role]);
 
   useEffect(() => {
     const eventSource = new EventSource(
@@ -32,15 +20,21 @@ export const useSSE = (
     );
 
     eventSource.onopen = () => {
-      console.log("SSE connection opened");
+      // console.log("SSE connection opened");
     };
 
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
         if (data.type === "candidateUpdate") {
+          const updatedCandidate = data.candidate;
+          if (!updatedCandidate?._id) {
+            console.warn("Invalid candidate data received");
+            return;
+          }
+
+          // Update the candidates list
           setCandidates((prev) => {
-            const updatedCandidate = data.candidate;
             const index = prev.findIndex((c) => c._id === updatedCandidate._id);
             if (index >= 0) {
               return [
@@ -51,13 +45,14 @@ export const useSSE = (
             }
             return [...prev, updatedCandidate];
           });
-          //   debugger;
-          setTimeout(() => {
+
+          // Update selectedCandidate only if it matches the updated candidate
+          if ((selectedCandidate as Candidate)?._id === updatedCandidate._id) {
             if (!pathname?.includes("/calendar")) {
-              setSelectedCandidate(data.candidate);
+              setSelectedCandidate(updatedCandidate);
             } else {
-              const currentEvent = currentCandidate;
-              const updatedCandidate = data.candidate;
+              // Construct calendar event for calendar views
+              const currentEvent = selectedCandidate as CustomCalendarEvent;
               const startTime = updatedCandidate?.assignment?.time
                 ? new Date(updatedCandidate?.assignment?.time)
                 : currentEvent?.start || new Date();
@@ -85,13 +80,13 @@ export const useSSE = (
                         ? updatedCandidate.jobId
                         : updatedCandidate.jobId?._id,
                     jobDetails:
-                      typeof updatedCandidate.jobId === "string"
-                        ? undefined
-                        : {
+                      typeof updatedCandidate.jobId === "object"
+                        ? {
                             title: updatedCandidate.jobId?.title || "",
                             description:
                               updatedCandidate.jobId?.description || "",
-                          },
+                          }
+                        : undefined,
                   },
                   interviewer:
                     typeof updatedCandidate?.assignment?.interviewerId ===
@@ -109,18 +104,12 @@ export const useSSE = (
                 },
               });
             }
-          }, 1000);
-          if (
-            !pathname?.includes("/calendar") &&
-            currentCandidate?._id === data.candidate._id
-          ) {
-            setSelectedCandidate(data.candidate);
           }
         } else if (data.type === "clients") {
           setClients(data.clients);
         } else if (data.type === "lanesUpdate") {
           setLanes(data.lanes);
-          console.log("UPDATED LANES: ", data.lanes);
+          // console.log("UPDATED LANES: ", data.lanes);
         } else if (data.type === "multipleCandidateUpdate") {
           setCandidates((prev: Candidate[]) => {
             const updated = data.candidates;
@@ -128,12 +117,10 @@ export const useSSE = (
             const filtered = prev.filter((c) => !updatedIds.has(c._id));
             return [...filtered, ...updated];
           });
-
-          console.log("UPDATED LANES: ", data.lanes);
         } else if (data.type === "heartbeat") {
           console.log("Heartbeat received");
         } else if (data.type === "connected") {
-          console.log("SSE connected");
+          // console.log("SSE connected");
         }
       } catch (error) {
         console.error("Error parsing SSE event:", error);
@@ -147,9 +134,9 @@ export const useSSE = (
 
     return () => {
       eventSource.close();
-      console.log("SSE connection closed");
+      // console.log("SSE connection closed");
     };
-  }, [role, jobId]);
+  }, [role, jobId, pathname]);
 
   return { candidates, setCandidates, clients, lanes };
 };

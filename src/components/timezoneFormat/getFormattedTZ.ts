@@ -1,4 +1,4 @@
-import { toZonedTime } from "date-fns-tz";
+import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 import { Settings } from "@/lib/mongodb";
 import { auth } from "@/lib/auth";
 import { NextRequest } from "next/server";
@@ -51,10 +51,21 @@ export async function getFormattedDate(
     }
 
     // Convert to user's timezone
-    const zonedDate = toZonedTime(dateObj, timeZone);
+    const zonedDate = fromZonedTime(dateObj, timeZone);
+    console.log("TZ: ZONED TIME ISO TO BE FORMATTED: ", zonedDate);
+    // if (iso) {
+    //   return zonedDate;
+    // }
     if (iso) {
-      return zonedDate;
+      const isoLikeString = formatInTimeZone(
+        dateObj,
+        timeZone,
+        "yyyy-MM-dd'T'HH:mm:ssXXX"
+      );
+      console.log("TZ: ZONED TIME ISO TO BE RETURNED: ", isoLikeString);
+      return new Date(isoLikeString);
     }
+
     // console.log("BEFORE FORMATINGL: ", zonedDate);
     // Format date using Intl.DateTimeFormat
     const formatter = new Intl.DateTimeFormat("en-IN", {
@@ -66,8 +77,9 @@ export async function getFormattedDate(
       hour12: true,
       timeZone,
     });
-    const dateTime = formatter.format(zonedDate);
-    // console.log(">>>>>>>>>>>> 🥳🥳 ", dateTime);
+
+    const dateTime = formatter.format(dateObj);
+    console.log("TZ: LocalStringLike formatted date:  ", dateTime);
     return dateTime;
   } catch (err) {
     console.error("Error formatting date:", err);

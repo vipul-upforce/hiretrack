@@ -42,7 +42,7 @@ interface RenderFieldProps {
     ) => void;
     error?: string;
   };
-  isEditMode?:boolean
+  isEditMode?: boolean;
   label: string;
   setFieldValue: (
     field: string,
@@ -81,14 +81,12 @@ export const RenderField = ({
   options,
   setFieldError,
   fieldHook,
-  isEditMode=false
+  isEditMode = false,
 }: RenderFieldProps) => {
   useEffect(() => {
-    if(isEditMode)
-    {
+    if (isEditMode) {
       setFieldTouched("customFields." + label, true);
     }
-    
   }, []);
 
   const commonProps = {
@@ -180,20 +178,22 @@ export const RenderField = ({
               </SelectItem>
             ))}
           </SelectContent>
-          <Button
-            style={{
-              marginLeft: "-10px",
-              color: "rgb(121, 121, 121)",
-              display: "contents",
-            }}
-            variant="link"
-            onClick={(e) => {
-              e.preventDefault();
-              setFieldValue("customFields." + label, "");
-            }}
-          >
-            Clear
-          </Button>
+          {fieldHook?.fieldProps.required && (
+            <Button
+              style={{
+                marginLeft: "-10px",
+                color: "rgb(121, 121, 121)",
+                display: "contents",
+              }}
+              variant="link"
+              onClick={(e) => {
+                e.preventDefault();
+                setFieldValue("customFields." + label, "");
+              }}
+            >
+              Clear
+            </Button>
+          )}
         </Select>
       );
 

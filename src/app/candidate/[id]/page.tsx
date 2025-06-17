@@ -3,7 +3,7 @@
 import { CandidateDetailsDialog } from "@/app/dashboard/jobs/[id]/components/Dialogs/candidate-details-dialog";
 import { toast } from "@/hooks/use-toast";
 import { Candidate } from "@/types/candidate";
-import { useParams, usePathname, useRouter } from "next/navigation";
+import { redirect, useParams, usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function CandidateDetailsPage() {
@@ -54,7 +54,9 @@ export default function CandidateDetailsPage() {
       <CandidateDetailsDialog
         candidate={candidate}
         isOpen={true}
-        onOpenChange={() => console.log("Dialog open state changed")}
+        onOpenChange={() => {
+          redirect(`/dashboard/jobs/${candidate?.jobId?._id}`);
+        }}
         // onUpdate={() => {}}
         onUpdate={() => {
           window.location.reload();

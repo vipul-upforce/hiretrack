@@ -52,7 +52,7 @@ const EditLaneDialog = ({
               onChange={(e) => {
                 const newValue = e.target.value;
                 const regex = /^[a-z0-9\s]*$/;
-                console.log("@Changed the value: ", newValue);
+                // console.log("@Changed the value: ", newValue);
                 if (regex.test(newValue)) {
                   setEditingLane(newValue);
                 }

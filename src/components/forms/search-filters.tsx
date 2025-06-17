@@ -81,7 +81,7 @@ export function SearchFilters({
       (col) => col.fieldId === fieldId && col.id !== colId
     );
     if (existsElsewhere) {
-      console.log(`FieldId "${fieldId}" already assigned elsewhere.`);
+      // console.log(`FieldId "${fieldId}" already assigned elsewhere.`);
       return;
     }
     const newCols = cols.map((col) =>
@@ -93,8 +93,7 @@ export function SearchFilters({
             type: selectedField.type,
             options: selectedField.options as string[],
             name: selectedField.label,
-            value: selectedField? '':(col.value ?? ""),
-
+            value: selectedField ? "" : (col.value ?? ""),
           }
         : col
     );

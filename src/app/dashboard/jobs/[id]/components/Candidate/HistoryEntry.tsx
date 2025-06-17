@@ -123,7 +123,25 @@ const RenderHistoryEntry = ({
         </div>
       );
     } else {
-      return interview.title;
+      return (
+        <div className="flex flex-row items-start justify-between w-full">
+          {interview.title}
+          {interview.assignmentBy && (
+            <div className="flex flex-col items-end text-right">
+              <p className="text-xs font-light text-gray-400">
+                {interview?.assignmentBy && "Updated by"}
+              </p>
+              <p className="font-light text-gray-500 text-sm">
+                {interview.assignmentBy &&
+                typeof interview.assignmentBy === "object" &&
+                "name" in interview?.assignmentBy
+                  ? `${interview?.assignmentBy.name}`
+                  : ""}
+              </p>
+            </div>
+          )}
+        </div>
+      );
     }
   };
   if (isLogTableEntry) {

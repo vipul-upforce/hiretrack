@@ -86,7 +86,7 @@ export const useAssignCandidate = ({
             : candidate.remarks,
         assignment: {
           interviewerId: values.interviewerId,
-          time: values?.time?.toString(),
+          time: values?.time?.toISOString(),
           assignedAt: new Date().toISOString(),
         },
         attachments: [...candidate.attachments, ...values.attachments],
@@ -128,7 +128,9 @@ export const useAssignCandidate = ({
         attachments: values.attachments,
       };
 
-      const { data: result, error } = await updateCandidate(updatedCandidate as Candidate);
+      const { data: result, error } = await updateCandidate(
+        updatedCandidate as Candidate
+      );
       if (!error) {
         sentAssignmentMail(result, sendEmail);
       }

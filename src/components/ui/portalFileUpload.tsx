@@ -79,8 +79,7 @@ export function PortalFileUpload({
   setter,
   isEdit = true,
 }: FileUploadProps) {
-
-    console.log('files :>> ', files);
+  // console.log('files :>> ', files);
   const [renameFile, setRenameFile] = useState<RenameFileState>({
     file: null,
     isExisting: false,
@@ -142,7 +141,6 @@ export function PortalFileUpload({
   function isExistingFile(file: File | ExistingFile): file is ExistingFile {
     return (file as ExistingFile).url !== undefined;
   }
-
 
   return (
     <div className="space-y-4" id={id}>

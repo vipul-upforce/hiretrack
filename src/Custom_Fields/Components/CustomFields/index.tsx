@@ -28,7 +28,13 @@ interface FileData {
   size: number;
 }
 
-function CustomFields({ formName,isEditMode=false }: { formName: string, isEditMode?:boolean }) {
+function CustomFields({
+  formName,
+  isEditMode = false,
+}: {
+  formName: string;
+  isEditMode?: boolean;
+}) {
   const {
     values,
     // touched,
@@ -68,7 +74,7 @@ function CustomFields({ formName,isEditMode=false }: { formName: string, isEditM
       const firstErrorNormalField = Object.keys(errors)[0];
       const firstErrorField = Object.keys(errors.customFields)[0];
       const fieldElement = fieldRefs.current[firstErrorField];
-      console.log("firstErrorNormalField : ", firstErrorNormalField);
+      // console.log("firstErrorNormalField : ", firstErrorNormalField);
 
       if (fieldElement && firstErrorNormalField === "customFields") {
         // Scroll to the field and focus it
@@ -131,7 +137,7 @@ function CustomFields({ formName,isEditMode=false }: { formName: string, isEditM
                   .filter((opt) => opt !== ""),
                 setFieldError,
                 fieldHook, // Pass the field hook for additional functionality
-                isEditMode
+                isEditMode,
               })}
               {fieldHook?.fieldMeta.touched && fieldHook?.fieldMeta.error && (
                 <div

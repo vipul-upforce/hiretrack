@@ -259,7 +259,7 @@ export function CandidateDetailsDialog({
           {user?.role !== "candidate" && (
             <div className="flex gap-2">
               <Button
-                // className={user?.role == "interviewer" ? "hidden" : ""}
+                className={user?.role == "interviewer" ? "hidden" : ""}
                 onClick={() => setIsAssigning(true)}
               >
                 Assign To
