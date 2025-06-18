@@ -38,7 +38,7 @@ export async function PUT(
 ) {
   let fileStorage = "local";
   let organizationId;
-  let userData;
+  let userData: any;
   const updates: IinfoUpdateLog[] = [];
 
   const fieldsToTrack = [
@@ -411,6 +411,13 @@ export async function PUT(
       }
       if (key in data && key !== "resume" && key !== "customFields") {
         if (
+          (key === "currentCTC" || key === "expectedCTC") &&
+          userData.role &&
+          userData.role === "interviewer"
+        ) {
+          return;
+        }
+        if (
           JSON.stringify(existingCandidate[key]) !== JSON.stringify(data[key])
         ) {
           whatWasUpdated.push(key);
@@ -529,10 +536,13 @@ export async function PUT(
 
       console.log("UPDATED SCRE: ", updatedCandidate.scores);
 
-      broadcastCandidateUpdate({
-        ...updatedCandidate,
-        history: candidateHistoryPopulated?.history,
-      });
+      broadcastCandidateUpdate(
+        {
+          ...updatedCandidate,
+          history: candidateHistoryPopulated?.history,
+        },
+        request
+      );
       return NextResponse.json(updatedCandidate);
     }
 

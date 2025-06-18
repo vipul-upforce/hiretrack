@@ -862,7 +862,7 @@ export async function GET(req: NextRequest) {
                 ? history.history.filter((entry) =>
                     userData?.role === "admin" || userData?.role === "hr"
                       ? true
-                      : !entry.remark?.isPrivate
+                      : !entry.remark?.id || !entry.remark.isPrivate
                   )
                 : [],
             };

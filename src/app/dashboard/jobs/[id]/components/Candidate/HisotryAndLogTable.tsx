@@ -153,25 +153,32 @@ export const HistoryAndLogTable: React.FC<{
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <Label className="font-semibold text-lg flex items-center gap-2">
-          {showLogTable ? "Candidate Update Logs" : "Candidate History"}
+          {showLogTable && user?.role !== "interviewer"
+            ? "Candidate Update Logs"
+            : "Candidate History"}
         </Label>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowLogTable((prev) => !prev)}
-        >
-          {showLogTable ? (
-            <>
-              <ListTree className="h-4 w-4 mr-2" />
-              Show Activities
-            </>
-          ) : (
-            <>
-              <TableIcon className="h-4 w-4 mr-2" />
-              Show Logs
-            </>
-          )}
-        </Button>
+
+        {user?.role !== "interviewer" && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              user?.role !== "interviewer" && setShowLogTable((prev) => !prev)
+            }
+          >
+            {showLogTable ? (
+              <>
+                <ListTree className="h-4 w-4 mr-2" />
+                Show Activities
+              </>
+            ) : (
+              <>
+                <TableIcon className="h-4 w-4 mr-2" />
+                Show Logs
+              </>
+            )}
+          </Button>
+        )}
       </div>
       {showLogTable ? (
         <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">

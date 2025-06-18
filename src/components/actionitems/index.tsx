@@ -79,7 +79,7 @@ function ActionItems({
         isOpen={isDetailsOpen}
         onOpenChange={setIsDetailsOpen}
         onUpdate={() => {}}
-        refetchAssignment={() => fetchAssignments()}
+        refetchAssignment={() => {}}
       />
     </>
   ) : null;
