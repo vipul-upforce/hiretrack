@@ -104,7 +104,7 @@ export const sendMail = async (
         htmlContent,
         eventTitle,
       });
-      console.log("✉️ SMTP Mail sent: ", result);
+      // console.log("✉️ SMTP Mail sent: ", result);
       return result || { status: 500, message: "Failed to send email" };
     } else if (mailConfig.mailProvider === "resend") {
       const result = await sendReSendMail({
@@ -114,7 +114,7 @@ export const sendMail = async (
         htmlContent,
         eventTitle,
       });
-      console.log("✉️ ReSend Mail sent: ", result);
+      // console.log("✉️ ReSend Mail sent: ", result);
       return result || { status: 500, message: "Failed to resend email" };
     }
 

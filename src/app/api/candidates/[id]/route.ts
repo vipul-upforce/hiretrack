@@ -438,7 +438,7 @@ export async function PUT(
       );
     }
 
-    console.log("$$$$$$$ UPDATED OBJ: ", updateObj);
+    // console.log("$$$$$$$ UPDATED OBJ: ", updateObj);
 
     if (Object.keys(updateObj.$set).length > 0 || updateObj.$unset) {
       const updatedCandidate = (await Candidate.findByIdAndUpdate(
@@ -510,7 +510,7 @@ export async function PUT(
             .flatMap((item) => item.attachments!),
         };
 
-        console.log("USERDATA>ID:", userData.id);
+        // console.log("USERDATA>ID:", userData.id);
 
         await History?.findOneAndUpdate(
           {
@@ -534,7 +534,7 @@ export async function PUT(
         { path: "history.note.userId", select: "_id name email" },
       ]);
 
-      console.log("UPDATED SCRE: ", updatedCandidate.scores);
+      // console.log("UPDATED SCRE: ", updatedCandidate.scores);
 
       broadcastCandidateUpdate({
         ...updatedCandidate,
@@ -619,8 +619,8 @@ export async function GET(
       history: history?.history || [],
     };
 
-    console.log("HISOTYER:L ", history);
-    console.log("CANDIDET WITH HISTORY:L ", candidateWithHisotry);
+    // console.log("HISOTYER:L ", history);
+    // console.log("CANDIDET WITH HISTORY:L ", candidateWithHisotry);
 
     if (!candidateWithHisotry) {
       return NextResponse.json(

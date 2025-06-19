@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     // console.log("BACKUPDS DI:R: ", backupsDir);
     const cookie = await auth(req);
     const userData = cookie?.user;
-    console.log("👍👍👍👍 userdata: ", userData);
+    console.log("userdata: ", userData);
 
     const entries = await fs.readdir(backupsDir, { withFileTypes: true });
     // console.log("BACKUPDS Entries ", entries);

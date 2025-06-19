@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CandidateDetailsDialog } from "../jobs/[id]/components/Dialogs/candidate-details-dialog";
 import { formatTime } from "../jobs/[id]/hooks/dateTimeFormatting";
-import { CandidateStatus } from "@/types/candidate";
+import { Candidate, CandidateStatus } from "@/types/candidate";
 import { Assignment } from "@/types/assignment";
 import LoaderSkeletonCalender from "./components/loader-skeleton-calender";
 import { RenderEvent } from "./components/renderCalendarEvent";
@@ -99,8 +99,9 @@ export default function CalendarPage() {
     isLoading,
     refetch,
   } = useFetchAssignedCandidatesQuery();
-  const [selectedEvent, setSelectedEvent] =
-    useState<CustomCalendarEvent | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<
+    CustomCalendarEvent | Candidate | null
+  >(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const calendarRef = useRef<FullCalendar>(null);
   const [searchText, setSearchText] = useState("");

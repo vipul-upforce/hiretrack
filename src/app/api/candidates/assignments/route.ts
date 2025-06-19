@@ -249,10 +249,10 @@ export async function GET(req: NextRequest) {
 
         // Calculate timezone-aware dates
         const now = new Date();
-        console.log("$$$$$$$$$$$ Server UTC Time:", now);
+        // console.log("$$$$$$$$$$$ Server UTC Time:", now);
         // Adjust to IST (GMT+05:30)
         const nowInUserTimeZone = new Date(now.getTime() + userTimeZoneOffset);
-        console.log("$$$$$$$$$$$ Now in IST:", nowInUserTimeZone);
+        // console.log("$$$$$$$$$$$ Now in IST:", nowInUserTimeZone);
 
         // Start and end of today in IST
         const startOfToday = new Date(
@@ -280,12 +280,12 @@ export async function GET(req: NextRequest) {
         const endOfTodayUTC = new Date(
           endOfToday.getTime() - userTimeZoneOffset
         );
-        console.log("$$$$$$$$$$$ StartOfTodayUTC:", startOfTodayUTC);
-        console.log("$$$$$$$$$$$ EndOfTodayUTC:", endOfTodayUTC);
+        // console.log("$$$$$$$$$$$ StartOfTodayUTC:", startOfTodayUTC);
+        // console.log("$$$$$$$$$$$ EndOfTodayUTC:", endOfTodayUTC);
 
         // Start and end of week (Monday to Sunday) in IST
         const dayOfWeek = nowInUserTimeZone.getDay(); // 0 for Sunday, ..., 6 for Saturday
-        console.log("$$$$$$$$$$$ DayOfWeek:", dayOfWeek);
+        // console.log("$$$$$$$$$$$ DayOfWeek:", dayOfWeek);
 
         // Start of week: Sunday
         const startOfWeek = new Date(
@@ -297,7 +297,7 @@ export async function GET(req: NextRequest) {
           0,
           0
         );
-        console.log("$$$$$$$$$$$ StartOfWeek (IST):", startOfWeek);
+        // console.log("$$$$$$$$$$$ StartOfWeek (IST):", startOfWeek);
 
         // End of week: Saturday (6 days after Sunday)
         const endOfWeek = new Date(
@@ -309,15 +309,15 @@ export async function GET(req: NextRequest) {
           59,
           999
         );
-        console.log("$$$$$$$$$$$ EndOfWeek (IST):", endOfWeek);
+        // console.log("$$$$$$$$$$$ EndOfWeek (IST):", endOfWeek);
 
         // Convert to UTC
         const startOfWeekUTC = new Date(
           startOfWeek.getTime() - userTimeZoneOffset
         );
         const endOfWeekUTC = new Date(endOfWeek.getTime() - userTimeZoneOffset);
-        console.log("$$$$$$$$$$$ StartOfWeekUTC:", startOfWeekUTC);
-        console.log("$$$$$$$$$$$ EndOfWeekUTC:", endOfWeekUTC);
+        // console.log("$$$$$$$$$$$ StartOfWeekUTC:", startOfWeekUTC);
+        // console.log("$$$$$$$$$$$ EndOfWeekUTC:", endOfWeekUTC);
 
         const pipeline = [
           {
@@ -834,7 +834,7 @@ export async function GET(req: NextRequest) {
         const todaysInterviews = todaysInterviewsResult[0]?.count || 0;
         const thisweeksInterviews = thisweeksInterviewsResult[0]?.count || 0;
         const assignmentCount = assignmentCountsResult || [];
-        console.log("befire filter: ", candidates.data.length);
+        // console.log("befire filter: ", candidates.data.length);
         // const filteredCandidates = candidates.data?.filter(
         //   (candidate) =>
         //     candidate.jobId?.organizationId?.toString() ===
@@ -843,7 +843,7 @@ export async function GET(req: NextRequest) {
         // console.log("after filter: ", filteredCandidates.length);
 
         if (!History) return;
-        console.log("befire history: ", candidates.data.length);
+        // console.log("befire history: ", candidates.data.length);
         const candidatesWithHistory = await Promise.all(
           candidates.data.map(async (candidate) => {
             const history = await History?.findOne({
@@ -869,7 +869,7 @@ export async function GET(req: NextRequest) {
           })
         );
 
-        console.log("aftetr history: ", candidatesWithHistory.length);
+        // console.log("aftetr history: ", candidatesWithHistory.length);
         return NextResponse.json([
           {
             data: candidatesWithHistory,

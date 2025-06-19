@@ -223,9 +223,9 @@ export async function POST(req: NextRequest) {
       immediate = false,
       id,
     } = await req.json();
-    console.log("ID IN EVENT_MAIL ROUTE: ", id);
+    // console.log("ID IN EVENT_MAIL ROUTE: ", id);
     const candidateDetailsPage = `${req.headers.get("origin")}/candidate/${id}`;
-    console.log("~~~~~~~~~~~ ", candidateDetailsPage);
+    // console.log("~~~~~~~~~~~ ", candidateDetailsPage);
 
     let organizationId;
     const token = req.cookies.get("token");

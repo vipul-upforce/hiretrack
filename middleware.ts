@@ -47,7 +47,6 @@ export async function middleware(request: NextRequest) {
     process.env.ALLOWED_ORIGINS || "https://hire.upforce.tech"
   ).split(",");
   const origin = request.nextUrl.hostname;
-  // console.log("ORIGINS: ", request, origin, allowedOrigins);
 
   if (!allowedOrigins.includes(origin))
     return NextResponse.json({ error: "Origin Not Allowed" }, { status: 401 });

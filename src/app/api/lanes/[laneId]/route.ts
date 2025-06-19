@@ -90,7 +90,6 @@ export async function DELETE(
       const history = candidateHistories.filter(
         (h) => h.candidateId.toString() === candidate._id.toString()
       );
-      console.log("🟢🟢🟢 HISTORY: ", history);
       return {
         ...candidate.toObject(),
         history: history[0]?.history || [],
@@ -229,7 +228,6 @@ export async function PATCH(
       const history = candidateHistories.filter(
         (h) => h.candidateId.toString() === candidate._id.toString()
       );
-      console.log("🟢🟢🟢 HISTORY: ", history);
       return {
         ...candidate.toObject(), // Convert Mongoose document to plain object
         history: history[0]?.history || [],

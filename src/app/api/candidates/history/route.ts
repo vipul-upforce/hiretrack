@@ -83,37 +83,85 @@ export async function PATCH(request: NextRequest) {
       throw new Error("Database not connected");
     }
 
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
+    // if (
+    //   !user ||
+    //   user?.role !== "admin" ||
+    //   user?.role !== "hr" ||
+    //   user?.role !== "interviewer"
+    // ) {
+    //   return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
+    // }
+
+    // // Update the remark in the history array
+    // const updatedHistory = await History.findOneAndUpdate(
+    //   {
+    //     "history.remark.id": id,
+    //     // "user.role": { $in: ["admin", "hr", "interviewer"] },
+    //     // $or: [
+    //     //   { "user.role": { $in: ["admin", "hr"] } },
+    //     //   { "history.assignmentBy": new mongoose.Types.ObjectId(user.id) },
+    //     // ],
+    //   },
+    //   {
+    //     $set: {
+    //       "history.$.remark.description": description,
+    //       "history.$.remark.isPrivate": isPrivate,
+    //       "history.$.remark.rating": rating,
+    //       "history.$.remark.updatedAt": new Date(),
+    //       // "history.$.remark.updatedAt": await getFormattedDate(
+    //       //   request,
+    //       //   new Date()
+    //       // ),
+
+    //       "history.$.assignmentBy": new mongoose.Types.ObjectId(user.id),
+    //       "history.$.title": "Remark Updated",
+    //     },
+    //   },
+    //   { new: true }
+    // );
+    // console.log("id: ", id);
+    // console.log("user: ", user.id, user.name, user.role);
+    // console.log("-=-=-== ", updatedHistory);
+
+    if (!user || !["admin", "hr", "interviewer"].includes(user.role)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Build query filter
+    const filter: any = {
+      "history.remark.id": id,
+    };
+
+    // Restrict interviewers to their own remarks
+    if (user.role === "interviewer") {
+      filter["history.assignmentBy"] = new mongoose.Types.ObjectId(user.id);
     }
 
     // Update the remark in the history array
     const updatedHistory = await History.findOneAndUpdate(
-      {
-        "history.remark.id": id,
-        $or: [
-          { "history.assignmentBy": new mongoose.Types.ObjectId(user.id) },
-          { "user.role": { $in: ["admin", "hr"] } },
-        ],
-      },
+      filter,
       {
         $set: {
           "history.$.remark.description": description,
           "history.$.remark.isPrivate": isPrivate,
           "history.$.remark.rating": rating,
           "history.$.remark.updatedAt": new Date(),
-          // "history.$.remark.updatedAt": await getFormattedDate(
-          //   request,
-          //   new Date()
-          // ),
-
           "history.$.assignmentBy": new mongoose.Types.ObjectId(user.id),
           "history.$.title": "Remark Updated",
         },
       },
       { new: true }
     );
-
+    const pupulatedHistory = await updatedHistory?.populate([
+      { path: "history.assignmentBy", select: "_id name email" },
+      { path: "history.currentInterviewer", select: "_id name email" },
+      { path: "history.previousInterviewer", select: "_id name email" },
+      { path: "history.note.userId", select: "_id name email" },
+    ]);
+    // Debug logging
+    console.log("id: ", id);
+    console.log("user: ", user.id, user.name, user.role);
+    console.log("updatedHistory: ", pupulatedHistory);
     if (!updatedHistory) {
       return NextResponse.json(
         { error: "Remark not found or unauthorized" },
@@ -122,7 +170,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // console.log("🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢 ", updatedHistory);
-    const updatedItem = updatedHistory?.history?.find(
+    const updatedItem = pupulatedHistory?.history?.find(
       (item) => item.remark && item.remark.id === id
     );
 
@@ -132,10 +180,26 @@ export async function PATCH(request: NextRequest) {
         { status: 404 }
       );
     }
-    // broadcastCandidateUpdate({
-    //       ...candidateData,
-    //       history: historyData.history || [],
-    //     } as ICandidate & { history?: ICandidateHistory[] });
+    const candidateData = await Candidate?.findById(updatedHistory.candidateId)
+      .populate([
+        {
+          path: "assignment.interviewerId",
+          select: "_id name email",
+        },
+        {
+          path: "remarks.userId",
+          select: "name email",
+        },
+        {
+          path: "jobId",
+          select: "title description ",
+        },
+      ])
+      .lean();
+    broadcastCandidateUpdate({
+      ...candidateData,
+      history: pupulatedHistory?.history || [],
+    } as ICandidate & { history?: ICandidateHistory[] });
     return NextResponse.json(
       {
         message: "Successfully updated the remark",
