@@ -1,4 +1,5 @@
 import { CustomCalendarEvent } from "@/app/dashboard/calendar/page";
+import { verifyAndDecryptSSE } from "@/lib/auth";
 import { Candidate } from "@/types/candidate";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -14,6 +15,11 @@ export const useSSE = (
   const [lanes, setLanes] = useState<string[]>();
   const pathname = usePathname();
 
+  async function getDecodedSSE(encodedData: string) {
+    const data: Candidate = await verifyAndDecryptSSE(encodedData);
+    return data;
+  }
+
   useEffect(() => {
     const eventSource = new EventSource(
       `/api/sse/candidates?role=${encodeURIComponent(role)}`
@@ -23,11 +29,13 @@ export const useSSE = (
       // console.log("SSE connection opened");
     };
 
-    eventSource.onmessage = (event) => {
+    eventSource.onmessage = async (event) => {
       try {
+        // debugger;
         const data = JSON.parse(event.data);
         if (data.type === "candidateUpdate") {
-          const updatedCandidate = data.candidate;
+          const encodedCandidate = data.candidate;
+          const updatedCandidate = await getDecodedSSE(encodedCandidate);
           if (!updatedCandidate?._id) {
             console.warn("Invalid candidate data received");
             return;
@@ -111,11 +119,20 @@ export const useSSE = (
           setLanes(data.lanes);
           // console.log("UPDATED LANES: ", data.lanes);
         } else if (data.type === "multipleCandidateUpdate") {
+          debugger;
+          const decodedCandidates = await getDecodedSSE(data.candidates);
+          const updatedCandidates = Object.values(decodedCandidates);
+          // const updatedCandidates = await Promise.all(
+          //   candidatesArray.map(async (candidate: any) => {
+          //     return await getDecodedSSE(candidate);
+          //   })
+          // );
           setCandidates((prev: Candidate[]) => {
-            const updated = data.candidates;
-            const updatedIds = new Set(updated.map((c: Candidate) => c._id));
+            const updatedIds = new Set(
+              updatedCandidates.map((c: Candidate) => c._id)
+            );
             const filtered = prev.filter((c) => !updatedIds.has(c._id));
-            return [...filtered, ...updated];
+            return [...filtered, ...updatedCandidates];
           });
         } else if (data.type === "heartbeat") {
           console.log("Heartbeat received");

@@ -536,13 +536,10 @@ export async function PUT(
 
       console.log("UPDATED SCRE: ", updatedCandidate.scores);
 
-      broadcastCandidateUpdate(
-        {
-          ...updatedCandidate,
-          history: candidateHistoryPopulated?.history,
-        },
-        request
-      );
+      broadcastCandidateUpdate({
+        ...updatedCandidate,
+        history: candidateHistoryPopulated?.history,
+      });
       return NextResponse.json(updatedCandidate);
     }
 

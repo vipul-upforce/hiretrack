@@ -37,3 +37,23 @@ export async function verifyAndDecryptJWTToken(token: string) {
     };
   }
 }
+export async function verifyAndDecryptSSE(token: string) {
+  const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key";
+  try {
+    if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
+
+    const decoded = jwtDecode<JWTPayload>(token);
+    if (!decoded || typeof decoded !== "object" || !decoded.user) {
+      throw new Error("Invalid token structure");
+    }
+
+    const bytes = CryptoJS.AES.decrypt(decoded.user, JWT_SECRET);
+    const decryptedData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+    return { ...decryptedData };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Unknown Error Occurred",
+    };
+  }
+}

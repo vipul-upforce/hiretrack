@@ -1,12 +1,11 @@
-import { NextRequest } from "next/server";
+import { signToken } from "../jwt";
 import { ICandidate } from "../models/candidate";
 import { ICandidateHistory } from "../models/history";
 // import { auth } from "../auth";
 
 // Broadcast candidate updates to all SSE clients
 export function broadcastCandidateUpdate(
-  candidate: ICandidate & { history?: ICandidateHistory[] },
-  req?: NextRequest
+  candidate: ICandidate & { history?: ICandidateHistory[] }
 ) {
   const orgId = candidate.organizationId;
   const orgClients = global.sseClients?.get(orgId);
@@ -30,7 +29,9 @@ export function broadcastCandidateUpdate(
     //   ),
     // };
     // console.log("CANDIDATE HISTORY: ", candidateToBeSent.history);
-    const data = `data: ${JSON.stringify({ type: "candidateUpdate", candidate })}\n\n`;
+    const encodedSSE = signToken(candidate);
+    const data = `data: ${JSON.stringify({ type: "candidateUpdate", candidate: encodedSSE })}\n\n`;
+
     const clientsCount = Array.from(global.sseClients.entries()).length;
 
     client.controller.enqueue(encoder.encode(data));
@@ -44,12 +45,13 @@ export function broadcastCandidateUpdate(
 export function broadcastMultipleCandidateUpdate(
   candidates: (ICandidate & { history?: ICandidateHistory[] })[]
 ) {
+  const encodedSSE = signToken(candidates);
   const orgId = candidates[0]?.organizationId;
   const orgClients = global.sseClients?.get(orgId);
   if (!orgClients) return;
   const encoder = new TextEncoder();
   orgClients?.forEach((client: any) => {
-    const data = `data: ${JSON.stringify({ type: "multipleCandidateUpdate", candidates })}\n\n`;
+    const data = `data: ${JSON.stringify({ type: "multipleCandidateUpdate", candidates: encodedSSE })}\n\n`;
     client.controller.enqueue(encoder.encode(data));
   });
 }
