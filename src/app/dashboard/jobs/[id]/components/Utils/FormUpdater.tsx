@@ -100,7 +100,6 @@ const FormUpdater = ({
 
   useEffect(() => {
     if (parsedResumeData && parsedResumeData.profile) {
-     
       const { profile } = parsedResumeData;
       if (!values.name && profile.name) {
         setFieldValue("name", profile.name);
@@ -121,17 +120,33 @@ const FormUpdater = ({
         parsedResumeData.skills?.descriptions.length > 0
       ) {
         const splitSkills = [
-          ...new Set(
-            parsedResumeData.skills.descriptions
+          ...new Set([
+            ...parsedResumeData.skills.featuredSkills
+              .flatMap((desc) =>
+                desc.skill
+                  .replace(/^[^:]+:/, "")
+                  ?.split(/[,|;\/]+/)
+                  .map((skill) => skill.trim())
+                  .filter((skill) => !/^[\d\W_]+$/.test(skill))
+              )
+              .filter(Boolean),
+            ...parsedResumeData.skills.descriptions
               .flatMap((desc) =>
                 desc
                   .replace(/^[^:]+:/, "")
                   ?.split(/[,|;\/]+/)
                   .map((skill) => skill.trim())
+                  .filter((skill) => !/^[\d\W_]+$/.test(skill))
               )
-              .filter(Boolean)
-          ),
-        ];
+              .filter(Boolean),
+          ]),
+        ]
+          .filter(
+            (lineText) =>
+              lineText.trim().split(/\s+/).length <= 3 &&
+              lineText.trim().length <= 25
+          )
+          .slice(0, 20);
 
         setFieldValue("skills", splitSkills);
         setTouched({ skills: true });

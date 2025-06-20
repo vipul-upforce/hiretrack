@@ -7,6 +7,7 @@ export const getSectionLinesByKeywords = (
   sections: ResumeSectionToLines,
   keywords: string[]
 ) => {
+  // debugger;
   for (const sectionName in sections) {
     const hasKeyWord = keywords.some((keyword) =>
       sectionName.toLowerCase().includes(keyword)

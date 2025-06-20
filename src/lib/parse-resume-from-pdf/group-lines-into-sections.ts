@@ -21,23 +21,29 @@ export const PROFILE_SECTION: ResumeKey = "profile";
  * into the closest section title above these lines.
  */
 export const groupLinesIntoSections = (lines: Lines) => {
+  // debugger;
   let sections: ResumeSectionToLines = {};
   let sectionName: string = PROFILE_SECTION;
-  let sectionLines = [];
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const text = line[0]?.text.trim();
-    if (isSectionTitle(line, i)) {
-      sections[sectionName] = [...sectionLines];
-      sectionName = text;
-      sectionLines = [];
-    } else {
-      sectionLines.push(line);
+  let sectionLines: Line[] = [];
+
+  if (lines)
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const text = line[0]?.text.trim();
+
+      if (isSectionTitle(line, i)) {
+        sections[sectionName] = [...sectionLines];
+        sectionName = text;
+        sectionLines = [];
+      } else {
+        sectionLines.push(line);
+      }
     }
-  }
+
   if (sectionLines.length > 0) {
     sections[sectionName] = [...sectionLines];
   }
+
   return sections;
 };
 
@@ -47,6 +53,7 @@ const SECTION_TITLE_PRIMARY_KEYWORDS = [
   "project",
   "skill",
 ];
+
 const SECTION_TITLE_SECONDARY_KEYWORDS = [
   "job",
   "course",
@@ -57,6 +64,7 @@ const SECTION_TITLE_SECONDARY_KEYWORDS = [
   "honor",
   "project",
 ];
+
 const SECTION_TITLE_KEYWORDS = [
   ...SECTION_TITLE_PRIMARY_KEYWORDS,
   ...SECTION_TITLE_SECONDARY_KEYWORDS,
@@ -66,6 +74,7 @@ const isSectionTitle = (line: Line, lineNumber: number) => {
   const isFirstTwoLines = lineNumber < 2;
   const hasMoreThanOneItemInLine = line.length > 1;
   const hasNoItemInLine = line.length === 0;
+
   if (isFirstTwoLines || hasMoreThanOneItemInLine || hasNoItemInLine) {
     return false;
   }

@@ -31,10 +31,17 @@ export const BULLET_POINTS = [
  * Convert bullet point lines into a string array aka descriptions.
  */
 export const getBulletPointsFromLines = (lines: Lines): string[] => {
+  // debugger;
   // Simply return all lines with text item joined together if there is no bullet point
   const firstBulletPointLineIndex = getFirstBulletPointLineIdx(lines);
   if (firstBulletPointLineIndex === undefined) {
-    return lines.map((line) => line.map((item) => item.text).join(" "));
+    return lines.map((line) =>
+      line
+        .map((item) => item.text)
+        // .filter((lineText) => lineText.trim().split(/\s+/).length <= 3)
+        .join("|")
+    );
+    // return lines.map((line) => line.map((item) => item.text).join("|"));
   }
 
   // Otherwise, process and remove bullet points
@@ -63,7 +70,7 @@ export const getBulletPointsFromLines = (lines: Lines): string[] => {
   return lineStr
     .split(commonBulletPoint)
     .map((text) => text.trim())
-    .filter((text) => !!text);
+    .filter((text) => !!text || text.trim().split(/\s+/).length <= 3);
 };
 
 const getMostCommonBulletPoint = (str: string): string => {

@@ -28,7 +28,7 @@ export const extractResumeFromSections = (
   const { workExperiences } = extractWorkExperience(sections);
   const { projects } = extractProject(sections);
   const { skills } = extractSkills(sections);
-
+  // debugger;
   return {
     profile,
     educations,
