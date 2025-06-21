@@ -270,7 +270,7 @@ export async function POST(request: NextRequest) {
                   {
                     $unwind: {
                       path: "$history.assignmentBy",
-                      preserveNullAndEmptyArrays: true 
+                      preserveNullAndEmptyArrays: true,
                     },
                   },
                   {
@@ -284,7 +284,7 @@ export async function POST(request: NextRequest) {
                   {
                     $unwind: {
                       path: "$history.currentInterviewer",
-                      preserveNullAndEmptyArrays: true 
+                      preserveNullAndEmptyArrays: true,
                     },
                   },
                   {
@@ -298,14 +298,13 @@ export async function POST(request: NextRequest) {
                   {
                     $unwind: {
                       path: "$history.previousInterviewer",
-                      preserveNullAndEmptyArrays: true 
+                      preserveNullAndEmptyArrays: true,
                     },
                   },
                   {
                     $unwind: {
                       path: "$history.note",
-                      preserveNullAndEmptyArrays: true 
-                      
+                      preserveNullAndEmptyArrays: true,
                     },
                   },
                   {
@@ -319,7 +318,7 @@ export async function POST(request: NextRequest) {
                   {
                     $unwind: {
                       path: "$history.note.userId",
-                      preserveNullAndEmptyArrays: true 
+                      preserveNullAndEmptyArrays: true,
                     },
                   },
                   {
@@ -344,6 +343,7 @@ export async function POST(request: NextRequest) {
                 experience: 1,
                 skills: 1,
                 email: 1,
+                resume: 1,
                 scores: 1,
                 status: 1,
                 createdAt: 1,
