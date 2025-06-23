@@ -1,54 +1,6 @@
 import { IEmailTemplate } from "@/app/dashboard/settings/components/types";
 
-export const emailTemplateVariables = {
-    'candidate-application': [
-      'hrNotificationTitle',
-      'candidateName',
-      'orgName',
-      'jobName',
-      'email',
-      'status',
-      'applicationDate',
-    ],
-  
-    'event-scheduling': [
-      'eventTitle',
-      'startDate',
-      'jobName',
-      'interviewerName',
-      'candidateName',
-      'status',
-      'googleCalendarLink',
-      'outlookCalendarLink',
-    ],
-  
-    'remark-add': [
-      'remark_adder',
-      'remark_for',
-      'remark',
-      'rating',
-    ],
-  
-    'password-reset': [
-      'resetUrl',
-    ],
-  
-    'marked-as-done': [
-      'candidate_name',
-      'unassigner',
-    ],
-  
-    'candidate-status-update': [
-      'eventTitle',
-      'eventSubTitle',
-      'actionBy',
-      'status',
-      'remark',
-      'rating',
-    ],
-  };
-
-  export const jobD  = `<!DOCTYPE html>
+export const jobD = `<!DOCTYPE html>
 <html>
   <head>
     <meta charset="UTF-8" />
@@ -166,7 +118,7 @@ export const emailTemplateVariables = {
     </div>
     <div style="height: 20px"></div>
   </body>
-</html>`
+</html>`;
 
 export const ResetP = `<!DOCTYPE html>
 <html>
@@ -441,8 +393,7 @@ export const assE = `<!DOCTYPE html>
   </body>
 </html>`;
 
-
-export const StatusU =`<!DOCTYPE html>
+export const StatusU = `<!DOCTYPE html>
 <html>
   <head>
     <meta charset="UTF-8" />
@@ -535,7 +486,7 @@ export const StatusU =`<!DOCTYPE html>
     </div>
     <div style="height: 20px"></div>
   </body>
-</html>`
+</html>`;
 
 export const RemA = `<!DOCTYPE html>
 <html>
@@ -610,7 +561,7 @@ export const RemA = `<!DOCTYPE html>
     </div>
     <div style="height: 20px"></div>
   </body>
-</html>`
+</html>`;
 
 export const MAD = `<!DOCTYPE html>
 <html>
@@ -665,7 +616,7 @@ export const MAD = `<!DOCTYPE html>
   </body>
 </html>`;
 
-export const Data= {
+export const Data = {
   orgName: "Acme Inc",
   candidateName: "John Doe",
   jobName: "Senior Developer",
@@ -679,7 +630,8 @@ export const Data= {
   interviewerName: "Jane Smith",
   startDate: "2024-01-20 10:00 AM",
   candidateDetailsPage: "https://example.com/candidate/123",
-  googleCalendarLink: "https://calendar.google.com/calendar/render?action=TEMPLATE",
+  googleCalendarLink:
+    "https://calendar.google.com/calendar/render?action=TEMPLATE",
   outlookCalendarLink: "https://outlook.live.com/calendar/0/deeplink/compose",
   eventSubTitle: "Status has been updated for this candidate",
   actionBy: "HR Manager",
@@ -689,77 +641,89 @@ export const Data= {
   remark_adder: "Technical Lead",
   unassigner: "HR Manager",
   candidate_name: "John Doe",
-}
+};
 
 // Default templates based on your HTML files
 export const defaultTemplates: { [key: string]: IEmailTemplate } = {
   "job-application-(hr)": {
     templateId: "job-application-(hr)",
-    templateName: "Job Application (HR Notification)", 
+    templateName: "Job Application (HR Notification)",
     subject: "New Job Application - {{candidateName}} for {{jobName}}",
     html: jobD,
-    variables : [
-      'hrNotificationTitle',
-      'candidateName',
-      'orgName',
-      'jobName',
-      'email',
-      'status',
-      'applicationDate'
-    ]
+    variables: [
+      "orgName",
+      "hrNotificationTitle",
+      "status",
+      "email",
+      "candidateName",
+      "jobName",
+      "applicationDate",
+      "candidateDetails",
+    ],
   },
   "reset-password-request": {
     templateId: "reset-password-request",
     templateName: "Password Reset Request",
-    subject: "Password Reset Request - {{orgName}}",
+    subject: "Password Reset Request",
     html: ResetP,
-    variables : [ 'resetUrl']
+    variables: ["resetUrl"],
   },
   "assignment-event": {
     templateId: "assignment-event",
     templateName: "Interview Assignment Event",
     subject: "Interview Scheduled - {{jobName}} with {{candidateName}}",
     html: assE,
-    variables : ['eventTitle',
-      'startDate',
-      'jobName',
-      'interviewerName',
-      'candidateName',
-      'status',
-      'googleCalendarLink',
-      'outlookCalendarLink']
+    variables: [
+      "eventTitle",
+      "startDate: startDateString",
+      "endDate: endDateString",
+      "jobName",
+      "interviewerName",
+      "candidateName",
+      "status",
+      "googleCalendarLink",
+      "outlookCalendarLink",
+      "candidateDetailsPage",
+    ],
   },
   "status-update": {
     templateId: "status-update",
     templateName: "Status Update Notification",
     subject: "Status Update - {{candidateName}} for {{jobName}}",
     html: StatusU,
-    variables : [    'eventTitle',
-      'eventSubTitle',
-      'actionBy',
-      'status',
-      'remark',
-      'rating']
+    variables: [
+      "eventTitle",
+      "candidateName",
+      "status",
+      "remark",
+      "rating",
+      "actionBy",
+      "prev_status",
+      "eventSubTitle",
+      "candidateDetails",
+    ],
   },
   "remark-add": {
     templateId: "remark-add",
     templateName: "New Remark Added",
     subject: "New Remark Added for {{remark_for}}",
     html: RemA,
-    variables : [  'remark_adder',
-      'remark_for',
-      'remark',
-      'rating']
+    variables: [
+      "remark_adder",
+      "remark_for",
+      "rating",
+      "remark",
+      "candidateDetails",
+    ],
   },
   "marked-as-done": {
     templateId: "marked-as-done",
     templateName: "Step Completed",
     subject: "Step Completed by {{unassigner}} for {{candidate_name}}",
     html: MAD,
-    variables : [ 'candidate_name',
-      'unassigner']
+    variables: ["candidate_name", "unassigner", "candidateDetails"],
   },
-}
+};
 
 export const editorOptions = {
   minimap: { enabled: false },
@@ -772,4 +736,4 @@ export const editorOptions = {
   wordWrap: "on" as const,
   formatOnPaste: true,
   formatOnType: true,
-}
+};
