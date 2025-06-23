@@ -8,11 +8,11 @@ import { ICandidate as IExternalCandidate } from "@/lib/models/candidate";
 import mongoose, { ProjectionType } from "mongoose";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
 import { sendMail } from "../../event-mail";
-import { loadTemplate } from "@/lib/templateLoader";
 import { auth } from "@/lib/auth";
 import { Attachment } from "../route";
 import { IinfoUpdateLog } from "@/lib/models/history";
 import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
+import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
 
 interface UpdateObject {
   $set: Record<string, unknown>;
@@ -359,23 +359,23 @@ export async function PUT(
             const remark_for = data.name || existingCandidate.name;
             const remark = latestRemark.description.trim();
             const rating = latestRemark.rating || "None";
-            console.log("DATA: ", data);
             const candidateDetails = `${request.headers.get("origin")}/candidate/${data._id}`;
-            // console.log("CNADIATE DETAILS:: ", candidateDetails);
-            if (emailList.length > 0 && remark !== "") {
-              const emailContent = loadTemplate("remark-add", {
+
+            if (emailList.length > 0 && remark !== "") { 
+
+              const { emailContent,emailSubject } = await getMappedEmailTemplate("remark-add", {
                 remark_adder,
                 remark_for,
                 rating,
                 remark,
                 candidateDetails,
-              });
+              } , organizationId);
 
               sendMail(
                 organizationId,
                 emailList as string[],
-                `New Remark Added For ${remark_for}`,
-                emailContent
+                emailSubject,
+                emailContent 
               );
             }
           }

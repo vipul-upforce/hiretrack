@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { sendMail } from "@/app/api/event-mail";
 import { Candidate, Organization, User } from "@/lib/mongodb"; // Add User import
 import { ICandidate } from "@/lib/models/candidate";
-import { loadTemplate } from "@/lib/templateLoader";
 import mongoose from "mongoose";
 import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
+import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
 
 export async function POST(req: NextRequest) {
   try {
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
     // Prepare HR notification email content
     const hrNotificationTitle = `${candidateName} applied for ${jobName}`;
     const candidateDetails = `${req.headers.get("Origin")}/candidate/${candidateId}`;
-    const hrHtmlContent = loadTemplate("job-application-(hr)", {
+    const {emailContent, emailSubject} = await getMappedEmailTemplate("job-application-(hr)", {
       orgName,
       hrNotificationTitle,
       status,
@@ -116,15 +116,15 @@ export async function POST(req: NextRequest) {
       jobName,
       applicationDate,
       candidateDetails,
-    });
+    }, organizationId);
 
     const candidateAndHr = [email, ...hrEmails];
 
     const candidateEmailStatus = await sendMail(
       organizationId,
       candidateAndHr,
-      eventTitle,
-      hrHtmlContent
+      emailSubject,
+      emailContent
     );
 
     // Prepare response

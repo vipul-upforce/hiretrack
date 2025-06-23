@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendMail } from "../event-mail";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
-import { loadTemplate } from "@/lib/templateLoader";
 import connectToDatabase, { User } from "@/lib/mongodb";
 import mongoose from "mongoose";
+import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
 
 // Email queue to track pending emails
 const emailQueue = new Map<
@@ -77,7 +77,7 @@ async function sendQueuedEmail(data: any) {
   //   <strong>Rating:</strong> ${rating || "N/A"}
   // </div>`;
 
-  const htmlContent = loadTemplate("status-update", {
+  const {emailContent, emailSubject} = await getMappedEmailTemplate("status-update", {
     eventTitle,
     candidateName,
     status,
@@ -88,13 +88,13 @@ async function sendQueuedEmail(data: any) {
     eventSubTitle,
     candidateDetails,
     // eventDescription,
-  });
+  }, organizationId);
   console.log(`>>> ${email}, ${[...emailList]}`);
   return await sendMail(
     organizationId,
     [email, ...emailList],
-    eventTitle,
-    htmlContent
+    emailSubject,
+    emailContent
   );
 }
 

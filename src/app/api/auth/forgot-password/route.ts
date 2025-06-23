@@ -5,7 +5,7 @@ import { User } from "@/lib/mongodb";
 import { sendMail } from "../../event-mail";
 import { ObjectId } from "mongoose";
 import { Organization } from "@/lib/models/user";
-import { loadTemplate } from "@/lib/templateLoader";
+import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
 
 type NodemailerError = {
   errno?: number;
@@ -208,15 +208,15 @@ async function handlePasswordReset(
     const origin = req.headers.get("origin") || "http://localhost:3000";
     const resetUrl = `${origin}/auth/reset-password?token=${resetToken}${isCandidate ? "&type=candidate" : ""}`;
 
-    const htmlContent = loadTemplate("reset-password-request", {
+    const { emailContent, emailSubject } = await getMappedEmailTemplate("reset-password-request", {
       resetUrl,
-    });
+    }, organizationId);
 
     const emailStatus = await sendMail(
       organizationId,
       email,
-      "Password Reset Request",
-      htmlContent
+      emailSubject,
+      emailContent
     );
 
     if (emailStatus.status === 200) {
