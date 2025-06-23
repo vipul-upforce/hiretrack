@@ -52,7 +52,7 @@ function Settings() {
     {
       title: "Email Template",
       key: "templates",
-      description: "Upgrade your email design.",
+      description: "Customize your E-mail templates.",
     },
   ];
 

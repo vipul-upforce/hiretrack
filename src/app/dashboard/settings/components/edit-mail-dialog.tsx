@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
-import { Eye, Mail } from "lucide-react"
+import { Eye, Mail, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Editor } from "@monaco-editor/react"
@@ -58,6 +58,20 @@ export default function EmailTemplateEditor({ onClose }: { onClose: () => void }
         description: "Failed to update email templates",
         variant: "destructive",
       })
+    }
+  }
+
+  const handleResetTemplate = (setFieldValue: any, values: IEmailTemplatesConfig) => {
+    const defaultTemplate = defaultTemplates[selectedTemplate]
+    if (defaultTemplate) {
+      const updatedTemplates = {
+        ...values.templates,
+        [selectedTemplate]: {
+          ...defaultTemplate,
+        },
+      }
+      setFieldValue("templates", updatedTemplates)
+       
     }
   }
 
@@ -141,19 +155,29 @@ export default function EmailTemplateEditor({ onClose }: { onClose: () => void }
                 </div>
 
                 <div className="text-sm text-muted-foreground">
-             
                   <p className="font-medium mb-2">Available Variables:</p>
-<div className="flex gap-2 text-xs flex-wrap">
-  {defaultTemplates[selectedTemplate]?.variables?.map((variable) => (
-    <span key={variable} className="border p-2 rounded-sm">{`${variable}`}</span>
-  ))}
-</div>
+                  <div className="flex gap-2 text-xs flex-wrap">
+                    {defaultTemplates[selectedTemplate]?.variables?.map((variable) => (
+                      <span key={variable} className="border p-2 rounded-sm">{`${variable}`}</span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="w-full flex justify-end">
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleResetTemplate(setFieldValue, values)}
+                    className="flex items-center gap-1"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    Reset to Default
+                  </Button>
                 </div>
               </div>
 
               <div className="space-y-4 overflow-hidden">
-             
-
                 <div className="text-sm text-muted-foreground mb-2">
                   <p>
                     <strong>Template :</strong> {defaultTemplates[selectedTemplate]?.templateName}
