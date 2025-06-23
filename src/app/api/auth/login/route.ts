@@ -109,7 +109,7 @@ const userLogin = async (users: IUser[], orgId: string, password: string) => {
       {
         organizations: orgs,
         message:
-          "User exists in multiple organizations. Please specify the organization for login.",
+          "User exists in multiple organizations. Please specify the organization to login.",
       },
       { status: 200 }
     );

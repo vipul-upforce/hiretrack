@@ -4,7 +4,7 @@ export const userFormVaidationSchema = Yup.object().shape({
   name: Yup.string()
     // .trim()
     .strict(true)
-    .min(2, "Full Name must be at least 2 characters long")
+    .min(2, "Full Name must be at least 2 characters")
     .max(20, "Full Name cannot exceed 20 characters")
     .matches(/^(?!\s+$).*/, "Full Name cannot be only spaces")
     .required("Full Name is required"),

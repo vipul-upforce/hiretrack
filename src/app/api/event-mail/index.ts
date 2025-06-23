@@ -42,7 +42,7 @@ export const sendMail = async (
   try {
     await connectToDatabase();
     if (!Settings) {
-      return { status: 404, message: "Setting Model not found" };
+      return { status: 404, message: "Database not connected" };
     }
     // const validEmails = email;
 
@@ -52,7 +52,7 @@ export const sendMail = async (
 
     // Check if settingInfo is not empty
     if (!settingInfo || settingInfo.length === 0) {
-      return { status: 404, message: "Settings not found" };
+      return { status: 404, message: "Database not connected" };
     }
 
     // Access the first document in the array

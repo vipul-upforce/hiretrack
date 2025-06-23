@@ -4,38 +4,38 @@ export const candidateSchema = (customFields: Yup.Schema<unknown>) =>
     resume: Yup.mixed().required("Resume is required"),
     name: Yup.string()
       .required("Name is required")
-      .min(2, "Name must be at least 2 characters")
-      .max(25, "Name cannot be longer than 25 charecters")
+      .min(2, "Name must be at least 2 characters long")
+      .max(25, "Name must be 25 characters or fewer")
       .matches(
         /^(?=.*[A-Za-z]).+$/,
-        "Name must contain at least one letter and cannot be only numbers or special characters"
+        "Name must include at least one letter and cannot consist of only numbers or symbols."
       ),
-      email: Yup.string()
+    email: Yup.string()
       .required("Email is required")
       .matches(
         /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-        "Invalid Email"
+        "Please enter a valid email address"
       ),
     location: Yup.string()
       .required("Location is required")
       .matches(
         /^(?=.*[A-Za-z]).+$/,
-        "Name must contain at least one letter and cannot be only numbers or special characters"
+        "Location must include at least one letter and cannot consist of only numbers or symbols."
       ),
     experience: Yup.number()
       .required("Experience is required")
       .min(0, "Experience cannot be negative"),
-      skills: Yup.array()
+    skills: Yup.array()
       .of(
         Yup.string()
           .required("Skill is required")
           .matches(
             /^(?=.*[A-Za-z]).+$/,
-            "Each skill must contain at least one letter and cannot be only numbers or special characters"
+            "Each skill must include at least one letter and cannot consist of only numbers or symbols."
           )
       )
       .min(1, "At least one skill is required"),
-    
+
     expectedCTC: Yup.number()
       .required("Expected CTC is required")
       .min(0, "CTC cannot be negative")
@@ -70,14 +70,13 @@ export const candidateSchema = (customFields: Yup.Schema<unknown>) =>
           ) {
             return this.createError({
               path: "assignment.interviewerId",
-              message: "Interviewer ID is required when a time is set",
+              message: "Interviewer ID is required when time is set",
             });
           }
           return true;
         }
       ),
     customFields: customFields,
-    
   });
 
 export interface CandidateFormValues {

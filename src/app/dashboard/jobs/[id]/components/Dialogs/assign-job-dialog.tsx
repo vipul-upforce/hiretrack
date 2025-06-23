@@ -85,7 +85,7 @@ export function AssignJobDialog({
     } catch {
       toast({
         title: "Error",
-        description: "Failed to assign job to candidate.",
+        description: "Job assignment to the candidate failed.",
         variant: "destructive",
       });
     } finally {

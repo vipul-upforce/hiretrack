@@ -44,7 +44,7 @@ export function ResetPasswordDialog({
 
       toast({
         title: "Success",
-        description: "User password reset successfully",
+        description: "Password updated successfully",
       });
 
       onOpenChange(false);

@@ -148,7 +148,7 @@ export const useCandidate = ({
         setColumns([...columns]);
         toast({
           title: "Error",
-          description: "Failed to update candidate status umiejscowienie",
+          description: "Failed to update candidate status",
           variant: "destructive",
         });
       }

@@ -38,32 +38,32 @@ const OrgSchema = Yup.object().shape({
     .required("Organization Name is required")
     .trim()
     .matches(/^(?!\s+$).*/, "Organization Name cannot be only spaces")
-    .min(2, "Organization Name must be at least 2 characters long")
-    .max(20, "Organization Name cannot exceed 20 characters")
+    .min(2, "Organization Name must be at least 2 characters")
+    .max(20, "Organization name must be 20 characters or fewer")
     .required("Organization Name is required"),
   fullName: Yup.string()
     .required("Admin Name is required")
     .trim()
-    .matches(/^(?!\s+$).*/, "Admin Name cannot be only spaces")
+    .matches(/^(?!\s+$).*/, "Admin name cannot be only spaces")
     .min(2, "Admin Name must be at least 2 characters long")
-    .max(20, "Admin Name cannot exceed 20 characters")
+    .max(20, "Admin name must be 20 characters or fewer")
     .required("Admin Name is required"),
   email: Yup.string()
     .required("Email is required")
-    .trim("email cannot be only spaces")
+    .trim("Email cannot be only spaces")
     .matches(/^[a-z][a-z0-9._%+-]*@[a-z0-9.-]+\.[a-z]{2,}$/, "Invalid Email"),
   password: Yup.string()
-    .min(6, "Password must be at least 6 characters long")
-    .matches(/[a-z]/, "Password must contain at least one lowercase letter")
-    .matches(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .matches(/\d/, "Password must contain at least one number")
+    .min(6, "Password must be at least 6 characters.")
+    .matches(/[a-z]/, "Password must include at least one lowercase letter")
+    .matches(/[A-Z]/, "Password must include at least one uppercase letter")
+    .matches(/\d/, "Password must include at least one number")
     .matches(
       /[@$!%*?&]/,
-      "Password must contain at least one special character (@$!%*?&)"
+      "Password must include at least one special character (@$!%*?&)"
     )
     .required("Password is required"),
   confirmPassword: Yup.string()
-    .oneOf([Yup.ref("password")], "Passwords must match")
+    .oneOf([Yup.ref("password")], "Passwords do not match")
     .required("Please confirm your password"),
 });
 
@@ -104,7 +104,7 @@ function OrgRegisterPage() {
     if (!captcha) {
       toast({
         title: "Error",
-        description: "Captcha Not Verified",
+        description: "Captcha not verified. Please try again",
         variant: "default",
       });
     }
