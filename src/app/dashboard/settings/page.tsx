@@ -49,6 +49,11 @@ function Settings() {
       key: "timezone",
       description: "Select the Time Zone for your organization.",
     },
+    {
+      title: "Email Template",
+      key: "templates",
+      description: "Upgrade your email design.",
+    },
   ];
 
   return (
