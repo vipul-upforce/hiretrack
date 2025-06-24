@@ -1,6 +1,11 @@
 import mongoose, { Schema } from "mongoose";
 import { CustomFieldFile } from "../fileUtils";
 
+export interface FollowUp {
+  note: string;
+  date?: Date;
+  userId: mongoose.Schema.Types.ObjectId;
+}
 export interface ICandidate {
   jobId?:
     | mongoose.Schema.Types.ObjectId
@@ -60,6 +65,7 @@ export interface ICandidate {
         }
       | object; // Add object type to allow MongoDB documents
   };
+  followUp?: FollowUp;
   email?: string;
   scores?: {
     overall: number;
@@ -120,6 +126,19 @@ export const candidateSchema = new Schema(
         },
       },
     ],
+    followUp: {
+      note: {
+        type: String,
+      },
+      date: {
+        type: Date,
+      },
+      userId: {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+        required: true,
+      },
+    },
     attachments: [
       {
         id: String,

@@ -551,6 +551,7 @@ export async function GET(req: NextRequest) {
               updatedAt: "$candidates.updatedAt",
               history: "$histories.history",
               customFields: "$candidates.customFields",
+              followUp: "$candidates.followUp",
             },
           },
           {

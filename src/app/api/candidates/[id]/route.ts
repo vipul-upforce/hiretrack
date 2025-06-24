@@ -297,6 +297,10 @@ export async function PUT(
     if ("scores" in data) {
       updateObj.$set.scores = data.scores;
     }
+    if ("followUp" in data) {
+      // console.log("☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️ FOllow Up in here");
+      updateObj.$set.followUp = data.followUp;
+    }
     // const whatWasUpdated: string[] = [];
     // if ("attachments" in data) {
     //   if (data.attachment === null) {

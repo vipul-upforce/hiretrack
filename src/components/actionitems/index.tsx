@@ -56,6 +56,7 @@ function ActionItems({
           scores: (assignment as Candidate).scores || undefined,
           organizationId: assignment.organizationId || undefined,
           isDeleted: (assignment as Candidate).isDeleted || false,
+          followUp: (assignment as Candidate).followUp,
         };
         setCandidate(transformedCandidate);
       }

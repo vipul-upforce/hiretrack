@@ -9,6 +9,12 @@ import { formatDate, formatTime } from "../../hooks/dateTimeFormatting";
 import AddRemarksPopover from "../Dialogs/add-remark-dialog";
 import RemarksPopover from "../Remarks/remarks-popover";
 import { CandidateScoreBadge } from "../Utils/candidate-score-badge";
+import FollowupDisplay from "../Remarks/followup-popover";
+import { useRemarkHandlers } from "../../hooks/useRemarkHandlers";
+import { useEffect, useState } from "react";
+import Cookies from "js-cookie";
+import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import { User } from "@/lib/features/users/usersApi";
 
 interface CandidateCardProps {
   candidate: Candidate;
@@ -32,49 +38,106 @@ export function CandidateCard({
   setOpenRemarksFor: (id: string | null) => void;
   refetch: () => void;
 }) {
+  const [user, setuser] = useState<User | null>(null);
+  useEffect(() => {
+    (async () => {
+      const token = Cookies.get("token");
+      if (token) {
+        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+        if (decryptedResponse.success && decryptedResponse.user) {
+          setuser(decryptedResponse.user);
+        }
+      }
+    })();
+  }, []);
+
+  const { handleRemoveFollowUp } = useRemarkHandlers(candidate, user, refetch);
   if (onDashboard) {
     return (
       <div className="bg-card border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow h-full">
-        <div className="flex justify-between items-start">
-          <h3 className="font-medium w-2/3 text-wrap break-words">
-            {candidate.name}
-          </h3>
-          <div className="flex gap-1">
-            <AddRemarksPopover
-              candidate={candidate}
-              isOpen={openRemarks}
-              refetch={refetch}
-              setOpenRemarksFor={setOpenRemarksFor}
-              onOpenChange={(open) =>
-                setOpenRemarksFor(open ? candidate._id : null)
-              }
-            />
-          </div>
-          <div className="flex gap-1">
-            <RemarksPopover
-              candidate={candidate}
-              onMoreClick={() => {
-                onViewDetails(candidate);
-              }}
-            />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={(e) => {
-                e.stopPropagation();
-                onViewDetails(candidate);
-              }}
-            >
-              <Info className="h-4 w-4" />
-            </Button>
+        <div className="flex flex-col items-start">
+          <div className="flex flex-row justify-between w-full">
+            <h3 className="font-medium w-2/3 text-wrap break-words">
+              {candidate.name}
+            </h3>
+            <div className="flex gap-1">
+              <AddRemarksPopover
+                candidate={candidate}
+                isOpen={openRemarks}
+                refetch={refetch}
+                setOpenRemarksFor={setOpenRemarksFor}
+                onOpenChange={(open) =>
+                  setOpenRemarksFor(open ? candidate._id : null)
+                }
+              />
+            </div>
+            <div className="flex gap-1">
+              <RemarksPopover
+                candidate={candidate}
+                onMoreClick={() => {
+                  onViewDetails(candidate);
+                }}
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onViewDetails(candidate);
+                }}
+              >
+                <Info className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
-        <div className="mt-2 text-sm text-muted-foreground text-wrap break-words">
-          <p>
+
+        {/* <div className="mt-2 ">
+          <div className="flex flex-row w-full justify-between items-center">
+            <p className="text-sm text-muted-foreground text-wrap break-words">
+              {candidate.experience} years • {candidate.location}
+            </p>
+            {candidate.followUp &&
+              candidate.followUp.date &&
+              candidate.followUp.date.length > 1 && (
+                <div className="flex justify-end">
+                  <FollowupDisplay
+                    note={candidate.followUp.note as string}
+                    date={new Date(candidate.followUp.date)}
+                  />
+                </div>
+              )}
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground text-wrap break-words">
+            {candidate.expectedCTC} LPA
+          </p>
+        </div> */}
+        <div className="mt-2 ">
+          <p className="mt-1 text-sm text-muted-foreground text-wrap break-words">
             {candidate.experience} years • {candidate.location}
           </p>
-          <p className="mt-1">{candidate.expectedCTC} LPA</p>
+          <div className="flex flex-row w-full justify-between items-center">
+            <p className="text-sm text-muted-foreground text-wrap break-words">
+              {candidate.expectedCTC} LPA
+            </p>
+            {candidate.followUp && candidate.followUp.note && (
+              // candidate.followUp.date.length > 1
+              // &&
+              <div className="flex justify-end">
+                <FollowupDisplay
+                  note={candidate.followUp.note as string}
+                  date={
+                    candidate.followUp.date &&
+                    candidate.followUp.date.length > 1
+                      ? new Date(candidate.followUp.date)
+                      : null
+                  }
+                  handleRemoveFollowUp={handleRemoveFollowUp}
+                />
+              </div>
+            )}
+          </div>
         </div>
         <div className="mt-2 flex flex-wrap gap-1">
           {candidate.skills.slice(0, 3).map((skill) => (
@@ -169,6 +232,7 @@ export function CandidateCard({
                 }
               />
             </div>
+
             <div className="flex gap-1">
               {!candidate.isDeleted ? (
                 <Button
@@ -214,11 +278,35 @@ export function CandidateCard({
               </Button>
             </div>
           </div>
-          <div className="mt-2 text-sm text-muted-foreground text-wrap break-words">
+          {/* <div className="mt-2 text-sm text-muted-foreground text-wrap break-words">
             <p>
               {candidate.experience} years • {candidate.location}
             </p>
             <p className="mt-1">{candidate.expectedCTC} LPA</p>
+          </div> */}
+          <div className="mt-2 ">
+            <p className="mt-1 text-sm text-muted-foreground text-wrap break-words">
+              {candidate.experience} years • {candidate.location}
+            </p>
+            <div className="flex flex-row w-full justify-between items-center">
+              <p className="text-sm text-muted-foreground text-wrap break-words">
+                {candidate.expectedCTC} LPA
+              </p>
+              {candidate.followUp && (
+                // candidate.followUp.date &&
+                // candidate.followUp.date.length > 1
+                <div className="flex justify-end">
+                  <FollowupDisplay
+                    note={candidate.followUp.note as string}
+                    date={
+                      candidate.followUp.date &&
+                      new Date(candidate.followUp.date)
+                    }
+                    handleRemoveFollowUp={handleRemoveFollowUp}
+                  />
+                </div>
+              )}
+            </div>
           </div>
           <div className="mt-2 flex flex-wrap gap-1">
             {candidate.skills.slice(0, 3).map((skill) => (

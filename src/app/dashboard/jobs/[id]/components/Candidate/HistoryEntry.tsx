@@ -7,6 +7,7 @@ import { Candidate } from "@/types/candidate";
 import { User } from "@/lib/features/users/usersApi";
 import { IEditRemark } from "../../schemas/EditRemarkDialog";
 import useRoles from "@/hooks/useRoles";
+import FollowupDisplay from "../Remarks/followup-popover";
 // import { useDateFormatter } from "@/components/timezoneFormat/useGetFormattedTZ";
 
 const RenderHistoryEntry = ({
@@ -53,7 +54,8 @@ const RenderHistoryEntry = ({
   const renderEntryTitle = () => {
     if (
       (interview.title !== "" || !interview.title) &&
-      interview.title !== "Assigned to Job"
+      interview.title !== "Assigned to Job" &&
+      !interview.title?.includes("Followup")
     ) {
       return (
         <div className="flex flex-row items-start justify-between w-full">
@@ -282,7 +284,15 @@ const RenderHistoryEntry = ({
             </div>
           )}
       </div>
-
+      {interview.title?.startsWith("Followup") &&
+        interview.note &&
+        interview.note.date && (
+          <FollowupDisplay
+            note={interview.note.description as string}
+            date={new Date(interview.note.date)}
+            showToolTip={false}
+          />
+        )}
       <AttachmentsPopover
         attachments={interview.attachments}
         onMoreClick={() => null}

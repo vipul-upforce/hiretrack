@@ -31,6 +31,7 @@ import { useRemarkHandlers } from "../../hooks/useRemarkHandlers";
 import { useUnassignHandlers } from "../../hooks/useUnassignHandlers";
 import { DetailsDialog } from "./DetailsDialog";
 import { candidateDetailsFields } from "../Candidate/candidate-details-fields";
+import AddFollowUpDialog from "./add-followup-dialog";
 
 const labelClass = "font-semibold text-base";
 
@@ -53,6 +54,7 @@ export function CandidateDetailsDialog({
   const [isEditing, setIsEditing] = useState(false);
   const [isReEvaluating, setIsReEvaluating] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
+  const [isAddingFollowUp, setIsAddingFollowUp] = useState(false);
   const [isAssigningJob, setIsAssigningJob] = useState(false);
   const [user, setuser] = useState<User | null>(null);
   const [evaluateCandidateMutation] = useEvaluateCandidateMutation();
@@ -95,6 +97,12 @@ export function CandidateDetailsDialog({
     setIsSubRemarkPrivate,
     handleRemarkUpdate,
     handleAddRemark,
+    handleAddFollowUp,
+    setNewFollowUp,
+    setNewFollowUpDate,
+    newFollowUp,
+    newFollowUpDate,
+    handleRemoveFollowUp,
   } = useRemarkHandlers(
     localCandidate,
     user,
@@ -119,6 +127,22 @@ export function CandidateDetailsDialog({
     refetchAssignment,
     onOpenChange
   );
+
+  // const {
+  //   handleFollowUp,
+  //   setConfirmUnassignOpen,
+  //   isLoading,
+  //   handleUnassign,
+  //   confirmUnassign,
+  // } = useUnassignHandlers(
+  //   localCandidate,
+  //   user,
+  //   refetch,
+  //   setLocalCandidate,
+  //   onUpdate,
+  //   refetchAssignment,
+  //   onOpenChange
+  // );
 
   const handleEditClick = () => {
     setIsEditing(true); // Open the edit dialog
@@ -271,6 +295,16 @@ export function CandidateDetailsDialog({
               >
                 Mark As Done
               </Button>
+
+              {user?.role !== "interviewer" && (
+                <Button
+                  onClick={() => setIsAddingFollowUp(true)}
+                  // disabled={!localCandidate.assignment}
+                  variant="outline"
+                >
+                  Add A Follow Up
+                </Button>
+              )}
             </div>
           )}
           <div className="flex gap-2">
@@ -315,7 +349,6 @@ export function CandidateDetailsDialog({
         {body}
         {footer}
       </DetailsDialog>
-
       {isAssigning && localCandidate && (
         <AssignCandidateDialog
           candidate={localCandidate}
@@ -347,6 +380,32 @@ export function CandidateDetailsDialog({
           }}
         />
       )}
+      {isAddingFollowUp && localCandidate && (
+        <AddFollowUpDialog
+          candidate={localCandidate}
+          handleRemoveFollowUp={handleRemoveFollowUp}
+          isOpen={isAddingFollowUp}
+          onOpenChange={setIsAddingFollowUp}
+          // onJobAssignment={() => {
+          //   refetchCandidates?.();
+          //   onOpenChange(false);
+          //   setIsAssigningJob(false);
+          // }}
+          refetch={refetch}
+          handleAddFollowUp={handleAddFollowUp}
+          setNewFollowUp={setNewFollowUp}
+          setNewFollowUpDate={setNewFollowUpDate}
+          newFollowUp={newFollowUp}
+          newFollowUpDate={newFollowUpDate}
+          onAddingFollowup={async () => {
+            // await refetchCandidates?.();
+            // refetch();
+            setIsAddingFollowUp(false);
+            setNewFollowUp("");
+            setNewFollowUpDate(null);
+          }}
+        />
+      )}
       {isEditing && localCandidate && (
         <EditCandidateDialog
           candidate={localCandidate}
@@ -373,7 +432,6 @@ export function CandidateDetailsDialog({
         loadingText="Marking as done..."
         className="sm:max-w-[300px]"
       />
-
       <ConfirmationDialog
         title="Are You Sure?"
         message="This will overwrite existing candidate score data with new
@@ -386,7 +444,6 @@ export function CandidateDetailsDialog({
         loadingText="Re-Evaluating"
         className="sm:max-w-[400px]"
       />
-
       <EditRemarkDialog
         isEditRemarkDialogOpen={isEditRemarkDialogOpen}
         setIsEditRemarkDialogOpen={setIsEditRemarkDialogOpen}

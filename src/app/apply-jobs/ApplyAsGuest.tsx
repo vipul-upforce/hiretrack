@@ -308,7 +308,7 @@ export function ApplyAsGuestDialog({
       // Show success message for guest application
       toast({
         title: "Application Submitted",
-        description: "Your application has been submitted successfully!",
+        description: "Your application has been successfully submitted.",
       });
 
       setIsOpen(false);

@@ -130,6 +130,14 @@ export function KanbanColumn({
           aValue = a.scores?.overall ? new Date(a.scores.overall).getTime() : 0;
           bValue = b.scores?.overall ? new Date(b.scores.overall).getTime() : 0;
           break;
+        case "followupDate":
+          aValue = a?.followUp?.date
+            ? new Date(a?.followUp?.date).getTime()
+            : 0;
+          bValue = b?.followUp?.date
+            ? new Date(b?.followUp?.date).getTime()
+            : 0;
+          break;
         case "createdAt":
           aValue = a.tracking?.createdAt
             ? new Date(a.tracking?.createdAt).getTime()
@@ -156,10 +164,10 @@ export function KanbanColumn({
 
       // Handle comparison
       if (aValue < bValue) {
-        return direction === "asc" ? -1 : 1;
+        return direction === "asc" ? 1 : -1;
       }
       if (aValue > bValue) {
-        return direction === "asc" ? 1 : -1;
+        return direction === "asc" ? -1 : 1;
       }
       return 0;
     });

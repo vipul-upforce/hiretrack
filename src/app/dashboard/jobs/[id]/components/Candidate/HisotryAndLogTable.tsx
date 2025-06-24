@@ -265,6 +265,11 @@ export const HistoryAndLogTable: React.FC<{
                   ) {
                     return null;
                   }
+                  if (
+                    user?.role === "interviewer" &&
+                    interview.title?.toLowerCase().includes("followup")
+                  )
+                    return null;
                   return (
                     <RenderHistoryEntry
                       interview={interview}
