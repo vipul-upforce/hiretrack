@@ -34,6 +34,12 @@ export const settingsApi = createApi({
         method: "GET",
       }),
     }),
+    getMailTemplates: builder.query({
+      query: () => ({
+        url: `/settings/templates`,
+        method: "GET",
+      }),
+    }),
     getGeminiConfigs: builder.query({
       query: () => ({
         url: `/settings/gemini`,
@@ -63,6 +69,14 @@ export const settingsApi = createApi({
         url: "/settings/smtp",
         method: "PUT",
         body: mailConfig,
+      }),
+      invalidatesTags: ["Settings"],
+    }),
+    updateMailTemplates: builder.mutation({
+      query: (mailTemplates) => ({
+        url: "/settings/templates",
+        method: "PUT",
+        body: mailTemplates,
       }),
       invalidatesTags: ["Settings"],
     }),
@@ -150,6 +164,8 @@ export const {
   useUpdateTimeZoneMutation,
   useUpdateMultipleOrgMutation,
   useGetMultipleOrgConfigsQuery,
+  useGetMailTemplatesQuery,
+  useUpdateMailTemplatesMutation
 } = settingsApi;
 
 // Export types for use in components

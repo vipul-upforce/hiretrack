@@ -1,3 +1,4 @@
+import { IEmailTemplate } from "@/app/dashboard/settings/components/types";
 import { Schema, Document } from "mongoose";
 
 const fileMetaSchema = new Schema(
@@ -8,19 +9,27 @@ const fileMetaSchema = new Schema(
     type: { type: String, default: null },
     size: { type: Number, required: true },
   },
-  { _id: false, strict: true } // No automatic _id, disallow extra fields
+  { _id: false, strict: true }
+);
+
+const templateSchema = new Schema(
+  {
+    templateId: { type: String, required: true },
+    templateName: { type: String, required: true },
+    subject: { type: String, required: true },
+    html: { type: String, required: true },
+  },
+  { _id: false }
 );
 
 const settingsSchema = new Schema({
   organizationId: { type: String, required: true },
-  multipleOrg: { type: Boolean, default: false, requred: true },
+  multipleOrg: { type: Boolean, default: false, required: true }, // Fixed typo: "requred" -> "required"
   fileStorage: {
     storageType: { type: String, default: "" },
-
     cloudinaryCloudName: { type: String, default: "" },
     cloudinaryApiSecret: { type: String, default: "" },
     cloudinaryApiKey: { type: String, default: "" },
-
     awsRegion: { type: String, default: "" },
     awsAccessKeyId: { type: String, default: "" },
     awsSecretAccessKey: { type: String, default: "" },
@@ -28,33 +37,16 @@ const settingsSchema = new Schema({
   },
   mailConfig: {
     mailProvider: { type: String, default: "" },
-
     smtp_host: { type: String, default: "" },
     smtp_port: { type: String, default: "" },
     smtp_user: { type: String, default: "" },
     smtp_password: { type: String, default: "" },
     smtp_from: { type: String, default: "" },
-
     resend_api_key: { type: String, default: "" },
     resend_from: { type: String, default: "" },
     resend_reply_to: { type: String, default: "" },
   },
   portalConfigs: {
-    // portalLogo: {
-    //   id: String,
-    //   name: String,
-    //   url: String,
-    //   type: { type: String, default: null },
-    //   size: Number,
-    // },
-    // portalHeader: { type:'object',default:null},
-    // portalFooter: {
-    //   id: String,
-    //   name: String,
-    //   url: String,
-    //   type: { type: String, default: null},
-    //   size: Number,
-    // },
     portalLogo: {
       type: fileMetaSchema,
       default: null,
@@ -83,6 +75,11 @@ const settingsSchema = new Schema({
       type: String,
     },
   },
+  emailTemplates: {
+    type: Map,
+    of: templateSchema,
+    default: new Map()
+  }
 });
 
 export interface ISettings {
@@ -101,6 +98,7 @@ export interface ISettings {
     name: string;
     offset: string;
   };
+  emailTemplates: { [key: string]: IEmailTemplate }; 
 }
 
 export interface Ismtp {

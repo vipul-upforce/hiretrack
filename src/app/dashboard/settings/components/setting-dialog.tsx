@@ -15,6 +15,7 @@ import MultipleOrgsConfigs from "./MultipleOrgsConfigs";
 import BackupsDialog from "./backups-dialog";
 import AssetsDialog from "./assets-dialog";
 import TimeZoneSelect from "./TimeZone-Dialog";
+import EmailTemplateEditor from './edit-mail-dialog';
 // import FileStorageOptions from "./file-storage-dialog"; // Example for another setting
 
 interface SettingComponentProps {
@@ -32,6 +33,7 @@ const settingComponents: Record<
   backups: BackupsDialog,
   assets: AssetsDialog,
   timezone: TimeZoneSelect,
+  templates : EmailTemplateEditor
 };
 
 const SettingDialog = ({
@@ -49,8 +51,8 @@ const SettingDialog = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
         className={`${
-          setting.title === "Portal"
-            ? "max-w-7xl w-[90vw] h-[95vh] flex flex-col p-4"
+          setting.title === "Portal" || setting.title === 'Email Template'
+            ? "max-w-7xl w-[90vw] min-h-[95vh] flex flex-col p-4"
             : ""
         }`}
       >

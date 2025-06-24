@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendMail } from ".";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
-import { loadTemplate } from "@/lib/templateLoader";
 import { User } from "@/lib/mongodb";
 import mongoose from "mongoose";
 import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
+import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
 
 // Email queue to track pending emails
 const emailQueue = new Map<
@@ -118,7 +118,7 @@ async function sendQueuedEmail(data: any, req: NextRequest) {
 
   // Use the request's host header to determine the client's base URI
 
-  const htmlContent = loadTemplate("assignment-event", {
+  const {emailContent, emailSubject} = await getMappedEmailTemplate("assignment-event", {
     eventTitle,
     startDate: startDateString as string,
     endDate: endDateString as string,
@@ -129,13 +129,13 @@ async function sendQueuedEmail(data: any, req: NextRequest) {
     googleCalendarLink,
     outlookCalendarLink,
     candidateDetailsPage,
-  });
+  }, organizationId);
 
   return await sendMail(
     organizationId,
     [email, ...emailList],
-    eventTitle,
-    htmlContent
+    emailSubject,
+    emailContent
   );
 }
 
@@ -166,11 +166,11 @@ export async function PUT(req: NextRequest) {
 
     const candidateDetails = `${req.headers.get("Origin")}/candidate/${data.id}`;
 
-    const htmlContent = loadTemplate("marked-as-done", {
+    const {emailContent, emailSubject} = await getMappedEmailTemplate("marked-as-done", {
       candidate_name: data.name,
       unassigner: decryptedResponse?.user.name,
       candidateDetails,
-    });
+    }, organizationId);
     const users = await User.find({
       organizationId: new mongoose.Types.ObjectId(organizationId),
       role: { $in: ["hr", "admin"] },
@@ -185,8 +185,8 @@ export async function PUT(req: NextRequest) {
     const emailStatus = await sendMail(
       organizationId,
       [undefined, ...emailList] as string[],
-      `Candidate Unassigned`,
-      htmlContent
+      emailSubject,
+      emailContent
     );
     if (emailStatus.status === 200) {
       return NextResponse.json({ message: "Email sent successfully." });
