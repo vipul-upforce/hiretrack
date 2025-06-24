@@ -415,6 +415,34 @@ export default function EmailTemplateEditor({
                         )}
                       </p>
 
+                      {/* Invalid Variables Section - Red and Non-clickable */}
+                      {variableAnalysis.invalid.length > 0 && (
+                        <div className="border-t pt-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <AlertTriangle className="h-4 w-4 text-red-500" />
+                            <p className="font-medium text-red-700">
+                              Invalid Variables Found (
+                              {variableAnalysis.invalid.length})
+                            </p>
+                          </div>
+                          <div className="flex gap-2 text-xs flex-wrap">
+                            {variableAnalysis.invalid.map((variable) => (
+                              <div
+                                key={variable}
+                                className="border px-3 py-2 rounded-md font-mono cursor-not-allowed border-red-300 bg-red-50 text-red-700 opacity-75"
+                                title={`Invalid variable: {{${variable}}} is not available for this template`}
+                              >
+                                {`{{${variable}}}`}
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-xs text-red-600 mt-2 mb-1">
+                            Remove these variables from your template or they
+                            will not be replaced with actual values.
+                          </p>
+                        </div>
+                      )}
+
                       {/* Used Variables - Green */}
                       {variableAnalysis.used.length > 0 && (
                         <div className="mb-3">
@@ -490,37 +518,7 @@ export default function EmailTemplateEditor({
                         </div>
                       )}
                     </div>
-
-                    {/* Invalid Variables Section - Red and Non-clickable */}
-                    {variableAnalysis.invalid.length > 0 && (
-                      <div className="border-t pt-3">
-                        <div className="flex items-center gap-2 mb-2">
-                          <AlertTriangle className="h-4 w-4 text-red-500" />
-                          <p className="font-medium text-red-700">
-                            Invalid Variables Found (
-                            {variableAnalysis.invalid.length})
-                          </p>
-                        </div>
-                        <div className="flex gap-2 text-xs flex-wrap">
-                          {variableAnalysis.invalid.map((variable) => (
-                            <div
-                              key={variable}
-                              className="border px-3 py-2 rounded-md font-mono cursor-not-allowed border-red-300 bg-red-50 text-red-700 opacity-75"
-                              title={`Invalid variable: {{${variable}}} is not available for this template`}
-                            >
-                              {`{{${variable}}}`}
-                            </div>
-                          ))}
-                        </div>
-                        <p className="text-xs text-red-600 mt-2">
-                          Remove these variables from your template or they will
-                          not be replaced with actual values.
-                        </p>
-                      </div>
-                    )}
                   </div>
-
-                 
                 </div>
 
                 <div className="space-y-4 overflow-hidden">
@@ -530,26 +528,28 @@ export default function EmailTemplateEditor({
                       {defaultTemplates[selectedTemplate]?.templateName}
                     </p>
                     <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant={isDemoEnabled ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setIsDemoEnabled((prev) => !prev)}
-                      className="flex items-center gap-1"
-                    >
-                      {!isDemoEnabled ? <EyeClosed /> : <Eye />}{"Preview"} 
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleResetTemplate(setFieldValue, values)}
-                      className="flex items-center gap-1"
-                    >
-                      <RotateCcw className="h-3 w-3" />
-                      Reset to Default
-                    </Button>
-                   
+                      <Button
+                        type="button"
+                        variant={isDemoEnabled ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setIsDemoEnabled((prev) => !prev)}
+                        className="flex items-center gap-1"
+                      >
+                        {!isDemoEnabled ? <EyeClosed /> : <Eye />}
+                        {"Preview"}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          handleResetTemplate(setFieldValue, values)
+                        }
+                        className="flex items-center gap-1"
+                      >
+                        <RotateCcw className="h-3 w-3" />
+                        Reset to Default
+                      </Button>
                     </div>
                   </div>
 
@@ -600,7 +600,7 @@ export default function EmailTemplateEditor({
                       isSubmitting ||
                       isUpdating ||
                       variableAnalysis.invalid.length > 0
-                    } 
+                    }
                   >
                     {isSubmitting || isUpdating
                       ? "Saving..."
