@@ -271,6 +271,8 @@ export function CandidateDetailsDialog({
           isSubRemarkPrivate={isSubRemarkPrivate}
           setIsSubRemarkPrivate={setIsSubRemarkPrivate}
           user={user}
+          localCandidate={candidate}
+          handleRemoveFollowUp={handleRemoveFollowUp}
           handleAddRemark={handleAddRemark}
         />
       )}

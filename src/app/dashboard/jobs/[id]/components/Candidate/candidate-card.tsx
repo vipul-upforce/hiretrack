@@ -113,32 +113,16 @@ export function CandidateCard({
             {candidate.expectedCTC} LPA
           </p>
         </div> */}
-        <div className="mt-2 ">
-          <p className="mt-1 text-sm text-muted-foreground text-wrap break-words">
-            {candidate.experience} years • {candidate.location}
+        {/* <div className="mt-2 "> */}
+        <p className="mt-1 text-sm text-muted-foreground text-wrap break-words">
+          {candidate.experience} years • {candidate.location}
+        </p>
+        <div className="flex flex-row w-full justify-between items-center">
+          <p className="text-sm text-muted-foreground text-wrap break-words">
+            {candidate.expectedCTC} LPA
           </p>
-          <div className="flex flex-row w-full justify-between items-center">
-            <p className="text-sm text-muted-foreground text-wrap break-words">
-              {candidate.expectedCTC} LPA
-            </p>
-            {candidate.followUp && candidate.followUp.note && (
-              // candidate.followUp.date.length > 1
-              // &&
-              <div className="flex justify-end">
-                <FollowupDisplay
-                  note={candidate.followUp.note as string}
-                  date={
-                    candidate.followUp.date &&
-                    candidate.followUp.date.length > 1
-                      ? new Date(candidate.followUp.date)
-                      : null
-                  }
-                  handleRemoveFollowUp={handleRemoveFollowUp}
-                />
-              </div>
-            )}
-          </div>
         </div>
+        {/* </div> */}
         <div className="mt-2 flex flex-wrap gap-1">
           {candidate.skills.slice(0, 3).map((skill) => (
             <Badge key={skill} variant="secondary" className="text-xs">
@@ -182,28 +166,47 @@ export function CandidateCard({
             )}
           </div>
         )}
-        {candidate.scores && candidate.scores.overall !== undefined && (
-          <div className="capitalize flex gap-2 py-2">
-            {candidate.scores.overall >= 0 && (
-              <CandidateScoreBadge
-                score={candidate.scores.overall}
-                category="Overall"
+        <div className="flex flex-row justify-between items-center w-full">
+          {candidate.scores && candidate.scores.overall !== undefined ? (
+            <div className="capitalize flex gap-2 py-2">
+              {candidate.scores.overall >= 0 && (
+                <CandidateScoreBadge
+                  score={candidate.scores.overall}
+                  category="Overall"
+                />
+              )}
+              {candidate.scores.experience >= 0 && (
+                <CandidateScoreBadge
+                  score={candidate.scores.experience}
+                  category="Experience"
+                />
+              )}
+              {candidate.scores.skills >= 0 && (
+                <CandidateScoreBadge
+                  score={candidate.scores.skills}
+                  category="Skills"
+                />
+              )}
+            </div>
+          ) : (
+            <div></div>
+          )}
+          {candidate.followUp && candidate.followUp.note && (
+            // candidate.followUp.date.length > 1
+            // &&
+            <div className="flex justify-end ml-2">
+              <FollowupDisplay
+                note={candidate.followUp.note as string}
+                date={
+                  candidate.followUp.date && candidate.followUp.date.length > 1
+                    ? new Date(candidate.followUp.date)
+                    : null
+                }
+                handleRemoveFollowUp={handleRemoveFollowUp}
               />
-            )}
-            {candidate.scores.experience >= 0 && (
-              <CandidateScoreBadge
-                score={candidate.scores.experience}
-                category="Experience"
-              />
-            )}
-            {candidate.scores.skills >= 0 && (
-              <CandidateScoreBadge
-                score={candidate.scores.skills}
-                category="Skills"
-              />
-            )}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -292,15 +295,17 @@ export function CandidateCard({
               <p className="text-sm text-muted-foreground text-wrap break-words">
                 {candidate.expectedCTC} LPA
               </p>
-              {candidate.followUp && (
-                // candidate.followUp.date &&
+              {candidate.followUp && candidate.followUp.note && (
                 // candidate.followUp.date.length > 1
-                <div className="flex justify-end">
+                // &&
+                <div className="flex justify-end ml-2">
                   <FollowupDisplay
                     note={candidate.followUp.note as string}
                     date={
                       candidate.followUp.date &&
-                      new Date(candidate.followUp.date)
+                      candidate.followUp.date.length > 1
+                        ? new Date(candidate.followUp.date)
+                        : null
                     }
                     handleRemoveFollowUp={handleRemoveFollowUp}
                   />

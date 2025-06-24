@@ -231,8 +231,8 @@ export const useRemarkHandlers = (
         assignmentBy: user!.id,
         title: `Followup Removed`,
         note: {
-          description: newFollowUp,
-          date: newFollowUpDate?.toISOString() || "",
+          description: "",
+          date: "",
           rating: 0,
           userId: null,
         },

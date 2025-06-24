@@ -6,6 +6,9 @@ import { Eye, EyeOff } from "lucide-react";
 import Rating from "@mui/material/Rating";
 
 import { User } from "@/lib/features/users/usersApi";
+import { Candidate } from "@/types/candidate";
+import { Checkbox } from "@mui/material";
+import { useState } from "react";
 
 interface RemarkInputSectionProps {
   newRemark: string;
@@ -17,6 +20,8 @@ interface RemarkInputSectionProps {
   setIsSubRemarkPrivate: (value: boolean) => void;
   user: User | null;
   handleAddRemark: () => void;
+  localCandidate: Candidate | null;
+  handleRemoveFollowUp: () => void;
 }
 
 export default function RemarkInputSection({
@@ -29,7 +34,23 @@ export default function RemarkInputSection({
   setIsSubRemarkPrivate,
   user,
   handleAddRemark,
+  localCandidate,
+  handleRemoveFollowUp,
 }: RemarkInputSectionProps) {
+  const hasFollowUp =
+    localCandidate?.followUp?.note && localCandidate?.followUp?.note.length > 0;
+  const [removeFU, setRemoveFU] = useState(false);
+  const handleFollowUpCheckboxChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    if (event.target.checked && hasFollowUp) {
+      // handleRemoveFollowUp();
+      setRemoveFU(true);
+    } else {
+      setRemoveFU(false);
+    }
+  };
+
   return (
     <div className="space-y-4 border-t pt-4">
       <div className="space-y-4">
@@ -54,6 +75,22 @@ export default function RemarkInputSection({
           </div>
           <div className="flex flex-row items-center justify-evenly">
             <div className="flex items-center justify-between px-2 py-2">
+              {(user?.role === "admin" || user?.role === "hr") &&
+                hasFollowUp && (
+                  <>
+                    <div className="flex flex-row items-center justify-center space-x-2">
+                      <Checkbox
+                        onChange={handleFollowUpCheckboxChange}
+                        inputProps={{ "aria-label": "Remove follow-up" }}
+                      />
+                      <Label htmlFor="followup-checkbox" className="text-sm">
+                        Remove Follow-up
+                      </Label>
+                    </div>
+                  </>
+                )}
+            </div>
+            <div className="flex items-center justify-between px-2 py-2">
               {(user?.role === "admin" || user?.role === "hr") && (
                 <>
                   <div className="flex items-center space-x-2">
@@ -77,7 +114,15 @@ export default function RemarkInputSection({
                 </>
               )}
             </div>
-            <Button onClick={handleAddRemark}>Add Remark</Button>
+
+            <Button
+              onClick={() => {
+                removeFU && handleRemoveFollowUp();
+                handleAddRemark();
+              }}
+            >
+              Add Remark
+            </Button>
           </div>
         </div>
       </div>
