@@ -18,6 +18,7 @@ interface KanbanColumnProps {
   setSelectedJob: (job: Job | null) => void;
   setIsDetailsOpen: (open: boolean) => void;
   handleDeleteClick: (jobId: string) => void;
+  setDuplicate: (x: boolean) => void;
 }
 
 const KanbanColumn = ({
@@ -26,6 +27,7 @@ const KanbanColumn = ({
   setSelectedJob,
   setIsDetailsOpen,
   handleDeleteClick,
+  setDuplicate,
 }: KanbanColumnProps) => {
   //   const router = useRouter();
 
@@ -129,6 +131,7 @@ const KanbanColumn = ({
                     setSelectedJob={setSelectedJob}
                     setIsDetailsOpen={setIsDetailsOpen}
                     handleDeleteClick={handleDeleteClick}
+                    setDuplicate={setDuplicate}
                   />
                 ))}
                 {provided.placeholder}

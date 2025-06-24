@@ -3,7 +3,13 @@
 import { Draggable } from "@hello-pangea/dnd";
 import { Job } from "@/types/job";
 import { Button } from "@/components/ui/button";
-import { Info, Trash2, ArchiveRestore, MinusCircleIcon } from "lucide-react";
+import {
+  Info,
+  Trash2,
+  ArchiveRestore,
+  MinusCircleIcon,
+  Copy,
+} from "lucide-react";
 import Link from "next/link";
 import {
   Tooltip,
@@ -18,6 +24,7 @@ interface JobCardProps {
   setSelectedJob: (job: Job | null) => void;
   setIsDetailsOpen: (open: boolean) => void;
   handleDeleteClick: (jobId: string) => void;
+  setDuplicate: (x: boolean) => void;
 }
 
 const JobCard = ({
@@ -26,6 +33,7 @@ const JobCard = ({
   setSelectedJob,
   setIsDetailsOpen,
   handleDeleteClick,
+  setDuplicate,
 }: JobCardProps) => {
   return (
     <Draggable key={job._id} draggableId={job._id} index={index}>
@@ -86,6 +94,19 @@ const JobCard = ({
                   <MinusCircleIcon className="h-4 w-4 text-red-500" />
                 </div>
               )} */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedJob(job);
+                  setDuplicate(true);
+                  // setIsDetailsOpen(true);
+                }}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
               <Button
                 variant="ghost"
                 size="icon"

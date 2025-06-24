@@ -64,7 +64,7 @@ export default function KanbanPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [jobToDelete, setJobToDelete] = useState<string | null>(null);
   const [isCreatingJob, setIsCreatingJob] = useState(false);
-
+  const [duplicate, setDuplicate] = useState(false);
   useEffect(() => {
     (async () => {
       const token = Cookies.get("token");
@@ -82,6 +82,12 @@ export default function KanbanPage() {
       refetch(); // Refetch jobs when user changes
     }
   }, [user, refetch]);
+  useEffect(() => {
+    if (selectedJob && duplicate) {
+      handleJobCreated({ ...selectedJob, status: "draft", isPublished: false });
+      setDuplicate(false);
+    }
+  }, [selectedJob, duplicate]);
 
   useEffect(() => {
     if (jobs) {
@@ -290,6 +296,7 @@ export default function KanbanPage() {
               setSelectedJob={setSelectedJob}
               setIsDetailsOpen={setIsDetailsOpen}
               handleDeleteClick={handleDeleteClick}
+              setDuplicate={setDuplicate}
             />
           ))}
         </div>
