@@ -45,6 +45,9 @@ const settingsSchema = new Schema({
     resend_api_key: { type: String, default: "" },
     resend_from: { type: String, default: "" },
     resend_reply_to: { type: String, default: "" },
+    brevo_api_key: { type: String, default: "" },
+    brevo_from: { type: String, default: "" },
+    brevo_reply_to: { type: String, default: "" },
   },
   portalConfigs: {
     portalLogo: {
@@ -78,8 +81,8 @@ const settingsSchema = new Schema({
   emailTemplates: {
     type: Map,
     of: templateSchema,
-    default: new Map()
-  }
+    default: new Map(),
+  },
 });
 
 export interface ISettings {
@@ -98,7 +101,7 @@ export interface ISettings {
     name: string;
     offset: string;
   };
-  emailTemplates: { [key: string]: IEmailTemplate }; 
+  emailTemplates: { [key: string]: IEmailTemplate };
 }
 
 export interface Ismtp {
@@ -110,6 +113,9 @@ export interface Ismtp {
   resend_api_key: string;
   resend_from: string;
   resend_reply_to: string;
+  brevo_api_key: string;
+  brevo_from: string;
+  brevo_reply_to: string;
   mailProvider: string;
 }
 

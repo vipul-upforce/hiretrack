@@ -98,6 +98,13 @@ export async function PUT(req: NextRequest) {
         resend_from: mailConfig.resend_from,
         resend_reply_to: mailConfig.resend_reply_to,
       };
+    } else if (mailConfig.mailProvider === "brevo") {
+      mailConfigObj = {
+        mailProvider: mailConfig.mailProvider,
+        brevo_api_key: mailConfig.brevo_api_key,
+        brevo_from: mailConfig.brevo_from,
+        brevo_reply_to: mailConfig.brevo_reply_to,
+      };
     }
 
     const updatedUser = await Settings.findOneAndUpdate(

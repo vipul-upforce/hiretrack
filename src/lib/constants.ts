@@ -675,8 +675,8 @@ export const defaultTemplates: { [key: string]: IEmailTemplate } = {
     html: assE,
     variables: [
       "eventTitle",
-      "startDate: startDateString",
-      "endDate: endDateString",
+      "startDate",
+      "endDate",
       "jobName",
       "interviewerName",
       "candidateName",
@@ -689,7 +689,7 @@ export const defaultTemplates: { [key: string]: IEmailTemplate } = {
   "status-update": {
     templateId: "status-update",
     templateName: "Status Update Notification",
-    subject: "Status Update - {{candidateName}} for {{jobName}}",
+    subject: "Status Update - {{candidateName}}",
     html: StatusU,
     variables: [
       "eventTitle",

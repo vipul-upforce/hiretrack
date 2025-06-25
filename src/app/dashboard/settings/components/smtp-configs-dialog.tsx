@@ -23,6 +23,7 @@ const mailProviders = [
   { key: "", label: "Select Mail Providers" },
   { key: "smtp", label: "SMTP" },
   { key: "resend", label: "Resend" },
+  { key: "brevo", label: "Brevo" },
 ];
 
 export default function SMTPConfigs({ onClose }: { onClose: () => void }) {
@@ -49,6 +50,9 @@ export default function SMTPConfigs({ onClose }: { onClose: () => void }) {
     resend_api_key: "",
     resend_from: "",
     resend_reply_to: "",
+    brevo_api_key: "",
+    brevo_from: "",
+    brevo_reply_to: "",
   };
 
   const validationSchema = Yup.object({
@@ -134,6 +138,35 @@ export default function SMTPConfigs({ onClose }: { onClose: () => void }) {
             .required("Resend Reply To is required"),
         otherwise: (schema) => schema.notRequired(),
       }),
+    brevo_api_key: Yup.string()
+      .trim()
+      .when("mailProvider", {
+        is: (mailProvider: unknown) => mailProvider === "brevo",
+        then: (schema) => schema.required("Brevo API Key is required"),
+        otherwise: (schema) => schema.notRequired(),
+      }),
+
+    brevo_from: Yup.string()
+      .trim()
+      .when("mailProvider", {
+        is: (mailProvider: unknown) => mailProvider === "brevo",
+        then: (schema) =>
+          schema
+            .email("Must be a valid email")
+            .required("Brevo From is required"),
+        otherwise: (schema) => schema.notRequired(),
+      }),
+
+    brevo_reply_to: Yup.string()
+      .trim()
+      .when("mailProvider", {
+        is: (mailProvider: unknown) => mailProvider === "brevo",
+        then: (schema) =>
+          schema
+            .email("Must be a valid email")
+            .required("Brevo Reply To is required"),
+        otherwise: (schema) => schema.notRequired(),
+      }),
   });
 
   const handleSubmit = async (values: typeof initialValues) => {
@@ -162,13 +195,19 @@ export default function SMTPConfigs({ onClose }: { onClose: () => void }) {
             resend_from: values.resend_from,
             reply_to: values.resend_reply_to,
           }
-        : {
-            host: values.smtp_host,
-            port: values.smtp_port,
-            from: values.smtp_from,
-            user: values.smtp_user,
-            pass: values.smtp_password,
-          };
+        : values.mailProvider === "brevo"
+          ? {
+              brevo_api_key: values.brevo_api_key,
+              brevo_from: values.brevo_from,
+              reply_to: values.brevo_reply_to,
+            }
+          : {
+              host: values.smtp_host,
+              port: values.smtp_port,
+              from: values.smtp_from,
+              user: values.smtp_user,
+              pass: values.smtp_password,
+            };
 
     await testConnection(values.mailProvider, credentials);
   };
@@ -216,6 +255,24 @@ export default function SMTPConfigs({ onClose }: { onClose: () => void }) {
       name: "resend_reply_to",
       placeholder: "Resend Reply To Email",
       condition: "resend",
+    },
+    {
+      label: "API Key",
+      name: "brevo_api_key",
+      placeholder: "Brevo API Key",
+      condition: "brevo",
+    },
+    {
+      label: "From",
+      name: "brevo_from",
+      placeholder: "Brevo From Email",
+      condition: "brevo",
+    },
+    {
+      label: "Reply To",
+      name: "brevo_reply_to",
+      placeholder: "Brevo Reply To Email",
+      condition: "brevo",
     },
   ];
 

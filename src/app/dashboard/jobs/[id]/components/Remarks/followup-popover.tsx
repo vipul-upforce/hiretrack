@@ -34,13 +34,15 @@ const FollowupDisplay = ({
           {formatDate(date || new Date())} at {formatTime(date || new Date())}
         </p>
       </div>
-      <button
-        onClick={() => setRemoveFUOpen(true)}
-        className="w-4 h-4 ml-1 bg-transparent rounded-full text-black hover:bg-gray-200 transition duration-300 "
-      >
-        {/* <X size={1} className="w-1 h-1" /> */}
-        <XIcon size={14} strokeWidth={1.25} />
-      </button>
+      {showToolTip && (
+        <button
+          onClick={() => setRemoveFUOpen(true)}
+          className="w-4 h-4 ml-1 bg-transparent rounded-full text-black hover:bg-gray-200 transition duration-300 "
+        >
+          {/* <X size={1} className="w-1 h-1" /> */}
+          <XIcon size={14} strokeWidth={1.25} />
+        </button>
+      )}
     </div>
   );
   const contentWODate = (
@@ -56,13 +58,15 @@ const FollowupDisplay = ({
           Follow Up
         </p>
       </div>
-      <button
-        onClick={() => setRemoveFUOpen(true)}
-        className="w-4 h-4 ml-1 bg-transparent rounded-full text-black hover:bg-gray-200 transition duration-300 "
-      >
-        {/* <X size={1} className="w-1 h-1" /> */}
-        <XIcon size={14} strokeWidth={1.25} />
-      </button>
+      {showToolTip && (
+        <button
+          onClick={() => setRemoveFUOpen(true)}
+          className="w-4 h-4 ml-1 bg-transparent rounded-full text-black hover:bg-gray-200 transition duration-300 "
+        >
+          {/* <X size={1} className="w-1 h-1" /> */}
+          <XIcon size={14} strokeWidth={1.25} />
+        </button>
+      )}
     </div>
   );
 

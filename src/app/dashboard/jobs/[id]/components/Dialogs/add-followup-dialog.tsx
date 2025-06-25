@@ -81,15 +81,18 @@ const AddFollowUpDialog = ({
           />
         </div>
         <DialogFooter>
-          <Button
-            variant="secondary"
-            onClick={() => {
-              handleRemoveFollowUp();
-              onAddingFollowup();
-            }}
-          >
-            Remove Followup
-          </Button>
+          {candidate?.followUp?.note &&
+            candidate?.followUp?.note.length > 0 && (
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  handleRemoveFollowUp();
+                  onAddingFollowup();
+                }}
+              >
+                Remove Followup
+              </Button>
+            )}
           <Button variant="secondary" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
