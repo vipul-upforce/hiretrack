@@ -236,9 +236,9 @@ export default function ApplyJobsContent({
       )}
       <main className={showHeaderFooter ? "flex-1 p-4" : ""}>
         <div className="container mx-auto p-2">
-          <div className="px-3 py-6 flex flex-row justify-between items-center">
+          <div className="py-2 flex flex-row justify-between items-start">
             <div>
-              <h1 className="text-2xl font-bold mb-4 ">
+              <h1 className="lg:text-2xl sm:text-xl text-lg font-bold mb-4 ">
                 Open Positions {orgName ? `for ${orgName}` : ""}
               </h1>
             </div>
@@ -247,13 +247,13 @@ export default function ApplyJobsContent({
               <Button
                 variant="ghost"
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all text-red-500 hover:text-red-600 hover:bg-red-50",
+                  "flex items-start gap-3 rounded-lg px-3 py-2 text-sm transition-all text-red-500 hover:text-red-600 hover:bg-red-50",
                   "justify-start"
                 )}
                 onClick={handleLogout}
               >
                 <LogOut className="h-5 w-5" />
-                <span>Logout</span>
+                <span className="hidden sm:inline" >Logout</span>
               </Button>
             )}
           </div>
@@ -273,7 +273,7 @@ export default function ApplyJobsContent({
               />
               <Search className="absolute left-3 text-gray-400 h-5 w-5" />
             </div>
-            <Button onClick={handleSearch} className="px-4 py-2">
+            <Button onClick={handleSearch} className="px-4 py-2 text-sm">
               Search
             </Button>
           </div>
@@ -307,18 +307,18 @@ export default function ApplyJobsContent({
               jobs.map((job, index) => (
                 <div
                   key={index}
-                  className="bg-white break-words rounded-lg border-2 inset-shadow-sm p-6 cursor-pointer hover:shadow-lg transition-shadow flex flex-col justify-between"
+                  className="bg-white break-words rounded-lg border inset-shadow-sm p-4 lg:p-6 cursor-pointer hover:shadow-md transition-shadow flex flex-col justify-between"
                   onClick={() => {
                     setSelectedJob(job);
                     setIsJobModalOpen(true);
                   }}
                 >
                   <div className="h-full">
-                    <h2 className="text-xl font-semibold mb-2 line-clamp-3">
+                    <h2 className="text-lg lg:text-xl font-semibold mb-2 line-clamp-3">
                       {job.title}
                     </h2>
                     <p
-                      className="text-gray-600 mb-4 line-clamp-2 "
+                      className="text-gray-600 mb-4 line-clamp-2 text-sm lg:text-lg "
                       dangerouslySetInnerHTML={{
                         __html: job?.description || "No description found",
                       }}
@@ -329,7 +329,7 @@ export default function ApplyJobsContent({
                       {job.skills.slice(0, 3).map((skill, i) => (
                         <span
                           key={i}
-                          className="break-all bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full h-7 max-w-[30%] overflow-clip"
+                          className="break-all bg-blue-100 text-blue-800 text-sm  px-3 py-1 rounded-full h-7 max-w-[30%] overflow-clip"
                         >
                           {skill}
                         </span>
@@ -374,7 +374,7 @@ export default function ApplyJobsContent({
       </main>
       {showHeaderFooter && (
         <div dangerouslySetInnerHTML={{ __html: layoutState.footerHTML }} />
-      )}
+      )} 
     </div>
   );
 }

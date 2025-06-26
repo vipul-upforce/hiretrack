@@ -345,32 +345,6 @@ export function ApplyAsGuestDialog({
       reader.onerror = (error) => reject(error);
     });
   };
-  // const handleApply = async () => {
-  //   if (!formikRef.current) return;
-
-  //   const errors = await formikRef.current.validateForm();
-  //   formikRef.current.setTouched({
-  //     name: true,
-  //     email: true,
-  //     location: true,
-  //     experience: true,
-  //     skills: [],
-  //     expectedCTC: true,
-  //     currentCTC: true,
-  //     noticePeriod: true,
-  //     resume: true,
-  //   });
-
-  //   const firstErrorKey = Object.keys(errors)[0];
-  //   if (firstErrorKey) {
-  //     const el = document.querySelector(`[id="${firstErrorKey}"]`);
-  //     el?.scrollIntoView({ behavior: "smooth", block: "center" });
-  //     (el as HTMLElement)?.focus();
-  //     return;
-  //   }
-
-  //   formikRef.current.handleSubmit();
-  // };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -378,7 +352,7 @@ export function ApplyAsGuestDialog({
         <button
           type="button"
           disabled={isSendingEmail || hasAlreadyApplied}
-          className={`inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${hasAlreadyApplied && "bg-gray-200 text-gray-600"}`}
+          className={`w-full md:w-fit inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${hasAlreadyApplied && "bg-gray-200 text-gray-600"}`}
         >
           {isSendingEmail
             ? "Processing..."
@@ -388,23 +362,42 @@ export function ApplyAsGuestDialog({
         </button>
       </DialogTrigger>
       <DialogContent
-        className={`sm:max-w-[80vw] xl:max-w-[65vw] h-[90vh] p-0 overflow-hidden flex flex-col justify-center`}
+        className="w-full h-full max-w-none max-h-none m-0 p-0 rounded-none sm:rounded-lg sm:w-[95vw] sm:h-[95vh] sm:max-w-[95vw] sm:max-h-[95vh] md:w-[90vw] md:h-[90vh] md:max-w-[90vw] md:max-h-[90vh] lg:w-[85vw] lg:h-[85vh] lg:max-w-[85vw] lg:max-h-[85vh] xl:w-[80vw] xl:h-[80vh] xl:max-w-[80vw] xl:max-h-[80vh] overflow-hidden flex flex-col justify-center"
       >
-        <DialogHeader className={`px-6 py-2 ${hasAlreadyApplied && "hidden"}`}>
-          <DialogTitle>Apply</DialogTitle>
+        <DialogHeader className={`px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0 ${hasAlreadyApplied && "hidden"}`}>
+          <DialogTitle className="text-lg sm:text-xl">Apply</DialogTitle>
         </DialogHeader>
         {hasAlreadyApplied ? (
-          <div className="p-6 pt-0 text-center flex flex-col justify-start items-center ">
-            <div className="w-[400px] h-[400px]  mb-2"></div>
-            <div>
-              <h3 className="text-lg font-semibold mb-2">
+          <div className="p-4 sm:p-6 text-center flex flex-col justify-center items-center h-full">
+            <div className="w-full max-w-md space-y-4">
+              <div className="w-32 h-32 sm:w-40 sm:h-40 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
+                <svg
+                  className="w-16 h-16 sm:w-20 sm:h-20 text-green-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-lg sm:text-xl font-semibold mb-2">
                 Application Already Submitted
               </h3>
-              <p className="text-muted-foreground mb-4">
+              <p className="text-sm sm:text-base text-muted-foreground mb-4">
                 We've received your application for this job. No further action
                 is needed at this time.
               </p>
-              <Button onClick={() => setIsOpen(false)}>Close</Button>
+              <Button 
+                onClick={() => setIsOpen(false)}
+                className="w-full sm:w-auto"
+              >
+                Close
+              </Button>
             </div>
           </div>
         ) : (
@@ -420,30 +413,29 @@ export function ApplyAsGuestDialog({
             enableReinitialize={false}
           >
             {({ isSubmitting, errors, touched, setFieldValue }) => (
-              <Form className="flex flex-col h-[calc(90vh-80px)] overflow-hidden">
+              <Form className="flex flex-col h-full overflow-hidden">
                 <FormUpdater parsedResumeData={parsedResumeData} />
-                <CandidateForm
-                  onFileUpload={async (file: File) => {
-                    setFieldValue("resume", file);
-                    await handleFileParse(file, setParsedResume);
-                  }}
-                />
-                <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4">
+                <div className="flex-1 overflow-hidden">
+                  <CandidateForm
+                    onFileUpload={async (file: File) => {
+                      setFieldValue("resume", file);
+                      await handleFileParse(file, setParsedResume);
+                    }}
+                  />
+                </div>
+                <div className="flex-shrink-0 flex justify-end space-x-2 border-t bg-background px-4 sm:px-6 py-3 sm:py-4 safe-area-inset-bottom">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => setIsOpen(false)}
+                    className="flex-1 sm:flex-none"
                   >
                     Cancel
                   </Button>
                   <Button
                     type={!errors ? "submit" : "button"}
                     onClick={handleApply}
-                    // disabled={
-                    //   isSubmitting ||
-                    //   Object.keys(errors).length > 0 ||
-                    //   Object.keys(touched).length === 0
-                    // }
+                    className="flex-1 sm:flex-none"
                   >
                     {isSubmitting ? "Saving..." : "Apply"}
                   </Button>
