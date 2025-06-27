@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import ApplyOptions from "./ApplyOptions";
 import { hasAppliedAsGuest } from "./ApplyAsGuest";
 import '../../components/ui/rte/rteStyles.css'
+
 // Define a type for the job object
 interface Job {
   title: string;
@@ -39,7 +40,6 @@ export default function JobModal({
   const [alreadyApplied, setAlreadyApplied] = useState(false);
 
   const roles = useRoles();
-  // const router = useRouter();
 
   useEffect(() => {
     if (isPendingOptionsOpen && !isOpen) {
@@ -69,100 +69,214 @@ export default function JobModal({
   return (
     <>
       <Dialog open={isOpen} onClose={onClose}>
+        {/* Backdrop */}
         <div
-          className="fixed inset-0 bg-black bg-opacity-25"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity"
           aria-hidden="true"
         />
-        <div className="fixed inset-0 flex items-center justify-center p-4 h-[100vh]">
-          <Dialog.Panel className="w-full sm:w-[80vw] md:w-[70vw] lg:w-[50vw] transform overflow-hidden rounded-2xl bg-white text-left align-middle shadow-xl transition-all max-h-[80vh] relative">
-            <div className="sticky top-0 bg-white p-4 sm:p-6 sm:py-3 sm:pt-4 sm:pb-2 z-10">
-              <Dialog.Title
-                as="h3"
-                className="text-lg font-bold leading-6 text-gray-900 break-words"
-              >
-                {job.title}
-              </Dialog.Title>
-              {/* <hr className="mt-2" /> */}
-            </div>
 
-            <div className="p-4 sm:p-6 sm:pt-0 pb-20 overflow-y-auto max-h-[calc(80vh-120px)] border-t border-gray-100">
-              <div className="mt-2 mb-10">
-                <p
-                  // className="w-full whitespace-pre-wrap"
-                  className="text-sm whitespace-pre-wrap pb-0 ml-[1rem]"
-                  style={{ wordWrap: "break-word" }}
-
-                  dangerouslySetInnerHTML={{
-                    __html: job?.description || "No description found",
+        {/* Modal Container */}
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <Dialog.Panel className="
+            w-full h-full
+            sm:w-[calc(100%-2rem)] sm:h-[calc(100%-2rem)] sm:max-w-2xl
+            md:w-[calc(100%-3rem)] md:h-[calc(100%-3rem)] md:max-w-3xl
+            lg:w-[calc(100%-4rem)] lg:h-[calc(100%-4rem)] lg:max-w-4xl
+            xl:max-w-5xl
+            bg-white 
+            flex flex-col
+            rounded-none sm:rounded-lg md:rounded-xl lg:rounded-2xl 
+            shadow-xl
+            overflow-hidden
+          ">
+            
+            {/* Header - Fixed */}
+            <div className="flex-shrink-0 bg-white border-b border-gray-100">
+              <div className="flex items-center justify-between p-4 sm:p-5 lg:p-6">
+                <Dialog.Title
+                  as="h3"
+                  className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 flex-1 pr-4 line-clamp-2"
+                  style={{ 
+                    wordBreak: 'break-word',
+                    overflowWrap: 'break-word'
                   }}
                 >
-                  {/* {job.description || "No description Found"} */}
-                </p>
-                <div className="mt-4">
-                  <h4 className="font-bold">Required Skills:</h4>
-                  <div className="flex flex-wrap gap-2 mt-2">
+                  {job.title}
+                </Dialog.Title>
+                
+                {/* Close button - visible on mobile */}
+                <button
+                  onClick={onClose}
+                  className="flex-shrink-0 p-2 rounded-full hover:bg-gray-100 transition-colors sm:hidden"
+                  aria-label="Close modal"
+                >
+                  <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Content - Scrollable */}
+            <div className="flex-1 overflow-y-auto min-h-0">
+              <div className="p-4 sm:p-5 lg:p-6 space-y-5 sm:space-y-6">
+                
+                {/* Description */}
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-sm sm:text-base text-gray-900">
+                    Job Description
+                  </h4>
+                  <div
+                    className="text-sm sm:text-base text-gray-700 leading-relaxed prose prose-sm sm:prose max-w-none"
+                    style={{ 
+                      wordBreak: 'break-word',
+                      overflowWrap: 'break-word'
+                    }}
+                    dangerouslySetInnerHTML={{
+                      __html: job?.description || "No description available",
+                    }}
+                  />
+                </div>
+
+                {/* Skills */}
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-sm sm:text-base text-gray-900">
+                    Required Skills
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
                     {job.skills.map((skill: string, i: number) => (
                       <span
                         key={i}
-                        className="break-all bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full"
+                        className="
+                          inline-flex items-center px-2.5 py-1 sm:px-3 sm:py-1.5
+                          bg-blue-50 text-blue-700 border border-blue-200
+                          text-xs sm:text-sm font-medium rounded-full
+                          break-all
+                        "
+                        style={{ 
+                          wordBreak: 'break-word',
+                          overflowWrap: 'break-word'
+                        }}
                       >
                         {skill}
                       </span>
                     ))}
                   </div>
                 </div>
-                <div className="mt-4">
-                  <h4 className="font-bold">Experience Required:</h4>
-                  <p className="mt-1">{job.experience} years</p>
+
+                {/* Experience */}
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-sm sm:text-base text-gray-900">
+                    Experience Required
+                  </h4>
+                  <div className="flex items-center space-x-2">
+                    <div className="flex items-center px-3 py-2 bg-gray-50 rounded-lg border">
+                      <svg className="w-4 h-4 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="text-sm sm:text-base text-gray-700 font-medium">
+                        {job.experience} {job.experience === 1 ? 'year' : 'years'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                {roles !== "" && (
-                  <div className="mt-4">
-                    <CustomFieldsData customFields={job?.customFields || {}} />
+
+                {/* Custom Fields */}
+                {roles !== "" && job?.customFields && Object.keys(job.customFields).length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="font-semibold text-sm sm:text-base text-gray-900">
+                      Additional Information
+                    </h4>
+                    <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                      <CustomFieldsData customFields={job?.customFields || {}} />
+                    </div>
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="absolute bottom-0 left-0 right-0 bg-white p-4 sm:p-6 sm:py-3 border-t border-gray-100 flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
-              {roles === "" ? (
-                <>
+            {/* Footer - Fixed */}
+            <div className="flex-shrink-0 bg-white border-t border-gray-100">
+              <div className="p-4 sm:p-5 lg:p-6">
+                <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-3 sm:justify-end">
+                  
+                  {/* Close button - hidden on mobile, visible on desktop */}
                   <button
-                    onClick={handleContinue}
-                    disabled={alreadyApplied || readOnly}
-                    className={`w-full sm:w-auto inline-flex justify-center rounded-md border ${alreadyApplied || readOnly
-                        ? "border-gray-300 bg-gray-100 text-gray-500"
-                        : "border-transparent bg-blue-100 text-blue-900 hover:bg-blue-200"
-                      } px-4 py-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2`}
+                    type="button"
+                    className="
+                      hidden sm:inline-flex items-center justify-center
+                      px-4 py-2.5 text-sm font-medium text-gray-700 
+                      bg-white border border-gray-300 rounded-lg
+                      hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2
+                      transition-colors duration-200
+                    "
+                    onClick={onClose}
                   >
-                    {alreadyApplied ? "Already Applied" : "Apply Now"}
+                    Close
                   </button>
-                </>
-              ) : (
-                <>
-                  {alreadyApplied || readOnly ? (
+
+                  {/* Apply button */}
+                  {roles === "" ? (
                     <button
-                      disabled
-                      className="w-full sm:w-auto inline-flex justify-center rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-500"
+                      onClick={handleContinue}
+                      disabled={alreadyApplied || readOnly}
+                      className={`
+                        flex items-center justify-center w-full sm:w-auto
+                        px-6 py-3 sm:py-2.5 text-sm font-medium rounded-lg
+                        focus:outline-none focus:ring-2 focus:ring-offset-2
+                        transition-all duration-200
+                        ${
+                          alreadyApplied || readOnly
+                            ? "bg-gray-100 text-gray-500 border border-gray-300 cursor-not-allowed"
+                            : "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 shadow-sm hover:shadow-md"
+                        }
+                      `}
                     >
-                      Already Applied
+                      {alreadyApplied ? (
+                        <>
+                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          Already Applied
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                          </svg>
+                          Apply Now
+                        </>
+                      )}
                     </button>
                   ) : (
-                    <CreateCandidateDialog
-                      jobId={job._id as string}
-                      isOpen={isFormDialogOpen}
-                      setIsOpen={setIsFormDialogOpen}
-                    />
+                    <div className="w-full sm:w-auto">
+                      {alreadyApplied || readOnly ? (
+                        <button
+                          disabled
+                          className="
+                            flex items-center justify-center w-full
+                            px-6 py-3 sm:py-2.5 text-sm font-medium rounded-lg
+                            bg-gray-100 text-gray-500 border border-gray-300 cursor-not-allowed
+                          "
+                        >
+                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          Already Applied
+                        </button>
+                      ) : (
+                        <div className="w-full">
+                          <CreateCandidateDialog
+                            jobId={job._id as string}
+                            isOpen={isFormDialogOpen}
+                            setIsOpen={setIsFormDialogOpen}
+                          />
+                        </div>
+                      )}
+                    </div>
                   )}
-                </>
-              )}
-
-              <button
-                type="button"
-                className="w-full sm:w-auto inline-flex justify-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2"
-                onClick={onClose}
-              >
-                Close
-              </button>
+                </div>
+              </div>
             </div>
           </Dialog.Panel>
         </div>

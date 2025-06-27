@@ -86,7 +86,7 @@ export default function ApplyOptions({
             Alert
           </Dialog.Title>
 
-          <p className="text-gray-500 text-md mt-2">
+          <p className="text-gray-500 text-sm md:text-md mt-2">
             Currently, You are not logged in. Please choose how you want to
             continue.
           </p>
@@ -95,8 +95,8 @@ export default function ApplyOptions({
             {roles === "" ? (
               <div className="flex flex-col sm:flex-row sm:justify-between w-full gap-3">
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <Button onClick={handleSignupRedirect}>Sign Up</Button>
-                  <Button onClick={handleLoginRedirect}>Login</Button>
+                  <Button onClick={handleSignupRedirect} className='text-sm'>Sign Up</Button>
+                  <Button onClick={handleLoginRedirect} className='text-sm'>Login</Button>
                 </div>
                 <div>
                   <ApplyAsGuestDialog

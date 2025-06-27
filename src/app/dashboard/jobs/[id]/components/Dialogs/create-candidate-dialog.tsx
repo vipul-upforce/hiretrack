@@ -400,9 +400,9 @@ export function CreateCandidateDialog({
         )}
       </DialogTrigger>
       <DialogContent
-        className={`sm:max-w-[80vw] xl:max-w-[65vw] h-[90vh] p-0 overflow-hidden flex flex-col justify-center`}
+        className={`sm:max-w-[80vw] xl:max-w-[65vw] h-[100vh] sm:h-[90vh] p-0 overflow-hidden flex flex-col`}
       >
-        <DialogHeader className="px-6 py-2">
+        <DialogHeader className="flex-shrink-0 px-6 py-4 border-b">
           <DialogTitle>
             {user && user.role === "candidate"
               ? "Add Application"
@@ -428,20 +428,22 @@ export function CreateCandidateDialog({
             values,
             setFieldValue,
           }) => (
-            <Form className="flex flex-col h-[calc(90vh-80px)] overflow-hidden">
+            <Form className="flex flex-col flex-1 min-h-0">
               <FormUpdater parsedResumeData={parsedResumeData} />
-              <CandidateForm
-                onFileUpload={async (file: File) => {
-                  setFieldValue("resume", file);
-                  await handleFileParse(file, setParsedResume);
-                  Object?.entries(values?.customFields).forEach(
-                    ([key, value]) => {
-                      setTouched({ [key]: true });
-                    }
-                  );
-                }}
-              />
-              <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4">
+              <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 pt-0 h-full">
+                <CandidateForm
+                  onFileUpload={async (file: File) => {
+                    setFieldValue("resume", file);
+                    await handleFileParse(file, setParsedResume);
+                    Object?.entries(values?.customFields).forEach(
+                      ([key, value]) => {
+                        setTouched({ [key]: true });
+                      }
+                    );
+                  }}
+                />
+              </div>
+              <div className="flex-shrink-0 flex justify-end space-x-2 border-t bg-background px-4 sm:px-6 py-3 sm:py-4">
                 <Button
                   type="button"
                   variant="outline"
