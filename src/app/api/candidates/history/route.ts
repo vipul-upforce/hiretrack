@@ -342,7 +342,7 @@ export async function PUT(request: NextRequest) {
         { status: 400 }
       );
     }
-
+    // console.log("🚒🚒🚒🚒 In HistoryUpdate: ", candidateData.remarks.length);
     broadcastCandidateUpdate({
       ...candidateData,
       history: historyData.history || [],

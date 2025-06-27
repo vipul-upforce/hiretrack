@@ -3,18 +3,61 @@ import { CandidateCard } from "@/app/dashboard/jobs/[id]/components/Candidate/ca
 import { CandidateDetailsDialog } from "@/app/dashboard/jobs/[id]/components/Dialogs/candidate-details-dialog";
 import { Assignment } from "@/app/dashboard/page";
 import { Candidate, CandidateStatus, Remark } from "@/types/candidate";
-// import { ICandidateHistory } from "@/lib/models/history";
+import { toast } from "@/hooks/use-toast";
 
 function ActionItems({
   assignment,
   fetchAssignments,
+  setAssignments,
+  assignments,
 }: {
   assignment: Assignment | Candidate;
   fetchAssignments: () => void;
+  setAssignments: any;
+  assignments: (Assignment | Candidate)[];
 }) {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [openRemarksFor, setOpenRemarksFor] = useState<string | null>(null);
   const [candidate, setCandidate] = useState<Candidate | null>(null);
+
+  // Candidate-specific refetch function
+  const refetchCandidate = async () => {
+    if (!candidate?._id) return;
+
+    try {
+      const response = await fetch(`/api/candidates/${candidate._id}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to fetch candidate");
+      }
+
+      const updatedCandidate: Candidate = await response.json();
+      setCandidate(updatedCandidate);
+      const updatedAssignments = assignments.map((assignment) =>
+        assignment._id === updatedCandidate._id
+          ? { ...assignment, ...updatedCandidate } // merge updated data
+          : assignment
+      );
+      setAssignments(updatedAssignments);
+      toast({
+        title: "Success",
+        description: "Candidate data refreshed successfully",
+      });
+    } catch (error) {
+      console.error("Failed to refetch candidate:", error);
+      toast({
+        title: "Error",
+        description: "Failed to refresh candidate data. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   useEffect(() => {
     if (assignment) {
@@ -51,7 +94,7 @@ function ActionItems({
           createdAt: assignment.createdAt,
           updatedAt: assignment.updatedAt,
           assignment: (assignment as Candidate).assignment || null,
-          history: (assignment as Candidate).history || [], // Temporary workaround, update Assignment type
+          history: (assignment as Candidate).history || [],
           email: (assignment as Candidate).email || undefined,
           scores: (assignment as Candidate).scores || undefined,
           organizationId: assignment.organizationId || undefined,
@@ -69,7 +112,7 @@ function ActionItems({
         key={candidate._id}
         candidate={candidate}
         index={0}
-        refetch={() => {}}
+        refetch={refetchCandidate}
         onViewDetails={() => setIsDetailsOpen(true)}
         openRemarks={openRemarksFor === candidate._id}
         setOpenRemarksFor={setOpenRemarksFor}
@@ -79,8 +122,8 @@ function ActionItems({
         candidate={candidate}
         isOpen={isDetailsOpen}
         onOpenChange={setIsDetailsOpen}
-        onUpdate={() => {}}
-        refetchAssignment={() => {}}
+        onUpdate={setCandidate}
+        refetchAssignment={refetchCandidate}
       />
     </>
   ) : null;

@@ -33,7 +33,7 @@ export function broadcastCandidateUpdate(
     const data = `data: ${JSON.stringify({ type: "candidateUpdate", candidate: encodedSSE })}\n\n`;
 
     const clientsCount = Array.from(global.sseClients.entries()).length;
-
+    // console.log("⛔⛔⛔⛔ ", candidate?.followUp);
     client.controller.enqueue(encoder.encode(data));
     client.controller.enqueue(
       encoder.encode(

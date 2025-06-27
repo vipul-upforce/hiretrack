@@ -159,16 +159,7 @@ export const useRemarkHandlers = (
           jobId: localCandidate?.jobId,
           newEntry: newHistoryEntry,
         }).unwrap());
-      if (
-        pathname !== "/dashboard" &&
-        !pathname?.endsWith("calendar") &&
-        !pathname?.startsWith("/candidate")
-      ) {
-        await refetch();
-      }
-      if (pathname === "/dashboard" && !pathname?.startsWith("/candidate")) {
-        await refetchAssignment?.();
-      }
+
       const result = await updateCandidate(updateData).unwrap();
       if (onUpdate && result && pathname !== "/dashboard/calendar") {
         await new Promise((resolve) => setTimeout(resolve, 500));
@@ -182,6 +173,16 @@ export const useRemarkHandlers = (
         // debugger;
         await refetchCandidates?.();
         await refetch();
+      }
+      if (
+        pathname !== "/dashboard" &&
+        !pathname?.endsWith("calendar") &&
+        !pathname?.startsWith("/candidate")
+      ) {
+        await refetch();
+      }
+      if (pathname === "/dashboard" && !pathname?.startsWith("/candidate")) {
+        await refetchAssignment?.();
       }
       setNewRemark("");
       setRemarkRating(null);
@@ -243,12 +244,36 @@ export const useRemarkHandlers = (
         name: localCandidate?.name,
         followUp: newFollowUpObj,
       };
+
+      // if (
+      //   pathname !== "/dashboard" &&
+      //   !pathname?.endsWith("calendar") &&
+      //   !pathname?.startsWith("/candidate")
+      // ) {
+      //   await refetch();
+      // }
+      // if (pathname === "/dashboard" && !pathname?.startsWith("/candidate")) {
+      //   await refetchAssignment?.();
+      // }
+      const result = await updateCandidate(updateData).unwrap();
+      if (onUpdate && result && pathname !== "/dashboard/calendar") {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        onUpdate(result);
+      }
+      if (onUpdate && localCandidate) {
+        await onUpdate(localCandidate);
+      }
       localCandidate &&
         (await updateCandidateHistory({
           candidateId: localCandidate?._id,
           jobId: localCandidate?.jobId,
           newEntry: newHistoryEntry,
         }).unwrap());
+      if (pathname === "/dashboard/search") {
+        // debugger;
+        await refetchCandidates?.();
+        await refetch();
+      }
       if (
         pathname !== "/dashboard" &&
         !pathname?.endsWith("calendar") &&
@@ -258,21 +283,8 @@ export const useRemarkHandlers = (
       }
       if (pathname === "/dashboard" && !pathname?.startsWith("/candidate")) {
         await refetchAssignment?.();
+        await refetch();
       }
-      const result = await updateCandidate(updateData).unwrap();
-      if (onUpdate && result && pathname !== "/dashboard/calendar") {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        onUpdate(result);
-      }
-      if (onUpdate && localCandidate) {
-        await onUpdate(localCandidate);
-      }
-
-      if (pathname === "/dashboard/search") {
-        // debugger;
-      }
-      await refetchCandidates?.();
-      await refetch();
       setNewFollowUp("");
       setNewFollowUpDate(null);
       // setRemarkRatingHistory(null);
@@ -343,12 +355,36 @@ export const useRemarkHandlers = (
         name: localCandidate?.name,
         followUp: newFollowUpObj,
       };
+
+      // if (
+      //   pathname !== "/dashboard" &&
+      //   !pathname?.endsWith("calendar") &&
+      //   !pathname?.startsWith("/candidate")
+      // ) {
+      //   await refetch();
+      // }
+      // if (pathname === "/dashboard" && !pathname?.startsWith("/candidate")) {
+      //   await refetchAssignment?.();
+      // }
+      const result = await updateCandidate(updateData).unwrap();
+      if (onUpdate && result && pathname !== "/dashboard/calendar") {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        onUpdate(result);
+      }
+      if (onUpdate && localCandidate) {
+        await onUpdate(localCandidate);
+      }
       localCandidate &&
         (await updateCandidateHistory({
           candidateId: localCandidate?._id,
           jobId: localCandidate?.jobId,
           newEntry: newHistoryEntry,
         }).unwrap());
+      if (pathname === "/dashboard/search") {
+        // debugger;
+        await refetchCandidates?.();
+        await refetch();
+      }
       if (
         pathname !== "/dashboard" &&
         !pathname?.endsWith("calendar") &&
@@ -358,21 +394,8 @@ export const useRemarkHandlers = (
       }
       if (pathname === "/dashboard" && !pathname?.startsWith("/candidate")) {
         await refetchAssignment?.();
+        await refetch();
       }
-      const result = await updateCandidate(updateData).unwrap();
-      if (onUpdate && result && pathname !== "/dashboard/calendar") {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        onUpdate(result);
-      }
-      if (onUpdate && localCandidate) {
-        await onUpdate(localCandidate);
-      }
-
-      if (pathname === "/dashboard/search") {
-        // debugger;
-      }
-      await refetchCandidates?.();
-      await refetch();
       setNewFollowUp("");
       setNewFollowUpDate(null);
       // setRemarkRatingHistory(null);

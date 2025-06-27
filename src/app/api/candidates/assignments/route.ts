@@ -168,7 +168,7 @@ export async function GET(req: NextRequest) {
 
         const isPagination = searchParams.get("isPagination") || false;
         const page = parseInt(searchParams.get("page") || "1", 10);
-        const limit = parseInt(searchParams.get("limit") || "12", 10);
+        const limit = parseInt(searchParams.get("limit") || "48", 10);
         const skip = (page - 1) * limit;
 
         // const today = new Date();

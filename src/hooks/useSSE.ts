@@ -94,10 +94,10 @@ export const useSSE = (
               }
             }
 
-            console.log("Comparing IDs:", {
-              currentSelectedId,
-              updatedCandidateId: updatedCandidate._id,
-            });
+            // console.log("Comparing IDs:", {
+            //   currentSelectedId,
+            //   updatedCandidateId: updatedCandidate._id,
+            // });
 
             if (currentSelected && currentSelectedId === updatedCandidate._id) {
               // console.log("Matched selected candidate, updating...");
@@ -166,10 +166,10 @@ export const useSSE = (
                 setSelectedCandidateRef.current(updatedEvent);
               }
             } else {
-              console.log("No match for selected candidate:", {
-                currentSelectedId,
-                updatedCandidateId: updatedCandidate._id,
-              });
+              // console.log("No match for selected candidate:", {
+              //   currentSelectedId,
+              //   updatedCandidateId: updatedCandidate._id,
+              // });
             }
           }, 1000);
         } else if (data.type === "clients") {

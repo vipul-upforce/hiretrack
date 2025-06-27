@@ -365,21 +365,25 @@ export async function PUT(
             const rating = latestRemark.rating || "None";
             const candidateDetails = `${request.headers.get("origin")}/candidate/${data._id}`;
 
-            if (emailList.length > 0 && remark !== "") { 
-
-              const { emailContent,emailSubject } = await getMappedEmailTemplate("remark-add", {
-                remark_adder,
-                remark_for,
-                rating,
-                remark,
-                candidateDetails,
-              } , organizationId);
+            if (emailList.length > 0 && remark !== "") {
+              const { emailContent, emailSubject } =
+                await getMappedEmailTemplate(
+                  "remark-add",
+                  {
+                    remark_adder,
+                    remark_for,
+                    rating,
+                    remark,
+                    candidateDetails,
+                  },
+                  organizationId
+                );
 
               sendMail(
                 organizationId,
                 emailList as string[],
                 emailSubject,
-                emailContent 
+                emailContent
               );
             }
           }
@@ -539,7 +543,10 @@ export async function PUT(
       ]);
 
       // console.log("UPDATED SCRE: ", updatedCandidate.scores);
-
+      // console.log(
+      //   "🔥🔥🔥🔥 In CandidateUpdate: ",
+      //   updatedCandidate.remarks.length
+      // );
       broadcastCandidateUpdate({
         ...updatedCandidate,
         history: candidateHistoryPopulated?.history,

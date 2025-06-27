@@ -107,7 +107,7 @@ export default function DashboardPage() {
   //   // error,
   //   // refetch,
   // } = useGetUsersQuery();
-  const itemsPerPage = 12;
+  const itemsPerPage = 48;
   const [open, setOpen] = useState(false);
   const [selectedAssignedTo, setSelectedAssignedTo] = useState("");
   const [user, setUser] = useState<User | null>(null);
@@ -167,6 +167,67 @@ export default function DashboardPage() {
   //   role || "",
   //   setSelectedEvent,
   //   selectedEvent
+  // );
+
+  // const fetchAssignmentsNoReload = useCallback(
+  //   async (page = currentPage, isAppend = false) => {
+  //     if (loadingRef.current) return;
+
+  //     loadingRef.current = true;
+  //     // if (!isAppend) {
+  //     //   setIsLoading(true);
+  //     // } else {
+  //     //   setIsLoadingMore(true);
+  //     // }
+
+  //     try {
+  //       const params = new URLSearchParams({
+  //         isPagination: "true",
+  //         page: page.toString(),
+  //         limit: itemsPerPage.toString(),
+  //         filterValue: filterText.toString(),
+  //         assignedTo: selectedAssignedTo,
+  //       });
+
+  //       const response = await fetch(
+  //         `/api/candidates/assignments?${params.toString()}`
+  //       );
+  //       if (!response.ok) {
+  //         const errorData = await response.json();
+  //         throw new Error(errorData.error || "Failed to fetch assignments");
+  //       }
+
+  //       const data = await response.json();
+  //       const newAssignments = data[0]?.data || [];
+  //       setAssignmentsCounts({
+  //         totalInterviews: data[0]?.totalInterviews || 0,
+  //         todaysInterviews: data[0]?.todaysInterviews || 0,
+  //         thisweeksInterviews: data[0]?.thisweeksInterviews || 0,
+  //       });
+  //       setAssignedInterviewers([...(data[0]?.assignmentCount || [])]);
+
+  //       // Update assignments state
+  //       if (isAppend) {
+  //         setAssignments((prev) => [...prev, ...newAssignments]);
+  //       } else {
+  //         setAssignments(newAssignments);
+  //       }
+
+  //       // Update pagination state
+  //       if (newAssignments.length < itemsPerPage) {
+  //         setHasMoreData(false);
+  //       } else {
+  //         setHasMoreData(true);
+  //       }
+  //     } catch (error) {
+  //       console.error("Error fetching assignments:", error);
+  //     } finally {
+  //       setIsLoading(false);
+  //       setIsLoadingMore(false);
+  //       loadingRef.current = false;
+  //     }
+  //   },
+  //   [filterText, selectedAssignedTo, itemsPerPage, currentPage]
   // );
 
   const fetchAssignments = useCallback(
@@ -619,7 +680,10 @@ export default function DashboardPage() {
                               ? sseCandidates[0]
                               : assignment
                           }
-                          fetchAssignments={() => fetchAssignments(1, false)}
+                          assignments={assignments}
+                          setAssignments={setAssignments}
+                          fetchAssignments={() => {}}
+                          // fetchAssignments={() => fetchAssignmentsNoReload()}
                         />
                       </div>
                     ))}
