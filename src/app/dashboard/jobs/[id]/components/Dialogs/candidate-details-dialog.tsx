@@ -32,6 +32,7 @@ import { useUnassignHandlers } from "../../hooks/useUnassignHandlers";
 import { DetailsDialog } from "./DetailsDialog";
 import { candidateDetailsFields } from "../Candidate/candidate-details-fields";
 import AddFollowUpDialog from "./add-followup-dialog";
+import ConfirmAndRemarkDialog from "./mark-as-done-dialog";
 
 const labelClass = "font-semibold text-base";
 
@@ -65,7 +66,6 @@ export function CandidateDetailsDialog({
   const [localCandidate, setLocalCandidate] = useState<Candidate | null>(
     candidate
   );
-
   const refetch = async () => {
     const result = await refetchCandidate(
       (id as string) || candidate?.jobId._id || ""
@@ -423,9 +423,23 @@ export function CandidateDetailsDialog({
           }}
         />
       )}
-      <ConfirmationDialog
+      <ConfirmAndRemarkDialog
         title="Mark as Done"
-        message="Are you sure you want to mark this assignment as complete?"
+        // message="Are you sure you want to mark this assignment as completed?"
+        isOpen={confirmUnassignOpen}
+        setIsOpen={setConfirmUnassignOpen}
+        onConfirm={(note, rating) => {
+          // debugger;
+          confirmUnassign(note, rating);
+        }}
+        onCancel={() => setConfirmUnassignOpen(false)}
+        isLoading={isLoading}
+        loadingText="Marking as done..."
+        className="sm:max-w-[300px]"
+      />
+      {/* <ConfirmationDialog
+        title="Mark as Done"
+        message="Are you sure you want to mark this assignment as completed?"
         isOpen={confirmUnassignOpen}
         setIsOpen={setConfirmUnassignOpen}
         onConfirm={confirmUnassign}
@@ -433,7 +447,7 @@ export function CandidateDetailsDialog({
         isLoading={isLoading}
         loadingText="Marking as done..."
         className="sm:max-w-[300px]"
-      />
+      /> */}
       <ConfirmationDialog
         title="Are You Sure?"
         message="This will overwrite existing candidate score data with new

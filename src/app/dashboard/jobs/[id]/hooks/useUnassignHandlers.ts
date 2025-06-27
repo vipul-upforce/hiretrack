@@ -15,6 +15,8 @@ export const useUnassignHandlers = (
   user: User | null,
   refetch: () => Promise<void>,
   setLocalCandidate: (candidate: Candidate) => void,
+  // unassignNote?: string | null,
+  // unassignRating?: number | null,
   onUpdate?: (candidate: Candidate) => void,
   refetchAssignment?: () => void,
   onOpenChange?: (open: boolean) => void
@@ -29,7 +31,10 @@ export const useUnassignHandlers = (
     setConfirmUnassignOpen(true);
   };
 
-  const confirmUnassign = async () => {
+  const confirmUnassign = async (
+    unassignNote?: string | null,
+    unassignRating?: number | null
+  ) => {
     try {
       const updatedCandidate = {
         ...localCandidate,
@@ -44,7 +49,7 @@ export const useUnassignHandlers = (
         } else {
           refetchAssignment?.();
         }
-
+        // debugger;
         const previousInterviewerId =
           typeof localCandidate?.assignment?.interviewerId === "object"
             ? Object(localCandidate.assignment.interviewerId._id)
@@ -56,9 +61,9 @@ export const useUnassignHandlers = (
           assignmentBy: user!.id,
           title: null,
           note: {
-            description: "",
+            description: unassignNote || "",
             date: "",
-            rating: 0,
+            rating: unassignRating || 0,
             userId: null,
           },
           attachments: [],

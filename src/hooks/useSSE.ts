@@ -54,7 +54,7 @@ export const useSSE = (
       try {
         const data = JSON.parse(event.data);
         // console.log("Received SSE event:", data);
-
+        // debugger;
         if (data.type === "candidateUpdate") {
           const encodedCandidate = data.candidate;
           const updatedCandidate = await getDecodedSSE(encodedCandidate);
@@ -81,6 +81,7 @@ export const useSSE = (
           });
 
           setTimeout(() => {
+            // debugger;
             const currentSelected = selectedCandidateRef.current;
             let currentSelectedId: string | undefined;
             if (currentSelected) {
