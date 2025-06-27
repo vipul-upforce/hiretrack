@@ -4,6 +4,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ const ConfirmAndRemarkDialog = ({
   onCancel,
   isLoading = false,
   loadingText = "Marking as done...",
+  message,
   className = "sm:max-w-[400px]",
   title = "Mark as Done",
 }: {
@@ -31,6 +33,7 @@ const ConfirmAndRemarkDialog = ({
   title?: string;
   assignmentId?: string;
   onAddHistoryEntry?: (historyEntry: any) => void;
+  message?: string;
 }) => {
   // Local state for the form
   const [remarkDescription, setRemarkDescription] = useState("");
@@ -64,8 +67,9 @@ const ConfirmAndRemarkDialog = ({
       <DialogContent className={className}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
+          {message && <DialogDescription>{message}</DialogDescription>}
         </DialogHeader>
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-4 pt-0">
           <div>
             <Label htmlFor="remark-textarea">Remark</Label>
             <Textarea

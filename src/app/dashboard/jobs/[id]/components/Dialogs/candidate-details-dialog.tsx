@@ -425,7 +425,7 @@ export function CandidateDetailsDialog({
       )}
       <ConfirmAndRemarkDialog
         title="Mark as Done"
-        // message="Are you sure you want to mark this assignment as completed?"
+        message="Candidate will be Un-Assigned after marking as done."
         isOpen={confirmUnassignOpen}
         setIsOpen={setConfirmUnassignOpen}
         onConfirm={(note, rating) => {

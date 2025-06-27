@@ -413,7 +413,8 @@ export function EditCandidateDialog({
           candidate.resume ? "xl:max-w-[65vw]" : "xl:max-w-[50vw]"
         } h-[90vh] p-0 flex flex-col justify-between overflow-hidden`}
       >
-        <DialogHeader className="px-6 pt-8 ">
+        <DialogHeader className="px-6 py-8 border-b">
+          {/* <DialogHeader className="flex-shrink-0 px-6 py-4 border-b"> */}
           <DialogTitle>Edit Candidate</DialogTitle>
         </DialogHeader>
         <Formik
@@ -423,15 +424,18 @@ export function EditCandidateDialog({
           onSubmit={handleSubmit}
         >
           {({ isSubmitting, errors, setFieldValue, dirty }) => (
-            <Form className="flex flex-col h-[calc(90vh-80px)] overflow-hidden border-t ">
+            // <Form className="flex flex-col h-[calc(90vh-80px)] overflow-hidden border-t ">
+            <Form className="flex flex-col flex-1 min-h-0">
               <FormUpdater parsedResumeData={parsedResumeData} />
-              <CandidateForm
-                onFileUpload={async (file: File) => {
-                  setFieldValue("resume", file);
-                  await handleFileParse(file, setParsedResume);
-                }}
-                isEditMode={true}
-              />
+              <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 pt-0 h-full">
+                <CandidateForm
+                  onFileUpload={async (file: File) => {
+                    setFieldValue("resume", file);
+                    await handleFileParse(file, setParsedResume);
+                  }}
+                  isEditMode={true}
+                />
+              </div>
               <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4">
                 <Button
                   type="button"
