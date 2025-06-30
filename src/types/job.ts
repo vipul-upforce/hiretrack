@@ -1,3 +1,4 @@
+import { ISalary } from "@/app/dashboard/jobs-board/schemas/job-schema";
 import { CustomFieldValues } from "@/Custom_Fields/hooks/useCustomForm";
 
 export interface JobAssignment {
@@ -16,6 +17,7 @@ export interface Job {
   experience: number;
   isPublished?: boolean;
   links: string[];
+  salary?: ISalary;
   // validTill?: Date;
   status: "open" | "closed" | "draft";
   candidateCount?: number;

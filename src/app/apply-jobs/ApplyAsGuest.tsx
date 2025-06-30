@@ -361,10 +361,10 @@ export function ApplyAsGuestDialog({
               : "Apply As Guest"}
         </button>
       </DialogTrigger>
-      <DialogContent
-        className="w-full h-full max-w-none max-h-none m-0 p-0 rounded-none sm:rounded-lg sm:w-[95vw] sm:h-[95vh] sm:max-w-[95vw] sm:max-h-[95vh] md:w-[90vw] md:h-[90vh] md:max-w-[90vw] md:max-h-[90vh] lg:w-[85vw] lg:h-[85vh] lg:max-w-[85vw] lg:max-h-[85vh] xl:w-[80vw] xl:h-[80vh] xl:max-w-[80vw] xl:max-h-[80vh] overflow-hidden flex flex-col justify-center"
-      >
-        <DialogHeader className={`px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0 ${hasAlreadyApplied && "hidden"}`}>
+      <DialogContent className="w-full h-full max-w-none max-h-none m-0 p-0 rounded-none sm:rounded-lg sm:w-[95vw] sm:h-[95vh] sm:max-w-[95vw] sm:max-h-[95vh] md:w-[90vw] md:h-[90vh] md:max-w-[90vw] md:max-h-[90vh] lg:w-[85vw] lg:h-[85vh] lg:max-w-[85vw] lg:max-h-[85vh] xl:w-[80vw] xl:h-[80vh] xl:max-w-[80vw] xl:max-h-[80vh] overflow-hidden flex flex-col justify-center">
+        <DialogHeader
+          className={`px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0 ${hasAlreadyApplied && "hidden"}`}
+        >
           <DialogTitle className="text-lg sm:text-xl">Apply</DialogTitle>
         </DialogHeader>
         {hasAlreadyApplied ? (
@@ -392,7 +392,7 @@ export function ApplyAsGuestDialog({
                 We've received your application for this job. No further action
                 is needed at this time.
               </p>
-              <Button 
+              <Button
                 onClick={() => setIsOpen(false)}
                 className="w-full sm:w-auto"
               >
@@ -415,7 +415,7 @@ export function ApplyAsGuestDialog({
             {({ isSubmitting, errors, touched, setFieldValue }) => (
               <Form className="flex flex-col h-full overflow-hidden">
                 <FormUpdater parsedResumeData={parsedResumeData} />
-                <div className="flex-1 overflow-hidden">
+                <div className="flex-1 overflow-hidden px-4 py-2">
                   <CandidateForm
                     onFileUpload={async (file: File) => {
                       setFieldValue("resume", file);

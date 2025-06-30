@@ -79,6 +79,12 @@ export default function ResumeEvaluationDetails({
                   category="Skills"
                 />
               )}
+              {localCandidate.scores.affordability >= 0 && (
+                <CandidateScoreBadge
+                  score={localCandidate.scores.affordability}
+                  category="Affordability"
+                />
+              )}
             </div>
           ) : (
             <p className="text-gray-500">

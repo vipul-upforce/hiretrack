@@ -136,7 +136,6 @@ export const candidateSchema = new Schema(
       userId: {
         type: Schema.Types.ObjectId,
         ref: "User",
-        required: true,
       },
     },
     attachments: [
@@ -177,6 +176,7 @@ export const candidateSchema = new Schema(
       },
       experience: { type: Number, min: 0, max: 10 },
       skills: { type: Number, min: 0, max: 10 },
+      affordability: { type: Number, min: 0, max: 10 },
       education: { type: Number, min: 0, max: 10 },
       projects: { type: Number, min: 0, max: 10, default: 0 },
       certifications: { type: Number, min: 0, max: 10, default: 0 },

@@ -24,6 +24,12 @@ interface Job {
   description: string;
   skills: string[];
   experience: number;
+  salary?: {
+    min: 0;
+    max: 0;
+    inText: string;
+    isPrivate: false;
+  };
 }
 
 function isFetchBaseQueryError(
@@ -253,7 +259,7 @@ export default function ApplyJobsContent({
                 onClick={handleLogout}
               >
                 <LogOut className="h-5 w-5" />
-                <span className="hidden sm:inline" >Logout</span>
+                <span className="hidden sm:inline">Logout</span>
               </Button>
             )}
           </div>
@@ -335,8 +341,41 @@ export default function ApplyJobsContent({
                         </span>
                       ))}
                     </div>
-                    <div className="mt-4 text-sm text-gray-500">
-                      Experience: {job.experience} years
+                    <div className="mt-4 text-sm text-gray-500 flex flex-rw items-center justify-between">
+                      <p>Experience: {job.experience} years</p>
+
+                      {job.salary ? (
+                        <div className="flex items-center">
+                          {job.salary?.inText ? (
+                            <span className="text-sm font-medium">
+                              {job.salary.inText}
+                            </span>
+                          ) : (
+                            <>
+                              {job.salary?.min && job.salary.min !== 0 && (
+                                <span className="text-sm font-medium">
+                                  {job.salary.min} LPA
+                                </span>
+                              )}
+                              {job.salary?.min &&
+                                job.salary.min !== 0 &&
+                                job.salary?.max &&
+                                job.salary.max !== 0 && (
+                                  <span className="mx-1 text-muted-foreground">
+                                    -
+                                  </span>
+                                )}
+                              {job.salary?.max && job.salary.max !== 0 && (
+                                <span className="text-sm font-medium">
+                                  {job.salary.max} LPA
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      ) : (
+                        ""
+                      )}
                     </div>
                   </div>
                 </div>
@@ -374,7 +413,7 @@ export default function ApplyJobsContent({
       </main>
       {showHeaderFooter && (
         <div dangerouslySetInnerHTML={{ __html: layoutState.footerHTML }} />
-      )} 
+      )}
     </div>
   );
 }

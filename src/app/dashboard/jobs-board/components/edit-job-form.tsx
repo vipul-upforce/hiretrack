@@ -23,6 +23,12 @@ interface Job {
   links: string[];
   isPublished?: boolean;
   // validTill: Date;
+  salary?: {
+    min: number;
+    max: number;
+    inText: string;
+    isPrivate: boolean;
+  };
   status: "open" | "closed" | "draft";
   candidateCount?: number;
   attachments: {

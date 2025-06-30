@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Candidate, History, Settings } from "@/lib/mongodb";
+import connectToDatabase, {
+  Candidate,
+  History,
+  Job,
+  Settings,
+} from "@/lib/mongodb";
 // import fetch from "node-fetch";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { promises as fs } from "fs";
@@ -26,12 +31,14 @@ interface JobForEvaluate {
   description: string;
   title: string;
   skills: string[];
+  salary?: string;
 }
 
 async function evaluateResume(
   resumeText: string,
   api_key: string,
-  jobData: JobForEvaluate
+  jobData: JobForEvaluate,
+  candidate: ICandidate
 ): Promise<{
   overall: number;
   experience: number;
@@ -53,30 +60,89 @@ async function evaluateResume(
     const jobSkills = jobData.skills.join(", ");
 
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
+    console.log("[JOBSALARY ]: ", jobData.salary);
     const prompt = `
-    As a seasoned senior technology leader with expertise in talent acquisition, you are tasked with evaluating a candidate for The details of the job is as follows: 
+    As a seasoned senior technology leader with expertise in talent acquisition, you are conducting a rigorous evaluation of a candidate. You must evaluate each dimension independently and avoid giving similar scores across categories.
     
-    Job Title: ${jobTitle}
-    Job Description: ${jobDescription}
-    Skills required for this job: ${jobSkills}
+    Job Details:
+    - Job Title: ${jobTitle}
+    - Job Description: ${jobDescription}
+    - Job Salary: ${jobData.salary}
+    - Candidate's Current salary: ${candidate.currentCTC}
+    - Candidate's Expected salary: ${candidate.expectedCTC}
+    - Required Skills: ${jobSkills}
     
+    EVALUATION FRAMEWORK - Each category must be scored independently:
     
-    Your objective is to assess this CV against the job description. Please provide your evaluation in JSON format, adhering to the following structure and guidelines:
+    **OVERALL SUITABILITY (1-10):**
+    - 9-10: Exceptional fit, exceeds most requirements
+    - 7-8: Strong fit, meets most requirements with some standout qualities
+    - 5-6: Moderate fit, meets basic requirements but has notable gaps
+    - 3-4: Weak fit, significant gaps in multiple areas
+    - 1-2: Poor fit, major misalignment with role requirements
     
-          {
-            "overall": // An overall rating (out of 10) reflecting the candidate's suitability for the role based on the CV. Consider the alignment of skills, experience, and demonstrated impact with the job description.
-            "skills": // A rating (out of 10) specifically assessing the match between the candidate's mentioned skills and the required skills for the role.
-            "experience": // A rating (out of 10) evaluating the relevance and depth of the candidate's experience in relation to the job description and required experience levels.
-            "strengths": // A concise bulleted list of the candidate's key strengths identified from the CV that align with the role.
-            "areas_for_improvement": // A concise bulleted list of potential areas where the candidate's CV could be stronger or where there might be gaps in relation to the requirements.
-            "recommendation": // A brief recommendation, such as "Strongly Recommend for Interview," "Recommend for Interview," "Consider for Other Roles," or "Not a Strong Match."
-            "notes": // Any additional qualitative observations or context that informed your ratings and recommendation.
-            "failure": // If the process encounters a critical error or you cannot provide a meaningful evaluation, include an error message here. Otherwise, this field should be omitted or left empty.
-            }
-            You are a strict and professional talent acquisition expert, the criteria for evaluation is very high. The candidate must have matching experience and skills to the job description.
-            Below is the text content of a Curriculum Vitae (CV) submitted by an applicant:
-            `;
+    **SKILLS ASSESSMENT (1-10) - TECHNICAL FOCUS ONLY:**
+    Evaluate ONLY technical/hard skills mentioned in CV vs. job requirements:
+    - 9-10: Possesses 90%+ of required skills with advanced proficiency
+    - 7-8: Possesses 70-89% of required skills with good proficiency
+    - 5-6: Possesses 50-69% of required skills with basic proficiency
+    - 3-4: Possesses 30-49% of required skills, significant gaps
+    - 1-2: Possesses <30% of required skills, major skill deficiencies
+    
+    **EXPERIENCE ASSESSMENT (1-10) - WORK HISTORY FOCUS ONLY:**
+    Evaluate ONLY professional work experience relevance and duration:
+    - 9-10: Highly relevant experience exceeding job requirements (years + domain match)
+    - 7-8: Relevant experience meeting job requirements with good domain alignment
+    - 5-6: Somewhat relevant experience, partial domain match or insufficient years
+    - 3-4: Limited relevant experience, weak domain alignment
+    - 1-2: Minimal or irrelevant work experience for this role
+    
+    **AFFORDABILITY ASSESSMENT (1-10):**
+    IMPORTANT: First normalize salary formats before comparison:
+    - If candidate expectation is >1000 (e.g., 34000, 45000): Treat as monthly salary in thousands, convert to LPA by dividing by 1000 and multiplying by 12
+    - If candidate expectation is ≤100 (e.g., 34, 45): Treat as LPA (Lakhs Per Annum)
+    - Apply same logic to job salary for comparison
+    
+    After normalization, compare candidate's expected CTC with job salary:
+    - 9-10: Candidate expectation is 0-10% below job salary (highly affordable)
+    - 7-8: Candidate expectation is within ±10% of job salary (affordable)
+    - 5-6: Candidate expectation is 10-25% above job salary (moderately affordable)
+    - 3-4: Candidate expectation is 25-50% above job salary (challenging)
+    - 1-2: Candidate expectation is 50%+ above job salary (unaffordable)
+    
+    *If no salary expectation is mentioned in CV or Job Salary is not provided, score as N/A*
+    
+    CRITICAL INSTRUCTIONS:
+    1. Each score must reflect the specific criteria above - DO NOT give similar scores across categories
+    2. Be strict and objective - average candidates should receive 4-6 scores, not 7-8
+    3. Only exceptional candidates deserve 8+ scores
+    4. Skills score should ONLY consider technical abilities, not soft skills or education
+    5. Experience score should ONLY consider relevant work history duration and domain match
+    6. For affordability, clearly show your salary normalization logic in the notes
+    7. Provide specific evidence from the CV to justify each score
+    
+    Return your evaluation in this JSON format:
+    {
+      "overall": // Overall suitability score (1-10) with brief justification
+      "skills": // Technical skills match score (1-10) with specific skill gaps/matches noted
+      "experience": // Work experience relevance score (1-10) with years and domain relevance noted
+      "affordability": // Salary alignment score (1-10) with calculation shown (include normalization logic)
+      "strengths": // Maximum 4 bullet points of genuine strengths from CV
+      "areas_for_improvement": // Maximum 4 bullet points of specific gaps or weaknesses
+      "recommendation": // One of: "Strongly Recommend", "Recommend", "Consider with Reservations", "Not Recommended"
+      "notes": // Specific evidence from CV that influenced your scoring, include salary normalization logic
+    }
+    
+    SALARY NORMALIZATION EXAMPLES:
+    - Candidate says "34000 expected": 34000 ÷ 1000 × 12 = 4.08 LPA
+    - Candidate says "34 LPA expected": 34 LPA (no conversion needed)
+    - Candidate says "45000 current, 50000 expected": 50000 ÷ 1000 × 12 = 6 LPA expected
+    - Job salary "8-12 LPA": Use midpoint 10 LPA for comparison
+    
+    REMEMBER: Be a strict evaluator. Most candidates should receive mixed scores (some high, some low) based on their actual qualifications. Identical scores across categories indicate insufficient analysis.
+    
+    Below is the CV content for evaluation:
+    `;
 
     const parts = [
       { text: prompt },
@@ -165,6 +231,13 @@ export async function PUT(request: NextRequest) {
         { status: 404 }
       );
     }
+    const job = await Job?.findById(
+      candidate.jobId &&
+        typeof candidate.jobId === "object" &&
+        "_id" in candidate.jobId
+        ? String(candidate.jobId._id)
+        : ""
+    );
     const settingsData = await Settings.findOne({
       organizationId:
         candidate.jobId &&
@@ -215,6 +288,7 @@ export async function PUT(request: NextRequest) {
         : "";
     const jobData = {
       description: jobDescription,
+      salary: job?.salary && job.salary.inText ? job.salary.inText : undefined,
       title:
         typeof candidate.jobId === "object" && "title" in candidate.jobId
           ? String(candidate.jobId.title)
@@ -227,7 +301,8 @@ export async function PUT(request: NextRequest) {
     const scores = await evaluateResume(
       base64Resume,
       settingsData.gemini.gemini_key,
-      jobData
+      jobData,
+      candidate
     );
 
     candidate.scores = scores;

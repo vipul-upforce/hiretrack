@@ -12,13 +12,19 @@ export const jobSchema = new mongoose.Schema({
   skills: [{ type: String }],
   experience: { type: Number, required: true },
   links: [{ type: String }],
+  salary: {
+    min: { type: Number },
+    max: { type: Number },
+    inText: { type: String },
+    isPrivate: { type: Boolean, default: false },
+  },
   // validTill: { type: Date, required: true },
   status: {
     type: String,
     enum: ["open", "closed", "draft"],
     default: "open",
   },
-  isPublished:{ type: Boolean, default:false},
+  isPublished: { type: Boolean, default: false },
   attachments: {
     files: [
       {
@@ -61,6 +67,12 @@ export interface IJob extends Document<mongoose.Types.ObjectId> {
   experience: number;
   links: string[];
   // validTill: Date;
+  salary?: {
+    min: number;
+    max: number;
+    inText: string;
+    isPrivate: boolean;
+  };
   status: string;
   attachments: {
     files: {

@@ -167,8 +167,11 @@ export function CandidateCard({
           </div>
         )}
         <div className="flex flex-row justify-between items-center w-full">
+          {/* <div className="capitalize flex gap-2 py-2 flex-wrap justify-start w-[60%]"> */}
           {candidate.scores && candidate.scores.overall !== undefined ? (
-            <div className="capitalize flex gap-2 py-2">
+            <div
+              className={`capitalize flex gap-2 py-2 flex-wrap justify-start  ${candidate.followUp && candidate.followUp.note && "w-[60%]"}`}
+            >
               {candidate.scores.overall >= 0 && (
                 <CandidateScoreBadge
                   score={candidate.scores.overall}
@@ -187,10 +190,17 @@ export function CandidateCard({
                   category="Skills"
                 />
               )}
+              {candidate.scores.affordability >= 0 && (
+                <CandidateScoreBadge
+                  score={candidate.scores.affordability}
+                  category="Affordability"
+                />
+              )}
             </div>
           ) : (
             <div></div>
           )}
+          {/* </div> */}
           {candidate.followUp && candidate.followUp.note && (
             // candidate.followUp.date.length > 1
             // &&
@@ -344,7 +354,7 @@ export function CandidateCard({
             </div>
           )}
           {candidate.scores && candidate.scores.overall !== undefined && (
-            <div className="capitalize flex gap-2 py-2">
+            <div className="capitalize flex gap-2 py-2 flex-wrap justify-start">
               {candidate.scores.overall >= 0 && (
                 <CandidateScoreBadge
                   score={candidate.scores.overall}
@@ -361,6 +371,12 @@ export function CandidateCard({
                 <CandidateScoreBadge
                   score={candidate.scores.skills}
                   category="Skills"
+                />
+              )}
+              {candidate.scores.affordability >= 0 && (
+                <CandidateScoreBadge
+                  score={candidate.scores.affordability}
+                  category="Affordability"
                 />
               )}
             </div>

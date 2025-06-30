@@ -52,12 +52,24 @@ export const jobSchema = (customFields: Yup.Schema<unknown>) => {
   });
 };
 
+export interface ISalary {
+  min: number;
+  max: number;
+  inText: string;
+  isPrivate: boolean;
+}
 export interface JobFormValues {
   _id: string;
   title: string;
   // company: string;
   description: string;
   skills: string[];
+  salary?: {
+    min: number;
+    max: number;
+    inText: string;
+    isPrivate: boolean;
+  };
   experience: number;
   links: string[];
   // validTill: Date;

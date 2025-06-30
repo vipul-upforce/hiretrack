@@ -19,6 +19,9 @@ import {
 // import { DatePicker } from "@/components/ui/date-picker";
 import { LinkIcon } from "lucide-react";
 import RichTextEditor from "@/components/ui/rte/RichTextEditor";
+import { Checkbox } from "@mui/material";
+// import { Checkbox } from "@mui/material";
+// import { Checkbox } from "@mui/material";
 
 // export const skillSuggestions = [
 //   "JavaScript",
@@ -175,6 +178,67 @@ export function JobForm(props: JobFormProps) {
         {touched.experience && errors.experience && (
           <p className="text-sm text-red-500">{errors.experience}</p>
         )}
+      </div>
+      <div className="space-y-2">
+        <Label>Salary</Label>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Input
+              id="salary.inText"
+              name="salary.inText"
+              type="text"
+              value={values.salary?.inText || ""}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              placeholder="Enter salary or salary range"
+              min="0"
+            />
+          </div>
+          {/* <div className="space-y-2">
+            <Input
+              id="salary.min"
+              name="salary.min"
+              type="number"
+              value={values.salary?.min || ""}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              placeholder="Minimum Salary in LPA"
+              min="0"
+            />
+          </div>
+          <div className="space-y-2">
+            <Input
+              id="salary.max"
+              name="salary.max"
+              type="number"
+              value={values.salary?.max || ""}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              placeholder="Maximum salary in LPA"
+              min="0"
+            />
+          </div> */}
+          <div className="space-y-2 flex items-center gap-2">
+            <Checkbox
+              sx={{
+                color: "black",
+                // borderRadius: "20px",
+                "&.Mui-checked": {
+                  // borderRadius: "20px",
+                  color: "black",
+                },
+              }}
+              id="salary.isPrivate"
+              name="salary.isPrivate"
+              // type="checkbox"
+              checked={values.salary?.isPrivate === true ? true : false}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              className="h-4 w-4"
+            />
+            <Label htmlFor="salary.isPrivate">Keep Salary Private</Label>
+          </div>
+        </div>
       </div>
 
       <div className="space-y-2">

@@ -91,6 +91,7 @@ export async function GET(request: Request) {
 
     const filteredJobs = sortedJobs?.map((job) => ({
       ...job,
+      salary: job?.salary && !job?.salary?.isPrivate ? job?.salary : undefined,
       customFields: Object.fromEntries(
         job?.customFields
           ? Object.entries(job.customFields).filter(([key]) =>

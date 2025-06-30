@@ -68,6 +68,12 @@ export function CreateJobDialog({
     // company: "",
     description: "",
     skills: [] as string[],
+    salary: {
+      min: 0,
+      max: 0,
+      inText: "",
+      isPrivate: false,
+    },
     experience: 0,
     links: [] as string[],
     // validTill: new Date(),

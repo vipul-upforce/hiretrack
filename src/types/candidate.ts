@@ -58,6 +58,7 @@ export interface Candidate {
     overall: number;
     experience: number;
     skills: number;
+    affordability: number;
     strengths: string[];
     areas_for_improvement: string[];
     recommendation: string;

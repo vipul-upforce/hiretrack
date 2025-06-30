@@ -2,7 +2,7 @@
 
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
-import { Link, Clock } from "lucide-react";
+import { Link, Clock, Lock } from "lucide-react";
 import { ImageGallery } from "@/components/ui/image-gallery";
 import { PDFViewer } from "@/components/ui/pdf-viewer";
 import { FileAttachment } from "./FileAttchment";
@@ -64,6 +64,42 @@ export const jobDetailsFields: FieldConfig[] = [
       </div>
     ),
     shouldRender: (job) => job.links.length > 0,
+  },
+  {
+    label: "Salary",
+    render: (job) => (
+      <div className="flex items-center gap-2">
+        <div className="flex items-center">
+          {job.salary?.inText ? (
+            <span className="text-sm font-medium">{job.salary.inText}</span>
+          ) : (
+            <>
+              {job.salary?.min && job.salary.min !== 0 && (
+                <span className="text-sm font-medium">
+                  {job.salary.min} LPA
+                </span>
+              )}
+              {job.salary?.min &&
+                job.salary.min !== 0 &&
+                job.salary?.max &&
+                job.salary.max !== 0 && (
+                  <span className="mx-1 text-muted-foreground">-</span>
+                )}
+              {job.salary?.max && job.salary.max !== 0 && (
+                <span className="text-sm font-medium">
+                  {job.salary.max} LPA
+                </span>
+              )}
+            </>
+          )}
+        </div>
+
+        {job.salary?.isPrivate && (
+          <Lock size={12} className="text-muted-foreground" />
+        )}
+      </div>
+    ),
+    shouldRender: (job) => (job.salary ? true : false),
   },
   {
     label: "Experience Required",
