@@ -188,12 +188,17 @@ export function KanbanColumn({
   };
 
   return (
-    <Draggable key={column.id} draggableId={column.id} index={index}>
+    <Draggable
+      key={column.id}
+      draggableId={column.id}
+      index={index}
+      className="z-50"
+    >
       {(provided: DraggableProvided) => (
         <div
           ref={provided.innerRef}
           {...provided.draggableProps}
-          className="w-[350px] mr-6"
+          className="w-[350px] mr-6 "
         >
           <Card className="space-y-4 min-h-[75vh] h-full">
             <CardHeader className="pb-3">

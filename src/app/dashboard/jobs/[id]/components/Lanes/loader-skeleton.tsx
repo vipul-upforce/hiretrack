@@ -1,12 +1,12 @@
-import { Button } from "@/components/ui/button";
-import { GripVertical, Plus } from "lucide-react";
+import { GripVertical } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const LoaderSkeleton = () => (
+  //COMMENTED ELEMENTS ARE DIRECTLY INSERTED IN THE JOB/[ID] PAGE, WHEN ITS LOADING THE REFs BY DRAGTOSCROLL HOOK
   <div className="space-y-6">
     {/* Header Section */}
-    <Skeleton className="w-56 h-[16px] rounded-lg" />
-    <div className="rounded-xl border bg-card text-card-foreground shadow p-6 flex flex-row items-center justify-between">
+    {/* <Skeleton className="w-56 h-[16px] rounded-lg" /> */}
+    {/* <div className="rounded-xl border bg-card text-card-foreground shadow p-6 flex flex-row items-center justify-between">
       <div className="font-semibold text-lg">
         <Skeleton className="w-40 h-[16px] rounded-lg" />
       </div>
@@ -20,7 +20,7 @@ const LoaderSkeleton = () => (
           Add Candidate
         </Button>
       </div>
-    </div>
+    </div> */}
 
     {/* Columns Section */}
     <div className="grid grid-flow-col flex flex-row justify-start overflow-x-scroll pb-4">

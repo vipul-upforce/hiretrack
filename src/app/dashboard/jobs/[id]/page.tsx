@@ -24,11 +24,14 @@ import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { Checkbox } from "@/components/ui/checkbox";
 import { KanbanColumn } from "./components/Lanes/KanbanColumn";
 import { useKanbanBoard } from "./hooks/useKanbanBoard";
+import { useDragToScroll } from "./hooks/useDragToScroll";
 import { useCandidate } from "./hooks/useCandidate";
 import ConfirmationDialog from "./components/Dialogs/ConfirmationDialog";
 import NoDataFound from "@/app/not-found";
 import EditLaneDialog from "./components/Lanes/edit-lane-dialog";
 import { useSSE } from "@/hooks/useSSE";
+import { mergeRefs } from "react-merge-refs";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function JobProgressPage() {
   const id = useParams()?.id as string;
@@ -52,21 +55,21 @@ export default function JobProgressPage() {
   const [initialLaneToEdit, setInitialLaneToEdit] = useState<string | null>(
     null
   );
+  const { ref: scrollRef, setIsDndDragging } =
+    useDragToScroll<HTMLDivElement>();
 
   // Initialize useSSE hook with hardcoded role "admin" and jobId
-  const {
-    candidates: sseCandidates,
-    // clients,
-    lanes: updatedLanes,
-  } = useSSE(user?.role || "", setSelectedCandidate, selectedCandidate, id);
-  // useEffect(() => {
-  //   // debugger;
-  //   console.log("SELECTED: ", selectedCandidate?.name, selectedCandidate?._id);
-  // }, [selectedCandidate]);
+  const { candidates: sseCandidates, lanes: updatedLanes } = useSSE(
+    user?.role || "",
+    setSelectedCandidate,
+    selectedCandidate,
+    id
+  );
+
   const {
     data: job,
     isLoading: isJobLoading,
-    error,
+    error: jobError,
   } = useFetchJobByIdQuery(id as string);
   const {
     data: candidatesFromQuery,
@@ -118,17 +121,36 @@ export default function JobProgressPage() {
     candidateToDelete,
   });
 
-  // Get user from cookies when component mounts
   useEffect(() => {
-    (async () => {
-      const user = Cookies.get("token");
-      if (user) {
-        const decryptedResponse = await verifyAndDecryptJWTToken(String(user));
+    console.log("Loading states:", {
+      isJobLoading,
+      isCandidatesLoading,
+      isLanesLoading,
+      jobError,
+    });
+    console.log("Data:", { job, candidatesFromQuery, lanes });
+    console.log("scrollRef.current:", scrollRef.current);
+  }, [
+    isJobLoading,
+    isCandidatesLoading,
+    isLanesLoading,
+    jobError,
+    job,
+    candidatesFromQuery,
+    lanes,
+    scrollRef,
+  ]);
+
+  useEffect(() => {
+    const token = Cookies.get("token");
+    if (token) {
+      verifyAndDecryptJWTToken(token).then((decryptedResponse) => {
+        console.log("User fetch result:", decryptedResponse);
         if (decryptedResponse.success && decryptedResponse.user) {
           setUser(decryptedResponse.user);
         }
-      }
-    })();
+      });
+    }
   }, []);
 
   useEffect(() => {
@@ -140,27 +162,14 @@ export default function JobProgressPage() {
   // Combine candidates from useFetchCandidatesQuery and useSSE
   useEffect(() => {
     if (candidatesFromQuery && lanes) {
-      // Merge candidates from query and SSE
       const mergedCandidates = [...candidatesFromQuery];
-      // sseCandidates.forEach((sseCandidate) => {
-      //   const index = mergedCandidates.findIndex(
-      //     (c) => c._id === sseCandidate._id
-      //   );
-      //   if (index >= 0) {
-      //     mergedCandidates[index] = sseCandidate;
-      //   } else {
-      //     mergedCandidates.push(sseCandidate);
-      //   }
-      // });
       sseCandidates.forEach((sseCandidate) => {
         const index = mergedCandidates.findIndex(
           (c) => c._id === sseCandidate._id
         );
         if (index >= 0) {
-          // Update existing candidate
           mergedCandidates[index] = sseCandidate;
         } else {
-          // Add new candidate if not deleted or if showArchived is true
           if (showArchived || !sseCandidate.isDeleted) {
             mergedCandidates.push(sseCandidate);
           }
@@ -169,7 +178,6 @@ export default function JobProgressPage() {
 
       const lanesArray = updatedLanes || [...lanes.lanes];
 
-      // Ensure all lanes exist in initialCandidateColumns
       lanesArray.forEach((lane) => {
         if (!initialCandidateColumns.find((item) => item.id === lane)) {
           initialCandidateColumns.push({
@@ -180,7 +188,6 @@ export default function JobProgressPage() {
         }
       });
 
-      // Create ordered columns with type safety
       const updatedColumns = lanesArray.map((lane) => {
         const column = initialCandidateColumns.find((item) => item.id === lane);
         return {
@@ -213,10 +220,74 @@ export default function JobProgressPage() {
     }
   }, [isLaneEditOpen]);
 
-  if (isJobLoading || isCandidatesLoading || isLanesLoading) {
-    return <LoaderSkeleton />;
+  // Fallback UI to ensure div renders
+  if (isJobLoading || isCandidatesLoading || isLanesLoading || !lanes) {
+    return (
+      <>
+        <div className="space-y-6 overflow-x-hidden" style={{ width: "100%" }}>
+          <Skeleton className="w-56 h-[16px] rounded-lg" />
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div className="font-semibold text-lg">
+                <Skeleton className="w-40 h-[16px] rounded-lg" />
+              </div>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="showArchived"
+                    checked={showArchived}
+                    onCheckedChange={(checked) =>
+                      setShowArchived(checked as boolean)
+                    }
+                  />
+                  <label
+                    htmlFor="showArchived"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Show Archived
+                  </label>
+                </div>
+                <div className="flex space-x-2">
+                  <CreateLaneDialog onAddLane={handleAddLane} />
+                  <CreateCandidateDialog
+                    jobId={id as string}
+                    isOpen={isDialogOpen}
+                    setIsOpen={setIsDialogOpen}
+                    resumeFile={droppedFileData}
+                  />
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
+          <DragDropContext
+            onDragStart={() => setIsDndDragging(true)}
+            onDragEnd={(result: any) => {
+              console.log(
+                "onDragEnd triggered, scrollRef.current:",
+                scrollRef.current
+              );
+              setIsDndDragging(false);
+              onDragEnd(result);
+            }}
+          >
+            <Droppable droppableId="lanes" direction="horizontal" type="lane">
+              {(provided: DroppableProvided) => (
+                <div
+                  {...provided.droppableProps}
+                  ref={mergeRefs([provided.innerRef, scrollRef])}
+                  className="grid grid-flow-col flex flex-row justify-start overflow-x-scroll pb-4 z-0"
+                >
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </DragDropContext>
+        </div>
+        <LoaderSkeleton />
+      </>
+    );
   }
-  if (error) {
+  if (jobError) {
     return <NoDataFound name={"Job"} />;
   }
 
@@ -233,9 +304,6 @@ export default function JobProgressPage() {
             Candidates for {job?.title}
           </CardTitle>
           <div className="flex items-center space-x-4">
-            {/* <p className="">
-              {clients} Member{clients == 1 ? "" : "s"} Online
-            </p> */}
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="showArchived"
@@ -264,13 +332,23 @@ export default function JobProgressPage() {
         </CardHeader>
       </Card>
 
-      <DragDropContext onDragEnd={onDragEnd}>
+      <DragDropContext
+        onDragStart={() => setIsDndDragging(true)}
+        onDragEnd={(result: any) => {
+          console.log(
+            "onDragEnd triggered, scrollRef.current:",
+            scrollRef.current
+          );
+          setIsDndDragging(false);
+          onDragEnd(result);
+        }}
+      >
         <Droppable droppableId="lanes" direction="horizontal" type="lane">
           {(provided: DroppableProvided) => (
             <div
               {...provided.droppableProps}
-              ref={provided.innerRef}
-              className="grid grid-flow-col flex flex-row justify-start overflow-x-scroll pb-4"
+              ref={mergeRefs([provided.innerRef, scrollRef])}
+              className="grid grid-flow-col flex flex-row justify-start overflow-x-scroll pb-4 z-0"
             >
               {columns.map((column, index) => (
                 <KanbanColumn
