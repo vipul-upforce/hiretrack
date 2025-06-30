@@ -60,7 +60,7 @@ async function evaluateResume(
     const jobSkills = jobData.skills.join(", ");
 
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    console.log("[JOBSALARY ]: ", jobData.salary);
+    // console.log("[JOBSALARY ]: ", jobData.salary);
     const prompt = `
     As a seasoned senior technology leader with expertise in talent acquisition, you are conducting a rigorous evaluation of a candidate. You must evaluate each dimension independently and avoid giving similar scores across categories.
     
@@ -113,13 +113,12 @@ async function evaluateResume(
     *If no salary expectation is mentioned in CV or Job Salary is not provided, score as N/A*
     
     CRITICAL INSTRUCTIONS:
-    1. Each score must reflect the specific criteria above - DO NOT give similar scores across categories
+    1. Each score must reflect the specific criteria above
     2. Be strict and objective - average candidates should receive 4-6 scores, not 7-8
-    3. Only exceptional candidates deserve 8+ scores
-    4. Skills score should ONLY consider technical abilities, not soft skills or education
-    5. Experience score should ONLY consider relevant work history duration and domain match
-    6. For affordability, clearly show your salary normalization logic in the notes
-    7. Provide specific evidence from the CV to justify each score
+    3. Skills score should ONLY consider technical abilities, not soft skills or education
+    4. Experience score should ONLY consider relevant work history duration and domain match
+    5. For affordability, clearly show your salary normalization logic in the notes
+    6. Provide specific evidence from the CV to justify each score
     
     Return your evaluation in this JSON format:
     {
@@ -137,9 +136,6 @@ async function evaluateResume(
     - Candidate says "34000 expected": 34000 ÷ 1000 × 12 = 4.08 LPA
     - Candidate says "34 LPA expected": 34 LPA (no conversion needed)
     - Candidate says "45000 current, 50000 expected": 50000 ÷ 1000 × 12 = 6 LPA expected
-    - Job salary "8-12 LPA": Use midpoint 10 LPA for comparison
-    
-    REMEMBER: Be a strict evaluator. Most candidates should receive mixed scores (some high, some low) based on their actual qualifications. Identical scores across categories indicate insufficient analysis.
     
     Below is the CV content for evaluation:
     `;

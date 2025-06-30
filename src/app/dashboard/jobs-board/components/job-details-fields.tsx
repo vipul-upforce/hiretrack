@@ -99,7 +99,10 @@ export const jobDetailsFields: FieldConfig[] = [
         )}
       </div>
     ),
-    shouldRender: (job) => (job.salary ? true : false),
+    shouldRender: (job) =>
+      job.salary && job.salary.inText && job.salary.inText !== ""
+        ? true
+        : false,
   },
   {
     label: "Experience Required",

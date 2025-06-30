@@ -461,6 +461,7 @@ export function CreateCandidateDialog({
                   // onClick={handleApply}
                   onClick={() => {
                     // debugger;
+                    // new Promise(() => setTimeout(() => {}, 2000));
                     scrollToError(errors);
                     handleApply();
                   }}

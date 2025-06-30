@@ -51,8 +51,10 @@ export const useApplyHandler = <T extends Record<string, any>>() => {
     }
 
     formik.setTouched(touched as any, true);
+    // new Promise(() => setTimeout(() => {}, 400));
 
     const firstErrorKey = Object.keys(errors)[0];
+    // debugger;
     if (firstErrorKey) {
       if (firstErrorKey === "customFields") {
         if (!errors.customFields) return;
