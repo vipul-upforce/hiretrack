@@ -79,6 +79,10 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
     setError(null);
 
     if (activeTab === "nginx") {
+      if (searchQuery) {
+        setIsLoading(false);
+        return;
+      }
       fetch("/api/nginx-logs")
         .then((res) => {
           if (!res.ok) throw new Error("Failed to fetch nginx logs");
@@ -204,8 +208,7 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
   }, [activeTab, selectedFile, offset, totalLines, isLoading, searchQuery]);
 
   useEffect(() => {
-    if (!isOpen || !searchClick || !selectedFile || activeTab !== "nginx")
-      return;
+    if (!isOpen || !selectedFile || activeTab !== "nginx") return;
 
     setIsLoading(true);
     setSearchClick(false);
@@ -232,7 +235,7 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
         setError("Error fetching file content: " + err.message);
       })
       .finally(() => setIsLoading(false));
-  }, [isOpen, activeTab, selectedFile, searchClick]);
+  }, [isOpen, activeTab, selectedFile, searchQuery]);
 
   const renderEntryTitle = (log: LogEntry) => {
     const assignmentBy = log.assignmentBy[0]?.name || "";
