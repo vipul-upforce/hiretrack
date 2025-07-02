@@ -9,7 +9,7 @@ export async function GET() {
       const files = fs.readdirSync(logDir);
       // console.log(files);
       const filteredFiles = files.filter((file) => !file.endsWith(".gz"));
-      return NextResponse.json({ filteredFiles });
+      return NextResponse.json({ files: filteredFiles });
     } catch (error) {
       console.log(error);
       return NextResponse.json(
