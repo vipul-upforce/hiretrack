@@ -59,7 +59,7 @@ const TagsDialog = ({ user, candidate, refetch }: TagsDialogProps) => {
       <h3 className="text-lg font-semibold mb-4">Candidate Tags</h3>
       {isLoading ? (
         <div className="flex justify-center">
-          <LoadingSpinner />
+          <LoadingSpinner w={4} />
         </div>
       ) : error ? (
         <p className="text-red-500">Failed to load tags. Please try again.</p>
@@ -93,7 +93,7 @@ const TagsDialog = ({ user, candidate, refetch }: TagsDialogProps) => {
           disabled={isUpdating || !hasChanges}
           className="min-w-[80px]"
         >
-          {isUpdating ? <LoadingSpinner /> : "Save"}
+          {isUpdating ? <LoadingSpinner w={4} /> : "Save"}
         </Button>
       </div>
     </div>
