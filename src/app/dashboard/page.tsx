@@ -15,6 +15,7 @@ import { MultiSelect } from "@/components/ui/multi-select";
 import useRoles from "@/hooks/useRoles";
 import { useSSE } from "@/hooks/useSSE";
 import { Candidate } from "@/types/candidate";
+import { ITag } from "@/lib/models/organization";
 // import useRoles from "@/hooks/useRoles";
 interface User {
   name: string;
@@ -64,6 +65,7 @@ export interface Assignment {
     createdAt: string;
     updatedAt: string;
   };
+  tags?: ITag[];
   organizationId: string;
   location: string;
   experience: number;
@@ -463,6 +465,7 @@ export default function DashboardPage() {
                   location: sseCandidate.location,
                   experience: sseCandidate.experience,
                   skills: sseCandidate.skills,
+                  tags: sseCandidate.tags,
                   expectedCTC: sseCandidate.expectedCTC,
                   currentCTC: sseCandidate.currentCTC,
                   noticePeriod: sseCandidate.noticePeriod,

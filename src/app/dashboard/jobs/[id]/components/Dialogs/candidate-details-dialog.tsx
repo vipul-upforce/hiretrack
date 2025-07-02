@@ -143,7 +143,6 @@ export function CandidateDetailsDialog({
   //   refetchAssignment,
   //   onOpenChange
   // );
-
   const handleEditClick = () => {
     setIsEditing(true); // Open the edit dialog
     onOpenChange(false); // Close the current dialog
@@ -234,6 +233,17 @@ export function CandidateDetailsDialog({
         <DetailsDialogHeader
           candidate={localCandidate}
           handleCandidateInfoCopy={handleCandidateInfoCopy}
+          user={user}
+          refetch={async () => {
+            if (
+              pathname !== "/dashboard" &&
+              pathname !== "/dashboard/calendar"
+            ) {
+              await refetch();
+            } else {
+              await refetchAssignment?.();
+            }
+          }}
         />
       )}
     </DialogHeader>

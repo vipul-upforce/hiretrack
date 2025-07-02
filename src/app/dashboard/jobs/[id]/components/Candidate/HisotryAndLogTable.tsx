@@ -93,8 +93,8 @@ export const HistoryAndLogTable: React.FC<{
             <TableCell className="p-2 max-w-[200px] break-words whitespace-pre-wrap">
               {(!log.attachments &&
                 JSON.stringify(log.previousValue as string)
-                  .replaceAll('"', "")
-                  .replace("~", "")) ??
+                  ?.replaceAll('"', "")
+                  ?.replace("~", "")) ??
                 "N/A"}
             </TableCell>
             <TableCell className="p-2 max-w-[250px] break-words whitespace-pre-wrap">

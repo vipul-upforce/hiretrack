@@ -15,6 +15,7 @@ import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { User } from "@/lib/features/users/usersApi";
+import TagsList from "@/components/ui/tagsList";
 
 interface CandidateCardProps {
   candidate: Candidate;
@@ -58,6 +59,7 @@ export function CandidateCard({
         <div className="flex flex-col items-start">
           <div className="flex flex-row justify-between w-full">
             <h3 className="font-medium w-2/3 text-wrap break-words">
+              {candidate.tags ? <TagsList candidate={candidate} /> : null}
               {candidate.name}
             </h3>
             <div className="flex gap-1">
@@ -232,6 +234,7 @@ export function CandidateCard({
         >
           <div className="flex justify-between items-start">
             <h3 className="font-medium w-2/5 text-wrap break-words">
+              {candidate.tags ? <TagsList candidate={candidate} /> : null}
               {candidate.name}
             </h3>
             <div className="flex gap-1">

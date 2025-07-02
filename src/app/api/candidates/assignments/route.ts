@@ -542,6 +542,7 @@ export async function GET(req: NextRequest) {
                   "$candidates.currentCTC",
                 ],
               },
+              tags: "$candidates.tags",
               noticePeriod: "$candidates.noticePeriod",
               remarks: "$candidates.remarks",
               attachments: "$candidates.attachments",

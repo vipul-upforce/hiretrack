@@ -1,6 +1,7 @@
 import { CustomFieldValues } from "@/Custom_Fields/hooks/useCustomForm";
 import { ICandidateHistory } from "@/lib/models/history";
 import { Job } from "./job";
+import { ITag } from "@/lib/models/organization";
 
 export interface JobDetail {
   title: string;
@@ -24,6 +25,7 @@ export interface Candidate {
   currentCTC?: number;
   noticePeriod: number;
   // currentLocation: string;
+  tags?: ITag[];
   resume: {
     id: string;
     name: string;

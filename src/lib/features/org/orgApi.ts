@@ -1,3 +1,4 @@
+import { ITag } from "@/lib/models/organization";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 export interface CreateAdminRequest {
@@ -96,7 +97,7 @@ export const orgApi = createApi({
     baseUrl: "/api",
     credentials: "include",
   }),
-  tagTypes: ["Users", "Batches"], // Add Batches to tagTypes
+  tagTypes: ["Users", "Batches", "Tags"], // Add Batches to tagTypes
   endpoints: (builder) => ({
     createAdmin: builder.mutation<CreateAdminResponse, CreateAdminRequest>({
       query: (credentials) => ({
@@ -181,6 +182,13 @@ export const orgApi = createApi({
       }),
       invalidatesTags: ["Batches"], // Invalidate Batches tag to refetch
     }),
+    fetchOrgTags: builder.query<{ tags: ITag[] }, { organizationId: string }>({
+      query: ({ organizationId }) => ({
+        url: `/organization/tags?organizationId=${organizationId}`,
+        method: "GET",
+      }),
+      providesTags: ["Tags"],
+    }),
   }),
 });
 
@@ -197,6 +205,7 @@ export const {
   useLazyGetCustomFieldsQuery,
   useLazyGetCustomFieldsByOrgNameQuery,
   useFetchBatchesQuery, // Hook for fetching batches
-  usePostBatchMutation, // Hook for posting a batch,
+  usePostBatchMutation, // Hook for posting a batch,,
+  useFetchOrgTagsQuery,
 } = orgApi;
 // export const { useCreateAdminMutation } = orgApi;

@@ -53,6 +53,7 @@ export async function PUT(
     "customFields",
     "resume",
     "status",
+    "tags",
   ];
 
   try {
@@ -296,6 +297,9 @@ export async function PUT(
     }
     if ("scores" in data) {
       updateObj.$set.scores = data.scores;
+    }
+    if ("tags" in data) {
+      updateObj.$set.tags = data.tags;
     }
     if ("followUp" in data) {
       // console.log("☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️ FOllow Up in here");

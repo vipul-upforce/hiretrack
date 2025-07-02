@@ -1,5 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import { CustomFieldFile } from "../fileUtils";
+import { ITag } from "./organization";
 
 export interface FollowUp {
   note: string;
@@ -19,6 +20,7 @@ export interface ICandidate {
   currentCTC: number;
   noticePeriod: number;
   // currentLocation: string;
+  tags?: ITag[];
   resume: {
     id: string;
     name: string;
@@ -138,6 +140,16 @@ export const candidateSchema = new Schema(
         ref: "User",
       },
     },
+    tags: [
+      {
+        title: {
+          type: String,
+        },
+        color: {
+          type: String,
+        },
+      },
+    ],
     attachments: [
       {
         id: String,

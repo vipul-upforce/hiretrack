@@ -93,6 +93,7 @@ function ActionItems({
           },
           createdAt: assignment.createdAt,
           updatedAt: assignment.updatedAt,
+          tags: assignment.tags,
           assignment: (assignment as Candidate).assignment || null,
           history: (assignment as Candidate).history || [],
           email: (assignment as Candidate).email || undefined,
