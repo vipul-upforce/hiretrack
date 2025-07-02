@@ -15,11 +15,13 @@ import MultipleOrgsConfigs from "./MultipleOrgsConfigs";
 import BackupsDialog from "./backups-dialog";
 import AssetsDialog from "./assets-dialog";
 import TimeZoneSelect from "./TimeZone-Dialog";
-import EmailTemplateEditor from './edit-mail-dialog';
+import EmailTemplateEditor from "./edit-mail-dialog";
+import LogsDialog from "./LogsDialog";
 // import FileStorageOptions from "./file-storage-dialog"; // Example for another setting
 
-interface SettingComponentProps {
+export interface SettingComponentProps {
   onClose: () => void;
+  isOpen?: boolean;
 }
 const settingComponents: Record<
   string,
@@ -33,7 +35,8 @@ const settingComponents: Record<
   backups: BackupsDialog,
   assets: AssetsDialog,
   timezone: TimeZoneSelect,
-  templates : EmailTemplateEditor
+  templates: EmailTemplateEditor,
+  logs: LogsDialog,
 };
 
 const SettingDialog = ({
@@ -46,12 +49,13 @@ const SettingDialog = ({
   setting: { title: string; description: string; key: string };
 }) => {
   const ComponentToRender = settingComponents[setting.key];
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
         className={`${
-          setting.title === "Portal" || setting.title === 'Email Template'
+          setting.title === "Portal" ||
+          setting.title === "Email Template" ||
+          setting.key === "logs"
             ? "max-w-7xl w-[90vw] min-h-[95vh] flex flex-col p-4"
             : ""
         }`}
@@ -62,7 +66,7 @@ const SettingDialog = ({
         </DialogHeader>
 
         {ComponentToRender ? (
-          <ComponentToRender onClose={onClose} />
+          <ComponentToRender onClose={onClose} isOpen={isOpen} />
         ) : (
           <p> No settings available for this option.</p>
         )}

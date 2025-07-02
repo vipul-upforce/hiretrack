@@ -121,25 +121,25 @@ export default function JobProgressPage() {
     candidateToDelete,
   });
 
-  useEffect(() => {
-    console.log("Loading states:", {
-      isJobLoading,
-      isCandidatesLoading,
-      isLanesLoading,
-      jobError,
-    });
-    console.log("Data:", { job, candidatesFromQuery, lanes });
-    console.log("scrollRef.current:", scrollRef.current);
-  }, [
-    isJobLoading,
-    isCandidatesLoading,
-    isLanesLoading,
-    jobError,
-    job,
-    candidatesFromQuery,
-    lanes,
-    scrollRef,
-  ]);
+  // useEffect(() => {
+  //   console.log("Loading states:", {
+  //     isJobLoading,
+  //     isCandidatesLoading,
+  //     isLanesLoading,
+  //     jobError,
+  //   });
+  //   console.log("Data:", { job, candidatesFromQuery, lanes });
+  //   console.log("scrollRef.current:", scrollRef.current);
+  // }, [
+  //   isJobLoading,
+  //   isCandidatesLoading,
+  //   isLanesLoading,
+  //   jobError,
+  //   job,
+  //   candidatesFromQuery,
+  //   lanes,
+  //   scrollRef,
+  // ]);
 
   useEffect(() => {
     const token = Cookies.get("token");
@@ -262,10 +262,10 @@ export default function JobProgressPage() {
           <DragDropContext
             onDragStart={() => setIsDndDragging(true)}
             onDragEnd={(result: any) => {
-              console.log(
-                "onDragEnd triggered, scrollRef.current:",
-                scrollRef.current
-              );
+              // console.log(
+              //   "onDragEnd triggered, scrollRef.current:",
+              //   scrollRef.current
+              // );
               setIsDndDragging(false);
               onDragEnd(result);
             }}

@@ -54,6 +54,12 @@ function Settings() {
       key: "templates",
       description: "Customize your E-mail templates.",
     },
+    {
+      title: "Logs",
+      key: "logs",
+      description:
+        "Inspect the logs and all the activity on your organization and server.",
+    },
   ];
 
   return (

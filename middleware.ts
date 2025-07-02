@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import CryptoJS from "crypto-js";
 import { jwtVerify } from "jose";
+// import { log } from "@/lib/logger";
 
 interface JWTPayload {
   user: string;
@@ -42,6 +43,7 @@ function createLoginRedirectUrl(request: NextRequest, targetPath: string) {
 }
 
 export async function middleware(request: NextRequest) {
+  // log(`${request.method} ${request.url}`);
   const { pathname } = request.nextUrl;
   const allowedOrigins = (
     process.env.ALLOWED_ORIGINS || "https://hire.upforce.tech"
