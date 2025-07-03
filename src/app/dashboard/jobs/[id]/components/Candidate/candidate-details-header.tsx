@@ -58,7 +58,7 @@ export default function DetailsDialogHeader({
                   <Copy size={14} />
                   <span className="sr-only">Copy Email</span>
                 </Button>
-                <Popover>
+                <Popover modal={true}>
                   <PopoverTrigger asChild>
                     <Button
                       variant="ghost"

@@ -110,7 +110,7 @@ const ManageTagsDialog = ({ orgId, onClose, open }: ManageTagsDialogProps) => {
     return (
       <ConfirmationDialog
         title="Are You Sure?"
-        message={`This will remove the tag \"${titleToDelete}\" from all the jobs and candidate in this organization.`}
+        message={`This will remove the tag from all the jobs and candidate in this organization.`}
         isOpen={confirmDeleteDialogOpen}
         setIsOpen={setConfirmDeleteDialogOpen}
         onConfirm={() => handleDeleteTag(titleToDelete)}
@@ -133,10 +133,10 @@ const ManageTagsDialog = ({ orgId, onClose, open }: ManageTagsDialogProps) => {
         ) : error || updateError ? (
           <p className="text-red-500">An error occurred. Please try again.</p>
         ) : (
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 max-h-[72vh] overflow-y-auto">
             <div className="flex flex-col gap-2">
               <h4 className="text-sm font-medium">Add New Tags</h4>
-              <div className="flex gap-2">
+              <div className="flex gap-2 pl-[1px]">
                 <Input
                   value={newTagTitle}
                   onChange={(e) => setNewTagTitle(e.target.value)}
@@ -159,8 +159,8 @@ const ManageTagsDialog = ({ orgId, onClose, open }: ManageTagsDialogProps) => {
                 Add
               </Button>
             </div>
-            <div className="flex flex-col gap-2">
-              <h4 className="text-sm font-medium">Current Tags</h4>
+            <h4 className="text-sm font-medium">Current Tags</h4>
+            <div className="flex flex-col gap-2 mb-[11%] overflow-y-auto">
               {!orgTags.length ? (
                 <p className="text-gray-500">No Tags available.</p>
               ) : (
@@ -172,7 +172,7 @@ const ManageTagsDialog = ({ orgId, onClose, open }: ManageTagsDialogProps) => {
                     >
                       <Badge
                         style={{ backgroundColor: tag.color }}
-                        className="text-white"
+                        className="text-white break-all w-fit"
                       >
                         {tag.title}
                       </Badge>
@@ -193,7 +193,7 @@ const ManageTagsDialog = ({ orgId, onClose, open }: ManageTagsDialogProps) => {
                 </div>
               )}
             </div>
-            <div className="flex justify-end gap-2 mt-4">
+            <div className="flex fixed bottom-0 w-[90%] justify-end space-x-2 bg-background px-6 py-4">
               <Button variant="outline" onClick={onClose} disabled={isUpdating}>
                 Cancel
               </Button>

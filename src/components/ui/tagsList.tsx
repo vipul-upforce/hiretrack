@@ -7,7 +7,7 @@ const TagsList = ({ candidate }: { candidate: Candidate }) => {
   const [hoveredTag, setHoveredTag] = useState<number | null>(null);
   if (!candidate.tags || candidate.tags.length == 0) return;
   return (
-    <div className="w-full flex flex-row items-center justify-start gap-1 mb-2 relative">
+    <div className="w-full flex flex-row items-center justify-start gap-1 mb-2 relative max-w-[90%] flex-wrap">
       {candidate.tags?.map((tag, i) => {
         return (
           <div

@@ -94,7 +94,10 @@ const TagsDialog = ({ user, candidate, refetch, onClose }: TagsDialogProps) => {
     JSON.stringify(selectedTags) !== JSON.stringify(candidate.tags);
 
   return (
-    <div className="p-6 w-[300px]" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="p-6 w-[300px] max-h-[570px] flex flex-col"
+      onClick={(e) => e.stopPropagation()}
+    >
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold mr-4">Assign Tags</h3>
         <Button variant="outline" size="sm" onClick={handleOpenManageTags}>
@@ -110,26 +113,29 @@ const TagsDialog = ({ user, candidate, refetch, onClose }: TagsDialogProps) => {
       ) : allTags.length === 0 ? (
         <p className="text-gray-500">No tags available.</p>
       ) : (
-        <div className="flex flex-col gap-3">
-          {allTags.map((tag) => (
-            <div key={tag.title} className="flex items-center gap-3">
-              <Checkbox
-                id={`tag-${tag.title}`}
-                checked={selectedTags.some((t) => t.title === tag.title)}
-                onCheckedChange={() => handleTagSelection(tag)}
-                aria-label={`Select ${tag.title}`}
-                onClick={(e) => e.stopPropagation()}
-              />
-              <label htmlFor={`tag-${tag.title}`}>
-                <Badge
-                  className="text-white cursor-pointer"
-                  style={{ backgroundColor: tag.color }}
-                >
-                  {tag.title}
-                </Badge>
-              </label>
-            </div>
-          ))}
+        <div className="flex-1 overflow-y-auto">
+          {" "}
+          <div className="flex flex-col gap-3">
+            {allTags.map((tag) => (
+              <div key={tag.title} className="flex items-center gap-3">
+                <Checkbox
+                  id={`tag-${tag.title}`}
+                  checked={selectedTags.some((t) => t.title === tag.title)}
+                  onCheckedChange={() => handleTagSelection(tag)}
+                  aria-label={`Select ${tag.title}`}
+                  onClick={(e) => e.stopPropagation()}
+                />
+                <label htmlFor={`tag-${tag.title}`}>
+                  <Badge
+                    className="text-white cursor-pointer break-all w-fit"
+                    style={{ backgroundColor: tag.color }}
+                  >
+                    {tag.title}
+                  </Badge>
+                </label>
+              </div>
+            ))}
+          </div>
         </div>
       )}
       <div className="flex justify-end mt-6">
