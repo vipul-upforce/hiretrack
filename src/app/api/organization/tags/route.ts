@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
       { status: 400 }
     );
   }
-  if (!user) {
+  if (!user || user.user.role !== "admin" || user?.user.role === "hr") {
     return NextResponse.json({ error: "Not Authorized" }, { status: 401 });
   }
   try {
@@ -58,7 +58,7 @@ export async function PUT(req: NextRequest) {
       { status: 400 }
     );
   }
-  if (!user) {
+  if (!user || user.user.role !== "admin" || user?.user.role === "hr") {
     return NextResponse.json({ error: "Not Authorized" }, { status: 401 });
   }
   try {

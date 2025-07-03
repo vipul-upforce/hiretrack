@@ -58,33 +58,35 @@ export default function DetailsDialogHeader({
                   <Copy size={14} />
                   <span className="sr-only">Copy Email</span>
                 </Button>
-                <Popover modal={true}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="ml-2 h-6 w-6"
-                      title="Tags"
-                      ref={triggerRef}
+                {(user?.role === "admin" || user?.role === "hr") && (
+                  <Popover modal={true}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="ml-2 h-6 w-6"
+                        title="Tags"
+                        ref={triggerRef}
+                      >
+                        <Tag size={14} />
+                        <span className="sr-only">Tags</span>
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      onClick={handlePopoverContentClick}
+                      className="p-0"
                     >
-                      <Tag size={14} />
-                      <span className="sr-only">Tags</span>
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    onClick={handlePopoverContentClick}
-                    className="p-0"
-                  >
-                    <TagsDialog
-                      user={user}
-                      candidate={candidate}
-                      refetch={refetch}
-                      onClose={() => {
-                        triggerRef.current?.click();
-                      }}
-                    />
-                  </PopoverContent>
-                </Popover>
+                      <TagsDialog
+                        user={user}
+                        candidate={candidate}
+                        refetch={refetch}
+                        onClose={() => {
+                          triggerRef.current?.click();
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                )}
               </div>
             )}
           </div>
