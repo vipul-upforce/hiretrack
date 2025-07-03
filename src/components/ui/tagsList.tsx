@@ -12,7 +12,7 @@ const TagsList = ({ candidate }: { candidate: Candidate }) => {
         return (
           <div
             key={i}
-            className="rounded-full flex-1 h-2 min-w-2 max-w-[80px] cursor-pointer transition-all duration-200 hover:h-3 hover:shadow-md relative"
+            className="rounded-full flex-1 h-2 min-w-2 max-w-[80px] cursor-pointer transition-all duration-200 hover:shadow-md relative"
             style={{
               backgroundColor: tag.color,
             }}

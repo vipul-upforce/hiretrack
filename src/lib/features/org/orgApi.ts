@@ -189,6 +189,17 @@ export const orgApi = createApi({
       }),
       providesTags: ["Tags"],
     }),
+    updateOrgTags: builder.mutation<
+      { tags: ITag[] },
+      { tags: ITag[]; organizationId: string }
+    >({
+      query: ({ tags, organizationId }) => ({
+        url: `/organization/tags?organizationId=${organizationId}`,
+        method: "PUT",
+        body: tags,
+      }),
+      invalidatesTags: ["Tags"],
+    }),
   }),
 });
 
@@ -207,5 +218,6 @@ export const {
   useFetchBatchesQuery, // Hook for fetching batches
   usePostBatchMutation, // Hook for posting a batch,,
   useFetchOrgTagsQuery,
+  useUpdateOrgTagsMutation,
 } = orgApi;
 // export const { useCreateAdminMutation } = orgApi;

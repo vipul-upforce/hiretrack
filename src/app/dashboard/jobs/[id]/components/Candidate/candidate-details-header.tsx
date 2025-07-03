@@ -1,18 +1,18 @@
-import { DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Tag } from "lucide-react";
-import { CandidateStatusBadge } from "../Utils/candidate-status-badge";
-import { Candidate } from "@/types/candidate";
-import { formatDate, formatTime } from "../../hooks/dateTimeFormatting";
+import { Button } from "@/components/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import TagsDialog from "../Dialogs/tags-dialog";
+import { Copy, Tag } from "lucide-react";
+import { CandidateStatusBadge } from "../Utils/candidate-status-badge";
+import { Candidate } from "@/types/candidate";
+import { formatDate, formatTime } from "../../hooks/dateTimeFormatting";
 import { User } from "@/lib/features/users/usersApi";
+import TagsDialog from "../Dialogs/tags-dialog";
 import TagsList from "@/components/ui/tagsList";
+import { useRef } from "react";
 
 interface DetailsDialogHeaderProps {
   candidate: Candidate;
@@ -27,10 +27,16 @@ export default function DetailsDialogHeader({
   user,
   refetch,
 }: DetailsDialogHeaderProps) {
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  const handlePopoverContentClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
   return (
     <div>
       {candidate.tags ? <TagsList candidate={candidate} /> : null}
-      <DialogTitle className="text-2xl font-semibold">
+      <div className="text-2xl font-semibold">
         <div className="flex items-center justify-between">
           <div>
             <div className="flex gap-2 items-center">
@@ -59,16 +65,23 @@ export default function DetailsDialogHeader({
                       size="icon"
                       className="ml-2 h-6 w-6"
                       title="Tags"
+                      ref={triggerRef}
                     >
                       <Tag size={14} />
                       <span className="sr-only">Tags</span>
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent>
+                  <PopoverContent
+                    onClick={handlePopoverContentClick}
+                    className="p-0"
+                  >
                     <TagsDialog
                       user={user}
                       candidate={candidate}
                       refetch={refetch}
+                      onClose={() => {
+                        triggerRef.current?.click();
+                      }}
                     />
                   </PopoverContent>
                 </Popover>
@@ -102,7 +115,7 @@ export default function DetailsDialogHeader({
             </div>
           </div>
         </div>
-      </DialogTitle>
+      </div>
     </div>
   );
 }

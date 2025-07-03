@@ -136,7 +136,10 @@ export function CVBatchProcessor() {
       setCompletedBatches((prevBatches) => [batchResult, ...prevBatches]);
       setFiles([]);
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Failed to process batch");
+      // alert(error instanceof Error ? error.message : "Failed to process batch");
+      console.log(
+        error instanceof Error ? error.message : "Failed to process batch"
+      );
     } finally {
       processingRef.current = false;
       setIsPosting(false);

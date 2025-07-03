@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 interface DetailsDialogProps {
   open: boolean;
@@ -18,7 +18,12 @@ export function DetailsDialog({
 }: DetailsDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={className}>{children}</DialogContent>
+      <DialogContent className={className}>
+        <div className="hidden">
+          <DialogTitle></DialogTitle>
+        </div>
+        {children}
+      </DialogContent>
     </Dialog>
   );
 }

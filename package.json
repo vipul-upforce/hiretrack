@@ -86,6 +86,7 @@
     "mime-types": "^2.1.35",
     "moment-timezone": "^0.5.48",
     "mongoose": "^8.1.0",
+    "mui-color-input": "^7.0.0",
     "next": "15.1.6",
     "nodemailer": "^6.10.0",
     "pdfjs-dist": "^3.7.107",
