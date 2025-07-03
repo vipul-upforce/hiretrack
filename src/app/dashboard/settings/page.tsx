@@ -60,6 +60,11 @@ function Settings() {
       description:
         "Inspect the logs and all the activity on your organization and server.",
     },
+    {
+      title: "Tags",
+      key: "tags",
+      description: "Manage the tags for candidates.",
+    },
   ];
 
   return (

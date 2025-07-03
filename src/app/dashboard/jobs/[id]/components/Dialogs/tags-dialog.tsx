@@ -150,7 +150,7 @@ const TagsDialog = ({ user, candidate, refetch, onClose }: TagsDialogProps) => {
       {isManageTagsOpen && (
         <ManageTagsDialog
           orgId={orgId}
-          open={isManageTagsOpen}
+          isOpen={isManageTagsOpen}
           onClose={handleManageTagsClose}
         />
       )}

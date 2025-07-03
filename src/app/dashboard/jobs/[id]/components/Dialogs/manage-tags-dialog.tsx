@@ -20,12 +20,16 @@ import ConfirmationDialog from "./ConfirmationDialog";
 import { X } from "lucide-react";
 
 interface ManageTagsDialogProps {
-  orgId: string;
+  orgId?: string;
   onClose: () => void;
-  open: boolean;
+  isOpen?: boolean;
 }
 
-const ManageTagsDialog = ({ orgId, onClose, open }: ManageTagsDialogProps) => {
+const ManageTagsDialog = ({
+  orgId = "681a1ee3a73fc6b5449caa81",
+  onClose,
+  isOpen,
+}: ManageTagsDialogProps) => {
   const {
     data: tagsObj,
     isLoading,
@@ -121,7 +125,7 @@ const ManageTagsDialog = ({ orgId, onClose, open }: ManageTagsDialogProps) => {
       />
     );
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md p-6">
         <DialogHeader>
           <DialogTitle>Manage Tags</DialogTitle>

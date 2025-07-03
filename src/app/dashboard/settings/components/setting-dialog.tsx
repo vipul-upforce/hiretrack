@@ -6,7 +6,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-// import { Button } from "@/components/ui/button";
 import SMTPConfigs from "./smtp-configs-dialog";
 import FileStorageOptions from "./fileStorage-dialog";
 import PortalConfigs from "./portalConfig-dialog";
@@ -17,12 +16,15 @@ import AssetsDialog from "./assets-dialog";
 import TimeZoneSelect from "./TimeZone-Dialog";
 import EmailTemplateEditor from "./edit-mail-dialog";
 import LogsDialog from "./LogsDialog";
-// import FileStorageOptions from "./file-storage-dialog"; // Example for another setting
-
+import ManageTagsDialog from "../../jobs/[id]/components/Dialogs/manage-tags-dialog";
+import { useEffect, useState } from "react";
+import Cookies from "js-cookie";
+import { verifyAndDecryptJWTToken } from "@/lib/auth";
 export interface SettingComponentProps {
   onClose: () => void;
   isOpen?: boolean;
 }
+
 const settingComponents: Record<
   string,
   React.ComponentType<SettingComponentProps>
@@ -37,6 +39,7 @@ const settingComponents: Record<
   timezone: TimeZoneSelect,
   templates: EmailTemplateEditor,
   logs: LogsDialog,
+  tags: ManageTagsDialog,
 };
 
 const SettingDialog = ({
@@ -46,9 +49,25 @@ const SettingDialog = ({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  setting: { title: string; description: string; key: string };
+  setting: { title: string; description: string; key: string; orgId?: string };
 }) => {
   const ComponentToRender = settingComponents[setting.key];
+  const [orgId, setOrgId] = useState("");
+  useEffect(() => {
+    (async () => {
+      const token = Cookies.get("token");
+      if (token) {
+        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+        if (decryptedResponse.success && decryptedResponse.user) {
+          setOrgId(decryptedResponse.user.organizationId);
+        }
+      }
+    })();
+  }, []);
+
+  if (setting.key === "tags")
+    return <ManageTagsDialog onClose={onClose} isOpen={isOpen} orgId={orgId} />;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
@@ -65,10 +84,10 @@ const SettingDialog = ({
           <DialogDescription>{setting.description}</DialogDescription>
         </DialogHeader>
 
-        {ComponentToRender ? (
+        {ComponentToRender && setting.key !== "tags" ? (
           <ComponentToRender onClose={onClose} isOpen={isOpen} />
         ) : (
-          <p> No settings available for this option.</p>
+          <p>No settings available for this option.</p>
         )}
       </DialogContent>
     </Dialog>
