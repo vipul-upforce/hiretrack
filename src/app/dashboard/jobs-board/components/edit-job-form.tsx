@@ -12,6 +12,9 @@ import useCustomForm, {
 } from "@/Custom_Fields/hooks/useCustomForm";
 import CustomFields from "@/Custom_Fields/Components/CustomFields";
 import { Checkbox } from "@/components/ui/checkbox";
+import { AddSpecificCustomFieldButton } from "@/Custom_Fields/Components/AddSpecificCustomFieldButton";
+import { CustomFieldsContext } from "@/Custom_Fields/Context";
+import { useContext } from "react";
 
 interface Job {
   _id: string;
@@ -119,6 +122,9 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
     customFields: { ...getDefaultValues(job.customFields || {}) },
   };
 
+  const { handleAddCustomField, selectedFormId } =
+    useContext(CustomFieldsContext);
+
   const onSubmit = async (values: JobFormValues) => {
     const fileNames = values.files.map((file) => file.name);
     const hasDuplicates = new Set(fileNames).size !== fileNames.length;
@@ -222,6 +228,12 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
                   ...(values.removedImages || []),
                   imageId,
                 ]);
+              }}
+            />
+            <AddSpecificCustomFieldButton
+              jobId={job._id}
+              onSave={(newField) => {
+                handleAddCustomField(newField, selectedFormId?.formId || "");
               }}
             />
             <CustomFields formName={formName} />

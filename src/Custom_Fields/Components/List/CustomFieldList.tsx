@@ -179,6 +179,16 @@ const CustomFieldItem = React.memo(
                   <CardTitle className="capitalize">{field.label}</CardTitle>
                 </div>
                 <div className="flex gap-2">
+                  {field.jobId ? (
+                    <Badge className="rounded-full px-4 bg-blue-500 text-white">
+                      Job Specific
+                    </Badge>
+                  ) : null}
+                  {field.candidateId ? (
+                    <Badge className="rounded-full px-4 bg-blue-500 text-white">
+                      Candidate Specific
+                    </Badge>
+                  ) : null}
                   <Button
                     variant="ghost"
                     size="sm"

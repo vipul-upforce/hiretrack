@@ -7,8 +7,10 @@ import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
 import { Dayjs } from "dayjs";
 import useRoles from "@/hooks/useRoles";
 import { useEffect, useRef } from "react";
+import { CustomField } from "@/Custom_Fields/Types/CustomField";
 
 interface FormValues {
+  _id?: string;
   customFields: {
     [key: string]:
       | string
@@ -50,14 +52,15 @@ function CustomFields({
   const role = useRoles();
   const allFields = role !== "interviewer";
   const fieldRefs = useRef<{ [key: string]: HTMLElement | null }>({});
-
+  // console.log("⛔⛔⛔⛔⛔⛔⛔⛔ values: ", values);
   // Create useField hooks for each custom field
   const customFieldHooks: { [key: string]: any } = {};
-
+  // debugger;
   if (formNameObject?.fields) {
     formNameObject.fields
-      .filter((field) => allFields || (!allFields && !field.private))
-      .forEach((field) => {
+      ?.filter((field) => allFields || (!allFields && !field.private))
+      ?.forEach((field: CustomField) => {
+        if (field.jobId || field.candidateId) return;
         // eslint-disable-next-line react-hooks/rules-of-hooks
         const [fieldProps, fieldMeta] = useField(`customFields.${field.label}`);
         customFieldHooks[field.label] = { fieldProps, fieldMeta };
@@ -110,7 +113,12 @@ function CustomFields({
         ?.filter((field) => allFields || (!allFields && !field.private))
         .map((field) => {
           const fieldHook = customFieldHooks[field.label];
-
+          if (field.jobId && field.jobId !== values._id) {
+            return;
+          }
+          if (field.candidateId && field.candidateId !== values._id) {
+            return;
+          }
           return (
             <div
               key={field.id}

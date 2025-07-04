@@ -22,6 +22,8 @@ export interface CustomField {
   label: string;
   type: Types;
   options?: string[];
+  candidateId?: string;
+  jobId?: string;
   persistance: Persistance;
   defaultValue?: string | string[];
   required: boolean;

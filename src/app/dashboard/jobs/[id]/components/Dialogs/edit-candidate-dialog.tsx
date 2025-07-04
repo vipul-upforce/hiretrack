@@ -20,7 +20,7 @@ import { v4 as uuidv4 } from "uuid";
 import { useParams, usePathname } from "next/navigation";
 import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
 import { ICandidateHistory } from "@/lib/models/history";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Resume } from "@/lib/redux/types";
 import { parseResumeFromPdf } from "@/lib/parse-resume-from-pdf";
 import FormUpdater from "../Utils/FormUpdater";
@@ -30,6 +30,8 @@ import { sentAssignmentMail } from "@/lib/utils";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import { useApplyHandler } from "@/app/apply-jobs/useApplyHandler";
+import { AddSpecificCustomFieldButton } from "@/Custom_Fields/Components/AddSpecificCustomFieldButton";
+import { CustomFieldsContext } from "@/Custom_Fields/Context";
 
 interface EditCandidateDialogProps {
   candidate: Candidate;
@@ -132,7 +134,8 @@ export function EditCandidateDialog({
   const [parsedResumeData, setParsedResume] = useState<Resume | null>(null);
   const [user, setuser] = useState<User | null>(null);
   const { formikRef, handleApply } = useApplyHandler<any>();
-
+  const { handleAddCustomField, selectedFormId } =
+    useContext(CustomFieldsContext);
   useEffect(() => {
     (async () => {
       const token = Cookies.get("token");
@@ -437,6 +440,16 @@ export function EditCandidateDialog({
                 />
               </div>
               <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4">
+                <AddSpecificCustomFieldButton
+                  candidateId={candidate._id}
+                  onSave={(newField) => {
+                    debugger;
+                    handleAddCustomField(
+                      newField,
+                      selectedFormId?.formId || ""
+                    );
+                  }}
+                />
                 <Button
                   type="button"
                   variant="outline"

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+// import { useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import Radio from "@mui/material/Radio";
@@ -83,11 +83,13 @@ export const RenderField = ({
   fieldHook,
   isEditMode = false,
 }: RenderFieldProps) => {
-  useEffect(() => {
-    if (isEditMode) {
-      setFieldTouched("customFields." + label, true);
-    }
-  }, []);
+  // useEffect(() => {
+  //   if (isEditMode) {
+  //     setFieldTouched("customFields." + label, true);
+  //   }
+  // }, []);
+
+  // console.log("🙇🙇🙇 ", values.customFields[label], fieldHook);
 
   const commonProps = {
     id: `customFields.${label}`,
