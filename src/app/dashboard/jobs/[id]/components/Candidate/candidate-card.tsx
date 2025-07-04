@@ -17,6 +17,7 @@ import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { User } from "@/lib/features/users/usersApi";
 import TagsList from "@/components/ui/tagsList";
 import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
+import CustomFieldBadge from "./CustomFieldBadge";
 
 interface CandidateCardProps {
   candidate: Candidate;
@@ -229,25 +230,20 @@ export function CandidateCard({
                 const field = formNameObject?.fields.find(
                   (f) => f.label === key
                 );
-                if (field?.candidateId && field.candidateId !== candidate._id)
-                  return false;
-                if (!value || String(value).length === 0) return false;
+                // if (field?.candidateId && field.candidateId !== candidate._id)
+                //   return false;
+                // if (!value || String(value).length === 0) return false;
 
-                return field?.showOnCard && field.candidateId === candidate._id;
+                // return field?.showOnCard && field.candidateId === candidate._id;
+                if (field?.candidateId && field.candidateId !== candidate._id) {
+                  return false;
+                }
+                return field?.showOnCard;
               })
               .map(([key, value], i) => (
-                <Badge
-                  key={i}
-                  variant="secondary"
-                  className="max-w-full inline-flex items-start gap-1 p-2 h-auto min-h-6"
-                >
-                  <span className="font-medium text-xs shrink-0 break-words hyphens-auto">
-                    {key}:
-                  </span>
-                  <span className="font-bold text-xs break-words hyphens-auto overflow-wrap-anywhere leading-tight">
-                    {String(value)}
-                  </span>
-                </Badge>
+                <div key={i}>
+                  <CustomFieldBadge kii={key} value={value} />
+                </div>
               ))}
         </div>
       </div>
@@ -429,18 +425,35 @@ export function CandidateCard({
                   return field?.showOnCard;
                 })
                 .map(([key, value], i) => (
-                  <Badge
-                    key={i}
-                    variant="secondary"
-                    className="max-w-full inline-flex items-start gap-1 p-2 h-auto min-h-6"
-                  >
-                    <span className="font-medium text-xs shrink-0 break-words hyphens-auto">
-                      {key}:
-                    </span>
-                    <span className="font-bold text-xs break-words hyphens-auto overflow-wrap-anywhere leading-tight">
-                      {String(value)}
-                    </span>
-                  </Badge>
+                  // <Badge
+                  //   key={i}
+                  //   variant="secondary"
+                  //   className="max-w-full inline-flex items-start gap-1 p-2 h-auto min-h-6"
+                  // >
+                  //   <span className="font-medium text-xs shrink-0 break-words hyphens-auto">
+                  //     {key}:
+                  //   </span>
+                  //   <span className="font-bold text-xs break-words hyphens-auto overflow-wrap-anywhere leading-tight">
+                  //     {String(value)}
+                  //   </span>
+                  // </Badge>
+                  // <Badge
+                  //   key={i}
+                  //   variant="secondary"
+                  //   className={`max-w-full flex break-words items-start gap-1 p-2 h-auto min-h-6 flex-col`}
+                  // >
+                  //   {/* <span className="font-medium text-xs shrink-0 w-4/5 break-words hyphens-auto">
+                  //         {key}:
+                  //       </span>
+                  //       <span className="font-bold text-xs  break-words hyphens-auto overflow-wrap-anywhere leading-tight">
+                  //         {String(value)}
+                  //       </span> */}
+                  //   <p className="text-[11px] font-thin text-gray-500">{key}</p>
+                  //   <p>{String(value)}</p>
+                  // </Badge>
+                  <div key={i}>
+                    <CustomFieldBadge kii={key} value={value} />
+                  </div>
                 ))}
           </div>
         </div>

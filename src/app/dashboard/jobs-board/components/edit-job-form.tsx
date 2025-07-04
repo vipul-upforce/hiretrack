@@ -259,40 +259,48 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
             <CustomFields formName={formName} />
           </div>
 
-          <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4">
-            <div className="items-top flex space-x-2 items-center">
-              <Checkbox
-                id="publish"
-                name="publish"
-                checked={values?.isPublished}
-                onCheckedChange={(checked) =>
-                  setFieldValue("isPublished", checked)
-                }
+          <div className="flex justify-between space-x-2 border-t bg-background px-6 py-4">
+            <div>
+              <AddSpecificCustomFieldButton
+                jobId={job._id}
+                onSave={(newField) => {
+                  handleAddCustomField(newField, selectedFormId?.formId || "");
+                }}
               />
-              <div className="grid gap-1.5 leading-none ">
-                <label
-                  htmlFor="publish"
-                  className="text-sm font-semibold leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Publish
-                </label>
-              </div>
             </div>
-            <AddSpecificCustomFieldButton
-              jobId={job._id}
-              onSave={(newField) => {
-                handleAddCustomField(newField, selectedFormId?.formId || "");
-              }}
-            />
-            <Button type="button" variant="outline" onClick={onCancel}>
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting || Object.keys(errors).length > 0}
-            >
-              {isSubmitting ? "Saving..." : "Save Changes"}
-            </Button>
+            <div className="flex flex-row gap-4">
+              <div className="items-top flex space-x-2 items-center">
+                <Checkbox
+                  id="publish"
+                  name="publish"
+                  checked={values?.isPublished}
+                  onCheckedChange={(checked) =>
+                    setFieldValue("isPublished", checked)
+                  }
+                />
+                <div className="grid gap-1.5 leading-none ">
+                  <label
+                    htmlFor="publish"
+                    className="text-sm font-semibold leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Publish
+                  </label>
+                </div>
+              </div>
+
+              {/* <FormCustomFieldList /> */}
+
+              <Button type="button" variant="outline" onClick={onCancel}>
+                Cancel
+              </Button>
+
+              <Button
+                type="submit"
+                disabled={isSubmitting || Object.keys(errors).length > 0}
+              >
+                {isSubmitting ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
           </div>
         </Form>
       )}

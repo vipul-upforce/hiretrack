@@ -20,7 +20,7 @@ import {
 import { useState } from "react";
 import ConfirmationDialog from "../../jobs/[id]/components/Dialogs/ConfirmationDialog";
 import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
-import { Badge } from "@/components/ui/badge";
+import CustomFieldBadge from "../../jobs/[id]/components/Candidate/CustomFieldBadge";
 
 interface JobCardProps {
   job: Job;
@@ -68,21 +68,23 @@ const JobCard = ({
                   </TooltipProvider>
                 </div>
               )}
-              <Link
-                href={`/dashboard/jobs/${job._id}`}
-                className="text-wrap break-words w-[90%]"
-              >
-                {/* <h3 className="font-medium">{job.title}</h3> */}
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="font-medium flex flex-row items-center">
-                    {job.title}
-                  </h3>
-                </div>
+              <div className="flex flex-col w-full">
+                <div className="flex flex-row w-full justify-between">
+                  <Link
+                    href={`/dashboard/jobs/${job._id}`}
+                    className="text-wrap break-words w-[90%]"
+                  >
+                    {/* <h3 className="font-medium">{job.title}</h3> */}
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-medium flex flex-row items-center">
+                        {job.title}
+                      </h3>
+                    </div>
 
-                <p className="text-sm text-muted-foreground">
-                  {job.candidateCount} Candidates
-                </p>
-                <div className="mt-2 flex flex-wrap gap-2">
+                    <p className="text-sm text-muted-foreground">
+                      {job.candidateCount} Candidates
+                    </p>
+                    {/* <div className="mt-2 flex flex-wrap gap-2">
                   {Object.entries(job.customFields)
                     .filter(([key, value]) => {
                       const field = formNameObject?.fields.find(
@@ -104,20 +106,20 @@ const JobCard = ({
                       <Badge
                         key={i}
                         variant="secondary"
-                        className={`max-w-full inline-flex items-start gap-1 p-2 h-auto min-h-6`}
+                        className={`max-w-full flex break-words items-start gap-1 p-2 h-auto min-h-6`}
                       >
-                        <span className="font-medium text-xs shrink-0 break-words hyphens-auto">
+                        <span className="font-medium text-xs shrink-0 w-4/5 break-words hyphens-auto">
                           {key}:
                         </span>
-                        <span className="font-bold text-xs break-words hyphens-auto overflow-wrap-anywhere leading-tight">
+                        <span className="font-bold text-xs  break-words hyphens-auto overflow-wrap-anywhere leading-tight">
                           {String(value)}
                         </span>
                       </Badge>
                     ))}
-                </div>
-              </Link>
-              <div className="flex items-center justify-end gap-1">
-                {/* {!job.isPublished && (
+                </div> */}
+                  </Link>
+                  <div className="flex items-center justify-end gap-1">
+                    {/* {!job.isPublished && (
                   // <TooltipProvider>
                   //   <Tooltip>
                   //     <TooltipTrigger asChild>
@@ -134,58 +136,84 @@ const JobCard = ({
                     <MinusCircleIcon className="h-4 w-4 text-red-500" />
                   </div>
                 )} */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // setSelectedJob(job);
-                    // setDuplicate(true);
-                    setIsDuplicateDialogOpen(true);
-                    // setIsDetailsOpen(true);
-                  }}
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedJob(job);
-                    setIsDetailsOpen(true);
-                  }}
-                >
-                  <Info className="h-4 w-4" />
-                </Button>
-                {!job.isDeleted ? (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-destructive hover:text-destructive/90"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteClick(job._id);
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                ) : (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-blue-500 hover:text-blue-500/90"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteClick(job._id);
-                      setSelectedJob(job);
-                    }}
-                  >
-                    <ArchiveRestore className="h-4 w-4" />
-                  </Button>
-                )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // setSelectedJob(job);
+                        // setDuplicate(true);
+                        setIsDuplicateDialogOpen(true);
+                        // setIsDetailsOpen(true);
+                      }}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedJob(job);
+                        setIsDetailsOpen(true);
+                      }}
+                    >
+                      <Info className="h-4 w-4" />
+                    </Button>
+                    {!job.isDeleted ? (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive/90"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteClick(job._id);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-blue-500 hover:text-blue-500/90"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteClick(job._id);
+                          setSelectedJob(job);
+                        }}
+                      >
+                        <ArchiveRestore className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {Object.entries(job.customFields)
+                    .filter(([key, value]) => {
+                      const field = formNameObject?.fields.find(
+                        (f) => f.label === key
+                      );
+                      if (field?.jobId && field.jobId !== job._id) {
+                        return false;
+                      }
+                      return field?.showOnCard;
+                    })
+                    .map(([key, value], i) => (
+                      // <div
+                      //   key={key}
+                      //   className="flex items-center gap-1 text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-full"
+                      // >
+                      //   <span className="font-medium">{key}:</span>
+                      //   <span>{String(value)}</span>
+                      // </div>
+                      <div key={i}>
+                        <CustomFieldBadge kii={key} value={value} />
+                      </div>
+                    ))}
+                </div>
               </div>
             </div>
           </>

@@ -466,7 +466,7 @@ export function EditCandidateDialog({
                   isEditMode={true}
                 />
               </div>
-              <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4">
+              <div className="flex justify-between space-x-2 border-t bg-background px-6 py-4">
                 <AddSpecificCustomFieldButton
                   candidateId={candidate._id}
                   onSave={(newField) => {
@@ -477,31 +477,34 @@ export function EditCandidateDialog({
                     );
                   }}
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    onOpenChange(false);
-                    // if (reopenDetailsDialog) {
-                    //   reopenDetailsDialog();
+                <div className="gap-3 flex">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      onOpenChange(false);
+                      // if (reopenDetailsDialog) {
+                      //   reopenDetailsDialog();
+                      // }
+                    }}
+                  >
+                    Cancel
+                  </Button>
+
+                  <Button
+                    onClick={() => {
+                      // debugger;
+                      scrollToError(errors);
+                      handleApply();
+                    }}
+                    type={!errors ? "submit" : "button"}
+                    // disabled={
+                    //   !dirty || isSubmitting || Object.keys(errors).length > 0
                     // }
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => {
-                    // debugger;
-                    scrollToError(errors);
-                    handleApply();
-                  }}
-                  type={!errors ? "submit" : "button"}
-                  // disabled={
-                  //   !dirty || isSubmitting || Object.keys(errors).length > 0
-                  // }
-                >
-                  {isSubmitting ? "Saving..." : "Save Changes"}
-                </Button>
+                  >
+                    {isSubmitting ? "Saving..." : "Save Changes"}
+                  </Button>
+                </div>
               </div>
             </Form>
           )}

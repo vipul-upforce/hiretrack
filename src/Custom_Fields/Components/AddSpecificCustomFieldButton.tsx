@@ -2,10 +2,9 @@
 
 import React, { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
 import CustomFieldDialog from "./Common/CustomFieldDialog";
 import { CustomField } from "../Types/CustomField";
-import { AddSpecificCustomFieldForm } from "./AddSpecificCustomFieldForm";
+import SpecificCustomFieldList from "./List/SpecificCustomFieldList";
 
 interface AddJobOrCandidateCustomFieldProps {
   jobId?: string;
@@ -20,10 +19,10 @@ export function AddSpecificCustomFieldButton({
 }: AddJobOrCandidateCustomFieldProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleSave = (newField: CustomField) => {
-    onSave(newField);
-    setIsOpen(false);
-  };
+  // const handleSave = (newField: CustomField) => {
+  //   onSave(newField);
+  //   setIsOpen(false);
+  // };
 
   const handleClose = useCallback(() => {
     setIsOpen(false);
@@ -32,20 +31,21 @@ export function AddSpecificCustomFieldButton({
   return (
     <div>
       <Button type="button" onClick={() => setIsOpen(true)}>
-        <Plus className="h-4 w-4 mr-2" />
-        Add Custom Field
+        {/* <Plus className="h-4 w-4 mr-2" /> */}
+        Meta Fields
       </Button>
       <CustomFieldDialog
         isOpen={isOpen}
         onClose={handleClose}
-        title="Add Custom Field"
+        title="Add Meta Field"
       >
-        <AddSpecificCustomFieldForm
+        {/* <AddSpecificCustomFieldForm
           handleClose={handleClose}
           onSave={handleSave}
           jobId={jobId}
           candidateId={candidateId}
-        />
+        /> */}
+        <SpecificCustomFieldList jobId={jobId} candidateId={candidateId} />
       </CustomFieldDialog>
     </div>
   );

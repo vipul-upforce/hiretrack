@@ -37,7 +37,7 @@ function AddCustomFields() {
       <CustomFieldDialog
         isOpen={isOpen}
         onClose={handleClose}
-        title="Meta Field"
+        title="Global Fields"
       >
         <Stepper />
       </CustomFieldDialog>

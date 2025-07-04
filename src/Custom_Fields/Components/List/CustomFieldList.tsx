@@ -82,44 +82,53 @@ function CustomFieldList() {
               ref={provided.innerRef}
               className="w-full"
             >
-              {orderedFields.map((field, index) => (
-                <Draggable key={field.id} draggableId={field.id} index={index}>
-                  {(
-                    provided: DraggableProvided,
-                    snapshot: DraggableStateSnapshot
-                  ) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      className="mb-2 w-full"
-                      style={{
-                        ...provided.draggableProps.style,
-                        left: 0,
-                        right: 0,
-                        width: "100%",
-                      }}
-                    >
-                      <CustomFieldItem
-                        field={field}
-                        dragHandleProps={provided.dragHandleProps}
-                        isDragging={snapshot.isDragging}
-                        handleEditCustomField={() => {
-                          setSelectedField(field);
-                          handleOpen();
+              {orderedFields.map((field, index) => {
+                if (field.candidateId || field.jobId) return;
+                return (
+                  <Draggable
+                    key={field.id}
+                    draggableId={field.id}
+                    index={index}
+                  >
+                    {(
+                      provided: DraggableProvided,
+                      snapshot: DraggableStateSnapshot
+                    ) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        className="mb-2 w-full"
+                        style={{
+                          ...provided.draggableProps.style,
+                          left: 0,
+                          right: 0,
+                          width: "100%",
                         }}
-                        handleDeleteCustomField={() => {
-                          if (selectedFormId?.formId) {
-                            handleDeleteCustomField(
-                              field.id,
-                              selectedFormId.formId
-                            );
-                          }
-                        }}
-                      />
-                    </div>
-                  )}
-                </Draggable>
-              ))}
+                      >
+                        <CustomFieldItem
+                          field={field}
+                          dragHandleProps={provided.dragHandleProps}
+                          isDragging={snapshot.isDragging}
+                          handleEditCustomField={() => {
+                            setSelectedField(field);
+                            handleOpen();
+                          }}
+                          handleDeleteCustomField={() => {
+                            if (selectedFormId?.formId) {
+                              handleDeleteCustomField(
+                                field.id,
+                                selectedFormId.formId
+                              );
+                            }
+                          }}
+                        />
+                      </div>
+                    )}
+                  </Draggable>
+                );
+              })}
+              {(orderedFields.length === 0 || !orderedFields) &&
+                "No Mea fields"}
               {provided.placeholder}
             </div>
           )}
@@ -144,7 +153,7 @@ interface CustomFieldItemProps {
   handleDeleteCustomField: () => void;
 }
 
-const CustomFieldItem = React.memo(
+export const CustomFieldItem = React.memo(
   ({
     field,
     dragHandleProps,
@@ -179,16 +188,16 @@ const CustomFieldItem = React.memo(
                   <CardTitle className="capitalize">{field.label}</CardTitle>
                 </div>
                 <div className="flex gap-2">
-                  {field.jobId ? (
+                  {/* {field.jobId ? (
                     <Badge variant="secondary" className="rounded-full">
                       Job Specific
                     </Badge>
-                  ) : null}
-                  {field.candidateId ? (
+                  ) : null} */}
+                  {/* {field.candidateId ? (
                     <Badge variant="secondary" className="rounded-full">
                       Candidate Specific
                     </Badge>
-                  ) : null}
+                  ) : null} */}
                   <Button
                     variant="ghost"
                     size="sm"

@@ -65,11 +65,14 @@ function FormIDCard({ formId, formName, fields }: CardProps) {
           </CardTitle>
           <div className="flex flex-wrap">
             {fields && fields.length > 0 ? (
-              fields.map((field) => (
-                <Badge key={field.id} className="capitalize p-2 mr-2">
-                  {field.label}
-                </Badge>
-              ))
+              fields.map((field) => {
+                if (field.candidateId || field.jobId) return;
+                return (
+                  <Badge key={field.id} className="capitalize p-2 mb-1 mr-1">
+                    {field.label}
+                  </Badge>
+                );
+              })
             ) : (
               <Badge className="capitalize p-2 mr-2">No fields</Badge>
             )}
