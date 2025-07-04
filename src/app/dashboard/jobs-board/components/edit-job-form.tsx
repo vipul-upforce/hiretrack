@@ -255,13 +255,7 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
                 ]);
               }}
             />
-            <AddSpecificCustomFieldButton
-              jobId={job._id}
-              onSave={(newField) => {
-                debugger;
-                handleAddCustomField(newField, selectedFormId?.formId || "");
-              }}
-            />
+
             <CustomFields formName={formName} />
           </div>
 
@@ -284,6 +278,12 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
                 </label>
               </div>
             </div>
+            <AddSpecificCustomFieldButton
+              jobId={job._id}
+              onSave={(newField) => {
+                handleAddCustomField(newField, selectedFormId?.formId || "");
+              }}
+            />
             <Button type="button" variant="outline" onClick={onCancel}>
               Cancel
             </Button>
