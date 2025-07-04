@@ -153,21 +153,23 @@ export function EditCandidateDialog({
     })();
     setStepName("Candidate");
     if (customFields) {
-      const formIds = Object.keys(customFields);
-      // NOTE: Object key order is not guaranteed. A more robust way
-      // would be to find the form by its name, e.g. "Candidate".
-      if (formIds.length > 1) {
-        const secondFormId = formIds[1];
-        const form = customFields[secondFormId];
-        if (form) {
-          setSelectedFormId({
-            formId: secondFormId,
-            formName: form.formName,
-            fields: form.fields,
-          });
-        }
+      const candidateForm = Object.entries(customFields).find(
+        ([, form]) => form.formName === "Candidate"
+      );
+
+      if (candidateForm) {
+        const [formId, form] = candidateForm;
+        setSelectedFormId({
+          formId: formId,
+          formName: form.formName,
+          fields: form.fields,
+        });
       }
     }
+
+    return () => {
+      setSelectedFormId(null);
+    };
   }, [customFields, setSelectedFormId, setStepName]);
 
   const handleSubmit = async (values: Candidate) => {
@@ -431,6 +433,9 @@ export function EditCandidateDialog({
       open={isOpen}
       onOpenChange={(open) => {
         onOpenChange(open);
+        if (!open) {
+          setSelectedFormId(null);
+        }
       }}
     >
       <DialogContent

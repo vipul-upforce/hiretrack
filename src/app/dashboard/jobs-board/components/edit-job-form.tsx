@@ -14,7 +14,7 @@ import CustomFields from "@/Custom_Fields/Components/CustomFields";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AddSpecificCustomFieldButton } from "@/Custom_Fields/Components/AddSpecificCustomFieldButton";
 import { CustomFieldsContext } from "@/Custom_Fields/Context";
-import { useContext } from "react";
+import { useContext, useEffect } from "react";
 
 interface Job {
   _id: string;
@@ -122,8 +122,33 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
     customFields: { ...getDefaultValues(job.customFields || {}) },
   };
 
-  const { handleAddCustomField, selectedFormId } =
-    useContext(CustomFieldsContext);
+  const {
+    handleAddCustomField,
+    selectedFormId,
+    customFields,
+    setSelectedFormId,
+  } = useContext(CustomFieldsContext);
+
+  useEffect(() => {
+    if (customFields) {
+      const jobForm = Object.entries(customFields).find(
+        ([, form]) => form.formName === formName
+      );
+
+      if (jobForm) {
+        const [formId, form] = jobForm;
+        setSelectedFormId({
+          formId: formId,
+          formName: form.formName,
+          fields: form.fields,
+        });
+      }
+    }
+
+    return () => {
+      setSelectedFormId(null);
+    };
+  }, [customFields, setSelectedFormId, formName]);
 
   const onSubmit = async (values: JobFormValues) => {
     const fileNames = values.files.map((file) => file.name);
@@ -233,6 +258,7 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
             <AddSpecificCustomFieldButton
               jobId={job._id}
               onSave={(newField) => {
+                debugger;
                 handleAddCustomField(newField, selectedFormId?.formId || "");
               }}
             />
