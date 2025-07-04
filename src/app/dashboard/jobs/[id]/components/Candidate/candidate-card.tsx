@@ -16,6 +16,7 @@ import Cookies from "js-cookie";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { User } from "@/lib/features/users/usersApi";
 import TagsList from "@/components/ui/tagsList";
+import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
 
 interface CandidateCardProps {
   candidate: Candidate;
@@ -39,6 +40,7 @@ export function CandidateCard({
   setOpenRemarksFor: (id: string | null) => void;
   refetch: () => void;
 }) {
+  const { formNameObject } = useCustomForm("Candidate");
   const [user, setuser] = useState<User | null>(null);
   useEffect(() => {
     (async () => {
@@ -137,6 +139,7 @@ export function CandidateCard({
             </Badge>
           )}
         </div>
+
         {/* <div className="mt-2 flex flex-wrap gap-1">
           {candidate.skills.slice(0, 3).map((skill) => (
             <Badge
@@ -218,6 +221,29 @@ export function CandidateCard({
               />
             </div>
           )}
+        </div>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {candidate.customFields &&
+            Object.entries(candidate.customFields)
+              .filter(([key, value]) => {
+                const field = formNameObject?.fields.find(
+                  (f) => f.label === key
+                );
+                if (field?.candidateId && field.candidateId === candidate._id)
+                  return false;
+                if (!value || String(value).length === 0) return false;
+
+                return field?.showOnCard && field.candidateId === candidate._id;
+              })
+              .map(([key, value]) => (
+                <div
+                  key={key}
+                  className="flex items-center gap-1 text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-full"
+                >
+                  <span className="font-medium">{key}:</span>
+                  <span>{String(value)}</span>
+                </div>
+              ))}
         </div>
       </div>
     );
@@ -342,6 +368,7 @@ export function CandidateCard({
               </Badge>
             )}
           </div>
+
           {candidate.assignment && (
             <div className="capitalize flex gap-2 py-2">
               <Badge>
@@ -384,6 +411,28 @@ export function CandidateCard({
               )}
             </div>
           )}
+          <div className="mt-2 flex flex-wrap gap-2">
+            {candidate.customFields &&
+              Object.entries(candidate.customFields)
+                .filter(([key, value]) => {
+                  const field = formNameObject?.fields.find(
+                    (f) => f.label === key
+                  );
+                  if (field?.candidateId && field.candidateId === candidate._id)
+                    return false;
+                  if (!value || String(value).length === 0) return false;
+                  return field?.showOnCard;
+                })
+                .map(([key, value]) => (
+                  <div
+                    key={key}
+                    className="flex items-center gap-1 text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-full"
+                  >
+                    <span className="font-medium">{key}:</span>
+                    <span>{String(value)}</span>
+                  </div>
+                ))}
+          </div>
         </div>
       )}
     </Draggable>

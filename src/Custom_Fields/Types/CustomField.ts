@@ -28,6 +28,7 @@ export interface CustomField {
   defaultValue?: string | string[];
   required: boolean;
   private: boolean;
+  showOnCard?: boolean;
 }
 
 export type CustomFieldFormProps = {

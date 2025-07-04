@@ -180,12 +180,12 @@ const CustomFieldItem = React.memo(
                 </div>
                 <div className="flex gap-2">
                   {field.jobId ? (
-                    <Badge className="rounded-full px-4 bg-blue-500 text-white">
+                    <Badge variant="secondary" className="rounded-full">
                       Job Specific
                     </Badge>
                   ) : null}
                   {field.candidateId ? (
-                    <Badge className="rounded-full px-4 bg-blue-500 text-white">
+                    <Badge variant="secondary" className="rounded-full">
                       Candidate Specific
                     </Badge>
                   ) : null}
@@ -216,6 +216,7 @@ const CustomFieldItem = React.memo(
                 <Badge>{field?.private ? "Private" : "Public"}</Badge>
                 {field.defaultValue && <Badge>{field.defaultValue}</Badge>}
                 {field.options && <Badge>{field.options.length}</Badge>}
+                {field.showOnCard && <Badge>Showing on Card</Badge>}
               </div>
             </CardContent>
           </Card>

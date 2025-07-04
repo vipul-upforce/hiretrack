@@ -36,6 +36,7 @@ const CustomFieldForm = memo(
       defaultValue: "",
       required: false,
       private: false,
+      showOnCard: false,
     });
 
     useEffect(() => {
@@ -227,6 +228,16 @@ const CustomFieldForm = memo(
                   }
                 />
                 <Label htmlFor="isPrivate">Private Field</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="showOnCard"
+                  checked={values.showOnCard}
+                  onCheckedChange={(checked) =>
+                    setFieldValue("showOnCard", checked)
+                  }
+                />
+                <Label htmlFor="showOnCard">Show On Card</Label>
               </div>
 
               {[
