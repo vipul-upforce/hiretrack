@@ -134,8 +134,13 @@ export function EditCandidateDialog({
   const [parsedResumeData, setParsedResume] = useState<Resume | null>(null);
   const [user, setuser] = useState<User | null>(null);
   const { formikRef, handleApply } = useApplyHandler<any>();
-  const { handleAddCustomField, selectedFormId } =
-    useContext(CustomFieldsContext);
+  const {
+    handleAddCustomField,
+    selectedFormId,
+    setStepName,
+    customFields,
+    setSelectedFormId,
+  } = useContext(CustomFieldsContext);
   useEffect(() => {
     (async () => {
       const token = Cookies.get("token");
@@ -146,7 +151,24 @@ export function EditCandidateDialog({
         }
       }
     })();
-  }, []);
+    setStepName("Candidate");
+    if (customFields) {
+      const formIds = Object.keys(customFields);
+      // NOTE: Object key order is not guaranteed. A more robust way
+      // would be to find the form by its name, e.g. "Candidate".
+      if (formIds.length > 1) {
+        const secondFormId = formIds[1];
+        const form = customFields[secondFormId];
+        if (form) {
+          setSelectedFormId({
+            formId: secondFormId,
+            formName: form.formName,
+            fields: form.fields,
+          });
+        }
+      }
+    }
+  }, [customFields, setSelectedFormId, setStepName]);
 
   const handleSubmit = async (values: Candidate) => {
     const fileNames = values.attachments.map((file) => file.name);

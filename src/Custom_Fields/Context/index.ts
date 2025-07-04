@@ -1,4 +1,4 @@
-import { createContext } from "react";
+import { createContext, Dispatch, SetStateAction } from "react";
 import {
   CustomField,
   CustomFields,
@@ -31,6 +31,7 @@ export type CustomFieldsContextType = {
   deleteFormIDAllCustomFields: (formId: string) => void;
   userLoggedIn: boolean;
   setUserLoggedIn: (user: boolean) => void;
+  setSelectedFormId: Dispatch<SetStateAction<SelectedFormObject | null>>;
 };
 
 // Create the context
@@ -50,4 +51,5 @@ export const CustomFieldsContext = createContext<CustomFieldsContextType>({
   deleteFormIDAllCustomFields: () => {},
   userLoggedIn: false,
   setUserLoggedIn: () => {},
+  setSelectedFormId: () => {},
 });

@@ -153,7 +153,7 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
 
     const handleAddCustomField = useCallback(
       (customField: CustomField, formId: string | null) => {
-        debugger;
+        // debugger;
         const formIdObject = formId && customFields[formId];
         if (formIdObject) {
           setCustomFields((prev) => ({
@@ -273,6 +273,7 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
           deleteFormIDAllCustomFields,
           userLoggedIn,
           setUserLoggedIn,
+          setSelectedFormId,
         }}
       >
         {children}
