@@ -20,6 +20,7 @@ import {
 import { useState } from "react";
 import ConfirmationDialog from "../../jobs/[id]/components/Dialogs/ConfirmationDialog";
 import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
+import { Badge } from "@/components/ui/badge";
 
 interface JobCardProps {
   job: Job;
@@ -87,19 +88,31 @@ const JobCard = ({
                       const field = formNameObject?.fields.find(
                         (f) => f.label === key
                       );
-                      if (field?.jobId && field.jobId === job._id) {
+                      if (field?.jobId && field.jobId !== job._id) {
                         return false;
                       }
                       return field?.showOnCard;
                     })
-                    .map(([key, value]) => (
-                      <div
-                        key={key}
-                        className="flex items-center gap-1 text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-full"
+                    .map(([key, value], i) => (
+                      // <div
+                      //   key={key}
+                      //   className="flex items-center gap-1 text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-full"
+                      // >
+                      //   <span className="font-medium">{key}:</span>
+                      //   <span>{String(value)}</span>
+                      // </div>
+                      <Badge
+                        key={i}
+                        variant="secondary"
+                        className={`max-w-full inline-flex items-start gap-1 p-2 h-auto min-h-6`}
                       >
-                        <span className="font-medium">{key}:</span>
-                        <span>{String(value)}</span>
-                      </div>
+                        <span className="font-medium text-xs shrink-0 break-words hyphens-auto">
+                          {key}:
+                        </span>
+                        <span className="font-bold text-xs break-words hyphens-auto overflow-wrap-anywhere leading-tight">
+                          {String(value)}
+                        </span>
+                      </Badge>
                     ))}
                 </div>
               </Link>
