@@ -154,6 +154,7 @@ export async function POST(req: NextRequest) {
       throw adminError; // Re-throw to be caught by outer catch block
     }
   } catch (error: unknown) {
+    console.log(error);
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }

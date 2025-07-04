@@ -42,7 +42,6 @@ const organizationSchema = new Schema({
       {
         title: {
           type: String,
-          unique: true,
         },
         color: {
           type: String,
