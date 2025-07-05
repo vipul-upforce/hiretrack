@@ -199,6 +199,9 @@ export function KanbanColumn({
           ref={provided.innerRef}
           {...provided.draggableProps}
           className="w-[350px] mr-6 "
+          style={{
+            userSelect: "none",
+          }}
         >
           <Card className="space-y-4 min-h-[75vh] h-full">
             <CardHeader className="pb-3">

@@ -23,7 +23,8 @@ export const useDragToScroll = <T extends HTMLElement>() => {
       setIsDragging(true);
       setStartX(e.pageX - element.offsetLeft);
       setScrollLeft(element.scrollLeft);
-      element.style.userSelect = "none";
+      element.style.removeProperty("user-select");
+      // element.style.userSelect = "grabbing";
     };
 
     const onMouseLeave = () => {
@@ -40,7 +41,7 @@ export const useDragToScroll = <T extends HTMLElement>() => {
       if (!isDragging || isDndDragging) return;
       e.preventDefault();
       const x = e.pageX - element.offsetLeft;
-      const walk = (x - startX) * 2;
+      const walk = (x - startX) * 1;
       element.scrollLeft = scrollLeft - walk;
     };
 
@@ -49,9 +50,9 @@ export const useDragToScroll = <T extends HTMLElement>() => {
     element.addEventListener("mouseup", onMouseUp);
     element.addEventListener("mousemove", onMouseMove);
 
-    if (element.style.cursor !== "grabbing") {
-      element.style.cursor = "default";
-    }
+    // if (element.style.cursor !== "grabbing") {
+    //   element.style.cursor = "default";
+    // }
 
     return () => {
       element.removeEventListener("mousedown", onMouseDown);

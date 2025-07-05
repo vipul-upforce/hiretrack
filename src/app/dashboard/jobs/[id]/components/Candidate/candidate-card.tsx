@@ -25,6 +25,9 @@ interface CandidateCardProps {
   onViewDetails: (candidate: Candidate) => void;
   onDashboard?: boolean;
   onDeleteClick?: (candidateId: string) => void;
+  openRemarks: boolean;
+  setOpenRemarksFor: (id: string | null) => void;
+  refetch: () => void;
 }
 
 export function CandidateCard({
@@ -34,182 +37,88 @@ export function CandidateCard({
   openRemarks,
   setOpenRemarksFor,
   refetch,
-  onDashboard,
+  onDashboard = false,
   onDeleteClick,
-}: CandidateCardProps & {
-  openRemarks: boolean;
-  setOpenRemarksFor: (id: string | null) => void;
-  refetch: () => void;
-}) {
+}: CandidateCardProps) {
   const { formNameObject } = useCustomForm("Candidate");
-  const [user, setuser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const { handleRemoveFollowUp } = useRemarkHandlers(candidate, user, refetch);
+
   useEffect(() => {
     (async () => {
       const token = Cookies.get("token");
       if (token) {
         const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
         if (decryptedResponse.success && decryptedResponse.user) {
-          setuser(decryptedResponse.user);
+          setUser(decryptedResponse.user);
         }
       }
     })();
   }, []);
 
-  const { handleRemoveFollowUp } = useRemarkHandlers(candidate, user, refetch);
-  if (onDashboard) {
-    return (
-      <div className="bg-card border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow h-full">
-        <div className="flex flex-col items-start">
-          <div className="flex flex-row justify-between w-full">
-            <h3 className="font-medium w-2/3 text-wrap break-words">
-              {candidate.tags ? <TagsList candidate={candidate} /> : null}
-              {candidate.name}
-            </h3>
-            <div className="flex gap-1">
-              <AddRemarksPopover
-                candidate={candidate}
-                isOpen={openRemarks}
-                refetch={refetch}
-                setOpenRemarksFor={setOpenRemarksFor}
-                onOpenChange={(open) =>
-                  setOpenRemarksFor(open ? candidate._id : null)
-                }
-              />
-            </div>
-            <div className="flex gap-1">
-              <RemarksPopover
-                candidate={candidate}
-                onMoreClick={() => {
-                  onViewDetails(candidate);
-                }}
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onViewDetails(candidate);
-                }}
-              >
-                <Info className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+  const renderCardContent = () => (
+    <div className="flex flex-col h-full">
+      <div className="flex justify-between items-start">
+        <h3 className="font-medium w-2/5 text-wrap break-words">
+          {candidate.tags ? <TagsList candidate={candidate} /> : null}
+          {candidate.name}
+        </h3>
+        <div className="flex gap-1">
+          <AddRemarksPopover
+            candidate={candidate}
+            isOpen={openRemarks}
+            refetch={refetch}
+            setOpenRemarksFor={setOpenRemarksFor}
+            onOpenChange={(open) =>
+              setOpenRemarksFor(open ? candidate._id : null)
+            }
+          />
         </div>
-
-        {/* <div className="mt-2 ">
-          <div className="flex flex-row w-full justify-between items-center">
-            <p className="text-sm text-muted-foreground text-wrap break-words">
-              {candidate.experience} years • {candidate.location}
-            </p>
-            {candidate.followUp &&
-              candidate.followUp.date &&
-              candidate.followUp.date.length > 1 && (
-                <div className="flex justify-end">
-                  <FollowupDisplay
-                    note={candidate.followUp.note as string}
-                    date={new Date(candidate.followUp.date)}
-                  />
-                </div>
+        <div className="flex gap-1">
+          {!onDashboard && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`h-8 w-8 ${candidate.isDeleted ? "text-blue-500 hover:text-blue-500/90" : "text-destructive hover:text-destructive/90"}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDeleteClick?.(candidate._id);
+              }}
+            >
+              {candidate.isDeleted ? (
+                <ArchiveRestore className="h-4 w-4" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
               )}
-          </div>
-          <p className="mt-1 text-sm text-muted-foreground text-wrap break-words">
-            {candidate.expectedCTC} LPA
-          </p>
-        </div> */}
-        {/* <div className="mt-2 "> */}
-        <p className="mt-1 text-sm text-muted-foreground text-wrap break-words">
+            </Button>
+          )}
+          <RemarksPopover
+            candidate={candidate}
+            onMoreClick={() => onViewDetails(candidate)}
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewDetails(candidate);
+            }}
+          >
+            <Info className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      <div className="mt-2">
+        <p className="text-sm text-muted-foreground text-wrap break-words">
           {candidate.experience} years • {candidate.location}
         </p>
         <div className="flex flex-row w-full justify-between items-center">
           <p className="text-sm text-muted-foreground text-wrap break-words">
             {candidate.expectedCTC} LPA
           </p>
-        </div>
-        {/* </div> */}
-        <div className="mt-2 flex flex-wrap gap-1">
-          {candidate.skills.slice(0, 3).map((skill) => (
-            <Badge key={skill} variant="secondary" className="text-xs">
-              {skill}
-            </Badge>
-          ))}
-          {candidate.skills.length > 3 && (
-            <Badge variant="secondary" className="text-xs">
-              +{candidate.skills.length - 3}
-            </Badge>
-          )}
-        </div>
-
-        {/* <div className="mt-2 flex flex-wrap gap-1">
-          {candidate.skills.slice(0, 3).map((skill) => (
-            <Badge
-              key={skill}
-              variant="secondary"
-              className="text-xs max-w-[80px] overflow-hidden text-ellipsis whitespace-nowrap"
-            >
-              {skill}
-            </Badge>
-          ))}
-          {candidate.skills.length > 3 && (
-            <Badge variant="secondary" className="text-xs">
-              +{candidate.skills.length - 3}
-            </Badge>
-          )}
-        </div> */}
-
-        {candidate.assignment && (
-          <div className="capitalize flex gap-2 py-2">
-            <Badge>
-              {typeof candidate.assignment?.interviewerId === "object" &&
-                candidate.assignment?.interviewerId?.name}
-            </Badge>
-            {candidate.assignment?.time && (
-              <Badge>{candidate.assignment?.time.split("T")[0]}</Badge>
-            )}
-            {candidate.assignment?.time && (
-              <Badge>{formatTime(candidate.assignment?.time)} </Badge>
-            )}
-          </div>
-        )}
-        <div className="flex flex-row justify-between items-center w-full">
-          {/* <div className="capitalize flex gap-2 py-2 flex-wrap justify-start w-[60%]"> */}
-          {candidate.scores && candidate.scores.overall !== undefined ? (
-            <div
-              className={`capitalize flex gap-2 py-2 flex-wrap justify-start  ${candidate.followUp && candidate.followUp.note && "w-[60%]"}`}
-            >
-              {candidate.scores.overall >= 0 && (
-                <CandidateScoreBadge
-                  score={candidate.scores.overall}
-                  category="Overall"
-                />
-              )}
-              {candidate.scores.experience >= 0 && (
-                <CandidateScoreBadge
-                  score={candidate.scores.experience}
-                  category="Experience"
-                />
-              )}
-              {candidate.scores.skills >= 0 && (
-                <CandidateScoreBadge
-                  score={candidate.scores.skills}
-                  category="Skills"
-                />
-              )}
-              {candidate.scores.affordability >= 0 && (
-                <CandidateScoreBadge
-                  score={candidate.scores.affordability}
-                  category="Affordability"
-                />
-              )}
-            </div>
-          ) : (
-            <div></div>
-          )}
-          {/* </div> */}
           {candidate.followUp && candidate.followUp.note && (
-            // candidate.followUp.date.length > 1
-            // &&
             <div className="flex justify-end ml-2">
               <FollowupDisplay
                 note={candidate.followUp.note as string}
@@ -223,34 +132,88 @@ export function CandidateCard({
             </div>
           )}
         </div>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {candidate.customFields &&
-            Object.entries(candidate.customFields)
-              .filter(([key, value]) => {
-                const field = formNameObject?.fields.find(
-                  (f) => f.label === key
-                );
-                // if (field?.candidateId && field.candidateId !== candidate._id)
-                //   return false;
-                // if (!value || String(value).length === 0) return false;
-
-                // return field?.showOnCard && field.candidateId === candidate._id;
-                if (field?.candidateId && field.candidateId !== candidate._id) {
-                  return false;
-                }
-                return field?.showOnCard;
-              })
-              .map(([key, value], i) => (
-                <div key={i}>
-                  <CustomFieldBadge kii={key} value={value} />
-                </div>
-              ))}
-        </div>
       </div>
-    );
-  }
 
-  return (
+      <div className="mt-2 flex flex-wrap gap-1">
+        {candidate.skills.slice(0, 3).map((skill) => (
+          <Badge key={skill} variant="secondary" className="text-xs break-all">
+            {skill}
+          </Badge>
+        ))}
+        {candidate.skills.length > 3 && (
+          <Badge variant="secondary" className="text-xs">
+            +{candidate.skills.length - 3}
+          </Badge>
+        )}
+      </div>
+
+      {candidate.assignment && (
+        <div className="capitalize flex gap-2 py-2">
+          <Badge>
+            {typeof candidate.assignment?.interviewerId === "object" &&
+              candidate.assignment?.interviewerId?.name}
+          </Badge>
+          {candidate.assignment?.time && (
+            <Badge>{formatDate(candidate.assignment?.time)}</Badge>
+          )}
+          {candidate.assignment?.time && (
+            <Badge>{formatTime(candidate.assignment?.time)}</Badge>
+          )}
+        </div>
+      )}
+
+      {candidate.scores && candidate.scores.overall !== undefined && (
+        <div className="capitalize flex gap-2 py-2 flex-wrap justify-start">
+          {candidate.scores.overall >= 0 && (
+            <CandidateScoreBadge
+              score={candidate.scores.overall}
+              category="Overall"
+            />
+          )}
+          {candidate.scores.experience >= 0 && (
+            <CandidateScoreBadge
+              score={candidate.scores.experience}
+              category="Experience"
+            />
+          )}
+          {candidate.scores.skills >= 0 && (
+            <CandidateScoreBadge
+              score={candidate.scores.skills}
+              category="Skills"
+            />
+          )}
+          {candidate.scores.affordability >= 0 && (
+            <CandidateScoreBadge
+              score={candidate.scores.affordability}
+              category="Affordability"
+            />
+          )}
+        </div>
+      )}
+
+      <div className="mt-2 flex flex-wrap gap-2">
+        {candidate.customFields &&
+          Object.entries(candidate.customFields)
+            .filter(([key, value]) => {
+              const field = formNameObject?.fields.find((f) => f.label === key);
+              if (field?.candidateId && field.candidateId !== candidate._id)
+                return false;
+              return field?.showOnCard;
+            })
+            .map(([key, value], i) => (
+              <div key={i}>
+                <CustomFieldBadge kii={key} value={value} />
+              </div>
+            ))}
+      </div>
+    </div>
+  );
+
+  return onDashboard ? (
+    <div className="bg-card border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow h-full">
+      {renderCardContent()}
+    </div>
+  ) : (
     <Draggable draggableId={candidate._id} index={index}>
       {(provided: DraggableProvided) => (
         <div
@@ -259,203 +222,7 @@ export function CandidateCard({
           {...provided.dragHandleProps}
           className="bg-card border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow"
         >
-          <div className="flex justify-between items-start">
-            <h3 className="font-medium w-2/5 text-wrap break-words">
-              {candidate.tags ? <TagsList candidate={candidate} /> : null}
-              {candidate.name}
-            </h3>
-            <div className="flex gap-1">
-              <AddRemarksPopover
-                candidate={candidate}
-                isOpen={openRemarks}
-                refetch={refetch}
-                setOpenRemarksFor={setOpenRemarksFor}
-                onOpenChange={(open) =>
-                  setOpenRemarksFor(open ? candidate._id : null)
-                }
-              />
-            </div>
-
-            <div className="flex gap-1">
-              {!candidate.isDeleted ? (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-destructive hover:text-destructive/90"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDeleteClick?.(candidate._id);
-                  }}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              ) : (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-blue-500 hover:text-blue-500/90"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDeleteClick?.(candidate._id);
-                  }}
-                >
-                  <ArchiveRestore className="h-4 w-4" />
-                </Button>
-              )}
-              <RemarksPopover
-                candidate={candidate}
-                onMoreClick={() => {
-                  onViewDetails(candidate);
-                }}
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onViewDetails(candidate);
-                }}
-              >
-                <Info className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-          {/* <div className="mt-2 text-sm text-muted-foreground text-wrap break-words">
-            <p>
-              {candidate.experience} years • {candidate.location}
-            </p>
-            <p className="mt-1">{candidate.expectedCTC} LPA</p>
-          </div> */}
-          <div className="mt-2 ">
-            <p className="mt-1 text-sm text-muted-foreground text-wrap break-words">
-              {candidate.experience} years • {candidate.location}
-            </p>
-            <div className="flex flex-row w-full justify-between items-center">
-              <p className="text-sm text-muted-foreground text-wrap break-words">
-                {candidate.expectedCTC} LPA
-              </p>
-              {candidate.followUp && candidate.followUp.note && (
-                // candidate.followUp.date.length > 1
-                // &&
-                <div className="flex justify-end ml-2">
-                  <FollowupDisplay
-                    note={candidate.followUp.note as string}
-                    date={
-                      candidate.followUp.date &&
-                      candidate.followUp.date.length > 1
-                        ? new Date(candidate.followUp.date)
-                        : null
-                    }
-                    handleRemoveFollowUp={handleRemoveFollowUp}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-          <div className="mt-2 flex flex-wrap gap-1">
-            {candidate.skills.slice(0, 3).map((skill) => (
-              <Badge
-                key={skill}
-                variant="secondary"
-                className="text-xs break-all"
-              >
-                {skill}
-              </Badge>
-            ))}
-            {candidate.skills.length > 3 && (
-              <Badge variant="secondary" className="text-xs">
-                +{candidate.skills.length - 3}
-              </Badge>
-            )}
-          </div>
-
-          {candidate.assignment && (
-            <div className="capitalize flex gap-2 py-2">
-              <Badge>
-                {typeof candidate.assignment?.interviewerId === "object" &&
-                  candidate.assignment?.interviewerId?.name}
-              </Badge>
-              {candidate.assignment?.time && (
-                <Badge>{formatDate(candidate.assignment?.time)} </Badge>
-              )}
-              {candidate.assignment?.time && (
-                <Badge>{formatTime(candidate.assignment?.time)} </Badge>
-              )}
-            </div>
-          )}
-          {candidate.scores && candidate.scores.overall !== undefined && (
-            <div className="capitalize flex gap-2 py-2 flex-wrap justify-start">
-              {candidate.scores.overall >= 0 && (
-                <CandidateScoreBadge
-                  score={candidate.scores.overall}
-                  category="Overall"
-                />
-              )}
-              {candidate.scores.experience >= 0 && (
-                <CandidateScoreBadge
-                  score={candidate.scores.experience}
-                  category="Experience"
-                />
-              )}
-              {candidate.scores.skills >= 0 && (
-                <CandidateScoreBadge
-                  score={candidate.scores.skills}
-                  category="Skills"
-                />
-              )}
-              {candidate.scores.affordability >= 0 && (
-                <CandidateScoreBadge
-                  score={candidate.scores.affordability}
-                  category="Affordability"
-                />
-              )}
-            </div>
-          )}
-          <div className="mt-2 flex flex-wrap gap-2">
-            {candidate.customFields &&
-              Object.entries(candidate.customFields)
-                .filter(([key, value]) => {
-                  const field = formNameObject?.fields.find(
-                    (f) => f.label === key
-                  );
-                  if (field?.candidateId && field.candidateId !== candidate._id)
-                    return false;
-                  if (!value || String(value).length === 0) return false;
-                  return field?.showOnCard;
-                })
-                .map(([key, value], i) => (
-                  // <Badge
-                  //   key={i}
-                  //   variant="secondary"
-                  //   className="max-w-full inline-flex items-start gap-1 p-2 h-auto min-h-6"
-                  // >
-                  //   <span className="font-medium text-xs shrink-0 break-words hyphens-auto">
-                  //     {key}:
-                  //   </span>
-                  //   <span className="font-bold text-xs break-words hyphens-auto overflow-wrap-anywhere leading-tight">
-                  //     {String(value)}
-                  //   </span>
-                  // </Badge>
-                  // <Badge
-                  //   key={i}
-                  //   variant="secondary"
-                  //   className={`max-w-full flex break-words items-start gap-1 p-2 h-auto min-h-6 flex-col`}
-                  // >
-                  //   {/* <span className="font-medium text-xs shrink-0 w-4/5 break-words hyphens-auto">
-                  //         {key}:
-                  //       </span>
-                  //       <span className="font-bold text-xs  break-words hyphens-auto overflow-wrap-anywhere leading-tight">
-                  //         {String(value)}
-                  //       </span> */}
-                  //   <p className="text-[11px] font-thin text-gray-500">{key}</p>
-                  //   <p>{String(value)}</p>
-                  // </Badge>
-                  <div key={i}>
-                    <CustomFieldBadge kii={key} value={value} />
-                  </div>
-                ))}
-          </div>
+          {renderCardContent()}
         </div>
       )}
     </Draggable>
