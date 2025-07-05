@@ -24,11 +24,29 @@ import {
   DraggableStateSnapshot,
   DraggableProvidedDragHandleProps,
 } from "@hello-pangea/dnd";
+import { createPortal } from "react-dom";
 
 function CustomFieldList() {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedField, setSelectedField] = useState<CustomField>();
   const [orderedFields, setOrderedFields] = useState<CustomField[]>([]);
+
+  // Custom function to handle draggable styling
+  const getDraggableStyle = (isDragging: boolean, draggableStyle: any) => {
+    if (!isDragging) {
+      return draggableStyle;
+    }
+
+    return {
+      ...draggableStyle,
+      position: "fixed" as const,
+      top: draggableStyle?.top,
+      left: draggableStyle?.left,
+      // width: "40%",
+      zIndex: 9999,
+      outline: "none",
+    };
+  };
 
   const handleOpen = useCallback(() => {
     setIsOpen(true);
@@ -80,7 +98,11 @@ function CustomFieldList() {
             <div
               {...provided.droppableProps}
               ref={provided.innerRef}
-              className="w-full"
+              className="w-full space-y-2"
+              style={{
+                minHeight: "100px",
+                position: "relative",
+              }}
             >
               {orderedFields.map((field, index) => {
                 if (field.candidateId || field.jobId) return;
@@ -93,37 +115,47 @@ function CustomFieldList() {
                     {(
                       provided: DraggableProvided,
                       snapshot: DraggableStateSnapshot
-                    ) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        className="mb-2 w-full"
-                        style={{
-                          ...provided.draggableProps.style,
-                          left: 0,
-                          right: 0,
-                          width: "100%",
-                        }}
-                      >
-                        <CustomFieldItem
-                          field={field}
-                          dragHandleProps={provided.dragHandleProps}
-                          isDragging={snapshot.isDragging}
-                          handleEditCustomField={() => {
-                            setSelectedField(field);
-                            handleOpen();
-                          }}
-                          handleDeleteCustomField={() => {
-                            if (selectedFormId?.formId) {
-                              handleDeleteCustomField(
-                                field.id,
-                                selectedFormId.formId
-                              );
-                            }
-                          }}
-                        />
-                      </div>
-                    )}
+                    ) => {
+                      const child = (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          className="w-full"
+                          style={getDraggableStyle(
+                            snapshot.isDragging,
+                            provided.draggableProps.style
+                          )}
+                        >
+                          <CustomFieldItem
+                            field={field}
+                            dragHandleProps={provided.dragHandleProps}
+                            isDragging={snapshot.isDragging}
+                            handleEditCustomField={() => {
+                              setSelectedField(field);
+                              handleOpen();
+                            }}
+                            handleDeleteCustomField={() => {
+                              if (selectedFormId?.formId) {
+                                handleDeleteCustomField(
+                                  field.id,
+                                  selectedFormId.formId
+                                );
+                              }
+                            }}
+                          />
+                        </div>
+                      );
+
+                      // Use portal for dragging elements to avoid clipping and render directly on the document.body
+                      if (
+                        snapshot.isDragging &&
+                        typeof window !== "undefined"
+                      ) {
+                        return createPortal(child, document.body);
+                      }
+
+                      return child;
+                    }}
                   </Draggable>
                 );
               })}

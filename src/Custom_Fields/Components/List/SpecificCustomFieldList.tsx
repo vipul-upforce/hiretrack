@@ -94,9 +94,10 @@ function SpecificCustomFieldList({
       position: "fixed" as const,
       top: draggableStyle?.top,
       left: draggableStyle?.left,
-      width: "50%",
+      //   width: "50%",
       zIndex: 9999,
       outline: "none",
+      border: "none",
     };
   };
 
