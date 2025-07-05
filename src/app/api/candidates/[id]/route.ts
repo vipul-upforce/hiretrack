@@ -13,6 +13,7 @@ import { Attachment } from "../route";
 import { IinfoUpdateLog } from "@/lib/models/history";
 import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
 import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
+import { ITag } from "@/lib/models/organization";
 
 interface UpdateObject {
   $set: Record<string, unknown>;
@@ -99,6 +100,22 @@ export async function PUT(
           previousValue: existingCandidate.resume,
           currentValue: data.resume,
           attachments: [data.resume],
+        });
+      }
+    }
+
+    if (data.tags) {
+      if (
+        JSON.stringify(existingCandidate.tags) !== JSON.stringify(data.tags)
+      ) {
+        const existingCandidateTagsStr = existingCandidate.tags
+          ?.map((tag) => tag.title)
+          .join(", ");
+        const dataTagsStr = data.tags?.map((tag: ITag) => tag.title).join(", ");
+        updates.push({
+          title: "Updated Tags",
+          previousValue: existingCandidateTagsStr,
+          currentValue: dataTagsStr,
         });
       }
     }
@@ -421,7 +438,12 @@ export async function PUT(
           }
         });
       }
-      if (key in data && key !== "resume" && key !== "customFields") {
+      if (
+        key in data &&
+        key !== "resume" &&
+        key !== "customFields" &&
+        key !== "tags"
+      ) {
         if (
           (key === "currentCTC" || key === "expectedCTC") &&
           userData.role &&
