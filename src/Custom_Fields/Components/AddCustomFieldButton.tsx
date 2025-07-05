@@ -30,7 +30,7 @@ function AddCustomFields() {
         onClick={onClick}
       >
         <CardHeader>
-          <CardTitle>Add Meta Fields</CardTitle>
+          <CardTitle>Meta Field</CardTitle>
         </CardHeader>
         <CardContent>Update the meta fields for your organization</CardContent>
       </Card>

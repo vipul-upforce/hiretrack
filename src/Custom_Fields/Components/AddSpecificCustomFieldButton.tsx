@@ -37,7 +37,7 @@ export function AddSpecificCustomFieldButton({
       <CustomFieldDialog
         isOpen={isOpen}
         onClose={handleClose}
-        title="Add Meta Field"
+        title="Meta Fields"
       >
         {/* <AddSpecificCustomFieldForm
           handleClose={handleClose}

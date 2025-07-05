@@ -220,16 +220,16 @@ export const CustomFieldItem = React.memo(
                   <CardTitle className="capitalize">{field.label}</CardTitle>
                 </div>
                 <div className="flex gap-2">
-                  {/* {field.jobId ? (
+                  {field.jobId ? (
                     <Badge variant="secondary" className="rounded-full">
                       Job Specific
                     </Badge>
-                  ) : null} */}
-                  {/* {field.candidateId ? (
+                  ) : null}
+                  {field.candidateId ? (
                     <Badge variant="secondary" className="rounded-full">
                       Candidate Specific
                     </Badge>
-                  ) : null} */}
+                  ) : null}
                   <Button
                     variant="ghost"
                     size="sm"

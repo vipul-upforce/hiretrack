@@ -112,16 +112,16 @@ function SpecificCustomFieldList({
     );
   }
 
-  const filteredFields = orderedFields.filter(
-    (field) => field.jobId === jobId && field.candidateId === candidateId
-  );
+  //   const filteredFields = orderedFields.filter(
+  //     (field) => field.jobId === jobId && field.candidateId === candidateId
+  //   );
 
   return (
     <div className="relative w-full">
       <div className="mb-4 flex justify-end">
         <Button onClick={handleAddField}>
           <Plus className="w-4 h-4 mr-2" />
-          Add Meta Field
+          Add More Meta Fields
         </Button>
       </div>
 
@@ -139,8 +139,8 @@ function SpecificCustomFieldList({
             >
               {orderedFields.map((field, index) => {
                 if (
-                  field.jobId !== jobId ||
-                  field.candidateId !== candidateId
+                  (field.jobId && field.jobId !== jobId) ||
+                  (field.candidateId && field.candidateId !== candidateId)
                 ) {
                   return null;
                 }
@@ -199,7 +199,7 @@ function SpecificCustomFieldList({
                 );
               })}
 
-              {filteredFields.length === 0 && (
+              {orderedFields.length === 0 && (
                 <div className="w-full flex items-center justify-center py-8 text-muted-foreground">
                   No Meta fields
                 </div>
