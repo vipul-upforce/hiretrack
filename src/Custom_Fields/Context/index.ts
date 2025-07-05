@@ -32,6 +32,7 @@ export type CustomFieldsContextType = {
   userLoggedIn: boolean;
   setUserLoggedIn: (user: boolean) => void;
   setSelectedFormId: Dispatch<SetStateAction<SelectedFormObject | null>>;
+  // postCustomFields: () => void;
 };
 
 // Create the context
@@ -52,4 +53,5 @@ export const CustomFieldsContext = createContext<CustomFieldsContextType>({
   userLoggedIn: false,
   setUserLoggedIn: () => {},
   setSelectedFormId: () => {},
+  // postCustomFields: () => {},
 });

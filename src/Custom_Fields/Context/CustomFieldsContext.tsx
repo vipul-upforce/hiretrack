@@ -42,11 +42,11 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
     // const searchParams = useSearchParams();
 
     const postCustomFields = useCallback(async () => {
+      // debugger;
       const token = Cookies.get("token");
       if (
-        token &&
-        // pathname?.includes("jobs-board") ||
-        // pathname?.includes("jobs") ||
+        (token && pathname?.includes("jobs-board")) ||
+        pathname?.includes("jobs") ||
         pathname?.includes("settings")
       ) {
         const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
@@ -87,6 +87,7 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
     }, [getCustomField, getCustomFieldsByOrgName, pathname]);
 
     const getAndSetCustomFields = useCallback(async () => {
+      // debugger;
       if (Object.keys(customFields).length === 0) {
         await getCustomFields();
       } else {
@@ -95,7 +96,9 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
     }, [customFields, userLoggedIn, getCustomFields, postCustomFields]);
 
     useEffect(() => {
+      // debugger;
       const isApplyJobsPage = pathname?.includes("/apply-jobs");
+      // const isJobsPage = pathname?.includes("/dashboard/jobs-board");
 
       if (userLoggedIn || isApplyJobsPage) {
         getAndSetCustomFields();
@@ -274,6 +277,7 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
           userLoggedIn,
           setUserLoggedIn,
           setSelectedFormId,
+          // postCustomFields,
         }}
       >
         {children}

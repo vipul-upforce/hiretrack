@@ -16,6 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { fieldTypes } from "@/Custom_Fields/utils";
 import { validationSchema } from "@/Custom_Fields/utils/validations";
+// import { CustomFieldsContext } from "../Context";
 
 interface JobCandidateCustomFieldFormProps {
   handleClose: () => void;
@@ -31,6 +32,8 @@ export const AddSpecificCustomFieldForm = memo(
     jobId,
     candidateId,
   }: JobCandidateCustomFieldFormProps) => {
+    // const { handleAddCustomField, handleEditCustomField, selectedFormId } =
+    //   useContext(CustomFieldsContext);
     const initialValues: CustomField = {
       id: "",
       label: "",
@@ -48,6 +51,7 @@ export const AddSpecificCustomFieldForm = memo(
         values: CustomField,
         { resetForm }: FormikHelpers<CustomField>
       ) => {
+        // debugger;
         try {
           const fieldData = {
             ...values,
@@ -56,6 +60,7 @@ export const AddSpecificCustomFieldForm = memo(
             candidateId,
           };
           onSave(fieldData);
+          // handleAddCustomField(fieldData, selectedFormId?.formId || null);
           handleClose();
           resetForm();
         } catch (error: unknown) {

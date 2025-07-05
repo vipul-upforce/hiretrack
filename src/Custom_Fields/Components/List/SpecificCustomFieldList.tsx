@@ -45,6 +45,7 @@ function SpecificCustomFieldList({
     setCustomFields,
     customFields,
     handleAddCustomField,
+    // postCustomFields,
   } = useContext(CustomFieldsContext);
 
   // Initialize orderedFields when selectedFormId changes
@@ -77,6 +78,7 @@ function SpecificCustomFieldList({
   const handleSave = (newField: CustomField) => {
     handleAddCustomField(newField, selectedFormId?.formId || "");
     setIsOpen(false);
+    // postCustomFields()
   };
   if (formOpen) {
     return (
