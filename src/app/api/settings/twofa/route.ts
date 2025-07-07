@@ -7,6 +7,10 @@ export async function GET(req: NextRequest) {
     await dbConnect();
     let organizationId = "";
     const token = req.cookies.get("token");
+    if (!token) {
+      const url = new URL(req.url);
+      organizationId = url.searchParams?.get("orgId") || "";
+    }
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
         String(token?.value)
@@ -36,6 +40,8 @@ export async function GET(req: NextRequest) {
     //     { status: 403 }
     //   );
     // }
+
+    console.log("ORGIDDATA: ", organizationId);
 
     const settings = await Settings.findOne({
       // organizationId: userData.organizationId,
