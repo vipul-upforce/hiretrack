@@ -65,6 +65,11 @@ function Settings() {
       key: "tags",
       description: "Manage the tags for candidates.",
     },
+    {
+      title: "Two Factor Authentication",
+      key: "twoFA",
+      description: "Enable Two Factor Authentication for Your Organization.",
+    },
   ];
 
   return (

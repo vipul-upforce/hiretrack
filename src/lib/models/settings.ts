@@ -83,6 +83,12 @@ const settingsSchema = new Schema({
     of: templateSchema,
     default: new Map(),
   },
+  twoFA: {
+    enable2FA: {
+      type: Boolean,
+      default: false,
+    },
+  },
 });
 
 export interface ISettings {
@@ -102,6 +108,7 @@ export interface ISettings {
     offset: string;
   };
   emailTemplates: { [key: string]: IEmailTemplate };
+  twoFA?: ITwoFA;
 }
 
 export interface Ismtp {
@@ -132,6 +139,9 @@ export interface Ifs {
 
 export interface IGemini {
   gemini_key: string;
+}
+export interface ITwoFA {
+  enable2FA: boolean;
 }
 
 export interface SettingsDocument extends Document, ISettings {}

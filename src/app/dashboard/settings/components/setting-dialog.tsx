@@ -20,6 +20,7 @@ import ManageTagsDialog from "../../jobs/[id]/components/Dialogs/manage-tags-dia
 import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import twoFASettings from "./twofa-setting";
 export interface SettingComponentProps {
   onClose: () => void;
   isOpen?: boolean;
@@ -40,6 +41,7 @@ const settingComponents: Record<
   templates: EmailTemplateEditor,
   logs: LogsDialog,
   tags: ManageTagsDialog,
+  twoFA: twoFASettings,
 };
 
 const SettingDialog = ({
