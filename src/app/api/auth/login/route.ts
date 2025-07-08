@@ -403,7 +403,7 @@ const checkMultipleOrgs = async (
 
       const tokenObj = {
         id: candidateInOrg._id.toString(),
-        name: candidateInOrg.email,
+        name: candidateInOrg.name,
         email: candidateInOrg.email,
         appliedApplications: candidateInOrg.appliedApplications,
         role: "candidate",

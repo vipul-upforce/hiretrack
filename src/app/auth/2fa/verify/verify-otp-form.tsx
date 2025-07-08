@@ -42,8 +42,8 @@ export default function VerifyOtpForm() {
       });
 
       if (response.ok) {
-        const { token } = await response.json();
-        Cookies.set("token", token, { expires: 30 });
+        const { user } = await response.json();
+        Cookies.set("token", user, { expires: 30 });
         toast({ title: "Success", description: "Login successful" });
         router.push("/dashboard");
       } else {
