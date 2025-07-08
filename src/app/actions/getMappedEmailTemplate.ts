@@ -14,7 +14,7 @@ export async function getMappedEmailTemplate(
   if (!settings || !settings.emailTemplates) {
     return {
       emailContent: loadTemplate(templateKey, variables),
-      emailSubject: defaultTemplates[templateKey].subject,
+      emailSubject: defaultTemplates[templateKey]?.subject,
     }; //If null then return the static HTML
   }
 

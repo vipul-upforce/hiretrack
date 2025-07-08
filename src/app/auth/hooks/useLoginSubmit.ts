@@ -123,9 +123,7 @@ export const useHandleLoginSubmit = ({
             `/api/settings/twofa?orgId=${decryptedResponse.user.organizationId}`
           );
           const data = await check2FA.json();
-          console.log(check2FA);
           is2FAEnabled = data.twoFA.enable2FA;
-          console.log("data: ", data);
           if (!check2FA.ok) {
             throw new Error("Failed to fetch 2FA info");
           }
@@ -150,9 +148,7 @@ export const useHandleLoginSubmit = ({
                 organizationId: decryptedResponse.user.organizationId,
               }),
             });
-            const data = await otpResponse.json();
-            console.log(otpResponse);
-            console.log("data: ", data);
+            // const data = await otpResponse.json();
             if (!otpResponse.ok) {
               throw new Error("Failed to send OTP");
             }
@@ -163,7 +159,7 @@ export const useHandleLoginSubmit = ({
               variant: "default",
             });
             router.push(
-              `/auth/2fa/verify?email=${values.email.toLowerCase().trim()}`
+              `/auth/2fa/verify?email=${values.email.toLowerCase().trim()}&orgId=${decryptedResponse.user.organizationId}`
             );
           } catch (error) {
             console.error(error);

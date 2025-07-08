@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,20 @@ export default function VerifyOtpForm() {
   const { toast } = useToast();
   const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [cooldownSeconds, setCooldownSeconds] = useState(60);
   const email = searchParams?.get("email");
+  const organizationId = searchParams?.get("orgId");
+
+  // Countdown timer effect
+  useEffect(() => {
+    if (cooldownSeconds <= 0) return;
+
+    const timer = setInterval(() => {
+      setCooldownSeconds((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [cooldownSeconds]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,7 +43,6 @@ export default function VerifyOtpForm() {
 
       if (response.ok) {
         const { token } = await response.json();
-        console.log("TOKEN RECEIVED: ", token);
         Cookies.set("token", token, { expires: 30 });
         toast({ title: "Success", description: "Login successful" });
         router.push("/dashboard");
@@ -47,6 +59,49 @@ export default function VerifyOtpForm() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleResendOtp = async () => {
+    if (!email) {
+      toast({
+        title: "Error",
+        description: "Email missing",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/auth/2fa/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, organizationId }),
+      });
+
+      if (response.ok) {
+        toast({ title: "Success", description: "New OTP sent" });
+        setCooldownSeconds(60); // Reset cooldown to 1 minute
+      } else {
+        const { message } = await response.json();
+        toast({ title: "Error", description: message, variant: "destructive" });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to resend OTP",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Format countdown timer
+  const formatCooldown = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${minutes}:${secs.toString().padStart(2, "0")}`;
   };
 
   return (
@@ -72,6 +127,22 @@ export default function VerifyOtpForm() {
               {isLoading ? "Verifying..." : "Verify"}
             </Button>
           </form>
+          <div className="mt-4 text-center">
+            {cooldownSeconds > 0 ? (
+              <p>
+                Please wait {formatCooldown(cooldownSeconds)} before requesting
+                a new OTP
+              </p>
+            ) : (
+              <Button
+                variant="link"
+                onClick={handleResendOtp}
+                disabled={isLoading}
+              >
+                Resend OTP
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>
