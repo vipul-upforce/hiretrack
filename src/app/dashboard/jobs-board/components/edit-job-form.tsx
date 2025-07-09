@@ -15,6 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AddSpecificCustomFieldButton } from "@/Custom_Fields/Components/AddSpecificCustomFieldButton";
 import { CustomFieldsContext } from "@/Custom_Fields/Context";
 import { useContext, useEffect } from "react";
+
 interface Job {
   _id: string;
   title: string;
@@ -333,7 +334,7 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
                 onClick={() => scrollToError(errors)}
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Saving..." : "Save Changes"}
+                {isSubmitting ? "Saving..." : "Create Job"}
               </Button>
             </div>
           </div>

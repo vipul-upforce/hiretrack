@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import fs from "fs";
+// import path from "path"; 
 
 export async function GET() {
   console.log(process.platform);
@@ -7,7 +8,7 @@ export async function GET() {
     const logDir = "/var/log/nginx";
     try {
       const files = fs.readdirSync(logDir);
-      // console.log(files);
+      console.log(files, "nginx");
       const filteredFiles = files.filter((file) => !file.endsWith(".gz"));
       return NextResponse.json({ files: filteredFiles });
     } catch (error) {
@@ -18,10 +19,11 @@ export async function GET() {
       );
     }
   } else {
-    const logDir = "/Users/Upforce/Documents/hiretrack-latest";
+    // const logDir = "/Users/Upforce/Documents/hiretrack-latest";
+    const logDir = "/Users/UpforceTech/hiretrack";
     try {
       const files = fs.readdirSync(logDir);
-      // console.log(files);
+      console.log(files, "nginx");
       const filteredFiles = files.filter(
         (file) => !file.endsWith(".tsbuildinfo")
       );
