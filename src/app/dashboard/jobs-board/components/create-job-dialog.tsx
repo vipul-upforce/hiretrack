@@ -3,6 +3,7 @@
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -48,6 +49,37 @@ interface CreateJobDialogProps {
   userRole?: string;
 }
 
+
+export const scrollToError = (errors: Record<string, any>) => {
+  if (!errors || typeof errors !== "object") return;
+
+  const findFirstKey = (obj: Record<string, any>, prefix = ""): string | null => {
+    for (const key in obj) {
+      if (typeof obj[key] === "string") {
+        return prefix ? `${prefix}.${key}` : key;
+      } else if (typeof obj[key] === "object") {
+        const nested = findFirstKey(obj[key], prefix ? `${prefix}.${key}` : key);
+        if (nested) return nested;
+      }
+    }
+    return null;
+  };
+
+  const firstErrorKey = findFirstKey(errors);
+  if (!firstErrorKey) return;
+
+  // Replace dots with escaped selector for nested names (e.g., customFields.name)
+  const selector = `[name="${firstErrorKey}"], [title="${firstErrorKey}"]`;
+
+  const element = document.querySelector(selector) as HTMLElement;
+
+  if (element) {
+    element.scrollIntoView({ behavior: "smooth", block: "center" });
+    element.focus?.({ preventScroll: true });
+  }
+};
+
+
 export function CreateJobDialog({
   onJobCreated,
   userRole,
@@ -88,6 +120,9 @@ export function CreateJobDialog({
     values: JobFormValues,
     { resetForm, setSubmitting }: FormikHelpers<JobFormValues>
   ) => {
+    console.log(values);
+
+
     const fileNames = values.files.map((file) => file.name);
     const hasDuplicates = new Set(fileNames).size !== fileNames.length;
 
@@ -167,7 +202,7 @@ export function CreateJobDialog({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="mb-4">
+        <Button className="">
           <Plus className="h-4 w-4 mr-2" />
           Create Job
         </Button>
@@ -177,6 +212,9 @@ export function CreateJobDialog({
           <DialogTitle className="text-lg font-semibold">
             Create New Job Position
           </DialogTitle>
+          <DialogDescription>
+            Fill out the form below to create a new job listing.
+          </DialogDescription>
         </DialogHeader>
         <Formik
           initialValues={initialValues as JobFormValues}
@@ -199,19 +237,18 @@ export function CreateJobDialog({
                 </Button>
                 <Button
                   type="submit"
-                  disabled={
-                    isSubmitting ||
-                    Object.keys(errors).length > 0 ||
-                    Object.keys(touched).length === 0
-                  }
+                  onClick={() => scrollToError(errors)}
+                  disabled={isSubmitting}
                 >
                   {isSubmitting ? "Saving..." : "Create Job"}
                 </Button>
+
               </div>
+
             </Form>
           )}
         </Formik>
       </DialogContent>
-    </Dialog>
+    </Dialog >
   );
 }

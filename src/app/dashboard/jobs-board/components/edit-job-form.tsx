@@ -1,6 +1,6 @@
 "use client";
 
-import { Formik, Form } from "formik";
+import { Formik, Form, FormikErrors } from "formik";
 import { jobSchema } from "../schemas/job-schema";
 import { JobForm } from "./job-form";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AddSpecificCustomFieldButton } from "@/Custom_Fields/Components/AddSpecificCustomFieldButton";
 import { CustomFieldsContext } from "@/Custom_Fields/Context";
 import { useContext, useEffect } from "react";
-
 interface Job {
   _id: string;
   title: string;
@@ -88,12 +87,12 @@ interface JobFormValues extends Omit<Job, "attachments"> {
 type FileOrAttachment =
   | File
   | {
-      id: string;
-      name: string;
-      url: string;
-      type: "pdf" | "image";
-      size: number;
-    };
+    id: string;
+    name: string;
+    url: string;
+    type: "pdf" | "image";
+    size: number;
+  };
 
 const convertFileToBase64 = (file: FileOrAttachment): Promise<string> => {
   if (file instanceof File) {
@@ -107,6 +106,35 @@ const convertFileToBase64 = (file: FileOrAttachment): Promise<string> => {
   return Promise.resolve(file.url);
 };
 
+
+export const scrollToError = (errors: FormikErrors<any>) => {
+  if (!errors || Object.keys(errors).length === 0) return;
+
+  const firstErrorKey = Object.keys(errors)[0];
+  if (!firstErrorKey) return;
+
+  let element: HTMLElement | null = null;
+
+  if (firstErrorKey === 'customFields' && errors.customFields) {
+    // Handle nested customFields errors
+    const customFieldErrors = errors.customFields as Record<string, string>;
+    const cfKey = Object.keys(customFieldErrors)[0];
+    if (cfKey) {
+      // Use name attribute for Formik fields
+      element = document.querySelector(`[name="customFields.${cfKey}"]`) as HTMLElement;
+    }
+  } else {
+    // Use name attribute for top-level fields
+    element = document.querySelector(`[name="${firstErrorKey}"]`) as HTMLElement;
+  }
+
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    element.focus({ preventScroll: true });
+  } else {
+    console.warn(`No element found for error key: ${firstErrorKey}`);
+  }
+};
 export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
   const formName = "Job Position";
   const { validationSchema, getDefaultValues } = useCustomForm(formName);
@@ -293,10 +321,17 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
               <Button type="button" variant="outline" onClick={onCancel}>
                 Cancel
               </Button>
-
+              {/* 
               <Button
                 type="submit"
                 disabled={isSubmitting || Object.keys(errors).length > 0}
+              >
+                {isSubmitting ? "Saving..." : "Save Changes"}
+              </Button> */}
+              <Button
+                type="submit"
+                onClick={() => scrollToError(errors)}
+                disabled={isSubmitting}
               >
                 {isSubmitting ? "Saving..." : "Save Changes"}
               </Button>

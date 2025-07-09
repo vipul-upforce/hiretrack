@@ -32,6 +32,7 @@ import EditLaneDialog from "./components/Lanes/edit-lane-dialog";
 import { useSSE } from "@/hooks/useSSE";
 import { mergeRefs } from "react-merge-refs";
 import { Skeleton } from "@/components/ui/skeleton";
+// import CandidatesPage from "./CandidatesPage";
 
 export default function JobProgressPage() {
   const id = useParams()?.id as string;
@@ -259,6 +260,7 @@ export default function JobProgressPage() {
               </div>
             </CardHeader>
           </Card>
+
           <DragDropContext
             onDragStart={() => setIsDndDragging(true)}
             onDragEnd={(result: any) => {
@@ -299,18 +301,20 @@ export default function JobProgressPage() {
       />
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="line-clamp-2 mr-2">
+        <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-4">
+          {/* Title */}
+          <CardTitle className="line-clamp-2 md:mr-2 text-lg">
             Candidates for {job?.title}
           </CardTitle>
-          <div className="flex items-center space-x-4">
+
+          {/* Right Section */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 sm:gap-4">
+            {/* Show Archived */}
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="showArchived"
                 checked={showArchived}
-                onCheckedChange={(checked) =>
-                  setShowArchived(checked as boolean)
-                }
+                onCheckedChange={(checked) => setShowArchived(checked as boolean)}
               />
               <label
                 htmlFor="showArchived"
@@ -319,7 +323,9 @@ export default function JobProgressPage() {
                 Show Archived
               </label>
             </div>
-            <div className="flex space-x-2">
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-2">
               <CreateLaneDialog onAddLane={handleAddLane} />
               <CreateCandidateDialog
                 jobId={id as string}
@@ -332,6 +338,7 @@ export default function JobProgressPage() {
         </CardHeader>
       </Card>
 
+      {/* <CandidatesPage /> */}
       <DragDropContext
         onDragStart={() => setIsDndDragging(true)}
         onDragEnd={(result: any) => {
@@ -348,7 +355,7 @@ export default function JobProgressPage() {
             <div
               {...provided.droppableProps}
               ref={mergeRefs([provided.innerRef, scrollRef])}
-              className="grid grid-flow-col flex flex-row justify-start overflow-x-scroll pb-4 z-0"
+              className="grid grid-flow-col  flex-row justify-start overflow-x-scroll pb-4 z-0"
             >
               {columns.map((column, index) => (
                 <KanbanColumn

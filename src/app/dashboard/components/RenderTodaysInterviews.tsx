@@ -73,8 +73,8 @@ export const RenderTodaysInterviews = ({
                     <p className="text-sm font-medium">
                       {assignment.assignment.time
                         ? formatDate(
-                            assignment.assignment.time.toLocaleString()
-                          )
+                          assignment.assignment.time.toLocaleString()
+                        )
                         : "N/A"}
                     </p>
                   </div>
@@ -87,8 +87,8 @@ export const RenderTodaysInterviews = ({
                     <p className="text-sm font-medium">
                       {assignment.assignment.time
                         ? formatTime(
-                            assignment.assignment.time.toLocaleString()
-                          )
+                          assignment.assignment.time.toLocaleString()
+                        )
                         : "N/A"}
                     </p>
                   </div>
