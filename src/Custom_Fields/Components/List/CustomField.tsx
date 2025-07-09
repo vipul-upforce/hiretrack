@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
 import { CustomFieldsContext } from "../../Context";
 import React, { useCallback, useContext, useState } from "react";
 import Breadcrumbs from "../Breadcrums";
@@ -20,7 +19,7 @@ function FormCustomFieldList() {
 
   const breadcrumbs = [
     <div key="custom-fields" onClick={() => setStepName("FormList")}>
-      Meta Fields
+      Global Meta Fields
     </div>,
     <div key={selectedFormId?.formName}>{selectedFormId?.formName}</div>,
   ];
@@ -33,7 +32,7 @@ function FormCustomFieldList() {
           <Plus />
         </Button>
       </div>
-      <Separator className="mt-4" />
+      {/* <Separator className="my-4" /> */}
       <CustomFieldForm isOpen={isOpen} handleClose={handleClose} />
       <CustomFieldList />
     </div>

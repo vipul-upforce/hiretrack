@@ -1,9 +1,8 @@
-// import { Button } from "@/components/ui/button";
-import AddFormID from "../Form/AddFormID";
-import { CustomFieldsContext } from "../../Context";
 import React, { useContext, useState } from "react";
+import { CustomFieldsContext } from "../../Context";
+import AddFormID from "../Form/AddFormID";
 import FormIDCard from "../Form/FormCard";
-// import { Separator } from "@/components/ui/separator";
+
 function CustomFieldFormList() {
   const { customFields } = useContext(CustomFieldsContext);
   const [isOpen, setIsOpen] = useState(false);
@@ -24,14 +23,22 @@ function CustomFieldFormList() {
       <AddFormID isOpen={isOpen} setIsOpen={setIsOpen} />
 
       <div className="flex flex-col py-4 gap-4">
-        {Object.entries(customFields).map(([formId, form]) => (
-          <FormIDCard
-            key={formId}
-            formId={formId}
-            formName={form.formName}
-            fields={form.fields}
-          />
-        ))}
+        {Object.entries(customFields).map(([formId, form]) => {
+          const fields = form.fields.filter(
+            (field) => !field.candidateId && !field.jobId
+          );
+          return (
+            <FormIDCard
+              key={formId}
+              formId={formId}
+              formName={form.formName}
+              fields={fields}
+            />
+          );
+        })}
+        {Object.keys(customFields).length === 0 && (
+          <div>No forms available</div>
+        )}
       </div>
     </div>
   );

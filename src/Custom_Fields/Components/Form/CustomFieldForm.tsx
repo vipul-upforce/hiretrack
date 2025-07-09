@@ -11,6 +11,15 @@ import {
   CustomField,
   CustomFieldFormProps,
 } from "@/Custom_Fields/Types/CustomField";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import CustomFieldDialog from "../Common/CustomFieldDialog";
 import { toast } from "@/Custom_Fields/hooks/use-toast";
 import { CustomFieldsContext } from "@/Custom_Fields/Context";
@@ -21,12 +30,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { fieldTypes } from "@/Custom_Fields/utils";
 import { validationSchema } from "@/Custom_Fields/utils/validations";
+import { Link } from "@mui/material";
+import { ArrowUpRightFromSquare } from "lucide-react";
 
 const CustomFieldForm = memo(
   ({ isOpen, handleClose, initialValue }: CustomFieldFormProps) => {
     const { handleAddCustomField, handleEditCustomField, selectedFormId } =
       useContext(CustomFieldsContext);
-
+    const [duplicationAlert, setDuplicationAlert] = useState<boolean>(false);
     const [initialValues, setInitialValues] = useState<CustomField>({
       id: "",
       label: "",
@@ -38,6 +49,8 @@ const CustomFieldForm = memo(
       private: false,
       showOnCard: false,
     });
+    const [candidateURL, setCandidateURL] = useState<string | null>(null);
+    const [jobURL, setJobURL] = useState<string | null>(null);
 
     useEffect(() => {
       if (initialValue) {
@@ -50,6 +63,41 @@ const CustomFieldForm = memo(
         values: CustomField,
         { resetForm }: FormikHelpers<CustomField>
       ) => {
+        const hasDuplicate = selectedFormId?.fields.some((field) => {
+          if (
+            // !field.jobId &&
+            // !field.candidateId &&
+            field.label === values.label
+          ) {
+            if (field.candidateId) {
+              setCandidateURL(`/candidate/${field.candidateId}`);
+            }
+            if (field.jobId) {
+              setJobURL(`/dashboard/jobs/${field.jobId}`);
+            }
+
+            return true;
+          }
+        });
+        const hasGlobalDuplicate = selectedFormId?.fields.some((field) => {
+          if (
+            !field.jobId &&
+            !field.candidateId &&
+            field.label === values.label
+          ) {
+            return true;
+          }
+        });
+        if (hasGlobalDuplicate) {
+          setCandidateURL(null);
+          setJobURL(null);
+          setDuplicationAlert(true);
+          return;
+        }
+        if (hasDuplicate) {
+          setDuplicationAlert(true);
+          return;
+        }
         try {
           if (initialValue) {
             handleEditCustomField(
@@ -128,12 +176,59 @@ const CustomFieldForm = memo(
         setFieldValue("defaultValue", value);
       }
     };
-
+    if (duplicationAlert) {
+      return (
+        <AlertDialog open={duplicationAlert} onOpenChange={setDuplicationAlert}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Duplication Alert</AlertDialogTitle>
+              <AlertDialogDescription>
+                <>
+                  This action was not completed because a field already exists
+                  in{" "}
+                  {jobURL ? (
+                    <Link
+                      href={jobURL}
+                      target="_blank"
+                      className="flex flex-row items-center"
+                    >
+                      this job form.
+                      <ArrowUpRightFromSquare className="ml-1" size={13} />
+                    </Link>
+                  ) : candidateURL ? (
+                    <Link
+                      href={candidateURL}
+                      target="_blank"
+                      className="flex flex-row items-center"
+                    >
+                      this candidate form.{" "}
+                      <ArrowUpRightFromSquare className="ml-1" size={13} />
+                    </Link>
+                  ) : (
+                    "global meta fields."
+                  )}
+                </>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogAction
+                onClick={() => setDuplicationAlert(false)}
+                className={
+                  "text-blue-500 bg-blue hover:bg-blue hover:text-blue-500/90"
+                }
+              >
+                {"Okay"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      );
+    }
     return (
       <CustomFieldDialog
         isOpen={isOpen}
         onClose={handleClose}
-        title="Meta Field"
+        title="Global Meta Fields"
         regular
       >
         <Formik
