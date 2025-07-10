@@ -46,6 +46,12 @@ export const settingsApi = createApi({
         method: "GET",
       }),
     }),
+    get2FAConfigs: builder.query({
+      query: () => ({
+        url: `/settings/twofa`,
+        method: "GET",
+      }),
+    }),
     getTimeZone: builder.query({
       query: () => ({
         url: `/settings/timezone`,
@@ -85,6 +91,14 @@ export const settingsApi = createApi({
         url: "/settings/gemini",
         method: "PUT",
         body: genimiConfig,
+      }),
+      invalidatesTags: ["Settings"],
+    }),
+    update2FA: builder.mutation({
+      query: (twoFAConfig) => ({
+        url: "/settings/twofa",
+        method: "PUT",
+        body: twoFAConfig,
       }),
       invalidatesTags: ["Settings"],
     }),
@@ -159,13 +173,15 @@ export const {
   useUpdatePortalConfigsMutation,
   useTestConnectionMutation,
   useGetGeminiConfigsQuery,
-  useGetTimeZoneQuery,
+  useGet2FAConfigsQuery,
   useUpdateGeminiMutation,
+  useGetTimeZoneQuery,
+  useUpdate2FAMutation,
   useUpdateTimeZoneMutation,
   useUpdateMultipleOrgMutation,
   useGetMultipleOrgConfigsQuery,
   useGetMailTemplatesQuery,
-  useUpdateMailTemplatesMutation
+  useUpdateMailTemplatesMutation,
 } = settingsApi;
 
 // Export types for use in components

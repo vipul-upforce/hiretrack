@@ -108,20 +108,83 @@ export const useHandleLoginSubmit = ({
           String(response.user)
         );
 
-        if (decryptedResponse.success && decryptedResponse.user) {
-          const userWithoutCustomFields: UserWithoutCF = {
-            ...decryptedResponse.user,
-          };
-          if (userWithoutCustomFields.organizationInfo) {
-            userWithoutCustomFields.organizationInfo = {
-              ...userWithoutCustomFields.organizationInfo,
-            };
-            delete userWithoutCustomFields.organizationInfo.customFields;
-          }
-          const token = await signToken(userWithoutCustomFields);
-          Cookies.set("token", String(token), { expires: 30 });
-          setUserLoggedIn(true);
+        if (!decryptedResponse.success || !decryptedResponse.user) {
+          setStatus(decryptedResponse.error || "Failed to process login.");
+          toast({
+            title: "Error",
+            description: decryptedResponse.error || "Failed to process login.",
+            variant: "destructive",
+          });
+          return;
         }
+        let is2FAEnabled = false;
+        try {
+          const check2FA = await fetch(
+            `/api/settings/twofa?orgId=${decryptedResponse.user.organizationId}`
+          );
+          const data = await check2FA.json();
+          is2FAEnabled = data.twoFA.enable2FA;
+          if (!check2FA.ok) {
+            throw new Error("Failed to fetch 2FA info");
+          }
+        } catch (error) {
+          console.error(error);
+          setStatus("Failed to fetch 2FA info");
+          toast({
+            title: "Error",
+            description: "Failed to fetch 2FA info",
+            variant: "destructive",
+          });
+        }
+        // const { is2FAEnabled } = await check2FA(String(response.user));
+
+        if (is2FAEnabled) {
+          try {
+            const otpResponse = await fetch("/api/auth/2fa/send-otp", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                email: values.email.toLowerCase().trim(),
+                organizationId: decryptedResponse.user.organizationId,
+              }),
+            });
+            // const data = await otpResponse.json();
+            if (!otpResponse.ok) {
+              throw new Error("Failed to send OTP");
+            }
+
+            toast({
+              title: "Check your email",
+              description: "An OTP has been sent to your email address.",
+              variant: "default",
+            });
+            router.push(
+              `/auth/2fa/verify?email=${values.email.toLowerCase().trim()}&orgId=${decryptedResponse.user.organizationId}`
+            );
+          } catch (error) {
+            console.error(error);
+            setStatus("Failed to send OTP.");
+            toast({
+              title: "Error",
+              description: "Failed to send OTP.",
+              variant: "destructive",
+            });
+          }
+          return;
+        }
+
+        const userWithoutCustomFields: UserWithoutCF = {
+          ...decryptedResponse.user,
+        };
+        if (userWithoutCustomFields.organizationInfo) {
+          userWithoutCustomFields.organizationInfo = {
+            ...userWithoutCustomFields.organizationInfo,
+          };
+          delete userWithoutCustomFields.organizationInfo.customFields;
+        }
+        const token = await signToken(userWithoutCustomFields);
+        Cookies.set("token", String(token), { expires: 30 });
+        setUserLoggedIn(true);
 
         toast({
           title: "Success",
@@ -129,7 +192,6 @@ export const useHandleLoginSubmit = ({
           variant: "default",
         });
 
-        // Get the appropriate redirect URL
         const redirectUrl = getRedirectUrl(
           decryptedResponse.user.role,
           decryptedResponse.user.organizationInfo?.name
@@ -162,6 +224,7 @@ export const useHandleLoginSubmit = ({
       router,
       toast,
       searchParams,
+      // check2FA,
     ]
   );
 

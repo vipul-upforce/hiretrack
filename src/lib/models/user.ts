@@ -1,10 +1,10 @@
-import { Schema, ObjectId } from "mongoose";
+import mongoose, { Schema, ObjectId } from "mongoose";
 
 export interface OrgInfo {
   customFields?: any;
   _id: Schema.Types.ObjectId | string;
   name: string;
-  adminId: Schema.Types.ObjectId | string;
+  adminId: mongoose.Types.ObjectId | string;
   lanes: string[];
 }
 
@@ -26,6 +26,8 @@ export interface IUser {
   resetToken?: string;
   resetTokenExpiry?: Date;
   isDeleted?: boolean;
+  otpExpires?: Date;
+  otp?: number;
 }
 
 export const userSchema = new Schema<IUser>(
@@ -65,6 +67,12 @@ export const userSchema = new Schema<IUser>(
     isDeleted: {
       type: Boolean,
       required: false,
+    },
+    otp: {
+      type: Number,
+    },
+    otpExpires: {
+      type: Date,
     },
   },
   {

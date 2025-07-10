@@ -227,6 +227,9 @@ const apiExemptPaths = [
   "/api/candidates/apply-application",
   "/apply-jobs",
   "/api/organization/cs/",
+  "/api/auth/2fa/send-otp",
+  "/api/auth/2fa/verify-otp",
+  "/api/settings/twofa",
 ];
 
 const redirectPaths = [
