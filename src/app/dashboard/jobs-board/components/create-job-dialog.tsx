@@ -74,7 +74,7 @@ export const scrollToError = (errors: Record<string, any>) => {
   const element = document.querySelector(selector) as HTMLElement;
 
   if (element) {
-    element.scrollIntoView({ behavior: "smooth", block: "center" });
+    element.scrollIntoView({ behavior: "smooth", block: "end" });
     element.focus?.({ preventScroll: true });
   }
 };
@@ -207,7 +207,7 @@ export function CreateJobDialog({
           Create Job
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[80vw] xl:max-w-[50vw] h-[90vh] p-0 overflow-hidden flex flex-col justify-center">
+      <DialogContent className="sm:max-w-[80vw] xl:max-w-[50vw] h-[90vh] p-0 overflow-hidden flex flex-col justify-center ">
         <DialogHeader className="px-6 py-2 pb-0">
           <DialogTitle className="text-lg font-semibold">
             Create New Job Position
@@ -222,12 +222,12 @@ export function CreateJobDialog({
           onSubmit={handleSubmit}
         >
           {({ isSubmitting, errors, touched }) => (
-            <Form className="flex flex-col h-[calc(90vh-80px)] overflow-hidden">
-              <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+            <Form className="flex flex-col h-[calc(90vh-80px)] overflow-hidden ">
+              <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 sticky top-0">
                 <JobForm />
                 <CustomFields formName={formName} />
               </div>
-              <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4">
+              <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4 mt-auto">
                 <Button
                   type="button"
                   variant="outline"

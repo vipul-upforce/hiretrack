@@ -267,7 +267,7 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
       onSubmit={onSubmit}
     >
       {({ isSubmitting, setFieldValue, values, errors }) => (
-        <Form className="flex flex-col h-[calc(90vh-80px)] overflow-hidden border-t pt-4">
+        <Form className="flex flex-col h-[calc(90vh-80px)] overflow-hidden border-t pt-4 sticky top-0">
           <div className="flex-1 overflow-y-auto px-6 py-4 pt-0 space-y-4">
             <JobForm
               job={job}
@@ -322,19 +322,13 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
               <Button type="button" variant="outline" onClick={onCancel}>
                 Cancel
               </Button>
-              {/* 
-              <Button
-                type="submit"
-                disabled={isSubmitting || Object.keys(errors).length > 0}
-              >
-                {isSubmitting ? "Saving..." : "Save Changes"}
-              </Button> */}
+
               <Button
                 type="submit"
                 onClick={() => scrollToError(errors)}
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Saving..." : "Create Job"}
+                {isSubmitting ? "Saving..." : "Save"}
               </Button>
             </div>
           </div>
