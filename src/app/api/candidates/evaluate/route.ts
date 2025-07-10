@@ -74,28 +74,11 @@ async function evaluateResume(
     
     EVALUATION FRAMEWORK - Each category must be scored independently:
     
-    **OVERALL SUITABILITY (1-10):**
-    - 9-10: Exceptional fit, exceeds most requirements
-    - 7-8: Strong fit, meets most requirements with some standout qualities
-    - 5-6: Moderate fit, meets basic requirements but has notable gaps
-    - 3-4: Weak fit, significant gaps in multiple areas
-    - 1-2: Poor fit, major misalignment with role requirements
-    
     **SKILLS ASSESSMENT (1-10) - TECHNICAL FOCUS ONLY:**
-    Evaluate ONLY technical/hard skills mentioned in CV vs. job requirements:
-    - 9-10: Possesses 90%+ of required skills with advanced proficiency
-    - 7-8: Possesses 70-89% of required skills with good proficiency
-    - 5-6: Possesses 50-69% of required skills with basic proficiency
-    - 3-4: Possesses 30-49% of required skills, significant gaps
-    - 1-2: Possesses <30% of required skills, major skill deficiencies
+    - Evaluate ONLY technical/hard skills mentioned in CV vs. job requirements
     
     **EXPERIENCE ASSESSMENT (1-10) - WORK HISTORY FOCUS ONLY:**
     Evaluate ONLY professional work experience relevance and duration:
-    - 9-10: Highly relevant experience exceeding job requirements (years + domain match)
-    - 7-8: Relevant experience meeting job requirements with good domain alignment
-    - 5-6: Somewhat relevant experience, partial domain match or insufficient years
-    - 3-4: Limited relevant experience, weak domain alignment
-    - 1-2: Minimal or irrelevant work experience for this role
     
     **AFFORDABILITY ASSESSMENT (1-10):**
     IMPORTANT: First normalize salary formats before comparison:
@@ -103,14 +86,10 @@ async function evaluateResume(
     - If candidate expectation is ≤100 (e.g., 34, 45): Treat as LPA (Lakhs Per Annum)
     - Apply same logic to job salary for comparison
     
-    After normalization, compare candidate's expected CTC with job salary:
-    - 9-10: Candidate expectation is 0-10% below job salary (highly affordable)
-    - 7-8: Candidate expectation is within ±10% of job salary (affordable)
-    - 5-6: Candidate expectation is 10-25% above job salary (moderately affordable)
-    - 3-4: Candidate expectation is 25-50% above job salary (challenging)
-    - 1-2: Candidate expectation is 50%+ above job salary (unaffordable)
-    
-    *If no salary expectation is mentioned in CV or Job Salary is not provided, score as N/A*
+    *After normalization, compare candidate's expected CTC with job salary*
+
+    **OVERALL SUITABILITY (1-10):**
+    - Consider all the scores, and calculate the overall score of candidate.
     
     CRITICAL INSTRUCTIONS:
     1. Each score must reflect the specific criteria above
@@ -264,6 +243,7 @@ export async function PUT(request: NextRequest) {
     if (fileStorage === "local") {
       base64Resume = await generateBase64(resumeUrl);
     } else {
+      console.log("🔥🔥 URL: ",resumeUrl)
       const response = await fetch(resumeUrl);
       if (!response.ok) {
         return NextResponse.json(
@@ -348,6 +328,7 @@ export async function PUT(request: NextRequest) {
     );
   } catch (error) {
     if (error instanceof Error) {
+      console.log(error)
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     return NextResponse.json(
