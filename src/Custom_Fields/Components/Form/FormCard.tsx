@@ -79,7 +79,7 @@ function FormIDCard({ formId, formName, fields }: CardProps) {
                 if (field.candidateId || field.jobId) return;
                 return (
                   <Badge key={field.id} className="capitalize p-2 mb-1 mr-1">
-                    {field.label}
+                    {field.label.split(" |||||(")[0]}
                   </Badge>
                 );
               })
@@ -101,9 +101,9 @@ function FormIDCard({ formId, formName, fields }: CardProps) {
               setShowDeleteDialog(true);
             }}
           >
-            <TrashIcon className="w-4 h-4" /> Global
+            <TrashIcon className="w-4 h-4" />
           </Button>
-          <Button
+          {/* <Button
             className="z-100 bg-red-500 text-white"
             onClick={(e) => {
               e.stopPropagation();
@@ -111,7 +111,7 @@ function FormIDCard({ formId, formName, fields }: CardProps) {
             }}
           >
             <TrashIcon className="w-4 h-4" /> Individual
-          </Button>
+          </Button> */}
         </CardContent>
       </Card>
       <AddFormID isOpen={isOpen} setIsOpen={setIsOpen} formId={formId} />
@@ -121,7 +121,7 @@ function FormIDCard({ formId, formName, fields }: CardProps) {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete All Meta Field</DialogTitle>
+            <DialogTitle>Delete All Individual Meta Field</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete all the individual meta fields of
               the form &quot;{formName}&quot;? This action cannot be undone.
@@ -149,7 +149,7 @@ function FormIDCard({ formId, formName, fields }: CardProps) {
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Global Meta Fields</DialogTitle>
+            <DialogTitle>Delete All Global Meta Fields</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete the global meta fields from the
               form &quot;{formName}&quot;? This action cannot be undone.

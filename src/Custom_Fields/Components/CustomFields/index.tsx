@@ -128,7 +128,7 @@ function CustomFields({
               }}
             >
               <Label htmlFor={field.label} className="capitalize">
-                {field.label}
+                {field.label.split(" |||||(")[0]}
                 {field.required && (
                   <span className="text-red-500 text-sm capitalize">*</span>
                 )}

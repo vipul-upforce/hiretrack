@@ -179,6 +179,7 @@ function CustomFieldList() {
         isOpen={isOpen}
         handleClose={handleClose}
         initialValue={selectedField}
+        existingFields={selectedFormId?.fields}
       />
     </div>
   );
@@ -226,7 +227,9 @@ export const CustomFieldItem = React.memo(
                   >
                     <GripVertical className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <CardTitle className="capitalize">{field.label}</CardTitle>
+                  <CardTitle className="capitalize">
+                    {field.label.split(" |||||(")[0]}
+                  </CardTitle>
                 </div>
                 <div className="flex gap-2">
                   {field.jobId ? (
@@ -276,7 +279,8 @@ export const CustomFieldItem = React.memo(
             <DialogHeader>
               <DialogTitle>Delete Meta Field</DialogTitle>
               <DialogDescription id="delete-field-description">
-                Are you sure you want to delete the field &quot;{field.label}
+                Are you sure you want to delete the field &quot;
+                {field.label.split(" |||||(")[0]}
                 &quot;? This action cannot be undone.
               </DialogDescription>
             </DialogHeader>

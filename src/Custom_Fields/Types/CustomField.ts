@@ -35,6 +35,7 @@ export type CustomFieldFormProps = {
   isOpen: boolean;
   handleClose: () => void;
   initialValue?: CustomField | null;
+  existingFields?: CustomField[];
 };
 
 export type Types =

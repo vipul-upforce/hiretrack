@@ -189,7 +189,7 @@ export function LaneOptionsMenu({
                     }}
                     aria-pressed={selectedSortField === field.value}
                   >
-                    <span>{field.label}</span>
+                    <span>{field.label.split(" |||||(")[0]}</span>
                     {/* {selectedSortField === field.value && (
                       <ChevronRight className="ml-auto h-4 w-4" />
                     )} */}

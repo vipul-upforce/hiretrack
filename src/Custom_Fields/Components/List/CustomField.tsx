@@ -33,7 +33,11 @@ function FormCustomFieldList() {
         </Button>
       </div>
       {/* <Separator className="my-4" /> */}
-      <CustomFieldForm isOpen={isOpen} handleClose={handleClose} />
+      <CustomFieldForm
+        isOpen={isOpen}
+        handleClose={handleClose}
+        existingFields={selectedFormId?.fields}
+      />
       <CustomFieldList />
     </div>
   );

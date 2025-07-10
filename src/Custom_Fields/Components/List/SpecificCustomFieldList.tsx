@@ -147,19 +147,25 @@ function SpecificCustomFieldList({
   };
 
   const handleSave = (newField: CustomField) => {
-    if (
-      selectedFormId?.fields.some(
-        (field) =>
-          field.label === newField.label && !field.jobId && !field.candidateId
-      )
-    ) {
-      setDuplicationMessage(
-        `field already exists with this label, in the global meta fields.`
-      );
-      setDuplicationAlert(true);
+    selectedFormId?.fields.forEach((field) => {
+      if (
+        field.label === newField.label &&
+        !field.jobId &&
+        !field.candidateId
+      ) {
+        newField.label += " |||||(i)";
+      }
+    });
+    // if (
 
-      return;
-    }
+    // ) {
+    //   setDuplicationMessage(
+    //     `field already exists with this label, in the global meta fields.`
+    //   );
+    //   setDuplicationAlert(true);
+
+    //   return;
+    // }
     if (
       selectedFormId?.fields.some(
         (field) =>
@@ -208,6 +214,7 @@ function SpecificCustomFieldList({
         onSave={handleSave}
         jobId={jobId}
         candidateId={candidateId}
+        existingFields={selectedFormId?.fields}
       />
     );
   }
@@ -233,6 +240,9 @@ function SpecificCustomFieldList({
               <AlertDialogDescription>
                 <>
                   This action was not completed because a {duplicationMessage}
+                  {/* {selectedFormId
+                    ? `This action was not completed because a a field already exists in this ${selectedFormId.formName}`
+                    : "This action was not completed because a a field already exists "} */}
                 </>
               </AlertDialogDescription>
             </AlertDialogHeader>

@@ -6,7 +6,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Formik, FormikHelpers } from "formik";
 import { SelectValue } from "@/components/ui/select";
-import React, { useState, useContext, memo, useEffect } from "react";
+import React, {
+  useState,
+  useContext,
+  memo,
+  useEffect,
+  useCallback,
+} from "react";
 import {
   CustomField,
   CustomFieldFormProps,
@@ -30,13 +36,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { fieldTypes } from "@/Custom_Fields/utils";
 import { validationSchema } from "@/Custom_Fields/utils/validations";
-import { Link } from "@mui/material";
-import { ArrowUpRightFromSquare } from "lucide-react";
+// import { Link } from "@mui/material";
+// import { ArrowUpRightFromSquare } from "lucide-react";
 
 const CustomFieldForm = memo(
   ({ isOpen, handleClose, initialValue }: CustomFieldFormProps) => {
     const { handleAddCustomField, handleEditCustomField, selectedFormId } =
       useContext(CustomFieldsContext);
+
+    const existingFields = selectedFormId?.fields || [];
     const [duplicationAlert, setDuplicationAlert] = useState<boolean>(false);
     const [initialValues, setInitialValues] = useState<CustomField>({
       id: "",
@@ -49,33 +57,57 @@ const CustomFieldForm = memo(
       private: false,
       showOnCard: false,
     });
-    const [candidateURL, setCandidateURL] = useState<string | null>(null);
-    const [jobURL, setJobURL] = useState<string | null>(null);
+    // const [candidateURL, setCandidateURL] = useState<string | null>(null);
+    // const [jobURL, setJobURL] = useState<string | null>(null);
+    const [dupLabel, setDupLabel] = useState<string | null>(null);
 
     useEffect(() => {
       if (initialValue) {
         setInitialValues(initialValue);
       }
     }, [initialValue]);
+    const [hasDuplicate, setHasDuplicate] = useState(false);
 
+    const checkForDuplicate = useCallback(
+      (label: string) => {
+        const trimmedLabel = label.trim().toLowerCase();
+        // debugger;
+        return existingFields?.some(
+          (field) =>
+            (field.label.toLowerCase() === trimmedLabel ||
+              field.label.toLowerCase() === trimmedLabel + " |||||(g)") &&
+            !field.candidateId &&
+            !field.jobId
+        );
+      },
+      [existingFields]
+    );
     const onSubmit = React.useCallback(
       async (
         values: CustomField,
-        { resetForm }: FormikHelpers<CustomField>
+        { resetForm, setFieldError }: FormikHelpers<CustomField>
       ) => {
-        const hasDuplicate = selectedFormId?.fields.some((field) => {
+        // const hasDuplicate =
+        if (checkForDuplicate(values.label)) {
+          setFieldError("label", "A field with this label already exists.");
+          setHasDuplicate(true);
+          return;
+        }
+        selectedFormId?.fields.forEach((field) => {
           if (
             // !field.jobId &&
             // !field.candidateId &&
+            (field.candidateId || field.jobId) &&
             field.label === values.label
           ) {
-            if (field.candidateId) {
-              setCandidateURL(`/candidate/${field.candidateId}`);
-            }
-            if (field.jobId) {
-              setJobURL(`/dashboard/jobs/${field.jobId}`);
-            }
-
+            // if (field.candidateId) {
+            //   setCandidateURL(`/candidate/${field.candidateId}`);
+            // }
+            // if (field.jobId) {
+            //   setJobURL(`/dashboard/jobs/${field.jobId}`);
+            // }
+            values.label += ` |||||(g)`;
+            setDupLabel(field.label);
             return true;
           }
         });
@@ -85,19 +117,21 @@ const CustomFieldForm = memo(
             !field.candidateId &&
             field.label === values.label
           ) {
+            // field.label += " (global)";
+            setDupLabel(field.label);
             return true;
           }
         });
         if (hasGlobalDuplicate) {
-          setCandidateURL(null);
-          setJobURL(null);
+          // setCandidateURL(null);
+          // setJobURL(null);
           setDuplicationAlert(true);
           return;
         }
-        if (hasDuplicate) {
-          setDuplicationAlert(true);
-          return;
-        }
+        // if (hasDuplicate) {
+        //   setDuplicationAlert(true);
+        //   return;
+        // }
         try {
           if (initialValue) {
             handleEditCustomField(
@@ -132,6 +166,7 @@ const CustomFieldForm = memo(
         handleEditCustomField,
         handleAddCustomField,
         handleClose,
+        checkForDuplicate,
       ]
     );
 
@@ -184,9 +219,9 @@ const CustomFieldForm = memo(
               <AlertDialogTitle>Duplication Alert</AlertDialogTitle>
               <AlertDialogDescription>
                 <>
-                  This action was not completed because a field already exists
-                  in{" "}
-                  {jobURL ? (
+                  <p className="text-lg">{dupLabel}</p> This action was not
+                  completed because a field with this label already exists in{" "}
+                  {/* {jobURL ? (
                     <Link
                       href={jobURL}
                       target="_blank"
@@ -204,9 +239,8 @@ const CustomFieldForm = memo(
                       this candidate form.{" "}
                       <ArrowUpRightFromSquare className="ml-1" size={13} />
                     </Link>
-                  ) : (
-                    "global meta fields."
-                  )}
+                  ) : ( */}
+                  {"global meta fields."}
                 </>
               </AlertDialogDescription>
             </AlertDialogHeader>
@@ -224,6 +258,25 @@ const CustomFieldForm = memo(
         </AlertDialog>
       );
     }
+    const handleLabelChange = useCallback(
+      (
+        e: React.ChangeEvent<HTMLInputElement>,
+        setFieldValue: (
+          field: string,
+          value: string | string[] | undefined
+        ) => void,
+        setFieldError: (field: string, message: string | undefined) => void
+      ) => {
+        const value = e.target.value;
+        setFieldValue("label", value);
+        const isDuplicate = checkForDuplicate(value);
+        setHasDuplicate(isDuplicate);
+        if (isDuplicate) {
+          setFieldError("label", "A field with this label already exists.");
+        }
+      },
+      [checkForDuplicate]
+    );
     return (
       <CustomFieldDialog
         isOpen={isOpen}
@@ -243,16 +296,28 @@ const CustomFieldForm = memo(
             handleSubmit,
             getFieldProps,
             setFieldValue,
+            setFieldError,
           }) => (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <Label htmlFor="label" className="flex pb-2">
                   Field Label<p className="text-red-500">*</p>
                 </Label>
-                <Input id="label" {...getFieldProps("label")} />
+                <Input
+                  id="label"
+                  {...getFieldProps("label")}
+                  onChange={(e) =>
+                    handleLabelChange(e, setFieldValue, setFieldError)
+                  }
+                />
                 {errors.label && touched.label && (
                   <div className="text-red-500 text-xs pt-1">
                     {errors.label}
+                  </div>
+                )}
+                {hasDuplicate && touched.label && (
+                  <div className="text-red-500 text-xs pt-1">
+                    Already exists
                   </div>
                 )}
               </div>
@@ -440,7 +505,12 @@ const CustomFieldForm = memo(
                 </>
               )}
 
-              <Button type="submit">Save</Button>
+              <Button
+                type="submit"
+                disabled={hasDuplicate || Object.keys(errors).length > 0}
+              >
+                Save
+              </Button>
             </form>
           )}
         </Formik>

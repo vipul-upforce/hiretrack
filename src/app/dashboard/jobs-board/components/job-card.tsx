@@ -191,28 +191,29 @@ const JobCard = ({
                   </div>
                 </div>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {Object.entries(job.customFields)
-                    .filter(([key, value]) => {
-                      const field = formNameObject?.fields.find(
-                        (f) => f.label === key
-                      );
-                      if (field?.jobId && field.jobId !== job._id) {
-                        return false;
-                      }
-                      return field?.showOnCard;
-                    })
-                    .map(([key, value], i) => (
-                      // <div
-                      //   key={key}
-                      //   className="flex items-center gap-1 text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-full"
-                      // >
-                      //   <span className="font-medium">{key}:</span>
-                      //   <span>{String(value)}</span>
-                      // </div>
-                      <div key={i}>
-                        <CustomFieldBadge kii={key} value={value} />
-                      </div>
-                    ))}
+                  {job.customFields &&
+                    Object.entries(job.customFields)
+                      .filter(([key, value]) => {
+                        const field = formNameObject?.fields.find(
+                          (f) => f.label === key
+                        );
+                        if (field?.jobId && field.jobId !== job._id) {
+                          return false;
+                        }
+                        return field?.showOnCard;
+                      })
+                      .map(([key, value], i) => (
+                        // <div
+                        //   key={key}
+                        //   className="flex items-center gap-1 text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-full"
+                        // >
+                        //   <span className="font-medium">{key}:</span>
+                        //   <span>{String(value)}</span>
+                        // </div>
+                        <div key={i}>
+                          <CustomFieldBadge kii={key} value={value} />
+                        </div>
+                      ))}
                 </div>
               </div>
             </div>
