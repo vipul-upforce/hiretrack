@@ -11,6 +11,7 @@ interface ResumeEvaluationDetailsProps {
   labelClass: string;
   localCandidate: Candidate;
   isReEvaluating: boolean;
+  isEvaluatingFor: string;
   onReEvaluate: () => void;
 }
 
@@ -18,11 +19,15 @@ export default function ResumeEvaluationDetails({
   labelClass,
   localCandidate,
   isReEvaluating,
+  isEvaluatingFor,
   onReEvaluate,
 }: ResumeEvaluationDetailsProps) {
   const [showEvalDetails, setShowEvalDetails] = useState(false);
+  // const [isReEvaluating, setIsReEvaluating] = useState(false);
   const role = useRoles();
   if (!localCandidate.scores) return null;
+
+
 
   return (
     <>
@@ -42,10 +47,11 @@ export default function ResumeEvaluationDetails({
                     e.stopPropagation();
                     // console.log("%%%%%%");
                     onReEvaluate();
+                    // handleReEvaluate();
                   }}
                   disabled={isReEvaluating}
                   className={
-                    isReEvaluating
+                    isReEvaluating && isEvaluatingFor === localCandidate._id
                       ? "animate-spin"
                       : "hover:text-gray-400 transition duration-300"
                   }

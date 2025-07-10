@@ -75,10 +75,13 @@ export const candidateDetailsFields: FieldConfig[] = [
       candidate: Candidate,
       user: User | null,
       isReEvaluating: boolean,
+      isEvaluatingFor: string,
       onReEvaluate: () => void
+
     ) => (
       <ResumeEvaluationDetails
         labelClass={labelClass}
+        isEvaluatingFor={isEvaluatingFor}
         localCandidate={candidate}
         isReEvaluating={isReEvaluating}
         onReEvaluate={onReEvaluate}
@@ -166,7 +169,7 @@ export const candidateDetailsFields: FieldConfig[] = [
               <span>
                 Interviewer:{" "}
                 {typeof candidate.assignment.interviewerId === "object" &&
-                candidate.assignment.interviewerId
+                  candidate.assignment.interviewerId
                   ? candidate.assignment.interviewerId.name
                   : "Unknown"}
               </span>
