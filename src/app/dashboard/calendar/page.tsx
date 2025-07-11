@@ -177,7 +177,7 @@ export default function CalendarPage() {
         searchRegex.test(
           (typeof assignment?.assignment?.interviewerId === "object" &&
             assignment?.assignment?.interviewerId?.name) ||
-            ""
+          ""
         ) ||
         (allSkills.length > 0 &&
           allSkills.some((skill) => searchRegex.test(skill || "")))
@@ -218,22 +218,22 @@ export default function CalendarPage() {
               typeof candidate?.jobId === "string"
                 ? undefined
                 : {
-                    title: (candidate?.jobId as Job)?.title,
-                    description: (candidate?.jobId as Job)?.description,
-                  },
+                  title: (candidate?.jobId as Job)?.title,
+                  description: (candidate?.jobId as Job)?.description,
+                },
           },
           interviewer:
             typeof candidate?.assignment?.interviewerId === "string"
               ? {
-                  _id: candidate?.assignment?.interviewerId,
-                  name: "Unknown",
-                  email: "Unknown",
-                }
+                _id: candidate?.assignment?.interviewerId,
+                name: "Unknown",
+                email: "Unknown",
+              }
               : candidate?.assignment?.interviewerId || {
-                  _id: "",
-                  name: "Unknown",
-                  email: "Unknown",
-                },
+                _id: "",
+                name: "Unknown",
+                email: "Unknown",
+              },
         },
       };
     }) || [];
@@ -389,38 +389,81 @@ export default function CalendarPage() {
             />
           </CardContent>
         </Card>
+        <div className="flex flex-col gap-4 sticky top-6 h-[calc(100vh-140px)] overflow-auto">
+          {/* Unscheduled interviews */}
+          <Card >
+            <CardHeader>
+              <CardTitle>Scheduled Interviews</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {filteredAssignments.filter(
+                (candidate) => !candidate.assignment?.time
+              ).length > 0 ? (
+                filteredAssignments
+                  .filter((candidate) => !candidate.assignment?.time)
+                  .map((candidate, index) => (
+                    <div
+                      key={index}
+                      className=" rounded-lg  mb-3 shadow-sm  bg-white"
+                    >
+                      <div className="font-bold text-md truncate">
+                        {candidate.name}
+                      </div>
+                      <div className="text-xs text-gray-600 truncate">
+                        {typeof candidate.jobId === "object"
+                          ? candidate.jobId.title
+                          : "Unknown Job"}
+                      </div>
+                      <div className="text-xs text-gray-500 truncate">
+                        Interviewer:{" "}
+                        {typeof candidate.assignment?.interviewerId === "object"
+                          ? candidate.assignment?.interviewerId.name
+                          : "Unknown"}
+                      </div>
+                    </div>
+                  ))
+              ) : (
+                <div className="text-center text-muted-foreground py-8">
+                  All interviews are scheduled
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-        <Card className="h-[calc(100vh-140px)] overflow-auto sticky top-6">
-          <CardHeader>
-            <CardTitle>Today's Interview</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {events
-              .filter(
-                (event) =>
-                  new Date(event.start!).toLocaleDateString() ===
-                  new Date().toLocaleDateString()
-              )
-              .map((event, i) => (
-                <RenderEvent
-                  key={i}
-                  event={event}
-                  events={events}
-                  getInterviewerName={getInterviewerName}
-                  index={i}
-                />
-              ))}
-            <div className="text-center text-muted-foreground py-8">
-              {events.filter(
-                (event) =>
-                  event?.start?.toISOString().split("T")[0] ===
-                  new Date().toISOString().split("T")[0]
-              ).length > 0
-                ? ""
-                : "No interviews scheduled for today"}
-            </div>
-          </CardContent>
-        </Card>
+          {/* today's interview */}
+          <Card >
+            <CardHeader>
+              <CardTitle>Today's Interview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {events
+                .filter(
+                  (event) =>
+                    new Date(event.start!).toLocaleDateString() ===
+                    new Date().toLocaleDateString()
+                )
+                .map((event, i) => (
+                  <RenderEvent
+                    key={i}
+                    event={event}
+                    events={events}
+                    getInterviewerName={getInterviewerName}
+                    index={i}
+                  />
+                ))}
+              <div className="text-center text-muted-foreground py-8">
+                {events.filter(
+                  (event) =>
+                    event?.start?.toISOString().split("T")[0] ===
+                    new Date().toISOString().split("T")[0]
+                ).length > 0
+                  ? ""
+                  : "No interviews scheduled for today"}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
       </div>
       {selectedEvent && (
         <CandidateDetailsDialog

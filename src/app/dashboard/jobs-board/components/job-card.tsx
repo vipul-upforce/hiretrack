@@ -191,7 +191,7 @@ const JobCard = ({
                   </div>
                 </div>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {Object.entries(job.customFields)
+                  {job.customFields && typeof job.customFields === 'object' && Object.entries(job.customFields)
                     .filter(([key, value]) => {
                       const field = formNameObject?.fields.find(
                         (f) => f.label === key

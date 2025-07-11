@@ -16,7 +16,8 @@ export async function GET(
   const logDir =
     process.platform === "linux"
       ? "/var/log/nginx"
-      : "/Users/Upforce/Documents/hiretrack-latest";
+      : "/Users/UpforceTech/hiretrack";
+
   const filePath = path.join(logDir, ...file);
 
   try {
@@ -28,48 +29,34 @@ export async function GET(
       );
     }
 
-    // Count total matching lines
-    let totalLines = 0;
-    const lineCounter = readline.createInterface({
-      input: fs.createReadStream(filePath, "utf-8"),
-      crlfDelay: Infinity,
-    });
-
-    for await (const line of lineCounter) {
-      if (line.trim() && (!query || line.toLowerCase().includes(query))) {
-        totalLines++;
-      }
-    }
-
-    // Read specific matching lines for pagination
-    const lines: string[] = [];
-    let currentLine = 0;
-    const fileStream = fs.createReadStream(filePath, "utf-8");
+    // Read all matching lines into memory (reversible)
+    const allLines: string[] = [];
     const rl = readline.createInterface({
-      input: fileStream,
+      input: fs.createReadStream(filePath, "utf-8"),
       crlfDelay: Infinity,
     });
 
     for await (const line of rl) {
       if (line.trim() && (!query || line.toLowerCase().includes(query))) {
-        if (currentLine >= offset && currentLine < offset + limit) {
-          lines.push(line);
-        }
-        currentLine++;
-        if (currentLine >= offset + limit) {
-          break;
-        }
+        allLines.push(line);
       }
     }
 
+    const totalLines = allLines.length;
+
+    // Reverse the lines to show latest first
+    const reversedLines = allLines.reverse();
+
+
     return NextResponse.json({
-      content: lines,
+      content: reversedLines,
       totalLines,
       offset,
       limit,
       query,
     });
   } catch (error) {
+    console.error("Log file read error:", error);
     return NextResponse.json(
       { error: "Failed to read nginx log file" },
       { status: 500 }

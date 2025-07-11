@@ -32,7 +32,10 @@ export const useApplyHandler = <T extends Record<string, any>>() => {
     if (!formik) return;
 
     const errors = await formik.validateForm();
-
+    // ✅ Log full errors object
+    if (Object.keys(errors).length > 0) {
+      console.error("Validation Errors:", errors);
+    }
     const touched: Partial<Record<keyof T, any>> = {};
     for (const key in formik.initialValues) {
       if (

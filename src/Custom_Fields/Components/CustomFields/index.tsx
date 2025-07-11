@@ -13,13 +13,13 @@ interface FormValues {
   _id?: string;
   customFields: {
     [key: string]:
-      | string
-      | number
-      | boolean
-      | string[]
-      | FileData[]
-      | Dayjs
-      | number;
+    | string
+    | number
+    | boolean
+    | string[]
+    | FileData[]
+    | Dayjs
+    | number;
   };
 }
 

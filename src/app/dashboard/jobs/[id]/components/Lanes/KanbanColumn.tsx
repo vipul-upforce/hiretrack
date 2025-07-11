@@ -158,6 +158,11 @@ export function KanbanColumn({
               ? new Date(b.createdAt).getTime()
               : 0;
           break;
+
+        case "name":
+          aValue = a.name?.toLowerCase() || "";
+          bValue = b.name?.toLowerCase() || "";
+          break;
         default:
           return 0;
       }

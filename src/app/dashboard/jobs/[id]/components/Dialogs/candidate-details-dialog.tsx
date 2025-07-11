@@ -63,6 +63,7 @@ export function CandidateDetailsDialog({
   const [isEditRemarkDialogOpen, setIsEditRemarkDialogOpen] = useState(false);
   const [editingRemark, setEditingRemark] = useState<IEditRemark | null>(null);
   const [timeLineItems, setTimeLineItems] = useState<ICandidateHistory[]>([]);
+  const [isEvaluatingFor, setIsEvaluatingFor] = useState<string | null>(null);
   const [localCandidate, setLocalCandidate] = useState<Candidate | null>(
     candidate
   );
@@ -152,7 +153,7 @@ export function CandidateDetailsDialog({
     setConfirmReEvaluateOpen(false);
     try {
       setIsReEvaluating(true);
-
+      setIsEvaluatingFor(localCandidate?._id as string);
       const result = await evaluateCandidate(
         localCandidate?._id as string,
         evaluateCandidateMutation
@@ -257,17 +258,20 @@ export function CandidateDetailsDialog({
           <div key={index} className="space-y-2">
             <Label className={labelClass}>{field.label}</Label>
             {field.id === "ai-evaluation"
-              ? field.render(localCandidate, user, isReEvaluating, () =>
-                  setConfirmReEvaluateOpen(true)
-                )
+
+              ? field.render(localCandidate, user, isReEvaluating, isEvaluatingFor, () =>
+                setConfirmReEvaluateOpen(true)
+
+
+              )
               : field.render(
-                  localCandidate,
-                  user,
-                  validTimeLineItems,
-                  handleRemarkUpdate,
-                  setEditingRemark,
-                  setIsEditRemarkDialogOpen
-                )}
+                localCandidate,
+                user,
+                validTimeLineItems,
+                handleRemarkUpdate,
+                setEditingRemark,
+                setIsEditRemarkDialogOpen
+              )}
           </div>
         );
       })}
@@ -367,7 +371,7 @@ export function CandidateDetailsDialog({
           refetch={refetch}
           isOpen={isAssigning}
           onOpenChange={setIsAssigning}
-          onUpdate={onUpdate || (() => {})}
+          onUpdate={onUpdate || (() => { })}
           setLocalCandidate={setLocalCandidate}
           refetchAssignment={refetchAssignment}
           onSuccess={() => {
@@ -423,7 +427,7 @@ export function CandidateDetailsDialog({
           candidate={localCandidate}
           isOpen={isEditing}
           onOpenChange={setIsEditing}
-          onUpdate={onUpdate || (() => {})}
+          onUpdate={onUpdate || (() => { })}
           refetchAssignment={refetchAssignment}
           onSuccess={async () => {
             await refetch();
@@ -445,7 +449,7 @@ export function CandidateDetailsDialog({
         onCancel={() => setConfirmUnassignOpen(false)}
         isLoading={isLoading}
         loadingText="Marking as done..."
-        // className="sm:max-w-[300px]"
+      // className="sm:max-w-[300px]"
       />
       {/* <ConfirmationDialog
         title="Mark as Done"

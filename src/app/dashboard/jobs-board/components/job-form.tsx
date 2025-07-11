@@ -78,9 +78,15 @@ export function JobForm(props: JobFormProps) {
   const handleAddLink = () => {
     try {
       new URL(newLink); // Validate URL
-      setFieldValue("links", [...values.links, newLink]);
+      // setFieldValue("links", [...values.links, newLink]);
+      // setNewLink("");
+      // setIsLinkDialogOpen(false);
+      const updatedLinks = [...values.links, newLink];
+      setFieldValue("links", updatedLinks);
       setNewLink("");
       setIsLinkDialogOpen(false);
+      console.log("Link added:", newLink);
+      console.log("Updated links:", updatedLinks);
     } catch {
       toast({
         title: "Invalid URL",
@@ -120,18 +126,11 @@ export function JobForm(props: JobFormProps) {
           className="min-h-[100px] p-3"
           maxLength={2000}
           value={values?.description || ""}
-          onChange={(data) => {
-            handleChange?.(data);
-            setFieldValue?.("description", data);
-          }}
-          onBlur={(data) => {
-            handleBlur?.(data);
-            setFieldTouched("description", true);
-          }}
-          error={errors.description}
-          touched={touched.description}
+          onChange={(val) => setFieldValue("description", val)}
+          onBlur={() => setFieldTouched("description", true)} // ✅ fixed
+
         />
-        {touched.description && errors.description && (
+        {errors.description && touched.description && (
           <p className="text-sm text-red-500">{String(errors.description)}</p>
         )}
       </div>
@@ -143,16 +142,21 @@ export function JobForm(props: JobFormProps) {
         </Label>
         <ChipInput
           value={values.skills}
-          onChange={(newSkills) => setFieldValue("skills", newSkills)}
+          onChange={(newSkills) => {
+            setFieldValue("skills", newSkills);
+            setFieldTouched("skills", true);
+          }}
           placeholder="Add skills..."
           onSuggestionClick={(suggestion) => {
-            setFieldValue("skills", [...values.skills, suggestion]);
+            if (!values.skills.includes(suggestion)) {
+              const newSkills = [...values.skills, suggestion];
+              setFieldValue("skills", newSkills);
+              setFieldTouched("skills", true);
+            }
           }}
-          // suggestions={skillSuggestions.filter(
-          //   (skill) => !values.skills.includes(skill)
-          // )}
         />
-        {touched.skills && errors.skills && (
+
+        {errors.skills && touched.skills && (
           <p className="text-sm text-red-500">{String(errors.skills)}</p>
         )}
       </div>
@@ -341,7 +345,7 @@ export function JobForm(props: JobFormProps) {
           setter={(files: File[]) => {
             setFieldValue("files", files);
           }}
-          // existingFiles={job?.attachments.files} // Remove from UI
+        // existingFiles={job?.attachments.files} // Remove from UI
         />
       </div>
 

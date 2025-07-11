@@ -411,11 +411,10 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
       {!readOnly && maxLength && (
         <p
-          className={`text-right text-sm mt-1 mx-1 ${
-            editor?.getText().length >= maxLength
-              ? "text-red-500"
-              : "text-gray-400"
-          }`}
+          className={`text-right text-sm mt-1 mx-1 ${editor?.getText().length >= maxLength
+            ? "text-red-500"
+            : "text-gray-400"
+            }`}
         >
           {editor?.getText().length || 0} / {maxLength}
         </p>
@@ -429,6 +428,10 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         placeholder={placeholder}
         name={name}
       />
+
+      {error && (
+        <p className="text-sm text-red-500 mt-1 ml-1">{error}</p>
+      )}
     </div>
   );
 };
