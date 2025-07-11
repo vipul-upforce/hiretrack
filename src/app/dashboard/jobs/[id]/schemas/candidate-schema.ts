@@ -57,7 +57,7 @@ export const candidateSchema = (customFields: Yup.Schema<unknown>) =>
     assignment: Yup.object()
       .shape({
         interviewerId: Yup.string().nullable(),
-        time: Yup.date().nullable(),
+        time: Yup.date().min(new Date(), "Past Date is not allowed").nullable(),
 
       })
       .nullable()

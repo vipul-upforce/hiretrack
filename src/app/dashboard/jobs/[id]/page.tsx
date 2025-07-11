@@ -355,7 +355,7 @@ export default function JobProgressPage() {
             <div
               {...provided.droppableProps}
               ref={mergeRefs([provided.innerRef, scrollRef])}
-              className="grid grid-flow-col  flex-row justify-start overflow-x-scroll pb-4 z-0"
+              className="grid grid-flow-col overflow-x-scroll pb-4 z-0"
             >
               {columns.map((column, index) => (
                 <KanbanColumn
