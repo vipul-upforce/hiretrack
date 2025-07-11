@@ -172,7 +172,7 @@ export const useSSE = (
               //   updatedCandidateId: updatedCandidate._id,
               // });
             }
-          }, 1000);
+          }, 500);
         } else if (data.type === "clients") {
           setClients(data.clients);
         } else if (data.type === "lanesUpdate") {

@@ -42,7 +42,6 @@ function CustomFieldList() {
       position: "fixed" as const,
       top: draggableStyle?.top,
       left: draggableStyle?.left,
-      // width: "40%",
       zIndex: 9999,
       outline: "none",
     };
@@ -63,10 +62,14 @@ function CustomFieldList() {
     customFields,
   } = useContext(CustomFieldsContext);
 
-  // Initialize orderedFields when selectedFormId changes
   React.useEffect(() => {
     if (selectedFormId?.fields) {
-      setOrderedFields(selectedFormId.fields);
+      const filteredFields = selectedFormId.fields.filter(
+        (field) => !field.candidateId && !field.jobId
+      );
+      setOrderedFields(filteredFields);
+    } else {
+      setOrderedFields([]);
     }
   }, [selectedFormId?.fields]);
 
@@ -76,13 +79,19 @@ function CustomFieldList() {
     const items = Array.from(orderedFields);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
-    // debugger
+
     if (selectedFormId) {
+      const allFields = selectedFormId.fields;
+      const otherFields = allFields.filter(
+        (field) => field.candidateId || field.jobId
+      );
+      const reorderedFields = [...items, ...otherFields];
+
       const orderedItems = {
         ...customFields,
         [selectedFormId.formId]: {
           ...selectedFormId,
-          fields: items,
+          fields: reorderedFields,
         },
       };
       setCustomFields(orderedItems);
@@ -98,15 +107,18 @@ function CustomFieldList() {
             <div
               {...provided.droppableProps}
               ref={provided.innerRef}
-              className="w-full space-y-2"
+              className="w-full space-y-2 mt-2"
               style={{
                 minHeight: "100px",
                 position: "relative",
               }}
             >
-              {orderedFields.map((field, index) => {
-                if (field.candidateId || field.jobId) return;
-                return (
+              {orderedFields.length === 0 ? (
+                <div className="w-full text-center justify-center border-none py-10 text-gray-500">
+                  No Global Meta fields
+                </div>
+              ) : (
+                orderedFields.map((field, index) => (
                   <Draggable
                     key={field.id}
                     draggableId={field.id}
@@ -146,7 +158,6 @@ function CustomFieldList() {
                         </div>
                       );
 
-                      // Use portal for dragging elements to avoid clipping and render directly on the document.body
                       if (
                         snapshot.isDragging &&
                         typeof window !== "undefined"
@@ -157,10 +168,8 @@ function CustomFieldList() {
                       return child;
                     }}
                   </Draggable>
-                );
-              })}
-              {(orderedFields.length === 0 || !orderedFields) &&
-                "No Mea fields"}
+                ))
+              )}
               {provided.placeholder}
             </div>
           )}
@@ -170,6 +179,7 @@ function CustomFieldList() {
         isOpen={isOpen}
         handleClose={handleClose}
         initialValue={selectedField}
+        existingFields={selectedFormId?.fields}
       />
     </div>
   );
@@ -217,7 +227,9 @@ export const CustomFieldItem = React.memo(
                   >
                     <GripVertical className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <CardTitle className="capitalize">{field.label}</CardTitle>
+                  <CardTitle className="capitalize">
+                    {field.label.split(" |||||(")[0]}
+                  </CardTitle>
                 </div>
                 <div className="flex gap-2">
                   {field.jobId ? (
@@ -267,7 +279,8 @@ export const CustomFieldItem = React.memo(
             <DialogHeader>
               <DialogTitle>Delete Meta Field</DialogTitle>
               <DialogDescription id="delete-field-description">
-                Are you sure you want to delete the field &quot;{field.label}
+                Are you sure you want to delete the field &quot;
+                {field.label.split(" |||||(")[0]}
                 &quot;? This action cannot be undone.
               </DialogDescription>
             </DialogHeader>

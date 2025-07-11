@@ -256,7 +256,9 @@ export function CandidateDetailsDialog({
           return null;
         return (
           <div key={index} className="space-y-2">
-            <Label className={labelClass}>{field.label}</Label>
+            <Label className={labelClass}>
+              {field.label.split(" |||||(")[0]}
+            </Label>
             {field.id === "ai-evaluation"
 
               ? field.render(localCandidate, user, isReEvaluating, isEvaluatingFor, () =>

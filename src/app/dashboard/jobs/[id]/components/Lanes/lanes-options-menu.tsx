@@ -172,24 +172,26 @@ export function LaneOptionsMenu({
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
-              {SORT_FIELDS.map((field) => (
-                <button
-                  key={field.value}
-                  className={cn(
-                    "flex items-center px-2 py-1 rounded hover:bg-gray-100 text-left transition-colors justify-between",
-                    selectedSortField === field.value
-                      ? "bg-gray-100 font-semibold"
-                      : ""
-                  )}
-                  onClick={() => {
-                    handleSortFieldSelect(field.value);
-                    handleSortApply();
-                  }}
-                  aria-pressed={selectedSortField === field.value}
-                >
-                  <span>{field.label}</span>
-                  {/* {selectedSortField === field.value && (
+            <div className="mb-4">
+              {/* <div className="text-xs text-muted-foreground mb-2">by</div> */}
+              <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
+                {SORT_FIELDS.map((field) => (
+                  <button
+                    key={field.value}
+                    className={cn(
+                      "flex items-center px-2 py-1 rounded hover:bg-gray-100 text-left transition-colors justify-between",
+                      selectedSortField === field.value
+                        ? "bg-gray-100 font-semibold"
+                        : ""
+                    )}
+                    onClick={() => {
+                      handleSortFieldSelect(field.value);
+                      handleSortApply();
+                    }}
+                    aria-pressed={selectedSortField === field.value}
+                  >
+                    <span>{field.label.split(" |||||(")[0]}</span>
+                    {/* {selectedSortField === field.value && (
                       <ChevronRight className="ml-auto h-4 w-4" />
                     )} */}
                   {sortDirection === "asc" &&

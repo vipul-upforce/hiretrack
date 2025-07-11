@@ -57,7 +57,9 @@ export function JobDetailsDialog({
         if (field.shouldRender && !field.shouldRender(job)) return null;
         return (
           <div key={index} className="space-y-2">
-            <Label className={labelClass}>{field.label}</Label>
+            <Label className={labelClass}>
+              {field.label.split(" |||||(")[0]}
+            </Label>
             {field.render(job)}
           </div>
         );

@@ -26,9 +26,11 @@ function FormIDCard({ formId, formName, fields }: CardProps) {
     handleDeleteFormId,
     setStepName,
     selecteFormIdTarget,
-    deleteFormIDAllCustomFields,
+    deleteFormIDAllCustomFields: deleteFormIDGlobalCustomFields,
+    deleteFormIDAllIndCustomFields,
   } = useContext(CustomFieldsContext);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showDeleteAllIndDialog, setShowDeleteAllIndDialog] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
   // const handleEdit = useCallback(
@@ -43,7 +45,15 @@ function FormIDCard({ formId, formName, fields }: CardProps) {
     (event: React.MouseEvent<HTMLButtonElement>) => {
       event.stopPropagation();
       // handleDeleteFormId(formId);
-      deleteFormIDAllCustomFields(formId);
+      deleteFormIDGlobalCustomFields(formId);
+    },
+    [formId, handleDeleteFormId]
+  );
+  const handleDeleteAllInd = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      event.stopPropagation();
+      // handleDeleteFormId(formId);
+      deleteFormIDAllIndCustomFields(formId);
     },
     [formId, handleDeleteFormId]
   );
@@ -69,12 +79,17 @@ function FormIDCard({ formId, formName, fields }: CardProps) {
                 if (field.candidateId || field.jobId) return;
                 return (
                   <Badge key={field.id} className="capitalize p-2 mb-1 mr-1">
-                    {field.label}
+                    {field.label.split(" |||||(")[0]}
                   </Badge>
                 );
               })
             ) : (
-              <Badge className="capitalize p-2 mr-2">No fields</Badge>
+              <Badge
+                className="capitalize p-2 mr-2"
+                style={{ backgroundColor: "gray" }}
+              >
+                No Global fields
+              </Badge>
             )}
           </div>
         </CardHeader>
@@ -88,16 +103,56 @@ function FormIDCard({ formId, formName, fields }: CardProps) {
           >
             <TrashIcon className="w-4 h-4" />
           </Button>
+          {/* <Button
+            className="z-100 bg-red-500 text-white"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowDeleteAllIndDialog(true);
+            }}
+          >
+            <TrashIcon className="w-4 h-4" /> Individual
+          </Button> */}
         </CardContent>
       </Card>
       <AddFormID isOpen={isOpen} setIsOpen={setIsOpen} formId={formId} />
+      <Dialog
+        open={showDeleteAllIndDialog}
+        onOpenChange={setShowDeleteAllIndDialog}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete All Individual Meta Field</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete all the individual meta fields of
+              the form &quot;{formName}&quot;? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteAllIndDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={(event) => {
+                handleDeleteAllInd(event);
+                setShowDeleteAllIndDialog(false);
+              }}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Meta Field</DialogTitle>
+            <DialogTitle>Delete All Global Meta Fields</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete the form &quot;{formName}&quot;?
-              This action cannot be undone.
+              Are you sure you want to delete the global meta fields from the
+              form &quot;{formName}&quot;? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

@@ -112,7 +112,7 @@ export const RenderField = ({
             setFieldValue("customFields." + label, e.target.value);
           }}
           onBlur={() => setFieldTouched("customFields." + label, true)}
-          placeholder={`Enter ${label}`}
+          placeholder={`Enter ${label.split(" |||||(")[0]}`}
         />
       );
 
@@ -144,7 +144,7 @@ export const RenderField = ({
             setFieldValue("customFields." + label, e.target.value);
           }}
           onBlur={() => setFieldTouched("customFields." + label, true)}
-          placeholder={`Enter ${label} in numbers`}
+          placeholder={`Enter ${label.split(" |||||(")[0]} in numbers`}
         />
       );
 
@@ -158,7 +158,7 @@ export const RenderField = ({
             setFieldValue("customFields." + label, e.target.value);
           }}
           onBlur={() => setFieldTouched("customFields." + label, true)}
-          placeholder={`Enter ${label}`}
+          placeholder={`Enter ${label.split(" |||||(")[0]}`}
         />
       );
 
@@ -171,7 +171,7 @@ export const RenderField = ({
           }
         >
           <SelectTrigger {...commonProps}>
-            <SelectValue placeholder={`Select ${label}`} />
+            <SelectValue placeholder={`Select ${label.split(" |||||(")[0]}`} />
           </SelectTrigger>
           <SelectContent>
             {options?.map((option) => (
@@ -403,7 +403,7 @@ export const RenderField = ({
               );
             }}
             onBlur={() => setFieldTouched("customFields." + label, true)}
-            placeholder={`Enter ${label}`}
+            placeholder={`Enter ${label.split(" |||||(")[0]}`}
             onSuggestionClick={(suggestion) => {
               const currentValues =
                 (values.customFields[label] as string[]) || [];

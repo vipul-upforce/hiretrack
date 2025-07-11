@@ -233,11 +233,46 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
       (formId: string) => {
         const formIdObject = customFields[formId];
         if (formIdObject) {
+          const individualCustomFields = formIdObject.fields.filter(
+            (field) => field.candidateId || field.jobId
+          );
           setCustomFields((prev) => ({
             ...prev,
             [formId]: {
               ...formIdObject,
-              fields: [],
+              fields: [...individualCustomFields],
+            },
+          }));
+
+          // Update selected form ID state if it matches the cleared form
+          if (selectedFormId?.formId === formId) {
+            setSelectedFormId(
+              (prev) =>
+                prev && {
+                  ...prev,
+                  fields: [],
+                  formId: prev.formId,
+                  formName: prev.formName,
+                }
+            );
+          }
+        }
+      },
+      [customFields, selectedFormId]
+    );
+
+    const deleteFormIDAllIndCustomFields = useCallback(
+      (formId: string) => {
+        const formIdObject = customFields[formId];
+        if (formIdObject) {
+          const globalCustomFields = formIdObject.fields.filter(
+            (field) => !field.candidateId && !field.jobId
+          );
+          setCustomFields((prev) => ({
+            ...prev,
+            [formId]: {
+              ...formIdObject,
+              fields: [...globalCustomFields],
             },
           }));
 
@@ -277,6 +312,7 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
           userLoggedIn,
           setUserLoggedIn,
           setSelectedFormId,
+          deleteFormIDAllIndCustomFields,
           // postCustomFields,
         }}
       >
