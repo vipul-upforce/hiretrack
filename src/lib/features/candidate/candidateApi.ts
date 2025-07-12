@@ -33,7 +33,10 @@ export const candidateApi = createApi({
   tagTypes: ["Candidate", "CandidateApplication"],
   endpoints: (builder) => ({
     fetchCandidates: builder.query<Candidate[], string>({
-      query: (jobId) => `/jobs/${jobId}/candidates`,
+      query: (jobId) =>{
+        // debugger
+        return `/jobs/${jobId}/candidates`
+      },
       providesTags: ["Candidate"],
     }),
     createCandidate: builder.mutation<Candidate, Partial<Candidate>>({

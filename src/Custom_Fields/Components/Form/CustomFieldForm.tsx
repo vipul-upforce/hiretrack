@@ -36,11 +36,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { fieldTypes } from "@/Custom_Fields/utils";
 import { validationSchema } from "@/Custom_Fields/utils/validations";
-// import { Link } from "@mui/material";
-// import { ArrowUpRightFromSquare } from "lucide-react";
 
 const CustomFieldForm = memo(
-  ({ isOpen, handleClose, initialValue }: CustomFieldFormProps) => {
+  ({ isOpen, handleClose, initialValue, isEditMode }: CustomFieldFormProps) => {
     const { handleAddCustomField, handleEditCustomField, selectedFormId } =
       useContext(CustomFieldsContext);
 
@@ -57,89 +55,73 @@ const CustomFieldForm = memo(
       private: false,
       showOnCard: false,
     });
-    // const [candidateURL, setCandidateURL] = useState<string | null>(null);
-    // const [jobURL, setJobURL] = useState<string | null>(null);
     const [dupLabel, setDupLabel] = useState<string | null>(null);
+    const [hasDuplicate, setHasDuplicate] = useState(false);
 
     useEffect(() => {
       if (initialValue) {
         setInitialValues(initialValue);
       }
     }, [initialValue]);
-    const [hasDuplicate, setHasDuplicate] = useState(false);
 
     const checkForDuplicate = useCallback(
-      (label: string) => {
+      (label: string, excludeId?: string) => {
         const trimmedLabel = label.trim().toLowerCase();
-        // debugger;
         return existingFields?.some(
           (field) =>
             (field.label.toLowerCase() === trimmedLabel ||
               field.label.toLowerCase() === trimmedLabel + " |||||(g)") &&
             !field.candidateId &&
-            !field.jobId
+            !field.jobId &&
+            field.id !== excludeId
         );
       },
       [existingFields]
     );
-    const onSubmit = React.useCallback(
+
+    const onSubmit = useCallback(
       async (
         values: CustomField,
         { resetForm, setFieldError }: FormikHelpers<CustomField>
       ) => {
-        // const hasDuplicate =
-        if (checkForDuplicate(values.label)) {
-          setFieldError("label", "A field with this label already exists.");
-          setHasDuplicate(true);
-          return;
-        }
-        selectedFormId?.fields.forEach((field) => {
-          if (
-            // !field.jobId &&
-            // !field.candidateId &&
-            (field.candidateId || field.jobId) &&
-            field.label === values.label
-          ) {
-            // if (field.candidateId) {
-            //   setCandidateURL(`/candidate/${field.candidateId}`);
-            // }
-            // if (field.jobId) {
-            //   setJobURL(`/dashboard/jobs/${field.jobId}`);
-            // }
-            values.label += ` |||||(g)`;
-            setDupLabel(field.label);
-            return true;
+        if (isEditMode && values.label === initialValue?.label) {
+        } else {
+          const isDuplicate = checkForDuplicate(
+            values.label,
+            isEditMode ? initialValue?.id : undefined
+          );
+          if (isDuplicate) {
+            setFieldError("label", "");
+            setHasDuplicate(true);
+            return;
           }
-        });
-        const hasGlobalDuplicate = selectedFormId?.fields.some((field) => {
-          if (
-            !field.jobId &&
-            !field.candidateId &&
-            field.label === values.label
-          ) {
-            // field.label += " (global)";
-            setDupLabel(field.label);
-            return true;
+
+          const hasGlobalDuplicate = selectedFormId?.fields.some((field) => {
+            if (
+              !field.jobId &&
+              !field.candidateId &&
+              field.label === values.label &&
+              (!isEditMode || field.id !== initialValue?.id)
+            ) {
+              setDupLabel(field.label);
+              setDuplicationAlert(true);
+              return true;
+            }
+            return false;
+          });
+
+          if (hasGlobalDuplicate) {
+            return;
           }
-        });
-        if (hasGlobalDuplicate) {
-          // setCandidateURL(null);
-          // setJobURL(null);
-          setDuplicationAlert(true);
-          return;
         }
-        // if (hasDuplicate) {
-        //   setDuplicationAlert(true);
-        //   return;
-        // }
+
         try {
-          if (initialValue) {
+          if (isEditMode) {
             handleEditCustomField(
               values as CustomField,
               selectedFormId?.formId || null
             );
           } else {
-            // Format the field data
             const fieldData = {
               ...values,
               id: Math.random().toString(36).substr(2, 9),
@@ -162,6 +144,7 @@ const CustomFieldForm = memo(
       },
       [
         initialValue,
+        isEditMode,
         selectedFormId,
         handleEditCustomField,
         handleAddCustomField,
@@ -170,7 +153,7 @@ const CustomFieldForm = memo(
       ]
     );
 
-    const onValuesChange = React.useCallback(
+    const onValuesChange = useCallback(
       (
         value: string,
         values: CustomField,
@@ -179,9 +162,7 @@ const CustomFieldForm = memo(
           value: string | string[] | undefined
         ) => void
       ) => {
-        // Clear options and default values when type changes
         if (value !== values.type) {
-          // Set appropriate default value based on new type
           if (["select", "multiSelect", "radio", "checkbox"].includes(value)) {
             setFieldValue("options", values.options);
             if (["select", "radio"].includes(value)) {
@@ -193,7 +174,6 @@ const CustomFieldForm = memo(
             setFieldValue("defaultValue", "");
           }
         }
-
         setFieldValue("type", value);
       },
       []
@@ -211,53 +191,7 @@ const CustomFieldForm = memo(
         setFieldValue("defaultValue", value);
       }
     };
-    if (duplicationAlert) {
-      return (
-        <AlertDialog open={duplicationAlert} onOpenChange={setDuplicationAlert}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Duplication Alert</AlertDialogTitle>
-              <AlertDialogDescription>
-                <>
-                  <p className="text-lg">{dupLabel}</p> This action was not
-                  completed because a field with this label already exists in{" "}
-                  {/* {jobURL ? (
-                    <Link
-                      href={jobURL}
-                      target="_blank"
-                      className="flex flex-row items-center"
-                    >
-                      this job form.
-                      <ArrowUpRightFromSquare className="ml-1" size={13} />
-                    </Link>
-                  ) : candidateURL ? (
-                    <Link
-                      href={candidateURL}
-                      target="_blank"
-                      className="flex flex-row items-center"
-                    >
-                      this candidate form.{" "}
-                      <ArrowUpRightFromSquare className="ml-1" size={13} />
-                    </Link>
-                  ) : ( */}
-                  {"global meta fields."}
-                </>
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogAction
-                onClick={() => setDuplicationAlert(false)}
-                className={
-                  "text-blue-500 bg-blue hover:bg-blue hover:text-blue-500/90"
-                }
-              >
-                {"Okay"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      );
-    }
+
     const handleLabelChange = useCallback(
       (
         e: React.ChangeEvent<HTMLInputElement>,
@@ -269,14 +203,18 @@ const CustomFieldForm = memo(
       ) => {
         const value = e.target.value;
         setFieldValue("label", value);
-        const isDuplicate = checkForDuplicate(value);
+        const isDuplicate = checkForDuplicate(
+          value,
+          isEditMode ? initialValue?.id : undefined
+        );
         setHasDuplicate(isDuplicate);
         if (isDuplicate) {
-          setFieldError("label", "A field with this label already exists.");
+          setFieldError("label", "");
         }
       },
-      [checkForDuplicate]
+      [checkForDuplicate, isEditMode, initialValue]
     );
+
     return (
       <CustomFieldDialog
         isOpen={isOpen}
@@ -284,6 +222,29 @@ const CustomFieldForm = memo(
         title="Global Meta Fields"
         regular
       >
+        <AlertDialog open={duplicationAlert} onOpenChange={setDuplicationAlert}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Duplication Alert</AlertDialogTitle>
+              <AlertDialogDescription>
+                <p className="text-lg">{dupLabel}</p> This action was not
+                completed because a field with this label already exists in
+                global meta fields.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogAction
+                onClick={() => setDuplicationAlert(false)}
+                className={
+                  "text-blue-500 bg-blue hover:bg-blue hover:text-blue-500/90"
+                }
+              >
+                Okay
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         <Formik
           initialValues={initialValues}
           validationSchema={validationSchema}
@@ -361,7 +322,6 @@ const CustomFieldForm = memo(
                     placeholder="Add options..."
                     suggestions={[]}
                   />
-
                   {errors.options && touched.options && (
                     <div className="text-red-500">{errors.options}</div>
                   )}
@@ -507,7 +467,10 @@ const CustomFieldForm = memo(
 
               <Button
                 type="submit"
-                disabled={hasDuplicate || Object.keys(errors).length > 0}
+                disabled={
+                  !isEditMode &&
+                  (hasDuplicate || Object.keys(errors).length > 0)
+                }
               >
                 Save
               </Button>

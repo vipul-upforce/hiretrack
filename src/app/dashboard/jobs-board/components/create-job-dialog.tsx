@@ -49,16 +49,21 @@ interface CreateJobDialogProps {
   userRole?: string;
 }
 
-
 export const scrollToError = (errors: Record<string, any>) => {
   if (!errors || typeof errors !== "object") return;
 
-  const findFirstKey = (obj: Record<string, any>, prefix = ""): string | null => {
+  const findFirstKey = (
+    obj: Record<string, any>,
+    prefix = ""
+  ): string | null => {
     for (const key in obj) {
       if (typeof obj[key] === "string") {
         return prefix ? `${prefix}.${key}` : key;
       } else if (typeof obj[key] === "object") {
-        const nested = findFirstKey(obj[key], prefix ? `${prefix}.${key}` : key);
+        const nested = findFirstKey(
+          obj[key],
+          prefix ? `${prefix}.${key}` : key
+        );
         if (nested) return nested;
       }
     }
@@ -79,7 +84,6 @@ export const scrollToError = (errors: Record<string, any>) => {
   }
 };
 
-
 export function CreateJobDialog({
   onJobCreated,
   userRole,
@@ -88,7 +92,12 @@ export function CreateJobDialog({
   const { toast } = useToast();
   const formName = "Job Position";
 
-  const { validationSchema, initialValues: inits } = useCustomForm(formName);
+  const { validationSchema, initialValues: inits } = useCustomForm(
+    formName,
+    undefined,
+    undefined,
+    true
+  );
 
   if (userRole !== "hr" && userRole !== "admin") {
     return null;
@@ -121,7 +130,6 @@ export function CreateJobDialog({
     { resetForm, setSubmitting }: FormikHelpers<JobFormValues>
   ) => {
     console.log(values);
-
 
     const fileNames = values.files.map((file) => file.name);
     const hasDuplicates = new Set(fileNames).size !== fileNames.length;
@@ -242,13 +250,11 @@ export function CreateJobDialog({
                 >
                   {isSubmitting ? "Saving..." : "Create Job"}
                 </Button>
-
               </div>
-
             </Form>
           )}
         </Formik>
       </DialogContent>
-    </Dialog >
+    </Dialog>
   );
 }

@@ -28,6 +28,7 @@ import { createPortal } from "react-dom";
 
 function CustomFieldList() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [selectedField, setSelectedField] = useState<CustomField>();
   const [orderedFields, setOrderedFields] = useState<CustomField[]>([]);
 
@@ -144,6 +145,7 @@ function CustomFieldList() {
                             isDragging={snapshot.isDragging}
                             handleEditCustomField={() => {
                               setSelectedField(field);
+                              setIsEditMode(true);
                               handleOpen();
                             }}
                             handleDeleteCustomField={() => {
@@ -177,7 +179,11 @@ function CustomFieldList() {
       </DragDropContext>
       <CustomFieldForm
         isOpen={isOpen}
-        handleClose={handleClose}
+        isEditMode={isEditMode}
+        handleClose={() => {
+          handleClose();
+          setIsEditMode(false);
+        }}
         initialValue={selectedField}
         existingFields={selectedFormId?.fields}
       />

@@ -41,6 +41,7 @@ function SpecificCustomFieldList({
   const [formOpen, setFormOpen] = useState<boolean>(false);
   const [duplicationAlert, setDuplicationAlert] = useState<boolean>(false);
   const [duplicationMessage, setDuplicationMessage] = useState<string>("");
+  const [isEditMode, setIsEditMode] = useState(false);
   const handleAddField = () => {
     setFormOpen(true);
   };
@@ -306,6 +307,7 @@ function SpecificCustomFieldList({
                             isDragging={snapshot.isDragging}
                             handleEditCustomField={() => {
                               setSelectedField(field);
+                              setIsEditMode(true);
                               handleOpen();
                             }}
                             handleDeleteCustomField={() => {
@@ -348,8 +350,12 @@ function SpecificCustomFieldList({
 
       <CustomFieldForm
         isOpen={isOpen}
-        handleClose={handleClose}
+        handleClose={() => {
+          handleClose();
+          setIsEditMode(false);
+        }}
         initialValue={selectedField}
+        isEditMode={isEditMode}
       />
     </div>
   );

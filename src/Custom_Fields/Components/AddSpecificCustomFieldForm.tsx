@@ -67,7 +67,7 @@ export const AddSpecificCustomFieldForm = memo(
         { resetForm, setFieldError }: FormikHelpers<CustomField>
       ) => {
         if (checkForDuplicate(values.label)) {
-          setFieldError("label", "A field with this label already exists.");
+          setFieldError("label", "");
           setHasDuplicate(true);
           return;
         }
@@ -147,7 +147,7 @@ export const AddSpecificCustomFieldForm = memo(
         const isDuplicate = checkForDuplicate(value);
         setHasDuplicate(isDuplicate);
         if (isDuplicate) {
-          setFieldError("label", "A field with this label already exists.");
+          setFieldError("label", "");
         }
       },
       [checkForDuplicate]
