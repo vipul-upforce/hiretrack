@@ -296,12 +296,20 @@ export function KanbanColumn({
                       </div>
                     )}
                     {sortedCandidates.map((candidate, index) => {
-                      // debugger;
+                      // if (column.title === "Shortlisted") {
+                      //   debugger;
+                      // }
                       if (
-                        // typeof candidate.jobId._id === "string" &&
+                        typeof candidate.jobId !== "string" &&
                         candidate?.jobId?._id?.toString() !== jobId?.toString()
-                      )
+                      ) {
                         return;
+                      } else if (
+                        typeof candidate.jobId === "string" &&
+                        candidate?.jobId !== jobId?.toString()
+                      ) {
+                        return;
+                      }
                       return (
                         <CandidateCard
                           key={`${column.id}-${candidate._id}`}
