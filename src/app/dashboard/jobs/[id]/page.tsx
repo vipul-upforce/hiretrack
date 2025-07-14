@@ -358,6 +358,7 @@ export default function JobProgressPage() {
             <div
               {...provided.droppableProps}
               ref={mergeRefs([provided.innerRef, scrollRef])}
+              // ref={provided.innerRef}
               className="grid grid-flow-col overflow-x-scroll pb-4 z-0"
             >
               {columns.map((column, index) => {
