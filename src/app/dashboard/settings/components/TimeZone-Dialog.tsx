@@ -122,16 +122,18 @@ export default function TimeZoneSelect({ onClose }: { onClose: () => void }) {
         <Form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="timeZone">Timezone</Label>
-            <Combobox
-              options={TIMEZONES.map((tz) => ({
-                value: tz.name,
-                label: `${tz.name} (${tz.offset})`,
-              }))}
-              placeholder="Select a timezone..."
-              value={values.timeZone}
-              onValueChange={(value) => setFieldValue("timeZone", value)}
-              width="100%"
-            />
+            <div>
+              <Combobox
+                options={TIMEZONES.map((tz) => ({
+                  value: tz.name,
+                  label: `${tz.name} (${tz.offset})`,
+                }))}
+                placeholder="Select a timezone..."
+                value={values.timeZone}
+                onValueChange={(value) => setFieldValue("timeZone", value)}
+                width="100%"
+              />
+            </div>
             <ErrorMessage
               name="timeZone"
               component="div"
