@@ -128,7 +128,6 @@ export function JobForm(props: JobFormProps) {
           value={values?.description || ""}
           onChange={(val) => setFieldValue("description", val)}
           onBlur={() => setFieldTouched("description", true)} // ✅ fixed
-
         />
         {errors.description && touched.description && (
           <p className="text-sm text-red-500">{String(errors.description)}</p>
@@ -144,7 +143,7 @@ export function JobForm(props: JobFormProps) {
           value={values.skills}
           onChange={(newSkills) => {
             setFieldValue("skills", newSkills);
-            setFieldTouched("skills", true);
+            // setFieldTouched("skills", true);
           }}
           placeholder="Add skills..."
           onSuggestionClick={(suggestion) => {
@@ -345,7 +344,7 @@ export function JobForm(props: JobFormProps) {
           setter={(files: File[]) => {
             setFieldValue("files", files);
           }}
-        // existingFiles={job?.attachments.files} // Remove from UI
+          // existingFiles={job?.attachments.files} // Remove from UI
         />
       </div>
 

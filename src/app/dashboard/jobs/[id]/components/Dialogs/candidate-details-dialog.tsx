@@ -97,12 +97,14 @@ export function CandidateDetailsDialog({
     isSubRemarkPrivate,
     setIsSubRemarkPrivate,
     handleRemarkUpdate,
+    isRemarkSubmitting,
     handleAddRemark,
     handleAddFollowUp,
     setNewFollowUp,
     setNewFollowUpDate,
     newFollowUp,
     newFollowUpDate,
+
     handleRemoveFollowUp,
   } = useRemarkHandlers(
     localCandidate,
@@ -220,6 +222,12 @@ export function CandidateDetailsDialog({
   }, [candidateData, localCandidate]);
 
   useEffect(() => {
+    if (isAddingFollowUp) {
+      setNewFollowUp(localCandidate?.followUp?.note || "");
+    }
+  }, [isAddingFollowUp, localCandidate]);
+
+  useEffect(() => {
     if (candidate) {
       setLocalCandidate(candidate);
     }
@@ -260,20 +268,21 @@ export function CandidateDetailsDialog({
               {field.label.split(" |||||(")[0]}
             </Label>
             {field.id === "ai-evaluation"
-
-              ? field.render(localCandidate, user, isReEvaluating, isEvaluatingFor, () =>
-                setConfirmReEvaluateOpen(true)
-
-
-              )
+              ? field.render(
+                  localCandidate,
+                  user,
+                  isReEvaluating,
+                  isEvaluatingFor,
+                  () => setConfirmReEvaluateOpen(true)
+                )
               : field.render(
-                localCandidate,
-                user,
-                validTimeLineItems,
-                handleRemarkUpdate,
-                setEditingRemark,
-                setIsEditRemarkDialogOpen
-              )}
+                  localCandidate,
+                  user,
+                  validTimeLineItems,
+                  handleRemarkUpdate,
+                  setEditingRemark,
+                  setIsEditRemarkDialogOpen
+                )}
           </div>
         );
       })}
@@ -290,6 +299,7 @@ export function CandidateDetailsDialog({
           localCandidate={candidate}
           handleRemoveFollowUp={handleRemoveFollowUp}
           handleAddRemark={handleAddRemark}
+          isRemarkSubmitting={isRemarkSubmitting}
         />
       )}
     </div>
@@ -373,7 +383,7 @@ export function CandidateDetailsDialog({
           refetch={refetch}
           isOpen={isAssigning}
           onOpenChange={setIsAssigning}
-          onUpdate={onUpdate || (() => { })}
+          onUpdate={onUpdate || (() => {})}
           setLocalCandidate={setLocalCandidate}
           refetchAssignment={refetchAssignment}
           onSuccess={() => {
@@ -429,7 +439,7 @@ export function CandidateDetailsDialog({
           candidate={localCandidate}
           isOpen={isEditing}
           onOpenChange={setIsEditing}
-          onUpdate={onUpdate || (() => { })}
+          onUpdate={onUpdate || (() => {})}
           refetchAssignment={refetchAssignment}
           onSuccess={async () => {
             await refetch();
@@ -451,7 +461,7 @@ export function CandidateDetailsDialog({
         onCancel={() => setConfirmUnassignOpen(false)}
         isLoading={isLoading}
         loadingText="Marking as done..."
-      // className="sm:max-w-[300px]"
+        // className="sm:max-w-[300px]"
       />
       {/* <ConfirmationDialog
         title="Mark as Done"

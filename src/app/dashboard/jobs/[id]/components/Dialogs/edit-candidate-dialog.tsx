@@ -1,37 +1,37 @@
-'use client';
+"use client";
 
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { Formik, Form, FormikErrors } from 'formik';
-import { candidateSchema } from '../../schemas/candidate-schema';
-import { CandidateForm } from '../Candidate/candidate-form';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { Formik, Form, FormikErrors } from "formik";
+import { candidateSchema } from "../../schemas/candidate-schema";
+import { CandidateForm } from "../Candidate/candidate-form";
 import {
   useUpdateCandidateMutation,
   useUpdateCandidateHistoryMutation,
-} from '@/lib/features/candidate/candidateApi';
-import { Candidate } from '@/types/candidate';
-import { v4 as uuidv4 } from 'uuid';
-import { useParams, usePathname } from 'next/navigation';
-import useCustomForm from '@/Custom_Fields/hooks/useCustomForm';
-import { ICandidateHistory } from '@/lib/models/history';
-import { useContext, useEffect, useState } from 'react';
-import { Resume } from '@/lib/redux/types';
-import { parseResumeFromPdf } from '@/lib/parse-resume-from-pdf';
-import FormUpdater from '../Utils/FormUpdater';
-import Cookies from 'js-cookie';
-import { useSendMailMutation } from '@/lib/features/org/orgApi';
-import { sentAssignmentMail } from '@/lib/utils';
-import { verifyAndDecryptJWTToken } from '@/lib/auth';
-import { FetchBaseQueryError } from '@reduxjs/toolkit/query';
-import { useApplyHandler } from '@/app/apply-jobs/useApplyHandler';
-import { AddSpecificCustomFieldButton } from '@/Custom_Fields/Components/AddSpecificCustomFieldButton';
-import { CustomFieldsContext } from '@/Custom_Fields/Context';
+} from "@/lib/features/candidate/candidateApi";
+import { Candidate } from "@/types/candidate";
+import { v4 as uuidv4 } from "uuid";
+import { useParams, usePathname } from "next/navigation";
+import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
+import { ICandidateHistory } from "@/lib/models/history";
+import { useContext, useEffect, useState } from "react";
+import { Resume } from "@/lib/redux/types";
+import { parseResumeFromPdf } from "@/lib/parse-resume-from-pdf";
+import FormUpdater from "../Utils/FormUpdater";
+import Cookies from "js-cookie";
+import { useSendMailMutation } from "@/lib/features/org/orgApi";
+import { sentAssignmentMail } from "@/lib/utils";
+import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
+import { useApplyHandler } from "@/app/apply-jobs/useApplyHandler";
+import { AddSpecificCustomFieldButton } from "@/Custom_Fields/Components/AddSpecificCustomFieldButton";
+import { CustomFieldsContext } from "@/Custom_Fields/Context";
 
 interface EditCandidateDialogProps {
   candidate: Candidate;
@@ -53,13 +53,13 @@ const handleFileParse = async (
   file: File | null,
   setParsedResume: (data: Resume | null) => void
 ) => {
-  if (file && file.type === 'application/pdf') {
+  if (file && file.type === "application/pdf") {
     const reader = new FileReader();
 
     reader.onload = async () => {
       const result = reader.result;
 
-      if (result && typeof result === 'string') {
+      if (result && typeof result === "string") {
         try {
           const fileUrl = result;
 
@@ -79,13 +79,13 @@ const isFetchBaseQueryError = (
   error: unknown
 ): error is FetchBaseQueryError & { data: { error: string } } => {
   return (
-    typeof error === 'object' &&
+    typeof error === "object" &&
     error !== null &&
-    'data' in error &&
-    typeof error.data === 'object' &&
+    "data" in error &&
+    typeof error.data === "object" &&
     error.data !== null &&
-    'error' in error.data &&
-    typeof error.data.error === 'string'
+    "error" in error.data &&
+    typeof error.data.error === "string"
   );
 };
 
@@ -98,16 +98,16 @@ export const scrollToErrorMassage = async (errors: FormikErrors<any>) => {
   const firstErrorKey = Object.keys(errors)[0];
   if (firstErrorKey) {
     // debugger;
-    if (firstErrorKey === 'customFields') {
+    if (firstErrorKey === "customFields") {
       if (!errors.customFields) return;
       const cfKey = Object.keys(errors.customFields)[0];
       const el = document.querySelector(`[id='${firstErrorKey}.${cfKey}']`);
-      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
       (el as HTMLElement)?.focus();
       return;
     }
     const el = document.querySelector(`[id='${firstErrorKey}']`);
-    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
     (el as HTMLElement)?.focus();
     return;
   }
@@ -128,7 +128,7 @@ export function EditCandidateDialog({
   const [sendEmail] = useSendMailMutation();
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
 
-  const formName = 'Candidate';
+  const formName = "Candidate";
   const { getDefaultValues, validationSchema } = useCustomForm(
     formName,
     undefined,
@@ -147,7 +147,7 @@ export function EditCandidateDialog({
   } = useContext(CustomFieldsContext);
   useEffect(() => {
     (async () => {
-      const token = Cookies.get('token');
+      const token = Cookies.get("token");
       if (token) {
         const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
         if (decryptedResponse.success && decryptedResponse.user) {
@@ -155,10 +155,10 @@ export function EditCandidateDialog({
         }
       }
     })();
-    setStepName('Candidate');
+    setStepName("Candidate");
     if (customFields) {
       const candidateForm = Object.entries(customFields).find(
-        ([, form]) => form.formName === 'Candidate'
+        ([, form]) => form.formName === "Candidate"
       );
 
       if (candidateForm) {
@@ -182,10 +182,10 @@ export function EditCandidateDialog({
 
     if (hasDuplicates) {
       toast({
-        title: 'Alert',
+        title: "Alert",
         description:
-          'Duplicate file names found! Please rename before submitting.',
-        variant: 'destructive',
+          "Duplicate file names found! Please rename before submitting.",
+        variant: "destructive",
       });
       return;
     }
@@ -249,9 +249,9 @@ export function EditCandidateDialog({
               name:
                 values.resume instanceof File
                   ? values.resume.name
-                  : values?.resume?.name || '',
+                  : values?.resume?.name || "",
               url: resumeBase64,
-              type: 'pdf',
+              type: "pdf",
               size:
                 values.resume instanceof File
                   ? values.resume.size
@@ -269,18 +269,18 @@ export function EditCandidateDialog({
       };
 
       if (values.assignment) {
-        if (values.assignment.interviewerId === '-1') {
+        if (values.assignment.interviewerId === "-1") {
           delete updatedCandidate.assignment;
         } else if (
-          typeof values.assignment.interviewerId === 'string' ||
-          typeof values.assignment.interviewerId === 'object'
+          typeof values.assignment.interviewerId === "string" ||
+          typeof values.assignment.interviewerId === "object"
         ) {
           updatedCandidate.assignment = {
             assignment: values.assignment.assignment,
             interviewerId:
-              typeof values.assignment.interviewerId === 'string'
+              typeof values.assignment.interviewerId === "string"
                 ? values.assignment.interviewerId
-                : values.assignment.interviewerId._id.replace(/"/g, ''),
+                : values.assignment.interviewerId._id.replace(/"/g, ""),
             time: values.assignment.time,
             assignedAt: values.assignment.assignedAt,
           };
@@ -290,70 +290,70 @@ export function EditCandidateDialog({
       const { data: result, error } = await updateCandidate(updatedCandidate);
       if (error) {
         toast({
-          title: 'Error',
+          title: "Error",
           description: isFetchBaseQueryError(error)
             ? error.data.error
-            : 'Failed to update job',
-          variant: 'destructive',
+            : "Failed to update job",
+          variant: "destructive",
         });
         return;
       }
       sentAssignmentMail(result, sendEmail);
       const previousInterviewer =
-        typeof candidate.assignment?.interviewerId === 'object'
+        typeof candidate.assignment?.interviewerId === "object"
           ? candidate.assignment.interviewerId.name
-          : '';
+          : "";
       const previousInterviewerId =
-        typeof candidate.assignment?.interviewerId === 'object'
+        typeof candidate.assignment?.interviewerId === "object"
           ? Object(candidate.assignment.interviewerId._id)
           : null;
 
       const nextInterviewer =
-        result && typeof result.assignment?.interviewerId === 'object'
+        result && typeof result.assignment?.interviewerId === "object"
           ? result.assignment.interviewerId.name
-          : '';
+          : "";
       const nextInterviewerId =
-        result && typeof result.assignment?.interviewerId === 'object'
+        result && typeof result.assignment?.interviewerId === "object"
           ? Object(result.assignment.interviewerId._id)
           : null;
 
       let title;
-      if (!previousInterviewer || previousInterviewer === '') {
+      if (!previousInterviewer || previousInterviewer === "") {
         title = `Assigned to ${nextInterviewer} : Assigned by ${
-          user ? user.name : 'No one'
+          user ? user.name : "No one"
         }`;
       } else {
         title = `${previousInterviewer} → ${nextInterviewer} : Assigned by ${
-          user ? user.name : 'No one'
+          user ? user.name : "No one"
         }`;
       }
 
       title = null;
 
       const newHistoryEntry: ICandidateHistory = {
-        dateTime: new Date().toISOString() || '',
+        dateTime: new Date().toISOString() || "",
         title: title,
         currentInterviewer: nextInterviewerId,
         previousInterviewer: previousInterviewerId,
-        assignmentBy: user ? user.id : '',
+        assignmentBy: user ? user.id : "",
         note: {
-          description: '',
-          date: '',
+          description: "",
+          date: "",
           rating: 0,
           userId: null,
         },
         attachments: latestModifiedAttachments || [],
       };
 
-      if (nextInterviewer && nextInterviewer !== '') {
+      if (nextInterviewer && nextInterviewer !== "") {
         await updateCandidateHistory({
-          candidateId: updatedCandidate._id || '',
-          jobId: updatedCandidate?.jobId || '',
+          candidateId: updatedCandidate._id || "",
+          jobId: updatedCandidate?.jobId || "",
           newEntry: newHistoryEntry,
         }).unwrap();
       }
 
-      if (pathname === '/dashboard') {
+      if (pathname === "/dashboard") {
         refetchAssignment?.();
       }
       if (result) {
@@ -367,31 +367,31 @@ export function EditCandidateDialog({
         reopenDetailsDialog();
       }
       toast({
-        title: 'Success',
-        description: 'Candidate updated successfully',
+        title: "Success",
+        description: "Candidate updated successfully",
       });
     } catch (error) {
-      if (typeof error === 'object' && error !== null && 'data' in error) {
+      if (typeof error === "object" && error !== null && "data" in error) {
         const errorData = (error as { data?: { error?: string } }).data;
 
         if (
-          typeof errorData === 'object' &&
+          typeof errorData === "object" &&
           errorData !== null &&
-          'error' in errorData
+          "error" in errorData
         ) {
           toast({
-            title: 'Error',
-            description: errorData.error || 'Failed to update job',
-            variant: 'destructive',
+            title: "Error",
+            description: errorData.error || "Failed to update job",
+            variant: "destructive",
           });
           return;
         }
       }
 
       toast({
-        title: 'Error',
-        description: 'Failed to update job due to an unexpected error.',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to update job due to an unexpected error.",
+        variant: "destructive",
       });
     }
   };
@@ -404,15 +404,15 @@ export function EditCandidateDialog({
       reader.onerror = (error) => reject(error);
     });
   };
-  let interviewerId = '';
+  let interviewerId = "";
   if (candidate?.assignment?.interviewerId) {
-    if (typeof candidate.assignment.interviewerId === 'string') {
+    if (typeof candidate.assignment.interviewerId === "string") {
       interviewerId =
-        candidate.assignment.interviewerId === '-1'
-          ? ''
+        candidate.assignment.interviewerId === "-1"
+          ? ""
           : candidate.assignment.interviewerId;
     } else {
-      interviewerId = candidate.assignment.interviewerId._id.replace(/"/g, '');
+      interviewerId = candidate.assignment.interviewerId._id.replace(/"/g, "");
     }
   }
 
@@ -444,10 +444,10 @@ export function EditCandidateDialog({
     >
       <DialogContent
         className={`sm:max-w-[80vw] ${
-          candidate.resume ? 'xl:max-w-[65vw]' : 'xl:max-w-[50vw]'
+          candidate.resume ? "xl:max-w-[65vw]" : "xl:max-w-[50vw]"
         } h-[90vh] p-0 flex flex-col justify-between overflow-hidden`}
       >
-        <DialogHeader className='px-6 py-8 border-b'>
+        <DialogHeader className="px-6 py-8 border-b">
           {/* <DialogHeader className='flex-shrink-0 px-6 py-4 border-b'> */}
           <DialogTitle>Edit Candidate</DialogTitle>
         </DialogHeader>
@@ -459,32 +459,32 @@ export function EditCandidateDialog({
         >
           {({ isSubmitting, errors, setFieldValue, dirty }) => (
             // <Form className='flex flex-col h-[calc(90vh-80px)] overflow-hidden border-t '>
-            <Form className='flex flex-col flex-1 min-h-0'>
+            <Form className="flex flex-col flex-1 min-h-0">
               <FormUpdater parsedResumeData={parsedResumeData} />
-              <div className='flex-1 overflow-y-auto px-4 sm:px-6 py-4 pt-0 h-full'>
+              <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 pt-0 h-full">
                 <CandidateForm
                   onFileUpload={async (file: File) => {
-                    setFieldValue('resume', file);
+                    setFieldValue("resume", file);
                     await handleFileParse(file, setParsedResume);
                   }}
                   isEditMode={true}
                 />
               </div>
-              <div className='flex justify-between space-x-2 border-t bg-background px-6 py-4'>
+              <div className="flex justify-between space-x-2 border-t bg-background px-6 py-4">
                 <AddSpecificCustomFieldButton
                   candidateId={candidate._id}
                   onSave={(newField) => {
                     debugger;
                     handleAddCustomField(
                       newField,
-                      selectedFormId?.formId || ''
+                      selectedFormId?.formId || ""
                     );
                   }}
                 />
-                <div className='gap-3 flex'>
+                <div className="gap-3 flex">
                   <Button
-                    type='button'
-                    variant='outline'
+                    type="button"
+                    variant="outline"
                     onClick={() => {
                       onOpenChange(false);
                       // if (reopenDetailsDialog) {
@@ -500,9 +500,9 @@ export function EditCandidateDialog({
                       // debugger;
                       handleApply();
                     }}
-                    type='submit'
+                    type="submit"
                   >
-                    {isSubmitting ? 'Saving...' : 'Save Changes'}
+                    {isSubmitting ? "Saving..." : "Save Changes"}
                   </Button>
                 </div>
               </div>

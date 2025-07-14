@@ -57,7 +57,7 @@ const AddFollowUpDialog = ({
           <Textarea
             placeholder="Add the note..."
             className="max-h-80 overflow-y-auto"
-            value={newFollowUp || candidate?.followUp?.note}
+            value={newFollowUp}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
               setNewFollowUp(e.target.value)
             }
@@ -75,9 +75,7 @@ const AddFollowUpDialog = ({
                 ? dayjs(candidate.followUp.date)
                 : null)
             }
-            onChange={(date: Dayjs | null) => {
-              setNewFollowUpDate(date);
-            }}
+            onChange={(date: Dayjs | null) => setNewFollowUpDate(date)}
           />
         </div>
         <DialogFooter>
