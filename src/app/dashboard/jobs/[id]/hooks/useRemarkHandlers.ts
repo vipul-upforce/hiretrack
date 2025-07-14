@@ -22,6 +22,7 @@ export const useRemarkHandlers = (
   const [updateCandidate] = useUpdateCandidateMutation();
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
   const [newRemark, setNewRemark] = useState("");
+  
   const [newFollowUp, setNewFollowUp] = useState(
     localCandidate?.followUp?.note && localCandidate?.followUp?.note.length > 1
       ? localCandidate?.followUp?.note
@@ -37,6 +38,7 @@ export const useRemarkHandlers = (
     null
   );
   const [isSubRemarkPrivate, setIsSubRemarkPrivate] = useState(true);
+  const [isRemarkSubmitting, setIsRemarkSubmitting] = useState(false);
 
   useEffect(() => {
     if (user?.role === "interviewer") {
@@ -110,7 +112,7 @@ export const useRemarkHandlers = (
       });
       return;
     }
-
+    setIsRemarkSubmitting(true);
     try {
       const newRemarkObj = {
         description: String(newRemark).trim(),
@@ -192,6 +194,7 @@ export const useRemarkHandlers = (
         title: "Success",
         description: "Remark added successfully",
       });
+      
     } catch (error: unknown) {
       if (error instanceof Error) {
         toast({
@@ -200,6 +203,8 @@ export const useRemarkHandlers = (
           variant: "destructive",
         });
       }
+    } finally {
+      setIsRemarkSubmitting(false);
     }
   };
   const handleRemoveFollowUp = async () => {
@@ -304,8 +309,19 @@ export const useRemarkHandlers = (
     }
   };
   const handleAddFollowUp = async () => {
+    if (!newFollowUp.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a follow-up note before submitting.",
+        variant: "destructive",
+      });
+      return;
+    }
     // debugger;
-    if (!newFollowUp.trim() || !user?.id) {
+    if ( !user?.id) {
+      console.log("newFollowUp",newFollowUp);
+      console.log("user",user);
+      
       toast({
         title: "Error",
         description: "Please add the follow-up note.",
@@ -446,12 +462,14 @@ export const useRemarkHandlers = (
     isSubRemarkPrivate,
     setIsSubRemarkPrivate,
     handleRemarkUpdate,
-    handleAddRemark,
+    isRemarkSubmitting,
+    handleAddRemark ,
     handleAddFollowUp,
     setNewFollowUp,
     setNewFollowUpDate,
     newFollowUp,
     newFollowUpDate,
     handleRemoveFollowUp,
+  
   };
 };

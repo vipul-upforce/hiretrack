@@ -57,9 +57,9 @@ export function CandidateCard({
   }, []);
 
   const renderCardContent = () => (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col">
       <div className="flex justify-between items-start">
-        <h3 className="font-medium w-2/5 text-wrap break-words">
+        <h3 className="font-medium w-2/5 text-wrap break-words ">
           {candidate.tags ? <TagsList candidate={candidate} /> : null}
           {candidate.name}
         </h3>
@@ -220,7 +220,7 @@ export function CandidateCard({
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          className="bg-card border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow"
+          className="bg-card border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow relative overflow-visible"
         >
           {renderCardContent()}
         </div>

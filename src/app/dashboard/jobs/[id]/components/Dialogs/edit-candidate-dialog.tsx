@@ -197,12 +197,12 @@ export function EditCandidateDialog({
             file:
               | File
               | {
-                url: string;
-                id: string;
-                name: string;
-                type: string;
-                size: number;
-              }
+                  url: string;
+                  id: string;
+                  name: string;
+                  type: string;
+                  size: number;
+                }
           ) => {
             if (file instanceof File) {
               const base64 = await convertFileToBase64(file);
@@ -241,18 +241,18 @@ export function EditCandidateDialog({
         ...values,
         resume: resumeBase64
           ? {
-            id: values?.resume?.id || uuidv4(),
-            name:
-              values.resume instanceof File
-                ? values.resume.name
-                : values?.resume?.name || "",
-            url: resumeBase64,
-            type: "pdf",
-            size:
-              values.resume instanceof File
-                ? values.resume.size
-                : values?.resume?.size || 0,
-          }
+              id: values?.resume?.id || uuidv4(),
+              name:
+                values.resume instanceof File
+                  ? values.resume.name
+                  : values?.resume?.name || "",
+              url: resumeBase64,
+              type: "pdf",
+              size:
+                values.resume instanceof File
+                  ? values.resume.size
+                  : values?.resume?.size || 0,
+            }
           : undefined,
         email: values.email, // Added email field
         currentCTC: Number(parseFloat(String(values.currentCTC)).toFixed(2)),
@@ -315,11 +315,13 @@ export function EditCandidateDialog({
 
       let title;
       if (!previousInterviewer || previousInterviewer === "") {
-        title = `Assigned to ${nextInterviewer} : Assigned by ${user ? user.name : "No one"
-          }`;
+        title = `Assigned to ${nextInterviewer} : Assigned by ${
+          user ? user.name : "No one"
+        }`;
       } else {
-        title = `${previousInterviewer} → ${nextInterviewer} : Assigned by ${user ? user.name : "No one"
-          }`;
+        title = `${previousInterviewer} → ${nextInterviewer} : Assigned by ${
+          user ? user.name : "No one"
+        }`;
       }
 
       title = null;
@@ -417,11 +419,11 @@ export function EditCandidateDialog({
     email: candidate.email, // Added email to initial values
     assignment: candidate.assignment
       ? {
-        assignment: candidate.assignment.assignment,
-        interviewerId,
-        time: candidate.assignment.time,
-        assignedAt: candidate.assignment.assignedAt,
-      }
+          assignment: candidate.assignment.assignment,
+          interviewerId,
+          time: candidate.assignment.time,
+          assignedAt: candidate.assignment.assignedAt,
+        }
       : null,
     customFields: getDefaultValues(candidate.customFields || {}),
   };
@@ -437,8 +439,9 @@ export function EditCandidateDialog({
       }}
     >
       <DialogContent
-        className={`sm:max-w-[80vw] ${candidate.resume ? "xl:max-w-[65vw]" : "xl:max-w-[50vw]"
-          } h-[90vh] p-0 flex flex-col justify-between overflow-hidden`}
+        className={`sm:max-w-[80vw] ${
+          candidate.resume ? "xl:max-w-[65vw]" : "xl:max-w-[50vw]"
+        } h-[90vh] p-0 flex flex-col justify-between overflow-hidden`}
       >
         <DialogHeader className="px-6 py-8 border-b">
           {/* <DialogHeader className="flex-shrink-0 px-6 py-4 border-b"> */}
@@ -494,7 +497,6 @@ export function EditCandidateDialog({
                       handleApply();
                     }}
                     type="submit"
-
                   >
                     {isSubmitting ? "Saving..." : "Save Changes"}
                   </Button>

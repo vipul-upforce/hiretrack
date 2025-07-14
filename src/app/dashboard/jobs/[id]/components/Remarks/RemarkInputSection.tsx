@@ -22,6 +22,7 @@ interface RemarkInputSectionProps {
   handleAddRemark: () => void;
   localCandidate: Candidate | null;
   handleRemoveFollowUp: () => void;
+  isRemarkSubmitting: boolean;
 }
 
 export default function RemarkInputSection({
@@ -33,6 +34,7 @@ export default function RemarkInputSection({
   isSubRemarkPrivate,
   setIsSubRemarkPrivate,
   user,
+  isRemarkSubmitting,
   handleAddRemark,
   localCandidate,
   handleRemoveFollowUp,
@@ -120,8 +122,9 @@ export default function RemarkInputSection({
                 removeFU && handleRemoveFollowUp();
                 handleAddRemark();
               }}
+              disabled={isRemarkSubmitting}
             >
-              Add Remark
+              {isRemarkSubmitting ? "Submitting..." : "Add Remark"}
             </Button>
           </div>
         </div>

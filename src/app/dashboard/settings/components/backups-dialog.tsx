@@ -123,8 +123,8 @@ export default function BackupsDialog() {
           {files
             .sort(
               (a, b) =>
-                new Date(a.createdAt).getTime() -
-                new Date(b.createdAt).getTime()
+                new Date(a.createdAt).getUTCDate() -
+                new Date(b.createdAt).getUTCDate()
             )
 
             .map((file, i) => (
