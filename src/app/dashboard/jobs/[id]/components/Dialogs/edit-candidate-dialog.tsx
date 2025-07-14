@@ -474,7 +474,6 @@ export function EditCandidateDialog({
                 <AddSpecificCustomFieldButton
                   candidateId={candidate._id}
                   onSave={(newField) => {
-                    debugger;
                     handleAddCustomField(
                       newField,
                       selectedFormId?.formId || ""

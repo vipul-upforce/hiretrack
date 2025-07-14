@@ -34,8 +34,15 @@ export function CandidateForm({
   onFileUpload,
   isEditMode = false,
 }: CandidateFormProps) {
-  const { setFieldValue, values, errors, setTouched } =
-    useFormikContext<CandidateFormValues>();
+  const {
+    setFieldValue,
+    values,
+    errors,
+    setTouched,
+    // touched,
+    // setFieldTouched,
+    // dirty,
+  } = useFormikContext<CandidateFormValues>();
   const { data: interviewers } = useFetchInterviewersQuery();
   const [nameField, nameMeta] = useField("name");
   const [locationField, locationMeta] = useField("location");
@@ -46,6 +53,8 @@ export function CandidateForm({
   const [noticePeriodField, noticePeriodMeta] = useField("noticePeriod");
   const [resumeField, resumeMeta] = useField("resume");
   const [attachmentsField] = useField("attachments");
+  const [timeTouched, setTimeTouched] = useState(false);
+  // const [assignment] = useField("assignment");
   const [tempResumeUrl, setTempResumeUrl] = useState<string | null>(null);
   const [currentBlobUrl, setCurrentBlobUrl] = useState<string | null>(null); // State to track only blob URLs for cleanup
   const [emailField, emailMeta] = useField("email");
@@ -238,7 +247,9 @@ export function CandidateForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="experience">Experience (years)</Label>
+              <Label htmlFor="experience">
+                Experience (years) <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="experience"
                 placeholder="Enter experience in years..."
@@ -278,7 +289,9 @@ export function CandidateForm({
           {/* CTC and Notice Period - Mobile */}
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="expectedCTC">Expected CTC (LPA)</Label>
+              <Label htmlFor="expectedCTC">
+                Expected CTC (LPA) <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="expectedCTC"
                 placeholder="in LPA..."
@@ -296,7 +309,9 @@ export function CandidateForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="currentCTC">Current CTC (LPA)</Label>
+              <Label htmlFor="currentCTC">
+                Current CTC (LPA) <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="currentCTC"
                 placeholder="in LPA..."
@@ -314,7 +329,9 @@ export function CandidateForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="noticePeriod">Notice Period (days)</Label>
+              <Label htmlFor="noticePeriod">
+                Notice Period (days) <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="noticePeriod"
                 placeholder="in days..."
@@ -382,10 +399,13 @@ export function CandidateForm({
                         ? dayjs(values.assignment?.time)
                         : null
                     }
-                    onChange={(date) => setFieldValue("assignment.time", date)}
+                    onChange={(date) => {
+                      setFieldValue("assignment.time", date);
+                      setTimeTouched(true);
+                    }}
                     placeholder="Select time"
                   />
-                  {errors?.assignment && (
+                  {/* {errors?.assignment && touched?.assignment && (
                     <p className="text-sm text-red-500">
                       {String(
                         errors.assignment[
@@ -393,7 +413,20 @@ export function CandidateForm({
                         ] || ""
                       )}
                     </p>
-                  )}
+                  )} */}
+                  {timeTouched &&
+                    values.assignment?.time &&
+                    new Date(values.assignment?.time) < new Date() && (
+                      <p className="text-sm text-orange-500">
+                        Assignment date should not be in past
+                      </p>
+                    )}
+                  {/* {timeTouched &&
+                    values.assignment?.time &&
+                    errors.push({
+                      "assignment.time":
+                        "Assignment date should not be in past",
+                    })} */}
                 </div>
               </div>
             </div>
@@ -633,7 +666,9 @@ export function CandidateForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="experience">Experience (years)</Label>
+              <Label htmlFor="experience">
+                Experience (years) <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="experience"
                 placeholder="Enter experience in years..."
@@ -673,7 +708,9 @@ export function CandidateForm({
           {/* CTC and Notice Period Grid - Desktop */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="expectedCTC">Expected CTC (LPA)</Label>
+              <Label htmlFor="expectedCTC">
+                Expected CTC (LPA) <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="expectedCTC"
                 placeholder="in LPA..."
@@ -691,7 +728,9 @@ export function CandidateForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="currentCTC">Current CTC (LPA)</Label>
+              <Label htmlFor="currentCTC">
+                Current CTC (LPA) <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="currentCTC"
                 placeholder="in LPA..."
@@ -709,7 +748,9 @@ export function CandidateForm({
             </div>
 
             <div className="space-y-2 col-span-2">
-              <Label htmlFor="noticePeriod">Notice Period (days)</Label>
+              <Label htmlFor="noticePeriod">
+                Notice Period (days) <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="noticePeriod"
                 placeholder="in days..."
@@ -777,10 +818,13 @@ export function CandidateForm({
                         ? dayjs(values.assignment?.time)
                         : null
                     }
-                    onChange={(date) => setFieldValue("assignment.time", date)}
+                    onChange={(date) => {
+                      setFieldValue("assignment.time", date);
+                      setTimeTouched(true);
+                    }}
                     placeholder="Select time"
                   />
-                  {errors?.assignment && (
+                  {/* {errors?.assignment && touched?.assignment && (
                     <p className="text-sm text-red-500">
                       {String(
                         errors.assignment[
@@ -788,7 +832,20 @@ export function CandidateForm({
                         ] || ""
                       )}
                     </p>
-                  )}
+                  )} */}
+                  {timeTouched &&
+                    values.assignment?.time &&
+                    new Date(values.assignment?.time) < new Date() && (
+                      <p className="text-sm text-orange-500">
+                        Assignment date should not be in past
+                      </p>
+                    )}
+                  {/* {timeTouched &&
+                    values.assignment?.time &&
+                    errors.push({
+                      "assignment.time":
+                        "Assignment date should not be in past",
+                    })} */}
                 </div>
               </div>
             </div>

@@ -1,4 +1,6 @@
+import { Interviewer } from "@/lib/features/user/userApi";
 import * as Yup from "yup";
+
 export const candidateSchema = (customFields: Yup.Schema<unknown>) =>
   Yup.object().shape({
     resume: Yup.mixed().required("Resume is required"),
@@ -35,7 +37,6 @@ export const candidateSchema = (customFields: Yup.Schema<unknown>) =>
           )
       )
       .min(1, "At least one skill is required"),
-
     expectedCTC: Yup.number()
       .required("Expected CTC is required")
       .min(0, "CTC cannot be negative")
@@ -49,29 +50,40 @@ export const candidateSchema = (customFields: Yup.Schema<unknown>) =>
       .integer("Notice period must be an integer")
       .min(0, "Notice period cannot be negative")
       .max(180, "Can not be more then 180 days(6 months)"),
-    // currentLocation: Yup.string().required("Current location is required"),
-    // remarks: Yup.string(),
     attachments: Yup.array().of(Yup.mixed()),
     assignee: Yup.string().nullable(),
     time: Yup.date().nullable(),
     assignment: Yup.object()
       .shape({
-        interviewerId: Yup.string().nullable(),
-        time: Yup.date().min(new Date(), "Past Date is not allowed").nullable(),
-
+        interviewerId: Yup.mixed().nullable(), // Allow string or object
+        time: Yup.date().nullable()
+        // .when("interviewerId", (interviewerId, schema) => {
+        //   // Handle both string and object cases
+          
+        //   const id = typeof interviewerId === "string" ? interviewerId : "_id" in interviewerId && interviewerId?._id;
+        //   if (id && id !== "-1") {
+        //     return schema
+        //       .min(new Date(), "Past Date is not allowed")
+        //       .required("Time is required when interviewer is assigned");
+        //   }
+        //   return schema.nullable();
+        // }),
       })
       .nullable()
       .test(
         "interviewer-required-if-time",
         "Interviewer ID is required if a time is set",
         function (value) {
+          const interviewerId = typeof value?.interviewerId === "string"
+            ? value.interviewerId
+            : (value?.interviewerId as Interviewer)?._id;
           if (
             value?.time &&
-            (!value.interviewerId || value.interviewerId === "-1")
+            (!interviewerId || interviewerId === "-1")
           ) {
             return this.createError({
               path: "assignment.interviewerId",
-              message: "Interviewer ID is required when time is set",
+             message: "Interviewer ID is required when time is set",
             });
           }
           return true;
@@ -79,7 +91,6 @@ export const candidateSchema = (customFields: Yup.Schema<unknown>) =>
       ),
     customFields: customFields,
   });
-
 export interface CandidateFormValues {
   name: string;
   location: string;
