@@ -101,12 +101,12 @@ export const scrollToErrorMassage = async (errors: FormikErrors<any>) => {
     if (firstErrorKey === "customFields") {
       if (!errors.customFields) return;
       const cfKey = Object.keys(errors.customFields)[0];
-      const el = document.querySelector(`[id="${firstErrorKey}.${cfKey}"]`);
+      const el = document.querySelector(`[id='${firstErrorKey}.${cfKey}']`);
       el?.scrollIntoView({ behavior: "smooth", block: "center" });
       (el as HTMLElement)?.focus();
       return;
     }
-    const el = document.querySelector(`[id="${firstErrorKey}"]`);
+    const el = document.querySelector(`[id='${firstErrorKey}']`);
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
     (el as HTMLElement)?.focus();
     return;
@@ -129,7 +129,11 @@ export function EditCandidateDialog({
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
 
   const formName = "Candidate";
-  const { getDefaultValues, validationSchema } = useCustomForm(formName);
+  const { getDefaultValues, validationSchema } = useCustomForm(
+    formName,
+    undefined,
+    candidate._id
+  );
   const pathname = usePathname();
   const [parsedResumeData, setParsedResume] = useState<Resume | null>(null);
   const [user, setuser] = useState<User | null>(null);
@@ -444,7 +448,7 @@ export function EditCandidateDialog({
         } h-[90vh] p-0 flex flex-col justify-between overflow-hidden`}
       >
         <DialogHeader className="px-6 py-8 border-b">
-          {/* <DialogHeader className="flex-shrink-0 px-6 py-4 border-b"> */}
+          {/* <DialogHeader className='flex-shrink-0 px-6 py-4 border-b'> */}
           <DialogTitle>Edit Candidate</DialogTitle>
         </DialogHeader>
         <Formik
@@ -454,7 +458,7 @@ export function EditCandidateDialog({
           onSubmit={handleSubmit}
         >
           {({ isSubmitting, errors, setFieldValue, dirty }) => (
-            // <Form className="flex flex-col h-[calc(90vh-80px)] overflow-hidden border-t ">
+            // <Form className='flex flex-col h-[calc(90vh-80px)] overflow-hidden border-t '>
             <Form className="flex flex-col flex-1 min-h-0">
               <FormUpdater parsedResumeData={parsedResumeData} />
               <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 pt-0 h-full">

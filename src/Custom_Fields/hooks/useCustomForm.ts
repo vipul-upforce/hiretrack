@@ -21,7 +21,12 @@ export type CustomFieldValues = {
     | number;
 };
 
-const useCustomForm = (formName: string) => {
+const useCustomForm = (
+  formName: string,
+  jobId?: string,
+  candidateId?: string,
+  fetchGlobal?: boolean
+) => {
   const { customFields } = useCustomFields();
 
   let formNameObject: FormObject | undefined;
@@ -34,7 +39,20 @@ const useCustomForm = (formName: string) => {
     }
   });
 
-  const validationSchema = getYupSchema(formNameObject?.fields || []);
+  const fields = formNameObject?.fields || [];
+  let filteredFields = fields;
+
+  if (jobId) {
+    filteredFields = fields.filter((field) => field.jobId === jobId || !field.jobId);
+  } else if (candidateId) {
+    filteredFields = fields.filter(
+      (field) => field.candidateId === candidateId || !field.candidateId
+    );
+  } else if (fetchGlobal) {
+    filteredFields = fields.filter((field) => !field.jobId && !field.candidateId);
+  }
+
+  const validationSchema = getYupSchema(filteredFields);
 
   const initialValues = formNameObject?.fields.reduce(
     (acc, field) => {

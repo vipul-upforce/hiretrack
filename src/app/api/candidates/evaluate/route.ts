@@ -93,13 +93,15 @@ async function evaluateResume(
     **OVERALL SUITABILITY (1-10):**
     - Consider all the scores, and calculate the overall score of candidate.
     
+
     CRITICAL INSTRUCTIONS:
     1. Each score must reflect the specific criteria above
     2. Be strict and objective - average candidates should receive 4-6 scores, not 7-8
     3. Skills score should ONLY consider technical abilities, not soft skills or education
     4. Experience score should ONLY consider relevant work history duration and domain match
-    5. For affordability, clearly show your salary normalization logic in the notes
-    6. Provide specific evidence from the CV to justify each score
+    5. After normalization, compare candidate's expected CTC with job salary
+    6. For affordability, clearly show your salary normalization logic in the notes
+    7. Provide specific evidence from the CV to justify each score
     
     Return your evaluation in this JSON format:
     {
@@ -230,7 +232,7 @@ export async function PUT(request: NextRequest) {
         { status: 404 }
       );
     }
-    const resumeUrl = candidate.resume.url;
+    let resumeUrl = candidate.resume.url;
     if (!resumeUrl) {
       return NextResponse.json(
         { error: "Resume URL not found" },
@@ -246,8 +248,13 @@ export async function PUT(request: NextRequest) {
     if (fileStorage === "local") {
       base64Resume = await generateBase64(resumeUrl);
     } else {
-      const response = await fetch(resumeUrl);
+      if(!resumeUrl.startsWith("http")){
+        console.log("reqHeader: ",request.headers.get("origin"))
+        resumeUrl=request.headers.get("origin")+resumeUrl;
+      }
+      const response = await fetch(resumeUrl.trim());
       if (!response.ok) {
+        // console.log("Resumne FETCH",response);
         return NextResponse.json(
           { error: "Failed to fetch resume file" },
           { status: 500 }
@@ -329,9 +336,11 @@ export async function PUT(request: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
+    console.log("Upper: ",error)
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    console.log(error)
     return NextResponse.json(
       { error: "An unexpected error occurred" },
       { status: 500 }

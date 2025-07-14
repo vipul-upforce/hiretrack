@@ -27,8 +27,6 @@ export default function ResumeEvaluationDetails({
   const role = useRoles();
   if (!localCandidate.scores) return null;
 
-
-
   return (
     <>
       <div
@@ -49,7 +47,9 @@ export default function ResumeEvaluationDetails({
                     onReEvaluate();
                     // handleReEvaluate();
                   }}
-                  disabled={isReEvaluating}
+                  disabled={
+                    isReEvaluating && isEvaluatingFor === localCandidate._id
+                  }
                   className={
                     isReEvaluating && isEvaluatingFor === localCandidate._id
                       ? "animate-spin"

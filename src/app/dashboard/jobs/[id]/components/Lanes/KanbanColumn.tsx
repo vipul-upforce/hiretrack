@@ -9,7 +9,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { GripVertical } from "lucide-react";
 import { CandidateCard } from "../Candidate/candidate-card";
-import { Candidate } from "@/types/candidate"; // Adjust path as needed
+import { Candidate } from "@/types/candidate";
 import { LaneOptionsMenu } from "./lanes-options-menu";
 import { useState, useMemo } from "react";
 import { usePathname } from "next/navigation";
@@ -61,7 +61,7 @@ export function KanbanColumn({
   handleDeleteClick,
 }: KanbanColumnProps) {
   const [isLaneOptionsOpen, setIsLaneOptionsOpen] = useState(false);
-  const [isLaneOpsOpenFor, setIsLaneOpsOpenFor] = useState<string | null>();
+  const [isLaneOpsOpenFor, setIsLaneOpsOpenFor] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   // const [jobId, setJobId] = useState<string>();
@@ -95,7 +95,6 @@ export function KanbanColumn({
           bValue = b.expectedCTC || 0;
           break;
         case "experience":
-          // Assuming experience is stored as a number (years) or string
           aValue =
             typeof a.experience === "number"
               ? a.experience
@@ -106,7 +105,6 @@ export function KanbanColumn({
               : parseInt(b.experience as string) || 0;
           break;
         case "skills":
-          // Sort by number of skills or first skill alphabetically
           aValue = Array.isArray(a.skills) ? a.skills.length : 0;
           bValue = Array.isArray(b.skills) ? b.skills.length : 0;
           break;
@@ -158,16 +156,10 @@ export function KanbanColumn({
               ? new Date(b.createdAt).getTime()
               : 0;
           break;
-
-        case "name":
-          aValue = a.name?.toLowerCase() || "";
-          bValue = b.name?.toLowerCase() || "";
-          break;
         default:
           return 0;
       }
 
-      // Handle comparison
       if (aValue < bValue) {
         return direction === "asc" ? 1 : -1;
       }
@@ -194,25 +186,35 @@ export function KanbanColumn({
 
   return (
     <Draggable
-      key={column.id}
       draggableId={column.id}
       index={index}
-      className="z-50"
+      // Ensure the column is draggable
+      isDragDisabled={false}
     >
       {(provided: DraggableProvided) => (
         <div
           ref={provided.innerRef}
           {...provided.draggableProps}
-          className="w-[350px] mr-6 "
+          className="w-[350px] mr-6"
           style={{
+            ...provided.draggableProps.style,
             userSelect: "none",
+            // opacity: snapshot.isDragging ? 0.8 : 1,
           }}
         >
           <Card className="space-y-4 min-h-[75vh] h-full">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between h-full">
                 <div className="flex items-center space-x-2">
-                  <div {...provided.dragHandleProps}>
+                  <div
+                    {...provided.dragHandleProps}
+                    onMouseDown={(e) => {
+                      // Prevent candidate drag interference
+                      e.stopPropagation();
+                      provided.dragHandleProps?.onMouseDown?.(e);
+                    }}
+                    className="cursor-grab active:cursor-grabbing"
+                  >
                     <GripVertical className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <CardTitle
@@ -221,7 +223,7 @@ export function KanbanColumn({
                   >
                     {column.title}
                     <span className="ml-2 text-sm text-muted-foreground">
-                      {/* ({column.candidates.length}) */}(
+                      (
                       {
                         column.candidates.filter(
                           (candidate) =>
@@ -231,11 +233,6 @@ export function KanbanColumn({
                       }
                       )
                     </span>
-                    {/* {sortField && (
-                      <span className="ml-1 text-xs text-blue-600">
-                        ↑{sortDirection === "asc" ? "↑" : "↓"}
-                      </span>
-                    )} */}
                   </CardTitle>
                 </div>
                 <LaneOptionsMenu
@@ -248,7 +245,7 @@ export function KanbanColumn({
                   isOpen={isLaneOptionsOpen && column.id === isLaneOpsOpenFor}
                   setIsOpen={(open) => {
                     setIsLaneOptionsOpen(open);
-                    setIsLaneOpsOpenFor(open ? column.id || null : null);
+                    setIsLaneOpsOpenFor(open ? column.id : null);
                   }}
                 />
               </div>
@@ -282,7 +279,6 @@ export function KanbanColumn({
                         e.preventDefault();
                         e.stopPropagation();
                         setIsFileOver(false);
-
                         const files = Array.from(e.dataTransfer.files);
                         if (files.length > 0) handleFileDrop(files[0]);
                       }
@@ -296,12 +292,15 @@ export function KanbanColumn({
                       </div>
                     )}
                     {sortedCandidates.map((candidate, index) => {
-                      // debugger;
                       if (
-                        // typeof candidate.jobId._id === "string" &&
-                        candidate?.jobId?._id?.toString() !== jobId?.toString()
-                      )
-                        return;
+                        (typeof candidate.jobId !== "string" &&
+                          candidate?.jobId?._id?.toString() !==
+                            jobId?.toString()) ||
+                        (typeof candidate.jobId === "string" &&
+                          candidate?.jobId !== jobId?.toString())
+                      ) {
+                        return null;
+                      }
                       return (
                         <CandidateCard
                           key={`${column.id}-${candidate._id}`}

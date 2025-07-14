@@ -6,7 +6,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Formik, Form, FormikHelpers } from "formik";
 import { SelectValue } from "@/components/ui/select";
-import React, { memo } from "react";
+import React, { memo, useCallback, useState } from "react";
 import { CustomField } from "@/Custom_Fields/Types/CustomField";
 import { toast } from "@/Custom_Fields/hooks/use-toast";
 import { Label } from "@/components/ui/label";
@@ -23,6 +23,7 @@ interface JobCandidateCustomFieldFormProps {
   onSave: (newField: CustomField) => void;
   jobId?: string;
   candidateId?: string;
+  existingFields?: CustomField[];
 }
 
 export const AddSpecificCustomFieldForm = memo(
@@ -31,9 +32,8 @@ export const AddSpecificCustomFieldForm = memo(
     onSave,
     jobId,
     candidateId,
+    existingFields = [],
   }: JobCandidateCustomFieldFormProps) => {
-    // const { handleAddCustomField, handleEditCustomField, selectedFormId } =
-    //   useContext(CustomFieldsContext);
     const initialValues: CustomField = {
       id: "",
       label: "",
@@ -46,12 +46,32 @@ export const AddSpecificCustomFieldForm = memo(
       showOnCard: false,
     };
 
-    const onSubmit = React.useCallback(
+    const [hasDuplicate, setHasDuplicate] = useState(false);
+
+    const checkForDuplicate = useCallback(
+      (label: string) => {
+        const trimmedLabel = label.trim().toLowerCase();
+        return existingFields.some(
+          (field) =>
+            (field.label.toLowerCase() === trimmedLabel ||
+              field.label.toLowerCase() === trimmedLabel + " |||||(i)") &&
+            (jobId ? field.jobId === jobId : field.candidateId === candidateId)
+        );
+      },
+      [existingFields, jobId, candidateId]
+    );
+
+    const onSubmit = useCallback(
       async (
         values: CustomField,
-        { resetForm }: FormikHelpers<CustomField>
+        { resetForm, setFieldError }: FormikHelpers<CustomField>
       ) => {
-        // debugger;
+        if (checkForDuplicate(values.label)) {
+          setFieldError("label", "");
+          setHasDuplicate(true);
+          return;
+        }
+
         try {
           const fieldData = {
             ...values,
@@ -60,7 +80,6 @@ export const AddSpecificCustomFieldForm = memo(
             candidateId,
           };
           onSave(fieldData);
-          // handleAddCustomField(fieldData, selectedFormId?.formId || null);
           handleClose();
           resetForm();
         } catch (error: unknown) {
@@ -72,10 +91,10 @@ export const AddSpecificCustomFieldForm = memo(
             });
         }
       },
-      [handleClose, onSave, jobId, candidateId]
+      [handleClose, onSave, jobId, candidateId, checkForDuplicate]
     );
 
-    const onValuesChange = React.useCallback(
+    const onValuesChange = useCallback(
       (
         value: string,
         values: CustomField,
@@ -84,9 +103,7 @@ export const AddSpecificCustomFieldForm = memo(
           value: string | string[] | undefined
         ) => void
       ) => {
-        // Clear options and default values when type changes
         if (value !== values.type) {
-          // Set appropriate default value based on new type
           if (["select", "multiSelect", "radio", "checkbox"].includes(value)) {
             setFieldValue("options", values.options);
             if (["select", "radio"].includes(value)) {
@@ -98,7 +115,6 @@ export const AddSpecificCustomFieldForm = memo(
             setFieldValue("defaultValue", "");
           }
         }
-
         setFieldValue("type", value);
       },
       []
@@ -117,6 +133,26 @@ export const AddSpecificCustomFieldForm = memo(
       }
     };
 
+    const handleLabelChange = useCallback(
+      (
+        e: React.ChangeEvent<HTMLInputElement>,
+        setFieldValue: (
+          field: string,
+          value: string | string[] | undefined
+        ) => void,
+        setFieldError: (field: string, message: string | undefined) => void
+      ) => {
+        const value = e.target.value;
+        setFieldValue("label", value);
+        const isDuplicate = checkForDuplicate(value);
+        setHasDuplicate(isDuplicate);
+        if (isDuplicate) {
+          setFieldError("label", "");
+        }
+      },
+      [checkForDuplicate]
+    );
+
     return (
       <Formik
         initialValues={initialValues}
@@ -130,15 +166,25 @@ export const AddSpecificCustomFieldForm = memo(
           handleSubmit,
           getFieldProps,
           setFieldValue,
+          setFieldError,
         }) => (
           <Form className="space-y-4">
             <div>
               <Label htmlFor="label" className="flex pb-2">
                 Field Label<p className="text-red-500">*</p>
               </Label>
-              <Input id="label" {...getFieldProps("label")} />
+              <Input
+                id="label"
+                {...getFieldProps("label")}
+                onChange={(e) =>
+                  handleLabelChange(e, setFieldValue, setFieldError)
+                }
+              />
               {errors.label && touched.label && (
                 <div className="text-red-500 text-xs pt-1">{errors.label}</div>
+              )}
+              {hasDuplicate && (
+                <div className="text-red-500 text-xs pt-1">Already exists</div>
               )}
             </div>
 
@@ -181,7 +227,6 @@ export const AddSpecificCustomFieldForm = memo(
                   placeholder="Add options..."
                   suggestions={[]}
                 />
-
                 {errors.options && touched.options && (
                   <div className="text-red-500">{errors.options}</div>
                 )}
@@ -322,7 +367,12 @@ export const AddSpecificCustomFieldForm = memo(
               </>
             )}
 
-            <Button type="submit">Save</Button>
+            <Button
+              type="submit"
+              disabled={hasDuplicate || Object.keys(errors).length > 0}
+            >
+              Save
+            </Button>
           </Form>
         )}
       </Formik>

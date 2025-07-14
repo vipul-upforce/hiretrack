@@ -29,6 +29,7 @@ export type CustomFieldsContextType = {
     formId: string | null
   ) => void;
   deleteFormIDAllCustomFields: (formId: string) => void;
+  deleteFormIDAllIndCustomFields: (formId: string) => void;
   userLoggedIn: boolean;
   setUserLoggedIn: (user: boolean) => void;
   setSelectedFormId: Dispatch<SetStateAction<SelectedFormObject | null>>;
@@ -53,5 +54,6 @@ export const CustomFieldsContext = createContext<CustomFieldsContextType>({
   userLoggedIn: false,
   setUserLoggedIn: () => {},
   setSelectedFormId: () => {},
+  deleteFormIDAllIndCustomFields:()=>{}
   // postCustomFields: () => {},
 });

@@ -6,11 +6,26 @@ import {
 import { Input } from "@/components/ui/input";
 import { Formik, FormikHelpers } from "formik";
 import { SelectValue } from "@/components/ui/select";
-import React, { useState, useContext, memo, useEffect } from "react";
+import React, {
+  useState,
+  useContext,
+  memo,
+  useEffect,
+  useCallback,
+} from "react";
 import {
   CustomField,
   CustomFieldFormProps,
 } from "@/Custom_Fields/Types/CustomField";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import CustomFieldDialog from "../Common/CustomFieldDialog";
 import { toast } from "@/Custom_Fields/hooks/use-toast";
 import { CustomFieldsContext } from "@/Custom_Fields/Context";
@@ -23,10 +38,12 @@ import { fieldTypes } from "@/Custom_Fields/utils";
 import { validationSchema } from "@/Custom_Fields/utils/validations";
 
 const CustomFieldForm = memo(
-  ({ isOpen, handleClose, initialValue }: CustomFieldFormProps) => {
+  ({ isOpen, handleClose, initialValue, isEditMode }: CustomFieldFormProps) => {
     const { handleAddCustomField, handleEditCustomField, selectedFormId } =
       useContext(CustomFieldsContext);
 
+    const existingFields = selectedFormId?.fields || [];
+    const [duplicationAlert, setDuplicationAlert] = useState<boolean>(false);
     const [initialValues, setInitialValues] = useState<CustomField>({
       id: "",
       label: "",
@@ -38,6 +55,8 @@ const CustomFieldForm = memo(
       private: false,
       showOnCard: false,
     });
+    const [dupLabel, setDupLabel] = useState<string | null>(null);
+    const [hasDuplicate, setHasDuplicate] = useState(false);
 
     useEffect(() => {
       if (initialValue) {
@@ -45,19 +64,64 @@ const CustomFieldForm = memo(
       }
     }, [initialValue]);
 
-    const onSubmit = React.useCallback(
+    const checkForDuplicate = useCallback(
+      (label: string, excludeId?: string) => {
+        const trimmedLabel = label.trim().toLowerCase();
+        return existingFields?.some(
+          (field) =>
+            (field.label.toLowerCase() === trimmedLabel ||
+              field.label.toLowerCase() === trimmedLabel + " |||||(g)") &&
+            !field.candidateId &&
+            !field.jobId &&
+            field.id !== excludeId
+        );
+      },
+      [existingFields]
+    );
+
+    const onSubmit = useCallback(
       async (
         values: CustomField,
-        { resetForm }: FormikHelpers<CustomField>
+        { resetForm, setFieldError }: FormikHelpers<CustomField>
       ) => {
+        if (isEditMode && values.label === initialValue?.label) {
+        } else {
+          const isDuplicate = checkForDuplicate(
+            values.label,
+            isEditMode ? initialValue?.id : undefined
+          );
+          if (isDuplicate) {
+            setFieldError("label", "");
+            setHasDuplicate(true);
+            return;
+          }
+
+          const hasGlobalDuplicate = selectedFormId?.fields.some((field) => {
+            if (
+              !field.jobId &&
+              !field.candidateId &&
+              field.label === values.label &&
+              (!isEditMode || field.id !== initialValue?.id)
+            ) {
+              setDupLabel(field.label);
+              setDuplicationAlert(true);
+              return true;
+            }
+            return false;
+          });
+
+          if (hasGlobalDuplicate) {
+            return;
+          }
+        }
+
         try {
-          if (initialValue) {
+          if (isEditMode) {
             handleEditCustomField(
               values as CustomField,
               selectedFormId?.formId || null
             );
           } else {
-            // Format the field data
             const fieldData = {
               ...values,
               id: Math.random().toString(36).substr(2, 9),
@@ -80,14 +144,16 @@ const CustomFieldForm = memo(
       },
       [
         initialValue,
+        isEditMode,
         selectedFormId,
         handleEditCustomField,
         handleAddCustomField,
         handleClose,
+        checkForDuplicate,
       ]
     );
 
-    const onValuesChange = React.useCallback(
+    const onValuesChange = useCallback(
       (
         value: string,
         values: CustomField,
@@ -96,9 +162,7 @@ const CustomFieldForm = memo(
           value: string | string[] | undefined
         ) => void
       ) => {
-        // Clear options and default values when type changes
         if (value !== values.type) {
-          // Set appropriate default value based on new type
           if (["select", "multiSelect", "radio", "checkbox"].includes(value)) {
             setFieldValue("options", values.options);
             if (["select", "radio"].includes(value)) {
@@ -110,7 +174,6 @@ const CustomFieldForm = memo(
             setFieldValue("defaultValue", "");
           }
         }
-
         setFieldValue("type", value);
       },
       []
@@ -129,13 +192,59 @@ const CustomFieldForm = memo(
       }
     };
 
+    const handleLabelChange = useCallback(
+      (
+        e: React.ChangeEvent<HTMLInputElement>,
+        setFieldValue: (
+          field: string,
+          value: string | string[] | undefined
+        ) => void,
+        setFieldError: (field: string, message: string | undefined) => void
+      ) => {
+        const value = e.target.value;
+        setFieldValue("label", value);
+        const isDuplicate = checkForDuplicate(
+          value,
+          isEditMode ? initialValue?.id : undefined
+        );
+        setHasDuplicate(isDuplicate);
+        if (isDuplicate) {
+          setFieldError("label", "");
+        }
+      },
+      [checkForDuplicate, isEditMode, initialValue]
+    );
+
     return (
       <CustomFieldDialog
         isOpen={isOpen}
         onClose={handleClose}
-        title="Meta Field"
+        title="Global Meta Fields"
         regular
       >
+        <AlertDialog open={duplicationAlert} onOpenChange={setDuplicationAlert}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Duplication Alert</AlertDialogTitle>
+              <AlertDialogDescription>
+                <p className="text-lg">{dupLabel}</p> This action was not
+                completed because a field with this label already exists in
+                global meta fields.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogAction
+                onClick={() => setDuplicationAlert(false)}
+                className={
+                  "text-blue-500 bg-blue hover:bg-blue hover:text-blue-500/90"
+                }
+              >
+                Okay
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         <Formik
           initialValues={initialValues}
           validationSchema={validationSchema}
@@ -148,16 +257,28 @@ const CustomFieldForm = memo(
             handleSubmit,
             getFieldProps,
             setFieldValue,
+            setFieldError,
           }) => (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <Label htmlFor="label" className="flex pb-2">
                   Field Label<p className="text-red-500">*</p>
                 </Label>
-                <Input id="label" {...getFieldProps("label")} />
+                <Input
+                  id="label"
+                  {...getFieldProps("label")}
+                  onChange={(e) =>
+                    handleLabelChange(e, setFieldValue, setFieldError)
+                  }
+                />
                 {errors.label && touched.label && (
                   <div className="text-red-500 text-xs pt-1">
                     {errors.label}
+                  </div>
+                )}
+                {hasDuplicate && touched.label && (
+                  <div className="text-red-500 text-xs pt-1">
+                    Already exists
                   </div>
                 )}
               </div>
@@ -201,7 +322,6 @@ const CustomFieldForm = memo(
                     placeholder="Add options..."
                     suggestions={[]}
                   />
-
                   {errors.options && touched.options && (
                     <div className="text-red-500">{errors.options}</div>
                   )}
@@ -345,7 +465,15 @@ const CustomFieldForm = memo(
                 </>
               )}
 
-              <Button type="submit">Save</Button>
+              <Button
+                type="submit"
+                disabled={
+                  !isEditMode &&
+                  (hasDuplicate || Object.keys(errors).length > 0)
+                }
+              >
+                Save
+              </Button>
             </form>
           )}
         </Formik>

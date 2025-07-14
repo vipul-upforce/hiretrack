@@ -221,7 +221,6 @@ export function LaneOptionsMenu({
             </div>
             <div className="mb-4">
               {/* <div className="text-xs text-muted-foreground mb-2">by</div> */}
-
             </div>
             {/* <div className="mb-4">
               <div className="text-xs text-muted-foreground mb-2">Order</div>
@@ -252,6 +251,6 @@ export function LaneOptionsMenu({
           </div>
         )}
       </DropdownMenuContent>
-    </DropdownMenu >
+    </DropdownMenu>
   );
 }

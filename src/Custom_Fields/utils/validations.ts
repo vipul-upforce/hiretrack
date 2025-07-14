@@ -37,13 +37,13 @@ export const getYupSchema = (fields: CustomField[]) => {
     let validator: Yup.Schema<unknown>;
     switch (field.type) {
       case "number":
-        validator = Yup.number().typeError(`${field.label} must be a number`);
+        validator = Yup.number().typeError(`${field.label.split(" |||||(")[0]} must be a number`);
         break;
       case "select":
       case "radio":
         validator = Yup.string().oneOf(
           field.options || [],
-          `${field.label} must be one of ${field.options?.join(", ")}`
+          `${field.label.split(" |||||(")[0]} must be one of ${field.options?.join(", ")}`
         );
         break;
       case "multiSelect":
@@ -52,17 +52,17 @@ export const getYupSchema = (fields: CustomField[]) => {
           .of(
             Yup.string().oneOf(
               field.options || [],
-              `${field.label} must be one of ${field.options?.join(", ")}`
+              `${field.label.split(" |||||(")[0]} must be one of ${field.options?.join(", ")}`
             )
           )
-          .min(field.required ? 1 : 0, `${field.label} is required`);
+          .min(field.required ? 1 : 0, `${field.label.split(" |||||(")[0]} is required`);
         break;
       case "date":
-        validator = Yup.date().typeError(`${field.label} must be a valid date`);
+        validator = Yup.date().typeError(`${field.label.split(" |||||(")[0]} must be a valid date`);
         break;
       case "datetime":
         validator = Yup.date().typeError(
-          `${field.label} must be a valid datetime`
+          `${field.label.split(" |||||(")[0]} must be a valid datetime`
         );
         break;
       case "time":
@@ -79,7 +79,7 @@ export const getYupSchema = (fields: CustomField[]) => {
     }
 
     if (field.required) {
-      validator = validator.required(`${field.label} is required`);
+      validator = validator.required(`${field.label.split(" |||||(")[0]} is required`);
     }
 
     schemaFields[field.label] = validator;

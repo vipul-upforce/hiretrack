@@ -30,14 +30,16 @@ function AddCustomFields() {
         onClick={onClick}
       >
         <CardHeader>
-          <CardTitle>Meta Field</CardTitle>
+          <CardTitle>Global Meta Fields</CardTitle>
         </CardHeader>
-        <CardContent>Update the meta fields for your organization</CardContent>
+        <CardContent>
+          Update the global meta fields for your organization
+        </CardContent>
       </Card>
       <CustomFieldDialog
         isOpen={isOpen}
         onClose={handleClose}
-        title="Global Fields"
+        title="Global Meta Fields"
       >
         <Stepper />
       </CustomFieldDialog>

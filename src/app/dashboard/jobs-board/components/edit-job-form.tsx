@@ -88,12 +88,12 @@ interface JobFormValues extends Omit<Job, "attachments"> {
 type FileOrAttachment =
   | File
   | {
-    id: string;
-    name: string;
-    url: string;
-    type: "pdf" | "image";
-    size: number;
-  };
+      id: string;
+      name: string;
+      url: string;
+      type: "pdf" | "image";
+      size: number;
+    };
 
 const convertFileToBase64 = (file: FileOrAttachment): Promise<string> => {
   if (file instanceof File) {
@@ -107,7 +107,6 @@ const convertFileToBase64 = (file: FileOrAttachment): Promise<string> => {
   return Promise.resolve(file.url);
 };
 
-
 export const scrollToError = (errors: FormikErrors<any>) => {
   if (!errors || Object.keys(errors).length === 0) return;
 
@@ -115,22 +114,26 @@ export const scrollToError = (errors: FormikErrors<any>) => {
   if (!firstErrorKey) return;
 
   let element: HTMLElement | null = null;
-
-  if (firstErrorKey === 'customFields' && errors.customFields) {
+  console.log(errors);
+  if (firstErrorKey === "customFields" && errors.customFields) {
     // Handle nested customFields errors
     const customFieldErrors = errors.customFields as Record<string, string>;
     const cfKey = Object.keys(customFieldErrors)[0];
     if (cfKey) {
       // Use name attribute for Formik fields
-      element = document.querySelector(`[name="customFields.${cfKey}"]`) as HTMLElement;
+      element = document.querySelector(
+        `[name="customFields.${cfKey}"]`
+      ) as HTMLElement;
     }
   } else {
     // Use name attribute for top-level fields
-    element = document.querySelector(`[name="${firstErrorKey}"]`) as HTMLElement;
+    element = document.querySelector(
+      `[name="${firstErrorKey}"]`
+    ) as HTMLElement;
   }
 
   if (element) {
-    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    element.scrollIntoView({ behavior: "smooth", block: "center" });
     element.focus({ preventScroll: true });
   } else {
     console.warn(`No element found for error key: ${firstErrorKey}`);
@@ -138,7 +141,10 @@ export const scrollToError = (errors: FormikErrors<any>) => {
 };
 export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
   const formName = "Job Position";
-  const { validationSchema, getDefaultValues } = useCustomForm(formName);
+  const { validationSchema, getDefaultValues } = useCustomForm(
+    formName,
+    job._id
+  );
   const [updateJob] = useUpdateJobMutation();
   const { toast } = useToast();
 
@@ -166,10 +172,13 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
 
       if (jobForm) {
         const [formId, form] = jobForm;
+        const formFields = form.fields.filter(
+          (field) => field.jobId && field.jobId === job._id
+        );
         setSelectedFormId({
           formId: formId,
           formName: form.formName,
-          fields: form.fields,
+          fields: formFields,
         });
       }
     }
@@ -267,7 +276,7 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
       onSubmit={onSubmit}
     >
       {({ isSubmitting, setFieldValue, values, errors }) => (
-        <Form className="flex flex-col h-[calc(90vh-80px)] overflow-hidden border-t pt-4 sticky top-0">
+        <Form className="flex flex-col h-[calc(90vh-80px)] overflow-hidden border-t pt-4 mb-[70px] sticky top-0">
           <div className="flex-1 overflow-y-auto px-6 py-4 pt-0 space-y-4">
             <JobForm
               job={job}
@@ -288,7 +297,7 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
             <CustomFields formName={formName} />
           </div>
 
-          <div className="flex justify-between space-x-2 border-t bg-background px-6 py-4">
+          <div className="flex justify-between space-x-2 border-t bg-background px-6 py-4 fixed bottom-0 w-full">
             <div>
               <AddSpecificCustomFieldButton
                 jobId={job._id}

@@ -57,7 +57,9 @@ const CustomFieldsData = ({ customFields }: FormValues) => {
         }
         return (
           <div key={key} className="space-y-1">
-            <Label className="font-semibold capitalize">{key}</Label>
+            <Label className="font-semibold capitalize">
+              {key.split(" |||||(")[0]}
+            </Label>
             <div className="text-sm text-gray-700">
               {Array.isArray(value) && value.length > 0 && (
                 <>

@@ -177,7 +177,12 @@ export function ApplyAsGuestDialog({
     useApplicationEventMailMutation();
   const [parsedResumeData, setParsedResume] = useState<Resume | null>(null);
   const formName = "Candidate";
-  const { validationSchema, initialValues: inits } = useCustomForm(formName);
+  const { validationSchema, initialValues: inits } = useCustomForm(
+    formName,
+    undefined,
+    undefined,
+    true
+  );
   const [resetForm, setResetForm] = useState(false);
   const [hasAlreadyApplied, setHasAlreadyApplied] = useState(false);
   const { formikRef, handleApply } = useApplyHandler<CandidateFormValues>();

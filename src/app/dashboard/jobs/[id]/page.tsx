@@ -164,6 +164,7 @@ export default function JobProgressPage() {
   useEffect(() => {
     if (candidatesFromQuery && lanes) {
       const mergedCandidates = [...candidatesFromQuery];
+      // debugger;
       sseCandidates.forEach((sseCandidate) => {
         const index = mergedCandidates.findIndex(
           (c) => c._id === sseCandidate._id
@@ -314,7 +315,9 @@ export default function JobProgressPage() {
               <Checkbox
                 id="showArchived"
                 checked={showArchived}
-                onCheckedChange={(checked) => setShowArchived(checked as boolean)}
+                onCheckedChange={(checked) =>
+                  setShowArchived(checked as boolean)
+                }
               />
               <label
                 htmlFor="showArchived"
@@ -355,30 +358,33 @@ export default function JobProgressPage() {
             <div
               {...provided.droppableProps}
               ref={mergeRefs([provided.innerRef, scrollRef])}
+              // ref={provided.innerRef}
               className="grid grid-flow-col overflow-x-scroll pb-4 z-0"
             >
-              {columns.map((column, index) => (
-                <KanbanColumn
-                  key={column.id}
-                  column={column}
-                  index={index}
-                  isFileOver={isFileOver}
-                  setIsFileOver={setIsFileOver}
-                  handleFileDrop={handleFileDrop}
-                  handleDeleteLane={handleDeleteLane}
-                  handleEditLane={handleEditLaneClick}
-                  setLaneToDelete={setLaneToDelete}
-                  setLaneToEdit={setLaneToEdit}
-                  refetch={refetch}
-                  selectedCandidate={selectedCandidate}
-                  setSelectedCandidate={setSelectedCandidate}
-                  isDetailsOpen={isDetailsOpen}
-                  setIsDetailsOpen={setIsDetailsOpen}
-                  openRemarksFor={openRemarksFor}
-                  setOpenRemarksFor={setOpenRemarksFor}
-                  handleDeleteClick={handleDeleteClick}
-                />
-              ))}
+              {columns.map((column, index) => {
+                return (
+                  <KanbanColumn
+                    key={column.id}
+                    column={column}
+                    index={index}
+                    isFileOver={isFileOver}
+                    setIsFileOver={setIsFileOver}
+                    handleFileDrop={handleFileDrop}
+                    handleDeleteLane={handleDeleteLane}
+                    handleEditLane={handleEditLaneClick}
+                    setLaneToDelete={setLaneToDelete}
+                    setLaneToEdit={setLaneToEdit}
+                    refetch={refetch}
+                    selectedCandidate={selectedCandidate}
+                    setSelectedCandidate={setSelectedCandidate}
+                    isDetailsOpen={isDetailsOpen}
+                    setIsDetailsOpen={setIsDetailsOpen}
+                    openRemarksFor={openRemarksFor}
+                    setOpenRemarksFor={setOpenRemarksFor}
+                    handleDeleteClick={handleDeleteClick}
+                  />
+                );
+              })}
               {provided.placeholder}
             </div>
           )}

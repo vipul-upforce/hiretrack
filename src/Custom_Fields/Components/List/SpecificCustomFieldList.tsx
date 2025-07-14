@@ -12,6 +12,15 @@ import {
   type DraggableProvided,
   type DraggableStateSnapshot,
 } from "@hello-pangea/dnd";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { CustomFieldItem } from "./CustomFieldList";
 import { AddSpecificCustomFieldForm } from "../AddSpecificCustomFieldForm";
 import CustomFieldForm from "../Form/CustomFieldForm";
@@ -30,7 +39,9 @@ function SpecificCustomFieldList({
   const [selectedField, setSelectedField] = useState<CustomField>();
   const [orderedFields, setOrderedFields] = useState<CustomField[]>([]);
   const [formOpen, setFormOpen] = useState<boolean>(false);
-
+  const [duplicationAlert, setDuplicationAlert] = useState<boolean>(false);
+  const [duplicationMessage, setDuplicationMessage] = useState<string>("");
+  const [isEditMode, setIsEditMode] = useState(false);
   const handleAddField = () => {
     setFormOpen(true);
   };
@@ -54,10 +65,42 @@ function SpecificCustomFieldList({
   // Initialize orderedFields when selectedFormId changes
   React.useEffect(() => {
     if (selectedFormId?.fields) {
-      setOrderedFields(selectedFormId.fields);
+      const filteredFIelds = selectedFormId.fields.filter(
+        (field) =>
+          (field.candidateId && field.candidateId === candidateId) ||
+          (field.jobId && field.jobId === jobId)
+      );
+      setOrderedFields(filteredFIelds);
     }
   }, [selectedFormId?.fields]);
 
+  // const onDragEnd = (result: DropResult) => {
+  //   if (!result.destination) return;
+
+  //   const items = Array.from(orderedFields);
+  //   const [reorderedItem] = items.splice(result.source.index, 1);
+  //   items.splice(result.destination.index, 0, reorderedItem);
+
+  //   if (selectedFormId) {
+  //     const allFields = selectedFormId.fields;
+  //     const otherFields = allFields.filter(
+  //       (field) =>
+  //         (field.candidateId && field.candidateId === candidateId) ||
+  //         (field.jobId && field.jobId === jobId)
+  //     );
+  //     const reorderedFields = [...items, ...otherFields];
+
+  //     const orderedItems = {
+  //       ...customFields,
+  //       [selectedFormId.formId]: {
+  //         ...selectedFormId,
+  //         fields: reorderedFields,
+  //       },
+  //     };
+  //     setCustomFields(orderedItems);
+  //   }
+  //   setOrderedFields(items);
+  // };
   const onDragEnd = (result: DropResult) => {
     if (!result.destination) return;
 
@@ -66,11 +109,37 @@ function SpecificCustomFieldList({
     items.splice(result.destination.index, 0, reorderedItem);
 
     if (selectedFormId) {
+      const allFields = selectedFormId.fields;
+      const matchingFields = allFields.filter(
+        (field) =>
+          (candidateId && field.candidateId === candidateId) ||
+          (jobId && field.jobId === jobId)
+      );
+      const otherFields = allFields.filter(
+        (field) =>
+          !(
+            (candidateId && field.candidateId === candidateId) ||
+            (jobId && field.jobId === jobId)
+          )
+      );
+      if (
+        JSON.stringify(matchingFields.map((f) => f.id)) !==
+        JSON.stringify(orderedFields.map((f) => f.id))
+      ) {
+        console.warn(
+          "orderedFields does not match the expected fields for candidateId/jobId",
+          { matchingFields, orderedFields }
+        );
+        return;
+      }
+      // Combine reordered fields with other fields
+      const reorderedFields = [...items, ...otherFields];
+
       const orderedItems = {
         ...customFields,
         [selectedFormId.formId]: {
           ...selectedFormId,
-          fields: items,
+          fields: reorderedFields,
         },
       };
       setCustomFields(orderedItems);
@@ -79,6 +148,44 @@ function SpecificCustomFieldList({
   };
 
   const handleSave = (newField: CustomField) => {
+    selectedFormId?.fields.forEach((field) => {
+      if (
+        field.label === newField.label &&
+        !field.jobId &&
+        !field.candidateId
+      ) {
+        newField.label += " |||||(i)";
+      }
+    });
+    // if (
+
+    // ) {
+    //   setDuplicationMessage(
+    //     `field already exists with this label, in the global meta fields.`
+    //   );
+    //   setDuplicationAlert(true);
+
+    //   return;
+    // }
+    if (
+      selectedFormId?.fields.some(
+        (field) =>
+          field.label === newField.label &&
+          ((field.jobId && field.jobId === jobId) ||
+            (field.candidateId && field.candidateId === candidateId))
+      )
+    ) {
+      // const count = selectedFormId?.fields.filter(
+      //   (field) => field.label === newField.label
+      // ).length;
+      // newField.label += ` (${String(count + 1)})`;
+      setDuplicationMessage(
+        `field already exists with this label in current ${selectedFormId.formName}.`
+      );
+      setDuplicationAlert(true);
+      return;
+    }
+
     handleAddCustomField(newField, selectedFormId?.formId || "");
     setIsOpen(false);
   };
@@ -108,6 +215,7 @@ function SpecificCustomFieldList({
         onSave={handleSave}
         jobId={jobId}
         candidateId={candidateId}
+        existingFields={selectedFormId?.fields}
       />
     );
   }
@@ -125,6 +233,34 @@ function SpecificCustomFieldList({
         </Button>
       </div>
 
+      {duplicationAlert && (
+        <AlertDialog open={duplicationAlert} onOpenChange={setDuplicationAlert}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Duplication Alert</AlertDialogTitle>
+              <AlertDialogDescription>
+                <>
+                  This action was not completed because a {duplicationMessage}
+                  {/* {selectedFormId
+                    ? `This action was not completed because a a field already exists in this ${selectedFormId.formName}`
+                    : "This action was not completed because a a field already exists "} */}
+                </>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogAction
+                onClick={() => setDuplicationAlert(false)}
+                className={
+                  "text-blue-500 bg-blue hover:bg-blue hover:text-blue-500/90"
+                }
+              >
+                {"Okay"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+
       <DragDropContext onDragEnd={onDragEnd}>
         <Droppable droppableId="custom-fields">
           {(provided: DroppableProvided) => (
@@ -139,8 +275,8 @@ function SpecificCustomFieldList({
             >
               {orderedFields.map((field, index) => {
                 if (
-                  (field.jobId && field.jobId !== jobId) ||
-                  (field.candidateId && field.candidateId !== candidateId)
+                  field.jobId !== jobId ||
+                  field.candidateId !== candidateId
                 ) {
                   return null;
                 }
@@ -171,6 +307,7 @@ function SpecificCustomFieldList({
                             isDragging={snapshot.isDragging}
                             handleEditCustomField={() => {
                               setSelectedField(field);
+                              setIsEditMode(true);
                               handleOpen();
                             }}
                             handleDeleteCustomField={() => {
@@ -213,8 +350,12 @@ function SpecificCustomFieldList({
 
       <CustomFieldForm
         isOpen={isOpen}
-        handleClose={handleClose}
+        handleClose={() => {
+          handleClose();
+          setIsEditMode(false);
+        }}
         initialValue={selectedField}
+        isEditMode={isEditMode}
       />
     </div>
   );

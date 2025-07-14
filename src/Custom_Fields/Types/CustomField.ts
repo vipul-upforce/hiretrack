@@ -35,6 +35,8 @@ export type CustomFieldFormProps = {
   isOpen: boolean;
   handleClose: () => void;
   initialValue?: CustomField | null;
+  existingFields?: CustomField[];
+  isEditMode?: boolean;
 };
 
 export type Types =
