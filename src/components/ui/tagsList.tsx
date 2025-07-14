@@ -1,7 +1,7 @@
 "use client";
 
 import type { Candidate } from "@/types/candidate";
-import { useState } from "react";
+// import { \ } from "react";
 import {
   Tooltip,
   TooltipContent,
@@ -10,7 +10,8 @@ import {
 } from "@/components/ui/tooltip";
 
 const TagsList = ({ candidate }: { candidate: Candidate }) => {
-  const [hoveredTag, setHoveredTag] = useState<number | null>(null);
+  // const [hoveredTag, setHoveredTag] = useState<number | null>(null);
+
   if (!candidate.tags || candidate.tags.length === 0) return null;
 
   return (
@@ -22,8 +23,8 @@ const TagsList = ({ candidate }: { candidate: Candidate }) => {
               <div
                 className="rounded-full flex-1 h-2 min-w-2 max-w-[80px] cursor-pointer transition-all duration-200 hover:shadow-md"
                 style={{ backgroundColor: tag.color }}
-                onMouseEnter={() => setHoveredTag(i)}
-                onMouseLeave={() => setHoveredTag(null)}
+                // onMouseEnter={() => setHoveredTag(i)}
+                // onMouseLeave={() => setHoveredTag(null)}
               />
             </TooltipTrigger>
             <TooltipContent
