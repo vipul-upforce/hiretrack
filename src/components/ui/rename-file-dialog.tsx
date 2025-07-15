@@ -1,19 +1,19 @@
-import * as React from "react"
+import * as React from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 interface RenameFileDialogProps {
-  isOpen: boolean
-  onClose: () => void
-  fileName: string
-  onRename: (newName: string) => void
+  isOpen: boolean;
+  onClose: () => void;
+  fileName: string;
+  onRename: (newName: string) => void;
 }
 
 export function RenameFileDialog({
@@ -22,30 +22,30 @@ export function RenameFileDialog({
   fileName,
   onRename,
 }: RenameFileDialogProps) {
-  const [newName, setNewName] = React.useState(fileName)
+  const [newName, setNewName] = React.useState(fileName);
 
   React.useEffect(() => {
-    setNewName(fileName)
-  }, [fileName])
+    setNewName(fileName);
+  }, [fileName]);
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    
+    e.preventDefault();
+    e.stopPropagation();
+
     // Check if the new name has an extension
-    const hasExtension = /\.[^/.]+$/.test(newName)
-    
+    const hasExtension = /\.[^/.]+$/.test(newName);
+
     // If original filename has an extension and new name doesn't, copy the extension
-    if (!hasExtension && fileName.includes('.')) {
-      const originalExt = fileName.split('.').pop()
-      const nameWithExt = `${newName}.${originalExt}`
-      onRename(nameWithExt)
+    if (!hasExtension && fileName.includes(".")) {
+      const originalExt = fileName.split(".").pop();
+      const nameWithExt = `${newName}.${originalExt}`;
+      onRename(nameWithExt);
     } else {
-      onRename(newName)
+      onRename(newName);
     }
-    
-    onClose()
-  }
+
+    onClose();
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -66,10 +66,12 @@ export function RenameFileDialog({
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={newName.length < 3}>Rename</Button>
+            <Button type="submit" disabled={newName.length < 3}>
+              Rename
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
-  )
-} 
+  );
+}

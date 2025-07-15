@@ -204,21 +204,28 @@ export function CandidateDetailsDialog({
   }, [isEditing, onOpenChange]);
 
   useEffect(() => {
-    if (candidateData || localCandidate) {
-      if (!candidateData && localCandidate) {
-        const currentCandidate = localCandidate;
-        if (currentCandidate && currentCandidate.history) {
-          setTimeLineItems(currentCandidate.history || []);
-        }
-      } else if (candidateData && localCandidate) {
-        const currentCandidate = candidateData.find(
-          (c) => c._id === localCandidate._id
-        );
-        if (currentCandidate && currentCandidate.history) {
-          setTimeLineItems(currentCandidate.history || []);
-        }
-      }
-    }
+    // if (candidateData || localCandidate) {
+    //   console.log("🛴🛴🛴 ", localCandidate?.history);
+    //   console.log(
+    //     "🛹🛹🛹 ",
+    //     candidateData?.find((c) => c._id === localCandidate?._id)?.history
+    //   );
+    //   if (!candidateData && localCandidate) {
+    //     const currentCandidate = localCandidate;
+    //     if (currentCandidate && currentCandidate.history) {
+    //       setTimeLineItems(currentCandidate.history || []);
+    //     }
+    //   } else if (candidateData && localCandidate) {
+    //     const currentCandidate = candidateData.find(
+    //       (c) => c._id === localCandidate._id
+    //     );
+    //     if (currentCandidate && currentCandidate.history) {
+    //       setTimeLineItems(currentCandidate.history || []);
+    //     }
+    //   }
+    // }
+    const currentCandidate = localCandidate;
+    setTimeLineItems(currentCandidate?.history || []);
   }, [candidateData, localCandidate]);
 
   useEffect(() => {
@@ -234,7 +241,7 @@ export function CandidateDetailsDialog({
   }, [candidate, id]);
 
   if (!localCandidate) return null;
-
+  // console.log("TimeLine Items: ", timeLineItems);
   const validTimeLineItems = timeLineItems.filter((item) => item.title !== "");
   const header = (
     <DialogHeader className="px-6 pt-6">

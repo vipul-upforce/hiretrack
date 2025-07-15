@@ -239,6 +239,7 @@ export const HistoryAndLogTable: React.FC<{
                     new Date(a?.dateTime ?? 0).getTime()
                 )
                 .filter((interview) => {
+                  // debugger;
                   if (!interview.remark || !interview.remark.description) {
                     return true;
                   }

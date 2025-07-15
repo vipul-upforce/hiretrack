@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useToast } from "@/hooks/use-toast";
-import { MuiColorInput } from "mui-color-input"
+import { MuiColorInput } from "mui-color-input";
 import {
   useFetchOrgTagsQuery,
   useUpdateOrgTagsMutation,
@@ -85,10 +85,10 @@ const ManageTagsDialog = ({
 
   const handleDeleteTag = (tagTitle: string) => {
     setOrgTags((prev) => prev.filter((t) => t.title !== tagTitle));
-    toast({
-      title: "Success",
-      description: `Tag "${tagTitle}" deleted.`,
-    });
+    // toast({
+    //   title: "Success",
+    //   description: `Tag "${tagTitle}" deleted.`,
+    // });
   };
 
   const handleSave = async () => {
@@ -188,7 +188,7 @@ const ManageTagsDialog = ({
                           setConfirmDeleteDialogOpen(true);
                         }}
                         className="rounded-full  p-0 w-6 h-6"
-                      // className="bg-white text-black"
+                        // className="bg-white text-black"
                       >
                         <X />
                       </Button>
@@ -197,7 +197,7 @@ const ManageTagsDialog = ({
                 </div>
               )}
             </div>
-            <div className="flex fixed bottom-0 w-[90%] justify-end space-x-2 bg-background px-6 py-4">
+            <div className="flex fixed bottom-0 w-[90%] justify-end space-x-2 bg-background px-0 py-4">
               <Button variant="outline" onClick={onClose} disabled={isUpdating}>
                 Cancel
               </Button>

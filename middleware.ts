@@ -210,6 +210,7 @@ const unauthorizedInterviewerPages = [
   "/dashboard/settings",
   "/dashboard/search",
   "/dashboard/cv-upload",
+  "/api/organization/tags"
 ];
 
 const unauthorizedInterviewerAPIRoutes = ["/api/candidates/filter"];
@@ -240,6 +241,7 @@ const apiExemptPaths = [
   "/api/auth/2fa/send-otp",
   "/api/auth/2fa/verify-otp",
   "/api/settings/twofa",
+  "/api/organization/tags"
 ];
 
 const redirectPaths = [

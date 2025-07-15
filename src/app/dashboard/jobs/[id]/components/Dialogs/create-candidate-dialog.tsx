@@ -460,7 +460,7 @@ export function CreateCandidateDialog({
                 </Button>
                 <Button
                   onClick={() => {
-                    scrollToErrorMassage(errors);
+                    // scrollToErrorMassage(errors);
                     handleApply();
                   }}
                   type="button"

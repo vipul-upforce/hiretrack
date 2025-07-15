@@ -165,6 +165,10 @@ export default function JobProgressPage() {
     if (candidatesFromQuery && lanes) {
       const mergedCandidates = [...candidatesFromQuery];
       // debugger;
+      // console.log(
+      //   "🙌🙌🙌🙌 ",
+      //   mergedCandidates.find((c) => c._id === selectedCandidate?._id)?.history
+      // );
       sseCandidates.forEach((sseCandidate) => {
         const index = mergedCandidates.findIndex(
           (c) => c._id === sseCandidate._id
@@ -192,14 +196,18 @@ export default function JobProgressPage() {
 
       const updatedColumns = lanesArray.map((lane) => {
         const column = initialCandidateColumns.find((item) => item.id === lane);
+        const candidates = mergedCandidates.filter(
+          (candidate) =>
+            candidate.status === lane &&
+            (showArchived ? candidate.isDeleted : !candidate.isDeleted)
+        );
+        // if (updateSelectedCandodate) {
+        //   handleCandidateUpdate(updateSelectedCandodate);
+        // }
         return {
           id: lane as CandidateStatus,
           title: column?.title || lane,
-          candidates: mergedCandidates.filter(
-            (candidate) =>
-              candidate.status === lane &&
-              (showArchived ? candidate.isDeleted : !candidate.isDeleted)
-          ),
+          candidates: candidates,
         } as CandidateColumn;
       });
 
