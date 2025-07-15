@@ -17,10 +17,8 @@ export function RenderEvent({
   getInterviewerName,
   index,
 }: EventDetailsProps) {
-  const today = new Date().toISOString().split("T")[0];
-  const hasMultipleEventsToday =
-    events.filter((e) => e?.start?.toISOString().split("T")[0] === today)
-      .length > 1;
+  // const today = new Date().toISOString().split("T")[0];
+  const hasMultipleEventsToday = events.length > 1;
 
   return (
     <div key={index}>

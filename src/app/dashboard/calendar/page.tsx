@@ -387,6 +387,15 @@ export default function CalendarPage() {
                 );
               }}
             />
+            <div className="text-center text-muted-foreground">
+              {events.filter(
+                (event) =>
+                  event?.start?.toISOString().split("T")[0] ===
+                  new Date().toISOString().split("T")[0]
+              ).length > 0
+                ? ""
+                : "No scheduled interviews"}
+            </div>
           </CardContent>
         </Card>
         <div className="flex flex-col gap-4 sticky top-6 h-[calc(100vh-140px)] overflow-auto">
@@ -435,7 +444,7 @@ export default function CalendarPage() {
             <CardHeader>
               <CardTitle>Today's Interview</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pb-2">
               {events
                 .filter(
                   (event) =>
@@ -451,8 +460,17 @@ export default function CalendarPage() {
                     index={i}
                   />
                 ))}
+              <div className="text-center text-muted-foreground">
+                {events.filter(
+                  (event) =>
+                    event?.start?.toISOString().split("T")[0] ===
+                    new Date().toISOString().split("T")[0]
+                ).length > 0
+                  ? ""
+                  : "No interviews scheduled "}
+              </div>
             </CardContent>
-            <CardHeader>
+            <CardHeader className="">
               <CardTitle>Not Scheduled</CardTitle>
             </CardHeader>
             <CardContent>
@@ -462,6 +480,7 @@ export default function CalendarPage() {
                     !candidate.extendedProps.candidate.assignment?.time
                 )
                 .map((event, i) => (
+                  // <div className="border-b border-gray-200 pb-2 mb-2">
                   <RenderEvent
                     key={i}
                     event={event}
@@ -469,13 +488,13 @@ export default function CalendarPage() {
                     getInterviewerName={getInterviewerName}
                     index={i}
                   />
+                  // </div>
                 ))}
 
               <div className="text-center text-muted-foreground">
                 {events.filter(
-                  (event) =>
-                    event?.start?.toISOString().split("T")[0] ===
-                    new Date().toISOString().split("T")[0]
+                  (candidate) =>
+                    !candidate.extendedProps.candidate.assignment?.time
                 ).length > 0
                   ? ""
                   : "No scheduled interviews"}
