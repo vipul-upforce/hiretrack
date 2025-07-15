@@ -64,7 +64,7 @@ const SORT_FIELDS: SortField[] = [
   { label: "Expected CTC", value: "expectedCtc" },
   { label: "Notice Period", value: "noticePeriod" },
   { label: "Last Modified Date", value: "lastModified" },
-  { label: "Alphabatical ", value: "name" },
+  { label: "Name ", value: "name" },
 ];
 
 export function LaneOptionsMenu({

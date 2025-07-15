@@ -134,8 +134,11 @@ export async function middleware(request: NextRequest) {
     // Candidate role - redirect to apply-jobs if trying to access dashboard
     if (userRole === "candidate") {
       if (
-        pathname?.includes("/dashboard") ||
-        pathname?.includes("/dashboard/:path*")
+        // pathname?.includes("/dashboard") ||
+        // pathname?.includes("/api/candidates/assignments") ||
+        // pathname?.includes("/dashboard/:path*")
+
+        unauthorizedCandidateAPIRoutes.some((path) => pathname?.includes(path))
       ) {
         const redirectUrl = isOrgPath
           ? new URL(`/${pathParts[0]}/apply-jobs`, request.url)
@@ -210,7 +213,14 @@ const unauthorizedInterviewerPages = [
 ];
 
 const unauthorizedInterviewerAPIRoutes = ["/api/candidates/filter"];
-
+const unauthorizedCandidateAPIRoutes = [
+  "/api/candidates/assignments",
+  "/dashboard",
+  "/api/candidates/assignments",
+  "/dashboard/:path*",
+  "/api/nginx-logs",
+  "/api/download/assets",
+];
 const apiExemptPaths = [
   "/api/jobs/open-jobs",
   "/api/auth/login",

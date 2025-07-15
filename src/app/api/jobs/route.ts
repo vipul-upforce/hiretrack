@@ -12,7 +12,11 @@ export async function GET(request: NextRequest) {
 
     // Check authentication
     const session = await auth(request);
-    if (!session || !session.user?.organizationId) {
+    if (
+      !session ||
+      !session.user?.organizationId ||
+      session.user.role === "candidate"
+    ) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
