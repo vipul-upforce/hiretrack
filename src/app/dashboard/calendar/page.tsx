@@ -177,7 +177,7 @@ export default function CalendarPage() {
         searchRegex.test(
           (typeof assignment?.assignment?.interviewerId === "object" &&
             assignment?.assignment?.interviewerId?.name) ||
-          ""
+            ""
         ) ||
         (allSkills.length > 0 &&
           allSkills.some((skill) => searchRegex.test(skill || "")))
@@ -218,22 +218,22 @@ export default function CalendarPage() {
               typeof candidate?.jobId === "string"
                 ? undefined
                 : {
-                  title: (candidate?.jobId as Job)?.title,
-                  description: (candidate?.jobId as Job)?.description,
-                },
+                    title: (candidate?.jobId as Job)?.title,
+                    description: (candidate?.jobId as Job)?.description,
+                  },
           },
           interviewer:
             typeof candidate?.assignment?.interviewerId === "string"
               ? {
-                _id: candidate?.assignment?.interviewerId,
-                name: "Unknown",
-                email: "Unknown",
-              }
+                  _id: candidate?.assignment?.interviewerId,
+                  name: "Unknown",
+                  email: "Unknown",
+                }
               : candidate?.assignment?.interviewerId || {
-                _id: "",
-                name: "Unknown",
-                email: "Unknown",
-              },
+                  _id: "",
+                  name: "Unknown",
+                  email: "Unknown",
+                },
         },
       };
     }) || [];
@@ -391,7 +391,7 @@ export default function CalendarPage() {
         </Card>
         <div className="flex flex-col gap-4 sticky top-6 h-[calc(100vh-140px)] overflow-auto">
           {/* Unscheduled interviews */}
-          <Card >
+          {/* <Card>
             <CardHeader>
               <CardTitle>Scheduled Interviews</CardTitle>
             </CardHeader>
@@ -404,7 +404,7 @@ export default function CalendarPage() {
                   .map((candidate, index) => (
                     <div
                       key={index}
-                      className=" rounded-lg  mb-3 shadow-sm  bg-white"
+                      className="rounded-lg  mb-3 shadow-sm  bg-white"
                     >
                       <div className="font-bold text-md truncate">
                         {candidate.name}
@@ -424,14 +424,14 @@ export default function CalendarPage() {
                   ))
               ) : (
                 <div className="text-center text-muted-foreground py-8">
-                  All interviews are scheduled
+                  No interviews are scheduled
                 </div>
               )}
             </CardContent>
-          </Card>
+          </Card> */}
 
           {/* today's interview */}
-          <Card >
+          <Card>
             <CardHeader>
               <CardTitle>Today's Interview</CardTitle>
             </CardHeader>
@@ -451,19 +451,38 @@ export default function CalendarPage() {
                     index={i}
                   />
                 ))}
-              <div className="text-center text-muted-foreground py-8">
+            </CardContent>
+            <CardHeader>
+              <CardTitle>Not Scheduled</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {events
+                .filter(
+                  (candidate) =>
+                    !candidate.extendedProps.candidate.assignment?.time
+                )
+                .map((event, i) => (
+                  <RenderEvent
+                    key={i}
+                    event={event}
+                    events={events}
+                    getInterviewerName={getInterviewerName}
+                    index={i}
+                  />
+                ))}
+
+              <div className="text-center text-muted-foreground">
                 {events.filter(
                   (event) =>
                     event?.start?.toISOString().split("T")[0] ===
                     new Date().toISOString().split("T")[0]
                 ).length > 0
                   ? ""
-                  : "No interviews scheduled for today"}
+                  : "No scheduled interviews"}
               </div>
             </CardContent>
           </Card>
         </div>
-
       </div>
       {selectedEvent && (
         <CandidateDetailsDialog

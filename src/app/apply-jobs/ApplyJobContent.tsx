@@ -324,7 +324,7 @@ export default function ApplyJobsContent({
                       {job.title}
                     </h2>
                     <p
-                      className="text-gray-600 mb-4 line-clamp-2 text-sm lg:text-lg "
+                      className="text-gray-600 mb-4 line-clamp-2 text-sm lg:text-lg"
                       dangerouslySetInnerHTML={{
                         __html: job?.description || "No description found",
                       }}
@@ -346,7 +346,7 @@ export default function ApplyJobsContent({
 
                       {job.salary ? (
                         <div className="flex items-center">
-                          {job.salary?.inText ? (
+                          {job.salary?.inText || job.salary?.inText === "" ? (
                             <span className="text-sm font-medium">
                               {job.salary.inText}
                             </span>

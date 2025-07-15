@@ -24,6 +24,10 @@ export async function GET(
       }
     }
 
+    if (role === "candidate") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id } = await params;
     if (!Candidate) {
       return NextResponse.json(
