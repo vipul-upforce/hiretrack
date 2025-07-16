@@ -6,9 +6,10 @@ import mime from "mime-types";
 export async function GET(request: NextRequest) {
   try {
     // Get the pathname from query parameters
-    const { searchParams } = new URL(request.url);
-    const pathName = searchParams?.get("pathName");
-
+    // const { searchParams } = new URL(request.url);
+    // const pathName = searchParams?.get("pathName");      // REMOVED BECAUSE THIS PARSES THE URL WRONG IF THERE IS TRAILING SPECIAL CHARACTERS LIKE "++++++"
+    const pathName = request.url.split("files?pathName=")[1];
+    
     if (!pathName) {
       return NextResponse.json(
         { error: "Path parameter is required" },

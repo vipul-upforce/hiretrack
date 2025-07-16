@@ -15,8 +15,9 @@ import { ICandidate } from "@/lib/models/candidate";
 // import { verifyAndDecryptToken } from "@/app/actions/auth";
 
 const generateBase64 = async (url: any) => {
-  const urlParams = new URLSearchParams(url.split("?")[1]);
-  const pathName = urlParams.get("pathName");
+  // const urlParams = new URLSearchParams(url.split("files?pathName=")[1]);
+  // const pathName = urlParams.get("pathName");
+  const pathName = url.split("files?pathName=")[1];
   if (!pathName) {
     return "";
   }
@@ -233,6 +234,7 @@ export async function PUT(request: NextRequest) {
       );
     }
     let resumeUrl = candidate.resume.url;
+    console.log("📌📌RESUME URL : ",resumeUrl)
     if (!resumeUrl) {
       return NextResponse.json(
         { error: "Resume URL not found" },
