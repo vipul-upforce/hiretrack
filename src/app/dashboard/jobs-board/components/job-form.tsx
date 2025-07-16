@@ -20,6 +20,8 @@ import {
 import { LinkIcon } from "lucide-react";
 import RichTextEditor from "@/components/ui/rte/RichTextEditor";
 import { Checkbox } from "@mui/material";
+import path from "path";
+import { wierdFileNamePattern } from "@/lib/constants";
 // import { Checkbox } from "@mui/material";
 // import { Checkbox } from "@mui/material";
 
@@ -335,7 +337,21 @@ export function JobForm(props: JobFormProps) {
       <div className="space-y-2">
         <Label>Attachments</Label>
         <FileUpload
-          onFileSelect={(newFiles) =>
+          onFileSelect={(newFiles) => {
+            const problematicFiles = newFiles.filter((file) => {
+              // Extract base name ("file.pdf" -> "file", "++weird.pdf" -> "++weird")
+              const baseName = path.parse(file.name).name;
+              return wierdFileNamePattern.test(baseName);
+            });
+
+            problematicFiles.forEach((file) => {
+              toast({
+                title: "Invalid Filename",
+                description: `The file name "${file.name}" starts or ends with special characters.`,
+                duration: 5000,
+              });
+            });
+            if (problematicFiles.length > 0) return;
             setFieldValue("files", [
               ...(values.files || []),
               ...newFiles.filter(
@@ -344,8 +360,8 @@ export function JobForm(props: JobFormProps) {
                     (existingFile) => existingFile.name === file.name
                   )
               ),
-            ])
-          }
+            ]);
+          }}
           accept={{}} // Empty object means accept all file types
           maxFiles={30}
           files={values.files || []}

@@ -812,3 +812,5 @@ export const editorOptions = {
   formatOnPaste: true,
   formatOnType: true,
 };
+
+export const wierdFileNamePattern = /^[^a-zA-Z0-9(]|[^a-zA-Z0-9)]$/;

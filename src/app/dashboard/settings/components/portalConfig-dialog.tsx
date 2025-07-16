@@ -21,6 +21,8 @@ import Cookies from "js-cookie";
 import * as jose from "jose";
 import CryptoJS from "crypto-js";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import path from "path";
+import { wierdFileNamePattern } from "@/lib/constants";
 
 export interface PortalLogo {
   id: string;
@@ -91,8 +93,7 @@ const formFields: Array<{
 export default function PortalConfig({ onClose }: { onClose: () => void }) {
   const { toast } = useToast();
   const { data, refetch } = useGetPortalConfigsQuery(undefined);
-  const [updateSMTPConfigs] =
-    useUpdatePortalConfigsMutation();
+  const [updateSMTPConfigs] = useUpdatePortalConfigsMutation();
   const [activeTab, setActiveTab] = useState("header");
   const headerFileInputRef = useRef<HTMLInputElement>(null);
   const footerFileInputRef = useRef<HTMLInputElement>(null);
@@ -264,22 +265,28 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
         };
       }
       if (values.headerFile) {
-        const headerFile = createHtmlFile(values.headerFile, headerFileName || "header.html");
+        const headerFile = createHtmlFile(
+          values.headerFile,
+          headerFileName || "header.html"
+        );
         const headerBase64 = await convertFileToBase64(headerFile);
         portalHeaderData = {
           id: uuidv4(),
-          name: 'header.html',
+          name: "header.html",
           url: headerBase64,
           type: headerFile.type,
           size: headerFile.size,
         };
       }
       if (values.footerFile) {
-        const footerFile = createHtmlFile(values.footerFile, footerFileName || "footer.html");
+        const footerFile = createHtmlFile(
+          values.footerFile,
+          footerFileName || "footer.html"
+        );
         const footerBase64 = await convertFileToBase64(footerFile);
         portalFooterData = {
           id: uuidv4(),
-          name: 'footer.html',
+          name: "footer.html",
           url: footerBase64,
           type: footerFile.type,
           size: footerFile.size,
@@ -352,6 +359,20 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
                           accept={{ "image/*": [".png", ".jpg", ".jpeg"] }}
                           maxFiles={1}
                           onFileSelect={(files) => {
+                            const problematicFiles = files.filter((file) => {
+                              // Extract base name ("file.pdf" -> "file", "++weird.pdf" -> "++weird")
+                              const baseName = path.parse(file.name).name;
+                              return wierdFileNamePattern.test(baseName);
+                            });
+
+                            problematicFiles.forEach((file) => {
+                              toast({
+                                title: "Invalid Filename",
+                                description: `The file name "${file.name}" starts or ends with special characters.`,
+                                duration: 5000,
+                              });
+                            });
+                            if (problematicFiles.length > 0) return;
                             setFieldValue(name, files[0]);
                             setFieldValue("existingLogo", null);
                           }}
@@ -359,8 +380,8 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
                             values[name]
                               ? [values[name] as File]
                               : values.existingLogo
-                              ? [values.existingLogo as unknown as File]
-                              : []
+                                ? [values.existingLogo as unknown as File]
+                                : []
                           }
                           setter={(files) => {
                             setFieldValue(name, files[0]);
@@ -442,14 +463,18 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
                         accept=".html"
                         ref={headerFileInputRef}
                         className="hidden"
-                        onChange={(e) => handleFileUpload(e, "header", setFieldValue)}
+                        onChange={(e) =>
+                          handleFileUpload(e, "header", setFieldValue)
+                        }
                       />
                       <input
                         type="file"
                         accept=".html"
                         ref={footerFileInputRef}
                         className="hidden"
-                        onChange={(e) => handleFileUpload(e, "footer", setFieldValue)}
+                        onChange={(e) =>
+                          handleFileUpload(e, "footer", setFieldValue)
+                        }
                       />
 
                       <TabsContent value="header" className="space-y-3 mt-4">

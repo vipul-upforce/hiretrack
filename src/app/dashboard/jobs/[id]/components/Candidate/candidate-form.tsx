@@ -24,6 +24,8 @@ import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import type { User } from "@/lib/features/org/orgApi";
 import dayjs from "dayjs";
 import { MobileFileUpload } from "@/components/ui/file-upload-mobile";
+import path from "path";
+import { wierdFileNamePattern } from "@/lib/constants";
 
 interface CandidateFormProps {
   onFileUpload?: (file: File) => Promise<string | void>; // Prop to handle file upload to a persistent storage
@@ -156,6 +158,20 @@ export function CandidateForm({
               accept={{}}
               maxFiles={user && user.role === "candidate" ? 2 : 30}
               onFileSelect={async (files) => {
+                const problematicFiles = files.filter((file) => {
+                  // Extract base name ("file.pdf" -> "file", "++weird.pdf" -> "++weird")
+                  const baseName = path.parse(file.name).name;
+                  return wierdFileNamePattern.test(baseName);
+                });
+
+                problematicFiles.forEach((file) => {
+                  toast({
+                    title: "Invalid Filename",
+                    description: `The file name "${file.name}" starts or ends with special characters.`,
+                    duration: 5000,
+                  });
+                });
+                if (problematicFiles.length > 0) return;
                 if (!user && files[0].size > 3 * 1024 * 1024) {
                   toast({
                     title: `File "${files[0].name}" exceeds 3MB. Please upload a smaller file.`,
@@ -473,6 +489,20 @@ export function CandidateForm({
               accept={{}}
               maxFiles={user && user.role === "candidate" ? 2 : 30}
               onFileSelect={(files) => {
+                const problematicFiles = files.filter((file) => {
+                  // Extract base name ("file.pdf" -> "file", "++weird.pdf" -> "++weird")
+                  const baseName = path.parse(file.name).name;
+                  return wierdFileNamePattern.test(baseName);
+                });
+
+                problematicFiles.forEach((file) => {
+                  toast({
+                    title: "Invalid Filename",
+                    description: `The file name "${file.name}" starts or ends with special characters.`,
+                    duration: 5000,
+                  });
+                });
+                if (problematicFiles.length > 0) return;
                 const currentFiles = attachmentsField.value || [];
 
                 const newFiles = files
@@ -577,6 +607,20 @@ export function CandidateForm({
               accept={{ "application/pdf": [".pdf"] }}
               maxFiles={1}
               onFileSelect={async (files) => {
+                const problematicFiles = files.filter((file) => {
+                  // Extract base name ("file.pdf" -> "file", "++weird.pdf" -> "++weird")
+                  const baseName = path.parse(file.name).name;
+                  return wierdFileNamePattern.test(baseName);
+                });
+
+                problematicFiles.forEach((file) => {
+                  toast({
+                    title: "Invalid Filename",
+                    description: `The file name "${file.name}" starts or ends with special characters.`,
+                    duration: 5000,
+                  });
+                });
+                if (problematicFiles.length > 0) return;
                 if (!user && files[0].size > 3 * 1024 * 1024) {
                   toast({
                     title: `File "${files[0].name}" exceeds 3MB. Please upload a smaller file.`,
@@ -896,6 +940,20 @@ export function CandidateForm({
               onFileSelect={(files) => {
                 const currentFiles = attachmentsField.value || [];
 
+                const problematicFiles = files.filter((file) => {
+                  // Extract base name ("file.pdf" -> "file", "++weird.pdf" -> "++weird")
+                  const baseName = path.parse(file.name).name;
+                  return wierdFileNamePattern.test(baseName);
+                });
+
+                problematicFiles.forEach((file) => {
+                  toast({
+                    title: "Invalid Filename",
+                    description: `The file name "${file.name}" starts or ends with special characters (before the extension).`,
+                    duration: 5000,
+                  });
+                });
+                if (problematicFiles.length > 0) return;
                 const newFiles = files
                   .filter((file) => {
                     if (!user && file.size > 3 * 1024 * 1024) {
@@ -927,6 +985,19 @@ export function CandidateForm({
                       });
                       return false;
                     }
+                    const specialCharPattern = /^[^a-zA-Z0-9(]|[^a-zA-Z0-9)]$/;
+                    // const problematicFiles = files.filter((file) =>
+                    //   specialCharPattern.test(file.name)
+                    // );
+                    if (specialCharPattern.test(file.name)) {
+                      toast({
+                        title: "Alert",
+                        description:
+                          "The file name is not suitable, it can cuase errors.",
+                      });
+                      return false;
+                    }
+
                     return true;
                   })
                   .map((file) => {

@@ -1,5 +1,8 @@
 import { v4 as uuidv4 } from "uuid";
 import { Attachment } from "../schemas/AssignCandidateSchema";
+import path from "path";
+import { wierdFileNamePattern } from "@/lib/constants";
+import { toast } from "@/hooks/use-toast";
 
 interface FileSelectParams {
   files: File[];
@@ -32,6 +35,21 @@ export const handleFileSelect = async ({
   currentFormAttachments,
   setFieldValue,
 }: FileSelectParams): Promise<void> => {
+
+   const problematicFiles = files.filter((file) => {
+                  // Extract base name ("file.pdf" -> "file", "++weird.pdf" -> "++weird")
+                  const baseName = path.parse(file.name).name;
+                  return wierdFileNamePattern.test(baseName);
+                });
+
+                problematicFiles.forEach((file) => {
+                  toast({
+                    title: "Invalid Filename",
+                    description: `The file name "${file.name}" starts or ends with special characters.`,
+                    duration: 5000,
+                  });
+                });
+                if (problematicFiles.length > 0) return;
   const newAttachments = await Promise.all(
     files.map(async (file) => {
       const dataUrl = await readFileAsDataURL(file);
