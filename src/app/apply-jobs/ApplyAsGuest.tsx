@@ -438,7 +438,7 @@ export function ApplyAsGuestDialog({
                     Cancel
                   </Button>
                   <Button
-                    type={!errors ? "submit" : "button"}
+                    type={Object.keys(errors).length == 0 ? "button" : "submit"}
                     onClick={handleApply}
                     className="flex-1 sm:flex-none"
                   >

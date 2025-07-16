@@ -461,7 +461,7 @@ export function CreateCandidateDialog({
                     // scrollToErrorMassage(errors);
                     handleApply();
                   }}
-                  type="button"
+                  type="submit"
                   disabled={isSubmitting}
                 >
                   {isSubmitting

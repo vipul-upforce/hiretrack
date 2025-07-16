@@ -18,7 +18,7 @@ import { useFetchInterviewersQuery } from "@/lib/features/user/userApi";
 import { v4 as uuidv4 } from "uuid";
 import CustomFields from "@/Custom_Fields/Components/CustomFields";
 import Cookies from "js-cookie";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { toast } from "@/hooks/use-toast";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import type { User } from "@/lib/features/org/orgApi";
@@ -39,6 +39,7 @@ export function CandidateForm({
     values,
     errors,
     setTouched,
+    submitCount,
     // touched,
     // setFieldTouched,
     // dirty,
@@ -59,6 +60,38 @@ export function CandidateForm({
   const [currentBlobUrl, setCurrentBlobUrl] = useState<string | null>(null); // State to track only blob URLs for cleanup
   const [emailField, emailMeta] = useField("email");
   const [user, setuser] = useState<User | null>(null);
+  const formRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (submitCount > 0) {
+      const errorKeys = Object.keys(errors);
+      if (errorKeys.length > 0) {
+        const firstErrorKey = errorKeys[0];
+
+        if (firstErrorKey === "customFields") {
+          // HANDLED BY HANDLEAPPLY SCROLLER
+          return;
+        }
+
+        const fieldContainer = formRef.current?.querySelector<HTMLElement>(
+          `[data-form-field="${firstErrorKey}"]`
+        );
+
+        if (fieldContainer) {
+          fieldContainer.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+          const inputElement = fieldContainer.querySelector<HTMLElement>(
+            'input, textarea, select, [role="combobox"]'
+          );
+          if (inputElement) {
+            inputElement.focus({ preventScroll: true });
+          }
+        }
+      }
+    }
+  }, [submitCount, errors]);
 
   // Get the current interviewer ID from the assignment
   const currentInterviewerId =
@@ -109,7 +142,7 @@ export function CandidateForm({
   }, [values.resume]); // Only depend on values.resume
 
   return (
-    <div className="w-full h-full flex flex-col">
+    <div className="w-full h-full flex flex-col" ref={formRef}>
       {/* Mobile Layout - Stacked */}
       <div className="flex flex-col h-full lg:hidden">
         {/* Form Section - Mobile */}
@@ -535,7 +568,7 @@ export function CandidateForm({
         {/* Form Section - Desktop */}
         <div className="w-1/2 space-y-6 overflow-y-auto px-6 py-6">
           {/* Resume Upload */}
-          <div className="space-y-2">
+          <div className="space-y-2" data-form-field="resume">
             <Label>
               Resume <span className="text-red-500">*</span>
             </Label>
@@ -611,7 +644,7 @@ export function CandidateForm({
 
           {/* Personal Information Grid - Desktop */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+            <div className="space-y-2" data-form-field="name">
               <Label htmlFor="name">
                 Name <span className="text-red-500">*</span>
               </Label>
@@ -628,7 +661,7 @@ export function CandidateForm({
               )}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2" data-form-field="email">
               <Label htmlFor="email">
                 Email <span className="text-red-500">*</span>
               </Label>
@@ -646,7 +679,7 @@ export function CandidateForm({
               )}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2" data-form-field="location">
               <Label htmlFor="location">
                 Location <span className="text-red-500">*</span>
               </Label>
@@ -665,7 +698,7 @@ export function CandidateForm({
               )}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2" data-form-field="experience">
               <Label htmlFor="experience">
                 Experience (years) <span className="text-red-500">*</span>
               </Label>
@@ -688,7 +721,7 @@ export function CandidateForm({
           </div>
 
           {/* Skills - Desktop */}
-          <div className="space-y-2" id="skills">
+          <div className="space-y-2" id="skills" data-form-field="skills">
             <Label>
               Skills (Hit Enter to Add) <span className="text-red-500">*</span>
             </Label>
@@ -707,7 +740,7 @@ export function CandidateForm({
 
           {/* CTC and Notice Period Grid - Desktop */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+            <div className="space-y-2" data-form-field="expectedCTC">
               <Label htmlFor="expectedCTC">
                 Expected CTC (LPA) <span className="text-red-500">*</span>
               </Label>
@@ -727,7 +760,7 @@ export function CandidateForm({
               )}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2" data-form-field="currentCTC">
               <Label htmlFor="currentCTC">
                 Current CTC (LPA) <span className="text-red-500">*</span>
               </Label>
@@ -747,7 +780,10 @@ export function CandidateForm({
               )}
             </div>
 
-            <div className="space-y-2 col-span-2">
+            <div
+              className="space-y-2 col-span-2"
+              data-form-field="noticePeriod"
+            >
               <Label htmlFor="noticePeriod">
                 Notice Period (days) <span className="text-red-500">*</span>
               </Label>

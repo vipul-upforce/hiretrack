@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Formik, Form, FormikErrors } from "formik";
+import { Formik, Form } from "formik";
 import { candidateSchema } from "../../schemas/candidate-schema";
 import { CandidateForm } from "../Candidate/candidate-form";
 import {
@@ -89,31 +89,31 @@ const isFetchBaseQueryError = (
   );
 };
 
-export const scrollToErrorMassage = async (errors: FormikErrors<any>) => {
-  // const formik = formikRef.current;
-  // if (!formik) return;
+// export const scrollToErrorMassage = async (errors: FormikErrors<any>) => {
+//   // const formik = formikRef.current;
+//   // if (!formik) return;
 
-  // debugger;
-  // const errors = await formik.validateForm();
-  console.log("🛴🛴🛴🛴 ", errors);
-  const firstErrorKey = Object.keys(errors)[0];
-  if (firstErrorKey) {
-    // debugger;
-    if (firstErrorKey === "customFields") {
-      if (!errors.customFields) return;
-      const cfKey = Object.keys(errors.customFields)[0];
-      const el = document.querySelector(`[id='${firstErrorKey}.${cfKey}']`);
-      el?.scrollIntoView({ behavior: "smooth", block: "center" });
-      (el as HTMLElement)?.focus();
-      return;
-    }
-    const el = document.querySelector(`[id='${firstErrorKey}']`);
-    console.log("ELEMENT: ", el);
-    el?.scrollIntoView({ behavior: "smooth", block: "center" });
-    (el as HTMLElement)?.focus();
-    return;
-  }
-};
+//   // debugger;
+//   // const errors = await formik.validateForm();
+//   console.log("🛴🛴🛴🛴 ", errors);
+//   const firstErrorKey = Object.keys(errors)[0];
+//   if (firstErrorKey) {
+//     // debugger;
+//     if (firstErrorKey === "customFields") {
+//       if (!errors.customFields) return;
+//       const cfKey = Object.keys(errors.customFields)[0];
+//       const el = document.querySelector(`[id='${firstErrorKey}.${cfKey}']`);
+//       el?.scrollIntoView({ behavior: "smooth", block: "center" });
+//       (el as HTMLElement)?.focus();
+//       return;
+//     }
+//     const el = document.querySelector(`[id='${firstErrorKey}']`);
+//     console.log("ELEMENT: ", el);
+//     el?.scrollIntoView({ behavior: "smooth", block: "center" });
+//     (el as HTMLElement)?.focus();
+//     return;
+//   }
+// };
 
 export function EditCandidateDialog({
   candidate,
@@ -499,10 +499,10 @@ export function EditCandidateDialog({
                   <Button
                     onClick={() => {
                       // debugger;
-                      // handleApply();
-                      scrollToErrorMassage(errors);
+                      handleApply();
+                      // scrollToErrorMassage(errors);
                     }}
-                    type="submit"
+                    type={Object.keys(errors).length == 0 ? "button" : "submit"}
                   >
                     {isSubmitting ? "Saving..." : "Save Changes"}
                   </Button>

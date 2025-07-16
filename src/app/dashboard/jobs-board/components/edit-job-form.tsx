@@ -130,9 +130,15 @@ export const scrollToError = (errors: FormikErrors<any>) => {
     element = document.querySelector(
       `[name="${firstErrorKey}"]`
     ) as HTMLElement;
+    if (firstErrorKey === "skills") {
+      element = document.querySelector(
+        `[id="${firstErrorKey}"]`
+      ) as HTMLElement;
+    }
   }
 
   if (element) {
+    console.log(element);
     element.scrollIntoView({ behavior: "smooth", block: "nearest" });
     element.focus({ preventScroll: true });
   } else {

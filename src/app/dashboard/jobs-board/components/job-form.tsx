@@ -134,7 +134,7 @@ export function JobForm(props: JobFormProps) {
         )}
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-2" id="skills">
         <Label>
           Required Skills (Hit Enter to add){" "}
           <span className="text-red-500">*</span>
@@ -239,7 +239,15 @@ export function JobForm(props: JobFormProps) {
               onBlur={handleBlur}
               className="h-4 w-4"
             />
-            <Label htmlFor="salary.isPrivate">Keep Salary Private</Label>
+            <Label
+              className="m-0 p-0"
+              style={{
+                margin: 0,
+              }}
+              htmlFor="salary.isPrivate"
+            >
+              Keep Salary Private
+            </Label>
           </div>
         </div>
       </div>

@@ -17,6 +17,7 @@ import { useState } from "react";
 import { JobForm } from "./job-form";
 import CustomFields from "@/Custom_Fields/Components/CustomFields";
 import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
+import { scrollToError } from "./edit-job-form";
 
 interface CreateJobDialogProps {
   onJobCreated: (
@@ -49,40 +50,40 @@ interface CreateJobDialogProps {
   userRole?: string;
 }
 
-export const scrollToError = (errors: Record<string, any>) => {
-  if (!errors || typeof errors !== "object") return;
+// export const scrollToError = (errors: Record<string, any>) => {
+//   if (!errors || typeof errors !== "object") return;
 
-  const findFirstKey = (
-    obj: Record<string, any>,
-    prefix = ""
-  ): string | null => {
-    for (const key in obj) {
-      if (typeof obj[key] === "string") {
-        return prefix ? `${prefix}.${key}` : key;
-      } else if (typeof obj[key] === "object") {
-        const nested = findFirstKey(
-          obj[key],
-          prefix ? `${prefix}.${key}` : key
-        );
-        if (nested) return nested;
-      }
-    }
-    return null;
-  };
+//   const findFirstKey = (
+//     obj: Record<string, any>,
+//     prefix = ""
+//   ): string | null => {
+//     for (const key in obj) {
+//       if (typeof obj[key] === "string") {
+//         return prefix ? `${prefix}.${key}` : key;
+//       } else if (typeof obj[key] === "object") {
+//         const nested = findFirstKey(
+//           obj[key],
+//           prefix ? `${prefix}.${key}` : key
+//         );
+//         if (nested) return nested;
+//       }
+//     }
+//     return null;
+//   };
 
-  const firstErrorKey = findFirstKey(errors);
-  if (!firstErrorKey) return;
+//   const firstErrorKey = findFirstKey(errors);
+//   if (!firstErrorKey) return;
 
-  // Replace dots with escaped selector for nested names (e.g., customFields.name)
-  const selector = `[name="${firstErrorKey}"], [title="${firstErrorKey}"]`;
+//   // Replace dots with escaped selector for nested names (e.g., customFields.name)
+//   const selector = `[name="${firstErrorKey}"], [title="${firstErrorKey}"]`;
 
-  const element = document.querySelector(selector) as HTMLElement;
+//   const element = document.querySelector(selector) as HTMLElement;
 
-  if (element) {
-    element.scrollIntoView({ behavior: "smooth", block: "end" });
-    element.focus?.({ preventScroll: true });
-  }
-};
+//   if (element) {
+//     element.scrollIntoView({ behavior: "smooth", block: "end" });
+//     element.focus?.({ preventScroll: true });
+//   }
+// };
 
 export function CreateJobDialog({
   onJobCreated,
