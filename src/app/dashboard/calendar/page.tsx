@@ -247,6 +247,11 @@ export default function CalendarPage() {
     }
   };
 
+  const handleInterviewClick = (event: CustomCalendarEvent) => {
+    setSelectedEvent(event);
+    setIsDetailsOpen(true);
+  };
+
   const handleDateClick = (arg: DateClickArg) => {
     const eventsOnDate = events.filter(
       (event) => event?.start?.toISOString().split("T")[0] === arg?.dateStr
@@ -387,15 +392,6 @@ export default function CalendarPage() {
                 );
               }}
             />
-            <div className="text-center text-muted-foreground">
-              {events.filter(
-                (event) =>
-                  event?.start?.toISOString().split("T")[0] ===
-                  new Date().toISOString().split("T")[0]
-              ).length > 0
-                ? ""
-                : "No scheduled interviews"}
-            </div>
           </CardContent>
         </Card>
         <div className="flex flex-col gap-4 sticky top-6 h-[calc(100vh-140px)] overflow-auto">
@@ -458,6 +454,7 @@ export default function CalendarPage() {
                     events={events}
                     getInterviewerName={getInterviewerName}
                     index={i}
+                    handleInterviewClick={handleInterviewClick}
                   />
                 ))}
               <div className="text-center text-muted-foreground">
@@ -487,6 +484,7 @@ export default function CalendarPage() {
                     events={events}
                     getInterviewerName={getInterviewerName}
                     index={i}
+                    handleInterviewClick={handleInterviewClick}
                   />
                   // </div>
                 ))}

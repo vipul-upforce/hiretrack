@@ -9,6 +9,7 @@ interface EventDetailsProps {
   events: CustomCalendarEvent[];
   getInterviewerName: (candidate: CandidateAssignment) => string;
   index: number;
+  handleInterviewClick: (event: CustomCalendarEvent) => void;
 }
 
 export function RenderEvent({
@@ -16,6 +17,7 @@ export function RenderEvent({
   events,
   getInterviewerName,
   index,
+  handleInterviewClick,
 }: EventDetailsProps) {
   // const today = new Date().toISOString().split("T")[0];
   const hasMultipleEventsToday = events.length > 1;
@@ -23,7 +25,10 @@ export function RenderEvent({
   return (
     <div key={index}>
       <ScrollArea className="">
-        <div className="space-y-4">
+        <div
+          className="space-y-4 cursor-pointer"
+          onClick={() => handleInterviewClick(event)}
+        >
           <div>
             <h3 className="font-semibold text-lg">
               {event.extendedProps.candidate.name}
