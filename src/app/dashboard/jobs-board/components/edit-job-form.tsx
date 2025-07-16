@@ -133,7 +133,7 @@ export const scrollToError = (errors: FormikErrors<any>) => {
   }
 
   if (element) {
-    element.scrollIntoView({ behavior: "smooth", block: "center" });
+    element.scrollIntoView({ behavior: "smooth", block: "nearest" });
     element.focus({ preventScroll: true });
   } else {
     console.warn(`No element found for error key: ${firstErrorKey}`);

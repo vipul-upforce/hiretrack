@@ -95,6 +95,7 @@ export const scrollToErrorMassage = async (errors: FormikErrors<any>) => {
 
   // debugger;
   // const errors = await formik.validateForm();
+  console.log("🛴🛴🛴🛴 ", errors);
   const firstErrorKey = Object.keys(errors)[0];
   if (firstErrorKey) {
     // debugger;
@@ -107,6 +108,7 @@ export const scrollToErrorMassage = async (errors: FormikErrors<any>) => {
       return;
     }
     const el = document.querySelector(`[id='${firstErrorKey}']`);
+    console.log("ELEMENT: ", el);
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
     (el as HTMLElement)?.focus();
     return;
@@ -497,7 +499,8 @@ export function EditCandidateDialog({
                   <Button
                     onClick={() => {
                       // debugger;
-                      handleApply();
+                      // handleApply();
+                      scrollToErrorMassage(errors);
                     }}
                     type="submit"
                   >

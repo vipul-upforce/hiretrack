@@ -33,8 +33,6 @@ import Cookies from "js-cookie";
 import * as pdfjs from "pdfjs-dist";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { useApplyHandler } from "@/app/apply-jobs/useApplyHandler";
-import { scrollToErrorMassage } from "./edit-candidate-dialog";
-
 // New function to call the evaluate API
 async function evaluateCandidate(
   candidateId: string,

@@ -688,7 +688,7 @@ export function CandidateForm({
           </div>
 
           {/* Skills - Desktop */}
-          <div className="space-y-2">
+          <div className="space-y-2" id="skills">
             <Label>
               Skills (Hit Enter to Add) <span className="text-red-500">*</span>
             </Label>

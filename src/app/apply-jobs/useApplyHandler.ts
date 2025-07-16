@@ -63,12 +63,12 @@ export const useApplyHandler = <T extends Record<string, any>>() => {
         if (!errors.customFields) return;
         const cfKey = Object.keys(errors.customFields)[0];
         const el = document.querySelector(`[id="${firstErrorKey}.${cfKey}"]`);
-        el?.scrollIntoView({ behavior: "smooth", block: "center" });
+        el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
         (el as HTMLElement)?.focus();
         return;
       }
       const el = document.querySelector(`[id="${firstErrorKey}"]`);
-      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
       (el as HTMLElement)?.focus();
       return;
     }

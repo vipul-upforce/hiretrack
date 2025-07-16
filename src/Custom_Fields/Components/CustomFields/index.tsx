@@ -83,7 +83,7 @@ function CustomFields({
         // Scroll to the field and focus it
         fieldElement.scrollIntoView({
           behavior: "smooth",
-          block: "center",
+          block: "nearest",
         });
 
         // Focus the input element
