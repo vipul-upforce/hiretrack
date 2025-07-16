@@ -346,7 +346,14 @@ export function CandidateDetailsDialog({
           )}
           <div className="flex gap-2">
             {!hideEditButton && user?.role !== "interviewer" && (
-              <Button onClick={handleEditClick}>Edit</Button>
+              <Button
+                disabled={
+                  user?.role === "candidate" && user.email !== candidate?.email
+                }
+                onClick={handleEditClick}
+              >
+                Edit
+              </Button>
             )}
             {!hideCloseButtons && (
               <Button
