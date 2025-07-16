@@ -94,13 +94,19 @@ export async function GET(request: Request) {
       salary: job?.salary && !job?.salary?.isPrivate ? job?.salary : undefined,
       customFields: Object.fromEntries(
         job?.customFields
-          ? Object.entries(job.customFields).filter(([key]) =>
-              publicFieldLabels.includes(key)
+          ? Object.entries(job.customFields as Record<string, unknown>).filter(
+              ([key, value]) =>
+                publicFieldLabels.includes(key) &&
+                value !== null &&
+                value !== "" &&
+                !(Array.isArray(value) && value.length === 0)
+              //  !Object.keys(value).length === 0
             )
           : []
       ),
     }));
 
+    console.log("filteredJobs", filteredJobs);
     return NextResponse.json(filteredJobs);
   } catch (error: unknown) {
     if (error instanceof Error) {

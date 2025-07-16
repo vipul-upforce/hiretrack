@@ -137,7 +137,8 @@ export default function JobModal({
                     Job Description
                   </h4>
                   <div
-                    className="text-sm sm:text-base text-gray-700 leading-relaxed prose prose-sm sm:prose max-w-none ms-5"
+                    id="description-marker"
+                    className="text-sm sm:text-base text-gray-700  leading-relaxed prose prose-sm sm:prose max-w-none"
                     style={{
                       wordBreak: "break-word",
                       overflowWrap: "break-word",
