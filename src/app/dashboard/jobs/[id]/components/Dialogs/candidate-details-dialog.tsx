@@ -148,7 +148,8 @@ export function CandidateDetailsDialog({
   // );
   const handleEditClick = () => {
     setIsEditing(true); // Open the edit dialog
-    onOpenChange(false); // Close the current dialog
+    pathname === "/candidate" && onOpenChange(true);
+    // onOpenChange(false); // Close the current dialog
   };
 
   const handleReEvaluation = async () => {
@@ -199,7 +200,8 @@ export function CandidateDetailsDialog({
 
   useEffect(() => {
     if (isEditing) {
-      onOpenChange(false); // Close the details dialog only when editing starts
+      pathname === "/candidate" && onOpenChange(true);
+      // onOpenChange(false); // Close the details dialog only when editing starts
     }
   }, [isEditing, onOpenChange]);
 

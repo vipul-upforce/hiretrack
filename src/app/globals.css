@@ -186,3 +186,10 @@ body {
   right: 105%;
   transform: translateX(0);
 }
+
+@layer utilities {
+  #description-marker ol,
+  #description-marker ul {
+    @apply ms-5;
+  }
+}
