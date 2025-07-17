@@ -34,6 +34,7 @@ import {
 } from "../../schemas/AssignCandidateSchema";
 import { useAssignCandidate } from "../../hooks/useAssignCandidate";
 import dayjs from "dayjs";
+import { useSanitizeFiles } from "@/hooks/useSanitizeFiles";
 
 export function AssignCandidateDialog({
   candidate,
@@ -63,6 +64,7 @@ export function AssignCandidateDialog({
     refetchAssignment,
     onSuccess,
   });
+  const { sanitizeFiles } = useSanitizeFiles();
 
   useEffect(() => {
     (async () => {
@@ -194,14 +196,15 @@ export function AssignCandidateDialog({
                     <FileUpload
                       accept={{}}
                       maxFiles={30}
-                      onFileSelect={(files) =>
+                      onFileSelect={(files) => {
+                        const sanitizedFiles = sanitizeFiles(files);
                         handleFileSelect({
-                          files,
+                          files: sanitizedFiles,
                           existingAttachments: candidate.attachments,
                           currentFormAttachments: values.attachments,
                           setFieldValue,
-                        })
-                      }
+                        });
+                      }}
                       files={(values.attachments || []).map(
                         (att) =>
                           new File([att.url], att.name, { type: att.type })

@@ -24,8 +24,7 @@ import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import type { User } from "@/lib/features/org/orgApi";
 import dayjs from "dayjs";
 import { MobileFileUpload } from "@/components/ui/file-upload-mobile";
-import path from "path";
-import { wierdFileNamePattern } from "@/lib/constants";
+import { useSanitizeFiles } from "@/hooks/useSanitizeFiles";
 
 interface CandidateFormProps {
   onFileUpload?: (file: File) => Promise<string | void>; // Prop to handle file upload to a persistent storage
@@ -63,6 +62,7 @@ export function CandidateForm({
   const [emailField, emailMeta] = useField("email");
   const [user, setuser] = useState<User | null>(null);
   const formRef = useRef<HTMLDivElement>(null);
+  const { sanitizeFiles } = useSanitizeFiles();
 
   useEffect(() => {
     if (submitCount > 0) {
@@ -158,20 +158,6 @@ export function CandidateForm({
               accept={{}}
               maxFiles={user && user.role === "candidate" ? 2 : 30}
               onFileSelect={async (files) => {
-                const problematicFiles = files.filter((file) => {
-                  // Extract base name ("file.pdf" -> "file", "++weird.pdf" -> "++weird")
-                  const baseName = path.parse(file.name).name;
-                  return wierdFileNamePattern.test(baseName);
-                });
-
-                problematicFiles.forEach((file) => {
-                  toast({
-                    title: "Invalid Filename",
-                    description: `The file name "${file.name}" starts or ends with special characters.`,
-                    duration: 5000,
-                  });
-                });
-                if (problematicFiles.length > 0) return;
                 if (!user && files[0].size > 3 * 1024 * 1024) {
                   toast({
                     title: `File "${files[0].name}" exceeds 3MB. Please upload a smaller file.`,
@@ -203,17 +189,18 @@ export function CandidateForm({
                   });
                   return;
                 }
-                setFieldValue("resume", files[0]); // Set the File object for form submission
+                const sanitizedFiles = sanitizeFiles(files);
+                setFieldValue("resume", sanitizedFiles[0]); // Set the File object for form submission
 
                 // Create a temporary blob URL for immediate client-side preview
-                setTempResumeUrl(URL.createObjectURL(files[0]));
+                setTempResumeUrl(URL.createObjectURL(sanitizedFiles[0]));
 
                 // Call onFileUpload to handle the actual upload to a persistent storage (e.g., Vercel Blob)
                 // The parent component should update `values.resume` with the public URL returned from the upload
                 // For example: const publicUrl = await onFileUpload(files[0]);
                 // if (publicUrl) { setFieldValue("resume", { url: publicUrl }); }
                 if (onFileUpload) {
-                  await onFileUpload(files[0]);
+                  await onFileUpload(sanitizedFiles[0]);
                 }
                 setTimeout(() => {
                   setTouched({
@@ -489,23 +476,10 @@ export function CandidateForm({
               accept={{}}
               maxFiles={user && user.role === "candidate" ? 2 : 30}
               onFileSelect={(files) => {
-                const problematicFiles = files.filter((file) => {
-                  // Extract base name ("file.pdf" -> "file", "++weird.pdf" -> "++weird")
-                  const baseName = path.parse(file.name).name;
-                  return wierdFileNamePattern.test(baseName);
-                });
-
-                problematicFiles.forEach((file) => {
-                  toast({
-                    title: "Invalid Filename",
-                    description: `The file name "${file.name}" starts or ends with special characters.`,
-                    duration: 5000,
-                  });
-                });
-                if (problematicFiles.length > 0) return;
+                const sanitizedFiles = sanitizeFiles(files);
                 const currentFiles = attachmentsField.value || [];
 
-                const newFiles = files
+                const newFiles = sanitizedFiles
                   .filter((file) => {
                     if (!user && file.size > 3 * 1024 * 1024) {
                       toast({
@@ -569,7 +543,10 @@ export function CandidateForm({
                 setFieldValue("attachments", updatedFileSelection);
               }}
               files={attachmentsField.value}
-              setter={(files) => setFieldValue("attachments", files)}
+              setter={(files) => {
+                const sanitizedFiles = sanitizeFiles(files);
+                setFieldValue("attachments", sanitizedFiles);
+              }}
               buttonText="Add Attachments"
             />
           </div>
@@ -607,20 +584,7 @@ export function CandidateForm({
               accept={{ "application/pdf": [".pdf"] }}
               maxFiles={1}
               onFileSelect={async (files) => {
-                const problematicFiles = files.filter((file) => {
-                  // Extract base name ("file.pdf" -> "file", "++weird.pdf" -> "++weird")
-                  const baseName = path.parse(file.name).name;
-                  return wierdFileNamePattern.test(baseName);
-                });
-
-                problematicFiles.forEach((file) => {
-                  toast({
-                    title: "Invalid Filename",
-                    description: `The file name "${file.name}" starts or ends with special characters.`,
-                    duration: 5000,
-                  });
-                });
-                if (problematicFiles.length > 0) return;
+                const sanitizedFiles = sanitizeFiles(files);
                 if (!user && files[0].size > 3 * 1024 * 1024) {
                   toast({
                     title: `File "${files[0].name}" exceeds 3MB. Please upload a smaller file.`,
@@ -652,17 +616,17 @@ export function CandidateForm({
                   });
                   return;
                 }
-                setFieldValue("resume", files[0]); // Set the File object for form submission
+                setFieldValue("resume", sanitizedFiles[0]); // Set the File object for form submission
 
                 // Create a temporary blob URL for immediate client-side preview
-                setTempResumeUrl(URL.createObjectURL(files[0]));
+                setTempResumeUrl(URL.createObjectURL(sanitizedFiles[0]));
 
                 // Call onFileUpload to handle the actual upload to a persistent storage (e.g., Vercel Blob)
                 // The parent component should update `values.resume` with the public URL returned from the upload
                 // For example: const publicUrl = await onFileUpload(files[0]);
                 // if (publicUrl) { setFieldValue("resume", { url: publicUrl }); }
                 if (onFileUpload) {
-                  await onFileUpload(files[0]);
+                  await onFileUpload(sanitizedFiles[0]);
                 }
                 setTimeout(() => {
                   setTouched({
@@ -679,7 +643,10 @@ export function CandidateForm({
                 }, 100);
               }}
               files={resumeField.value ? [resumeField.value] : []}
-              setter={(files) => setFieldValue("resume", files[0])}
+              setter={(files) => {
+                const sanitizedFiles = sanitizeFiles(files);
+                setFieldValue("resume", sanitizedFiles[0]);
+              }}
             />
             {resumeMeta.touched && resumeMeta.error && (
               <div className="text-sm text-destructive">{resumeMeta.error}</div>
@@ -939,22 +906,8 @@ export function CandidateForm({
               maxFiles={user && user.role === "candidate" ? 2 : 30}
               onFileSelect={(files) => {
                 const currentFiles = attachmentsField.value || [];
-
-                const problematicFiles = files.filter((file) => {
-                  // Extract base name ("file.pdf" -> "file", "++weird.pdf" -> "++weird")
-                  const baseName = path.parse(file.name).name;
-                  return wierdFileNamePattern.test(baseName);
-                });
-
-                problematicFiles.forEach((file) => {
-                  toast({
-                    title: "Invalid Filename",
-                    description: `The file name "${file.name}" starts or ends with special characters (before the extension).`,
-                    duration: 5000,
-                  });
-                });
-                if (problematicFiles.length > 0) return;
-                const newFiles = files
+                const sanitizedFiles = sanitizeFiles(files);
+                const newFiles = sanitizedFiles
                   .filter((file) => {
                     if (!user && file.size > 3 * 1024 * 1024) {
                       toast({

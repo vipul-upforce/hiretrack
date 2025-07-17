@@ -182,11 +182,11 @@ export function CandidateDetailsDialog({
       });
     } finally {
       setIsReEvaluating(false);
-      if (pathname !== "/dashboard" && pathname !== "/dashboard/calendar") {
-        await refetch();
-      } else {
-        await refetchAssignment?.();
-      }
+      // if (pathname !== "/dashboard" && pathname !== "/dashboard/calendar") {
+      //   await refetch();
+      // } else {
+      //   await refetchAssignment?.();
+      // }
     }
   };
 
