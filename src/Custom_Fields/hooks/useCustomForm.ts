@@ -2,6 +2,7 @@ import { useCustomFields } from "./use-customFields";
 import { getYupSchema } from "../utils/validations";
 import { FormObject } from "../Types/CustomField";
 import dayjs, { Dayjs } from "dayjs";
+import useRoles from "@/hooks/useRoles";
 
 export type FileData = {
   base64: string;
@@ -28,6 +29,7 @@ const useCustomForm = (
   fetchGlobal?: boolean
 ) => {
   const { customFields } = useCustomFields();
+  const role = useRoles()
 
   let formNameObject: FormObject | undefined;
   let formId: string | undefined;
@@ -52,7 +54,7 @@ const useCustomForm = (
     filteredFields = fields.filter((field) => !field.jobId && !field.candidateId);
   }
 
-  const validationSchema = getYupSchema(filteredFields);
+  const validationSchema = getYupSchema(filteredFields, role === "" ? "candidate" : (role || undefined));
 
   const initialValues = formNameObject?.fields.reduce(
     (acc, field) => {
