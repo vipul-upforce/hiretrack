@@ -20,8 +20,7 @@ import {
 import { LinkIcon } from "lucide-react";
 import RichTextEditor from "@/components/ui/rte/RichTextEditor";
 import { Checkbox } from "@mui/material";
-import path from "path";
-import { wierdFileNamePattern } from "@/lib/constants";
+import { useSanitizeFiles } from "@/hooks/useSanitizeFiles";
 // import { Checkbox } from "@mui/material";
 // import { Checkbox } from "@mui/material";
 
@@ -76,6 +75,7 @@ export function JobForm(props: JobFormProps) {
   } = useFormikContext<JobFormValues>();
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
   const [newLink, setNewLink] = useState("");
+  const { sanitizeFiles } = useSanitizeFiles();
 
   const handleAddLink = () => {
     try {
@@ -338,23 +338,10 @@ export function JobForm(props: JobFormProps) {
         <Label>Attachments</Label>
         <FileUpload
           onFileSelect={(newFiles) => {
-            const problematicFiles = newFiles.filter((file) => {
-              // Extract base name ("file.pdf" -> "file", "++weird.pdf" -> "++weird")
-              const baseName = path.parse(file.name).name;
-              return wierdFileNamePattern.test(baseName);
-            });
-
-            problematicFiles.forEach((file) => {
-              toast({
-                title: "Invalid Filename",
-                description: `The file name "${file.name}" starts or ends with special characters.`,
-                duration: 5000,
-              });
-            });
-            if (problematicFiles.length > 0) return;
+            const sanitizedFiles = sanitizeFiles(newFiles);
             setFieldValue("files", [
               ...(values.files || []),
-              ...newFiles.filter(
+              ...sanitizedFiles.filter(
                 (file) =>
                   !(values.files || []).some(
                     (existingFile) => existingFile.name === file.name

@@ -30,6 +30,21 @@ interface FileData {
   size: number;
 }
 
+const useConditionallyValidatedField = (
+  name: string,
+  shouldValidate: boolean
+) => {
+  const [field, meta, helpers] = useField({
+    name,
+    validate: () => {
+      if (!shouldValidate) {
+        return undefined;
+      }
+    },
+  });
+  return [field, meta, helpers];
+};
+
 function CustomFields({
   formName,
   isEditMode = false,
@@ -48,25 +63,42 @@ function CustomFields({
     submitCount,
   } = useFormikContext<FormValues>();
 
-  const { formNameObject } = useCustomForm(formName);
   const role = useRoles();
-  const allFields = role !== "interviewer";
+  const { formNameObject } = useCustomForm(
+    formName,
+    undefined,
+    undefined,
+    undefined
+    // role || ""
+  );
+  new Promise(() => {
+    setTimeout(() => {}, 1000);
+  });
+  // debugger;
+  const allFields = role !== "candidate" && role !== "";
   const fieldRefs = useRef<{ [key: string]: HTMLElement | null }>({});
+  // if (!role || !formNameObject || !formNameObject.fields) {
+  //   return <div>Loading...</div>;
+  // }
+
   // console.log("⛔⛔⛔⛔⛔⛔⛔⛔ values: ", values);
   // Create useField hooks for each custom field
   const customFieldHooks: { [key: string]: any } = {};
   // debugger;
+  console.log("ROLE AT CF:::::: ", role);
   if (formNameObject?.fields) {
-    formNameObject.fields
-      ?.filter((field) => allFields || (!allFields && !field.private))
-      ?.forEach((field: CustomField) => {
-        if (field.jobId || field.candidateId) return;
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        const [fieldProps, fieldMeta] = useField(`customFields.${field.label}`);
-        customFieldHooks[field.label] = { fieldProps, fieldMeta };
-      });
-  }
+    formNameObject.fields.forEach((field: CustomField) => {
+      if (field.jobId || field.candidateId) return;
 
+      const shouldValidate = allFields || (!allFields && !field.private);
+      // eslint-disable-next-line react-hooks/rules-of-hooks
+      const [fieldProps, fieldMeta] = useConditionallyValidatedField(
+        `customFields.${field.label}`,
+        shouldValidate
+      );
+      customFieldHooks[field.label] = { fieldProps, fieldMeta };
+    });
+  }
   // Focus on first field with error only after form submission
   useEffect(() => {
     if (
@@ -109,58 +141,59 @@ function CustomFields({
 
   return (
     <div className="flex flex-col gap-2">
-      {formNameObject?.fields
-        ?.filter((field) => allFields || (!allFields && !field.private))
-        .map((field) => {
-          const fieldHook = customFieldHooks[field.label];
-          if (field.jobId && field.jobId !== values._id) {
-            return;
-          }
-          if (field.candidateId && field.candidateId !== values._id) {
-            return;
-          }
-          return (
-            <div
-              key={field.id}
-              className="flex flex-col gap-2"
-              ref={(el) => {
-                fieldRefs.current[field.label] = el;
-              }}
-            >
-              <Label htmlFor={field.label} className="capitalize">
-                {field.label.split(" |||||(")[0]}
-                {field.required && (
-                  <span className="text-red-500 text-sm capitalize">*</span>
-                )}
-              </Label>
-              {RenderField({
-                getFieldProps,
-                label: field.label,
-                // formId: field.id,
-                setFieldValue,
-                setFieldTouched,
-                type: field.type,
-                values: values as FormValues,
-                options: field.options
-                  ?.map((opt) => opt.trim())
-                  .filter((opt) => opt !== ""),
-                setFieldError,
-                fieldHook, // Pass the field hook for additional functionality
-                isEditMode,
-              })}
-              {fieldHook?.fieldMeta.touched && fieldHook?.fieldMeta.error && (
-                <div
-                  className="text-red-500 text-xs capitalize"
-                  style={{
-                    marginTop: "-5px",
-                  }}
-                >
-                  {fieldHook.fieldMeta.error}
-                </div>
+      {formNameObject?.fields.map((field) => {
+        const fieldHook = customFieldHooks[field.label];
+        if (field.jobId && field.jobId !== values._id) {
+          return null;
+        }
+        if (field.candidateId && field.candidateId !== values._id) {
+          return null;
+        }
+        if (!allFields && field.private) {
+          return null;
+        }
+        return (
+          <div
+            key={field.id}
+            className="flex flex-col gap-2"
+            ref={(el) => {
+              fieldRefs.current[field.label] = el;
+            }}
+          >
+            <Label htmlFor={field.label} className="capitalize">
+              {field.label.split(" |||||(")[0]}
+              {field.required && (
+                <span className="text-red-500 text-sm capitalize">*</span>
               )}
-            </div>
-          );
-        })}
+            </Label>
+            {RenderField({
+              getFieldProps,
+              label: field.label,
+              // formId: field.id,
+              setFieldValue,
+              setFieldTouched,
+              type: field.type,
+              values: values as FormValues,
+              options: field.options
+                ?.map((opt) => opt.trim())
+                .filter((opt) => opt !== ""),
+              setFieldError,
+              fieldHook, // Pass the field hook for additional functionality
+              isEditMode,
+            })}
+            {fieldHook?.fieldMeta.touched && fieldHook?.fieldMeta.error && (
+              <div
+                className="text-red-500 text-xs capitalize"
+                style={{
+                  marginTop: "-5px",
+                }}
+              >
+                {fieldHook.fieldMeta.error}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

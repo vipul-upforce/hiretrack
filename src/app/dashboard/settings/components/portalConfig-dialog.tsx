@@ -21,8 +21,7 @@ import Cookies from "js-cookie";
 import * as jose from "jose";
 import CryptoJS from "crypto-js";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
-import path from "path";
-import { wierdFileNamePattern } from "@/lib/constants";
+import { useSanitizeFiles } from "@/hooks/useSanitizeFiles";
 
 export interface PortalLogo {
   id: string;
@@ -99,6 +98,7 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
   const footerFileInputRef = useRef<HTMLInputElement>(null);
   const [headerFileName, setHeaderFileName] = useState<string | null>(null);
   const [footerFileName, setFooterFileName] = useState<string | null>(null);
+  const { sanitizeFiles } = useSanitizeFiles();
 
   const [headerCode, setHeaderCode] = useState(
     `<header style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1rem 0;">
@@ -359,21 +359,8 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
                           accept={{ "image/*": [".png", ".jpg", ".jpeg"] }}
                           maxFiles={1}
                           onFileSelect={(files) => {
-                            const problematicFiles = files.filter((file) => {
-                              // Extract base name ("file.pdf" -> "file", "++weird.pdf" -> "++weird")
-                              const baseName = path.parse(file.name).name;
-                              return wierdFileNamePattern.test(baseName);
-                            });
-
-                            problematicFiles.forEach((file) => {
-                              toast({
-                                title: "Invalid Filename",
-                                description: `The file name "${file.name}" starts or ends with special characters.`,
-                                duration: 5000,
-                              });
-                            });
-                            if (problematicFiles.length > 0) return;
-                            setFieldValue(name, files[0]);
+                            const sanitizedFiles = sanitizeFiles(files);
+                            setFieldValue(name, sanitizedFiles[0]);
                             setFieldValue("existingLogo", null);
                           }}
                           files={

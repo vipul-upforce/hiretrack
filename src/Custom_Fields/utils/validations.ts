@@ -30,10 +30,16 @@ export const validationSchema = Yup.object({
   }),
 });
 
-export const getYupSchema = (fields: CustomField[]) => {
+export const getYupSchema = (fields: CustomField[], role?: string) => {
   const schemaFields: Record<string, Yup.Schema<unknown>> = {};
 
   fields.forEach((field) => {
+    const shouldValidate = role !== 'candidate' || !field.private;
+
+    if (!shouldValidate) {
+      return; // Skip validation for this field
+    }
+
     let validator: Yup.Schema<unknown>;
     switch (field.type) {
       case "number":
