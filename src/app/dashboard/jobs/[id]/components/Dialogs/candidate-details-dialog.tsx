@@ -147,9 +147,7 @@ export function CandidateDetailsDialog({
   //   onOpenChange
   // );
   const handleEditClick = () => {
-    setIsEditing(true); // Open the edit dialog
-    pathname === "/candidate" && onOpenChange(true);
-    // onOpenChange(false); // Close the current dialog
+    setIsEditing(true);
   };
 
   const handleReEvaluation = async () => {
@@ -197,13 +195,6 @@ export function CandidateDetailsDialog({
       setRemarkRatingHistory(0);
     };
   }, []);
-
-  useEffect(() => {
-    if (isEditing) {
-      pathname === "/candidate" && onOpenChange(true);
-      // onOpenChange(false); // Close the details dialog only when editing starts
-    }
-  }, [isEditing, onOpenChange]);
 
   useEffect(() => {
     // if (candidateData || localCandidate) {
@@ -381,7 +372,7 @@ export function CandidateDetailsDialog({
   return (
     <>
       <DetailsDialog
-        open={isOpen && !isAssigning}
+        open={isOpen && !isAssigning && !isEditing}
         onOpenChange={(e) => {
           setNewRemark("");
           setRemarkRating(null);
