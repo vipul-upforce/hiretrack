@@ -391,7 +391,8 @@ export function CandidateDetailsDialog({
       >
         {header}
         {body}
-        {footer}
+
+        {user?.role !== "candidate" && footer}
       </DetailsDialog>
       {isAssigning && localCandidate && (
         <AssignCandidateDialog

@@ -144,7 +144,7 @@ export async function POST(req: Request) {
 
 // Function to handle the actual password reset after organization selection
 async function handlePasswordReset(
-  email: string[],
+  email: string,
   organizationId: string,
   req: Request,
   isCandidate?: boolean
@@ -208,13 +208,17 @@ async function handlePasswordReset(
     const origin = req.headers.get("origin") || "http://localhost:3000";
     const resetUrl = `${origin}/auth/reset-password?token=${resetToken}${isCandidate ? "&type=candidate" : ""}`;
 
-    const { emailContent, emailSubject } = await getMappedEmailTemplate("reset-password-request", {
-      resetUrl,
-    }, organizationId);
+    const { emailContent, emailSubject } = await getMappedEmailTemplate(
+      "reset-password-request",
+      {
+        resetUrl,
+      },
+      organizationId
+    );
 
     const emailStatus = await sendMail(
       organizationId,
-      email,
+      [email],
       emailSubject,
       emailContent
     );
