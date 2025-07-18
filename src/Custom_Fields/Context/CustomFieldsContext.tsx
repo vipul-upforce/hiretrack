@@ -47,7 +47,8 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
       if (
         (token && pathname?.includes("jobs-board")) ||
         pathname?.includes("jobs") ||
-        pathname?.includes("settings")
+        pathname?.includes("settings") ||
+        pathname?.endsWith("dashboard")
       ) {
         const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
         if (decryptedResponse.success && decryptedResponse.user) {

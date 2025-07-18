@@ -7,6 +7,7 @@ import { User } from "@/lib/mongodb";
 import { Job } from "@/lib/mongodb";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
 import { Types } from "mongoose";
+import {getFilterPrivateCF} from "@/lib/filterPrivateCF";
 
 // export async function GET(req: NextRequest) {
 //   try {
@@ -845,9 +846,10 @@ export async function GET(req: NextRequest) {
         // console.log("after filter: ", filteredCandidates.length);
 
         if (!History) return;
+        const candidatesWithPrivateCF = await getFilterPrivateCF(candidates.data, req)
         // console.log("befire history: ", candidates.data.length);
         const candidatesWithHistory = await Promise.all(
-          candidates.data.map(async (candidate) => {
+          candidatesWithPrivateCF.map(async (candidate) => {
             const history = await History?.findOne({
               jobId: candidate.jobId._id,
               candidateId: candidate._id.toString(),
@@ -895,6 +897,7 @@ export async function GET(req: NextRequest) {
     }
   } catch (error) {
     if (error instanceof Error) {
+      console.log(error)
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
   }

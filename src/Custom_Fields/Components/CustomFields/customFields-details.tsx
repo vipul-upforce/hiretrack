@@ -2,6 +2,8 @@ import { PDFViewer } from "@/components/ui/pdf-viewer";
 import { Label } from "@radix-ui/react-label";
 import { Dayjs } from "dayjs";
 import { ImageGallery } from "@/components/ui/image-gallery";
+import { useCustomFields } from "@/Custom_Fields/hooks/use-customFields";
+import useRoles from "@/hooks/useRoles";
 // import useRoles from "@/hooks/useRoles";
 
 interface FileData {
@@ -25,21 +27,51 @@ interface FormValues {
   };
 }
 
-const CustomFieldsData = ({ customFields }: FormValues) => {
-  // const role = useRoles();
-  // debugger
-  if (
-    !customFields ||
-    Object.keys(customFields).length === 0 ||
-    Object.values(customFields).every(
-      (value) =>
+const CustomFieldsData = ({ customFields: cfWOFormatting }: FormValues) => {
+  const { customFields: cfMetaData } = useCustomFields();
+  const role = useRoles();
+
+  // Collect private fields for interviewer and candidate
+  const fieldsPrivateFromInterviewer: string[] = [];
+  const fieldsPrivateFromCandidate: string[] = [];
+  Object.values(cfMetaData).forEach((form) => {
+    form.fields.forEach((field) => {
+      if (field.privateInt) {
+        fieldsPrivateFromInterviewer.push(field.label);
+      }
+      if (field.private) {
+        fieldsPrivateFromCandidate.push(field.label);
+      }
+    });
+  });
+
+  const customFields = Object.fromEntries(
+    Object.entries(cfWOFormatting).filter(([key, value]) => {
+      if (
         (typeof value === "string" && value.trim() === "") ||
         (Array.isArray(value) && value.length === 0)
-    )
-  ) {
+      ) {
+        return false;
+      }
+
+      if (
+        role === "interviewer" &&
+        fieldsPrivateFromInterviewer.includes(key)
+      ) {
+        return false;
+      }
+      if (role === "candidate" && fieldsPrivateFromCandidate.includes(key)) {
+        return false;
+      }
+
+      return true;
+    })
+  );
+
+  // If no valid custom fields remain, return null
+  if (!customFields || Object.keys(customFields).length === 0) {
     return null;
   }
-
   return (
     <div className="flex flex-col gap-4">
       {/* {role !== "candidate" && (
@@ -55,6 +87,7 @@ const CustomFieldsData = ({ customFields }: FormValues) => {
         ) {
           return null;
         }
+
         return (
           <div key={key} className="space-y-1">
             <Label className="font-semibold capitalize">

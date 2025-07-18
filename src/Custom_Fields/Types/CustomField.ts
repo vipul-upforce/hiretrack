@@ -29,6 +29,7 @@ export interface CustomField {
   required: boolean;
   private: boolean;
   showOnCard?: boolean;
+  privateInt?: boolean;
 }
 
 export type CustomFieldFormProps = {
