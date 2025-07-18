@@ -347,7 +347,17 @@ const CustomFieldForm = memo(
                     setFieldValue("private", checked)
                   }
                 />
-                <Label htmlFor="isPrivate">Private Field</Label>
+                <Label htmlFor="isPrivate">Hide from Candidates</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="isPrivateInt"
+                  checked={values.privateInt}
+                  onCheckedChange={(checked) =>
+                    setFieldValue("privateInt", checked)
+                  }
+                />
+                <Label htmlFor="isPrivateInt">Hide from Interviewer</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <Checkbox
