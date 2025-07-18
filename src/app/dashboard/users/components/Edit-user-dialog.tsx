@@ -51,6 +51,7 @@ export function EditUserDialog({
       await updateUser({
         id: selectedUser?.id,
         ...values,
+        email: values.email.toLowerCase().trim(),
         name: values.name.trim(),
       }).unwrap();
       toast({ title: "Success", description: "User updated successfully" });

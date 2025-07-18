@@ -61,6 +61,7 @@ export default function Signup() {
             const orgID_cookie = decryptedResponse.user.organizationId || "";
             const signupData = {
               ...values,
+              email: values.email.toLowerCase().trim(),
               organizationId: orgID_cookie,
               name: values.name.trim(),
             };
