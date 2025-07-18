@@ -33,10 +33,10 @@ export const handleFileSelect = async ({
   currentFormAttachments,
   setFieldValue,
 }: FileSelectParams): Promise<void> => {
-const { sanitizeFiles } = useSanitizeFiles();
- const sanitizedFiles = sanitizeFiles(files);
+  // const { sanitizeFiles } = useSanitizeFiles();
+  //  const sanitizedFiles = files(files);
   const newAttachments = await Promise.all(
-    sanitizedFiles.map(async (file) => {
+    files.map(async (file) => {
       const dataUrl = await readFileAsDataURL(file);
       let newFileName = file.name;
 

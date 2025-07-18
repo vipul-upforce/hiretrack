@@ -127,6 +127,7 @@ export function CandidateForm({
         const newBlobUrl = URL.createObjectURL(values.resume);
         setTempResumeUrl(newBlobUrl);
         setCurrentBlobUrl(newBlobUrl); // Store the blob URL for cleanup
+        // console.log(newBlobUrl, "newBlobUrl");
       } else if ("url" in resumeValue && resumeValue.url) {
         // For persistent preview from a public URL (e.g., after upload)
         setTempResumeUrl(resumeValue.url);
@@ -143,6 +144,7 @@ export function CandidateForm({
     };
   }, [values.resume]); // Only depend on values.resume
 
+  console.log(tempResumeUrl, "tempResumeUrl");
   return (
     <div className="w-full h-full flex flex-col" ref={formRef}>
       {/* Mobile Layout - Stacked */}
@@ -217,7 +219,10 @@ export function CandidateForm({
                 }, 100);
               }}
               files={resumeField.value ? [resumeField.value] : []}
-              setter={(files) => setFieldValue("resume", files[0])}
+              setter={(files) => {
+                const sanitizedFiles = sanitizeFiles(files);
+                setFieldValue("resume", sanitizedFiles[0]);
+              }}
               buttonText="Add Resume"
             />
 
@@ -938,18 +943,18 @@ export function CandidateForm({
                       });
                       return false;
                     }
-                    const specialCharPattern = /^[^a-zA-Z0-9(]|[^a-zA-Z0-9)]$/;
+                    // const specialCharPattern = /^[^a-zA-Z0-9(]|[^a-zA-Z0-9)]$/;
                     // const problematicFiles = files.filter((file) =>
                     //   specialCharPattern.test(file.name)
                     // );
-                    if (specialCharPattern.test(file.name)) {
-                      toast({
-                        title: "Alert",
-                        description:
-                          "The file name is not suitable, it can cuase errors.",
-                      });
-                      return false;
-                    }
+                    // if (specialCharPattern.test(file.name)) {
+                    //   toast({
+                    //     title: "Alert",
+                    //     description:
+                    //       "The file name is not suitable, it can cuase errors.",
+                    //   });
+                    //   return false;
+                    // }
 
                     return true;
                   })
@@ -984,7 +989,10 @@ export function CandidateForm({
                 setFieldValue("attachments", updatedFileSelection);
               }}
               files={attachmentsField.value}
-              setter={(files) => setFieldValue("attachments", files)}
+              setter={(files) => {
+                const sanitizedFiles = sanitizeFiles(files);
+                setFieldValue("attachments", sanitizedFiles);
+              }}
             />
           </div>
         </div>

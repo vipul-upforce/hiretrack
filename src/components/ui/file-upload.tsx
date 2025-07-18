@@ -173,7 +173,7 @@ export function FileUpload({
               <FileIcon className="h-4 w-4" />
               <span className="text-sm">{file?.name}</span>
               <span className="text-xs text-gray-500">
-                ({ formatFileSize(file?.size)})
+                ({formatFileSize(file?.size)})
               </span>
             </div>
             <div className="flex items-center gap-2">

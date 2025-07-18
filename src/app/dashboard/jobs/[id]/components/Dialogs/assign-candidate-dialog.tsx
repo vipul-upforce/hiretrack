@@ -209,14 +209,15 @@ export function AssignCandidateDialog({
                         (att) =>
                           new File([att.url], att.name, { type: att.type })
                       )}
-                      setter={(uiFiles) =>
+                      setter={(uiFiles) => {
+                        const sanitizedFiles = sanitizeFiles(uiFiles);
                         handleSetter({
-                          uiFiles,
+                          uiFiles: sanitizedFiles,
                           existingAttachments: candidate.attachments,
                           currentFormAttachments: values.attachments,
                           setFieldValue,
-                        })
-                      }
+                        });
+                      }}
                     />
                   </div>
                 </div>
