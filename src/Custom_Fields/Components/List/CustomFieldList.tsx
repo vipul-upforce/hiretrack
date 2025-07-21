@@ -266,13 +266,14 @@ export const CustomFieldItem = React.memo(
               </div>
             </CardHeader>
             <CardContent className="capitalize px-4">
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 {field.type && <Badge>{field.type}</Badge>}
                 {field.persistance && <Badge>{field.persistance}</Badge>}
                 {field.required && (
                   <Badge>{field.required ? "Required" : "Optional"}</Badge>
                 )}
-                <Badge>{field?.private ? "Private" : "Public"}</Badge>
+                {field?.private && <Badge>Hidden from Candidate</Badge>}
+                {field?.privateInt && <Badge>Hidden from Interviewer</Badge>}
                 {field.defaultValue && <Badge>{field.defaultValue}</Badge>}
                 {field.options && <Badge>{field.options.length}</Badge>}
                 {field.showOnCard && <Badge>Showing on Card</Badge>}
