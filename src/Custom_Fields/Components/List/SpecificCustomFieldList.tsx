@@ -12,18 +12,9 @@ import {
   type DraggableProvided,
   type DraggableStateSnapshot,
 } from "@hello-pangea/dnd";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { CustomFieldItem } from "./CustomFieldList";
 import { AddSpecificCustomFieldForm } from "../AddSpecificCustomFieldForm";
-import CustomFieldForm from "../Form/CustomFieldForm";
+// import CustomFieldForm from "../Form/CustomFieldForm";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { createPortal } from "react-dom";
@@ -39,8 +30,8 @@ function SpecificCustomFieldList({
   const [selectedField, setSelectedField] = useState<CustomField>();
   const [orderedFields, setOrderedFields] = useState<CustomField[]>([]);
   const [formOpen, setFormOpen] = useState<boolean>(false);
-  const [duplicationAlert, setDuplicationAlert] = useState<boolean>(false);
-  const [duplicationMessage, setDuplicationMessage] = useState<string>("");
+  // const [duplicationAlert, setDuplicationAlert] = useState<boolean>(false);
+  // const [duplicationMessage, setDuplicationMessage] = useState<string>("");
   const [isEditMode, setIsEditMode] = useState(false);
   const handleAddField = () => {
     setFormOpen(true);
@@ -60,6 +51,7 @@ function SpecificCustomFieldList({
     setCustomFields,
     customFields,
     handleAddCustomField,
+    handleEditCustomField,
   } = useContext(CustomFieldsContext);
 
   // Initialize orderedFields when selectedFormId changes
@@ -76,19 +68,15 @@ function SpecificCustomFieldList({
 
   // const onDragEnd = (result: DropResult) => {
   //   if (!result.destination) return;
-
+  //   debugger;
+  //   console.log(customFields);
   //   const items = Array.from(orderedFields);
   //   const [reorderedItem] = items.splice(result.source.index, 1);
   //   items.splice(result.destination.index, 0, reorderedItem);
 
   //   if (selectedFormId) {
   //     const allFields = selectedFormId.fields;
-  //     const otherFields = allFields.filter(
-  //       (field) =>
-  //         (field.candidateId && field.candidateId === candidateId) ||
-  //         (field.jobId && field.jobId === jobId)
-  //     );
-  //     const reorderedFields = [...items, ...otherFields];
+  //     const reorderedFields = [...items];
 
   //     const orderedItems = {
   //       ...customFields,
@@ -109,7 +97,7 @@ function SpecificCustomFieldList({
     items.splice(result.destination.index, 0, reorderedItem);
 
     if (selectedFormId) {
-      const allFields = selectedFormId.fields;
+      const allFields = customFields[selectedFormId.formId].fields;
       const matchingFields = allFields.filter(
         (field) =>
           (candidateId && field.candidateId === candidateId) ||
@@ -148,15 +136,17 @@ function SpecificCustomFieldList({
   };
 
   const handleSave = (newField: CustomField) => {
-    selectedFormId?.fields.forEach((field) => {
-      if (
-        field.label === newField.label &&
-        !field.jobId &&
-        !field.candidateId
-      ) {
-        newField.label += " |||||(i)";
-      }
-    });
+    selectedFormId &&
+      customFields[selectedFormId.formId].fields.forEach((field) => {
+        if (
+          field.label === newField.label &&
+          !field.jobId &&
+          !field.candidateId &&
+          field.id !== newField.id
+        ) {
+          newField.label += " |||||(i)";
+        }
+      });
     // if (
 
     // ) {
@@ -168,9 +158,11 @@ function SpecificCustomFieldList({
     //   return;
     // }
     if (
+      !isEditMode &&
       selectedFormId?.fields.some(
         (field) =>
           field.label === newField.label &&
+          field.id === newField.id &&
           ((field.jobId && field.jobId === jobId) ||
             (field.candidateId && field.candidateId === candidateId))
       )
@@ -179,14 +171,21 @@ function SpecificCustomFieldList({
       //   (field) => field.label === newField.label
       // ).length;
       // newField.label += ` (${String(count + 1)})`;
-      setDuplicationMessage(
-        `field already exists with this label in current ${selectedFormId.formName}.`
-      );
-      setDuplicationAlert(true);
+      // setDuplicationMessage(
+      //   `field already exists with this label in current ${selectedFormId.formName}.`
+      // );
+      // setDuplicationAlert(true);
       return;
     }
-
-    handleAddCustomField(newField, selectedFormId?.formId || "");
+    // debugger;
+    if (isEditMode) {
+      handleEditCustomField(
+        newField as CustomField,
+        selectedFormId?.formId || null
+      );
+    } else {
+      handleAddCustomField(newField, selectedFormId?.formId || "");
+    }
     setIsOpen(false);
   };
 
@@ -208,17 +207,34 @@ function SpecificCustomFieldList({
     };
   };
 
-  if (formOpen) {
-    return (
-      <AddSpecificCustomFieldForm
-        handleClose={() => setFormOpen(false)}
-        onSave={handleSave}
-        jobId={jobId}
-        candidateId={candidateId}
-        existingFields={selectedFormId?.fields}
-      />
-    );
-  }
+  // if (formOpen) {
+  //   // debugger;
+  //   console.log("🔥🔥🔥🔥 selectedFormId?.fields: ", selectedFormId);
+  //   return (
+  //     // <AddSpecificCustomFieldForm
+  //     //   isOpen={isOpen}
+  //     //   handleClose={() => setFormOpen(false)}
+  //     //   onSave={handleSave}
+  //     //   jobId={jobId}
+  //     //   candidateId={candidateId}
+  //     //   existingFields={selectedFormId?.fields}
+  //     // />
+  //     <AddSpecificCustomFieldForm
+  //       isOpen={isOpen}
+  //       handleClose={() => {
+  //         handleClose();
+  //         setIsEditMode(false);
+  //       }}
+  //       // initialValues={selectedField}
+  //       isEditMode={false}
+  //       //  handleClose={() => setFormOpen(false)}
+  //       onSave={handleSave}
+  //       jobId={jobId}
+  //       candidateId={candidateId}
+  //       existingFields={selectedFormId?.fields}
+  //     />
+  //   );
+  // }
 
   //   const filteredFields = orderedFields.filter(
   //     (field) => field.jobId === jobId && field.candidateId === candidateId
@@ -232,34 +248,6 @@ function SpecificCustomFieldList({
           Add More Meta Fields
         </Button>
       </div>
-
-      {duplicationAlert && (
-        <AlertDialog open={duplicationAlert} onOpenChange={setDuplicationAlert}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Duplication Alert</AlertDialogTitle>
-              <AlertDialogDescription>
-                <>
-                  This action was not completed because a {duplicationMessage}
-                  {/* {selectedFormId
-                    ? `This action was not completed because a a field already exists in this ${selectedFormId.formName}`
-                    : "This action was not completed because a a field already exists "} */}
-                </>
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogAction
-                onClick={() => setDuplicationAlert(false)}
-                className={
-                  "text-blue-500 bg-blue hover:bg-blue hover:text-blue-500/90"
-                }
-              >
-                {"Okay"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
 
       <DragDropContext onDragEnd={onDragEnd}>
         <Droppable droppableId="custom-fields">
@@ -348,15 +336,39 @@ function SpecificCustomFieldList({
         </Droppable>
       </DragDropContext>
 
-      <CustomFieldForm
-        isOpen={isOpen}
-        handleClose={() => {
-          handleClose();
-          setIsEditMode(false);
-        }}
-        initialValue={selectedField}
-        isEditMode={isEditMode}
-      />
+      {formOpen && (
+        <AddSpecificCustomFieldForm
+          isOpen={true}
+          handleClose={() => {
+            handleClose();
+            setFormOpen(false);
+          }}
+          // initialValues={selectedField}
+          isEditMode={false}
+          //  handleClose={() => setFormOpen(false)}
+          onSave={handleSave}
+          jobId={jobId}
+          candidateId={candidateId}
+          existingFields={selectedFormId?.fields}
+        />
+      )}
+
+      {isEditMode && (
+        <AddSpecificCustomFieldForm
+          isOpen={isOpen}
+          handleClose={() => {
+            handleClose();
+            setIsEditMode(false);
+          }}
+          initialValues={selectedField}
+          isEditMode={isEditMode}
+          //  handleClose={() => setFormOpen(false)}
+          onSave={handleSave}
+          jobId={jobId}
+          candidateId={candidateId}
+          existingFields={selectedFormId?.fields}
+        />
+      )}
     </div>
   );
 }

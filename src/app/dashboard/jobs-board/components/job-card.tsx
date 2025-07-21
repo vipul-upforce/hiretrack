@@ -200,6 +200,13 @@ const JobCard = ({
                         if (field?.jobId && field.jobId !== job._id) {
                           return false;
                         }
+                        if (
+                          (typeof value === "string" && value === "") ||
+                          (typeof value === "object" &&
+                            Object.keys(value).length === 0)
+                        ) {
+                          return false;
+                        }
                         return field?.showOnCard;
                       })
                       .map(([key, value], i) => (
