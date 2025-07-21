@@ -198,6 +198,12 @@ export function CandidateCard({
               const field = formNameObject?.fields.find((f) => f.label === key);
               if (field?.candidateId && field.candidateId !== candidate._id)
                 return false;
+              if (
+                (typeof value === "string" && value === "") ||
+                (typeof value === "object" && Object.keys(value).length === 0)
+              ) {
+                return false;
+              }
               return field?.showOnCard;
             })
             .map(([key, value], i) => (

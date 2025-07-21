@@ -19,7 +19,9 @@ const CustomFieldBadge = ({
         <span className="font-bold text-xs  break-words hyphens-auto overflow-wrap-anywhere leading-tight">
           {String(value)}
         </span> */}
-    <p className="text-[11px] font-thin text-gray-500">{kii}</p>
+    <p className="text-[11px] font-thin text-gray-500">
+      {kii.split(" |||||(")[0]}
+    </p>
     <p>{String(value)}</p>
   </Badge>
 );
