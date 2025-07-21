@@ -9,7 +9,9 @@ function AddCustomFields() {
   const { setStepName } = useContext(CustomFieldsContext);
   const [isOpen, setIsOpen] = useState(false);
   const onClick = () => {
-    setIsOpen(true);
+    setTimeout(() => {
+      setIsOpen(true);
+    }, 200);
   };
 
   const handleClose = useCallback(() => {

@@ -58,7 +58,10 @@ export const AddSpecificCustomFieldForm = memo(
     existingFields = [],
   }: JobCandidateCustomFieldFormProps) => {
     const [hasDuplicate, setHasDuplicate] = useState(false);
-
+    const initValsWithLabel = {
+      ...initialValues,
+      label: initialValues.label.split(" |||||(")[0],
+    };
     const checkForDuplicate = useCallback(
       (label: string, currentFieldId?: string) => {
         const trimmedLabel = label.trim().toLowerCase();
@@ -99,11 +102,12 @@ export const AddSpecificCustomFieldForm = memo(
             jobId,
             candidateId,
           };
+          console.log("00090909 ", fieldData);
           onSave(fieldData);
           handleClose();
-          if (!isEditMode) {
-            resetForm(); // Reset form only in create mode
-          }
+          // if (!isEditMode) {
+          resetForm(); // Reset form only in create mode
+          // }
         } catch (error: unknown) {
           if (error instanceof Error)
             toast({
@@ -193,7 +197,7 @@ export const AddSpecificCustomFieldForm = memo(
             </DialogTitle>
           </DialogHeader>
           <Formik
-            initialValues={initialValues}
+            initialValues={initValsWithLabel}
             validationSchema={validationSchema}
             onSubmit={onSubmit}
             enableReinitialize={true} // Ensure form reinitializes with new initialValues in EditMode

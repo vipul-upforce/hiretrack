@@ -12,15 +12,6 @@ import {
   type DraggableProvided,
   type DraggableStateSnapshot,
 } from "@hello-pangea/dnd";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { CustomFieldItem } from "./CustomFieldList";
 import { AddSpecificCustomFieldForm } from "../AddSpecificCustomFieldForm";
 // import CustomFieldForm from "../Form/CustomFieldForm";
@@ -39,8 +30,8 @@ function SpecificCustomFieldList({
   const [selectedField, setSelectedField] = useState<CustomField>();
   const [orderedFields, setOrderedFields] = useState<CustomField[]>([]);
   const [formOpen, setFormOpen] = useState<boolean>(false);
-  const [duplicationAlert, setDuplicationAlert] = useState<boolean>(false);
-  const [duplicationMessage, setDuplicationMessage] = useState<string>("");
+  // const [duplicationAlert, setDuplicationAlert] = useState<boolean>(false);
+  // const [duplicationMessage, setDuplicationMessage] = useState<string>("");
   const [isEditMode, setIsEditMode] = useState(false);
   const handleAddField = () => {
     setFormOpen(true);
@@ -60,6 +51,7 @@ function SpecificCustomFieldList({
     setCustomFields,
     customFields,
     handleAddCustomField,
+    handleEditCustomField,
   } = useContext(CustomFieldsContext);
 
   // Initialize orderedFields when selectedFormId changes
@@ -166,9 +158,11 @@ function SpecificCustomFieldList({
     //   return;
     // }
     if (
+      !isEditMode &&
       selectedFormId?.fields.some(
         (field) =>
           field.label === newField.label &&
+          field.id === newField.id &&
           ((field.jobId && field.jobId === jobId) ||
             (field.candidateId && field.candidateId === candidateId))
       )
@@ -177,14 +171,21 @@ function SpecificCustomFieldList({
       //   (field) => field.label === newField.label
       // ).length;
       // newField.label += ` (${String(count + 1)})`;
-      setDuplicationMessage(
-        `field already exists with this label in current ${selectedFormId.formName}.`
-      );
-      setDuplicationAlert(true);
+      // setDuplicationMessage(
+      //   `field already exists with this label in current ${selectedFormId.formName}.`
+      // );
+      // setDuplicationAlert(true);
       return;
     }
-
-    handleAddCustomField(newField, selectedFormId?.formId || "");
+    // debugger;
+    if (isEditMode) {
+      handleEditCustomField(
+        newField as CustomField,
+        selectedFormId?.formId || null
+      );
+    } else {
+      handleAddCustomField(newField, selectedFormId?.formId || "");
+    }
     setIsOpen(false);
   };
 
@@ -247,34 +248,6 @@ function SpecificCustomFieldList({
           Add More Meta Fields
         </Button>
       </div>
-
-      {duplicationAlert && (
-        <AlertDialog open={duplicationAlert} onOpenChange={setDuplicationAlert}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Duplication Alert</AlertDialogTitle>
-              <AlertDialogDescription>
-                <>
-                  This action was not completed because a {duplicationMessage}
-                  {/* {selectedFormId
-                    ? `This action was not completed because a a field already exists in this ${selectedFormId.formName}`
-                    : "This action was not completed because a a field already exists "} */}
-                </>
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogAction
-                onClick={() => setDuplicationAlert(false)}
-                className={
-                  "text-blue-500 bg-blue hover:bg-blue hover:text-blue-500/90"
-                }
-              >
-                {"Okay"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
 
       <DragDropContext onDragEnd={onDragEnd}>
         <Droppable droppableId="custom-fields">

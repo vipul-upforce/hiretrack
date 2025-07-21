@@ -65,7 +65,10 @@ const CustomFieldForm = memo(
 
     useEffect(() => {
       if (initialValue) {
-        setInitialValues(initialValue);
+        setInitialValues({
+          ...initialValue,
+          label: initialValue.label.split(" |||||(")[0],
+        });
       }
     }, [initialValue]);
 

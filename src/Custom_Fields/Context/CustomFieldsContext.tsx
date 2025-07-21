@@ -88,7 +88,6 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
     }, [getCustomField, getCustomFieldsByOrgName, pathname]);
 
     const getAndSetCustomFields = useCallback(async () => {
-      // debugger;
       if (Object.keys(customFields).length === 0) {
         await getCustomFields();
       } else {
