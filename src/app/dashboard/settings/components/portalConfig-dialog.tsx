@@ -371,7 +371,8 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
                                 : []
                           }
                           setter={(files) => {
-                            setFieldValue(name, files[0]);
+                            const sanitizedFiles = sanitizeFiles(files);
+                            setFieldValue(name, sanitizedFiles[0]);
                             setFieldValue("existingLogo", null);
                           }}
                         />

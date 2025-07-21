@@ -353,7 +353,8 @@ export function JobForm(props: JobFormProps) {
           maxFiles={30}
           files={values.files || []}
           setter={(files: File[]) => {
-            setFieldValue("files", files);
+            const sanitizedFiles = sanitizeFiles(files);
+            setFieldValue("files", sanitizedFiles);
           }}
           // existingFiles={job?.attachments.files} // Remove from UI
         />

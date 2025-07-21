@@ -93,6 +93,8 @@ export function DateTimePicker({
       newDate.setHours(0, 0, 0, 0);
       setDate(newDate);
       onChange(dayjs(newDate));
+      setDate(undefined);
+      onChange(null);
     }
   };
 
@@ -173,6 +175,7 @@ export function DateTimePicker({
                   size="sm"
                   onClick={() => {
                     setDate(new Date());
+                    handleClearTime();
                     onChange(null);
                     setIsOpen(false);
                   }}

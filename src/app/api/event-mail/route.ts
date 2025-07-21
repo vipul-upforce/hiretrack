@@ -71,25 +71,29 @@ async function sendQueuedEmail(data: any, req: NextRequest) {
     candidateDetailsPage,
   } = data;
 
-  const startDateString = await getFormattedDate(req, new Date(startTime));
-  const startDate = (await getFormattedDate(
-    req,
-    new Date(startTime),
-    true
-  )) as Date;
+  const startDateString = startTime
+    ? await getFormattedDate(req, new Date(startTime))
+    : "N/A";
+  const startDate = startTime
+    ? ((await getFormattedDate(req, new Date(startTime), true)) as Date)
+    : null;
   // const startDate = new Date(startTime);
-  const endDateString = await getFormattedDate(req, new Date(endTime));
-  const endDate = (await getFormattedDate(
-    req,
-    new Date(endTime),
-    true
-  )) as Date;
+  const endDateString = endTime
+    ? await getFormattedDate(req, new Date(endTime))
+    : "N/A";
+  const endDate = endTime
+    ? ((await getFormattedDate(req, new Date(endTime), true)) as Date)
+    : null;
   // const endDate = new Date(endTime);
-  const formattedStartTime = startDate.toISOString().replace(/-|:|\.\d+/g, "");
-  const formattedEndTime = endDate.toISOString().replace(/-|:|\.\d+/g, "");
+  const formattedStartTime = startDate
+    ? startDate.toISOString().replace(/-|:|\.\d+/g, "")
+    : "N/A";
+  const formattedEndTime = endDate
+    ? endDate.toISOString().replace(/-|:|\.\d+/g, "")
+    : "N/A";
 
   console.log("START TIME: BEFORE: : ", startTime);
-  console.log("DATE TO BE RECORDED in EMail: ", startDate);
+  console.log("DATE TO BE RECORDED in EMail: ", startDateString, endDateString);
   const eventDescription: string = `<div><strong>Job Name:</strong> ${
     jobName || "N/A"
   }<br>
@@ -112,24 +116,28 @@ async function sendQueuedEmail(data: any, req: NextRequest) {
 
   const outlookCalendarLink = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${encodeURIComponent(
     eventTitle
-  )}&startdt=${startDate.toISOString()}&enddt=${endDate.toISOString()}&body=${encodeURIComponent(
+  )}&startdt=${startDate ? startDate.toISOString() : "N/A"}&enddt=${endDate ? endDate.toISOString() : "N/A"}&body=${encodeURIComponent(
     eventDescription || ""
   )}`;
 
   // Use the request's host header to determine the client's base URI
 
-  const {emailContent, emailSubject} = await getMappedEmailTemplate("assignment-event", {
-    eventTitle,
-    startDate: startDateString as string,
-    endDate: endDateString as string,
-    jobName,
-    interviewerName,
-    candidateName,
-    status,
-    googleCalendarLink,
-    outlookCalendarLink,
-    candidateDetailsPage,
-  }, organizationId);
+  const { emailContent, emailSubject } = await getMappedEmailTemplate(
+    "assignment-event",
+    {
+      eventTitle,
+      startDate: startDateString as string,
+      endDate: endDateString as string,
+      jobName,
+      interviewerName,
+      candidateName,
+      status,
+      googleCalendarLink,
+      outlookCalendarLink,
+      candidateDetailsPage,
+    },
+    organizationId
+  );
 
   return await sendMail(
     organizationId,
@@ -166,11 +174,15 @@ export async function PUT(req: NextRequest) {
 
     const candidateDetails = `${req.headers.get("Origin")}/candidate/${data.id}`;
 
-    const {emailContent, emailSubject} = await getMappedEmailTemplate("marked-as-done", {
-      candidate_name: data.name,
-      unassigner: decryptedResponse?.user.name,
-      candidateDetails,
-    }, organizationId);
+    const { emailContent, emailSubject } = await getMappedEmailTemplate(
+      "marked-as-done",
+      {
+        candidate_name: data.name,
+        unassigner: decryptedResponse?.user.name,
+        candidateDetails,
+      },
+      organizationId
+    );
     const users = await User.find({
       organizationId: new mongoose.Types.ObjectId(organizationId),
       role: { $in: ["hr", "admin"] },
@@ -245,7 +257,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!email || !eventTitle || !startTime || !endTime) {
+    if (!email || !eventTitle) {
       return NextResponse.json(
         { error: "Email, event title, start time, and end time are required." },
         { status: 400 }
@@ -260,14 +272,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const startDate = new Date(startTime);
-    const endDate = new Date(endTime);
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-      return NextResponse.json(
-        { error: "Invalid start or end time." },
-        { status: 400 }
-      );
-    }
+    // const startDate = new Date(startTime);
+    // const endDate = new Date(endTime);
+    // if (
+    //   (startDate ) ||
+    //   (endDate && isNaN(endDate.getTime()))
+    // ) {
+    //   return NextResponse.json(
+    //     { error: `Invalid start or end time. ${startTime} ${endTime}` },
+    //     { status: 400 }
+    //   );
+    // }
 
     if (!User) {
       throw new Error("Database not connected");

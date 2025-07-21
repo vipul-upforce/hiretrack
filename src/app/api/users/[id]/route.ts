@@ -86,9 +86,32 @@ export async function PUT(
     const { id } = await params;
     const userData = await req.json();
 
+    console.log("userData", userData);
     let user = await User.findById(id);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Prevent logged-in user from deactivating themselves
+    if (session.user.id === id && userData.isDeleted) {
+      return NextResponse.json(
+        { error: "Cannot deactivate yourself" },
+        { status: 400 }
+      );
+    }
+
+    // Duplicate email check
+    if (userData.email && userData.email !== user.email) {
+      const existingUser = await User.findOne({
+        email: userData.email,
+        _id: { $ne: id }, // Exclude the current user
+      });
+      if (existingUser) {
+        return NextResponse.json(
+          { error: "Email already exists for another user" },
+          { status: 400 }
+        );
+      }
     }
 
     const isAdmin = user.role === "admin";

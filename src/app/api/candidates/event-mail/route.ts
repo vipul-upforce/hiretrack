@@ -104,19 +104,23 @@ export async function POST(req: NextRequest) {
     )) as string;
 
     // console.log("⛔⛔⛔ APLPICTION DATE: ", applicationDate);
-    // Prepare HR notification email content
+    // Prepare HR notification email contentEmail, event title, start time, and end time are required
     const hrNotificationTitle = `${candidateName} applied for ${jobName}`;
     const candidateDetails = `${req.headers.get("Origin")}/candidate/${candidateId}`;
-    const {emailContent, emailSubject} = await getMappedEmailTemplate("job-application-(hr)", {
-      orgName,
-      hrNotificationTitle,
-      status,
-      email,
-      candidateName,
-      jobName,
-      applicationDate,
-      candidateDetails,
-    }, organizationId);
+    const { emailContent, emailSubject } = await getMappedEmailTemplate(
+      "job-application-(hr)",
+      {
+        orgName,
+        hrNotificationTitle,
+        status,
+        email,
+        candidateName,
+        jobName,
+        applicationDate,
+        candidateDetails,
+      },
+      organizationId
+    );
 
     const candidateAndHr = [email, ...hrEmails];
 
@@ -126,6 +130,7 @@ export async function POST(req: NextRequest) {
       emailSubject,
       emailContent
     );
+    console.log("candidateEmailStatus", candidateEmailStatus);
 
     // Prepare response
     if (candidateEmailStatus.status === 200) {
