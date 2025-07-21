@@ -1,6 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
 import { Attachment } from "../schemas/AssignCandidateSchema";
-import { useSanitizeFiles } from "@/hooks/useSanitizeFiles";
 
 interface FileSelectParams {
   files: File[];
