@@ -17,15 +17,15 @@ import {
   CustomField,
   CustomFieldFormProps,
 } from "@/Custom_Fields/Types/CustomField";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+// import {
+//   AlertDialog,
+//   AlertDialogAction,
+//   AlertDialogContent,
+//   AlertDialogDescription,
+//   AlertDialogFooter,
+//   AlertDialogHeader,
+//   AlertDialogTitle,
+// } from "@/components/ui/alert-dialog";
 import CustomFieldDialog from "../Common/CustomFieldDialog";
 import { toast } from "@/Custom_Fields/hooks/use-toast";
 import { CustomFieldsContext } from "@/Custom_Fields/Context";
@@ -39,11 +39,15 @@ import { validationSchema } from "@/Custom_Fields/utils/validations";
 
 const CustomFieldForm = memo(
   ({ isOpen, handleClose, initialValue, isEditMode }: CustomFieldFormProps) => {
-    const { handleAddCustomField, handleEditCustomField, selectedFormId } =
-      useContext(CustomFieldsContext);
+    const {
+      handleAddCustomField,
+      handleEditCustomField,
+      selectedFormId,
+      customFields,
+    } = useContext(CustomFieldsContext);
 
     const existingFields = selectedFormId?.fields || [];
-    const [duplicationAlert, setDuplicationAlert] = useState<boolean>(false);
+    // const [duplicationAlert, setDuplicationAlert] = useState<boolean>(false);
     const [initialValues, setInitialValues] = useState<CustomField>({
       id: "",
       label: "",
@@ -53,9 +57,10 @@ const CustomFieldForm = memo(
       defaultValue: "",
       required: false,
       private: false,
+      privateInt: false,
       showOnCard: false,
     });
-    const [dupLabel, setDupLabel] = useState<string | null>(null);
+    // const [dupLabel, setDupLabel] = useState<string | null>(null);
     const [hasDuplicate, setHasDuplicate] = useState(false);
 
     useEffect(() => {
@@ -96,23 +101,26 @@ const CustomFieldForm = memo(
             return;
           }
 
-          const hasGlobalDuplicate = selectedFormId?.fields.some((field) => {
-            if (
-              !field.jobId &&
-              !field.candidateId &&
-              field.label === values.label &&
-              (!isEditMode || field.id !== initialValue?.id)
-            ) {
-              setDupLabel(field.label);
-              setDuplicationAlert(true);
-              return true;
-            }
-            return false;
-          });
+          // const hasGlobalDuplicate =
+          selectedFormId &&
+            customFields[selectedFormId.formId].fields.some((field) => {
+              // debugger;
+              if (
+                (field.jobId || field.candidateId) &&
+                field.label === values.label &&
+                (!isEditMode || field.id !== initialValue?.id)
+              ) {
+                values.label = `${values.label} |||||(g)`;
+                // setDupLabel(field.label);
+                // setDuplicationAlert(true);
+                return true;
+              }
+              return false;
+            });
 
-          if (hasGlobalDuplicate) {
-            return;
-          }
+          // if (hasGlobalDuplicate) {
+          //   return;
+          // }
         }
 
         try {
@@ -222,7 +230,7 @@ const CustomFieldForm = memo(
         title="Global Meta Fields"
         regular
       >
-        <AlertDialog open={duplicationAlert} onOpenChange={setDuplicationAlert}>
+        {/* <AlertDialog open={duplicationAlert} onOpenChange={setDuplicationAlert}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Duplication Alert</AlertDialogTitle>
@@ -243,7 +251,7 @@ const CustomFieldForm = memo(
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
-        </AlertDialog>
+        </AlertDialog> */}
 
         <Formik
           initialValues={initialValues}
