@@ -114,6 +114,9 @@ export function CandidateForm({
   }, []);
 
   useEffect(() => {
+    if (values.resume && !(values.resume as { url?: string }).url) {
+      return;
+    }
     // Cleanup previous blob URL if it exists
     if (currentBlobUrl) {
       URL.revokeObjectURL(currentBlobUrl);
