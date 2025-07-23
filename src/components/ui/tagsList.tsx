@@ -30,7 +30,7 @@ const TagsList = ({ candidate }: { candidate: Candidate }) => {
             <TooltipContent
               side="top"
               align="center"
-              className="px-2 py-1 text-xs bg-gray-900 text-white rounded shadow-lg max-w-[500px]  break-words"
+              className="px-2 py-1 text-xs bg-popover text-popover-foreground rounded shadow-lg max-w-[500px] break-words"
             >
               <p className="px-2">{tag.title || `Tag ${i + 1}`}</p>
             </TooltipContent>

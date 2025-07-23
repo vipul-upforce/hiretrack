@@ -124,10 +124,22 @@ export default function GeminiConfigs({ onClose }: { onClose: () => void }) {
             </div>
           ))}
 
-          <div className="w-full flex justify-end">
-            <Button type="submit" disabled={isSubmitting || isUpdating}>
-              {isSubmitting || isUpdating ? "Saving..." : "Save Settings"}
-            </Button>
+          <div className="w-full flex justify-between items-center pt-4 border-t">
+            <div className="text-sm text-muted-foreground">
+              {/* Optional helper text can go here */}
+            </div>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                disabled={isSubmitting || isUpdating}
+              >
+                {isSubmitting || isUpdating ? "Saving..." : "Save"}
+              </Button>
+            </div>
           </div>
         </Form>
       )}

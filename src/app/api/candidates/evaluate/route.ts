@@ -6,7 +6,7 @@ import connectToDatabase, {
   Settings,
 } from "@/lib/mongodb";
 // import fetch from "node-fetch";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, Part } from "@google/generative-ai";
 import { promises as fs } from "fs";
 import path from "path";
 import { stripHtml } from "@/app/dashboard/jobs-board/schemas/job-schema";
@@ -64,8 +64,8 @@ async function evaluateResume(
     // console.log("[JOBSALARY ]: ", jobData.salary);
     const prompt = `
     As a seasoned senior technology leader with expertise in talent acquisition, you are conducting a rigorous evaluation of a candidate. You must evaluate each dimension independently and avoid giving similar scores across categories.
-    
-       
+
+
     Job Details:
     - Job Title: ${jobTitle}
     - Job Description: ${jobDescription}
@@ -73,27 +73,27 @@ async function evaluateResume(
     - Candidate's Current salary: ${candidate.currentCTC}
     - Candidate's Expected salary: ${candidate.expectedCTC}
     - Required Skills: ${jobSkills}
-    
+
     EVALUATION FRAMEWORK - Each category must be scored independently:
-    
+
     **SKILLS ASSESSMENT (1-10) - TECHNICAL FOCUS ONLY:**
     - Evaluate ONLY technical/hard skills mentioned in CV vs. job requirements
-    
+
     **EXPERIENCE ASSESSMENT (1-10) - WORK HISTORY FOCUS ONLY:**
     Evaluate ONLY professional work experience relevance and duration:
-    
+
     **AFFORDABILITY ASSESSMENT (1-10):**
     IMPORTANT: First normalize salary formats before comparison:
     - If candidate expectation is >1000 (e.g., 34000, 45000): Treat as monthly salary in thousands, convert to LPA by dividing by 1000 and multiplying by 12
     - If candidate expectation is ≤100 (e.g., 34, 45): Treat as LPA (Lakhs Per Annum)
     - Apply same logic to job salary for comparison
-    
+
     *After normalization, compare candidate's expected CTC with job salary*
-  
+
 
     **OVERALL SUITABILITY (1-10):**
     - Consider all the scores, and calculate the overall score of candidate.
-    
+
 
     CRITICAL INSTRUCTIONS:
     1. Each score must reflect the specific criteria above
@@ -103,7 +103,7 @@ async function evaluateResume(
     5. After normalization, compare candidate's expected CTC with job salary
     6. For affordability, clearly show your salary normalization logic in the notes
     7. Provide specific evidence from the CV to justify each score
-    
+
     Return your evaluation in this JSON format:
     {
       "overall": // Overall suitability score (1-10) with brief justification
@@ -115,17 +115,17 @@ async function evaluateResume(
       "recommendation": // One of: "Strongly Recommend", "Recommend", "Consider with Reservations", "Not Recommended"
       "notes": // Specific evidence from CV that influenced your scoring, include salary normalization logic
     }
-    
+
     SALARY NORMALIZATION EXAMPLES:
     - Candidate says "34000 expected": 34000 ÷ 1000 × 12 = 4.08 LPA
     - Candidate says "34 LPA expected": 34 LPA (no conversion needed)
     - Candidate says "45000 current, 50000 expected": 50000 ÷ 1000 × 12 = 6 LPA expected
-    
+
     Below is the CV content for evaluation:
 
     `;
 
-    const parts = [
+    const parts: Part[] = [
       { text: prompt },
       {
         inlineData: {
@@ -222,8 +222,8 @@ export async function PUT(request: NextRequest) {
     const settingsData = await Settings.findOne({
       organizationId:
         candidate.jobId &&
-          typeof candidate.jobId === "object" &&
-          "organizationId" in candidate.jobId
+        typeof candidate.jobId === "object" &&
+        "organizationId" in candidate.jobId
           ? String(candidate.jobId.organizationId)
           : "",
     });
@@ -234,7 +234,7 @@ export async function PUT(request: NextRequest) {
       );
     }
     let resumeUrl = candidate.resume.url;
-    console.log("📌📌RESUME URL : ",resumeUrl)
+    console.log("📌📌RESUME URL : ", resumeUrl);
     if (!resumeUrl) {
       return NextResponse.json(
         { error: "Resume URL not found" },
@@ -250,9 +250,9 @@ export async function PUT(request: NextRequest) {
     if (fileStorage === "local") {
       base64Resume = await generateBase64(resumeUrl);
     } else {
-      if(!resumeUrl.startsWith("http")){
-        console.log("reqHeader: ",request.headers.get("origin"))
-        resumeUrl=request.headers.get("origin")+resumeUrl;
+      if (!resumeUrl.startsWith("http")) {
+        console.log("reqHeader: ", request.headers.get("origin"));
+        resumeUrl = request.headers.get("origin") + resumeUrl;
       }
       const response = await fetch(resumeUrl.trim());
       if (!response.ok) {
@@ -269,8 +269,8 @@ export async function PUT(request: NextRequest) {
 
     const jobDescription =
       candidate.jobId &&
-        typeof candidate.jobId === "object" &&
-        "description" in candidate.jobId
+      typeof candidate.jobId === "object" &&
+      "description" in candidate.jobId
         ? String(candidate.jobId.description)
         : "";
     const jobData = {
@@ -338,11 +338,11 @@ export async function PUT(request: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    console.log("Upper: ",error)
+    console.log("Upper: ", error);
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    console.log(error)
+    console.log(error);
     return NextResponse.json(
       { error: "An unexpected error occurred" },
       { status: 500 }

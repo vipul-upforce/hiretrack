@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { IUser } from "@/lib/models/user";
+import { useTheme } from "@/components/theme-provider";
 
 interface PortalHeadProps {
   portalName?: string;
@@ -18,7 +19,8 @@ export default function PortalHead({
   isLoading = false,
 }: PortalHeadProps) {
   const [user, setUser] = useState<IUser | null>(null);
-  // debugger;
+  const { theme } = useTheme();
+
   // Get user from cookies when component mounts
   useEffect(() => {
     (async () => {
@@ -31,19 +33,22 @@ export default function PortalHead({
       }
     })();
   }, []);
-  // console.log("PortalHead render:", { portalName, portalLogo, isLoading });
-  // console.log("PortalHead Head component output:", {
-  //   title: isLoading ? "" : portalName,
-  //   favicon: portalLogo || null,
-  // });
+
+  // Determine which logo to use
+  const getLogoUrl = () => {
+    // If user has set a custom logo, use it
+    if (portalLogo && portalLogo !== "/default/favicon.png") {
+      return portalLogo;
+    }
+
+    // Otherwise use default logos based on theme
+    return theme === "dark" ? "/logo_dark.png" : "/logo.png";
+  };
 
   return (
     <Head>
       <title>{isLoading ? "Hiretrack" : portalName}</title>
-      <link
-        rel="icon"
-        href={portalLogo || `/${user?.organizationInfo?.name}/favicon.png`}
-      />
+      <link rel="icon" href={getLogoUrl()} />
     </Head>
   );
 }

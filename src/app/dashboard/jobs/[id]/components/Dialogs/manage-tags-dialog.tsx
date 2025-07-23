@@ -159,6 +159,7 @@ const ManageTagsDialog = ({
                 onClick={handleAddTag}
                 disabled={!newTagTitle.trim()}
                 className="mt-2"
+                variant="outline"
               >
                 Add
               </Button>
@@ -205,6 +206,7 @@ const ManageTagsDialog = ({
                 onClick={handleSave}
                 disabled={isUpdating || !hasChanges}
                 className="min-w-[80px]"
+                variant="primary"
               >
                 {isUpdating ? <LoadingSpinner w={4} /> : "Save"}
               </Button>

@@ -113,7 +113,12 @@ export default function BackupsDialog() {
 
   return (
     <div className="">
-      <Button className="w-full mb-2" onClick={takeSnapShot} disabled={loading}>
+      <Button
+        className="w-full mb-2"
+        variant="primary"
+        onClick={takeSnapShot}
+        disabled={loading}
+      >
         Take a database snapshot
       </Button>
       {files.length === 0 ? (
@@ -191,7 +196,7 @@ export default function BackupsDialog() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteBackup(fileToDelete)}
-              className={"text-white bg-red-600 hover:bg-red-700"}
+              className="bg-red-600 hover:bg-red-700 text-white"
             >
               Delete
             </AlertDialogAction>

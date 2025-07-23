@@ -84,19 +84,19 @@ export default function JobModal({
             md:w-[calc(100%-3rem)] md:h-[calc(100%-3rem)] md:max-w-3xl
             lg:w-[calc(100%-4rem)] lg:h-[calc(100%-4rem)] lg:max-w-4xl
             xl:max-w-5xl
-            bg-white 
+            bg-card
             flex flex-col
-            rounded-none sm:rounded-lg md:rounded-xl lg:rounded-2xl 
+            rounded-none sm:rounded-lg md:rounded-xl lg:rounded-2xl
             shadow-xl
             overflow-hidden
           "
           >
             {/* Header - Fixed */}
-            <div className="flex-shrink-0 bg-white border-b border-gray-100">
+            <div className="flex-shrink-0 bg-card border-b border-border">
               <div className="flex items-center justify-between p-4 sm:p-5 lg:p-6">
                 <Dialog.Title
                   as="h3"
-                  className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 flex-1 pr-4 line-clamp-2"
+                  className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground flex-1 pr-4 line-clamp-2"
                   style={{
                     wordBreak: "break-word",
                     overflowWrap: "break-word",
@@ -108,11 +108,11 @@ export default function JobModal({
                 {/* Close button - visible on mobile */}
                 <button
                   onClick={onClose}
-                  className="flex-shrink-0 p-2 rounded-full hover:bg-gray-100 transition-colors sm:hidden"
+                  className="flex-shrink-0 p-2 rounded-full hover:bg-muted transition-colors sm:hidden"
                   aria-label="Close modal"
                 >
                   <svg
-                    className="w-5 h-5 text-gray-500"
+                    className="w-5 h-5 text-muted-foreground"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -133,12 +133,12 @@ export default function JobModal({
               <div className="p-4 sm:p-5 lg:p-6 space-y-5 sm:space-y-6">
                 {/* Description */}
                 <div className="space-y-2">
-                  <h4 className="font-semibold text-sm sm:text-base text-gray-900">
+                  <h4 className="font-semibold text-sm sm:text-base text-foreground">
                     Job Description
                   </h4>
                   <div
                     id="description-marker"
-                    className="text-sm sm:text-base text-gray-700  leading-relaxed prose prose-sm sm:prose max-w-none"
+                    className="text-sm sm:text-base text-muted-foreground leading-relaxed prose prose-sm sm:prose max-w-none"
                     style={{
                       wordBreak: "break-word",
                       overflowWrap: "break-word",
@@ -151,7 +151,7 @@ export default function JobModal({
 
                 {/* Skills */}
                 <div className="space-y-3">
-                  <h4 className="font-semibold text-sm sm:text-base text-gray-900">
+                  <h4 className="font-semibold text-sm sm:text-base text-foreground">
                     Required Skills
                   </h4>
                   <div className="flex flex-wrap gap-2">
@@ -177,13 +177,13 @@ export default function JobModal({
 
                 {/* Experience */}
                 <div className="space-y-2">
-                  <h4 className="font-semibold text-sm sm:text-base text-gray-900">
+                  <h4 className="font-semibold text-sm sm:text-base text-foreground">
                     Experience Required
                   </h4>
                   <div className="flex items-center space-x-2">
-                    <div className="flex items-center px-3 py-2 bg-gray-50 rounded-lg border">
+                    <div className="flex items-center px-3 py-2 bg-muted rounded-lg border">
                       <svg
-                        className="w-4 h-4 text-gray-500 mr-2"
+                        className="w-4 h-4 text-muted-foreground mr-2"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -195,7 +195,7 @@ export default function JobModal({
                           d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                         />
                       </svg>
-                      <span className="text-sm sm:text-base text-gray-700 font-medium">
+                      <span className="text-sm sm:text-base text-muted-foreground font-medium">
                         {job.experience}{" "}
                         {job.experience === 1 ? "year" : "years"}
                       </span>
@@ -208,10 +208,10 @@ export default function JobModal({
                   job?.customFields &&
                   Object.keys(job.customFields).length > 0 && (
                     <div className="space-y-3">
-                      <h4 className="font-semibold text-sm sm:text-base text-gray-900">
+                      <h4 className="font-semibold text-sm sm:text-base text-foreground">
                         Additional Information
                       </h4>
-                      <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                      <div className="bg-muted rounded-lg p-3 sm:p-4">
                         <CustomFieldsData
                           customFields={job?.customFields || {}}
                         />
@@ -222,7 +222,7 @@ export default function JobModal({
             </div>
 
             {/* Footer - Fixed */}
-            <div className="flex-shrink-0 bg-white border-t border-gray-100">
+            <div className="flex-shrink-0 bg-card border-t border-border">
               <div className="p-4 sm:p-5 lg:p-6">
                 <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-3 sm:justify-end">
                   {/* Close button - hidden on mobile, visible on desktop */}
@@ -230,9 +230,9 @@ export default function JobModal({
                     type="button"
                     className="
                       hidden sm:inline-flex items-center justify-center
-                      px-4 py-2.5 text-sm font-medium text-gray-700 
-                      bg-white border border-gray-300 rounded-lg
-                      hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2
+                      px-4 py-2.5 text-sm font-medium text-muted-foreground
+                      bg-card border border-border rounded-lg
+                      hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2
                       transition-colors duration-200
                     "
                     onClick={onClose}
@@ -252,7 +252,7 @@ export default function JobModal({
                         transition-all duration-200
                         ${
                           alreadyApplied || readOnly
-                            ? "bg-gray-100 text-gray-500 border border-gray-300 cursor-not-allowed"
+                            ? "bg-muted text-muted-foreground border border-border cursor-not-allowed"
                             : "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 shadow-sm hover:shadow-md"
                         }
                       `}
@@ -301,7 +301,7 @@ export default function JobModal({
                           className="
                             flex items-center justify-center w-full
                             px-6 py-3 sm:py-2.5 text-sm font-medium rounded-lg
-                            bg-gray-100 text-gray-500 border border-gray-300 cursor-not-allowed
+                            bg-muted text-muted-foreground border border-border cursor-not-allowed
                           "
                         >
                           <svg

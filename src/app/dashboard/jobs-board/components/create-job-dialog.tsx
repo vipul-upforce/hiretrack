@@ -211,7 +211,7 @@ export function CreateJobDialog({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="">
+        <Button className="bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-500 dark:hover:bg-blue-600">
           <Plus className="h-4 w-4 mr-2" />
           Create Job
         </Button>

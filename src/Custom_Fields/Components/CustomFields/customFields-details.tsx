@@ -1,10 +1,12 @@
+"use client";
+
+import { Label } from "@/components/ui/label";
 import { PDFViewer } from "@/components/ui/pdf-viewer";
-import { Label } from "@radix-ui/react-label";
-import { Dayjs } from "dayjs";
 import { ImageGallery } from "@/components/ui/image-gallery";
 import { useCustomFields } from "@/Custom_Fields/hooks/use-customFields";
 import useRoles from "@/hooks/useRoles";
-// import useRoles from "@/hooks/useRoles";
+import { format } from "date-fns";
+import { Dayjs } from "dayjs";
 
 interface FileData {
   base64: string;
@@ -72,14 +74,72 @@ const CustomFieldsData = ({ customFields: cfWOFormatting }: FormValues) => {
   if (!customFields || Object.keys(customFields).length === 0) {
     return null;
   }
+
+  // Helper function to get field type
+  const getFieldType = (fieldName: string): string | undefined => {
+    for (const form of Object.values(cfMetaData)) {
+      if (form && typeof form === "object" && "fields" in form) {
+        const field = (form as any).fields.find(
+          (f: any) => f.label === fieldName
+        );
+        if (field) {
+          return field.type;
+        }
+      }
+    }
+    return undefined;
+  };
+
+  // Helper function to format value based on field type
+  const formatValue = (value: any, fieldName: string): string => {
+    const fieldType = getFieldType(fieldName);
+
+    if (!fieldType) {
+      return String(value);
+    }
+
+    switch (fieldType) {
+      case "date":
+        if (typeof value === "string" && value) {
+          try {
+            return format(new Date(value), "MMM dd, yyyy");
+          } catch {
+            return String(value);
+          }
+        }
+        return String(value);
+
+      case "datetime":
+        if (typeof value === "string" && value) {
+          try {
+            return format(new Date(value), "MMM dd, yyyy 'at' h:mm a");
+          } catch {
+            return String(value);
+          }
+        }
+        return String(value);
+
+      case "time":
+        if (typeof value === "string" && value) {
+          try {
+            // Handle time format (HH:mm)
+            const [hours, minutes] = value.split(":");
+            const date = new Date();
+            date.setHours(parseInt(hours), parseInt(minutes));
+            return format(date, "h:mm a");
+          } catch {
+            return String(value);
+          }
+        }
+        return String(value);
+
+      default:
+        return String(value);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-4">
-      {/* {role !== "candidate" && (
-        <>
-          <hr className="mt-4" />
-          <div className="font-bold text-lg">Meta Fields</div>
-        </>
-      )} */}
       {Object.entries(customFields).map(([key, value]) => {
         if (
           (typeof value === "string" && value.trim() === "") ||
@@ -93,7 +153,7 @@ const CustomFieldsData = ({ customFields: cfWOFormatting }: FormValues) => {
             <Label className="font-semibold capitalize">
               {key.split(" |||||(")[0]}
             </Label>
-            <div className="text-sm text-gray-700">
+            <div className="text-sm text-gray-700 dark:text-gray-300">
               {Array.isArray(value) && value.length > 0 && (
                 <>
                   {value.some(
@@ -161,12 +221,12 @@ const CustomFieldsData = ({ customFields: cfWOFormatting }: FormValues) => {
                         .map((file) => (
                           <div
                             key={file.name}
-                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors duration-200"
+                            className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
                           >
                             <div className="flex items-center gap-3">
-                              <div className="p-2 bg-grey-100 rounded-md">
+                              <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-md">
                                 <svg
-                                  className="w-5 h-5"
+                                  className="w-5 h-5 text-gray-600 dark:text-gray-400"
                                   fill="none"
                                   stroke="currentColor"
                                   viewBox="0 0 24 24"
@@ -181,10 +241,10 @@ const CustomFieldsData = ({ customFields: cfWOFormatting }: FormValues) => {
                                 </svg>
                               </div>
                               <div className="flex flex-col">
-                                <span className="text-sm font-medium text-gray-700">
+                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                   {file.name}
                                 </span>
-                                <span className="text-xs text-gray-500">
+                                <span className="text-xs text-gray-500 dark:text-gray-400">
                                   {(file.size / 1024).toFixed(1)} KB
                                 </span>
                               </div>
@@ -192,7 +252,7 @@ const CustomFieldsData = ({ customFields: cfWOFormatting }: FormValues) => {
                             <a
                               href={file.base64}
                               download={file.name}
-                              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-blue-50 rounded-md hover:bg-blue-100 transition-colors duration-200"
+                              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors duration-200"
                             >
                               <svg
                                 className="w-4 h-4"
@@ -219,7 +279,8 @@ const CustomFieldsData = ({ customFields: cfWOFormatting }: FormValues) => {
                   ) && <span>{value.join(", ")}</span>}
                 </>
               )}
-              {(!Array.isArray(value) || value.length === 0) && String(value)}
+              {(!Array.isArray(value) || value.length === 0) &&
+                formatValue(value, key)}
             </div>
           </div>
         );

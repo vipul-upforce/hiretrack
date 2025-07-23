@@ -27,10 +27,8 @@ import useCustomForm, {
 } from "@/Custom_Fields/hooks/useCustomForm";
 import { ICandidateHistory } from "@/lib/models/history";
 import { Resume } from "@/lib/redux/types";
-import { parseResumeFromPdf } from "@/lib/parse-resume-from-pdf";
 import FormUpdater from "../Utils/FormUpdater";
 import Cookies from "js-cookie";
-import * as pdfjs from "pdfjs-dist";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { useApplyHandler } from "@/app/apply-jobs/useApplyHandler";
 // New function to call the evaluate API
@@ -104,6 +102,10 @@ const handleFileParse = async (
       if (result && typeof result === "string") {
         try {
           const fileUrl = result;
+          // Dynamically import PDF parsing only on client side
+          const { parseResumeFromPdf } = await import(
+            "@/lib/parse-resume-from-pdf"
+          );
           const parsedData = await parseResumeFromPdf(fileUrl);
           setParsedResume(parsedData);
         } catch {
@@ -126,6 +128,8 @@ const checkPdfPageCount = async (file: File): Promise<number> => {
     reader.onload = async () => {
       const arrayBuffer = reader.result as ArrayBuffer;
       try {
+        // Dynamically import pdfjs only on client side
+        const pdfjs = await import("pdfjs-dist");
         const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
         resolve(pdf.numPages);
       } catch (error) {
@@ -166,6 +170,11 @@ export function CreateCandidateDialog({
   const [resetForm, setResetForm] = useState(false);
   const [user, setuser] = useState<User | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -180,7 +189,7 @@ export function CreateCandidateDialog({
   }, []);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && isClient) {
       if (resumeFile) {
         setParsedResume(null);
         handleFileParse(resumeFile, setParsedResume);
@@ -189,7 +198,7 @@ export function CreateCandidateDialog({
       setParsedResume(null);
       setResetForm((prev) => !prev);
     }
-  }, [isOpen, resumeFile]);
+  }, [isOpen, resumeFile, isClient]);
 
   const handleSubmit = async (values: CandidateFormValues) => {
     const fileNames = values.attachments.map((file) => file.name);
@@ -398,8 +407,8 @@ export function CreateCandidateDialog({
               : "Apply Now"}
           </button>
         ) : (
-          <Button>
-            <Plus className="h- w-4 mr-2" />
+          <Button variant="outline">
+            <Plus className="h-4 w-4 mr-2" />
             Add Candidate
           </Button>
         )}

@@ -30,6 +30,8 @@ import { setAllowMultipleOrgs } from "@/lib/features/org/orgSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/lib/store";
 import PortalHead from "@/components/layouts/PortalHead";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { useTheme } from "@/components/theme-provider";
 
 interface SidebarItem {
   title: string;
@@ -194,6 +196,36 @@ export default function DashboardLayout({
     }
   };
 
+  const { theme } = useTheme();
+
+  // Helper function to get the appropriate logo URL
+  const getLogoUrl = (userLogo?: string) => {
+    // If user has set a custom logo, use it
+    if (userLogo) {
+      return userLogo;
+    }
+
+    // Otherwise use default logos based on theme
+    return theme === "dark" ? "/logo_dark.png" : "/logo.png";
+  };
+
+  // Helper function to get user avatar
+  const getUserAvatar = () => {
+    // Use theme-appropriate icon
+    return theme === "dark" ? "/icon_dark.png" : "/icon.png";
+  };
+
+  // Helper function to get user initials
+  const getUserInitials = (name?: string) => {
+    if (!name) return "U";
+    return name
+      .split(" ")
+      .map((word) => word.charAt(0))
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
   const shouldShowPortalData = Boolean(
     portalConfigData && userData && portalConfigData.portalName
   );
@@ -207,20 +239,18 @@ export default function DashboardLayout({
       >
         {shouldShowPortalData && portalConfigData ? (
           <div className={`flex items-center overflow-hidden `}>
-            {portalConfigData.portalLogo?.url && (
-              <div
-                className={cn(
-                  "flex-shrink-0",
-                  isCollapsed ? "mx-auto w-0" : "mr-3"
-                )}
-              >
-                <img
-                  src={portalConfigData.portalLogo.url}
-                  alt={portalConfigData.portalName || "Portal Logo"}
-                  className="h-8 w-auto object-contain rounded"
-                />
-              </div>
-            )}
+            <div
+              className={cn(
+                "flex-shrink-0",
+                isCollapsed ? "mx-auto w-0" : "mr-3"
+              )}
+            >
+              <img
+                src={getLogoUrl(portalConfigData.portalLogo?.url)}
+                alt={portalConfigData.portalName || "Portal Logo"}
+                className="h-8 w-auto object-contain rounded"
+              />
+            </div>
             {!isCollapsed && (
               <h2 className="text-lg font-semibold truncate max-w-[200px]">
                 {portalConfigData.portalName}
@@ -305,28 +335,37 @@ export default function DashboardLayout({
         </div>
       </div>
       <div className="px-3 pb-4 mt-auto space-y-2">
+        {/* Theme Toggle */}
+        <div className="flex justify-center mb-2">
+          <ThemeToggle
+            variant="ghost"
+            size="sm"
+            className={cn(
+              "w-full",
+              isCollapsed ? "justify-center" : "justify-start"
+            )}
+          />
+        </div>
         <div className="mt-auto space-y-2">
           <div
             className={cn(
-              "flex items-center gap-3 bg-gray-1000 rounded-lg p-2 transition-all border border-solid border-gray-200",
+              "flex items-center gap-3 bg-card rounded-lg p-2 transition-all border border-border",
               isCollapsed ? "flex-col justify-center" : "justify-start"
             )}
           >
-            {shouldShowPortalData && portalConfigData?.portalLogo?.url && (
-              <div className="flex-shrink-0">
-                <img
-                  src={portalConfigData.portalLogo.url || "/placeholder.svg"}
-                  alt={portalConfigData.portalName || "Portal Logo"}
-                  className={`object-cover h-8 w-8 rounded-full ${isCollapsed ? "aspect-ratio-square h-6 w-6" : "ring-2 ring-gray-200"}`}
-                />
+            <div className="flex-shrink-0">
+              <div
+                className={`flex items-center justify-center bg-muted text-muted-foreground font-semibold h-8 w-8 rounded-full ${isCollapsed ? "aspect-ratio-square h-6 w-6" : "ring-2 ring-border"}`}
+              >
+                {getUserInitials(userData?.name)}
               </div>
-            )}
+            </div>
             {!isCollapsed && (
               <div className="flex flex-col min-w-0 flex-1">
-                <p className="text-sm font-semibold truncate text-gray-900">
+                <p className="text-sm font-semibold truncate text-foreground">
                   {userData?.name}
                 </p>
-                <p className="text-xs text-gray-500 truncate">
+                <p className="text-xs text-muted-foreground truncate">
                   {userData?.email}
                 </p>
               </div>
@@ -346,7 +385,7 @@ export default function DashboardLayout({
         <Button
           variant="ghost"
           className={cn(
-            "w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:text-red-500 bg-red-100 hover:bg-red-200 text-red-600",
+            "w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:text-destructive hover:bg-destructive/10 text-destructive",
             isCollapsed ? "justify-center" : "justify-start"
           )}
           onClick={handleLogout}
@@ -384,7 +423,7 @@ export default function DashboardLayout({
         </SheetContent>
       </Sheet>
       <main className="w-full overflow-x-hidden overflow-y-scroll h-[100vh]">
-        <div className="p-8 pt-4 max-w-[100%] mx-auto overflow-x-hidden overflow-y-scroll">
+        <div className="max-w-[100%] mx-auto overflow-x-hidden overflow-y-scroll">
           {children}
         </div>
       </main>

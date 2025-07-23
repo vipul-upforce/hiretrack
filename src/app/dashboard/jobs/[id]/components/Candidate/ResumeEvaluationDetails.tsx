@@ -3,7 +3,6 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { RefreshCwIcon } from "lucide-react";
 import { CandidateScoreBadge } from "../Utils/candidate-score-badge";
-import ExpandableDescription from "../Utils/expand-collapse-desc";
 import { Candidate } from "@/types/candidate";
 import useRoles from "@/hooks/useRoles";
 
@@ -23,17 +22,13 @@ export default function ResumeEvaluationDetails({
   onReEvaluate,
 }: ResumeEvaluationDetailsProps) {
   const [showEvalDetails, setShowEvalDetails] = useState(false);
-  // const [isReEvaluating, setIsReEvaluating] = useState(false);
   const role = useRoles();
   if (!localCandidate.scores) return null;
 
   return (
     <>
-      <div
-        className="space-y-2 cursor-pointer"
-        onClick={() => setShowEvalDetails(!showEvalDetails)}
-      >
-        <div className="space-y-2 cursor-pointer">
+      <div className="space-y-2">
+        <div className="space-y-2">
           <div className="flex flex-row justify-between items-center">
             <div className="flex items-center gap-3">
               <Label className={labelClass}>AI Evaluation</Label>
@@ -52,8 +47,8 @@ export default function ResumeEvaluationDetails({
                   }
                   className={
                     isReEvaluating && isEvaluatingFor === localCandidate._id
-                      ? "animate-spin"
-                      : "hover:text-gray-400 transition duration-300"
+                      ? "animate-spin text-gray-400 dark:text-gray-500"
+                      : "hover:text-gray-600 dark:hover:text-gray-300 transition duration-300 text-gray-500 dark:text-gray-400"
                   }
                 >
                   <RefreshCwIcon size={15} />
@@ -61,7 +56,12 @@ export default function ResumeEvaluationDetails({
               )}
             </div>
             {localCandidate.scores.overall !== undefined && (
-              <p>{showEvalDetails ? "Hide details" : "Show details"}</p>
+              <p
+                className="text-gray-600 dark:text-gray-400 text-sm cursor-pointer hover:text-gray-800 dark:hover:text-gray-200"
+                onClick={() => setShowEvalDetails(!showEvalDetails)}
+              >
+                {showEvalDetails ? "Hide details" : "Show details"}
+              </p>
             )}
           </div>
 
@@ -93,7 +93,7 @@ export default function ResumeEvaluationDetails({
               )}
             </div>
           ) : (
-            <p className="text-gray-500">
+            <p className="text-gray-500 dark:text-gray-400">
               This candidate has not been evaluated yet.
             </p>
           )}
@@ -103,16 +103,11 @@ export default function ResumeEvaluationDetails({
       {showEvalDetails && localCandidate.scores.strengths?.length > 0 && (
         <div className="space-y-1">
           <Label className={labelClass}>Strengths</Label>
-          <ExpandableDescription
-            description={
-              <ul className="list-disc pl-5">
-                {localCandidate.scores.strengths.map((strength, index) => (
-                  <li key={index}>{strength}</li>
-                ))}
-              </ul>
-            }
-            open
-          />
+          <ul className="list-disc pl-5">
+            {localCandidate.scores.strengths.map((strength, index) => (
+              <li key={index}>{strength}</li>
+            ))}
+          </ul>
         </div>
       )}
 
@@ -120,18 +115,13 @@ export default function ResumeEvaluationDetails({
         localCandidate.scores.areas_for_improvement?.length > 0 && (
           <div className="space-y-1">
             <Label className={labelClass}>Areas for Improvement</Label>
-            <ExpandableDescription
-              description={
-                <ul className="list-disc pl-5">
-                  {localCandidate.scores.areas_for_improvement.map(
-                    (area, index) => (
-                      <li key={index}>{area}</li>
-                    )
-                  )}
-                </ul>
-              }
-              open
-            />
+            <ul className="list-disc pl-5">
+              {localCandidate.scores.areas_for_improvement.map(
+                (area, index) => (
+                  <li key={index}>{area}</li>
+                )
+              )}
+            </ul>
           </div>
         )}
 
@@ -145,10 +135,7 @@ export default function ResumeEvaluationDetails({
       {showEvalDetails && localCandidate.scores.notes && (
         <div className="space-y-1">
           <Label className={labelClass}>Note</Label>
-          <ExpandableDescription
-            description={localCandidate.scores.notes}
-            open
-          />
+          <p>{localCandidate.scores.notes}</p>
         </div>
       )}
     </>

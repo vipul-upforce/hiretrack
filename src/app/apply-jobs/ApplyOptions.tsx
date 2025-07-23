@@ -70,10 +70,10 @@ export default function ApplyOptions({
         aria-hidden="true"
       />
       <div className="fixed inset-0 flex items-center justify-center p-4 sm:p-2 h-[100vh]">
-        <Dialog.Panel className="relative w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw] xl:w-[30vw] transform overflow-hidden rounded-2xl bg-white p-6 sm:p-4 text-left align-middle shadow-xl transition-all max-h-[80vh] overflow-y-auto">
+        <Dialog.Panel className="relative w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw] xl:w-[30vw] transform overflow-hidden rounded-2xl bg-card p-6 sm:p-4 text-left align-middle shadow-xl transition-all max-h-[80vh] overflow-y-auto">
           <button
             type="button"
-            className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 w-4 h-4"
+            className="absolute top-4 right-4 text-muted-foreground hover:text-foreground w-4 h-4"
             onClick={onClose}
           >
             <X width={15} />
@@ -81,12 +81,12 @@ export default function ApplyOptions({
 
           <Dialog.Title
             as="h3"
-            className="text-lg font-bold leading-6 text-gray-900 top-0 break-words"
+            className="text-lg font-bold leading-6 text-foreground top-0 break-words"
           >
             Alert
           </Dialog.Title>
 
-          <p className="text-gray-500 text-sm md:text-md mt-2">
+          <p className="text-muted-foreground text-sm md:text-md mt-2">
             Currently, You are not logged in. Please choose how you want to
             continue.
           </p>
@@ -95,8 +95,12 @@ export default function ApplyOptions({
             {roles === "" ? (
               <div className="flex flex-col sm:flex-row sm:justify-between w-full gap-3">
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <Button onClick={handleSignupRedirect} className='text-sm'>Sign Up</Button>
-                  <Button onClick={handleLoginRedirect} className='text-sm'>Login</Button>
+                  <Button onClick={handleSignupRedirect} className="text-sm">
+                    Sign Up
+                  </Button>
+                  <Button onClick={handleLoginRedirect} className="text-sm">
+                    Login
+                  </Button>
                 </div>
                 <div>
                   <ApplyAsGuestDialog

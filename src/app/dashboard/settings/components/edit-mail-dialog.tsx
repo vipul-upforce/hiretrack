@@ -16,6 +16,7 @@ import {
 } from "@/lib/features/settings/settingsApi";
 import { Data, defaultTemplates, editorOptions } from "@/lib/constants";
 import type { IEmailTemplatesConfig } from "./types";
+import { useTheme } from "@/components/theme-provider";
 
 export default function EmailTemplateEditor({
   onClose,
@@ -23,6 +24,7 @@ export default function EmailTemplateEditor({
   onClose: () => void;
 }) {
   const { toast } = useToast();
+  const { theme } = useTheme();
   const [selectedTemplate, setSelectedTemplate] = useState(
     "job-application-(hr)"
   );
@@ -388,8 +390,9 @@ export default function EmailTemplateEditor({
                           readOnly: false,
                           cursorStyle: "line",
                           automaticLayout: true,
+                          theme: theme === "dark" ? "vs-dark" : "vs-light",
                         }}
-                        theme="vs-light"
+                        theme={theme === "dark" ? "vs-dark" : "vs-light"}
                       />
                     </div>
                   </div>
@@ -420,7 +423,7 @@ export default function EmailTemplateEditor({
                         <div className="border-t pt-3">
                           <div className="flex items-center gap-2 mb-2">
                             <AlertTriangle className="h-4 w-4 text-red-500" />
-                            <p className="font-medium text-red-700">
+                            <p className="font-medium text-red-700 dark:text-red-400">
                               Invalid Variables Found (
                               {variableAnalysis.invalid.length})
                             </p>
@@ -429,14 +432,14 @@ export default function EmailTemplateEditor({
                             {variableAnalysis.invalid.map((variable) => (
                               <div
                                 key={variable}
-                                className="border px-3 py-2 rounded-md font-mono cursor-not-allowed border-red-300 bg-red-50 text-red-700 opacity-75"
+                                className="border px-3 py-2 rounded-md font-mono cursor-not-allowed border-red-300 bg-red-50 text-red-700 dark:border-red-600 dark:bg-red-950/20 dark:text-red-400 opacity-75"
                                 title={`Invalid variable: {{${variable}}} is not available for this template`}
                               >
                                 {`{{${variable}}}`}
                               </div>
                             ))}
                           </div>
-                          <p className="text-xs text-red-600 mt-2 mb-1">
+                          <p className="text-xs text-red-600 dark:text-red-400 mt-2 mb-1">
                             Remove these variables from your template or they
                             will not be replaced with actual values.
                           </p>
@@ -446,7 +449,7 @@ export default function EmailTemplateEditor({
                       {/* Used Variables - Green */}
                       {variableAnalysis.used.length > 0 && (
                         <div className="mb-3">
-                          <p className="text-xs font-medium text-green-700 mb-1">
+                          <p className="text-xs font-medium text-green-700 dark:text-green-400 mb-1">
                             ✓ Used Variables ({variableAnalysis.used.length})
                           </p>
                           <div className="flex gap-2 text-xs flex-wrap">
@@ -463,8 +466,8 @@ export default function EmailTemplateEditor({
                                 }
                                 className={`border px-3 py-2 rounded-md transition-all duration-200 font-mono ${
                                   activeEditor
-                                    ? "hover:bg-green-100 hover:border-green-500 hover:shadow-sm cursor-pointer border-green-300 bg-green-50 text-green-800"
-                                    : "cursor-not-allowed opacity-50 bg-green-50 text-green-400 border-green-200"
+                                    ? "border-green-400 bg-green-100 text-green-800 hover:bg-green-200 hover:border-green-600 hover:shadow-sm cursor-pointer dark:border-green-600 dark:bg-green-950/20 dark:text-green-400 dark:hover:bg-green-900/20 dark:hover:border-green-600"
+                                    : "border-green-300 bg-green-100 text-green-600 opacity-50 cursor-not-allowed dark:border-green-700 dark:bg-green-950/20 dark:text-green-500"
                                 }`}
                                 disabled={!activeEditor}
                                 title={
@@ -483,7 +486,7 @@ export default function EmailTemplateEditor({
                       {/* Unused Variables - Gray */}
                       {variableAnalysis.unused.length > 0 && (
                         <div className="mb-3">
-                          <p className="text-xs font-medium text-gray-600 mb-1">
+                          <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                             ○ Unused Variables ({variableAnalysis.unused.length}
                             )
                           </p>
@@ -501,8 +504,8 @@ export default function EmailTemplateEditor({
                                 }
                                 className={`border px-3 py-2 rounded-md transition-all duration-200 font-mono ${
                                   activeEditor
-                                    ? "hover:bg-gray-100 hover:border-gray-400 hover:shadow-sm cursor-pointer border-gray-300 bg-gray-50 text-gray-700"
-                                    : "cursor-not-allowed opacity-50 bg-gray-50 text-gray-400 border-gray-200"
+                                    ? "border-gray-400 bg-gray-100 text-gray-700 hover:bg-gray-200 hover:border-gray-500 hover:shadow-sm cursor-pointer dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:border-gray-600"
+                                    : "border-gray-300 bg-gray-100 text-gray-500 opacity-50 cursor-not-allowed dark:border-gray-700 dark:bg-gray-800 dark:text-gray-500"
                                 }`}
                                 disabled={!activeEditor}
                                 title={
@@ -596,15 +599,14 @@ export default function EmailTemplateEditor({
                   </Button>
                   <Button
                     type="submit"
+                    variant="primary"
                     disabled={
                       isSubmitting ||
                       isUpdating ||
                       variableAnalysis.invalid.length > 0
                     }
                   >
-                    {isSubmitting || isUpdating
-                      ? "Saving..."
-                      : "Save Templates"}
+                    {isSubmitting || isUpdating ? "Saving..." : "Save"}
                   </Button>
                 </div>
               </div>

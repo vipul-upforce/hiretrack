@@ -25,9 +25,14 @@ import ReCAPTCHA from "react-google-recaptcha";
 import { LoginFormValues } from "@/types/login";
 import { LoginSchema } from "../schema/Login.schema";
 import { useHandleLoginSubmit } from "../hooks/useLoginSubmit";
+import { useTheme } from "@/components/theme-provider";
+import Image from "next/image";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import "./recaptcha-theme.css";
 
 export default function LoginFormContent() {
   const router = useRouter();
+  const { theme } = useTheme();
   const [showPassword, setShowPassword] = useState(false);
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const [organizationDialogOpen, setOrganizationDialogOpen] = useState(false);
@@ -38,10 +43,14 @@ export default function LoginFormContent() {
   const [selectedOrg, setSelectedOrg] = useState<string>();
   const [captcha, setCaptcha] = useState<string>();
   const [isMultiple, setIsMultiple] = useState<boolean>(false);
+  const [portalLogo, setPortalLogo] = useState<string | null>(null);
+  const [portalName, setPortalName] = useState<string>("");
+
   const initialValues: LoginFormValues = {
     email: "",
     password: "",
   };
+
   // useHandleLoginSubmit, which uses useSearchParams, is now called within this client component
   const { handleSubmit, isLoading } = useHandleLoginSubmit({
     selectedOrg,
@@ -71,15 +80,64 @@ export default function LoginFormContent() {
     checkAllowance();
   }, []);
 
+  // Fetch portal settings for logo and name
+  useEffect(() => {
+    async function fetchPortalSettings() {
+      try {
+        const response = await fetch("/api/settings/portal");
+        if (response.ok) {
+          const data = await response.json();
+          setPortalLogo(data.portalLogo?.url || null);
+          setPortalName(data.portalName || "");
+        }
+      } catch (error) {
+        console.error("Failed to fetch portal settings:", error);
+      }
+    }
+    fetchPortalSettings();
+  }, []);
+
+  // Get default logo based on theme
+  const getDefaultLogo = () => {
+    return theme === "dark" ? "/logo_dark.png" : "/logo.png";
+  };
+
+  // Get logo URL with fallback
+  const getLogoUrl = () => {
+    return portalLogo || getDefaultLogo();
+  };
+
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
+    <div className="flex items-center justify-center min-h-screen bg-background relative">
+      {/* Theme Toggle in top right corner */}
+      <div className="absolute top-4 right-4 z-10">
+        <ThemeToggle
+          variant="ghost"
+          size="icon"
+          className="h-10 w-10 rounded-full bg-background/80 backdrop-blur-sm border border-border shadow-sm hover:bg-background/90"
+        />
+      </div>
+
       <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
+        <CardHeader className="space-y-4">
+          {/* Logo Section */}
+          <div className="flex justify-center mb-4">
+            <div className="relative w-72 h-36">
+              <Image
+                src={getLogoUrl()}
+                alt={portalName || "HireTrack"}
+                fill
+                className="object-contain"
+                priority
+              />
+            </div>
+          </div>
+
           <CardTitle className="text-2xl font-bold flex flex-row justify-between items-center">
             Login
             {selectedOrg && (
               <span
-                className="text-lg font-medium text-gray-700 cursor-pointer"
+                className="text-lg font-medium text-muted-foreground cursor-pointer"
                 style={{
                   animation: selectedOrg
                     ? "fadeInOrg 0.9s ease-in-out forwards"
@@ -178,17 +236,24 @@ export default function LoginFormContent() {
                   )}
                 </div>
 
-                <ReCAPTCHA
-                  sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
-                  onChange={(token) => {
-                    if (token) setCaptcha(token);
-                  }}
-                />
+                {/* Custom styled reCAPTCHA */}
+                <div className="flex justify-center">
+                  <div className="recaptcha-container">
+                    <ReCAPTCHA
+                      sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
+                      onChange={(token) => {
+                        if (token) setCaptcha(token);
+                      }}
+                      theme={theme as "light" | "dark"}
+                    />
+                  </div>
+                </div>
 
                 <CardFooter className="px-0 pt-6 flex-col space-y-4">
                   <Button
                     type="submit"
-                    className="w-full"
+                    variant="primary"
+                    className="w-full font-medium"
                     disabled={isLoading || isSubmitting || !captcha}
                   >
                     {isLoading || isSubmitting ? "Logging in..." : "Login"}

@@ -7,6 +7,7 @@ import {
   DialogFooter,
   DialogTrigger,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -52,6 +53,9 @@ const AddFollowUpDialog = ({
       <DialogContent className="w-[700px] p-6">
         <DialogHeader>
           <DialogTitle>Create A Followup for {candidate.name}</DialogTitle>
+          <DialogDescription>
+            Schedule a follow-up reminder for this candidate.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <Textarea
@@ -78,30 +82,38 @@ const AddFollowUpDialog = ({
             onChange={(date: Dayjs | null) => setNewFollowUpDate(date)}
           />
         </div>
-        <DialogFooter>
-          {candidate?.followUp?.note &&
-            candidate?.followUp?.note.length > 0 && (
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  handleRemoveFollowUp();
-                  onAddingFollowup();
-                }}
-              >
-                Remove Followup
-              </Button>
-            )}
-          <Button variant="secondary" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button
-            onClick={() => {
-              handleAddFollowUp();
-              onAddingFollowup();
-            }}
-          >
-            Create Followup
-          </Button>
+        <DialogFooter className="flex justify-between items-center">
+          <div className="flex-1">
+            {candidate?.followUp?.note &&
+              candidate?.followUp?.note.length > 0 && (
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    handleRemoveFollowUp();
+                    onAddingFollowup();
+                  }}
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20"
+                >
+                  Remove Followup
+                </Button>
+              )}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                handleAddFollowUp();
+                onAddingFollowup();
+              }}
+              className="bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-500 dark:hover:bg-blue-600"
+            >
+              {candidate?.followUp?.note && candidate?.followUp?.note.length > 0
+                ? "Update Followup"
+                : "Create Followup"}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

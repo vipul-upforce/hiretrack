@@ -74,8 +74,8 @@ const SettingDialog = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
         className={`${
-          setting.title === "Portal" ||
-          setting.title === "Email Template" ||
+          setting.key === "portal" ||
+          setting.key === "templates" ||
           setting.key === "logs"
             ? "max-w-7xl w-[90vw] min-h-[95vh] flex flex-col p-4"
             : ""

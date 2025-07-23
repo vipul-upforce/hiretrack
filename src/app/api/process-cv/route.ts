@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, Part } from "@google/generative-ai";
 import AdmZip from "adm-zip";
 import connectToDatabase, {
   Candidate,
@@ -35,10 +35,10 @@ async function processResume(
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `
-    please firstly check that it is valid cv or not, 
-    if not then dont give me anything just give me message in json like 
-    { error : " this is not valid cv"}, 
-    If it as then & then only give me fields 
+    please firstly check that it is valid cv or not,
+    if not then dont give me anything just give me message in json like
+    { error : " this is not valid cv"},
+    If it as then & then only give me fields
     As an AI assistant specializing in resume parsing, analyze this resume and extract the following information in JSON format:
     {
       "name": "candidate's full name",
@@ -59,17 +59,17 @@ async function processResume(
         "notes": // Additional notes
       }
     }
-    
+
     Please ensure:
     1. All numeric fields are numbers, not strings
     2. Skills are extracted as an array of strings
     3. Experience is calculated based on work history
     4. CTCs are in lakhs per annum
     5. If any field is not found, use appropriate default values (0 for numbers, empty array for skills)
-    
+
     Below is the resume content:`;
 
-    const parts = [
+    const parts: Part[] = [
       { text: prompt },
       {
         inlineData: {

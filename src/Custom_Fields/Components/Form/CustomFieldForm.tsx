@@ -486,15 +486,18 @@ const CustomFieldForm = memo(
                 </>
               )}
 
-              <Button
-                type="submit"
-                disabled={
-                  !isEditMode &&
-                  (hasDuplicate || Object.keys(errors).length > 0)
-                }
-              >
-                Save
-              </Button>
+              <div className="flex justify-end pt-4">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  disabled={
+                    !isEditMode &&
+                    (hasDuplicate || Object.keys(errors).length > 0)
+                  }
+                >
+                  Save
+                </Button>
+              </div>
             </form>
           )}
         </Formik>

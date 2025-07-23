@@ -381,6 +381,7 @@ export default function SMTPConfigs({ onClose }: { onClose: () => void }) {
                   <div>
                     <Button
                       type="submit"
+                      variant="primary"
                       disabled={
                         isSubmitting || isUpdating || !isConnectionSuccessful
                       }
@@ -390,9 +391,7 @@ export default function SMTPConfigs({ onClose }: { onClose: () => void }) {
                           : ""
                       }
                     >
-                      {isSubmitting || isUpdating
-                        ? "Saving..."
-                        : "Save Settings"}
+                      {isSubmitting || isUpdating ? "Saving..." : "Save"}
                     </Button>
                   </div>
                 </TooltipTrigger>

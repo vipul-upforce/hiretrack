@@ -1,11 +1,12 @@
 "use client";
 
 import { Suspense } from "react";
-import LoginFormContent from "./LoginFormContent";
+import ModernLoginComponent from "@/components/auth/ModernLoginComponent";
+
 export default function Login() {
   return (
     <Suspense fallback={<div>Loading login form...</div>}>
-      <LoginFormContent />
+      <ModernLoginComponent showCompanyField={false} />
     </Suspense>
   );
 }

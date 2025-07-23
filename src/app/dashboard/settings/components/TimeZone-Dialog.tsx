@@ -142,8 +142,12 @@ export default function TimeZoneSelect({ onClose }: { onClose: () => void }) {
           </div>
 
           <div className="w-full flex justify-end">
-            <Button type="submit" disabled={isSubmitting || isUpdating}>
-              {isSubmitting || isUpdating ? "Saving..." : "Save Settings"}
+            <Button
+              type="submit"
+              disabled={isSubmitting || isUpdating}
+              variant="primary"
+            >
+              {isSubmitting || isUpdating ? "Saving..." : "Save"}
             </Button>
           </div>
         </Form>

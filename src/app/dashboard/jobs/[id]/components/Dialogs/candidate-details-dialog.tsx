@@ -33,6 +33,10 @@ import { DetailsDialog } from "./DetailsDialog";
 import { candidateDetailsFields } from "../Candidate/candidate-details-fields";
 import AddFollowUpDialog from "./add-followup-dialog";
 import ConfirmAndRemarkDialog from "./mark-as-done-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { User as UserIcon, FileText, MessageSquare, Clock } from "lucide-react";
+import { HistoryAndLogTable, LogsTable } from "../Candidate/HisotryAndLogTable";
+import ResumeEvaluationDetails from "../Candidate/ResumeEvaluationDetails";
 
 const labelClass = "font-semibold text-base";
 
@@ -67,6 +71,7 @@ export function CandidateDetailsDialog({
   const [localCandidate, setLocalCandidate] = useState<Candidate | null>(
     candidate
   );
+  const [activeTab, setActiveTab] = useState("overview");
   const refetch = async () => {
     const result = await refetchCandidate(
       (id as string) || candidate?.jobId._id || ""
@@ -233,6 +238,13 @@ export function CandidateDetailsDialog({
     }
   }, [candidate, id]);
 
+  // Reset active tab when dialog opens or candidate changes
+  useEffect(() => {
+    if (isOpen) {
+      setActiveTab("overview");
+    }
+  }, [isOpen, candidate?._id]);
+
   if (!localCandidate) return null;
   // console.log("TimeLine Items: ", timeLineItems);
   const validTimeLineItems = timeLineItems.filter((item) => item.title !== "");
@@ -253,39 +265,293 @@ export function CandidateDetailsDialog({
               await refetchAssignment?.();
             }
           }}
+          onAssignClick={() => setIsAssigning(true)}
         />
       )}
     </DialogHeader>
   );
   const body = (
-    <div className="flex-1 overflow-y-auto px-6 py-4 pt-4 border-y space-y-6">
-      {candidateDetailsFields.map((field, index) => {
-        if (field.shouldRender && !field.shouldRender(localCandidate))
-          return null;
-        return (
-          <div key={index} className="space-y-2">
-            <Label className={labelClass}>
-              {field.label.split(" |||||(")[0]}
-            </Label>
-            {field.id === "ai-evaluation"
-              ? field.render(
-                  localCandidate,
-                  user,
-                  isReEvaluating,
-                  isEvaluatingFor,
-                  () => setConfirmReEvaluateOpen(true)
-                )
-              : field.render(
-                  localCandidate,
-                  user,
-                  validTimeLineItems,
-                  handleRemarkUpdate,
-                  setEditingRemark,
-                  setIsEditRemarkDialogOpen
+    <div className="flex-1 overflow-hidden flex flex-col">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="w-full flex flex-col h-full"
+      >
+        <TabsList
+          className={`grid w-full ${user?.role === "interviewer" ? "grid-cols-3" : "grid-cols-4"} bg-transparent border-b border-gray-200 dark:border-gray-700 rounded-none h-12`}
+        >
+          <TabsTrigger
+            value="overview"
+            className="flex items-center gap-2 data-[state=active]:bg-transparent data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 dark:data-[state=active]:border-blue-400 rounded-none h-full"
+          >
+            <UserIcon className="h-4 w-4" />
+            Overview
+          </TabsTrigger>
+          <TabsTrigger
+            value="documents"
+            className="flex items-center gap-2 data-[state=active]:bg-transparent data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 dark:data-[state=active]:border-blue-400 rounded-none h-full"
+          >
+            <FileText className="h-4 w-4" />
+            CV & Documents
+          </TabsTrigger>
+          <TabsTrigger
+            value="history"
+            className="flex items-center gap-2 data-[state=active]:bg-transparent data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 dark:data-[state=active]:border-blue-400 rounded-none h-full"
+          >
+            <MessageSquare className="h-4 w-4" />
+            History
+          </TabsTrigger>
+          <TabsTrigger
+            value="logs"
+            className={`flex items-center gap-2 data-[state=active]:bg-transparent data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 dark:data-[state=active]:border-blue-400 rounded-none h-full ${user?.role === "interviewer" ? "hidden" : ""}`}
+          >
+            <Clock className="h-4 w-4" />
+            Logs
+          </TabsTrigger>
+        </TabsList>
+
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          <TabsContent value="overview" className="space-y-6 mt-0">
+            {/* AI Assessment Scores Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                AI Assessment Scores
+              </h3>
+              <div className="grid grid-cols-3 gap-4">
+                {localCandidate.scores?.overall !== undefined && (
+                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 relative">
+                    <div className="absolute top-3 right-3">
+                      <svg
+                        className="w-5 h-5 text-green-600 dark:text-green-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                        {localCandidate.scores.overall}%
+                      </div>
+                      <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mt-1">
+                        Overall Fit
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Combined assessment
+                      </div>
+                    </div>
+                  </div>
                 )}
-          </div>
-        );
-      })}
+                {localCandidate.scores?.experience !== undefined && (
+                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 relative">
+                    <div className="absolute top-3 right-3">
+                      <svg
+                        className="w-5 h-5 text-green-600 dark:text-green-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+                        />
+                      </svg>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                        {localCandidate.scores.experience}%
+                      </div>
+                      <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mt-1">
+                        Experience
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Relevant experience match
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {localCandidate.scores?.skills !== undefined && (
+                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 relative">
+                    <div className="absolute top-3 right-3">
+                      <svg
+                        className="w-5 h-5 text-green-600 dark:text-green-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+                        />
+                      </svg>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                        {localCandidate.scores.skills}%
+                      </div>
+                      <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mt-1">
+                        Skills Match
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Technical skills alignment
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Detailed AI Evaluation */}
+            <div className="space-y-4">
+              {/* <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Detailed AI Evaluation
+              </h3> */}
+              <ResumeEvaluationDetails
+                labelClass="font-semibold text-base"
+                localCandidate={localCandidate}
+                isReEvaluating={isReEvaluating}
+                isEvaluatingFor={isEvaluatingFor}
+                onReEvaluate={handleReEvaluation}
+              />
+            </div>
+
+            {/* Basic Candidate Information */}
+            <div className="space-y-4">
+              {/* <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Basic Information
+              </h3> */}
+              {candidateDetailsFields
+                .find((field) => field.id === "candidate-info")
+                ?.render(localCandidate, user)}
+            </div>
+
+            {/* Skills */}
+            {localCandidate.skills && localCandidate.skills.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  Skills
+                </h3>
+                {candidateDetailsFields
+                  .find((field) => field.id === "skills")
+                  ?.render(localCandidate, user)}
+              </div>
+            )}
+
+            {/* Custom Fields */}
+            {localCandidate.customFields &&
+              Object.keys(localCandidate.customFields).length > 0 && (
+                <div className="space-y-4">
+                  {/* <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    Meta Fields
+                  </h3> */}
+                  {candidateDetailsFields
+                    .find((field) => field.id === "metafields")
+                    ?.render(localCandidate, user)}
+                </div>
+              )}
+          </TabsContent>
+
+          <TabsContent value="documents" className="space-y-6 mt-0">
+            {/* Resume */}
+            {localCandidate.resume && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  Resume
+                </h3>
+                {candidateDetailsFields
+                  .find((field) => field.id === "resume")
+                  ?.render(localCandidate, user)}
+              </div>
+            )}
+
+            {/* Attachments */}
+            {localCandidate.attachments &&
+              localCandidate.attachments.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    Attachments
+                  </h3>
+                  {candidateDetailsFields
+                    .find((field) => field.id === "attachments")
+                    ?.render(localCandidate, user)}
+                </div>
+              )}
+          </TabsContent>
+
+          <TabsContent value="history" className="space-y-6 mt-0">
+            {/* Candidate History */}
+            {localCandidate.history && localCandidate.history.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  Candidate History
+                </h3>
+                {candidateDetailsFields
+                  .find((field) => field.id === "candidate-history")
+                  ?.render(
+                    localCandidate,
+                    user,
+                    validTimeLineItems,
+                    handleRemarkUpdate,
+                    setEditingRemark,
+                    setIsEditRemarkDialogOpen,
+                    false // showHeader = false
+                  )}
+              </div>
+            )}
+
+            {/* Status History */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Status History
+              </h3>
+              {candidateDetailsFields
+                .find((field) => field.id === "status-history")
+                ?.render(localCandidate, user)}
+            </div>
+
+            {/* Interview Assignment */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Interview Assignment
+              </h3>
+              {candidateDetailsFields
+                .find((field) => field.id === "interview-assignment")
+                ?.render(localCandidate, user)}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="logs" className="space-y-6 mt-0">
+            {/* Show Logs Table - Direct content without button */}
+            {user?.role !== "interviewer" && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  Update Logs
+                </h3>
+                <LogsTable
+                  candidate={localCandidate}
+                  user={user}
+                  timeLineItems={validTimeLineItems}
+                />
+              </div>
+            )}
+          </TabsContent>
+        </div>
+      </Tabs>
+    </div>
+  );
+  const footer = (
+    <div className="flex flex-col space-y-4 bg-background px-6 py-4 pt-0">
+      {/* Remark Input Section - Always visible */}
       {user?.role !== "candidate" && (
         <RemarkInputSection
           newRemark={newRemark}
@@ -302,70 +568,80 @@ export function CandidateDetailsDialog({
           isRemarkSubmitting={isRemarkSubmitting}
         />
       )}
-    </div>
-  );
-  const footer = (
-    <div className="flex space-x-2  bg-background px-6 py-4 pt-0">
-      {!fromFilter ? (
-        <div className="flex justify-between w-full">
-          {user?.role !== "candidate" && (
-            <div className="flex gap-2">
-              <Button
-                className={user?.role == "interviewer" ? "hidden" : ""}
-                onClick={() => setIsAssigning(true)}
-              >
-                Assign To
-              </Button>
-              <Button
-                onClick={handleUnassign}
-                disabled={!localCandidate.assignment}
-                variant="outline"
-              >
-                Mark As Done
-              </Button>
 
-              {user?.role !== "interviewer" && (
+      {/* Action Buttons */}
+      <div className="flex space-x-2 border-t border-gray-200 dark:border-gray-700 pt-4">
+        {!fromFilter ? (
+          <div className="flex justify-between w-full">
+            {user?.role !== "candidate" && (
+              <div className="flex gap-2">
                 <Button
-                  onClick={() => setIsAddingFollowUp(true)}
-                  // disabled={!localCandidate.assignment}
-                  variant="outline"
+                  className={user?.role == "interviewer" ? "hidden" : ""}
+                  variant="dark-primary"
+                  onClick={() => setIsAssigning(true)}
                 >
-                  Add A Follow Up
+                  Assign To
+                </Button>
+                <Button
+                  onClick={handleUnassign}
+                  disabled={!localCandidate.assignment}
+                  variant="dark-outline"
+                >
+                  Mark As Done
+                </Button>
+
+                {user?.role !== "interviewer" && (
+                  <Button
+                    onClick={() => setIsAddingFollowUp(true)}
+                    // disabled={!localCandidate.assignment}
+                    variant="dark-outline"
+                  >
+                    {localCandidate?.followUp
+                      ? "Edit Follow Up"
+                      : "Add A Follow Up"}
+                  </Button>
+                )}
+              </div>
+            )}
+            <div className="flex gap-2">
+              {!hideEditButton && user?.role !== "interviewer" && (
+                <Button
+                  disabled={
+                    user?.role === "candidate" &&
+                    user.email !== candidate?.email
+                  }
+                  variant="dark-secondary"
+                  onClick={handleEditClick}
+                >
+                  Edit
+                </Button>
+              )}
+              {!hideCloseButtons && (
+                <Button
+                  variant="dark-outline"
+                  onClick={() => {
+                    onOpenChange(false);
+                    setNewRemark("");
+                    setRemarkRating(null);
+                    setRemarkRatingHistory(null);
+                  }}
+                >
+                  Close
                 </Button>
               )}
             </div>
-          )}
-          <div className="flex gap-2">
-            {!hideEditButton && user?.role !== "interviewer" && (
-              <Button
-                disabled={
-                  user?.role === "candidate" && user.email !== candidate?.email
-                }
-                onClick={handleEditClick}
-              >
-                Edit
-              </Button>
-            )}
-            {!hideCloseButtons && (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  onOpenChange(false);
-                  setNewRemark("");
-                  setRemarkRating(null);
-                  setRemarkRatingHistory(null);
-                }}
-              >
-                Close
-              </Button>
-            )}
           </div>
-        </div>
-      ) : (
-        <div>
-          <Button onClick={() => setIsAssigningJob(true)}>Assign Job</Button>
-        </div>
-      )}
+        ) : (
+          <div>
+            <Button
+              variant="dark-primary"
+              onClick={() => setIsAssigningJob(true)}
+            >
+              Assign Job
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 

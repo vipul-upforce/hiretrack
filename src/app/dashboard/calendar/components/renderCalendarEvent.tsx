@@ -69,7 +69,10 @@ export function RenderEvent({
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">Status:</span>
-              <Badge className="capitalize">
+              <Badge
+                variant="secondary"
+                className="capitalize bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+              >
                 {event.extendedProps.candidate.status || "Unknown"}
               </Badge>
             </div>
@@ -77,8 +80,12 @@ export function RenderEvent({
 
           {typeof event.extendedProps.candidate.jobId !== "string" &&
             (event.extendedProps.candidate.jobId as Job)?.skills?.map(
-              (skill: string) => (
-                <Badge key={skill} variant="secondary">
+              (skill: string, skillIndex: number) => (
+                <Badge
+                  key={`${event.extendedProps.candidate._id}-job-skill-${skillIndex}-${skill}`}
+                  variant="secondary"
+                  className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200"
+                >
                   {skill}
                 </Badge>
               )

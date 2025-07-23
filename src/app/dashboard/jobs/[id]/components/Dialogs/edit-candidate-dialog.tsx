@@ -413,7 +413,7 @@ export function EditCandidateDialog({
         candidate.assignment.interviewerId === "-1"
           ? ""
           : candidate.assignment.interviewerId;
-    } else {
+    } else if (candidate.assignment.interviewerId._id) {
       interviewerId = candidate.assignment.interviewerId._id.replace(/"/g, "");
     }
   }
@@ -503,6 +503,7 @@ export function EditCandidateDialog({
                       // scrollToErrorMassage(errors);
                     }}
                     type={Object.keys(errors).length == 0 ? "button" : "submit"}
+                    className="bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-500 dark:hover:bg-blue-600"
                   >
                     {isSubmitting ? "Saving..." : "Save Changes"}
                   </Button>

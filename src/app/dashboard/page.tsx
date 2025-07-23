@@ -547,7 +547,7 @@ export default function DashboardPage() {
   return (
     <div
       ref={scrollContainerRef}
-      className="space-y-6 h-screen overflow-y-auto"
+      className="space-y-6 h-screen overflow-y-auto px-4 mt-2 mb-4"
     >
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>

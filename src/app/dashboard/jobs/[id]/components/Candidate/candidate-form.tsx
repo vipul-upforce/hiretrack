@@ -216,7 +216,7 @@ export function CandidateForm({
                     expectedCTC: true,
                     currentCTC: true,
                     noticePeriod: true,
-                    resume: true,
+                    resume: true as any,
                     email: true,
                   });
                 }, 100);
@@ -645,7 +645,7 @@ export function CandidateForm({
                     expectedCTC: true,
                     currentCTC: true,
                     noticePeriod: true,
-                    resume: true,
+                    resume: true as any,
                     email: true,
                   });
                 }, 100);
@@ -1010,12 +1010,12 @@ export function CandidateForm({
                 title="Resume Preview"
               />
             ) : (
-              <div className="w-full h-full bg-gray-50 flex items-center justify-center">
+              <div className="w-full h-full bg-muted flex items-center justify-center">
                 <div className="text-center p-4 sm:p-6">
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-700 mb-2">
+                  <h3 className="text-base sm:text-lg font-semibold text-foreground mb-2">
                     No Resume Preview Available
                   </h3>
-                  <p className="text-sm sm:text-base text-gray-500">
+                  <p className="text-sm sm:text-base text-muted-foreground">
                     Please upload resume to see a preview here!
                   </p>
                 </div>

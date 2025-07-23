@@ -48,6 +48,7 @@ export default function KanbanPage() {
   const [user, setUser] = useState<User | null>(null);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [createJob] = useCreateJobMutation();
   const {
@@ -258,56 +259,79 @@ export default function KanbanPage() {
   if (error) return <div>Error loading jobs</div>;
 
   return (
-    <div className="w-full max-w-full space-y-10">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Job Positions</CardTitle>
-          <div className="flex flex-row items-center justify-between gap-4">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="showArchived"
-                checked={showArchived}
-                onCheckedChange={(checked) =>
-                  setShowArchived(checked as boolean)
-                }
-              />
-              <label
-                htmlFor="showArchived"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Show Archived
-              </label>
-            </div>
-            <CreateJobDialog
-              onJobCreated={handleJobCreated}
-              userRole={user?.role}
-            />
-          </div>
-        </CardHeader>
-      </Card>
+    <div className="h-screen flex flex-col overflow-hidden w-full">
+      {/* Header section with improved design */}
+      <div className="flex-shrink-0 px-4 pb-2">
+        <Card className="border-0 shadow-none bg-transparent">
+          <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-2 py-3 px-0">
+            {/* Title */}
+            <CardTitle className="line-clamp-2 md:mr-2 text-xl font-bold">
+              Job Positions
+            </CardTitle>
 
-      <DragDropContext onDragEnd={onDragEnd}>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {columns.map((column) => (
-            <KanbanColumn
-              key={column.id}
-              column={column}
-              isCreatingJob={isCreatingJob}
-              setSelectedJob={setSelectedJob}
-              setIsDetailsOpen={setIsDetailsOpen}
-              handleDeleteClick={handleDeleteClick}
-              setDuplicate={setDuplicate}
-            />
-          ))}
-        </div>
-      </DragDropContext>
+            {/* Right Section */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3">
+              {/* Show Archived */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="showArchived"
+                  checked={showArchived}
+                  onCheckedChange={(checked) =>
+                    setShowArchived(checked as boolean)
+                  }
+                />
+                <label
+                  htmlFor="showArchived"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Show Archived
+                </label>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-2">
+                <CreateJobDialog
+                  onJobCreated={handleJobCreated}
+                  userRole={user?.role}
+                />
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+      </div>
+
+      {/* <CandidatesPage /> */}
+      <div className="flex-1 overflow-hidden px-4 pb-4">
+        <DragDropContext onDragEnd={onDragEnd}>
+          <div className="h-full flex gap-3 overflow-x-auto w-full">
+            {columns.map((column) => (
+              <KanbanColumn
+                key={column.id}
+                column={column}
+                isCreatingJob={isCreatingJob}
+                setSelectedJob={setSelectedJob}
+                setIsDetailsOpen={setIsDetailsOpen}
+                setIsEditMode={setIsEditMode}
+                handleDeleteClick={handleDeleteClick}
+                setDuplicate={setDuplicate}
+              />
+            ))}
+          </div>
+        </DragDropContext>
+      </div>
 
       <JobDetailsDialog
         job={selectedJob}
         isOpen={isDetailsOpen}
-        onOpenChange={setIsDetailsOpen}
+        onOpenChange={(open) => {
+          setIsDetailsOpen(open);
+          if (!open) {
+            setIsEditMode(false);
+          }
+        }}
         userRole={user?.role}
         onJobUpdate={handleJobUpdate}
+        isEditMode={isEditMode}
       />
 
       <AlertDialog

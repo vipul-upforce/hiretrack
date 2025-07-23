@@ -142,21 +142,21 @@ export function FileUpload({
       <div
         {...getRootProps()}
         className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer
-          ${isDragActive ? "border-primary bg-primary/10" : "border-gray-300"}`}
+          ${isDragActive ? "border-primary bg-primary/10" : "border-border"}`}
       >
         <input {...getInputProps()} />
-        <Upload className="mx-auto h-8 w-8 text-gray-400" />
-        <p className="mt-2 text-sm text-gray-500">
+        <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
+        <p className="mt-2 text-sm text-muted-foreground">
           {isDragActive
             ? "Drop the files here..."
             : "Drag 'n' drop files here, or click to select files"}
         </p>
-        <p className="mt-2 text-sm text-gray-500">
+        <p className="mt-2 text-sm text-muted-foreground">
           {user && user.role === "candidate" && !accept["application/pdf"]
             ? "Maximum 2 files are allowed"
             : null}
         </p>
-        <p className="mt-2 text-sm text-gray-500">
+        <p className="mt-2 text-sm text-muted-foreground">
           {user && user.role === "candidate"
             ? "File should have less than 3MB size"
             : null}
@@ -172,7 +172,7 @@ export function FileUpload({
             <div className="flex items-center space-x-2">
               <FileIcon className="h-4 w-4" />
               <span className="text-sm">{file?.name}</span>
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-muted-foreground">
                 ({formatFileSize(file?.size)})
               </span>
             </div>
@@ -202,7 +202,7 @@ export function FileUpload({
             <div className="flex items-center space-x-2">
               <FileIcon className="h-4 w-4" />
               <span className="text-sm">{file?.name}</span>
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-muted-foreground">
                 ({formatFileSize(file?.size)})
               </span>
             </div>

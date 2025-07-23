@@ -67,7 +67,7 @@ function UsersPage() {
           "error" in error.data
             ? (error.data as { error: string }).error
             : "Unknown error"),
-         title: "Failed to delete user",
+        title: "Failed to delete user",
         variant: "destructive",
       });
     }
@@ -126,11 +126,11 @@ function UsersPage() {
   }
 
   return (
-    <div className="w-[100%] py-6">
+    <div className="w-[100%] py-6 px-4 mt-2">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Users</CardTitle>
-          <Button onClick={() => router.push("/auth/signup")}>
+          <Button variant="outline" onClick={() => router.push("/auth/signup")}>
             Create User
           </Button>
         </CardHeader>

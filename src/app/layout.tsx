@@ -1,11 +1,7 @@
-"use client";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
-import { useEffect, useState } from "react";
-import { IUser } from "@/lib/models/user";
-import Cookies from "js-cookie";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import { ClientLayout } from "./client-layout";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,67 +12,42 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
-// export const metadata = {
-//   title: "Hiretrack",
-//   description: "Hiring management system",
-//   icons: {
-//     icon: "/favicon.png",
-//     shortcut: "/favicon.png",
-//     apple: "/favicon.png",
-//     other: {
-//       rel: "icon",
-//       url: "/favicon.png",
-//     },
-//   },
-// };
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [user, setUser] = useState<IUser | null>(null);
-  const [uriOrgName, setOrgName] = useState<string>();
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const orgname = window.location.href.split("=")[1];
-      setOrgName(orgname);
-    }
-  }, []);
-
-  useEffect(() => {
-    (async () => {
-      const user = Cookies.get("token");
-      if (user) {
-        const decryptedResponse = await verifyAndDecryptJWTToken(String(user));
-        if (decryptedResponse.success && decryptedResponse.user) {
-          setUser(decryptedResponse.user);
-        }
-      }
-    })();
-  }, []);
-
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
-        <title>
-          {uriOrgName || user?.organizationInfo?.name || "Hiretrack"}
-        </title>
-        <link
-          rel="icon"
-          href={
-            user?.organizationInfo?.name || uriOrgName
-              ? `/api/files?pathName=../assets/organizations/${uriOrgName || user?.organizationInfo?.name}/favicon.png`
-              : "/favicon.png"
-          }
+        <title>Hiretrack</title>
+        <link rel="icon" href="/favicon.png" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var theme = localStorage.getItem('hiretrack-theme') || 'light';
+                  var root = document.documentElement;
+                  root.classList.remove('light', 'dark');
+                  root.classList.add(theme);
+                  root.setAttribute('data-theme', theme);
+                } catch (e) {
+                  console.warn('Failed to initialize theme:', e);
+                }
+              })();
+            `,
+          }}
         />
       </head>
-      {/* <PortalHead /> */}
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        suppressHydrationWarning
       >
-        <Providers>{children}</Providers>
+        <ClientLayout>
+          <Providers>{children}</Providers>
+        </ClientLayout>
       </body>
     </html>
   );

@@ -293,10 +293,13 @@ export default function CalendarPage() {
   };
 
   const getInterviewerName = (candidate: CandidateAssignment) => {
-    if (candidate?.assignment?.interviewerId) {
-      return typeof candidate.assignment.interviewerId === "object"
-        ? candidate.assignment.interviewerId.name
-        : "Unknown";
+    if (
+      candidate?.assignment?.interviewerId &&
+      typeof candidate.assignment.interviewerId === "object" &&
+      candidate.assignment.interviewerId._id &&
+      candidate.assignment.interviewerId.name
+    ) {
+      return candidate.assignment.interviewerId.name;
     }
     return "Unknown";
   };
@@ -306,13 +309,7 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-80px)] flex flex-col gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Interview Calendar</CardTitle>
-        </CardHeader>
-      </Card>
-
+    <div className="h-[calc(100vh-80px)] flex flex-col gap-6 px-4 mt-2">
       {/* Search Input and Filter Button */}
       <div className="flex gap-2 items-center">
         <Input
@@ -333,8 +330,11 @@ export default function CalendarPage() {
             }
           }}
         />
-        <Button onClick={applyFilter}>Filter</Button>
+        <Button variant="outline" onClick={applyFilter}>
+          Filter
+        </Button>
         <Button
+          variant="outline"
           onClick={() => {
             setFilterText("");
             setSearchText("");
@@ -373,19 +373,19 @@ export default function CalendarPage() {
               eventTextColor="var(--primary-foreground)"
               eventContent={(arg) => {
                 return (
-                  <div className="bg-white w-full rounded-lg border border-gray-200 p-1.5 shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-pointer">
+                  <div className="bg-white dark:bg-gray-800 w-full rounded-lg border border-gray-200 dark:border-gray-600 p-1.5 shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-pointer">
                     <div className="flex items-baseline gap-1 items-center justify-between">
-                      <span className="font-medium text-sm truncate">
+                      <span className="font-medium text-sm truncate text-gray-900 dark:text-gray-100">
                         {arg.event._def.extendedProps.candidate.name}
                       </span>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
                         {arg.event.start ? formatTime(arg.event.start) : ""}
                       </span>
                     </div>
-                    <div className="text-xs text-gray-700 truncate">
+                    <div className="text-xs text-gray-700 dark:text-gray-300 truncate">
                       {arg.event._def.extendedProps.interviewer.name}
                     </div>
-                    <div className="text-[10px] text-gray-500 truncate">
+                    <div className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
                       {arg.event.title}
                     </div>
                   </div>

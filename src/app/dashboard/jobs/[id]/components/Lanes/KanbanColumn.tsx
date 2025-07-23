@@ -11,8 +11,10 @@ import { GripVertical } from "lucide-react";
 import { CandidateCard } from "../Candidate/candidate-card";
 import { Candidate } from "@/types/candidate";
 import { LaneOptionsMenu } from "./lanes-options-menu";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { usePathname } from "next/navigation";
+import { CustomScrollbar } from "@/components/ui/custom-scrollbar";
+import { useDragToScroll } from "../../hooks/useDragToScroll";
 
 interface KanbanColumnProps {
   column: {
@@ -36,6 +38,7 @@ interface KanbanColumnProps {
   openRemarksFor: string | null;
   setOpenRemarksFor: (candidateId: string | null) => void;
   handleDeleteClick: (candidateId: string) => void;
+  isDragging?: boolean;
 }
 
 type SortField = string;
@@ -47,6 +50,7 @@ export function KanbanColumn({
   isFileOver,
   setIsFileOver,
   handleFileDrop,
+  isDragging,
   handleDeleteLane,
   handleEditLane,
   setLaneToDelete,
@@ -64,10 +68,12 @@ export function KanbanColumn({
   const [isLaneOpsOpenFor, setIsLaneOpsOpenFor] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  // const [isDragging, setIsDragging] = useState();
   // const [jobId, setJobId] = useState<string>();
   // Sorting function
   const pathname = usePathname();
   const jobId = pathname?.split("/")[3];
+
   const sortCandidates = (
     candidates: Candidate[],
     field: SortField,
@@ -195,15 +201,15 @@ export function KanbanColumn({
         <div
           ref={provided.innerRef}
           {...provided.draggableProps}
-          className="w-[350px] mr-6"
+          className="w-96 flex-shrink-0 mt-1"
           style={{
             ...provided.draggableProps.style,
             userSelect: "none",
             // opacity: snapshot.isDragging ? 0.8 : 1,
           }}
         >
-          <Card className="space-y-4 min-h-[75vh] h-full">
-            <CardHeader className="pb-3">
+          <Card className="h-full flex flex-col border border-gray-200 dark:border-gray-700 shadow-none bg-transparent rounded-none">
+            <CardHeader className="py-3 flex-shrink-0 px-4 bg-transparent border-b border-gray-200 dark:border-gray-700 rounded-none">
               <div className="flex items-center justify-between h-full">
                 <div className="flex items-center space-x-2">
                   <div
@@ -218,7 +224,7 @@ export function KanbanColumn({
                     <GripVertical className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <CardTitle
-                    className="text-lg font-semibold capitalize"
+                    className="text-base font-medium capitalize text-gray-700 dark:text-gray-300"
                     style={{ overflowWrap: "anywhere" }}
                   >
                     {column.title}
@@ -250,78 +256,111 @@ export function KanbanColumn({
                 />
               </div>
             </CardHeader>
-            <CardContent className="h-[89%]">
+            <CardContent
+              className={`flex-1 overflow-hidden p-0 bg-transparent rounded-none`}
+            >
               <Droppable droppableId={column.id} type="candidate">
                 {(provided: DroppableProvided) => (
-                  <div
-                    {...provided.droppableProps}
-                    ref={provided.innerRef}
-                    className={`space-y-3 min-h-full rounded-lg relative`}
-                    onDragOver={(e) => {
-                      if (
-                        e.dataTransfer.types.includes("Files") &&
-                        column.id === "applied"
-                      ) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setIsFileOver(true);
-                        e.dataTransfer.dropEffect = "link";
-                      }
-                    }}
-                    onDragLeave={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setIsFileOver(false);
-                      e.dataTransfer.dropEffect = "none";
-                    }}
-                    onDrop={(e) => {
-                      if (e.dataTransfer.types.includes("Files")) {
+                  <CustomScrollbar isDragging={isDragging} className="h-full">
+                    <div
+                      {...provided.droppableProps}
+                      ref={provided.innerRef}
+                      className={`space-y-3 min-h-full rounded-lg relative`}
+                      onDragOver={(e) => {
+                        if (
+                          e.dataTransfer.types.includes("Files") &&
+                          column.id === "applied"
+                        ) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setIsFileOver(true);
+                          e.dataTransfer.dropEffect = "link";
+                        }
+                      }}
+                      onDragLeave={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         setIsFileOver(false);
-                        const files = Array.from(e.dataTransfer.files);
-                        if (files.length > 0) handleFileDrop(files[0]);
-                      }
-                    }}
-                  >
-                    {isFileOver && column.id === "applied" && (
-                      <div className="absolute bg-gray-200/50 h-full w-full border border-dashed border-gray-500 rounded-lg pointer-events-none">
-                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black text-white p-2 rounded-md shadow-lg text-lg font-semibold pointer-events-none animate-fade-in">
-                          Drop file here!
+                        e.dataTransfer.dropEffect = "none";
+                      }}
+                      onDrop={(e) => {
+                        if (e.dataTransfer.types.includes("Files")) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setIsFileOver(false);
+                          const files = Array.from(e.dataTransfer.files);
+                          if (files.length > 0) handleFileDrop(files[0]);
+                        }
+                      }}
+                    >
+                      {/* <div> */}
+                      {isFileOver && column.id === "applied" && (
+                        <div className="absolute bg-gray-200/50 h-full w-full border border-dashed border-gray-500 rounded-lg pointer-events-none">
+                          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black text-white p-2 rounded-md shadow-lg text-lg font-semibold pointer-events-none animate-fade-in">
+                            Drop file here!
+                          </div>
                         </div>
-                      </div>
-                    )}
-                    {sortedCandidates.map((candidate, index) => {
-                      if (
-                        (typeof candidate.jobId !== "string" &&
-                          candidate?.jobId?._id?.toString() !==
-                            jobId?.toString()) ||
-                        (typeof candidate.jobId === "string" &&
-                          candidate?.jobId !== jobId?.toString())
-                      ) {
-                        return null;
-                      }
-                      return (
-                        <CandidateCard
-                          key={`${column.id}-${candidate._id}`}
-                          candidate={candidate}
-                          index={index}
-                          refetch={refetch}
-                          onViewDetails={(candidate) => {
-                            setSelectedCandidate(candidate);
-                            setIsDetailsOpen(true);
-                          }}
-                          openRemarks={openRemarksFor === candidate._id}
-                          setOpenRemarksFor={setOpenRemarksFor}
-                          onDeleteClick={(id: string) => {
-                            setSelectedCandidate(candidate);
-                            handleDeleteClick(id);
-                          }}
-                        />
-                      );
-                    })}
-                    {provided.placeholder}
-                  </div>
+                      )}
+                      {sortedCandidates.map((candidate, index) => {
+                        if (
+                          (typeof candidate.jobId !== "string" &&
+                            candidate?.jobId?._id?.toString() !==
+                              jobId?.toString()) ||
+                          (typeof candidate.jobId === "string" &&
+                            candidate?.jobId !== jobId?.toString())
+                        ) {
+                          return null;
+                        }
+                        return (
+                          <CandidateCard
+                            className="mt-2 mx-1"
+                            key={`${column.id}-${candidate._id}`}
+                            // setIsDragging={() => setIsDragging(true)}
+                            candidate={candidate}
+                            index={index}
+                            refetch={refetch}
+                            onViewDetails={(candidate) => {
+                              setSelectedCandidate(candidate);
+                              setIsDetailsOpen(true);
+                            }}
+                            openRemarks={openRemarksFor === candidate._id}
+                            setOpenRemarksFor={setOpenRemarksFor}
+                            onDeleteClick={(id: string) => {
+                              setSelectedCandidate(candidate);
+                              handleDeleteClick(id);
+                            }}
+                            onEditClick={(candidate) => {
+                              setSelectedCandidate(candidate);
+                              // Handle edit - could open edit dialog
+                              console.log("Edit candidate:", candidate);
+                            }}
+                            onAssignClick={(candidate) => {
+                              setSelectedCandidate(candidate);
+                              // Handle assign - could open assign dialog
+                              console.log("Assign candidate:", candidate);
+                            }}
+                            onMarkAsDoneClick={(candidate) => {
+                              setSelectedCandidate(candidate);
+                              // Handle mark as done
+                              console.log("Mark as done:", candidate);
+                            }}
+                            onFollowUpClick={(candidate) => {
+                              setSelectedCandidate(candidate);
+                              // Handle follow up
+                              console.log("Follow up:", candidate);
+                            }}
+                            onAddRemarkClick={(candidate) => {
+                              setSelectedCandidate(candidate);
+                              // Handle add remark
+                              console.log("Add remark:", candidate);
+                            }}
+                          />
+                        );
+                      })}
+                      {provided.placeholder}
+                      {/* </div> */}
+                    </div>
+                  </CustomScrollbar>
                 )}
               </Droppable>
             </CardContent>

@@ -73,10 +73,8 @@ function CandidateSearch() {
   const [filterCandidates] = useFilterCandidatesMutation();
 
   const refetchResults = async () => {
-    // debugger;
     setIsSearching(true);
     try {
-      // await new Promise((resolve) => setTimeout(resolve, 3000));
       const response = await filterCandidates(currentFilters).unwrap();
       setSearchResults(response.candidates || []);
     } catch (error) {
@@ -165,8 +163,20 @@ function CandidateSearch() {
   };
   const sortedResults = sortField
     ? [...searchResults].sort((a, b) => {
-        const aValue = a[sortField as keyof Candidate];
-        const bValue = b[sortField as keyof Candidate];
+        let aValue: any;
+        let bValue: any;
+
+        // Handle custom sorting fields
+        if (sortField === "overallScore") {
+          aValue = a.scores?.overall ?? 0;
+          bValue = b.scores?.overall ?? 0;
+        } else if (sortField === "jobAssignment") {
+          aValue = a.jobId?.title ?? "";
+          bValue = b.jobId?.title ?? "";
+        } else {
+          aValue = a[sortField as keyof Candidate];
+          bValue = b[sortField as keyof Candidate];
+        }
 
         // Ensure both values are strings for localeCompare
         if (typeof aValue === "string" && typeof bValue === "string") {
@@ -185,17 +195,9 @@ function CandidateSearch() {
       })
     : searchResults;
 
-  // const paginatedResults = Array.isArray(sortedResults)
-  //   ? sortedResults.slice(
-  //       (currentPage - 1) * itemsPerPage,
-  //       currentPage * itemsPerPage
-  //     )
-  //   : [];
-
-  // const totalPages = Math.ceil(sortedResults.length / itemsPerPage);
   return (
     <div className="space-y-6">
-      <Card className="p-6">
+      <Card className="border-0 shadow-none">
         <Formik
           initialValues={initialValues}
           validationSchema={SearchSchema}
@@ -213,17 +215,25 @@ function CandidateSearch() {
             <Form className="space-y-6">
               <SearchFilters handleSearch={handleSearch} />
 
-              <div className="flex justify-end gap-3">
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-4 pt-4 border-t">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => resetForm()}
                   disabled={!dirty}
+                  className="px-6"
                 >
                   <ResetIcon className="mr-2 h-4 w-4" />
                   Reset
                 </Button>
-                <Button type="submit" disabled={isSearching || !isValid}>
+                <Button
+                  type="submit"
+                  disabled={isSearching || !isValid}
+                  variant="default"
+                  className="px-8"
+                  size="lg"
+                >
                   <SearchIcon className="mr-2 h-4 w-4" />
                   {isSearching ? "Searching..." : "Search"}
                 </Button>
@@ -232,6 +242,8 @@ function CandidateSearch() {
           )}
         </Formik>
       </Card>
+
+      {/* Search Results */}
       <SearchResults
         results={sortedResults}
         totalResultsCount={totalRecordsCount}
@@ -251,9 +263,4 @@ function CandidateSearch() {
   );
 }
 
-export default withAuthGuard(CandidateSearch, {
-  requiredRoles: ["admin", "hr"],
-  fallbackPath: "/dashboard",
-  checkAllowance: false,
-  allowAuthenticated: true,
-});
+export default withAuthGuard(CandidateSearch);

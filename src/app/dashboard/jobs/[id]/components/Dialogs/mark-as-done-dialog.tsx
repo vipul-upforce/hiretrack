@@ -20,7 +20,7 @@ const ConfirmAndRemarkDialog = ({
   isLoading = false,
   loadingText = "Marking as done...",
   message,
-  className = "sm:max-w-[400px]",
+  className = "sm:max-w-[600px]",
   title = "Mark as Done",
 }: {
   isOpen: boolean;
@@ -91,10 +91,19 @@ const ConfirmAndRemarkDialog = ({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={handleCancel} disabled={isLoading}>
+          <Button
+            variant="outline"
+            onClick={handleCancel}
+            disabled={isLoading}
+            className="border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+          >
             Cancel
           </Button>
-          <Button disabled={isLoading} onClick={handleConfirm}>
+          <Button
+            disabled={isLoading}
+            onClick={handleConfirm}
+            className="bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-500 dark:hover:bg-blue-600"
+          >
             {isLoading ? loadingText : "Mark as done"}
           </Button>
         </DialogFooter>

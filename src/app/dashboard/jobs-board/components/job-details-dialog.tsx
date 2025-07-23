@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,7 @@ interface JobDetailsDialogProps {
   onOpenChange: (open: boolean) => void;
   userRole?: string;
   onJobUpdate: (job: Job) => void;
+  isEditMode?: boolean;
 }
 
 const labelClass = "font-semibold text-base";
@@ -25,9 +26,15 @@ export function JobDetailsDialog({
   onOpenChange,
   userRole,
   onJobUpdate,
+  isEditMode = false,
 }: JobDetailsDialogProps) {
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(isEditMode);
   const canEdit = userRole === "hr" || userRole === "admin";
+
+  // Update isEditing when isEditMode prop changes
+  useEffect(() => {
+    setIsEditing(isEditMode);
+  }, [isEditMode]);
 
   if (!job) return null;
 

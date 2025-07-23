@@ -457,6 +457,7 @@ export default function FileStorageOptions({
                   <div>
                     <Button
                       type="submit"
+                      variant="primary"
                       disabled={
                         values.storageType !== "local" &&
                         (isSubmitting || isUpdating || !isConnectionSuccessful)
@@ -467,9 +468,7 @@ export default function FileStorageOptions({
                           : ""
                       }
                     >
-                      {isSubmitting || isUpdating
-                        ? "Saving..."
-                        : "Save Settings"}
+                      {isSubmitting || isUpdating ? "Saving..." : "Save"}
                     </Button>
                   </div>
                 </TooltipTrigger>

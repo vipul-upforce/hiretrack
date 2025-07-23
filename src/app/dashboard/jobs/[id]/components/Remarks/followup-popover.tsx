@@ -22,49 +22,35 @@ const FollowupDisplay = ({
 }) => {
   const [removeFUOpen, setRemoveFUOpen] = useState(false);
   const contentWithDate = (
-    <div className="border cursor-default border-blue-200/60 rounded-lg w-fit px-2 py-1 flex flex-row items-center justify-between bg-gradient-to-r from-blue-50/80 to-indigo-50/60 hover:from-blue-100/80 hover:to-indigo-100/60 transition-all duration-200 shadow-sm hover:shadow-md">
-      <CalendarClockIcon size={18} className="mr-2 text-blue-600" />
-      <div className=" flex flex-row items-center justify-between w-full">
-        <p
-          className="text-slate-700"
-          style={{
-            fontSize: "11px",
-          }}
-        >
+    <div className="border cursor-default border-blue-200 rounded w-fit px-2 py-1 flex flex-row items-center justify-between bg-blue-50 hover:bg-blue-100 transition-colors duration-200">
+      <CalendarClockIcon size={14} className="mr-1 text-blue-600" />
+      <div className="flex flex-row items-center justify-between w-full">
+        <p className="text-slate-700 text-xs">
           {formatDate(date || new Date())} at {formatTime(date || new Date())}
         </p>
       </div>
       {showToolTip && (
         <button
           onClick={() => setRemoveFUOpen(true)}
-          className="w-4 h-4 ml-1 bg-transparent rounded-full text-black hover:bg-gray-200 transition duration-300 "
+          className="w-4 h-4 ml-1 bg-transparent rounded text-gray-500 hover:text-red-500 transition-colors duration-200"
         >
-          {/* <X size={1} className="w-1 h-1" /> */}
-          <XIcon size={14} strokeWidth={1.25} />
+          <XIcon size={10} strokeWidth={1.5} />
         </button>
       )}
     </div>
   );
   const contentWODate = (
-    <div className="border cursor-default border-blue-200/60 rounded-lg w-fit px-2 py-1 flex flex-row items-center justify-between bg-gradient-to-r from-blue-50/80 to-indigo-50/60 hover:from-blue-100/80 hover:to-indigo-100/60 transition-all duration-200 shadow-sm hover:shadow-md">
-      <CalendarClockIcon size={18} className="mr-2 text-blue-600" />
-      <div className=" flex flex-row items-center justify-between w-full">
-        <p
-          className=" text-slate-700"
-          style={{
-            fontSize: "11px",
-          }}
-        >
-          Follow Up
-        </p>
+    <div className="border cursor-default border-blue-200 rounded w-fit px-2 py-1 flex flex-row items-center justify-between bg-blue-50 hover:bg-blue-100 transition-colors duration-200">
+      <CalendarClockIcon size={14} className="mr-1 text-blue-600" />
+      <div className="flex flex-row items-center justify-between w-full">
+        <p className="text-slate-700 text-xs">Follow Up</p>
       </div>
       {showToolTip && (
         <button
           onClick={() => setRemoveFUOpen(true)}
-          className="w-4 h-4 ml-1 bg-transparent rounded-full text-black hover:bg-gray-200 transition duration-300 "
+          className="w-4 h-4 ml-1 bg-transparent rounded text-gray-500 hover:text-red-500 transition-colors duration-200"
         >
-          {/* <X size={1} className="w-1 h-1" /> */}
-          <XIcon size={14} strokeWidth={1.25} />
+          <XIcon size={10} strokeWidth={1.5} />
         </button>
       )}
     </div>
@@ -85,21 +71,12 @@ const FollowupDisplay = ({
     );
   }
   return showToolTip ? (
-    <TooltipProvider>
+    <TooltipProvider delayDuration={0}>
       <Tooltip>
         <TooltipTrigger asChild>
           {date ? contentWithDate : contentWODate}
         </TooltipTrigger>
         <TooltipContent className="bg-white border border-slate-200 text-slate-900 max-w-80 break-words shadow-lg">
-          <div className="text-sm font-semibold text-blue-700 mb-1 w-full flex items-center justify-between">
-            <p className="mr-2">Followup</p>
-            {/* <Button
-              onClick={handleRemoveFollowUp}
-              className="w-5 h-5 p-1 rounded-full bg-gray-200 text-black hover:bg-gray-300 transition duration-300"
-            >
-              <XIcon size={10} strokeWidth={1.25} />
-            </Button> */}
-          </div>
           <p className="text-md text-slate-600 leading-relaxed">{note}</p>
         </TooltipContent>
       </Tooltip>

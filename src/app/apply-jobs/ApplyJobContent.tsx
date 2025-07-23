@@ -194,7 +194,7 @@ export default function ApplyJobsContent({
   if (error && !isLoading) {
     if (isFetchBaseQueryError(error) && error.status !== 404) {
       return (
-        <div className="px-3 font-bold text-gray-500 w-[100vw] flex flex-col items-center justify-center">
+        <div className="px-3 font-bold text-muted-foreground w-[100vw] flex flex-col items-center justify-center">
           <Image
             src="/error.webp"
             alt="No data illustration"
@@ -208,7 +208,7 @@ export default function ApplyJobsContent({
       );
     } else {
       return (
-        <div className="px-3 font-bold text-gray-500 w-[100vw] flex flex-col items-center justify-center">
+        <div className="px-3 font-bold text-muted-foreground w-[100vw] flex flex-col items-center justify-center">
           <Image
             src="/notfound.jpg"
             alt="No data illustration"
@@ -277,7 +277,7 @@ export default function ApplyJobsContent({
                   }
                 }}
               />
-              <Search className="absolute left-3 text-gray-400 h-5 w-5" />
+              <Search className="absolute left-3 text-muted-foreground h-5 w-5" />
             </div>
             <Button onClick={handleSearch} className="px-4 py-2 text-sm">
               Search
@@ -293,7 +293,7 @@ export default function ApplyJobsContent({
               </>
             ) : error ? (
               // Show error state
-              <div className="px-3 font-bold text-gray-500 w-[100vw] flex flex-col items-center justify-center">
+              <div className="px-3 font-bold text-muted-foreground w-[100vw] flex flex-col items-center justify-center">
                 <Image
                   src={
                     isFetchBaseQueryError(error) && error.status !== 404
@@ -313,7 +313,7 @@ export default function ApplyJobsContent({
               jobs.map((job, index) => (
                 <div
                   key={index}
-                  className="bg-white break-words rounded-lg border inset-shadow-sm p-4 lg:p-6 cursor-pointer hover:shadow-md transition-shadow flex flex-col justify-between"
+                  className="bg-background break-words rounded-lg border inset-shadow-sm p-4 lg:p-6 cursor-pointer hover:shadow-md transition-shadow flex flex-col justify-between"
                   onClick={() => {
                     setSelectedJob(job);
                     setIsJobModalOpen(true);
@@ -324,7 +324,7 @@ export default function ApplyJobsContent({
                       {job.title}
                     </h2>
                     <p
-                      className="text-gray-600 mb-4 line-clamp-2 text-sm lg:text-lg"
+                      className="text-muted-foreground mb-4 line-clamp-2 text-sm lg:text-lg"
                       dangerouslySetInnerHTML={{
                         __html: job?.description || "No description found",
                       }}
@@ -335,13 +335,13 @@ export default function ApplyJobsContent({
                       {job.skills.slice(0, 3).map((skill, i) => (
                         <span
                           key={i}
-                          className="break-all bg-blue-100 text-blue-800 text-sm  px-3 py-1 rounded-full h-7 max-w-[30%] overflow-clip"
+                          className="break-all bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 text-sm px-3 py-1 rounded-full h-7 max-w-[30%] overflow-clip"
                         >
                           {skill}
                         </span>
                       ))}
                     </div>
-                    <div className="mt-4 text-sm text-gray-500 flex flex-rw items-center justify-between">
+                    <div className="mt-4 text-sm text-muted-foreground flex flex-rw items-center justify-between">
                       <p>Experience: {job.experience} years</p>
 
                       {job.salary ? (
@@ -385,7 +385,7 @@ export default function ApplyJobsContent({
             )}
           </div>
           {error && !jobs && (
-            <div className="px-3 font-bold text-gray-500 w-[100vw] flex flex-col items-center justify-center">
+            <div className="px-3 font-bold text-muted-foreground w-[100vw] flex flex-col items-center justify-center">
               <Image
                 src="/notfound.jpg"
                 alt="No data illustration"

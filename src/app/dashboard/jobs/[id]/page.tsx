@@ -32,6 +32,7 @@ import EditLaneDialog from "./components/Lanes/edit-lane-dialog";
 import { useSSE } from "@/hooks/useSSE";
 import { mergeRefs } from "react-merge-refs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { QuickSelectAndFilter } from "./components/QuickSelectAndFilter";
 // import CandidatesPage from "./CandidatesPage";
 
 export default function JobProgressPage() {
@@ -56,8 +57,11 @@ export default function JobProgressPage() {
   const [initialLaneToEdit, setInitialLaneToEdit] = useState<string | null>(
     null
   );
-  const { ref: scrollRef, setIsDndDragging } =
-    useDragToScroll<HTMLDivElement>();
+  const {
+    ref: scrollRef,
+    setIsDndDragging,
+    isDragging,
+  } = useDragToScroll<HTMLDivElement>();
 
   // Initialize useSSE hook with hardcoded role "admin" and jobId
   const { candidates: sseCandidates, lanes: updatedLanes } = useSSE(
@@ -85,6 +89,7 @@ export default function JobProgressPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLaneEditOpen, setIsLaneEditOpen] = useState(false);
   const [isFileOver, setIsFileOver] = useState(false);
+  const [filteredCandidates, setFilteredCandidates] = useState<Candidate[]>([]);
 
   const {
     handleAddLane,
@@ -194,9 +199,13 @@ export default function JobProgressPage() {
         }
       });
 
+      // Use filtered candidates if available, otherwise use merged candidates
+      const candidatesToUse =
+        filteredCandidates.length > 0 ? filteredCandidates : mergedCandidates;
+
       const updatedColumns = lanesArray.map((lane) => {
         const column = initialCandidateColumns.find((item) => item.id === lane);
-        const candidates = mergedCandidates.filter(
+        const candidates = candidatesToUse.filter(
           (candidate) =>
             candidate.status === lane &&
             (showArchived ? candidate.isDeleted : !candidate.isDeleted)
@@ -213,7 +222,14 @@ export default function JobProgressPage() {
 
       setColumns(updatedColumns);
     }
-  }, [candidatesFromQuery, sseCandidates, lanes, updatedLanes, showArchived]);
+  }, [
+    candidatesFromQuery,
+    sseCandidates,
+    lanes,
+    updatedLanes,
+    showArchived,
+    filteredCandidates,
+  ]);
 
   // Update initialLaneToEdit when laneToEdit is set
   useEffect(() => {
@@ -234,65 +250,72 @@ export default function JobProgressPage() {
   if (isJobLoading || isCandidatesLoading || isLanesLoading || !lanes) {
     return (
       <>
-        <div className="space-y-6 overflow-x-hidden" style={{ width: "100%" }}>
-          <Skeleton className="w-56 h-[16px] rounded-lg" />
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div className="font-semibold text-lg">
-                <Skeleton className="w-40 h-[16px] rounded-lg" />
-              </div>
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="showArchived"
-                    checked={showArchived}
-                    onCheckedChange={(checked) =>
-                      setShowArchived(checked as boolean)
-                    }
-                  />
-                  <label
-                    htmlFor="showArchived"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Show Archived
-                  </label>
+        <div
+          className="h-screen flex flex-col overflow-hidden"
+          style={{ width: "100%" }}
+        >
+          <div className="flex-shrink-0 p-4 pb-2">
+            <Skeleton className="w-56 h-[16px] rounded-lg" />
+            <Card className="mt-2">
+              <CardHeader className="flex flex-row items-center justify-between py-3">
+                <div className="font-semibold text-lg">
+                  <Skeleton className="w-40 h-[16px] rounded-lg" />
                 </div>
-                <div className="flex space-x-2">
-                  <CreateLaneDialog onAddLane={handleAddLane} />
-                  <CreateCandidateDialog
-                    jobId={id as string}
-                    isOpen={isDialogOpen}
-                    setIsOpen={setIsDialogOpen}
-                    resumeFile={droppedFileData}
-                  />
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="showArchived"
+                      checked={showArchived}
+                      onCheckedChange={(checked) =>
+                        setShowArchived(checked as boolean)
+                      }
+                    />
+                    <label
+                      htmlFor="showArchived"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      Show Archived
+                    </label>
+                  </div>
+                  <div className="flex space-x-2">
+                    <CreateLaneDialog onAddLane={handleAddLane} />
+                    <CreateCandidateDialog
+                      jobId={id as string}
+                      isOpen={isDialogOpen}
+                      setIsOpen={setIsDialogOpen}
+                      resumeFile={droppedFileData}
+                    />
+                  </div>
                 </div>
-              </div>
-            </CardHeader>
-          </Card>
+              </CardHeader>
+            </Card>
+          </div>
 
-          <DragDropContext
-            onDragStart={() => setIsDndDragging(true)}
-            onDragEnd={(result: any) => {
-              // console.log(
-              //   "onDragEnd triggered, scrollRef.current:",
-              //   scrollRef.current
-              // );
-              setIsDndDragging(false);
-              onDragEnd(result);
-            }}
-          >
-            <Droppable droppableId="lanes" direction="horizontal" type="lane">
-              {(provided: DroppableProvided) => (
-                <div
-                  {...provided.droppableProps}
-                  ref={mergeRefs([provided.innerRef, scrollRef])}
-                  className="grid grid-flow-col flex flex-row justify-start overflow-x-scroll pb-4 z-0"
-                >
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
-          </DragDropContext>
+          <div className="flex-1 overflow-hidden px-4 pb-4">
+            <DragDropContext
+              onDragStart={() => setIsDndDragging(true)}
+              onDragEnd={(result: any) => {
+                // console.log(
+                //   "onDragEnd triggered, scrollRef.current:",
+                //   scrollRef.current
+                // );
+                setIsDndDragging(false);
+                onDragEnd(result);
+              }}
+            >
+              <Droppable droppableId="lanes" direction="horizontal" type="lane">
+                {(provided: DroppableProvided) => (
+                  <div
+                    {...provided.droppableProps}
+                    ref={mergeRefs([provided.innerRef, scrollRef])}
+                    className="h-full flex gap-3 overflow-x-auto"
+                  >
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            </DragDropContext>
+          </div>
         </div>
         <LoaderSkeleton />
       </>
@@ -303,101 +326,89 @@ export default function JobProgressPage() {
   }
 
   return (
-    <div className="space-y-6 overflow-x-hidden" style={{ width: "100%" }}>
-      <Breadcrumb
-        jobTitle={job?.title}
-        links={[{ title: "Jobs", href: "/dashboard/jobs-board" }]}
+    <div
+      className="h-screen flex flex-col overflow-hidden"
+      style={{ width: "100%" }}
+    >
+      {/* Header section with breadcrumbs and action buttons */}
+      <div className="flex-shrink-0 px-4 pt-4 pb-2">
+        <div className="flex items-center justify-between">
+          <Breadcrumb
+            jobTitle={job?.title}
+            links={[{ title: "Jobs", href: "/dashboard/jobs-board" }]}
+          />
+          <div className="flex gap-2">
+            <CreateLaneDialog onAddLane={handleAddLane} />
+            <CreateCandidateDialog
+              jobId={id as string}
+              isOpen={isDialogOpen}
+              setIsOpen={setIsDialogOpen}
+              resumeFile={droppedFileData}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Select and Filter Section */}
+      <QuickSelectAndFilter
+        currentJobId={id}
+        candidates={candidatesFromQuery || []}
+        onFilterChange={setFilteredCandidates}
+        showArchived={showArchived}
+        onShowArchivedChange={setShowArchived}
       />
 
-      <Card>
-        <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-4">
-          {/* Title */}
-          <CardTitle className="line-clamp-2 md:mr-2 text-lg">
-            Candidates for {job?.title}
-          </CardTitle>
-
-          {/* Right Section */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 sm:gap-4">
-            {/* Show Archived */}
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="showArchived"
-                checked={showArchived}
-                onCheckedChange={(checked) =>
-                  setShowArchived(checked as boolean)
-                }
-              />
-              <label
-                htmlFor="showArchived"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Show Archived
-              </label>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-2">
-              <CreateLaneDialog onAddLane={handleAddLane} />
-              <CreateCandidateDialog
-                jobId={id as string}
-                isOpen={isDialogOpen}
-                setIsOpen={setIsDialogOpen}
-                resumeFile={droppedFileData}
-              />
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
-
       {/* <CandidatesPage /> */}
-      <DragDropContext
-        onDragStart={() => setIsDndDragging(true)}
-        onDragEnd={(result: any) => {
-          console.log(
-            "onDragEnd triggered, scrollRef.current:",
-            scrollRef.current
-          );
-          setIsDndDragging(false);
-          onDragEnd(result);
-        }}
-      >
-        <Droppable droppableId="lanes" direction="horizontal" type="lane">
-          {(provided: DroppableProvided) => (
-            <div
-              {...provided.droppableProps}
-              ref={mergeRefs([provided.innerRef, scrollRef])}
-              // ref={provided.innerRef}
-              className="grid grid-flow-col overflow-x-scroll pb-4 z-0"
-            >
-              {columns.map((column, index) => {
-                return (
-                  <KanbanColumn
-                    key={column.id}
-                    column={column}
-                    index={index}
-                    isFileOver={isFileOver}
-                    setIsFileOver={setIsFileOver}
-                    handleFileDrop={handleFileDrop}
-                    handleDeleteLane={handleDeleteLane}
-                    handleEditLane={handleEditLaneClick}
-                    setLaneToDelete={setLaneToDelete}
-                    setLaneToEdit={setLaneToEdit}
-                    refetch={refetch}
-                    selectedCandidate={selectedCandidate}
-                    setSelectedCandidate={setSelectedCandidate}
-                    isDetailsOpen={isDetailsOpen}
-                    setIsDetailsOpen={setIsDetailsOpen}
-                    openRemarksFor={openRemarksFor}
-                    setOpenRemarksFor={setOpenRemarksFor}
-                    handleDeleteClick={handleDeleteClick}
-                  />
-                );
-              })}
-              {provided.placeholder}
-            </div>
-          )}
-        </Droppable>
-      </DragDropContext>
+      <div className="flex-1 overflow-hidden px-4 pb-4">
+        <DragDropContext
+          onDragStart={() => setIsDndDragging(true)}
+          onDragEnd={(result: any) => {
+            // console.log(
+            //   "onDragEnd triggered, scrollRef.current:",
+            //   scrollRef.current
+            // );
+            setIsDndDragging(false);
+            onDragEnd(result);
+          }}
+        >
+          <Droppable droppableId="lanes" direction="horizontal" type="lane">
+            {(provided: DroppableProvided) => (
+              <div
+                {...provided.droppableProps}
+                ref={mergeRefs([provided.innerRef, scrollRef])}
+                className="h-full flex gap-3 overflow-x-auto"
+              >
+                {columns.map((column, index) => {
+                  return (
+                    <KanbanColumn
+                      key={column.id}
+                      column={column}
+                      index={index}
+                      isDragging={isDragging}
+                      isFileOver={isFileOver}
+                      setIsFileOver={setIsFileOver}
+                      handleFileDrop={handleFileDrop}
+                      handleDeleteLane={handleDeleteLane}
+                      handleEditLane={handleEditLaneClick}
+                      setLaneToDelete={setLaneToDelete}
+                      setLaneToEdit={setLaneToEdit}
+                      refetch={refetch}
+                      selectedCandidate={selectedCandidate}
+                      setSelectedCandidate={setSelectedCandidate}
+                      isDetailsOpen={isDetailsOpen}
+                      setIsDetailsOpen={setIsDetailsOpen}
+                      openRemarksFor={openRemarksFor}
+                      setOpenRemarksFor={setOpenRemarksFor}
+                      handleDeleteClick={handleDeleteClick}
+                    />
+                  );
+                })}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
+      </div>
 
       <CandidateDetailsDialog
         candidate={selectedCandidate}

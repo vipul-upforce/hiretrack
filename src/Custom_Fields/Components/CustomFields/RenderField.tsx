@@ -2,11 +2,9 @@
 // import { useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import Radio from "@mui/material/Radio";
-import RadioGroup from "@mui/material/RadioGroup";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import FormControl from "@mui/material/FormControl";
-import { Checkbox, FormGroup } from "@mui/material";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import dayjs, { Dayjs } from "dayjs";
 import { FileDropZone } from "@/components/ui/file-drop-zone";
 import { ChipInput } from "@/components/ui/chip-input";
@@ -20,7 +18,7 @@ import {
 import { DateTimePicker } from "@/components/ui/DateTimePicker";
 import PasswordField from "@/components/ui/PasswordField";
 import TimePicker from "@/components/ui/time-picker";
-import DatePicker from "@/components/ui/datepicker";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Button } from "@/components/ui/button";
 
 interface FileData {
@@ -201,64 +199,59 @@ export const RenderField = ({
 
     case "checkbox":
       return (
-        <FormControl component="fieldset">
-          <FormGroup
-            style={{ display: "flex", flexDirection: "row", gap: "10px" }}
-          >
-            {options?.map((option) => (
-              <FormControlLabel
-                key={option}
-                control={
-                  <Checkbox
-                    {...commonProps}
-                    checked={(values.customFields[label] as string[])?.includes(
-                      option
-                    )}
-                    className="capitalize"
-                    onBlur={() => {
-                      if (values.customFields[label] === undefined) {
-                        setFieldError("customFields." + label, "");
-                      }
-                      setFieldTouched("customFields." + label, true);
-                    }}
-                    onChange={(e) => {
-                      if (values.customFields[label] === undefined) {
-                        setFieldValue("customFields." + label, [option]);
-                        setFieldError("customFields." + label, "");
-                      } else {
-                        const currentValues = values.customFields[
-                          label
-                        ] as string[];
-                        const newValues = currentValues.includes(option)
-                          ? currentValues.filter((value) => value !== option)
-                          : [...currentValues, option];
+        <div className="flex flex-row gap-4">
+          {options?.map((option) => (
+            <div key={option} className="flex items-center space-x-2">
+              <Checkbox
+                id={`${label}-${option}`}
+                checked={(values.customFields[label] as string[])?.includes(
+                  option
+                )}
+                onCheckedChange={(checked) => {
+                  if (values.customFields[label] === undefined) {
+                    setFieldValue("customFields." + label, [option]);
+                    setFieldError("customFields." + label, "");
+                  } else {
+                    const currentValues = values.customFields[
+                      label
+                    ] as string[];
+                    const newValues = checked
+                      ? [...currentValues, option]
+                      : currentValues.filter((value) => value !== option);
 
-                        setFieldValue("customFields." + label, newValues);
-                        if (newValues.length > 0 || !e.target.checked) {
-                          setFieldError("customFields." + label, "");
-                        }
-                      }
-                      setFieldTouched("customFields." + label, true);
-                    }}
-                    name={option}
-                  />
-                }
-                label={option}
+                    setFieldValue("customFields." + label, newValues);
+                    if (newValues.length > 0) {
+                      setFieldError("customFields." + label, "");
+                    }
+                  }
+                  setFieldTouched("customFields." + label, true);
+                }}
+                onBlur={() => {
+                  if (values.customFields[label] === undefined) {
+                    setFieldError("customFields." + label, "");
+                  }
+                  setFieldTouched("customFields." + label, true);
+                }}
               />
-            ))}
-          </FormGroup>
-        </FormControl>
+              <Label htmlFor={`${label}-${option}`} className="capitalize">
+                {option}
+              </Label>
+            </div>
+          ))}
+        </div>
       );
 
     case "date":
       return (
         <DatePicker
-          {...commonProps}
           value={new Date(values.customFields[label] as string)}
           onChange={(e) =>
-            setFieldValue("customFields." + label, e?.toISOString() || "")
+            setFieldValue(
+              "customFields." + label,
+              e && e instanceof Date ? e.toISOString() : ""
+            )
           }
-          onBlur={() => setFieldTouched("customFields." + label, true)}
+          onClose={() => setFieldTouched("customFields." + label, true)}
         />
       );
 
@@ -284,7 +277,10 @@ export const RenderField = ({
               : null
           }
           onChange={(e) =>
-            setFieldValue("customFields." + label, e?.toISOString() || "")
+            setFieldValue(
+              "customFields." + label,
+              e && e instanceof Date ? e.toISOString() : ""
+            )
           }
           onBlur={() => setFieldTouched("customFields." + label, true)}
         />
@@ -292,47 +288,34 @@ export const RenderField = ({
 
     case "radio":
       return (
-        <FormControl className="flex">
+        <div className="flex items-center gap-4">
           <RadioGroup
-            {...commonProps}
             value={values.customFields[label] as string}
-            onChange={(e) =>
-              setFieldValue("customFields." + label, e.target.value)
+            onValueChange={(value) =>
+              setFieldValue("customFields." + label, value)
             }
-            onBlur={() => setFieldTouched("customFields." + label, true)}
-            name={label}
-            className=""
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              gap: "10px",
-            }}
+            className="flex flex-row gap-4"
           >
             {options?.map((option) => (
-              <FormControlLabel
-                key={option}
-                className="capitalize"
-                value={option}
-                control={<Radio />}
-                label={option}
-              />
+              <div key={option} className="flex items-center space-x-2">
+                <RadioGroupItem value={option} id={`${label}-${option}`} />
+                <Label htmlFor={`${label}-${option}`} className="capitalize">
+                  {option}
+                </Label>
+              </div>
             ))}
           </RadioGroup>
           <Button
-            style={{
-              marginLeft: "-10px",
-              color: "rgb(121, 121, 121)",
-              display: "contents",
-            }}
             variant="link"
             onClick={(e) => {
               e.preventDefault();
               setFieldValue("customFields." + label, "");
             }}
+            className="text-muted-foreground"
           >
             Clear
           </Button>
-        </FormControl>
+        </div>
       );
 
     case "file":

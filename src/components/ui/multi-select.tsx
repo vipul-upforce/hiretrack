@@ -24,8 +24,8 @@ interface MultiSelectProps {
   setOpen: (open: boolean) => void;
   value: string;
   setValue: (value: string) => void;
-  placeholder?:string
-  options?: { value: string; label: string }[] | [];
+  placeholder?: string;
+  options?: { value: string; label: string }[];
 }
 
 export function MultiSelect({
@@ -33,8 +33,8 @@ export function MultiSelect({
   setOpen,
   value,
   setValue,
-  options=[],
-  placeholder=''
+  options = [],
+  placeholder = "",
 }: MultiSelectProps) {
   return (
     <Popover open={open} onOpenChange={setOpen}>

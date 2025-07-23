@@ -19,7 +19,7 @@ import {
 // import { DatePicker } from "@/components/ui/date-picker";
 import { LinkIcon } from "lucide-react";
 import RichTextEditor from "@/components/ui/rte/RichTextEditor";
-import { Checkbox } from "@mui/material";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useSanitizeFiles } from "@/hooks/useSanitizeFiles";
 // import { Checkbox } from "@mui/material";
 // import { Checkbox } from "@mui/material";
@@ -225,29 +225,14 @@ export function JobForm(props: JobFormProps) {
           </div> */}
           <div className="space-y-2 flex items-center gap-2">
             <Checkbox
-              sx={{
-                color: "black",
-                // borderRadius: "20px",
-                "&.Mui-checked": {
-                  // borderRadius: "20px",
-                  color: "black",
-                },
-              }}
               id="salary.isPrivate"
-              name="salary.isPrivate"
-              // type="checkbox"
-              checked={values.salary?.isPrivate === true ? true : false}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              className="h-4 w-4"
-            />
-            <Label
-              className="m-0 p-0"
-              style={{
-                margin: 0,
+              checked={values.salary?.isPrivate === true}
+              onCheckedChange={(checked) => {
+                setFieldValue("salary.isPrivate", checked);
               }}
-              htmlFor="salary.isPrivate"
-            >
+              onBlur={handleBlur}
+            />
+            <Label className="m-0 p-0" htmlFor="salary.isPrivate">
               Keep Salary Private
             </Label>
           </div>

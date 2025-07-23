@@ -30,7 +30,7 @@ export function AddSpecificCustomFieldButton({
 
   return (
     <div>
-      <Button type="button" onClick={() => setIsOpen(true)}>
+      <Button type="button" variant="secondary" onClick={() => setIsOpen(true)}>
         {/* <Plus className="h-4 w-4 mr-2" /> */}
         Meta Fields
       </Button>

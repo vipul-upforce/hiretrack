@@ -13,6 +13,7 @@ import {
   DialogFooter,
   DialogTrigger,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -164,6 +165,10 @@ const AddRemarksDialog = ({
       <DialogContent className="w-[700px] p-6">
         <DialogHeader>
           <DialogTitle>Add Remarks for {candidate.name}</DialogTitle>
+          <DialogDescription>
+            Add your observations and feedback for this candidate. You can
+            include a rating and set privacy preferences.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <Textarea
@@ -183,6 +188,17 @@ const AddRemarksDialog = ({
                 }}
                 defaultValue={0}
                 precision={0.5}
+                sx={{
+                  "& .MuiRating-iconEmpty": {
+                    color: "rgba(255, 255, 255, 0.3)",
+                  },
+                  "& .MuiRating-iconFilled": {
+                    color: "#fbbf24",
+                  },
+                  "& .MuiRating-iconHover": {
+                    color: "#f59e0b",
+                  },
+                }}
               />
             </div>
             <div className="flex flex-row items-center justify-evenly">
@@ -212,7 +228,12 @@ const AddRemarksDialog = ({
           <Button variant="secondary" onClick={() => onOpenChange(false)}>
             No Remarks
           </Button>
-          <Button onClick={handleAddRemark}>Add Remark</Button>
+          <Button
+            onClick={handleAddRemark}
+            className="bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-500 dark:hover:bg-blue-600"
+          >
+            Add Remark
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

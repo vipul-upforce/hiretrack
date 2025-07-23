@@ -22,6 +22,7 @@ import * as jose from "jose";
 import CryptoJS from "crypto-js";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { useSanitizeFiles } from "@/hooks/useSanitizeFiles";
+import { useTheme } from "@/components/theme-provider";
 
 export interface PortalLogo {
   id: string;
@@ -99,6 +100,7 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
   const [headerFileName, setHeaderFileName] = useState<string | null>(null);
   const [footerFileName, setFooterFileName] = useState<string | null>(null);
   const { sanitizeFiles } = useSanitizeFiles();
+  const { theme } = useTheme();
 
   const [headerCode, setHeaderCode] = useState(
     `<header style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1rem 0;">
@@ -480,8 +482,10 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
                               setHeaderCode(value || "");
                               setFieldValue("headerFile", value);
                             }}
-                            options={editorOptions}
-                            theme="vs-light"
+                            options={{
+                              ...editorOptions,
+                              theme: theme === "dark" ? "vs-dark" : "vs-light",
+                            }}
                             className="font-mono text-xs min-h-[400px] border-2 rounded-md"
                           />
                         </div>
@@ -502,8 +506,10 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
                               setFooterCode(value || "");
                               setFieldValue("footerFile", value);
                             }}
-                            options={editorOptions}
-                            theme="vs-light"
+                            options={{
+                              ...editorOptions,
+                              theme: theme === "dark" ? "vs-dark" : "vs-light",
+                            }}
                             className="font-mono text-xs min-h-[400px] border-2 rounded-md"
                           />
                         </div>
@@ -538,8 +544,8 @@ export default function PortalConfig({ onClose }: { onClose: () => void }) {
               </div>
             </div>
             <div className="flex justify-end gap-3 pt-[0.28rem] sm:pt-6 md:pt-8 lg:pt-2 border-t w-full">
-              <Button type="submit" disabled={isSubmitting}>
-                Save Settings
+              <Button type="submit" disabled={isSubmitting} variant="primary">
+                Save
               </Button>
             </div>
           </div>

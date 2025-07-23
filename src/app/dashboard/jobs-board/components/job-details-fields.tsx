@@ -25,17 +25,20 @@ export const jobDetailsFields: FieldConfig[] = [
   {
     label: "Job Description",
     render: (job) => (
-      <ExpandableDescription
-        description={job.description || "No description Found"}
-      />
+      <div className="text-sm break-words whitespace-pre-wrap">
+        {job.description || "No description Found"}
+      </div>
     ),
   },
   {
     label: "Required Skills",
     render: (job) => (
       <div className="flex flex-wrap gap-2">
-        {job.skills.map((skill) => (
-          <Badge key={skill} variant="secondary">
+        {job.skills.map((skill, skillIndex) => (
+          <Badge
+            key={`${job._id}-skill-${skillIndex}-${skill}`}
+            variant="secondary"
+          >
             {skill}
           </Badge>
         ))}
@@ -195,6 +198,10 @@ export const jobDetailsFields: FieldConfig[] = [
       job.customFields && Object.keys(job.customFields).length > 0
         ? true
         : false,
-    render: (job) => <CustomFieldsData customFields={job.customFields} />,
+    render: (job) => (
+      <CustomFieldsData
+        customFields={{ customFields: job.customFields || {} } as any}
+      />
+    ),
   },
 ];

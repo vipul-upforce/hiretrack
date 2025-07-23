@@ -45,7 +45,7 @@ interface SortField {
 const MenuItem = ({ icon, label, onClick, className = "" }: MenuItemProps) => (
   <button
     className={cn(
-      "flex items-center justify-between w-full px-2 py-2 text-left hover:bg-gray-100 focus:outline-none focus:bg-gray-100",
+      "flex items-center justify-between w-full px-2 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700",
       className
     )}
     onClick={onClick}
@@ -129,8 +129,8 @@ export function LaneOptionsMenu({
       <DropdownMenuTrigger
         asChild
         className={cn(
-          "p-1.5 rounded-full hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-colors overflow-x-visible",
-          isOpen ? "bg-gray-200" : ""
+          "p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-600 transition-colors overflow-x-visible",
+          isOpen ? "bg-gray-200 dark:bg-gray-700" : ""
         )}
       >
         <Button
@@ -177,9 +177,9 @@ export function LaneOptionsMenu({
                 <button
                   key={field.value}
                   className={cn(
-                    "flex items-center px-2 py-1 rounded hover:bg-gray-100 text-left transition-colors justify-between",
+                    "flex items-center px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-left transition-colors justify-between",
                     selectedSortField === field.value
-                      ? "bg-gray-100 font-semibold"
+                      ? "bg-gray-100 dark:bg-gray-700 font-semibold"
                       : ""
                   )}
                   onClick={() => {

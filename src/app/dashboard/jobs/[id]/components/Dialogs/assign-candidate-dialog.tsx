@@ -99,7 +99,7 @@ export function AssignCandidateDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[80vw] xl:max-w-[50vw] h-[90vh] p-0 overflow-hidden flex flex-col justify-start">
+      <DialogContent className="sm:max-w-[40vw] xl:max-w-[25vw] h-[55vh] p-0 overflow-hidden flex flex-col justify-start">
         <DialogHeader className="px-6 pt-6">
           <DialogTitle className="flex justify-between align-center">
             Assign Candidate
@@ -243,7 +243,11 @@ export function AssignCandidateDialog({
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={isSubmitting}>
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-500 dark:hover:bg-blue-600"
+                  >
                     {isSubmitting ? "Assigning..." : "Assign"}
                   </Button>
                 </div>

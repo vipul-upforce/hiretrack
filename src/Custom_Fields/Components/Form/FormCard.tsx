@@ -95,13 +95,14 @@ function FormIDCard({ formId, formName, fields }: CardProps) {
         </CardHeader>
         <CardContent className="flex justify-end gap-2">
           <Button
+            variant="outline"
             className="z-100"
             onClick={(e) => {
               e.stopPropagation();
               setShowDeleteDialog(true);
             }}
           >
-            <TrashIcon className="w-4 h-4" />
+            <TrashIcon className="w-4 h-4 text-red-500" />
           </Button>
           {/* <Button
             className="z-100 bg-red-500 text-white"
@@ -135,7 +136,7 @@ function FormIDCard({ formId, formName, fields }: CardProps) {
               Cancel
             </Button>
             <Button
-              variant="destructive"
+              variant="outline"
               onClick={(event) => {
                 handleDeleteAllInd(event);
                 setShowDeleteAllIndDialog(false);
@@ -163,7 +164,7 @@ function FormIDCard({ formId, formName, fields }: CardProps) {
               Cancel
             </Button>
             <Button
-              variant="destructive"
+              variant="outline"
               onClick={(event) => {
                 handleDelete(event);
                 setShowDeleteDialog(false);

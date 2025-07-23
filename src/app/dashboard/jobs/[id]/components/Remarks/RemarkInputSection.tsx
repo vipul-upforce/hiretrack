@@ -7,7 +7,7 @@ import Rating from "@mui/material/Rating";
 
 import { User } from "@/lib/features/users/usersApi";
 import { Candidate } from "@/types/candidate";
-import { Checkbox } from "@mui/material";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useState } from "react";
 
 interface RemarkInputSectionProps {
@@ -73,6 +73,22 @@ export default function RemarkInputSection({
               }}
               defaultValue={0}
               precision={0.5}
+              sx={{
+                "& .MuiRating-iconEmpty": {
+                  color: "rgb(156 163 175)", // gray-400 for light mode
+                },
+                "& .MuiRating-iconFilled": {
+                  color: "#f59e0b", // amber-500
+                },
+                "& .MuiRating-iconHover": {
+                  color: "#d97706", // amber-600
+                },
+                "@media (prefers-color-scheme: dark)": {
+                  "& .MuiRating-iconEmpty": {
+                    color: "rgb(156 163 175)", // gray-400 for dark mode
+                  },
+                },
+              }}
             />
           </div>
           <div className="flex flex-row items-center justify-evenly">
@@ -82,8 +98,14 @@ export default function RemarkInputSection({
                   <>
                     <div className="flex flex-row items-center justify-center space-x-2">
                       <Checkbox
-                        onChange={handleFollowUpCheckboxChange}
-                        inputProps={{ "aria-label": "Remove follow-up" }}
+                        onCheckedChange={(checked) => {
+                          if (checked && hasFollowUp) {
+                            setRemoveFU(true);
+                          } else {
+                            setRemoveFU(false);
+                          }
+                        }}
+                        aria-label="Remove follow-up"
                       />
                       <Label htmlFor="followup-checkbox" className="text-sm">
                         Remove Follow-up
@@ -97,11 +119,14 @@ export default function RemarkInputSection({
                 <>
                   <div className="flex items-center space-x-2">
                     {isSubRemarkPrivate ? (
-                      <EyeOff className="h-4 w-4 text-gray-500" />
+                      <EyeOff className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                     ) : (
-                      <Eye className="h-4 w-4 text-gray-500" />
+                      <Eye className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                     )}
-                    <Label htmlFor="privacy-toggle" className="text-sm">
+                    <Label
+                      htmlFor="privacy-toggle"
+                      className="text-sm text-gray-700 dark:text-gray-300"
+                    >
                       {isSubRemarkPrivate ? "Private" : "Public"}
                     </Label>
                   </div>
@@ -118,6 +143,7 @@ export default function RemarkInputSection({
             </div>
 
             <Button
+              variant="dark-primary"
               onClick={() => {
                 removeFU && handleRemoveFollowUp();
                 handleAddRemark();
