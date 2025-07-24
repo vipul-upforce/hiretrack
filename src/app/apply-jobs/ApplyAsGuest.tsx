@@ -418,9 +418,9 @@ export function ApplyAsGuestDialog({
             enableReinitialize={false}
           >
             {({ isSubmitting, errors, touched, setFieldValue }) => (
-              <Form className="flex flex-col h-full overflow-hidden">
+              <Form className="flex flex-col flex-1 min-h-0 sticky top-0 overflow-y-clip">
                 <FormUpdater parsedResumeData={parsedResumeData} />
-                <div className="flex-1 overflow-hidden px-4 py-2">
+                <div className="flex-1 overflow-hidden px-4 py-2 border-t">
                   <CandidateForm
                     onFileUpload={async (file: File) => {
                       setFieldValue("resume", file);
