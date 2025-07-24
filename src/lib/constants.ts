@@ -813,5 +813,5 @@ export const editorOptions = {
   formatOnType: true,
 };
 
-export const wierdFileNamePattern = /[^a-zA-Z0-9().]/g;
+export const wierdFileNamePattern = /[^a-zA-Z0-9(). ]/g;
 // export const wierdFileNamePattern = /^(?!.*[()]{2,})[a-zA-Z0-9()]+$/g;
