@@ -22,6 +22,7 @@ import PasswordField from "@/components/ui/PasswordField";
 import TimePicker from "@/components/ui/time-picker";
 import DatePicker from "@/components/ui/datepicker";
 import { Button } from "@/components/ui/button";
+import { wierdFileNamePattern } from "@/lib/constants";
 
 interface FileData {
   base64: string;
@@ -69,6 +70,36 @@ const fileToBase64 = (file: File): Promise<string> => {
     reader.readAsDataURL(file);
     reader.onload = () => resolve(reader.result as string);
     reader.onerror = (error) => reject(error);
+  });
+};
+
+const sanitizeFiles = (files: any[]): any[] => {
+  return files.map((file) => {
+    // debugger;
+    // Handle standard File objects
+    if (file instanceof File) {
+      const sanitizedBaseName = file.name
+        .replace(wierdFileNamePattern, "")
+        .replace("/ /", "_");
+      return new File([file], sanitizedBaseName, {
+        type: file.type,
+        lastModified: file.lastModified,
+      });
+    }
+
+    // Handle custom file objects with URL - while renaming
+    if (file && typeof file === "object" && "name" in file) {
+      const sanitizedBaseName = file.name
+        .replace(wierdFileNamePattern, "")
+        .replace("/ /", "_");
+      return {
+        ...file,
+        name: sanitizedBaseName,
+      };
+    }
+
+    // Fallback: return unchanged if neither type matches
+    return file;
   });
 };
 
@@ -342,9 +373,10 @@ export const RenderField = ({
             {...commonProps}
             value={values.customFields[label] as FileData[]}
             onFilesChange={async (files: File[] | FileData[]) => {
+              const sanitizedFiles = sanitizeFiles(files);
               try {
                 const base64Files = await Promise.all(
-                  files.map(async (file) => {
+                  sanitizedFiles.map(async (file) => {
                     let fileurl;
                     if ((file as FileData).base64) {
                       fileurl = (file as FileData).base64;
@@ -374,14 +406,29 @@ export const RenderField = ({
                 // Handle error
               }
             }}
+            // existingFiles={
+            //   Array.isArray(values.customFields[label])
+            //     ? (() => {})() &&
+            //       (values.customFields[label] as FileData[]).map((file) => ({
+            //         name: file.name,
+            //         type: file.type,
+            //         size: file.size,
+            //         preview: file.base64,
+            //       }))
+            //     : []
+            // }
             existingFiles={
               Array.isArray(values.customFields[label])
-                ? (values.customFields[label] as FileData[]).map((file) => ({
-                    name: file.name,
-                    type: file.type,
-                    size: file.size,
-                    preview: file.base64,
-                  }))
+                ? sanitizeFiles(
+                    (values.customFields[label] as FileData[]).map((file) => ({
+                      // id: file.id || crypto.randomUUID(), // Add unique ID
+                      name: file.name,
+                      type: file.type,
+                      size: file.size,
+                      url: file.base64 || "", // Map base64 to url
+                      preview: file.base64,
+                    }))
+                  )
                 : []
             }
           />
