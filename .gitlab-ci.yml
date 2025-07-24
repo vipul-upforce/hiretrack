@@ -1,0 +1,62 @@
+# Use Node.js 20 for consistency with your Next.js project
+image: node:20
+
+# No services needed unless your app requires MySQL, Redis, or PostgreSQL
+# Comment out or remove if not needed
+# services:
+#   - mysql:latest
+#   - redis:latest
+#   - postgres:latest
+
+# Cache node_modules to speed up builds
+cache:
+  paths:
+    - node_modules/
+
+stages:
+  - build
+  - deploy
+
+build:
+  stage: build
+  script:
+    - npm ci
+    - npm run build
+  artifacts:
+    paths:
+      - .
+    exclude:
+      - .git/**
+      - "*.log"
+  only:
+    - main-backup
+
+deploy:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache rsync openssh-client
+    - mkdir -p ~/.ssh
+    - echo "$VM_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan $VM_HOST >> ~/.ssh/known_hosts
+  script:
+    # Check if package.json or package-lock.json changed
+    - |
+      if git diff HEAD^ HEAD -- package.json package-lock.json > /dev/null; then
+        echo "No changes to package.json or package-lock.json. Skipping node_modules sync."
+        rsync -avz --exclude='.git' --exclude='*.log' --exclude='node_modules' -e "ssh -i ~/.ssh/id_rsa" ./ $VM_USER@$VM_HOST:$VM_DEST_DIR/$PROJECT_DIR
+      else
+        echo "Changes detected in package.json or package-lock.json. Syncing node_modules."
+        rsync -avz --exclude='.git' --exclude='*.log' -e "ssh -i ~/.ssh/id_rsa" ./ $VM_USER@$VM_HOST:$VM_DEST_DIR/$PROJECT_DIR
+      fi
+    # Deploy on VM
+    - |
+      ssh -i ~/.ssh/id_rsa $VM_USER@$VM_HOST << 'EOF'
+        cd $VM_DEST_DIR/$PROJECT_DIR
+        cp $VM_DEST_DIR/.env.production .env
+        pm2 restart $PROJECT_DIR || pm2 start npm --name "$PROJECT_DIR" -- start
+      EOF
+  environment: production
+  only:
+    - main-backup
