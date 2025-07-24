@@ -147,7 +147,7 @@ export function CandidateForm({
     };
   }, [values.resume]); // Only depend on values.resume
 
-  console.log(tempResumeUrl, "tempResumeUrl");
+  // console.log(tempResumeUrl, "tempResumeUrl");
   return (
     <div className="w-full h-full flex flex-col" ref={formRef}>
       {/* Mobile Layout - Stacked */}

@@ -108,6 +108,7 @@ const convertFileToBase64 = (file: FileOrAttachment): Promise<string> => {
 };
 
 export const scrollToError = (errors: FormikErrors<any>) => {
+  // debugger;
   if (!errors || Object.keys(errors).length === 0) return;
 
   const firstErrorKey = Object.keys(errors)[0];
@@ -121,9 +122,11 @@ export const scrollToError = (errors: FormikErrors<any>) => {
     const cfKey = Object.keys(customFieldErrors)[0];
     if (cfKey) {
       // Use name attribute for Formik fields
-      element = document.querySelector(
-        `[name="customFields.${cfKey}"]`
-      ) as HTMLElement;
+      element =
+        (document.querySelector(
+          `[id="customFields.${cfKey}"]`
+        ) as HTMLElement) ||
+        (document.querySelector(`[data-field-name="${cfKey}"]`) as HTMLElement);
     }
   } else {
     // Use name attribute for top-level fields

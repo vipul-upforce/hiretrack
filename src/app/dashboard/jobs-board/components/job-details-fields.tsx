@@ -198,10 +198,6 @@ export const jobDetailsFields: FieldConfig[] = [
       job.customFields && Object.keys(job.customFields).length > 0
         ? true
         : false,
-    render: (job) => (
-      <CustomFieldsData
-        customFields={{ customFields: job.customFields || {} } as any}
-      />
-    ),
+    render: (job) => <CustomFieldsData customFields={job.customFields || {}} />,
   },
 ];

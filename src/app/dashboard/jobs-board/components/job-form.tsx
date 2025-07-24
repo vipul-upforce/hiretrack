@@ -126,7 +126,7 @@ export function JobForm(props: JobFormProps) {
           name="description"
           placeholder="Enter job description..."
           className="min-h-[100px] p-3"
-          maxLength={2000}
+          maxLength={10000}
           value={values?.description || ""}
           onChange={(val) => setFieldValue("description", val)}
           onBlur={() => setFieldTouched("description", true)} // ✅ fixed

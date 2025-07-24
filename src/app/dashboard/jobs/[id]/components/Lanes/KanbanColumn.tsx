@@ -201,7 +201,7 @@ export function KanbanColumn({
         <div
           ref={provided.innerRef}
           {...provided.draggableProps}
-          className="w-96 flex-shrink-0 mt-1"
+          className="w-96 flex-shrink-0 mt-1 bg-card"
           style={{
             ...provided.draggableProps.style,
             userSelect: "none",

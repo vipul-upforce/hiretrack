@@ -85,7 +85,7 @@ function CustomFields({
   // Create useField hooks for each custom field
   const customFieldHooks: { [key: string]: any } = {};
   // debugger;
-  console.log("ROLE AT CF:::::: ", role);
+  // console.log("ROLE AT CF:::::: ", role);
   if (formNameObject?.fields) {
     formNameObject.fields.forEach((field: CustomField) => {
       if (field.jobId || field.candidateId) return;
