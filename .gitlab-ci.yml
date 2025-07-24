@@ -1,12 +1,12 @@
 # Use Node.js 20 for consistency with your Next.js project
 image: node:20
 
-# No services needed unless your app requires MySQL, Redis, or PostgreSQL
-# Comment out or remove if not needed
-# services:
-#   - mysql:latest
-#   - redis:latest
-#   - postgres:latest
+# Define variables
+variables:
+  PROJECT_DIR: "hiretrack" # Replace with your app name, e.g., hiretrack
+  VM_DEST_DIR: "/home/deployer/apps" # Replace with your VM path
+  VM_HOST: "$VM_HOST"
+  VM_USER: "$VM_USER"
 
 # Cache node_modules to speed up builds
 cache:
@@ -20,7 +20,7 @@ stages:
 build:
   stage: build
   script:
-    - npm ci
+    - npm ci --legacy-peer-deps
     - npm run build
   artifacts:
     paths:
@@ -35,7 +35,7 @@ deploy:
   stage: deploy
   image: alpine:latest
   before_script:
-    - apk add --no-cache rsync openssh-client
+    - apk add --no-cache rsync openssh-client git
     - mkdir -p ~/.ssh
     - echo "$VM_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
@@ -43,7 +43,7 @@ deploy:
   script:
     # Check if package.json or package-lock.json changed
     - |
-      if git diff HEAD^ HEAD -- package.json package-lock.json > /dev/null; then
+      if git diff HEAD^ HEAD -- package.json package-lock.json > /dev/null 2>&1; then
         echo "No changes to package.json or package-lock.json. Skipping node_modules sync."
         rsync -avz --exclude='.git' --exclude='*.log' --exclude='node_modules' -e "ssh -i ~/.ssh/id_rsa" ./ $VM_USER@$VM_HOST:$VM_DEST_DIR/$PROJECT_DIR
       else
@@ -53,9 +53,14 @@ deploy:
     # Deploy on VM
     - |
       ssh -i ~/.ssh/id_rsa $VM_USER@$VM_HOST << 'EOF'
-        cd $VM_DEST_DIR/$PROJECT_DIR
-        cp $VM_DEST_DIR/.env.production .env
-        pm2 restart $PROJECT_DIR || pm2 start npm --name "$PROJECT_DIR" -- start
+        if [ -d "$VM_DEST_DIR/$PROJECT_DIR" ]; then
+          cd $VM_DEST_DIR/$PROJECT_DIR
+          cp $VM_DEST_DIR/.env.production .env
+          pm2 restart $PROJECT_DIR || pm2 start npm --name "$PROJECT_DIR" -- start
+        else
+          echo "Error: Directory $VM_DEST_DIR/$PROJECT_DIR does not exist."
+          exit 1
+        fi
       EOF
   environment: production
   only:
