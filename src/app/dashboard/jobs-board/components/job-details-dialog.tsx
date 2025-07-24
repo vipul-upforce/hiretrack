@@ -49,15 +49,17 @@ export function JobDetailsDialog({
   );
 
   const body = isEditing ? (
-    <EditJobForm
-      job={job}
-      onSave={(updatedJob) => {
-        onJobUpdate?.(updatedJob);
-        setIsEditing(false);
-        onOpenChange(false);
-      }}
-      onCancel={() => setIsEditing(false)}
-    />
+    <div className="flex-1 overflow-y-auto px-0  space-y-6 ">
+      <EditJobForm
+        job={job}
+        onSave={(updatedJob) => {
+          onJobUpdate?.(updatedJob);
+          setIsEditing(false);
+          onOpenChange(false);
+        }}
+        onCancel={() => setIsEditing(false)}
+      />
+    </div>
   ) : (
     <div className="flex-1 overflow-y-auto px-6 py-4 pt-4 space-y-6 border-t">
       {jobDetailsFields.map((field, index) => {

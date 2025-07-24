@@ -203,7 +203,6 @@ export const RenderField = ({
           {options?.map((option) => (
             <div key={option} className="flex items-center space-x-2">
               <Checkbox
-                {...commonProps}
                 id={`${label}-${option}`}
                 className="capitalize"
                 checked={(values.customFields[label] as string[])?.includes(
