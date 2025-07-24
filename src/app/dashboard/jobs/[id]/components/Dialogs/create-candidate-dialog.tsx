@@ -442,7 +442,7 @@ export function CreateCandidateDialog({
             values,
             setFieldValue,
           }) => (
-            <Form className="flex flex-col flex-1 min-h-0">
+            <Form className="flex flex-col flex-1 min-h-0 sticky top-0 overflow-y-clip">
               <FormUpdater parsedResumeData={parsedResumeData} />
               <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 pt-0 h-full">
                 <CandidateForm
@@ -457,7 +457,7 @@ export function CreateCandidateDialog({
                   }}
                 />
               </div>
-              <div className="flex-shrink-0 flex justify-end space-x-2 border-t bg-background px-4 sm:px-6 py-3 sm:py-4">
+              <div className="flex-shrink-0  flex justify-end bottom-0 space-x-2 border-t bg-background px-4 sm:px-6 py-3 sm:py-4">
                 <Button
                   type="button"
                   variant="outline"
