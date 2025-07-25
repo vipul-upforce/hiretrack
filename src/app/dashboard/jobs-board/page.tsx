@@ -157,6 +157,7 @@ export default function KanbanPage() {
     // Update local state first
     const newColumns = [...columns];
     const sourceJobs = [...sourceColumn.jobs];
+
     const destJobs =
       source.droppableId === destination.droppableId
         ? sourceJobs
@@ -181,6 +182,9 @@ export default function KanbanPage() {
 
     setColumns(newColumns);
 
+    if (showArchived) {
+      return;
+    }
     // Then update the database
     try {
       await updateJobStatus({
