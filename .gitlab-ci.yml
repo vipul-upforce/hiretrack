@@ -40,9 +40,11 @@ build:
     - npm ci --legacy-peer-deps
     # Skip linting (temporary fix)
     - npx next build
+    # - rm -r node_modules
+    # - npm i next --force
     # Create tarball in a temp directory, excluding .next and server.log
     - mkdir -p temp
-    - tar --exclude='./node_modules' --exclude='./.git' --exclude='./temp' -czvf temp/hiretrack-v1-gl.tar.gz .
+    - tar --exclude='./.git' --exclude='./temp' -czvf temp/hiretrack-v1-gl.tar.gz .
     # Move tarball to project root and clean up
     - mv temp/hiretrack-v1-gl.tar.gz .
     - rm -rf temp
