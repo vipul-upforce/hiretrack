@@ -64,7 +64,6 @@ deploy:
     - |
       echo "Transferring hiretrack-v1-gl.tar.gz to VM..."
       export SSHPASS="$VM_PASSWORD"
-      echo "$SSHPASS"
       sshpass -e scp -o StrictHostKeyChecking=no hiretrack-v1-gl.tar.gz root@$VM_HOST:$VM_DEST_DIR
     # Extract and deploy on VM
     - |
@@ -74,9 +73,10 @@ deploy:
         rm -rf hiretrack-latest
         mkdir -p hiretrack-latest
         tar -xzvf hiretrack-v1-gl.tar.gz -C hiretrack-latest
-        cd hiretrack-latest
+        mv hiretrack-latest hiretrack-gl
+        cd hiretrack-gl
         cp /root/.env.production .env.local
-        pm2 restart hiretrack || pm2 start npm --name "hiretrack-demo" -- start
+        pm2 kill && pm2 start npm --name "hiretrack-deployed-by-gitlab" -- start
         # Clean up the tarball
         rm -f /root/hiretrack-v1-gl.tar.gz
       EOF
