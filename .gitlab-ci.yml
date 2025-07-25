@@ -21,8 +21,8 @@ build:
     # Create .env file for build
     - |
       echo "MONGODB_URI=$MONGODB_URI" > .env
-      echo "NEXT_PUBLIC_RECAPTCHA_SITE_KEY=$NEXT_PUBLIC_RECAPTCHA_SITE_KEY" > .env
-      echo "RECAPTCHA_SECRET_KEY=$RECAPTCHA_SECRET_KEY" > .env
+      echo "NEXT_PUBLIC_RECAPTCHA_SITE_KEY=$NEXT_PUBLIC_RECAPTCHA_SITE_KEY" >> .env
+      echo "RECAPTCHA_SECRET_KEY=$RECAPTCHA_SECRET_KEY" >> .env
       # Add other variables if needed, e.g.:
       # echo "NEXTAUTH_SECRET=$NEXTAUTH_SECRET" >> .env
     - npm ci --legacy-peer-deps
