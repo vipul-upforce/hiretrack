@@ -1,12 +1,10 @@
-# Use Node.js 20 for consistency with your Next.js project
-image: node:20
+# Use Node.js 20 for your Next.js project
+image: alpine:latest
 
 # Define variables
 variables:
-  PROJECT_DIR: "hiretrack" # Replace with your app name, e.g., hiretrack
-  VM_DEST_DIR: "/home/deployer/apps" # Replace with your VM path
+  VM_DEST_DIR: "/root" # Where tarball is sent and extracted
   VM_HOST: "$VM_HOST"
-  VM_USER: "$VM_USER"
 
 # Cache node_modules to speed up builds
 cache:
@@ -19,15 +17,14 @@ stages:
 
 build:
   stage: build
+  image: node:20
   script:
     - npm ci --legacy-peer-deps
     - npm run build
+    - tar -czvf hiretrack-v1.tar.gz .
   artifacts:
     paths:
-      - .
-    exclude:
-      - .git/**
-      - "*.log"
+      - hiretrack-v1.tar.gz
   only:
     - main-backup
 
@@ -35,32 +32,20 @@ deploy:
   stage: deploy
   image: alpine:latest
   before_script:
-    - apk add --no-cache rsync openssh-client git
-    - mkdir -p ~/.ssh
-    - echo "$VM_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-    - chmod 600 ~/.ssh/id_rsa
-    - ssh-keyscan $VM_HOST >> ~/.ssh/known_hosts
+    - apk add --no-cache sshpass openssh-client
   script:
-    # Check if package.json or package-lock.json changed
+    # Transfer tarball to VM
     - |
-      if git diff HEAD^ HEAD -- package.json package-lock.json > /dev/null 2>&1; then
-        echo "No changes to package.json or package-lock.json. Skipping node_modules sync."
-        rsync -avz --exclude='.git' --exclude='*.log' --exclude='node_modules' -e "ssh -i ~/.ssh/id_rsa" ./ $VM_USER@$VM_HOST:$VM_DEST_DIR/$PROJECT_DIR
-      else
-        echo "Changes detected in package.json or package-lock.json. Syncing node_modules."
-        rsync -avz --exclude='.git' --exclude='*.log' -e "ssh -i ~/.ssh/id_rsa" ./ $VM_USER@$VM_HOST:$VM_DEST_DIR/$PROJECT_DIR
-      fi
-    # Deploy on VM
+      echo "Transferring hiretrack-v1.tar.gz to VM..."
+      sshpass -p "$VM_PASSWORD" scp -o StrictHostKeyChecking=no hiretrack-v1.tar.gz root@$VM_HOST:$VM_DEST_DIR
+    # Extract and deploy on VM
     - |
-      ssh -i ~/.ssh/id_rsa $VM_USER@$VM_HOST << 'EOF'
-        if [ -d "$VM_DEST_DIR/$PROJECT_DIR" ]; then
-          cd $VM_DEST_DIR/$PROJECT_DIR
-          cp $VM_DEST_DIR/.env.production .env
-          pm2 restart $PROJECT_DIR || pm2 start npm --name "$PROJECT_DIR" -- start
-        else
-          echo "Error: Directory $VM_DEST_DIR/$PROJECT_DIR does not exist."
-          exit 1
-        fi
+      sshpass -p "$VM_PASSWORD" ssh -o StrictHostKeyChecking=no root@$VM_HOST << 'EOF'
+        cd $VM_DEST_DIR
+        tar -xzvf hiretrack-v1.tar.gz -C hiretrack-latest
+        cd hiretrack-latest
+        cp /root/.env.production .env
+        pm2 restart hiretrack || pm2 start npm --name "hiretrack" -- start
       EOF
   environment: production
   only:
