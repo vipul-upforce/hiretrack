@@ -18,9 +18,12 @@ stages:
 build:
   stage: build
   script:
-    # Debug: Check if variables are available
+    # Debug: Check environment and variables
     - |
-      echo "Checking CI/CD variables at $(date):"
+      echo "Pipeline started at $(date -u) UTC"
+      echo "CI_PROJECT_URL=$CI_PROJECT_URL"
+      echo "CI_COMMIT_REF_NAME=$CI_COMMIT_REF_NAME"
+      echo "Checking CI/CD variables:"
       echo "VM_HOST=$VM_HOST"
       echo "MONGODB_URI=$MONGODB_URI"
       echo "NEXT_PUBLIC_RECAPTCHA_SITE_KEY=$NEXT_PUBLIC_RECAPTCHA_SITE_KEY"
@@ -37,7 +40,12 @@ build:
     - npm ci --legacy-peer-deps
     # Skip linting (temporary fix)
     - npx next build
-    - tar -czvf hiretrack-v1.tar.gz .
+    # Create tarball in a temp directory, excluding .next and server.log
+    - mkdir -p temp
+    - tar -czvf temp/hiretrack-v1.tar.gz .
+    # Move tarball to project root and clean up
+    - mv temp/hiretrack-v1.tar.gz .
+    - rm -rf temp
   artifacts:
     paths:
       - hiretrack-v1.tar.gz
