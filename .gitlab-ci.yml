@@ -58,14 +58,16 @@ deploy:
   before_script:
     - apk add --no-cache sshpass openssh-client
   script:
-    # Transfer tarball to VM
+    # Transfer tarball to VM using SSHPASS environment variable
     - |
       echo "Transferring hiretrack-v1-gl.tar.gz to VM..."
-      # Use single quotes to prevent variable expansion
-      sshpass -p '$VM_PASSWORD' scp -o StrictHostKeyChecking=no hiretrack-v1-gl.tar.gz root@$VM_HOST:$VM_DEST_DIR
+      export SSHPASS="$VM_PASSWORD"
+      echo "$SSHPASS"
+      sshpass -e scp -o StrictHostKeyChecking=no hiretrack-v1-gl.tar.gz root@$VM_HOST:$VM_DEST_DIR
     # Extract and deploy on VM
     - |
-      sshpass -p '$VM_PASSWORD' ssh -o StrictHostKeyChecking=no root@$VM_HOST << 'EOF'
+      export SSHPASS="$VM_PASSWORD"
+      sshpass -e ssh -o StrictHostKeyChecking=no root@$VM_HOST << 'EOF'
         cd /root
         rm -rf hiretrack-latest
         mkdir -p hiretrack-latest
