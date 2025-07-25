@@ -78,7 +78,7 @@ deploy:
         # cp /root/.env.production .env.local
         # pm2 kill && pm2 start "npm run start" --name "hiretrack-latest-deployed-by-gitlab"
         cd hiretrack-latest
-        pm2 start npm --name "hiretrack-latest-deployed-by-gitlab" -- start
+        pm2 kill && pm2 start npm --name "hiretrack-latest-deployed-by-gitlab" -- start
         # Clean up the tarball
         rm -f /root/hiretrack-v1-gl.tar.gz
       EOF
