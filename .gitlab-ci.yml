@@ -61,18 +61,20 @@ deploy:
     # Transfer tarball to VM
     - |
       echo "Transferring hiretrack-v1-gl.tar.gz to VM..."
-      echo "$VM_PASSWORD"
-      sshpass -p "$VM_PASSWORD" scp -o StrictHostKeyChecking=no hiretrack-v1-gl.tar.gz root@$VM_HOST:$VM_DEST_DIR
+      # Use single quotes to prevent variable expansion
+      sshpass -p '$VM_PASSWORD' scp -o StrictHostKeyChecking=no hiretrack-v1-gl.tar.gz root@$VM_HOST:$VM_DEST_DIR
     # Extract and deploy on VM
     - |
-      sshpass -p "$VM_PASSWORD" ssh -o StrictHostKeyChecking=no root@$VM_HOST << 'EOF'
-        cd $VM_DEST_DIR
+      sshpass -p '$VM_PASSWORD' ssh -o StrictHostKeyChecking=no root@$VM_HOST << 'EOF'
+        cd /root
         rm -rf hiretrack-latest
         mkdir -p hiretrack-latest
         tar -xzvf hiretrack-v1-gl.tar.gz -C hiretrack-latest
         cd hiretrack-latest
         cp /root/.env.production .env
         pm2 restart hiretrack || pm2 start npm --name "hiretrack" -- start
+        # Clean up the tarball
+        rm -f /root/hiretrack-v1-gl.tar.gz
       EOF
   environment: production
   only:
