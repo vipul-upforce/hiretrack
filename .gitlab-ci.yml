@@ -1,5 +1,5 @@
 # Use Node.js 20 for your Next.js project
-image: alpine:latest
+image: node:20
 
 # Define variables
 variables:
@@ -17,8 +17,14 @@ stages:
 
 build:
   stage: build
-  image: node:20
   script:
+    # Create .env file for build
+    - |
+      echo "MONGODB_URI=$MONGODB_URI" > .env
+      echo "NEXT_PUBLIC_RECAPTCHA_SITE_KEY=$NEXT_PUBLIC_RECAPTCHA_SITE_KEY" > .env
+      echo "RECAPTCHA_SECRET_KEY=$RECAPTCHA_SECRET_KEY" > .env
+      # Add other variables if needed, e.g.:
+      # echo "NEXTAUTH_SECRET=$NEXTAUTH_SECRET" >> .env
     - npm ci --legacy-peer-deps
     - npm run build
     - tar -czvf hiretrack-v1.tar.gz .
@@ -42,6 +48,8 @@ deploy:
     - |
       sshpass -p "$VM_PASSWORD" ssh -o StrictHostKeyChecking=no root@$VM_HOST << 'EOF'
         cd $VM_DEST_DIR
+        rm -rf hiretrack-latest
+        mkdir -p hiretrack-latest
         tar -xzvf hiretrack-v1.tar.gz -C hiretrack-latest
         cd hiretrack-latest
         cp /root/.env.production .env
