@@ -42,7 +42,7 @@ build:
     - npx next build
     # Create tarball in a temp directory, excluding .next and server.log
     - mkdir -p temp
-    - tar -czvf temp/hiretrack-v1.tar.gz .
+    - tar --exclude='./node_modules' --exclude='./.next' --exclude='./.git' --exclude='./temp' -czvf temp/hiretrack-v1.tar.gz .
     # Move tarball to project root and clean up
     - mv temp/hiretrack-v1.tar.gz .
     - rm -rf temp
@@ -68,7 +68,7 @@ deploy:
         cd $VM_DEST_DIR
         rm -rf hiretrack-latest
         mkdir -p hiretrack-latest
-        tar --exclude='./node_modules' --exclude='./.next' --exclude='./.git' --exclude='./temp' -czvf temp/hiretrack-v1.tar.gz .
+        tar -xzvf hiretrack-v1.tar.gz -C hiretrack-latest
         cd hiretrack-latest
         cp /root/.env.production .env
         pm2 restart hiretrack || pm2 start npm --name "hiretrack" -- start
