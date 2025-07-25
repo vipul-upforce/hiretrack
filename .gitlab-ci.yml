@@ -42,7 +42,7 @@ build:
     - npx next build
     # Create tarball in a temp directory, excluding .next and server.log
     - mkdir -p temp
-    - tar --exclude='./node_modules' --exclude='./.next' --exclude='./.git' --exclude='./temp' -czvf temp/hiretrack-v1.tar.gz .
+    - tar --exclude='./node_modules' --exclude='./.git' --exclude='./temp' -czvf temp/hiretrack-v1.tar.gz .
     # Move tarball to project root and clean up
     - mv temp/hiretrack-v1.tar.gz .
     - rm -rf temp
