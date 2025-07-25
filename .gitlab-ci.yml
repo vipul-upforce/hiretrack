@@ -75,8 +75,8 @@ deploy:
         rm -rf hiretrack-latest
         mkdir -p hiretrack-latest
         tar -xzvf hiretrack-v1-gl.tar.gz -C hiretrack-latest
-        cp /root/.env.production .env
-        pm2 kill && pm2 start npm --name "hiretrack-latest-deployed-by-gitlab" -- start
+        cp /root/.env.production .env.local
+        pm2 kill && pm2 start "npm run start" --name "hiretrack-latest-deployed-by-gitlab"
         # Clean up the tarball
         rm -f /root/hiretrack-v1-gl.tar.gz
       EOF
