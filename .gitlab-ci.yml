@@ -1,5 +1,5 @@
 # Use Node.js 20 for your Next.js project
-image: node:20
+image: node:20.17.0
 
 # Define variables
 variables:
@@ -75,7 +75,7 @@ deploy:
         rm -rf hiretrack-latest
         mkdir -p hiretrack-latest
         tar -xzvf hiretrack-v1-gl.tar.gz -C hiretrack-latest
-        cp /root/.env.production .env.local
+        # cp /root/.env.production .env.local
         pm2 kill && pm2 start "npm run start" --name "hiretrack-latest-deployed-by-gitlab"
         # Clean up the tarball
         rm -f /root/hiretrack-v1-gl.tar.gz
