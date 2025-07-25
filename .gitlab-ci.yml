@@ -75,8 +75,8 @@ deploy:
         mkdir -p hiretrack-latest
         tar -xzvf hiretrack-v1-gl.tar.gz -C hiretrack-latest
         cd hiretrack-latest
-        cp /root/.env.production .env
-        pm2 restart hiretrack || pm2 start npm --name "hiretrack" -- start
+        cp /root/.env.production .env.local
+        pm2 restart hiretrack || pm2 start npm --name "hiretrack-demo" -- start
         # Clean up the tarball
         rm -f /root/hiretrack-v1-gl.tar.gz
       EOF
