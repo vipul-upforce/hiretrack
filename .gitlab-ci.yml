@@ -42,13 +42,13 @@ build:
     - npx next build
     # Create tarball in a temp directory, excluding .next and server.log
     - mkdir -p temp
-    - tar --exclude='./node_modules' --exclude='./.git' --exclude='./temp' -czvf temp/hiretrack-v1.tar.gz .
+    - tar --exclude='./node_modules' --exclude='./.git' --exclude='./temp' -czvf temp/hiretrack-v1-gl.tar.gz .
     # Move tarball to project root and clean up
-    - mv temp/hiretrack-v1.tar.gz .
+    - mv temp/hiretrack-v1-gl.tar.gz .
     - rm -rf temp
   artifacts:
     paths:
-      - hiretrack-v1.tar.gz
+      - hiretrack-v1-gl.tar.gz
   only:
     - main-backup
 
@@ -60,15 +60,16 @@ deploy:
   script:
     # Transfer tarball to VM
     - |
-      echo "Transferring hiretrack-v1.tar.gz to VM..."
-      sshpass -p "$VM_PASSWORD" scp -o StrictHostKeyChecking=no hiretrack-v1.tar.gz root@$VM_HOST:$VM_DEST_DIR
+      echo "Transferring hiretrack-v1-gl.tar.gz to VM..."
+      echo "$VM_PASSWORD"
+      sshpass -p "$VM_PASSWORD" scp -o StrictHostKeyChecking=no hiretrack-v1-gl.tar.gz root@$VM_HOST:$VM_DEST_DIR
     # Extract and deploy on VM
     - |
       sshpass -p "$VM_PASSWORD" ssh -o StrictHostKeyChecking=no root@$VM_HOST << 'EOF'
         cd $VM_DEST_DIR
         rm -rf hiretrack-latest
         mkdir -p hiretrack-latest
-        tar -xzvf hiretrack-v1.tar.gz -C hiretrack-latest
+        tar -xzvf hiretrack-v1-gl.tar.gz -C hiretrack-latest
         cd hiretrack-latest
         cp /root/.env.production .env
         pm2 restart hiretrack || pm2 start npm --name "hiretrack" -- start
