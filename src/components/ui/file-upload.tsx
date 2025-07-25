@@ -76,7 +76,7 @@ export function FileUpload({
     isExisting: false,
   });
   const [user, setuser] = useState<User | null>(null);
-  const [droppedFiles, setDroppedFiles] = useState<string[]>();
+  // const [droppedFiles, setDroppedFiles] = useState<string[]>();
 
   useEffect(() => {
     (async () => {
@@ -102,18 +102,18 @@ export function FileUpload({
         setter?.(updatedFiles);
       } else {
         // Assuming renameFile.file is an object with a url property
+
         const updatedFiles = files.map((f) =>
           f === renameFile.file ? { ...f, name: newName } : f
         );
         setter?.(updatedFiles);
       }
-      setDroppedFiles((prev = []) => {
-        const combined = [...prev, newName];
-        return Array.from(new Set(combined));
-      });
+      // setDroppedFiles((prev = []) => {
+      //   const combined = [...prev, newName];
+      //   return Array.from(new Set(combined));
+      // });
     }
   };
-
   const handleRemoveFile = (fileNameToRemove: string) => {
     const updatedFiles = files.filter(
       (file) => file?.name !== fileNameToRemove
@@ -124,10 +124,10 @@ export function FileUpload({
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
       onFileSelect(acceptedFiles);
-      setDroppedFiles((prev = []) => {
-        const combined = [...prev, ...acceptedFiles.map((file) => file?.name)];
-        return Array.from(new Set(combined));
-      });
+      // setDroppedFiles((prev = []) => {
+      //   const combined = [...prev, ...acceptedFiles.map((file) => file?.name)];
+      //   return Array.from(new Set(combined));
+      // });
     },
     [onFileSelect]
   );
@@ -137,6 +137,7 @@ export function FileUpload({
     accept,
     maxFiles,
   });
+
   return (
     <div className="space-y-4" id={id}>
       <div
@@ -167,14 +168,24 @@ export function FileUpload({
         {existingFiles.map((file) => (
           <div
             key={file.id}
-            className="flex items-center justify-between p-2 border rounded"
+            className="flex items-center justify-between p-2 border rounded break-all"
           >
             <div className="flex items-center space-x-2">
               <FileIcon className="h-4 w-4" />
-              <span className="text-sm">{file?.name}</span>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-sm break-words max-w-[350px]">
+                {file?.name}
+              </span>
+              <span className="text-xs text-gray-500">
                 ({formatFileSize(file?.size)})
               </span>
+              <button
+                type="button"
+                className="p-2 hover:bg-muted rounded-md hover:text-red-500"
+                onClick={() => handleRemoveFile(file?.name)}
+                aria-label="Remove file"
+              >
+                <X className="h-4 w-4 text-muted-foreground" />
+              </button>
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -197,31 +208,34 @@ export function FileUpload({
         {files?.map((file) => (
           <div
             key={file?.name}
-            className="flex items-center justify-between p-2 border rounded"
+            className="flex items-center justify-between p-2 border rounded break-all w-full"
           >
             <div className="flex items-center space-x-2">
               <FileIcon className="h-4 w-4" />
-              <span className="text-sm">{file?.name}</span>
-              <span className="text-xs text-muted-foreground">
-                ({formatFileSize(file?.size)})
+              <span className="text-sm break-words max-w-[350px]">
+                {file?.name}
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              {isEdit && (
-                <button
-                  type="button"
-                  className="p-2 hover:bg-muted rounded-md"
-                  onClick={() =>
-                    setRenameFile({
-                      file,
-                      isExisting: false,
-                    })
-                  }
-                >
-                  <Pencil className="h-4 w-4 text-muted-foreground" />
-                </button>
-              )}
-              {droppedFiles?.includes(file?.name) && (
+            <div className="flex items-center space-x-4 justify-end">
+              <span className="text-xs text-gray-500">
+                ({formatFileSize(file?.size)})
+              </span>
+              <div className="flex items-center gap-2">
+                {isEdit && (
+                  <button
+                    type="button"
+                    className="p-2 hover:bg-muted rounded-md"
+                    onClick={() =>
+                      setRenameFile({
+                        file,
+                        isExisting: false,
+                      })
+                    }
+                  >
+                    <Pencil className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                )}
+                {/* {droppedFiles?.includes(file.name) && ( */}
                 <button
                   type="button"
                   className="p-2 hover:bg-muted rounded-md hover:text-red-500"
@@ -230,7 +244,8 @@ export function FileUpload({
                 >
                   <X className="h-4 w-4 text-muted-foreground" />
                 </button>
-              )}
+                {/* )} */}
+              </div>
             </div>
           </div>
         ))}

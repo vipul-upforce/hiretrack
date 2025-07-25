@@ -17,6 +17,8 @@ import InvalidPage from "@/components/InvalidPage";
 import { Input } from "@/components/ui/input";
 import { JobCardSkeleton } from "./JobCardSkeleton";
 import { ISettings } from "@/lib/models/settings";
+import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
+import CustomFieldBadge from "../dashboard/jobs/[id]/components/Candidate/CustomFieldBadge";
 
 interface Job {
   _id: string;
@@ -30,6 +32,7 @@ interface Job {
     inText: string;
     isPrivate: false;
   };
+  customFields?: Record<string, any>;
 }
 
 function isFetchBaseQueryError(
@@ -79,6 +82,7 @@ export default function ApplyJobsContent({
     isLoading: boolean;
     error: FetchBaseQueryError | SerializedError;
   };
+  const { formNameObject } = useCustomForm("Job Position");
 
   async function checkAllowance() {
     const urlOrgName = searchParams?.get("o") || orgName;
@@ -234,7 +238,7 @@ export default function ApplyJobsContent({
 
     router.push("/auth/login");
   };
-
+  console.log(jobs);
   return (
     <div className={showHeaderFooter ? "flex flex-col min-h-screen" : ""}>
       {showHeaderFooter && (
@@ -376,6 +380,30 @@ export default function ApplyJobsContent({
                       ) : (
                         ""
                       )}
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2 ">
+                      {job?.customFields &&
+                        Object.entries(job?.customFields)
+                          .filter(([key, value]) => {
+                            const field = formNameObject?.fields.find(
+                              (f) => f.label === key
+                            );
+                            if (field?.jobId && field.jobId !== job?._id)
+                              return false;
+                            if (
+                              (typeof value === "string" && value === "") ||
+                              (typeof value === "object" &&
+                                Object.keys(value).length === 0)
+                            ) {
+                              return false;
+                            }
+                            return field?.showOnCard;
+                          })
+                          .map(([key, value], i) => (
+                            <div key={i}>
+                              <CustomFieldBadge kii={key} value={value} />
+                            </div>
+                          ))}
                     </div>
                   </div>
                 </div>

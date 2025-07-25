@@ -1,0 +1,85 @@
+# Use Node.js 20 for your Next.js project
+image: node:20
+
+# Define variables
+variables:
+  VM_DEST_DIR: "/root" # Where tarball is sent and extracted
+  VM_HOST: "$VM_HOST"
+
+# Cache node_modules to speed up builds
+cache:
+  paths:
+    - node_modules/
+
+stages:
+  - build
+  - deploy
+
+build:
+  stage: build
+  script:
+    # Debug: Check environment and variables
+    - |
+      echo "Pipeline started at $(date -u) UTC"
+      echo "CI_PROJECT_URL=$CI_PROJECT_URL"
+      echo "CI_COMMIT_REF_NAME=$CI_COMMIT_REF_NAME"
+      echo "Checking CI/CD variables:"
+      echo "VM_HOST=$VM_HOST"
+      echo "MONGODB_URI=$MONGODB_URI"
+      echo "NEXT_PUBLIC_RECAPTCHA_SITE_KEY=$NEXT_PUBLIC_RECAPTCHA_SITE_KEY"
+      echo "RECAPTCHA_SECRET_KEY=$RECAPTCHA_SECRET_KEY"
+      echo "ALLOWED_ORIGINS=$ALLOWED_ORIGINS"
+    # Create .env file for build
+    - |
+      echo "MONGODB_URI=$MONGODB_URI" > .env
+      echo "NEXT_PUBLIC_RECAPTCHA_SITE_KEY=$NEXT_PUBLIC_RECAPTCHA_SITE_KEY" >> .env
+      echo "RECAPTCHA_SECRET_KEY=$RECAPTCHA_SECRET_KEY" >> .env
+      echo "ALLOWED_ORIGINS=$ALLOWED_ORIGINS" >> .env
+      # Add other variables if needed, e.g.:
+      # echo "NEXTAUTH_SECRET=$NEXTAUTH_SECRET" >> .env
+    # Debug: Show .env contents (remove after testing)
+    - cat .env
+    - npm ci --legacy-peer-deps
+    # Skip linting (temporary fix)
+    - npx next build
+    # - rm -r node_modules
+    # - npm i next --force
+    # Create tarball in a temp directory, excluding .next and server.log
+    - mkdir -p temp
+    - tar --exclude='./.git' --exclude='./temp' -czvf temp/hiretrack-v1-gl.tar.gz .
+    # Move tarball to project root and clean up
+    - mv temp/hiretrack-v1-gl.tar.gz .
+    - rm -rf temp
+  artifacts:
+    paths:
+      - hiretrack-v1-gl.tar.gz
+  only:
+    - main-backup
+
+deploy:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache sshpass openssh-client
+  script:
+    # Transfer tarball to VM using SSHPASS environment variable
+    - |
+      echo "Transferring hiretrack-v1-gl.tar.gz to VM..."
+      export SSHPASS="$VM_PASSWORD"
+      sshpass -e scp -o StrictHostKeyChecking=no hiretrack-v1-gl.tar.gz root@$VM_HOST:$VM_DEST_DIR
+    # Extract and deploy on VM
+    - |
+      export SSHPASS="$VM_PASSWORD"
+      sshpass -e ssh -o StrictHostKeyChecking=no root@$VM_HOST << 'EOF'
+        cd /root
+        rm -rf hiretrack-latest
+        mkdir -p hiretrack-latest
+        tar -xzvf hiretrack-v1-gl.tar.gz -C hiretrack-latest
+        cp /root/.env.production .env
+        pm2 kill && pm2 start npm --name "hiretrack-latest-deployed-by-gitlab" -- start
+        # Clean up the tarball
+        rm -f /root/hiretrack-v1-gl.tar.gz
+      EOF
+  environment: production
+  only:
+    - main-backup

@@ -5,12 +5,17 @@ import { CandidateStatus } from "@/types/candidate";
 import { BriefcaseIcon, CalendarIcon, ClockIcon, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatDate, formatTime } from "../jobs/[id]/hooks/dateTimeFormatting";
+import CustomFieldBadge from "../jobs/[id]/components/Candidate/CustomFieldBadge";
+
+import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
 
 export const RenderInterviewerAssignments = ({
   interviewerAssignments,
 }: {
   interviewerAssignments: Assignment[];
 }) => {
+  const { formNameObject } = useCustomForm("Candidate");
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {interviewerAssignments?.map((assignment) => (
@@ -93,6 +98,33 @@ export const RenderInterviewerAssignments = ({
                     </p>
                   </div>
                 </div>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {assignment.customFields &&
+                  Object.entries(assignment.customFields)
+                    .filter(([key, value]) => {
+                      const field = formNameObject?.fields.find(
+                        (f) => f.label === key
+                      );
+                      if (
+                        field?.candidateId &&
+                        field.candidateId !== assignment._id
+                      )
+                        return false;
+                      if (
+                        (typeof value === "string" && value === "") ||
+                        (typeof value === "object" &&
+                          Object.keys(value).length === 0)
+                      ) {
+                        return false;
+                      }
+                      return field?.showOnCard;
+                    })
+                    .map(([key, value], i) => (
+                      <div key={i}>
+                        <CustomFieldBadge kii={key} value={value} />
+                      </div>
+                    ))}
               </div>
             </div>
           </CardContent>

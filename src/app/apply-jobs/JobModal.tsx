@@ -204,8 +204,7 @@ export default function JobModal({
                 </div>
 
                 {/* Custom Fields */}
-                {roles !== "" &&
-                  job?.customFields &&
+                {job?.customFields &&
                   Object.keys(job.customFields).length > 0 && (
                     <div className="space-y-3">
                       <h4 className="font-semibold text-sm sm:text-base text-foreground">

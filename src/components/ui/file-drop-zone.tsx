@@ -318,16 +318,16 @@ export const FileDropZone = ({
               >
                 <Pencil className="h-4 w-4 text-muted-foreground" />
               </button>
-              {droppedFiles.includes(file.name) && (
-                <button
-                  type="button"
-                  className="p-2 hover:bg-muted rounded-md hover:text-red-500"
-                  onClick={() => handleRemoveFile(file.name)}
-                  aria-label="Remove file"
-                >
-                  <X className="h-4 w-4 text-muted-foreground" />
-                </button>
-              )}
+              {/* {droppedFiles.includes(file.name) && ( */}
+              <button
+                type="button"
+                className="p-2 hover:bg-muted rounded-md hover:text-red-500"
+                onClick={() => handleRemoveFile(file.name)}
+                aria-label="Remove file"
+              >
+                <X className="h-4 w-4 text-muted-foreground" />
+              </button>
+              {/* )} */}
             </div>
           ))}
         </div>
