@@ -199,10 +199,12 @@ export default function DashboardLayout({
   const { theme } = useTheme();
 
   // Helper function to get the appropriate logo URL
-  const getLogoUrl = (userLogo?: string) => {
-    // If user has set a custom logo, use it
-    if (userLogo) {
-      return userLogo;
+  const getLogoUrl = (portalLogo?: string, portalLogoDark?: string) => {
+    // Use appropriate logo based on theme and availability
+    if (theme === "dark" && portalLogoDark) {
+      return portalLogoDark;
+    } else if (portalLogo) {
+      return portalLogo;
     }
 
     // Otherwise use default logos based on theme
@@ -237,54 +239,34 @@ export default function DashboardLayout({
           isCollapsed ? "h-16 justify-center px-2" : "h-16 justify-between px-4"
         )}
       >
-        {shouldShowPortalData && portalConfigData ? (
-          <div className={`flex items-center overflow-hidden `}>
-            <div
-              className={cn(
-                "flex-shrink-0",
-                isCollapsed ? "mx-auto w-0" : "mr-3"
+        <div className="flex items-center justify-center flex-1">
+          {shouldShowPortalData && portalConfigData ? (
+            <img
+              src={getLogoUrl(
+                portalConfigData.portalLogo?.url,
+                portalConfigData.portalLogoDark?.url
               )}
-            >
-              <img
-                src={getLogoUrl(portalConfigData.portalLogo?.url)}
-                alt={portalConfigData.portalName || "Portal Logo"}
-                className="h-8 w-auto object-contain rounded"
-              />
+              alt={portalConfigData.portalName || "Portal Logo"}
+              className={cn(
+                "object-contain rounded transition-all duration-200",
+                isCollapsed ? "h-6 w-auto max-w-[40px]" : "h-8 w-auto max-w-[180px]"
+              )}
+            />
+          ) : !isLoading ? (
+            <img
+              src={theme === "dark" ? "/logo_dark.png" : "/logo.png"}
+              alt="Dashboard"
+              className={cn(
+                "object-contain rounded transition-all duration-200",
+                isCollapsed ? "h-6 w-auto max-w-[40px]" : "h-8 w-auto max-w-[180px]"
+              )}
+            />
+          ) : (
+            <div className="flex items-center justify-center">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
             </div>
-            {!isCollapsed && (
-              <h2 className="text-lg font-semibold truncate max-w-[200px]">
-                {portalConfigData.portalName}
-              </h2>
-            )}
-          </div>
-        ) : !isLoading ? (
-          <div
-            className={cn(
-              "flex items-center",
-              isCollapsed && "hidden w-full justify-center"
-            )}
-          >
-            <h2
-              className={cn("text-lg font-semibold", isCollapsed && "hidden")}
-            >
-              Dashboard
-            </h2>
-          </div>
-        ) : (
-          <div
-            className={cn(
-              "flex items-center gap-2",
-              isCollapsed && "justify-center w-full"
-            )}
-          >
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
-            <h2
-              className={cn("text-lg font-semibold", isCollapsed && "hidden")}
-            >
-              Loading
-            </h2>
-          </div>
-        )}
+          )}
+        </div>
         <Button
           variant="ghost"
           size="sm"

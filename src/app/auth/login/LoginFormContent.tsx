@@ -581,15 +581,25 @@ export default function LoginFormContent({
           className="absolute inset-0 size-full opacity-50"
           squareSize={4}
           gridGap={6}
-          color="#6366f1"
+          color={primaryColor}
           maxOpacity={0.3}
           flickerChance={0.1}
         />
       </div>
 
       {/* Gradient Orbs */}
-      <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-gradient-to-r from-purple-400/20 to-pink-400/20 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-to-r from-blue-400/20 to-cyan-400/20 rounded-full blur-3xl animate-pulse delay-1000" />
+      <div 
+        className="absolute top-1/4 left-1/4 w-72 h-72 rounded-full blur-3xl animate-pulse"
+        style={{
+          background: `linear-gradient(135deg, ${primaryColor}20, ${secondaryColor}20)`
+        }}
+      />
+      <div 
+        className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl animate-pulse delay-1000"
+        style={{
+          background: `linear-gradient(225deg, ${secondaryColor}15, ${primaryColor}15)`
+        }}
+      />
 
       {/* Theme Toggle in top right corner */}
       <div className="absolute top-4 right-4 z-10">
@@ -626,7 +636,14 @@ export default function LoginFormContent({
             <h1 className="text-4xl lg:text-6xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
               Smart Hiring
               <br />
-              <span className="bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+              <span 
+                className="bg-clip-text text-transparent"
+                style={{
+                  background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
+                  WebkitBackgroundClip: 'text',
+                  backgroundClip: 'text'
+                }}
+              >
                 Made Simple
               </span>
             </h1>
@@ -647,7 +664,10 @@ export default function LoginFormContent({
                   transition={{ delay: 0.4 + index * 0.1 }}
                   className="flex items-center gap-2 px-3 py-1 bg-background/50 backdrop-blur-sm rounded-full border border-border/50"
                 >
-                  <Sparkles className="w-4 h-4 text-primary" />
+                  <Sparkles 
+                    className="w-4 h-4"
+                    style={{ color: primaryColor }}
+                  />
                   <span className="text-sm">{feature}</span>
                 </motion.div>
               )
@@ -668,8 +688,9 @@ export default function LoginFormContent({
           {/* Hover Effect */}
           {isHovering && (
             <motion.div
-              className="absolute pointer-events-none w-96 h-96 bg-gradient-to-r from-primary/20 via-purple-500/20 to-pink-500/20 rounded-full blur-3xl"
+              className="absolute pointer-events-none w-96 h-96 rounded-full blur-3xl"
               style={{
+                background: `linear-gradient(135deg, ${primaryColor}20, ${secondaryColor}20, ${primaryColor}15)`,
                 transform: `translate(${mousePosition.x - 192}px, ${mousePosition.y - 192}px)`,
               }}
               transition={{ type: "spring", damping: 30, stiffness: 200 }}
@@ -683,8 +704,9 @@ export default function LoginFormContent({
               {selectedOrg && (
                 <div className="mt-2">
                   <span
-                    className="text-lg font-medium text-primary cursor-pointer"
-                    style={{
+                    className="text-lg font-medium cursor-pointer"
+                    style={{ 
+                      color: primaryColor,
                       animation: selectedOrg
                         ? "fadeInOrg 0.9s ease-in-out forwards"
                         : "none",
@@ -715,7 +737,13 @@ export default function LoginFormContent({
                       onChange={(e) =>
                         handleInputChange("companyName", e.target.value)
                       }
-                      className="w-full pl-10 pr-4 py-3 bg-background/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                      className="w-full pl-10 pr-4 py-3 bg-background/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:border-current transition-all"
+                      style={{
+                        '--tw-ring-color': `${primaryColor}50`,
+                        '--tw-border-opacity': '1'
+                      } as React.CSSProperties}
+                      onFocus={(e) => e.target.style.borderColor = primaryColor}
+                      onBlur={(e) => e.target.style.borderColor = ''}
                       placeholder="Enter your company name"
                     />
                   </div>
@@ -730,7 +758,13 @@ export default function LoginFormContent({
                     type="email"
                     value={formData.email}
                     onChange={(e) => handleInputChange("email", e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-background/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                    className="w-full pl-10 pr-4 py-3 bg-background/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:border-current transition-all"
+                    style={{
+                      '--tw-ring-color': `${primaryColor}50`,
+                      '--tw-border-opacity': '1'
+                    } as React.CSSProperties}
+                    onFocus={(e) => e.target.style.borderColor = primaryColor}
+                    onBlur={(e) => e.target.style.borderColor = ''}
                     placeholder="Enter your email"
                     required
                   />
@@ -747,7 +781,13 @@ export default function LoginFormContent({
                     onChange={(e) =>
                       handleInputChange("password", e.target.value)
                     }
-                    className="w-full pl-10 pr-12 py-3 bg-background/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                    className="w-full pl-10 pr-12 py-3 bg-background/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:border-current transition-all"
+                    style={{
+                      '--tw-ring-color': `${primaryColor}50`,
+                      '--tw-border-opacity': '1'
+                    } as React.CSSProperties}
+                    onFocus={(e) => e.target.style.borderColor = primaryColor}
+                    onBlur={(e) => e.target.style.borderColor = ''}
                     placeholder="Enter your password"
                     required
                   />
@@ -788,7 +828,8 @@ export default function LoginFormContent({
                 <button
                   type="button"
                   onClick={() => setForgotPasswordOpen(true)}
-                  className="text-sm text-primary hover:underline"
+                  className="text-sm hover:underline"
+                  style={{ color: primaryColor }}
                 >
                   Forgot password?
                 </button>
@@ -797,7 +838,10 @@ export default function LoginFormContent({
               <motion.button
                 type="submit"
                 disabled={isLoading || !captcha}
-                className="w-full bg-gradient-to-r from-primary to-purple-600 text-primary-foreground py-3 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 relative overflow-hidden group"
+                className="w-full text-white py-3 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 relative overflow-hidden group"
+                style={{
+                  background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
+                }}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
