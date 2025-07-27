@@ -1,0 +1,4521 @@
+openapi: 3.0.3
+info:
+  title: HireTrack API Documentation
+  description: |
+    Comprehensive API documentation for HireTrack - AI-powered hiring management platform.
+    
+    **Authentication**: Most endpoints require JWT token authentication via cookies.
+    **Base URL**: http://localhost:3000/api
+    
+    **Key Features**:
+    - Multi-tenant organization support
+    - Role-based access control (Admin, HR, Interviewer, Candidate)
+    - AI-powered resume analysis with Google Gemini
+    - Real-time updates via Server-Sent Events (SSE)
+    - File storage support (Local, Cloudinary, AWS S3)
+    - Email notifications (SMTP, Resend, Brevo)
+    - Two-factor authentication
+    
+    **Usage Contexts**:
+    - **Dashboard**: Internal hiring management interface
+    - **Portal**: Public job application interface
+    - **Mobile**: Responsive candidate application
+    - **API Integrations**: Third-party system integrations
+  version: 1.0.0
+  contact:
+    name: HireTrack Support
+    email: support@hiretrack.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000/api
+    description: Local development server
+  - url: https://your-domain.com/api
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: User authentication and authorization endpoints
+  - name: Organizations
+    description: Multi-tenant organization management
+  - name: Users
+    description: User account management and role administration
+  - name: Jobs
+    description: Job posting creation, management, and publishing
+  - name: Candidates
+    description: Candidate profile management and application processing
+  - name: Assignments
+    description: Interview assignments and candidate-interviewer mapping
+  - name: Lanes
+    description: Kanban workflow stage management
+  - name: History
+    description: Audit trail and candidate interaction history
+  - name: Settings
+    description: System configuration and organization settings
+  - name: Files
+    description: File upload, storage, and management
+  - name: Email
+    description: Email notifications and template management
+  - name: Analytics
+    description: Real-time updates and monitoring
+  - name: AI
+    description: AI-powered resume processing and candidate evaluation
+
+security:
+  - cookieAuth: []
+
+paths:
+  # ========== AUTHENTICATION ENDPOINTS ==========
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: User login
+      description: |
+        **Purpose**: Authenticate users and establish session
+        **Used By**: Login page, mobile app authentication
+        **Where**: `/auth/login` page, organization-specific login portals
+        **How**: Users enter email/password, system validates credentials and creates JWT session
+        
+        **Business Logic**:
+        - Validates user credentials against database
+        - Supports multi-organization login (if multiple orgs exist)
+        - Creates encrypted JWT token with user data
+        - Sets secure HTTP-only cookie for session management
+        - Returns user role and organization information
+        
+        **Security Features**:
+        - Password hashing with bcrypt
+        - JWT token encryption
+        - Rate limiting protection
+        - Organization-specific user isolation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "john@company.com"
+                  description: User's email address
+                password:
+                  type: string
+                  format: password
+                  example: "securePassword123"
+                  description: User's password
+                orgId:
+                  type: string
+                  example: "64f1a2b3c4d5e6f7g8h9i0j1"
+                  description: Organization ID (required for multi-org setups)
+            examples:
+              single_org_login:
+                summary: Single organization login
+                value:
+                  email: "admin@company.com"
+                  password: "password123"
+              multi_org_login:
+                summary: Multi-organization login
+                value:
+                  email: "hr@company.com"
+                  password: "password123"
+                  orgId: "64f1a2b3c4d5e6f7g8h9i0j1"
+      responses:
+        '200':
+          description: Login successful
+          headers:
+            Set-Cookie:
+              description: JWT session token
+              schema:
+                type: string
+                example: "token=encrypted_jwt_token; HttpOnly; Secure; SameSite=Strict"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  user:
+                    $ref: '#/components/schemas/UserProfile'
+                  organizations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/OrganizationSummary'
+                    description: Available organizations (for multi-org users)
+        '400':
+          description: Invalid request or missing parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missing_credentials:
+                  summary: Missing email or password
+                  value:
+                    error: "Email and password are required"
+                invalid_org:
+                  summary: Invalid organization ID
+                  value:
+                    error: "Organization not found"
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid_credentials:
+                  summary: Wrong email or password
+                  value:
+                    error: "Invalid credentials"
+                account_disabled:
+                  summary: Account disabled
+                  value:
+                    error: "Account has been disabled"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/signup:
+    post:
+      tags: [Authentication]
+      summary: Create new user account
+      description: |
+        **Purpose**: Register new users within an organization
+        **Used By**: Admin dashboard, HR management interface
+        **Where**: User management pages, organization setup
+        **How**: Admins create accounts for HR, interviewers; HR creates interviewer accounts
+        
+        **Business Logic**:
+        - Creates user accounts with role-based permissions
+        - Validates email uniqueness within organization
+        - Sets up default workflow lanes for new organizations
+        - Sends welcome email to new users
+        - Enforces organization-specific user limits
+        
+        **Role Permissions**:
+        - Admin: Can create any role
+        - HR: Can create Interviewer roles only
+        - Others: Cannot create accounts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password, role, organizationId]
+              properties:
+                name:
+                  type: string
+                  example: "John Smith"
+                  description: Full name of the user
+                email:
+                  type: string
+                  format: email
+                  example: "john@company.com"
+                  description: Unique email address
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  example: "securePassword123"
+                  description: User password (will be hashed)
+                role:
+                  type: string
+                  enum: [admin, hr, interviewer, candidate]
+                  example: "hr"
+                  description: User role defining permissions
+                organizationId:
+                  type: string
+                  example: "64f1a2b3c4d5e6f7g8h9i0j1"
+                  description: Organization the user belongs to
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User created successfully"
+                  user:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid request data
+        '401':
+          description: Unauthorized to create users
+        '409':
+          description: Email already exists
+
+  /auth/forgot-password:
+    post:
+      tags: [Authentication]
+      summary: Request password reset
+      description: |
+        **Purpose**: Allow users to reset forgotten passwords
+        **Used By**: Login page, password recovery flow
+        **Where**: Forgot password link on login pages
+        **How**: Users enter email, system sends reset link via email
+        
+        **Business Logic**:
+        - Generates secure reset token with expiration
+        - Sends password reset email to user
+        - Supports both regular users and candidate accounts
+        - Token expires after 1 hour for security
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "user@company.com"
+                organizationId:
+                  type: string
+                  example: "64f1a2b3c4d5e6f7g8h9i0j1"
+                  description: Required for organization-specific users
+      responses:
+        '200':
+          description: Reset email sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Password reset email sent"
+
+  /auth/reset-password:
+    post:
+      tags: [Authentication]
+      summary: Reset password with token
+      description: |
+        **Purpose**: Complete password reset process
+        **Used By**: Password reset email links
+        **Where**: Password reset confirmation pages
+        **How**: Users click email link, enter new password, system updates account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, password]
+              properties:
+                token:
+                  type: string
+                  example: "secure_reset_token_123"
+                  description: Reset token from email
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  example: "newSecurePassword123"
+      responses:
+        '200':
+          description: Password reset successful
+
+  /auth/2fa/send-otp:
+    post:
+      tags: [Authentication]
+      summary: Send two-factor authentication OTP
+      description: |
+        **Purpose**: Send OTP for two-factor authentication
+        **Used By**: Login flow when 2FA is enabled
+        **Where**: 2FA verification pages
+        **How**: System sends 6-digit OTP to user's email after initial login
+        
+        **Business Logic**:
+        - Generates 6-digit random OTP
+        - Stores OTP with 5-minute expiration
+        - Sends OTP via configured email provider
+        - Rate limited to prevent abuse
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, organizationId]
+              properties:
+                email:
+                  type: string
+                  format: email
+                organizationId:
+                  type: string
+      responses:
+        '200':
+          description: OTP sent successfully
+
+  /auth/2fa/verify-otp:
+    post:
+      tags: [Authentication]
+      summary: Verify two-factor authentication OTP
+      description: |
+        **Purpose**: Complete 2FA verification process
+        **Used By**: 2FA verification forms
+        **Where**: OTP input pages during login
+        **How**: Users enter received OTP, system validates and completes authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, otp]
+              properties:
+                email:
+                  type: string
+                  format: email
+                otp:
+                  type: string
+                  pattern: '^[0-9]{6}$'
+                  example: "123456"
+      responses:
+        '200':
+          description: OTP verified, login complete
+
+  # ========== ORGANIZATION ENDPOINTS ==========
+  /orgs:
+    get:
+      tags: [Organizations]
+      summary: Get public organization list
+      description: |
+        **Purpose**: Provide anonymous access to organization portal names for login page
+        **Used By**: Login page, organization selection dialogs
+        **Where**: Public login interfaces, organization discovery
+        **How**: Anonymous users can see available organizations for login selection
+        
+        **Security**: Only exposes minimal public data (ID and portal name)
+        **No Authentication Required**: This endpoint is publicly accessible
+      responses:
+        '200':
+          description: List of available organizations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  portals:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: "64f1a2b3c4d5e6f7g8h9i0j1"
+                        name:
+                          type: string
+                          example: "TechCorp Solutions"
+              example:
+                portals:
+                  - id: "64f1a2b3c4d5e6f7g8h9i0j1"
+                    name: "TechCorp Solutions"
+                  - id: "64f1a2b3c4d5e6f7g8h9i0j2"
+                    name: "StartupXYZ"
+
+  /organization:
+    get:
+      tags: [Organizations]
+      summary: Get organization settings and multi-org status
+      description: |
+        **Purpose**: Check if multiple organizations are allowed and get org data
+        **Used By**: Dashboard layouts, organization management pages
+        **Where**: Admin settings, organization configuration
+        **How**: Authenticated users check multi-org permissions and settings
+        
+        **Business Logic**:
+        - Returns organization-specific settings
+        - Indicates if user can create multiple organizations
+        - Provides organization metadata for UI decisions
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Organization settings retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  allow:
+                    type: boolean
+                    description: Whether multiple organizations are allowed
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/OrganizationSettings'
+
+    post:
+      tags: [Organizations]
+      summary: Create new organization
+      description: |
+        **Purpose**: Create new organization with admin user
+        **Used By**: Organization registration pages, admin setup
+        **Where**: Initial setup, multi-org expansion
+        **How**: Creates organization structure and admin account atomically
+        
+        **Business Logic**:
+        - Creates organization and admin user in single transaction
+        - Sets up default workflow lanes and settings
+        - Creates organization-specific file storage directory
+        - Initializes default custom fields and configurations
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, adminData]
+              properties:
+                name:
+                  type: string
+                  example: "TechCorp Solutions"
+                adminData:
+                  type: object
+                  required: [name, email, password]
+                  properties:
+                    name:
+                      type: string
+                      example: "Admin User"
+                    email:
+                      type: string
+                      format: email
+                      example: "admin@techcorp.com"
+                    password:
+                      type: string
+                      format: password
+      responses:
+        '201':
+          description: Organization created successfully
+        '400':
+          description: Invalid data or creation failed
+        '401':
+          description: Not authorized to create organizations
+
+    put:
+      tags: [Organizations]
+      summary: Update organization workflow lanes
+      description: |
+        **Purpose**: Modify kanban workflow stages for hiring process
+        **Used By**: Admin settings, workflow configuration
+        **Where**: Organization settings pages
+        **How**: Admins customize hiring pipeline stages
+      security:
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                orgId:
+                  type: string
+                lanes:
+                  type: array
+                  items:
+                    type: string
+                  example: ["applied", "screening", "interview", "offer", "hired", "rejected"]
+      responses:
+        '200':
+          description: Organization workflow lanes updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Workflow lanes updated successfully"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /organization/cf:
+    get:
+      tags: [Organizations]
+      summary: Get organization custom fields (anonymous)
+      description: |
+        **Purpose**: Retrieve custom form fields for public job applications
+        **Used By**: Job application forms, candidate portals
+        **Where**: Public job posting pages, application forms
+        **How**: Anonymous candidates see required custom fields for applications
+        
+        **No Authentication Required**: Public access for job applications
+      responses:
+        '200':
+          description: Custom fields configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomFields'
+
+  /organization/cf/{orgName}:
+    get:
+      tags: [Organizations]
+      summary: Get custom fields by organization name
+      description: |
+        **Purpose**: Get custom fields for specific organization by name
+        **Used By**: Organization-specific job application portals
+        **Where**: Branded career portals (e.g., /company-name/apply-jobs)
+        **How**: Public access to organization's custom application fields
+      parameters:
+        - name: orgName
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "techcorp-solutions"
+      responses:
+        '200':
+          description: Organization-specific custom fields
+
+  /organization/cs:
+    post:
+      tags: [Organizations]
+      summary: Update organization custom fields
+      description: |
+        **Purpose**: Admin interface to modify custom form fields
+        **Used By**: Admin dashboard, form builder interface
+        **Where**: Organization settings, custom fields management
+        **How**: Admins create/edit dynamic form fields for applications
+      security:
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                orgId:
+                  type: string
+                customFields:
+                  $ref: '#/components/schemas/CustomFields'
+      responses:
+        '200':
+          description: Custom fields updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Custom fields updated successfully"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /organization/cs/{org}:
+    get:
+      tags: [Organizations]
+      summary: Get custom fields by org ID
+      description: |
+        **Purpose**: Retrieve custom fields using organization ID
+        **Used By**: Internal applications, authenticated forms
+        **Where**: Dashboard forms, internal candidate management
+        **How**: Authenticated users access organization's custom fields
+      parameters:
+        - name: org
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Custom fields retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomFields'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Organization not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /organization/tags:
+    get:
+      tags: [Organizations]
+      summary: Get organization tags
+      description: |
+        **Purpose**: Retrieve available tags for candidate categorization
+        **Used By**: Candidate tagging interfaces, filter dropdowns
+        **Where**: Candidate management pages, search filters
+        **How**: HR users access available tags for candidate organization
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: organizationId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Available tags
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tag'
+
+    post:
+      tags: [Organizations]
+      summary: Create or update organization tags
+      description: |
+        **Purpose**: Manage tags for candidate categorization
+        **Used By**: Admin/HR interfaces for tag management
+        **Where**: Organization settings, tag management pages
+        **How**: Admins create/modify tags for candidate organization
+      security:
+        - cookieAuth: []
+      responses:
+        '201':
+          description: Tags created/updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Tags updated successfully"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ========== USER ENDPOINTS ==========
+  /users:
+    get:
+      tags: [Users]
+      summary: Get organization users
+      description: |
+        **Purpose**: List all users within an organization
+        **Used By**: User management dashboard, team overview
+        **Where**: Admin/HR user management pages
+        **How**: Display organization team members with roles and status
+        
+        **Role Access**:
+        - Admin: Can see all users
+        - HR: Can see HR and Interviewer roles
+        - Others: Limited access
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: List of organization users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+
+  /users/{id}:
+    get:
+      tags: [Users]
+      summary: Get specific user details
+      description: |
+        **Purpose**: Retrieve detailed information about a specific user
+        **Used By**: User profile pages, edit user forms
+        **Where**: User management interfaces
+        **How**: Display/edit individual user information
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Request successful
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags: [Users]
+      summary: Update user information
+      description: |
+        **Purpose**: Modify user account details and permissions
+        **Used By**: User edit forms, profile management
+        **Where**: User management pages, profile settings
+        **How**: Admins/HR update user information and roles
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: User information updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User updated successfully"
+                  user:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags: [Users]
+      summary: Delete user account
+      description: |
+        **Purpose**: Remove user from organization (soft delete)
+        **Used By**: User management interfaces
+        **Where**: Admin user management pages
+        **How**: Mark user as deleted while preserving data integrity
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Resource deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Resource deleted successfully"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/interviewers:
+    get:
+      tags: [Users]
+      summary: Get interviewers list
+      description: |
+        **Purpose**: Get users with interviewer role for assignment dropdowns
+        **Used By**: Candidate assignment forms, interview scheduling
+        **Where**: Candidate management pages, assignment dialogs
+        **How**: HR selects interviewers for candidate assignments
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: List of interviewers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    _id:
+                      type: string
+                    name:
+                      type: string
+                    email:
+                      type: string
+
+  # ========== JOB ENDPOINTS ==========
+  /jobs:
+    get:
+      tags: [Jobs]
+      summary: Get organization jobs
+      description: |
+        **Purpose**: Retrieve all jobs for an organization with candidate counts
+        **Used By**: Jobs dashboard, job management interface
+        **Where**: Main jobs page, job overview screens
+        **How**: Display job listings with application counts and status
+        
+        **Data Includes**:
+        - Job details and descriptions
+        - Candidate application counts
+        - Job status (open/closed/draft)
+        - Custom ordering based on organization preferences
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: List of jobs with candidate counts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  allOf:
+                    - $ref: '#/components/schemas/Job'
+                    - type: object
+                      properties:
+                        candidateCount:
+                          type: integer
+                          description: Number of candidates who applied
+
+    post:
+      tags: [Jobs]
+      summary: Create new job posting
+      description: |
+        **Purpose**: Create new job posting with attachments and custom fields
+        **Used By**: Job creation forms, HR job posting interface
+        **Where**: Job creation pages, HR dashboard
+        **How**: HR/Admin creates job with details, requirements, and attachments
+        
+        **Business Logic**:
+        - Handles file attachments (images and documents)
+        - Processes custom fields specific to organization
+        - Sets default status and tracking information
+        - Validates required fields and permissions
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/JobInput'
+                - type: object
+                  properties:
+                    attachments:
+                      $ref: '#/components/schemas/FileAttachments'
+                    customFields:
+                      type: object
+                      description: Organization-specific custom fields
+      responses:
+        '201':
+          description: Resource created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Resource created successfully"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /jobs/{id}:
+    get:
+      tags: [Jobs]
+      summary: Get specific job details
+      description: |
+        **Purpose**: Retrieve detailed job information
+        **Used By**: Job detail pages, edit job forms
+        **Where**: Job management interfaces, public job postings
+        **How**: Display complete job information with attachments
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Request successful
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags: [Jobs]
+      summary: Update job information
+      description: |
+        **Purpose**: Modify existing job posting details
+        **Used By**: Job edit forms, job management interface
+        **Where**: Job editing pages
+        **How**: HR/Admin updates job details, requirements, status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Job information updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Job updated successfully"
+                  job:
+                    $ref: '#/components/schemas/Job'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags: [Jobs]
+      summary: Delete job posting
+      description: |
+        **Purpose**: Remove job posting (soft delete to preserve candidate data)
+        **Used By**: Job management interface
+        **Where**: Job management pages
+        **How**: Mark job as deleted while maintaining candidate application history
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Resource deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Resource deleted successfully"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /jobs/{id}/candidates:
+    get:
+      tags: [Jobs]
+      summary: Get candidates for specific job
+      description: |
+        **Purpose**: Retrieve all candidates who applied to a specific job
+        **Used By**: Job-specific candidate management, kanban boards
+        **Where**: Job detail pages, candidate pipeline views
+        **How**: Display job applicants with their current status and details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Request successful
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /jobs/{id}/status:
+    patch:
+      tags: [Jobs]
+      summary: Update job status
+      description: |
+        **Purpose**: Change job status (open/closed/draft)
+        **Used By**: Job management interfaces
+        **Where**: Job status controls, bulk operations
+        **How**: HR/Admin controls job visibility and application acceptance
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Resource updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Resource updated successfully"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /jobs/open:
+    get:
+      tags: [Jobs]
+      summary: Get open jobs for public access
+      description: |
+        **Purpose**: Public access to published job listings
+        **Used By**: Career portals, job listing pages
+        **Where**: Public job boards, company career pages
+        **How**: Anonymous users browse available positions
+        
+        **No Authentication Required**: Public job listings
+      responses:
+        '200':
+          description: List of open job positions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PublicJob'
+
+  /jobs/open-jobs:
+    get:
+      tags: [Jobs]
+      summary: Get open jobs with organization info
+      description: |
+        **Purpose**: Public job listings with organization context
+        **Used By**: Job search portals, career sites
+        **Where**: Public job discovery interfaces
+        **How**: Job seekers browse positions with company information
+      responses:
+        '200':
+          description: Open jobs with organization details
+
+  /jobs/assignments:
+    get:
+      tags: [Jobs]
+      summary: Get job assignment statistics
+      description: |
+        **Purpose**: Retrieve assignment metrics for job management
+        **Used By**: Analytics dashboard, job performance tracking
+        **Where**: Job analytics pages, management dashboards
+        **How**: Track job posting effectiveness and assignment distribution
+      security:
+        - cookieAuth: []
+
+  # ========== CANDIDATE ENDPOINTS ==========
+      responses:
+        '200':
+          description: Request successful
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /candidates:
+    get:
+      tags: [Candidates]
+      summary: Get candidates list
+      description: |
+        **Purpose**: Retrieve candidates with optional job filtering
+        **Used By**: Candidate management dashboard, search interfaces
+        **Where**: Main candidate pages, search results
+        **How**: Display candidate listings with basic information
+        
+        **Query Options**:
+        - Filter by specific job ID
+        - Sort by creation date (newest first)
+        - Paginated results for performance
+      parameters:
+        - name: jobId
+          in: query
+          schema:
+            type: string
+          description: Filter candidates by specific job
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: List of candidates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Candidate'
+
+    post:
+      tags: [Candidates]
+      summary: Create new candidate
+      description: |
+        **Purpose**: Add new candidate to system with full profile data
+        **Used By**: Candidate creation forms, HR data entry
+        **Where**: Add candidate pages, import processes
+        **How**: HR manually adds candidates or imports from applications
+        
+        **Business Logic**:
+        - Handles file uploads (resume, attachments)
+        - Processes custom fields
+        - Sets initial workflow status
+        - Creates audit history entry
+        - Sends real-time updates via SSE
+        - Handles interviewer assignments
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/CandidateInput'
+                - type: object
+                  properties:
+                    assignment:
+                      type: object
+                      properties:
+                        interviewerId:
+                          type: string
+                        time:
+                          type: string
+                          format: date-time
+                    attachments:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/FileAttachment'
+      responses:
+        '201':
+          description: Resource created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Resource created successfully"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /candidates/{id}:
+    get:
+      tags: [Candidates]
+      summary: Get candidate details
+      description: |
+        **Purpose**: Retrieve complete candidate profile information
+        **Used By**: Candidate detail pages, profile views
+        **Where**: Candidate management interfaces
+        **How**: Display full candidate information with history and files
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Request successful
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags: [Candidates]
+      summary: Update candidate information
+      description: |
+        **Purpose**: Modify candidate profile data and status
+        **Used By**: Candidate edit forms, status updates
+        **Where**: Candidate management pages
+        **How**: HR/Interviewers update candidate information and progress
+        
+        **Features**:
+        - Handles file updates (resume, attachments)
+        - Updates custom field data
+        - Manages interviewer assignments
+        - Creates history log entries
+        - Sends email notifications for status changes
+        - Broadcasts real-time updates
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Candidate information updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Candidate updated successfully"
+                  candidate:
+                    $ref: '#/components/schemas/Candidate'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Candidate not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags: [Candidates]
+      summary: Delete candidate
+      description: |
+        **Purpose**: Remove candidate from system (soft delete)
+        **Used By**: Candidate management interface
+        **Where**: Candidate action menus
+        **How**: Mark candidate as deleted while preserving history
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Resource deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Resource deleted successfully"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /candidates/{id}/status:
+    patch:
+      tags: [Candidates]
+      summary: Update candidate status
+      description: |
+        **Purpose**: Move candidate through workflow stages
+        **Used By**: Kanban boards, status update controls
+        **Where**: Candidate pipeline management
+        **How**: Drag-and-drop or manual status updates in hiring workflow
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  example: "shortlisted"
+      responses:
+        '200':
+          description: Resource updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Resource updated successfully"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /candidates/filter:
+    post:
+      tags: [Candidates]
+      summary: Advanced candidate search
+      description: |
+        **Purpose**: Search candidates with complex filters and criteria
+        **Used By**: Search interfaces, advanced filtering
+        **Where**: Candidate search pages, analytics
+        **How**: HR searches candidates by multiple criteria for sourcing and analysis
+        
+        **Search Capabilities**:
+        - Name and skill-based search
+        - Location and experience filters
+        - Salary range filtering (current and expected CTC)
+        - Date range searches
+        - Custom field filtering
+        - Boolean logic support (AND/OR operations)
+        - Pagination for large result sets
+      security:
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                skills:
+                  type: array
+                  items:
+                    type: string
+                location:
+                  type: string
+                minExpectedCTC:
+                  type: number
+                maxExpectedCTC:
+                  type: number
+                minCurrentCTC:
+                  type: number
+                maxCurrentCTC:
+                  type: number
+                minExperience:
+                  type: number
+                maxExperience:
+                  type: number
+                startDate:
+                  type: string
+                  format: date
+                endDate:
+                  type: string
+                  format: date
+                customFields:
+                  type: object
+                  description: Organization-specific filter criteria
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: Candidates search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  candidates:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Candidate'
+                  total:
+                    type: integer
+                    description: Total number of matching candidates
+                  page:
+                    type: integer
+                    description: Current page number
+        '400':
+          description: Invalid search criteria
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /candidates/assignments:
+    get:
+      tags: [Assignments]
+      summary: Get candidate assignments
+      description: |
+        **Purpose**: Retrieve interview assignments for candidates
+        **Used By**: Interview scheduling, assignment management
+        **Where**: Interview calendar, assignment dashboards
+        **How**: Display interviewer assignments and scheduled interviews
+        
+        **Role-based Results**:
+        - Interviewers: See only their assignments
+        - HR/Admin: See all assignments
+        - Includes assignment dates and candidate details
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Request successful
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /candidates/apply-application:
+    post:
+      tags: [Candidates]
+      summary: Candidate self-application
+      description: |
+        **Purpose**: Allow registered candidates to apply for jobs
+        **Used By**: Candidate portals, self-service applications
+        **Where**: Candidate dashboard, job application pages
+        **How**: Registered candidates apply to available positions
+        
+        **Authentication**: Requires candidate account login
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: jobid
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Resource created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Resource created successfully"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /candidates/guest-apply:
+    post:
+      tags: [Candidates]
+      summary: Guest candidate application
+      description: |
+        **Purpose**: Allow anonymous users to apply for jobs
+        **Used By**: Public job portals, career pages
+        **Where**: Job application forms on public websites
+        **How**: Job seekers apply without creating accounts
+        
+        **No Authentication Required**: Public job applications
+        
+        **Business Logic**:
+        - Creates candidate profile from application data
+        - Handles file uploads (resume, attachments)
+        - Processes organization-specific custom fields
+        - Sets initial status in hiring workflow
+        - Creates application history entry
+        - Sends confirmation email to applicant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/CandidateInput'
+                - type: object
+                  required: [jobId, dateTime]
+                  properties:
+                    jobId:
+                      type: string
+                      description: Job being applied to
+                    dateTime:
+                      type: string
+                      description: Application timestamp
+      responses:
+        '201':
+          description: Resource created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Resource created successfully"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /candidates/signup:
+    post:
+      tags: [Candidates]
+      summary: Candidate account registration
+      description: |
+        **Purpose**: Create candidate accounts for self-service portals
+        **Used By**: Candidate registration forms
+        **Where**: Public registration pages, career portals
+        **How**: Job seekers create accounts to manage applications
+        
+        **No Authentication Required**: Public account creation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password, orgName]
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+                orgName:
+                  type: string
+                  description: Organization name for account association
+      responses:
+        '201':
+          description: Resource created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Resource created successfully"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /candidates/evaluate:
+    post:
+      tags: [AI]
+      summary: AI-powered candidate evaluation
+      description: |
+        **Purpose**: Analyze candidate resumes using Google Gemini AI
+        **Used By**: Resume analysis tools, candidate screening
+        **Where**: Candidate profile pages, bulk processing
+        **How**: AI analyzes resume content and generates candidate scores
+        
+        **AI Processing**:
+        - Extracts resume text from PDF files
+        - Analyzes skills, experience, and qualifications
+        - Generates scores for different criteria
+        - Provides structured candidate assessment
+        - Updates candidate profile with AI insights
+        
+        **No Authentication Required**: Can be used for public applications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [candidateId]
+              properties:
+                candidateId:
+                  type: string
+                  description: ID of candidate to evaluate
+      responses:
+        '201':
+          description: Resource created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Resource created successfully"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /candidates/event-mail:
+    post:
+      tags: [Email]
+      summary: Send candidate event notification
+      description: |
+        **Purpose**: Send interview or status change emails to candidates
+        **Used By**: Interview scheduling, status update notifications
+        **Where**: Assignment workflows, status change triggers
+        **How**: Automated emails sent when candidate status changes or interviews are scheduled
+        
+        **Email Types**:
+        - Interview assignment notifications
+        - Status change confirmations
+        - Schedule updates and reminders
+        - Uses organization email templates
+      security:
+        - cookieAuth: []
+      responses:
+        '201':
+          description: Resource created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Resource created successfully"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /candidates/history:
+    post:
+      tags: [History]
+      summary: Add candidate history entry
+      description: |
+        **Purpose**: Record candidate interaction history and remarks
+        **Used By**: Candidate management, interviewer feedback
+        **Where**: Candidate detail pages, feedback forms
+        **How**: Users add notes, ratings, and track candidate progress
+        
+        **History Types**:
+        - Interview feedback and ratings
+        - Status change logs
+        - General remarks and notes
+        - File attachments to history entries
+        - Automated system entries
+      security:
+        - cookieAuth: []
+      responses:
+        '201':
+          description: Resource created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Resource created successfully"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /candidates/getJob/{jobId}:
+    get:
+      tags: [Candidates]
+      summary: Get candidates for specific job
+      description: |
+        **Purpose**: Retrieve all candidates who applied to a specific job
+        **Used By**: Job-specific views, candidate pipeline
+        **Where**: Job detail pages, hiring pipeline management
+        **How**: Display job applicants sorted by application date
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Request successful
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /candidates/job/{id}:
+    get:
+      tags: [Candidates]
+      summary: Get job candidates (alias endpoint)
+      description: |
+        **Purpose**: Alternative endpoint to get candidates by job ID
+        **Used By**: Legacy interfaces, alternative routing
+        **Where**: Various candidate management interfaces
+        **How**: Retrieve candidates associated with specific job posting
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+
+  # ========== WORKFLOW LANES ENDPOINTS ==========
+      responses:
+        '200':
+          description: Request successful
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /lanes:
+    get:
+      tags: [Lanes]
+      summary: Get workflow lanes
+      description: |
+        **Purpose**: Retrieve kanban workflow stages for hiring process
+        **Used By**: Kanban boards, workflow configuration
+        **Where**: Candidate pipeline views, settings pages
+        **How**: Display available workflow stages for candidate progression
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Request successful
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tags: [Lanes]
+      summary: Create workflow lane
+      description: |
+        **Purpose**: Add new stage to hiring workflow
+        **Used By**: Workflow configuration, admin settings
+        **Where**: Lane management interfaces
+        **How**: Admins customize hiring pipeline stages
+      security:
+        - cookieAuth: []
+      responses:
+        '201':
+          description: Resource created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Resource created successfully"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /lanes/{laneId}:
+    delete:
+      tags: [Lanes]
+      summary: Delete workflow lane
+      description: |
+        **Purpose**: Remove stage from hiring workflow
+        **Used By**: Workflow management, admin settings
+        **Where**: Lane configuration pages
+        **How**: Admins remove unused workflow stages
+        
+        **Business Logic**:
+        - Moves candidates from deleted lane to default lane
+        - Updates organization lane configuration
+        - Creates history entries for moved candidates
+        - Broadcasts real-time updates to connected clients
+      parameters:
+        - name: laneId
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Resource deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Resource deleted successfully"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /lanes/order:
+    put:
+      tags: [Lanes]
+      summary: Update lane order
+      description: |
+        **Purpose**: Reorder workflow stages in kanban board
+        **Used By**: Drag-and-drop lane reordering
+        **Where**: Kanban board configuration
+        **How**: Users customize lane order for optimal workflow
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Lane order updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Lane order updated successfully"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ========== SETTINGS ENDPOINTS ==========
+  /settings/portal:
+    get:
+      tags: [Settings]
+      summary: Get portal configuration
+      description: |
+        **Purpose**: Retrieve portal branding and configuration
+        **Used By**: Login pages, public portals, organization branding
+        **Where**: Login interfaces, public career pages
+        **How**: Display organization logos, names, and branding elements
+        
+        **Anonymous Access**: Public portal branding information
+        **Authenticated Access**: Complete portal settings including sensitive data
+        
+        **No Authentication Required**: Returns public branding data
+      responses:
+        '200':
+          description: Portal configuration
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  portalLogo:
+                    type: object
+                    properties:
+                      url:
+                        type: string
+                        example: "https://storage.com/logo.png"
+                  portalName:
+                    type: string
+                    example: "TechCorp Careers"
+                  portalHeader:
+                    type: object
+                    properties:
+                      url:
+                        type: string
+                  portalFooter:
+                    type: object
+                    properties:
+                      url:
+                        type: string
+                  fileStorage:
+                    type: object
+                    description: "Only for authenticated users"
+
+    put:
+      tags: [Settings]
+      summary: Update portal configuration
+      description: |
+        **Purpose**: Admin interface to update portal branding
+        **Used By**: Admin settings, branding configuration
+        **Where**: Organization settings pages
+        **How**: Admins upload logos, set portal names, customize branding
+        
+        **Features**:
+        - Logo file upload and processing
+        - Favicon generation from logos
+        - Header/footer HTML content
+        - Portal name configuration
+        - File storage management
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Portal configuration updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Portal configuration updated successfully"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /settings/fs:
+    get:
+      tags: [Settings]
+      summary: Get file storage settings
+      description: |
+        **Purpose**: Retrieve file storage configuration
+        **Used By**: Admin settings, storage management
+        **Where**: File storage configuration pages
+        **How**: Display current storage provider and settings
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Request successful
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags: [Settings]
+      summary: Update file storage settings
+      description: |
+        **Purpose**: Configure file storage provider (Local/Cloudinary/AWS S3)
+        **Used By**: Admin storage configuration
+        **Where**: File storage settings pages
+        **How**: Admins switch between storage providers and configure credentials
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: File storage settings updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "File storage settings updated successfully"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /settings/smtp:
+    get:
+      tags: [Settings]
+      summary: Get email configuration
+      description: |
+        **Purpose**: Retrieve email provider settings
+        **Used By**: Email configuration interfaces
+        **Where**: Email settings pages
+        **How**: Display current email provider and configuration
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Request successful
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags: [Settings]
+      summary: Update email configuration
+      description: |
+        **Purpose**: Configure email providers (SMTP/Resend/Brevo)
+        **Used By**: Admin email configuration
+        **Where**: Email settings pages
+        **How**: Set up email providers for system notifications
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Email configuration updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Email configuration updated successfully"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /settings/templates:
+    get:
+      tags: [Settings]
+      summary: Get email templates
+      description: |
+        **Purpose**: Retrieve email template configurations
+        **Used By**: Template management interfaces
+        **Where**: Email template settings
+        **How**: Display and edit notification email templates
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Request successful
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags: [Settings]
+      summary: Update email templates
+      description: |
+        **Purpose**: Customize email notification templates
+        **Used By**: Admin template configuration
+        **Where**: Email template editors
+        **How**: Customize email content for different notification types
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Email templates updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Email templates updated successfully"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /settings/gemini:
+    get:
+      tags: [Settings]
+      summary: Get AI configuration
+      description: |
+        **Purpose**: Retrieve Google Gemini AI settings
+        **Used By**: AI configuration interfaces
+        **Where**: AI settings pages
+        **How**: Display AI provider configuration and capabilities
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Request successful
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags: [Settings]
+      summary: Update AI configuration
+      description: |
+        **Purpose**: Configure Google Gemini AI integration
+        **Used By**: Admin AI configuration
+        **Where**: AI settings pages
+        **How**: Set up AI provider credentials and parameters
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: AI configuration updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "AI configuration updated successfully"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /settings/twofa:
+    get:
+      tags: [Settings]
+      summary: Get two-factor authentication settings
+      description: |
+        **Purpose**: Check 2FA configuration for organization
+        **Used By**: 2FA status checks, login flow
+        **Where**: Login pages, security settings
+        **How**: Determine if 2FA is enabled for organization
+        
+        **Anonymous Access**: Can check 2FA status for login flow
+      parameters:
+        - name: orgId
+          in: query
+          schema:
+            type: string
+          description: Organization ID for anonymous access
+      responses:
+        '200':
+          description: Request successful
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags: [Settings]
+      summary: Update two-factor authentication settings
+      description: |
+        **Purpose**: Enable/disable 2FA for organization
+        **Used By**: Security configuration interfaces
+        **Where**: Security settings pages
+        **How**: Admins toggle 2FA requirements
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Two-factor authentication settings updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "2FA settings updated successfully"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /settings/multipleorg:
+    get:
+      tags: [Settings]
+      summary: Get multi-organization settings
+      description: |
+        **Purpose**: Check if multiple organizations are allowed
+        **Used By**: Organization management interfaces
+        **Where**: Organization settings, multi-tenant configuration
+        **How**: Control organization creation permissions
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Request successful
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags: [Settings]
+      summary: Update multi-organization settings
+      description: |
+        **Purpose**: Enable/disable multiple organization support
+        **Used By**: Admin configuration interfaces
+        **Where**: Multi-tenant settings pages
+        **How**: Control whether users can create multiple organizations
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Multi-organization settings updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Multi-organization settings updated successfully"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /settings/timezone:
+    get:
+      tags: [Settings]
+      summary: Get timezone settings
+      description: |
+        **Purpose**: Retrieve organization timezone configuration
+        **Used By**: Date/time display, scheduling interfaces
+        **Where**: Various UI components needing timezone info
+        **How**: Format dates and times according to organization timezone
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Request successful
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags: [Settings]
+      summary: Update timezone settings
+      description: |
+        **Purpose**: Set organization timezone preferences
+        **Used By**: Admin timezone configuration
+        **Where**: Regional settings pages
+        **How**: Configure timezone for date/time displays
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Timezone settings updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Timezone settings updated successfully"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ========== FILE MANAGEMENT ENDPOINTS ==========
+  /files:
+    get:
+      tags: [Files]
+      summary: Retrieve uploaded files
+      description: |
+        **Purpose**: Serve uploaded files from configured storage
+        **Used By**: File display, download functionality
+        **Where**: Resume viewers, attachment displays
+        **How**: Retrieve files from Local/Cloudinary/AWS S3 storage
+        
+        **Storage Support**:
+        - Local file system
+        - Cloudinary cloud storage
+        - AWS S3 buckets
+        - Secure file access with path validation
+      parameters:
+        - name: pathName
+          in: query
+          required: true
+          schema:
+            type: string
+          description: File path in storage system
+      responses:
+        '200':
+          description: Request successful
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tags: [Files]
+      summary: Upload files
+      description: |
+        **Purpose**: Handle file uploads for resumes and attachments
+        **Used By**: File upload components, drag-and-drop interfaces
+        **Where**: Resume uploads, attachment forms
+        **How**: Process and store files in configured storage provider
+      security:
+        - cookieAuth: []
+      responses:
+        '201':
+          description: Resource created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Resource created successfully"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /download/assets:
+    get:
+      tags: [Files]
+      summary: Download organization assets
+      description: |
+        **Purpose**: Serve organization-specific assets (logos, headers, footers)
+        **Used By**: Portal branding, organization customization
+        **Where**: Portal pages, branded interfaces
+        **How**: Serve organization branding assets
+      parameters:
+        - name: org
+          in: query
+          schema:
+            type: string
+        - name: asset
+          in: query
+          schema:
+            type: string
+
+  # ========== BULK PROCESSING ENDPOINTS ==========
+      responses:
+        '200':
+          description: Request successful
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /process-cv:
+    post:
+      tags: [AI]
+      summary: Bulk CV processing
+      description: |
+        **Purpose**: Process multiple resumes using AI for bulk candidate import
+        **Used By**: Bulk import tools, CV processing interfaces
+        **Where**: Bulk candidate upload pages
+        **How**: Upload ZIP files of resumes for AI-powered batch processing
+        
+        **AI Processing**:
+        - Extracts candidate data from multiple PDF resumes
+        - Uses Google Gemini AI for content analysis
+        - Creates candidate profiles automatically
+        - Handles file storage and organization
+        - Provides processing status and results
+        - Supports error handling and retry logic
+      security:
+        - cookieAuth: []
+
+  # ========== REAL-TIME COMMUNICATION ==========
+      responses:
+        '201':
+          description: Resource created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Resource created successfully"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /sse/candidates:
+    get:
+      tags: [Analytics]
+      summary: Server-Sent Events for candidate updates
+      description: |
+        **Purpose**: Real-time updates for candidate changes
+        **Used By**: Live dashboards, real-time interfaces
+        **Where**: Candidate management pages, live monitoring
+        **How**: WebSocket-like real-time updates for candidate status changes
+        
+        **Real-time Events**:
+        - Candidate status changes
+        - New candidate applications
+        - Assignment updates
+        - Interview scheduling changes
+        - Multi-user collaboration updates
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: SSE stream established
+          content:
+            text/event-stream:
+              schema:
+                type: string
+
+  # ========== EMAIL NOTIFICATIONS ==========
+  /event-mail:
+    post:
+      tags: [Email]
+      summary: Send event-based email notifications
+      description: |
+        **Purpose**: Send automated email notifications for various events
+        **Used By**: Event triggers, notification systems
+        **Where**: Interview scheduling, status changes
+        **How**: Automated email dispatch for candidate and user notifications
+        
+        **Email Types**:
+        - Interview invitations with calendar links
+        - Status change notifications
+        - Application confirmations
+        - Password reset emails
+        - Custom event notifications
+      security:
+        - cookieAuth: []
+      responses:
+        '201':
+          description: Resource created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Resource created successfully"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /status-mail:
+    post:
+      tags: [Email]
+      summary: Send status change notifications
+      description: |
+        **Purpose**: Send email notifications when candidate status changes
+        **Used By**: Status change workflows, automated notifications
+        **Where**: Candidate status update processes
+        **How**: Queue and send emails when candidates move through hiring stages
+        
+        **Features**:
+        - Email queuing to prevent spam
+        - Template-based notifications
+        - Batch email processing
+        - Delivery status tracking
+      security:
+        - cookieAuth: []
+
+  # ========== UTILITY ENDPOINTS ==========
+      responses:
+        '201':
+          description: Resource created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Resource created successfully"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /test-connection:
+    post:
+      tags: [Settings]
+      summary: Test external service connections
+      description: |
+        **Purpose**: Validate configuration for external services
+        **Used By**: Settings configuration, connectivity testing
+        **Where**: Service configuration pages
+        **How**: Test connections to storage, email, and other services before saving settings
+        
+        **Services Tested**:
+        - Cloudinary storage connection
+        - AWS S3 bucket access
+        - SMTP email server connectivity
+        - Resend API validation
+        - Brevo API testing
+      security:
+        - cookieAuth: []
+      responses:
+        '201':
+          description: Resource created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Resource created successfully"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /checkorg:
+    get:
+      tags: [Organizations]
+      summary: Verify organization exists
+      description: |
+        **Purpose**: Check if organization ID exists in database
+        **Used By**: Validation processes, organization verification
+        **Where**: Registration forms, organization selection
+        **How**: Validate organization IDs before processing requests
+      parameters:
+        - name: organizationId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Request successful
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /backups:
+    get:
+      tags: [Settings]
+      summary: Get database backups
+      description: |
+        **Purpose**: List available database backups
+        **Used By**: Backup management interfaces
+        **Where**: Admin backup pages
+        **How**: Display available backups for restore operations
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Request successful
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tags: [Settings]
+      summary: Create database backup
+      description: |
+        **Purpose**: Trigger database backup creation
+        **Used By**: Backup management tools
+        **Where**: Admin backup interfaces
+        **How**: Create point-in-time database snapshots
+      security:
+        - cookieAuth: []
+      responses:
+        '201':
+          description: Resource created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Resource created successfully"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /db/take-snapshot:
+    post:
+      tags: [Settings]
+      summary: Create database snapshot
+      description: |
+        **Purpose**: Create immediate database snapshot
+        **Used By**: Backup tools, data protection
+        **Where**: Emergency backup creation
+        **How**: Instant database state capture
+      security:
+        - cookieAuth: []
+      responses:
+        '201':
+          description: Resource created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Resource created successfully"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /logs:
+    get:
+      tags: [Settings]
+      summary: Get system logs
+      description: |
+        **Purpose**: Retrieve application logs for debugging
+        **Used By**: Admin monitoring, troubleshooting
+        **Where**: System monitoring pages
+        **How**: Access application logs for system analysis
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Request successful
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /nginx-logs:
+    get:
+      tags: [Settings]
+      summary: Get web server logs
+      description: |
+        **Purpose**: Access nginx web server logs
+        **Used By**: Server administration, performance monitoring
+        **Where**: Server monitoring interfaces
+        **How**: Retrieve web server access and error logs
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Request successful
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /nginx-logs/{file}:
+    get:
+      tags: [Settings]
+      summary: Get specific nginx log file
+      description: |
+        **Purpose**: Access specific nginx log files
+        **Used By**: Detailed log analysis, troubleshooting
+        **Where**: Log file browsers
+        **How**: Download or view specific log files
+      parameters:
+        - name: file
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - cookieAuth: []
+
+  # ========== FORM FIELDS MANAGEMENT ==========
+      responses:
+        '200':
+          description: Request successful
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /form-fields:
+    get:
+      tags: [Organizations]
+      summary: Get form field definitions
+      description: |
+        **Purpose**: Retrieve custom form field configurations
+        **Used By**: Dynamic form builders, field management
+        **Where**: Form configuration interfaces
+        **How**: Build dynamic forms based on organization needs
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Request successful
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tags: [Organizations]
+      summary: Create form field definition
+      description: |
+        **Purpose**: Create new custom form field
+        **Used By**: Form builder interfaces
+        **Where**: Field configuration pages
+        **How**: Add new fields to organization forms
+      security:
+        - cookieAuth: []
+      responses:
+        '201':
+          description: Resource created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Resource created successfully"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /form-fields/{id}:
+    get:
+      tags: [Organizations]
+      summary: Get specific form field
+      description: |
+        **Purpose**: Retrieve individual form field configuration
+        **Used By**: Field editors, form builders
+        **Where**: Field detail interfaces
+        **How**: Edit and configure specific form fields
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Request successful
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags: [Organizations]
+      summary: Update form field definition
+      description: |
+        **Purpose**: Modify existing form field configuration
+        **Used By**: Field management interfaces
+        **Where**: Form builder tools
+        **How**: Update field properties and validation rules
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Form field definition updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Form field updated successfully"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Form field not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags: [Organizations]
+      summary: Delete form field definition
+      description: |
+        **Purpose**: Remove custom form field
+        **Used By**: Field management tools
+        **Where**: Field configuration interfaces
+        **How**: Remove unused or obsolete form fields
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Form field deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Form field deleted successfully"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Form field not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: token
+      description: JWT token stored in HTTP-only cookie
+
+  schemas:
+    # ========== USER SCHEMAS ==========
+    UserProfile:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: "64f1a2b3c4d5e6f7g8h9i0j1"
+        name:
+          type: string
+          example: "John Smith"
+        email:
+          type: string
+          format: email
+          example: "john@company.com"
+        role:
+          type: string
+          enum: [admin, hr, interviewer, candidate]
+          example: "hr"
+        organizationId:
+          type: string
+          example: "64f1a2b3c4d5e6f7g8h9i0j1"
+        organizationInfo:
+          type: object
+          properties:
+            _id:
+              type: string
+            name:
+              type: string
+              example: "TechCorp Solutions"
+            customFields:
+              type: object
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    User:
+      allOf:
+        - $ref: '#/components/schemas/UserProfile'
+        - type: object
+          properties:
+            isDeleted:
+              type: boolean
+              default: false
+            resetToken:
+              type: string
+            resetTokenExpiry:
+              type: string
+              format: date-time
+            otp:
+              type: integer
+              description: Two-factor authentication OTP
+            otpExpires:
+              type: string
+              format: date-time
+
+    # ========== ORGANIZATION SCHEMAS ==========
+    OrganizationSummary:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: "64f1a2b3c4d5e6f7g8h9i0j1"
+        name:
+          type: string
+          example: "TechCorp Solutions"
+        orgId:
+          type: string
+          example: "64f1a2b3c4d5e6f7g8h9i0j1"
+
+    OrganizationSettings:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        adminId:
+          type: string
+        lanes:
+          type: array
+          items:
+            type: string
+          example: ["applied", "screening", "shortlisted", "processing", "accepted", "rejected"]
+        openJobCards:
+          type: array
+          items:
+            type: string
+          description: "Job ordering configuration"
+        customFields:
+          $ref: '#/components/schemas/CustomFields'
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        multipleOrg:
+          type: boolean
+          description: "Whether multiple organizations are allowed"
+
+    Tag:
+      type: object
+      properties:
+        title:
+          type: string
+          example: "High Priority"
+        color:
+          type: string
+          example: "#FF5733"
+          description: "Hex color code for tag display"
+
+    # ========== JOB SCHEMAS ==========
+    JobInput:
+      type: object
+      required: [title, description, experience]
+      properties:
+        title:
+          type: string
+          example: "Senior Software Engineer"
+          description: "Job position title"
+        description:
+          type: string
+          example: "We are looking for an experienced software engineer..."
+          description: "Detailed job description"
+        skills:
+          type: array
+          items:
+            type: string
+          example: ["JavaScript", "React", "Node.js", "MongoDB"]
+          description: "Required skills for the position"
+        experience:
+          type: integer
+          minimum: 0
+          example: 5
+          description: "Required years of experience"
+        links:
+          type: array
+          items:
+            type: string
+            format: uri
+          example: ["https://company.com/benefits"]
+          description: "Additional information links"
+        salary:
+          type: object
+          properties:
+            min:
+              type: number
+              example: 80000
+            max:
+              type: number
+              example: 120000
+            inText:
+              type: string
+              example: "Competitive salary based on experience"
+            isPrivate:
+              type: boolean
+              default: false
+              description: "Whether salary range is private"
+        status:
+          type: string
+          enum: [open, closed, draft]
+          default: open
+          description: "Job posting status"
+        isPublished:
+          type: boolean
+          default: false
+          description: "Whether job is published on public portal"
+
+    Job:
+      allOf:
+        - $ref: '#/components/schemas/JobInput'
+        - type: object
+          properties:
+            _id:
+              type: string
+              example: "64f1a2b3c4d5e6f7g8h9i0j1"
+            organizationId:
+              type: string
+              example: "64f1a2b3c4d5e6f7g8h9i0j1"
+            attachments:
+              $ref: '#/components/schemas/FileAttachments'
+            tracking:
+              type: object
+              properties:
+                createdAt:
+                  type: string
+                  format: date-time
+                openedAt:
+                  type: string
+                  format: date-time
+                closedAt:
+                  type: string
+                  format: date-time
+            customFields:
+              type: object
+              description: "Organization-specific custom fields"
+
+    PublicJob:
+      type: object
+      properties:
+        _id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        skills:
+          type: array
+          items:
+            type: string
+        experience:
+          type: integer
+        salary:
+          type: object
+          properties:
+            inText:
+              type: string
+            isPrivate:
+              type: boolean
+        links:
+          type: array
+          items:
+            type: string
+        organizationName:
+          type: string
+          description: "Public organization name"
+
+    # ========== CANDIDATE SCHEMAS ==========
+    CandidateInput:
+      type: object
+      required: [name, location, experience, skills]
+      properties:
+        name:
+          type: string
+          example: "Jane Doe"
+          description: "Candidate full name"
+        location:
+          type: string
+          example: "San Francisco, CA"
+          description: "Candidate location"
+        experience:
+          type: number
+          minimum: 0
+          example: 3
+          description: "Years of experience"
+        skills:
+          type: array
+          items:
+            type: string
+          example: ["Python", "Django", "PostgreSQL"]
+          description: "Candidate skills"
+        expectedCTC:
+          type: number
+          example: 100000
+          description: "Expected salary"
+        currentCTC:
+          type: number
+          example: 85000
+          description: "Current salary"
+        noticePeriod:
+          type: number
+          example: 30
+          description: "Notice period in days"
+        phoneNumber:
+          type: string
+          example: "+1-555-123-4567"
+          description: "Contact phone number"
+        email:
+          type: string
+          format: email
+          example: "jane@email.com"
+          description: "Contact email address"
+        resume:
+          $ref: '#/components/schemas/FileAttachment'
+        customFields:
+          type: object
+          description: "Organization-specific custom field data"
+
+    Candidate:
+      allOf:
+        - $ref: '#/components/schemas/CandidateInput'
+        - type: object
+          properties:
+            _id:
+              type: string
+              example: "64f1a2b3c4d5e6f7g8h9i0j1"
+            jobId:
+              type: string
+              example: "64f1a2b3c4d5e6f7g8h9i0j1"
+              description: "Associated job ID"
+            organizationId:
+              type: string
+              example: "64f1a2b3c4d5e6f7g8h9i0j1"
+            status:
+              type: string
+              example: "screening"
+              description: "Current workflow stage"
+            remarks:
+              type: array
+              items:
+                type: object
+                properties:
+                  _id:
+                    type: string
+                  description:
+                    type: string
+                    example: "Great communication skills during phone screen"
+                  date:
+                    type: string
+                    format: date-time
+                  rating:
+                    type: number
+                    minimum: 0
+                    maximum: 5
+                    example: 4
+                  userId:
+                    type: string
+                    description: "ID of user who added remark"
+            attachments:
+              type: array
+              items:
+                $ref: '#/components/schemas/FileAttachment'
+            assignment:
+              type: object
+              properties:
+                interviewerId:
+                  type: string
+                  description: "Assigned interviewer ID"
+                assignedAt:
+                  type: string
+                  format: date-time
+                time:
+                  type: string
+                  format: date-time
+                  description: "Scheduled interview time"
+            followUp:
+              type: object
+              properties:
+                note:
+                  type: string
+                date:
+                  type: string
+                  format: date-time
+                userId:
+                  type: string
+            tags:
+              type: array
+              items:
+                $ref: '#/components/schemas/Tag'
+            tracking:
+              type: object
+              properties:
+                createdAt:
+                  type: string
+                  format: date-time
+                updatedAt:
+                  type: string
+                  format: date-time
+            isDeleted:
+              type: boolean
+              default: false
+
+    # ========== FILE SCHEMAS ==========
+    FileAttachment:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "file_unique_id_123"
+          description: "Unique file identifier"
+        name:
+          type: string
+          example: "resume.pdf"
+          description: "Original filename"
+        url:
+          type: string
+          format: uri
+          example: "https://storage.com/files/resume.pdf"
+          description: "File access URL"
+        type:
+          type: string
+          example: "application/pdf"
+          description: "MIME type"
+        size:
+          type: number
+          example: 2048576
+          description: "File size in bytes"
+
+    FileAttachments:
+      type: object
+      properties:
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/FileAttachment'
+          description: "Document attachments"
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/FileAttachment'
+          description: "Image attachments"
+
+    # ========== CUSTOM FIELDS SCHEMAS ==========
+    CustomFields:
+      type: object
+      description: "Dynamic form fields configuration"
+      additionalProperties:
+        type: object
+        properties:
+          formName:
+            type: string
+            example: "Job Application Form"
+          fields:
+            type: array
+            items:
+              type: object
+              properties:
+                id:
+                  type: string
+                label:
+                  type: string
+                  example: "Portfolio URL"
+                type:
+                  type: string
+                  enum: [text, email, number, select, multiselect, textarea, file, date]
+                  example: "text"
+                required:
+                  type: boolean
+                  default: false
+                options:
+                  type: array
+                  items:
+                    type: string
+                  description: "Options for select/multiselect fields"
+                validation:
+                  type: object
+                  properties:
+                    minLength:
+                      type: integer
+                    maxLength:
+                      type: integer
+                    pattern:
+                      type: string
+                      description: "Regex validation pattern"
+
+    # ========== HISTORY SCHEMAS ==========
+    HistoryEntry:
+      type: object
+      properties:
+        _id:
+          type: string
+        candidateId:
+          type: string
+        jobId:
+          type: string
+        history:
+          type: array
+          items:
+            type: object
+            properties:
+              dateTime:
+                type: string
+                format: date-time
+              title:
+                type: string
+                example: "Status changed to Shortlisted"
+              previousValue:
+                type: string
+              currentValue:
+                type: string
+              remark:
+                type: object
+                properties:
+                  description:
+                    type: string
+                  rating:
+                    type: number
+                  attachments:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FileAttachment'
+              assignmentBy:
+                type: string
+                description: "User ID who made the change"
+              previousInterviewer:
+                type: string
+              currentInterviewer:
+                type: string
+
+    # ========== ERROR SCHEMAS ==========
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          description: "Error message describing what went wrong"
+          example: "Invalid credentials"
+        message:
+          type: string
+          description: "Additional error details"
+        code:
+          type: string
+          description: "Error code for programmatic handling"
+
+    # ========== SETTINGS SCHEMAS ==========
+    PortalSettings:
+      type: object
+      properties:
+        portalLogo:
+          $ref: '#/components/schemas/FileAttachment'
+        portalName:
+          type: string
+          example: "TechCorp Careers"
+        portalHeader:
+          $ref: '#/components/schemas/FileAttachment'
+        portalFooter:
+          $ref: '#/components/schemas/FileAttachment'
+        fileStorage:
+          type: object
+          properties:
+            storageType:
+              type: string
+              enum: [local, cloudinary, s3]
+            cloudinaryCloudName:
+              type: string
+            cloudinaryApiKey:
+              type: string
+            cloudinaryApiSecret:
+              type: string
+            awsRegion:
+              type: string
+            awsAccessKeyId:
+              type: string
+            awsSecretAccessKey:
+              type: string
+            awsBucketName:
+              type: string
+
+    EmailSettings:
+      type: object
+      properties:
+        mailProvider:
+          type: string
+          enum: [smtp, resend, brevo]
+        smtp_host:
+          type: string
+        smtp_port:
+          type: string
+        smtp_user:
+          type: string
+        smtp_password:
+          type: string
+        smtp_from:
+          type: string
+        resend_api_key:
+          type: string
+        resend_from:
+          type: string
+        resend_reply_to:
+          type: string
+        brevo_api_key:
+          type: string
+        brevo_from:
+          type: string
+        brevo_reply_to:
+          type: string
+
+    AISettings:
+      type: object
+      properties:
+        gemini_key:
+          type: string
+          description: "Google Gemini AI API key"
+        enable:
+          type: boolean
+          description: "Whether AI processing is enabled"
+
+  # ========== EXAMPLES ==========
+  examples:
+    CandidateApplication:
+      summary: Complete candidate application
+      value:
+        name: "Sarah Johnson"
+        email: "sarah@email.com"
+        location: "New York, NY"
+        experience: 4
+        skills: ["React", "TypeScript", "Node.js", "AWS"]
+        expectedCTC: 95000
+        currentCTC: 80000
+        noticePeriod: 30
+        phoneNumber: "+1-555-987-6543"
+        jobId: "64f1a2b3c4d5e6f7g8h9i0j1"
+        customFields:
+          portfolio: "https://sarah-portfolio.com"
+          availability: "2 weeks"
+        attachments:
+          - id: "resume_123"
+            name: "sarah_resume.pdf"
+            url: "https://storage.com/resumes/sarah_resume.pdf"
+            type: "application/pdf"
+            size: 1024000
+
+    JobCreation:
+      summary: New job posting creation
+      value:
+        title: "Full Stack Developer"
+        description: "Join our growing team as a Full Stack Developer. You'll work on exciting projects using modern technologies..."
+        skills: ["JavaScript", "React", "Node.js", "MongoDB", "AWS"]
+        experience: 3
+        salary:
+          min: 70000
+          max: 100000
+          inText: "Competitive salary with equity options"
+          isPrivate: false
+        status: "open"
+        isPublished: true
+        links:
+          - "https://company.com/benefits"
+          - "https://company.com/culture"

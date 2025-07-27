@@ -1,8 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import dbConnect, { CandidateAccount } from "@/lib/mongodb";
 import { User, Lane } from "@/lib/mongodb";
 import mongoose from "mongoose";
+import { signupRateLimiter } from "@/lib/rateLimiter";
 
 const DEFAULT_LANES = [
   "applied",
@@ -13,7 +14,7 @@ const DEFAULT_LANES = [
   "rejected",
 ];
 
-export async function POST(req: Request) {
+async function handleSignup(req: NextRequest) {
   try {
     await dbConnect();
     var { email, password, name, role, organizationId } = await req.json();
@@ -100,4 +101,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
   }
+}
+
+// Export with rate limiting
+export async function POST(req: Request) {
+  // SECURITY FIX: Apply rate limiting to prevent signup spam
+  return signupRateLimiter(req as NextRequest, handleSignup);
 }

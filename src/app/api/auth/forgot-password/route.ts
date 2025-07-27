@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import crypto from "crypto";
 import dbConnect, { CandidateAccount, Settings } from "@/lib/mongodb";
 import { User } from "@/lib/mongodb";
@@ -6,6 +6,7 @@ import { sendMail } from "../../event-mail";
 import { ObjectId } from "mongoose";
 import { Organization } from "@/lib/models/user";
 import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
+import { passwordResetRateLimiter } from "@/lib/rateLimiter";
 
 type NodemailerError = {
   errno?: number;
@@ -45,7 +46,7 @@ const getNodemailerErrorMessage = (error: NodemailerError) => {
 };
 
 // Initial lookup to find all accounts with the given email
-export async function POST(req: Request) {
+async function handleForgotPassword(req: NextRequest) {
   try {
     await dbConnect();
     const { email, selectedOrgId } = await req.json();
@@ -238,4 +239,10 @@ async function handlePasswordReset(
     }
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
+}
+
+// Export with rate limiting
+export async function POST(req: Request) {
+  // SECURITY FIX: Apply rate limiting to prevent abuse
+  return passwordResetRateLimiter(req as NextRequest, handleForgotPassword);
 }

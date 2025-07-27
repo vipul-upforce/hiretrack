@@ -6,6 +6,14 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(request: NextRequest) {
   try {
     await connectToDatabase();
+    
+    // Give models a moment to initialize if they haven't already
+    let retries = 0;
+    while (!CandidateAccount && retries < 5) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      retries++;
+    }
+    
     const jobId = request.nextUrl.searchParams?.get("jobid");
     const { user } = (await auth(request)) || {};
 
@@ -20,14 +28,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Model not found" }, { status: 404 });
     }
 
-    const candidate = await CandidateAccount.findByIdAndUpdate(user.id, {
-      $push: { appliedApplications: jobId },
-    }).lean();
+    const candidate = await CandidateAccount.findByIdAndUpdate(
+      user.id, 
+      { $push: { appliedApplications: jobId } },
+      { new: true, lean: true } // Return updated document
+    );
+
+    if (!candidate) {
+      return NextResponse.json(
+        { error: "Candidate not found" },
+        { status: 404 }
+      );
+    }
 
     const dateTime = await getFormattedDate(request, new Date());
-    // const historyCreated =
     await History?.create({
-      candidateId: candidate?._id,
+      candidateId: candidate._id,
       jobId,
       history: [
         {
@@ -54,6 +70,14 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     await connectToDatabase();
+    
+    // Give models a moment to initialize if they haven't already
+    let retries = 0;
+    while (!CandidateAccount && retries < 5) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      retries++;
+    }
+    
     const { user } = (await auth(request)) || {};
 
     if (!user) {
@@ -68,8 +92,15 @@ export async function GET(request: NextRequest) {
     }
 
     const candidate = await CandidateAccount.findOne({ _id: user.id }).lean();
-    const appliedApplications = (candidate as { appliedApplications: string[] })
-      .appliedApplications;
+    
+    if (!candidate) {
+      return NextResponse.json(
+        { error: "Candidate not found" },
+        { status: 404 }
+      );
+    }
+    
+    const appliedApplications = candidate.appliedApplications || [];
 
     return NextResponse.json({ appliedApplications }, { status: 200 });
   } catch (error) {

@@ -179,6 +179,8 @@ function Settings() {
                   onClick={() => {
                     if (option.key === "users") {
                       router.push("/dashboard/users");
+                    } else if (option.key === "portal") {
+                      router.push("/dashboard/settings/portal");
                     } else {
                       setOpenDialog(option.key);
                     }
@@ -204,7 +206,7 @@ function Settings() {
                 </Card>
 
                 {/* Dialog Component */}
-                {openDialog === option.key && (
+                {openDialog === option.key && option.key !== "portal" && (
                   <SettingDialog
                     isOpen={openDialog === option.key}
                     onClose={() => setOpenDialog(null)}

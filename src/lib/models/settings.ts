@@ -54,6 +54,14 @@ const settingsSchema = new Schema({
       type: fileMetaSchema,
       default: null,
     },
+    portalLogoDark: {
+      type: fileMetaSchema,
+      default: null,
+    },
+    portalFavicon: {
+      type: fileMetaSchema,
+      default: null,
+    },
     portalHeader: {
       type: fileMetaSchema,
       default: null,
@@ -65,6 +73,14 @@ const settingsSchema = new Schema({
     portalName: {
       type: String,
       default: "",
+    },
+    primaryColor: {
+      type: String,
+      default: "#6366f1",
+    },
+    secondaryColor: {
+      type: String,
+      default: "#8b5cf6",
     },
   },
   gemini: {
@@ -98,10 +114,14 @@ export interface ISettings {
   mailConfig: Ismtp;
   gemini: IGemini;
   portalConfigs?: {
-    portalLogo: string | null;
-    portalHeader: string | null;
-    portalFooter: string | null;
+    portalLogo: any | null;
+    portalLogoDark: any | null;
+    portalFavicon: any | null;
+    portalHeader: any | null;
+    portalFooter: any | null;
     portalName: string;
+    primaryColor: string;
+    secondaryColor: string;
   };
   timeZone: {
     name: string;

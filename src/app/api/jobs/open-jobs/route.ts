@@ -1,17 +1,43 @@
 import connectToDatabase, { Job, Organization } from "@/lib/mongodb";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { validateQueryParams, VALIDATION_PATTERNS, MAX_LENGTHS, sanitizeString } from "@/lib/inputValidation";
 
 interface CustomField {
   label: string;
   private?: boolean;
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
+    // SECURITY FIX: Validate query parameters for public endpoint
+    const validation = validateQueryParams(request.nextUrl.searchParams, {
+      o: { 
+        type: 'string',
+        maxLength: MAX_LENGTHS.name,
+        pattern: VALIDATION_PATTERNS.safeString
+      },
+      title: {
+        type: 'string',
+        maxLength: MAX_LENGTHS.title,
+        sanitize: true
+      },
+      limit: {
+        type: 'number',
+        min: 1,
+        max: 50  // Reasonable limit for public job listings
+      }
+    });
+    
+    if (!validation.isValid) {
+      return NextResponse.json(
+        { error: 'Invalid query parameters', details: validation.errors },
+        { status: 400 }
+      );
+    }
+
     await connectToDatabase();
-    const url = new URL(request.url);
-    const orgName = url.searchParams?.get("o");
-    const title = url.searchParams?.get("title");
+    const orgName = sanitizeString(request.nextUrl.searchParams?.get("o") || "");
+    const title = sanitizeString(request.nextUrl.searchParams?.get("title") || "");
 
     if (!Organization && !Job) {
       return NextResponse.json(

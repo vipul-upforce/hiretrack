@@ -19,6 +19,7 @@ export interface ICandidate {
   expectedCTC: number;
   currentCTC: number;
   noticePeriod: number;
+  phoneNumber?: string; // New field - optional
   // currentLocation: string;
   tags?: ITag[];
   resume: {
@@ -97,6 +98,7 @@ export const candidateSchema = new Schema(
     expectedCTC: { type: Number, required: false },
     currentCTC: { type: Number, required: false },
     noticePeriod: { type: Number, required: false },
+    phoneNumber: { type: String, required: false },
     resume: {
       id: String,
       name: String,

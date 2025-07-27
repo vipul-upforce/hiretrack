@@ -3,8 +3,9 @@ import { sendMail } from "@/app/api/event-mail";
 import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
 import { User } from "@/lib/mongodb";
 import dbConnect from "@/lib/mongodb";
+import { otpRateLimiter } from "@/lib/rateLimiter";
 
-export async function POST(req: NextRequest) {
+async function handleSendOtp(req: NextRequest) {
   try {
     await dbConnect();
     const { email, organizationId } = await req.json();
@@ -76,4 +77,10 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// Export with rate limiting
+export async function POST(req: Request) {
+  // SECURITY FIX: Apply rate limiting to prevent OTP spam
+  return otpRateLimiter(req as NextRequest, handleSendOtp);
 }

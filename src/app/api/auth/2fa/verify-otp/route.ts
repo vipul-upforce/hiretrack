@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { User } from "@/lib/mongodb";
 import dbConnect from "@/lib/mongodb";
 import { signToken } from "@/app/actions/auth";
-// import { signToken } from "@/app/actions/auth";
-// import { returnTokenBasedResponse } from "../../login/route";
+import { setSecureAuthTokens } from "@/lib/secureTokens";
+import { loginRateLimiter } from "@/lib/rateLimiter";
 
-export async function POST(req: NextRequest) {
+async function handleVerifyOtp(req: NextRequest) {
   try {
     await dbConnect();
     const { email, otp } = await req.json();
@@ -107,13 +107,17 @@ const returnTokenBasedResponse = async (obj: any) => {
     user: token,
   });
 
-  response.cookies.set("token", token, {
-    httpOnly: false,
-    sameSite: "strict",
-    // expires: new Date(Date.now() + 2 * 60 * 1000),
-    expires: 30,
-    // maxAge: 30 * 24 * 60 * 60,
+  // SECURITY FIX: Use secure token system with improved security
+  setSecureAuthTokens(response, token, {
+    expires: 30, // 30 days
+    maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
   });
 
   return response;
 };
+
+// Export with rate limiting
+export async function POST(req: Request) {
+  // SECURITY FIX: Apply rate limiting to prevent OTP brute force attacks
+  return loginRateLimiter(req as NextRequest, handleVerifyOtp);
+}
