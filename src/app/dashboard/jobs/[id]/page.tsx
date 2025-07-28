@@ -6,7 +6,7 @@ import {
   DroppableProvided,
 } from "@hello-pangea/dnd";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { CreateCandidateDialog } from "./components/Dialogs/create-candidate-dialog";
 import { CreateLaneDialog } from "./components/Dialogs/create-lane-dialog";
 import { CandidateDetailsDialog } from "./components/Dialogs/candidate-details-dialog";
@@ -33,7 +33,20 @@ import { useSSE } from "@/hooks/useSSE";
 import { mergeRefs } from "react-merge-refs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { QuickSelectAndFilter } from "./components/QuickSelectAndFilter";
-// import CandidatesPage from "./CandidatesPage";
+
+interface FilterState {
+  search: string;
+  logicalOperator: "AND" | "OR";
+  topCandidates: boolean;
+  appliedThisWeek: boolean;
+  appliedToday: boolean;
+  appliedIn15Days: boolean;
+  toFollowUp: boolean;
+  assigned: boolean;
+  notAssigned: boolean;
+  withRemarks: boolean;
+  withoutRemarks: boolean;
+}
 
 export default function JobProgressPage() {
   const id = useParams()?.id as string;
@@ -57,13 +70,16 @@ export default function JobProgressPage() {
   const [initialLaneToEdit, setInitialLaneToEdit] = useState<string | null>(
     null
   );
+  const [filterConditions, setFilterConditions] = useState<FilterState | null>(
+    null
+  );
+
   const {
     ref: scrollRef,
     setIsDndDragging,
     isDragging,
   } = useDragToScroll<HTMLDivElement>();
 
-  // Initialize useSSE hook with hardcoded role "admin" and jobId
   const { candidates: sseCandidates, lanes: updatedLanes } = useSSE(
     user?.role || "",
     setSelectedCandidate,
@@ -89,7 +105,6 @@ export default function JobProgressPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLaneEditOpen, setIsLaneEditOpen] = useState(false);
   const [isFileOver, setIsFileOver] = useState(false);
-  const [filteredCandidates, setFilteredCandidates] = useState<Candidate[]>([]);
 
   const {
     handleAddLane,
@@ -127,31 +142,173 @@ export default function JobProgressPage() {
     candidateToDelete,
   });
 
-  // useEffect(() => {
-  //   console.log("Loading states:", {
-  //     isJobLoading,
-  //     isCandidatesLoading,
-  //     isLanesLoading,
-  //     jobError,
-  //   });
-  //   console.log("Data:", { job, candidatesFromQuery, lanes });
-  //   console.log("scrollRef.current:", scrollRef.current);
-  // }, [
-  //   isJobLoading,
-  //   isCandidatesLoading,
-  //   isLanesLoading,
-  //   jobError,
-  //   job,
-  //   candidatesFromQuery,
-  //   lanes,
-  //   scrollRef,
-  // ]);
+  // Merge candidatesFromQuery and sseCandidates
+  const mergedCandidates = useMemo(() => {
+    const candidateMap = new Map<string, Candidate>(
+      candidatesFromQuery?.map((c) => [c._id, c]) || []
+    );
+
+    // Update or add candidates from SSE
+    sseCandidates.forEach((sseCandidate) => {
+      candidateMap.set(sseCandidate._id, sseCandidate);
+    });
+
+    return Array.from(candidateMap.values());
+  }, [candidatesFromQuery, sseCandidates]);
+
+  useEffect(() => {
+    if (candidatesFromQuery && lanes) {
+      let currentCandidates = [...mergedCandidates];
+
+      // Apply filter conditions if they exist
+      if (filterConditions) {
+        currentCandidates = currentCandidates.filter((candidate) => {
+          // Apply text search
+          if (filterConditions.search) {
+            const searchLower = filterConditions.search.toLowerCase();
+            const matchesSearch =
+              candidate.name.toLowerCase().includes(searchLower) ||
+              candidate.skills.some((skill) =>
+                skill.toLowerCase().includes(searchLower)
+              ) ||
+              candidate.experience.toString().includes(searchLower) ||
+              (candidate.assignment?.interviewerId as any)?.name
+                ?.toLowerCase()
+                .includes(searchLower) ||
+              candidate.location.toLowerCase().includes(searchLower);
+            if (!matchesSearch) return false;
+          }
+
+          // Apply other filters
+          const activeFilters = [
+            {
+              key: "topCandidates",
+              filter: (candidate: Candidate) =>
+                candidate.scores?.overall && candidate.scores.overall >= 7,
+            },
+            {
+              key: "appliedThisWeek",
+              filter: (candidate: Candidate) => {
+                if (!candidate.tracking?.createdAt) return false;
+                const oneWeekAgo = new Date();
+                oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                return new Date(candidate.tracking.createdAt) >= oneWeekAgo;
+              },
+            },
+            {
+              key: "appliedToday",
+              filter: (candidate: Candidate) => {
+                if (!candidate.tracking?.createdAt) return false;
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                return (
+                  new Date(candidate.tracking.createdAt) >= today &&
+                  new Date(candidate.tracking.createdAt) < tomorrow
+                );
+              },
+            },
+            {
+              key: "appliedIn15Days",
+              filter: (candidate: Candidate) => {
+                if (!candidate.tracking?.createdAt) return false;
+                const fifteenDaysAgo = new Date();
+                fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
+                return new Date(candidate.tracking.createdAt) >= fifteenDaysAgo;
+              },
+            },
+            {
+              key: "toFollowUp",
+              filter: (candidate: Candidate) =>
+                candidate.followUp && candidate.followUp.note,
+            },
+            {
+              key: "assigned",
+              filter: (candidate: Candidate) => candidate.assignment,
+            },
+            {
+              key: "notAssigned",
+              filter: (candidate: Candidate) => !candidate.assignment,
+            },
+            {
+              key: "withRemarks",
+              filter: (candidate: Candidate) =>
+                candidate.remarks && candidate.remarks.length > 0,
+            },
+            {
+              key: "withoutRemarks",
+              filter: (candidate: Candidate) =>
+                !candidate.remarks || candidate.remarks.length === 0,
+            },
+          ].filter(
+            (filter) =>
+              filterConditions[filter.key as keyof FilterState] === true
+          );
+
+          if (activeFilters.length > 0) {
+            if (filterConditions.logicalOperator === "AND") {
+              return activeFilters.every(({ filter }) => filter(candidate));
+            } else {
+              return activeFilters.some(({ filter }) => filter(candidate));
+            }
+          }
+
+          return true;
+        });
+      }
+
+      // Apply archived filter
+      currentCandidates = currentCandidates.filter(
+        (candidate) => showArchived || !candidate.isDeleted
+      );
+
+      // Update columns
+      const lanesArray = updatedLanes || [...lanes.lanes];
+      lanesArray.forEach((lane) => {
+        if (!initialCandidateColumns.find((item) => item.id === lane)) {
+          initialCandidateColumns.push({
+            id: lane as CandidateStatus,
+            title: lane,
+            candidates: [],
+          });
+        }
+      });
+
+      const updatedColumns = lanesArray.map((lane) => {
+        const column = initialCandidateColumns.find((item) => item.id === lane);
+        const candidates = currentCandidates.filter(
+          (candidate) => candidate.status === lane
+        );
+
+        return {
+          id: lane as CandidateStatus,
+          title: column?.title || lane,
+          candidates: candidates,
+        } as CandidateColumn;
+      });
+
+      setColumns(updatedColumns);
+    }
+  }, [mergedCandidates, lanes, updatedLanes, showArchived, filterConditions]);
+
+  useEffect(() => {
+    if (laneToEdit && initialLaneToEdit === null) {
+      setInitialLaneToEdit(laneToEdit);
+    }
+  }, [laneToEdit]);
+
+  useEffect(() => {
+    if (!isLaneEditOpen) {
+      setInitialLaneToEdit(null);
+      setLaneToEdit(null);
+    }
+  }, [isLaneEditOpen]);
 
   useEffect(() => {
     const token = Cookies.get("token");
     if (token) {
       verifyAndDecryptJWTToken(token).then((decryptedResponse) => {
-        console.log("User fetch result:", decryptedResponse);
         if (decryptedResponse.success && decryptedResponse.user) {
           setUser(decryptedResponse.user);
         }
@@ -165,88 +322,7 @@ export default function JobProgressPage() {
     }
   }, [isDialogOpen]);
 
-  // Combine candidates from useFetchCandidatesQuery and useSSE
-  useEffect(() => {
-    if (candidatesFromQuery && lanes) {
-      const mergedCandidates = [...candidatesFromQuery];
-      // debugger;
-      // console.log(
-      //   "🙌🙌🙌🙌 ",
-      //   mergedCandidates.find((c) => c._id === selectedCandidate?._id)?.history
-      // );
-      sseCandidates.forEach((sseCandidate) => {
-        const index = mergedCandidates.findIndex(
-          (c) => c._id === sseCandidate._id
-        );
-        if (index >= 0) {
-          mergedCandidates[index] = sseCandidate;
-        } else {
-          if (showArchived || !sseCandidate.isDeleted) {
-            mergedCandidates.push(sseCandidate);
-          }
-        }
-      });
-
-      const lanesArray = updatedLanes || [...lanes.lanes];
-
-      lanesArray.forEach((lane) => {
-        if (!initialCandidateColumns.find((item) => item.id === lane)) {
-          initialCandidateColumns.push({
-            id: lane as CandidateStatus,
-            title: lane,
-            candidates: [],
-          });
-        }
-      });
-
-      // Use filtered candidates if available, otherwise use merged candidates
-      const candidatesToUse =
-        filteredCandidates.length > 0 ? filteredCandidates : mergedCandidates;
-
-      const updatedColumns = lanesArray.map((lane) => {
-        const column = initialCandidateColumns.find((item) => item.id === lane);
-        const candidates = candidatesToUse.filter(
-          (candidate) =>
-            candidate.status === lane &&
-            (showArchived ? candidate.isDeleted : !candidate.isDeleted)
-        );
-        // if (updateSelectedCandodate) {
-        //   handleCandidateUpdate(updateSelectedCandodate);
-        // }
-        return {
-          id: lane as CandidateStatus,
-          title: column?.title || lane,
-          candidates: candidates,
-        } as CandidateColumn;
-      });
-
-      setColumns(updatedColumns);
-    }
-  }, [
-    candidatesFromQuery,
-    sseCandidates,
-    lanes,
-    updatedLanes,
-    showArchived,
-    filteredCandidates,
-  ]);
-
-  // Update initialLaneToEdit when laneToEdit is set
-  useEffect(() => {
-    if (laneToEdit && initialLaneToEdit === null) {
-      setInitialLaneToEdit(laneToEdit);
-    }
-  }, [laneToEdit]);
-
-  // Reset initialLaneToEdit when the edit dialog is closed
-  useEffect(() => {
-    if (!isLaneEditOpen) {
-      setInitialLaneToEdit(null);
-      setLaneToEdit(null);
-    }
-  }, [isLaneEditOpen]);
-
-  // Fallback UI to ensure div renders
+  // Fallback UI
   if (isJobLoading || isCandidatesLoading || isLanesLoading || !lanes) {
     return (
       <>
@@ -290,15 +366,10 @@ export default function JobProgressPage() {
               </CardHeader>
             </Card>
           </div>
-
           <div className="flex-1 overflow-hidden px-4 pb-4">
             <DragDropContext
               onDragStart={() => setIsDndDragging(true)}
               onDragEnd={(result: any) => {
-                // console.log(
-                //   "onDragEnd triggered, scrollRef.current:",
-                //   scrollRef.current
-                // );
                 setIsDndDragging(false);
                 onDragEnd(result);
               }}
@@ -321,6 +392,7 @@ export default function JobProgressPage() {
       </>
     );
   }
+
   if (jobError) {
     return <NoDataFound name={"Job"} />;
   }
@@ -330,7 +402,6 @@ export default function JobProgressPage() {
       className="h-screen flex flex-col overflow-hidden"
       style={{ width: "100%" }}
     >
-      {/* Header section with breadcrumbs and action buttons */}
       <div className="flex-shrink-0 px-4 pt-4 pb-2">
         <div className="flex items-center justify-between">
           <Breadcrumb
@@ -349,24 +420,18 @@ export default function JobProgressPage() {
         </div>
       </div>
 
-      {/* Quick Select and Filter Section */}
       <QuickSelectAndFilter
         currentJobId={id}
-        candidates={candidatesFromQuery || []}
-        onFilterChange={setFilteredCandidates}
+        candidates={mergedCandidates}
+        onFilterChange={setFilterConditions}
         showArchived={showArchived}
         onShowArchivedChange={setShowArchived}
       />
 
-      {/* <CandidatesPage /> */}
       <div className="flex-1 overflow-hidden px-4 pb-4">
         <DragDropContext
           onDragStart={() => setIsDndDragging(true)}
           onDragEnd={(result: any) => {
-            // console.log(
-            //   "onDragEnd triggered, scrollRef.current:",
-            //   scrollRef.current
-            // );
             setIsDndDragging(false);
             onDragEnd(result);
           }}
@@ -378,31 +443,29 @@ export default function JobProgressPage() {
                 ref={mergeRefs([provided.innerRef, scrollRef])}
                 className="h-full flex gap-3 overflow-x-auto"
               >
-                {columns.map((column, index) => {
-                  return (
-                    <KanbanColumn
-                      key={column.id}
-                      column={column}
-                      index={index}
-                      isDragging={isDragging}
-                      isFileOver={isFileOver}
-                      setIsFileOver={setIsFileOver}
-                      handleFileDrop={handleFileDrop}
-                      handleDeleteLane={handleDeleteLane}
-                      handleEditLane={handleEditLaneClick}
-                      setLaneToDelete={setLaneToDelete}
-                      setLaneToEdit={setLaneToEdit}
-                      refetch={refetch}
-                      selectedCandidate={selectedCandidate}
-                      setSelectedCandidate={setSelectedCandidate}
-                      isDetailsOpen={isDetailsOpen}
-                      setIsDetailsOpen={setIsDetailsOpen}
-                      openRemarksFor={openRemarksFor}
-                      setOpenRemarksFor={setOpenRemarksFor}
-                      handleDeleteClick={handleDeleteClick}
-                    />
-                  );
-                })}
+                {columns.map((column, index) => (
+                  <KanbanColumn
+                    key={column.id}
+                    column={column}
+                    index={index}
+                    isDragging={isDragging}
+                    isFileOver={isFileOver}
+                    setIsFileOver={setIsFileOver}
+                    handleFileDrop={handleFileDrop}
+                    handleDeleteLane={handleDeleteLane}
+                    handleEditLane={handleEditLaneClick}
+                    setLaneToDelete={setLaneToDelete}
+                    setLaneToEdit={setLaneToEdit}
+                    refetch={refetch}
+                    selectedCandidate={selectedCandidate}
+                    setSelectedCandidate={setSelectedCandidate}
+                    isDetailsOpen={isDetailsOpen}
+                    setIsDetailsOpen={setIsDetailsOpen}
+                    openRemarksFor={openRemarksFor}
+                    setOpenRemarksFor={setOpenRemarksFor}
+                    handleDeleteClick={handleDeleteClick}
+                  />
+                ))}
                 {provided.placeholder}
               </div>
             )}

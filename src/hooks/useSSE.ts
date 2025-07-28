@@ -58,10 +58,11 @@ export const useSSE = (
         if (data.type === "candidateUpdate") {
           const encodedCandidate = data.candidate;
           const updatedCandidate = await getDecodedSSE(encodedCandidate);
-          // console.log("Decoded candidate:", {
-          //   updatedCandidateId: updatedCandidate?._id,
-          //   updatedCandidate,
-          // });
+          console.log("Decoded candidate:", {
+            updatedCandidateId: updatedCandidate?._id,
+            status: updatedCandidate.status,
+            updatedCandidate,
+          });
 
           if (!updatedCandidate || !updatedCandidate._id) {
             // console.warn("Invalid candidate data received:", updatedCandidate);
@@ -69,6 +70,7 @@ export const useSSE = (
           }
 
           setCandidates((prev) => {
+            // debugger
             const index = prev.findIndex((c) => c._id === updatedCandidate._id);
             if (index >= 0) {
               return [
@@ -77,10 +79,15 @@ export const useSSE = (
                 ...prev.slice(index + 1),
               ];
             }
+            console.log("AFTER SETTING THE UPDATED CANIDATE: ", {
+            updatedCandidateId: updatedCandidate?._id,
+            status: updatedCandidate.status,
+            updatedCandidate,
+          })
             return [...prev, updatedCandidate];
           });
 
-          setTimeout(() => {
+          // setTimeout(() => {
             // debugger;
             const currentSelected = selectedCandidateRef.current;
             let currentSelectedId: string | undefined;
@@ -172,7 +179,7 @@ export const useSSE = (
               //   updatedCandidateId: updatedCandidate._id,
               // });
             }
-          }, 500);
+          // }, 500);
         } else if (data.type === "clients") {
           setClients(data.clients);
         } else if (data.type === "lanesUpdate") {
