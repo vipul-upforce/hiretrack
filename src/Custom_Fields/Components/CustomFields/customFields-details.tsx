@@ -75,15 +75,14 @@ const CustomFieldsData = ({ customFields: cfWOFormatting }: FormValues) => {
     return null;
   }
 
-  // Helper function to get field type
-  const getFieldType = (fieldName: string): string | undefined => {
+  const getFieldType = (fieldName: string): any | undefined => {
     for (const form of Object.values(cfMetaData)) {
       if (form && typeof form === "object" && "fields" in form) {
         const field = (form as any).fields.find(
           (f: any) => f.label === fieldName
         );
         if (field) {
-          return field.type;
+          return field;
         }
       }
     }
@@ -138,9 +137,26 @@ const CustomFieldsData = ({ customFields: cfWOFormatting }: FormValues) => {
     }
   };
 
+  const sortedCustomFields = Object.entries(customFields).sort(([keyA], [keyB]) => {
+    const aField = getFieldType(keyA);
+    const bField = getFieldType(keyB);
+
+    const aIsIndividual = aField && (aField.candidateId || aField.jobId);
+    const bIsIndividual = bField && (bField.candidateId || bField.jobId);
+
+    if (aIsIndividual && !bIsIndividual) {
+      return 1;
+    }
+    if (!aIsIndividual && bIsIndividual) {
+      return -1;
+    }
+
+    return (aField?.renderOrder ?? 0) - (bField?.renderOrder ?? 0);
+  });
+
   return (
     <div className="flex flex-col gap-4">
-      {Object.entries(customFields).map(([key, value]) => {
+      {sortedCustomFields.map(([key, value]) => {
         if (
           (typeof value === "string" && value.trim() === "") ||
           (Array.isArray(value) && value.length === 0)
@@ -221,7 +237,7 @@ const CustomFieldsData = ({ customFields: cfWOFormatting }: FormValues) => {
                         .map((file) => (
                           <div
                             key={file.name}
-                            className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                            className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
                           >
                             <div className="flex items-center gap-3">
                               <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-md">
@@ -252,7 +268,7 @@ const CustomFieldsData = ({ customFields: cfWOFormatting }: FormValues) => {
                             <a
                               href={file.base64}
                               download={file.name}
-                              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors duration-200"
+                              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-blue-50 dark:bg-blue-900/20 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors duration-200"
                             >
                               <svg
                                 className="w-4 h-4"

@@ -141,59 +141,72 @@ function CustomFields({
 
   return (
     <div className="flex flex-col gap-2">
-      {formNameObject?.fields.map((field) => {
-        const fieldHook = customFieldHooks[field.label];
-        if (field.jobId && field.jobId !== values._id) {
-          return null;
-        }
-        if (field.candidateId && field.candidateId !== values._id) {
-          return null;
-        }
-        if (!allFields && field.private) {
-          return null;
-        }
-        return (
-          <div
-            key={field.id}
-            className="flex flex-col gap-2"
-            ref={(el) => {
-              fieldRefs.current[field.label] = el;
-            }}
-          >
-            <Label htmlFor={field.label} className="capitalize">
-              {field.label.split(" |||||(")[0]}
-              {field.required && (
-                <span className="text-red-500 text-sm capitalize">*</span>
+      {[...formNameObject.fields]
+        .sort((a, b) => {
+          const aIsIndividual = a.candidateId || a.jobId;
+          const bIsIndividual = b.candidateId || b.jobId;
+
+          if (aIsIndividual && !bIsIndividual) {
+            return 1;
+          }
+          if (!aIsIndividual && bIsIndividual) {
+            return -1;
+          }
+          return 0;
+        })
+        .map((field) => {
+          const fieldHook = customFieldHooks[field.label];
+          if (field.jobId && field.jobId !== values._id) {
+            return null;
+          }
+          if (field.candidateId && field.candidateId !== values._id) {
+            return null;
+          }
+          if (!allFields && field.private) {
+            return null;
+          }
+          return (
+            <div
+              key={field.id}
+              className="flex flex-col gap-2"
+              ref={(el) => {
+                fieldRefs.current[field.label] = el;
+              }}
+            >
+              <Label htmlFor={field.label} className="capitalize">
+                {field.label.split(" |||||(")[0]}
+                {field.required && (
+                  <span className="text-red-500 text-sm capitalize">*</span>
+                )}
+              </Label>
+              {RenderField({
+                getFieldProps,
+                label: field.label,
+                // formId: field.id,
+                setFieldValue,
+                setFieldTouched,
+                type: field.type,
+                values: values as FormValues,
+                options: field.options
+                  ?.map((opt) => opt.trim())
+                  .filter((opt) => opt !== ""),
+                setFieldError,
+                fieldHook, // Pass the field hook for additional functionality
+                isEditMode,
+              })}
+              {fieldHook?.fieldMeta.touched && fieldHook?.fieldMeta.error && (
+                <div
+                  className="text-red-500 text-xs capitalize"
+                  style={{
+                    marginTop: "-5px",
+                  }}
+                >
+                  {fieldHook.fieldMeta.error}
+                </div>
               )}
-            </Label>
-            {RenderField({
-              getFieldProps,
-              label: field.label,
-              // formId: field.id,
-              setFieldValue,
-              setFieldTouched,
-              type: field.type,
-              values: values as FormValues,
-              options: field.options
-                ?.map((opt) => opt.trim())
-                .filter((opt) => opt !== ""),
-              setFieldError,
-              fieldHook, // Pass the field hook for additional functionality
-              isEditMode,
-            })}
-            {fieldHook?.fieldMeta.touched && fieldHook?.fieldMeta.error && (
-              <div
-                className="text-red-500 text-xs capitalize"
-                style={{
-                  marginTop: "-5px",
-                }}
-              >
-                {fieldHook.fieldMeta.error}
-              </div>
-            )}
-          </div>
-        );
-      })}
+            </div>
+          );
+        })}
     </div>
   );
 }
