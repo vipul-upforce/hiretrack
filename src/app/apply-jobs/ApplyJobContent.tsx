@@ -3,7 +3,7 @@ import JobModal from "./JobModal";
 import { useFetchOpenJobQuery } from "@/lib/features/job/jobApi";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { LogOut, Search } from "lucide-react";
+import { LogOut, Search, MapPin, Calendar, Briefcase, ChevronRight } from "lucide-react";
 import Cookies from "js-cookie";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -70,6 +70,10 @@ export default function ApplyJobsContent({
     footerHTML: "",
   });
 
+  // Portal settings for styling
+  const [primaryColor, setPrimaryColor] = useState<string>("#6366f1");
+  const [secondaryColor, setSecondaryColor] = useState<string>("#8b5cf6");
+
   const {
     data: jobs,
     isLoading,
@@ -98,6 +102,15 @@ export default function ApplyJobsContent({
       const config = allowance?.data?.find(
         (org: ISettings) => org?.portalConfigs?.portalName === urlOrgName
       ).portalConfigs;
+      
+      // Set portal colors
+      if (config?.primaryColor) {
+        setPrimaryColor(config.primaryColor);
+      }
+      if (config?.secondaryColor) {
+        setSecondaryColor(config.secondaryColor);
+      }
+      
       if (config?.portalHeader?.url && config?.portalFooter?.url) {
         const [headerRes, footerRes] = await Promise.all([
           fetch(config.portalHeader.url),
@@ -120,6 +133,14 @@ export default function ApplyJobsContent({
       setInvalidPage(true);
     }
     const config = allowance?.data?.[0]?.portalConfigs;
+
+    // Set portal colors for default org
+    if (config?.primaryColor) {
+      setPrimaryColor(config.primaryColor);
+    }
+    if (config?.secondaryColor) {
+      setSecondaryColor(config.secondaryColor);
+    }
 
     if (config?.portalHeader?.url && config?.portalFooter?.url) {
       const [headerRes, footerRes] = await Promise.all([
@@ -240,53 +261,81 @@ export default function ApplyJobsContent({
   };
   console.log(jobs);
   return (
-    <div className={showHeaderFooter ? "flex flex-col min-h-screen" : ""}>
+    <div className={showHeaderFooter ? "flex flex-col min-h-screen relative" : "relative"}>
+      {/* Background pattern */}
+      <div className="fixed inset-0 -z-10">
+        <div 
+          className="absolute inset-0 opacity-5"
+          style={{
+            backgroundImage: `radial-gradient(circle at 20% 80%, ${primaryColor}22 0%, transparent 60%), 
+                             radial-gradient(circle at 80% 20%, ${secondaryColor}22 0%, transparent 60%),
+                             radial-gradient(circle at 40% 40%, ${primaryColor}11 0%, transparent 50%)`,
+          }}
+        />
+        <div 
+          className="absolute inset-0 opacity-20"
+          style={{
+            backgroundImage: `linear-gradient(90deg, transparent 0%, ${primaryColor}05 50%, transparent 100%)`,
+          }}
+        />
+      </div>
+
       {showHeaderFooter && (
         <div dangerouslySetInnerHTML={{ __html: layoutState?.headerHTML }} />
       )}
-      <main className={showHeaderFooter ? "flex-1 p-4" : ""}>
+      <main className={showHeaderFooter ? "flex-1 p-4 relative z-10" : "relative z-10"}>
         <div className="container mx-auto p-2">
-          <div className="py-2 flex flex-row justify-between items-start">
+          <div className="py-4 flex flex-row justify-between items-start mb-8">
             <div>
-              <h1 className="lg:text-2xl sm:text-xl text-lg font-bold mb-4 ">
+              <h1 className="lg:text-3xl sm:text-2xl text-xl font-bold mb-2 bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
                 Open Positions {orgName ? `for ${orgName}` : ""}
               </h1>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
+                Discover amazing opportunities and take your career to the next level
+              </p>
             </div>
 
             {userLoggedIn && (
               <Button
                 variant="ghost"
                 className={cn(
-                  "flex items-start gap-3 rounded-lg px-3 py-2 text-sm transition-all text-red-500 hover:text-red-600 hover:bg-red-50",
+                  "flex items-center gap-2 rounded-xl px-4 py-2 text-sm transition-all text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-800/50 backdrop-blur-sm",
                   "justify-start"
                 )}
                 onClick={handleLogout}
               >
-                <LogOut className="h-5 w-5" />
+                <LogOut className="h-4 w-4" />
                 <span className="hidden sm:inline">Logout</span>
               </Button>
             )}
           </div>
-          <div className="flex gap-2 mb-4 w-full  flex-row ">
-            <div className="relative w-full flex flex-row items-center max-w-md">
-              <Input
-                type="text"
-                placeholder="Search jobs..."
-                className="pl-10 pr-4  border rounded-lg w-full"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    handleSearch();
-                  }
-                }}
-              />
-              <Search className="absolute left-3 text-muted-foreground h-5 w-5" />
+          
+          {jobs && jobs.length > 5 && (
+            <div className="flex gap-3 mb-8 w-full flex-row">
+              <div className="relative w-full flex flex-row items-center max-w-md">
+                <Input
+                  type="text"
+                  placeholder="Search..."
+                  className="pl-12 pr-4 py-3 border rounded-xl bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleSearch();
+                    }
+                  }}
+                />
+                <Search className="absolute left-4 text-gray-400 h-5 w-5" />
+              </div>
+              <Button 
+                onClick={handleSearch} 
+                className="px-6 py-3 text-sm font-semibold rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+              >
+                <Search className="w-4 h-4 mr-2" />
+                Search
+              </Button>
             </div>
-            <Button onClick={handleSearch} className="px-4 py-2 text-sm">
-              Search
-            </Button>
-          </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {isLoading ? (
               // Show skeleton loading cards
@@ -317,93 +366,126 @@ export default function ApplyJobsContent({
               jobs.map((job, index) => (
                 <div
                   key={index}
-                  className="bg-background break-words rounded-lg border inset-shadow-sm p-4 lg:p-6 cursor-pointer hover:shadow-md transition-shadow flex flex-col justify-between"
+                  className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-6 cursor-pointer hover:shadow-md transition-shadow duration-200"
                   onClick={() => {
                     setSelectedJob(job);
                     setIsJobModalOpen(true);
                   }}
                 >
-                  <div className="h-full">
-                    <h2 className="text-lg lg:text-xl font-semibold mb-2 line-clamp-3">
-                      {job.title}
-                    </h2>
-                    <p
-                      className="text-muted-foreground mb-4 line-clamp-2 text-sm lg:text-lg"
-                      dangerouslySetInnerHTML={{
-                        __html: job?.description || "No description found",
-                      }}
-                    ></p>
-                  </div>
-                  <div>
-                    <div className="flex flex-wrap gap-2">
-                      {job.skills.slice(0, 3).map((skill, i) => (
-                        <span
-                          key={i}
-                          className="break-all bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 text-sm px-3 py-1 rounded-full h-7 max-w-[30%] overflow-clip"
-                        >
-                          {skill}
-                        </span>
-                      ))}
-                    </div>
-                    <div className="mt-4 text-sm text-muted-foreground flex flex-rw items-center justify-between">
-                      <p>Experience: {job.experience} years</p>
 
-                      {job.salary ? (
-                        <div className="flex items-center">
-                          {job.salary?.inText || job.salary?.inText === "" ? (
-                            <span className="text-sm font-medium">
-                              {job.salary.inText}
-                            </span>
-                          ) : (
-                            <>
-                              {job.salary?.min && job.salary.min !== 0 && (
-                                <span className="text-sm font-medium">
-                                  {job.salary.min} LPA
-                                </span>
-                              )}
-                              {job.salary?.min &&
-                                job.salary.min !== 0 &&
-                                job.salary?.max &&
-                                job.salary.max !== 0 && (
-                                  <span className="mx-1 text-muted-foreground">
-                                    -
-                                  </span>
-                                )}
-                              {job.salary?.max && job.salary.max !== 0 && (
-                                <span className="text-sm font-medium">
-                                  {job.salary.max} LPA
-                                </span>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      ) : (
-                        ""
-                      )}
+                  {/* Card content */}
+                  <div className="flex flex-col h-full">
+                    {/* Header section */}
+                    <div className="flex-1 mb-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white leading-tight line-clamp-2">
+                          {job.title}
+                        </h2>
+                        <ChevronRight className="w-5 h-5 text-gray-400" />
+                      </div>
+                      
+                      <div 
+                        className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed line-clamp-3 mb-4"
+                        dangerouslySetInnerHTML={{
+                          __html: job?.description || "No description found",
+                        }}
+                      />
+
+                      {/* Skills badges */}
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {job.skills.slice(0, 3).map((skill, i) => (
+                          <span
+                            key={i}
+                            className="px-3 py-1 text-xs font-medium rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
+                          >
+                            {skill}
+                          </span>
+                        ))}
+                        {job.skills.length > 3 && (
+                          <span className="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                            +{job.skills.length - 3} more
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="mt-2 flex flex-wrap gap-2 ">
-                      {job?.customFields &&
-                        Object.entries(job?.customFields)
-                          .filter(([key, value]) => {
-                            const field = formNameObject?.fields.find(
-                              (f) => f.label === key
-                            );
-                            if (field?.jobId && field.jobId !== job?._id)
-                              return false;
-                            if (
-                              (typeof value === "string" && value === "") ||
-                              (typeof value === "object" &&
-                                Object.keys(value).length === 0)
-                            ) {
-                              return false;
-                            }
-                            return field?.showOnCard;
-                          })
-                          .map(([key, value], i) => (
-                            <div key={i}>
-                              <CustomFieldBadge kii={key} value={value} />
-                            </div>
-                          ))}
+
+                    {/* Footer section */}
+                    <div className="space-y-3">
+                      {/* Experience and Salary row */}
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                          <Briefcase className="w-4 h-4" />
+                          <span className="font-medium">{job.experience} years exp</span>
+                        </div>
+
+                        {job.salary && (
+                          <div className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
+                            <span className="w-4 h-4 flex items-center justify-center text-sm font-semibold">₹</span>
+                            {job.salary?.inText || job.salary?.inText === "" ? (
+                              <span className="text-sm font-semibold">
+                                {job.salary.inText}
+                              </span>
+                            ) : (
+                              <span className="text-sm font-semibold">
+                                {job.salary?.min && job.salary.min !== 0 && `${job.salary.min}`}
+                                {job.salary?.min && job.salary.min !== 0 && job.salary?.max && job.salary.max !== 0 && "-"}
+                                {job.salary?.max && job.salary.max !== 0 && `${job.salary.max}`}
+                                {(job.salary?.min || job.salary?.max) && " LPA"}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Custom fields */}
+                      {job?.customFields && Object.entries(job?.customFields)
+                        .filter(([key, value]) => {
+                          const field = formNameObject?.fields.find(
+                            (f) => f.label === key
+                          );
+                          if (field?.jobId && field.jobId !== job?._id)
+                            return false;
+                          if (
+                            (typeof value === "string" && value === "") ||
+                            (typeof value === "object" &&
+                              Object.keys(value).length === 0)
+                          ) {
+                            return false;
+                          }
+                          return field?.showOnCard;
+                        }).length > 0 && (
+                        <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                          {Object.entries(job?.customFields)
+                            .filter(([key, value]) => {
+                              const field = formNameObject?.fields.find(
+                                (f) => f.label === key
+                              );
+                              if (field?.jobId && field.jobId !== job?._id)
+                                return false;
+                              if (
+                                (typeof value === "string" && value === "") ||
+                                (typeof value === "object" &&
+                                  Object.keys(value).length === 0)
+                              ) {
+                                return false;
+                              }
+                              return field?.showOnCard;
+                            })
+                            .map(([key, value], i) => (
+                              <div key={i}>
+                                <CustomFieldBadge kii={key} value={value} />
+                              </div>
+                            ))}
+                        </div>
+                      )}
+
+
+                      {/* Apply indicator */}
+                      <div className="flex items-center justify-between pt-2">
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          Click to view details & apply
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -368,7 +368,7 @@ export function QuickSelectAndFilter({
             onChange={(e) =>
               setFilters((prev) => ({ ...prev, search: e.target.value }))
             }
-            className="pl-10"
+            className="pl-10 bg-white dark:bg-black border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
           />
           {filters.search && (
             <Button

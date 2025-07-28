@@ -66,62 +66,89 @@ export default function ApplyOptions({
   return (
     <Dialog open={isOptionsOpen} onClose={onClose}>
       <div
-        className="fixed inset-0 bg-black bg-opacity-25"
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
         aria-hidden="true"
       />
-      <div className="fixed inset-0 flex items-center justify-center p-4 sm:p-2 h-[100vh]">
-        <Dialog.Panel className="relative w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw] xl:w-[30vw] transform overflow-hidden rounded-2xl bg-card p-6 sm:p-4 text-left align-middle shadow-xl transition-all max-h-[80vh] overflow-y-auto">
+      <div className="fixed inset-0 flex items-center justify-center p-4 z-50">
+        <Dialog.Panel className="relative w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-gray-900 p-6 text-left align-middle shadow-2xl transition-all border border-gray-200 dark:border-gray-700">
           <button
             type="button"
-            className="absolute top-4 right-4 text-muted-foreground hover:text-foreground w-4 h-4"
+            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             onClick={onClose}
           >
-            <X width={15} />
+            <X className="w-4 h-4" />
           </button>
 
-          <Dialog.Title
-            as="h3"
-            className="text-lg font-bold leading-6 text-foreground top-0 break-words"
-          >
-            Alert
-          </Dialog.Title>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+              <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <Dialog.Title
+              as="h3"
+              className="text-xl font-bold text-gray-900 dark:text-white"
+            >
+              Authentication Required
+            </Dialog.Title>
+          </div>
 
-          <p className="text-muted-foreground text-sm md:text-md mt-2">
-            Currently, You are not logged in. Please choose how you want to
-            continue.
+          <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed mb-6">
+            You're not currently logged in. Please choose how you'd like to continue with your application.
           </p>
 
-          <div className="mt-6 flex flex-col sm:flex-row sm:justify-end gap-3">
+          <div className="space-y-3">
             {roles === "" ? (
-              <div className="flex flex-col sm:flex-row sm:justify-between w-full gap-3">
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <Button onClick={handleSignupRedirect} className="text-sm">
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Button 
+                    onClick={handleSignupRedirect} 
+                    variant="outline"
+                    className="w-full py-2.5 text-sm font-medium border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  >
                     Sign Up
                   </Button>
-                  <Button onClick={handleLoginRedirect} className="text-sm">
+                  <Button 
+                    onClick={handleLoginRedirect} 
+                    variant="outline"
+                    className="w-full py-2.5 text-sm font-medium border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  >
                     Login
                   </Button>
                 </div>
-                <div>
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-gray-200 dark:border-gray-700" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-white dark:bg-gray-900 px-2 text-gray-500 dark:text-gray-400">Or</span>
+                  </div>
+                </div>
+                <div className="w-full flex justify-center">
                   <ApplyAsGuestDialog
                     jobId={job._id as string}
                     isOpen={isFormDialogOpen}
                     setIsOpen={setIsFormDialogOpen}
                     closeParent={onClose}
+                    jobTitle={job.title}
                   />
                 </div>
-              </div>
+              </>
             ) : (
               <>
                 {readOnly ? (
-                  <Button onClick={handleSignupRedirect} disabled>
-                    Applied
+                  <Button 
+                    disabled
+                    className="w-full py-2.5 text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                  >
+                    Already Applied
                   </Button>
                 ) : (
                   <CreateCandidateDialog
                     jobId={job._id as string}
                     isOpen={isFormDialogOpen}
                     setIsOpen={setIsFormDialogOpen}
+                    jobTitle={job.title}
                   />
                 )}
               </>

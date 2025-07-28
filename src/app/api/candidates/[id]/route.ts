@@ -45,6 +45,7 @@ export async function PUT(
   const fieldsToTrack = [
     "name",
     "email",
+    "contact",
     "location",
     "experience",
     "currentCTC",

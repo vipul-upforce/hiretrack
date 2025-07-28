@@ -17,11 +17,10 @@ export async function POST(request: NextRequest) {
     const validation = validateInput(data, {
       jobId: {
         required: true,
-        type: 'object'
-      },
-      'jobId._id': {
-        required: true,
-        type: 'objectId'
+        type: 'object',
+        customValidator: (value) => {
+          return value && typeof value._id === 'string' && /^[0-9a-fA-F]{24}$/.test(value._id);
+        }
       },
       name: {
         required: true,
@@ -35,7 +34,8 @@ export async function POST(request: NextRequest) {
         type: 'email',
         maxLength: MAX_LENGTHS.email
       },
-      phone: {
+      contact: {
+        required: true,
         type: 'string',
         maxLength: 20,
         pattern: VALIDATION_PATTERNS.phone
@@ -147,6 +147,7 @@ export async function POST(request: NextRequest) {
       expectedCTC: data.expectedCTC,
       currentCTC: data.currentCTC,
       noticePeriod: data.noticePeriod,
+      contact: data.contact,
       status: candidateStatus,
       remarks: data.remarks || [],
       tracking: {

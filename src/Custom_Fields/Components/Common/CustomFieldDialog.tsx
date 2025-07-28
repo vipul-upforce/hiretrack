@@ -16,19 +16,23 @@ function CustomFieldDialog({
   regular = false,
   modal = true,
 }: CustomFieldDialogProps) {
+  console.log('CustomFieldDialog props:', { isOpen, title, regular, modal, hasChildren: !!children });
+  
   return (
     <div>
       <Dialog open={isOpen} onOpenChange={onClose} modal={modal}>
         <DialogContent
           className={`${
             !regular ? "sm:max-w-[80vw] xl:max-w-[50vw] h-[90vh]" : ""
-          } p-6 flex flex-col overflow-y-auto`}
+          } p-0 flex flex-col bg-white dark:bg-black border dark:border-gray-800`}
           aria-describedby="custom-field-dialog-description"
         >
-          <DialogHeader className="pb-4 border-b">
-            <DialogTitle className="text-xl font-bold">{title}</DialogTitle>
+          <DialogHeader className="px-6 pt-6 pb-4 border-b dark:border-gray-700">
+            <DialogTitle className="text-xl font-bold text-gray-900 dark:text-gray-100">{title}</DialogTitle>
           </DialogHeader>
-          {children}
+          <div className="flex-1 overflow-hidden px-4 pb-6">
+            {children}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

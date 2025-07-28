@@ -35,7 +35,6 @@ import {
   User,
   MapPin,
   Star,
-  DollarSign,
   Calendar,
   Clock,
   Target,

@@ -19,7 +19,7 @@ function FormCustomFieldList() {
 
   const breadcrumbs = [
     <div key="custom-fields" onClick={() => setStepName("FormList")}>
-      Global Meta Fields
+      Personalized Form Fields
     </div>,
     <div key={selectedFormId?.formName}>{selectedFormId?.formName}</div>,
   ];
@@ -29,7 +29,8 @@ function FormCustomFieldList() {
       <div className="flex justify-between">
         <Breadcrumbs breadcrumbs={breadcrumbs} />
         <Button onClick={handleOpen}>
-          <Plus />
+          <Plus className="mr-2 h-4 w-4" />
+          Add a new field
         </Button>
       </div>
       {/* <Separator className="my-4" /> */}

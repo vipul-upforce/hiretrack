@@ -11,9 +11,10 @@ import {
   Download,
   MapPin,
   Clock,
-  DollarSign,
   Calendar,
   User,
+  Phone,
+  Mail,
 } from "lucide-react";
 import { CandidateStatusBadge } from "../Utils/candidate-status-badge";
 import { Candidate } from "@/types/candidate";
@@ -92,6 +93,7 @@ export default function DetailsDialogHeader({
             </div>
             {candidate.email && (
               <div className="text-gray-500 font-thin text-sm flex flex-row items-center">
+                <Mail size={12} className="mr-1" />
                 {candidate.email}
                 <Button
                   variant="ghost"
@@ -103,47 +105,66 @@ export default function DetailsDialogHeader({
                   <Copy size={14} />
                   <span className="sr-only">Copy Email</span>
                 </Button>
-                {(user?.role === "admin" || user?.role === "hr") && (
-                  <Popover modal={true}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="ml-2 h-6 w-6"
-                        title="Tags"
-                        ref={triggerRef}
-                      >
-                        <Tag size={14} />
-                        <span className="sr-only">Tags</span>
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      onClick={handlePopoverContentClick}
-                      className="p-0"
+                {candidate.contact && (
+                  <>
+                    <span className="mx-2 text-gray-400">•</span>
+                    <Phone size={12} className="mr-1" />
+                    {candidate.contact}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="ml-2 h-6 w-6"
+                      onClick={() => handleCandidateInfoCopy(candidate.contact || "")}
+                      title="Copy Contact Number"
                     >
-                      <TagsDialog
-                        user={user}
-                        candidate={candidate}
-                        refetch={refetch}
-                        onClose={() => {
-                          triggerRef.current?.click();
-                        }}
-                      />
-                    </PopoverContent>
-                  </Popover>
+                      <Copy size={14} />
+                      <span className="sr-only">Copy Contact Number</span>
+                    </Button>
+                  </>
                 )}
-                {candidate.resume?.url && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="ml-2 h-6 w-6"
-                    onClick={handleDownloadCV}
-                    title="Download CV"
-                  >
-                    <Download size={14} />
-                    <span className="sr-only">Download CV</span>
-                  </Button>
-                )}
+                <div className="flex flex-row items-center">
+                  {(user?.role === "admin" || user?.role === "hr") && (
+                    <Popover modal={true}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="ml-2 h-6 w-6"
+                          title="Tags"
+                          ref={triggerRef}
+                        >
+                          <Tag size={14} />
+                          <span className="sr-only">Tags</span>
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        onClick={handlePopoverContentClick}
+                        className="p-0"
+                      >
+                        <TagsDialog
+                          user={user}
+                          candidate={candidate}
+                          refetch={refetch}
+                          onClose={() => {
+                            triggerRef.current?.click();
+                          }}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                  {candidate.resume?.url && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="ml-2 h-6 w-6"
+                      onClick={handleDownloadCV}
+                      title="Download CV"
+                    >
+                      <Download size={14} />
+                      <span className="sr-only">Download CV</span>
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
           </div>

@@ -200,14 +200,14 @@ export function KanbanColumn({
         <div
           ref={provided.innerRef}
           {...provided.draggableProps}
-          className="flex-1 min-w-[450px] px-2"
+          className={`flex-1 min-w-[450px] ${index === 0 ? 'pl-0 pr-1' : 'px-1'}`}
           style={{
             ...provided.draggableProps.style,
             userSelect: "none",
             // opacity: snapshot.isDragging ? 0.8 : 1,
           }}
         >
-          <div className="h-full flex flex-col bg-gray-50/70 dark:bg-gray-800/30 rounded-lg p-2 min-w-0 w-full max-w-full">
+          <div className="h-full flex flex-col bg-gray-50/70 dark:bg-gray-800/30 rounded-xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm p-2 min-w-0 w-full max-w-full">
             <div className="py-2 flex-shrink-0 px-2 mb-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
@@ -226,28 +226,30 @@ export function KanbanColumn({
                     {column.title}
                   </h3>
                 </div>
-                <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-700 px-2 py-1 rounded-full min-w-[24px] text-center shadow-sm">
-                  {
-                    column.candidates.filter(
-                      (candidate) =>
-                        candidate?.jobId?._id?.toString() ===
-                        jobId?.toString()
-                    ).length
-                  }
-                </span>
-                <LaneOptionsMenu
-                  laneId={column.id}
-                  onSort={handleSort}
-                  handleDeleteLane={handleDeleteLane}
-                  setLaneToDelete={setLaneToDelete}
-                  setLaneToEdit={setLaneToEdit}
-                  onEdit={handleEditLane}
-                  isOpen={isLaneOptionsOpen && column.id === isLaneOpsOpenFor}
-                  setIsOpen={(open) => {
-                    setIsLaneOptionsOpen(open);
-                    setIsLaneOpsOpenFor(open ? column.id : null);
-                  }}
-                />
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-700 px-2 py-1 rounded-full min-w-[24px] text-center shadow-sm">
+                    {
+                      column.candidates.filter(
+                        (candidate) =>
+                          candidate?.jobId?._id?.toString() ===
+                          jobId?.toString()
+                      ).length
+                    }
+                  </span>
+                  <LaneOptionsMenu
+                    laneId={column.id}
+                    onSort={handleSort}
+                    handleDeleteLane={handleDeleteLane}
+                    setLaneToDelete={setLaneToDelete}
+                    setLaneToEdit={setLaneToEdit}
+                    onEdit={handleEditLane}
+                    isOpen={isLaneOptionsOpen && column.id === isLaneOpsOpenFor}
+                    setIsOpen={(open) => {
+                      setIsLaneOptionsOpen(open);
+                      setIsLaneOpsOpenFor(open ? column.id : null);
+                    }}
+                  />
+                </div>
               </div>
             </div>
             <div className="flex-1 overflow-hidden space-y-2 pr-2 min-w-0">

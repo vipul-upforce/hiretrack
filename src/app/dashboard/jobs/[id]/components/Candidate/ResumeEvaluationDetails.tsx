@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { RefreshCwIcon } from "lucide-react";
-import { CandidateScoreBadge } from "../Utils/candidate-score-badge";
 import { Candidate } from "@/types/candidate";
 import useRoles from "@/hooks/useRoles";
 
@@ -21,7 +20,7 @@ export default function ResumeEvaluationDetails({
   isEvaluatingFor,
   onReEvaluate,
 }: ResumeEvaluationDetailsProps) {
-  const [showEvalDetails, setShowEvalDetails] = useState(false);
+  const [showEvalDetails, setShowEvalDetails] = useState(true);
   const role = useRoles();
   if (!localCandidate.scores) return null;
 
@@ -65,34 +64,7 @@ export default function ResumeEvaluationDetails({
             )}
           </div>
 
-          {localCandidate.scores.overall !== undefined ? (
-            <div className="capitalize flex gap-2 py-2">
-              {localCandidate.scores.overall >= 0 && (
-                <CandidateScoreBadge
-                  score={localCandidate.scores.overall}
-                  category="Overall"
-                />
-              )}
-              {localCandidate.scores.experience >= 0 && (
-                <CandidateScoreBadge
-                  score={localCandidate.scores.experience}
-                  category="Experience"
-                />
-              )}
-              {localCandidate.scores.skills >= 0 && (
-                <CandidateScoreBadge
-                  score={localCandidate.scores.skills}
-                  category="Skills"
-                />
-              )}
-              {localCandidate.scores.affordability >= 0 && (
-                <CandidateScoreBadge
-                  score={localCandidate.scores.affordability}
-                  category="Affordability"
-                />
-              )}
-            </div>
-          ) : (
+          {localCandidate.scores.overall === undefined && (
             <p className="text-gray-500 dark:text-gray-400">
               This candidate has not been evaluated yet.
             </p>

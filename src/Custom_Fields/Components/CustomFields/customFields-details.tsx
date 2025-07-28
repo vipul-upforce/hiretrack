@@ -139,7 +139,7 @@ const CustomFieldsData = ({ customFields: cfWOFormatting }: FormValues) => {
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="space-y-4">
       {Object.entries(customFields).map(([key, value]) => {
         if (
           (typeof value === "string" && value.trim() === "") ||
@@ -149,11 +149,11 @@ const CustomFieldsData = ({ customFields: cfWOFormatting }: FormValues) => {
         }
 
         return (
-          <div key={key} className="space-y-1">
-            <Label className="font-semibold capitalize">
+          <div key={key} className="space-y-2">
+            <Label className="font-semibold text-gray-900 dark:text-white capitalize">
               {key.split(" |||||(")[0]}
             </Label>
-            <div className="text-sm text-gray-700 dark:text-gray-300">
+            <div className="text-gray-700 dark:text-gray-300">
               {Array.isArray(value) && value.length > 0 && (
                 <>
                   {value.some(
@@ -207,7 +207,7 @@ const CustomFieldsData = ({ customFields: cfWOFormatting }: FormValues) => {
                       !file.type?.endsWith("pdf") &&
                       !file.type?.startsWith("image")
                   ) && (
-                    <div className="flex flex-col gap-3 mt-2">
+                    <div className="flex flex-col gap-2">
                       {value
                         .filter(
                           (file): file is FileData =>
@@ -221,10 +221,10 @@ const CustomFieldsData = ({ customFields: cfWOFormatting }: FormValues) => {
                         .map((file) => (
                           <div
                             key={file.name}
-                            className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                            className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
                           >
                             <div className="flex items-center gap-3">
-                              <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-md">
+                              <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
                                 <svg
                                   className="w-5 h-5 text-gray-600 dark:text-gray-400"
                                   fill="none"
@@ -241,7 +241,7 @@ const CustomFieldsData = ({ customFields: cfWOFormatting }: FormValues) => {
                                 </svg>
                               </div>
                               <div className="flex flex-col">
-                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
                                   {file.name}
                                 </span>
                                 <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -252,7 +252,7 @@ const CustomFieldsData = ({ customFields: cfWOFormatting }: FormValues) => {
                             <a
                               href={file.base64}
                               download={file.name}
-                              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors duration-200"
+                              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
                             >
                               <svg
                                 className="w-4 h-4"
@@ -276,11 +276,22 @@ const CustomFieldsData = ({ customFields: cfWOFormatting }: FormValues) => {
                   )}
                   {value.every(
                     (item): item is string => typeof item === "string"
-                  ) && <span>{value.join(", ")}</span>}
+                  ) && (
+                    <div className="flex flex-wrap gap-2">
+                      {value.map((item, index) => (
+                        <span key={index} className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm rounded-full border border-gray-200 dark:border-gray-600">
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </>
               )}
-              {(!Array.isArray(value) || value.length === 0) &&
-                formatValue(value, key)}
+              {(!Array.isArray(value) || value.length === 0) && (
+                <span className="text-gray-700 dark:text-gray-300">
+                  {formatValue(value, key)}
+                </span>
+              )}
             </div>
           </div>
         );

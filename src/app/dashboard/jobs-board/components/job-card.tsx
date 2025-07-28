@@ -74,8 +74,8 @@ const JobCard = ({
                 {job.title}
               </h3>
               <div className="flex items-center gap-1">
-                {/* Warning Icon for Unpublished Jobs */}
-                {!job.isPublished && (
+                {/* Warning Icon for Unpublished Jobs in Open Lane */}
+                {!job.isPublished && job.status === "open" && (
                   <TooltipProvider>
                     <Tooltip delayDuration={0}>
                       <TooltipTrigger asChild>

@@ -40,7 +40,7 @@ function AddCustomFields() {
             </div>
             <div className="flex-1">
               <CardTitle className="text-base font-medium text-gray-900 dark:text-gray-100">
-                Global Meta Fields
+                Personalized form fields
               </CardTitle>
             </div>
           </div>
@@ -55,7 +55,7 @@ function AddCustomFields() {
       <CustomFieldDialog
         isOpen={isOpen}
         onClose={handleClose}
-        title="Global Meta Fields"
+        title="Personalized form fields"
       >
         <Stepper />
       </CustomFieldDialog>

@@ -818,54 +818,61 @@ export const wierdFileNamePattern = /[^a-zA-Z0-9(). ]/g;
 
 
 export const scoreColors: Record<number, { bg: string; text: string; border: string }> = {
+  // Poor (1-2): Red theme
   1: {
-    bg: "bg-red-50 dark:bg-red-900/20",
-    text: "text-red-800 dark:text-red-300",
-    border: "border-red-800 dark:border-red-300",
+    bg: "",
+    text: "text-red-700 dark:text-red-400",
+    border: "border-red-500 dark:border-red-400",
   },
   2: {
-    bg: "bg-red-50 dark:bg-red-900/20",
-    text: "text-red-700 dark:text-red-300",
-    border: "border-red-700 dark:border-red-300",
+    bg: "",
+    text: "text-red-700 dark:text-red-400",
+    border: "border-red-500 dark:border-red-400",
   },
+  // Below Average (3-4): Orange theme
   3: {
-    bg: "bg-orange-50 dark:bg-red-900/20",
-    text: "text-orange-700 dark:text-red-400",
-    border: "border-orange-700 dark:border-red-400",
+    bg: "",
+    text: "text-orange-700 dark:text-orange-400",
+    border: "border-orange-500 dark:border-orange-400",
   },
   4: {
-    bg: "bg-orange-50 dark:bg-orange-900/20",
-    text: "text-orange-700 dark:text-orange-300",
-    border: "border-orange-700 dark:border-orange-300",
+    bg: "",
+    text: "text-orange-700 dark:text-orange-400",
+    border: "border-orange-500 dark:border-orange-400",
   },
+  // Average (5): Purple theme
   5: {
-    bg: "bg-amber-50 dark:bg-amber-900/20",
-    text: "text-amber-700 dark:text-amber-300",
-    border: "border-amber-700 dark:border-amber-300",
+    bg: "",
+    text: "text-purple-700 dark:text-purple-400",
+    border: "border-purple-500 dark:border-purple-400",
   },
+  // Above Average (6): Indigo theme
   6: {
-    bg: "bg-yellow-50 dark:bg-lime-900/20",
-    text: "text-yellow-700 dark:text-lime-300",
-    border: "border-yellow-700 dark:border-lime-300",
+    bg: "",
+    text: "text-indigo-700 dark:text-indigo-400",
+    border: "border-indigo-500 dark:border-indigo-400",
   },
+  // Good (7): Teal theme
   7: {
-    bg: "bg-lime-50 dark:bg-teal-900/20",
-    text: "text-lime-700 dark:text-teal-400",
-    border: "border-lime-700 dark:border-teal-400",
+    bg: "",
+    text: "text-teal-700 dark:text-teal-400",
+    border: "border-teal-500 dark:border-teal-400",
   },
+  // Very Good (8): Emerald theme
   8: {
-    bg: "bg-emerald-50 dark:bg-teal-900/20",
-    text: "text-emerald-700 dark:text-teal-300",
-    border: "border-emerald-700 dark:border-teal-300",
+    bg: "",
+    text: "text-emerald-700 dark:text-emerald-400",
+    border: "border-emerald-500 dark:border-emerald-400",
   },
+  // Excellent (9-10): Green theme
   9: {
-    bg: "bg-green-50 dark:bg-emerald-900/20",
-    text: "text-green-700 dark:text-emerald-300",
-    border: "border-green-700 dark:border-emerald-300",
+    bg: "",
+    text: "text-green-700 dark:text-green-400",
+    border: "border-green-500 dark:border-green-400",
   },
   10: {
-    bg: "bg-green-50 dark:bg-green-900/20",
-    text: "text-green-700 dark:text-green-300",
-    border: "border-green-700 dark:border-green-300",
+    bg: "",
+    text: "text-green-700 dark:text-green-400",
+    border: "border-green-500 dark:border-green-400",
   },
 };

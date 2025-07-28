@@ -161,11 +161,11 @@ body {
 }
 
 /* Better form styling in dark mode */
-.dark input,
+/* .dark input,
 .dark textarea,
 .dark select {
   @apply bg-gray-800 border-gray-600 text-gray-100;
-}
+} */
 
 .dark input:focus,
 .dark textarea:focus,
@@ -304,7 +304,6 @@ body {
   }
 }
 
-
 @keyframes fadeInOrg {
   from {
     opacity: 0;
@@ -314,7 +313,6 @@ body {
     opacity: 1;
   }
 }
-
 
 @layer utilities {
   .text-balance {
@@ -340,7 +338,6 @@ body {
       margin-left: 100%;
     }
   }
-
 }
 
 /* For menus that would overflow the viewport */
@@ -351,7 +348,6 @@ body {
 }
 
 @layer utilities {
-
   #description-marker ol,
   #description-marker ul {
     @apply ms-5;

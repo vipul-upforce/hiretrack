@@ -475,6 +475,7 @@ export function EditCandidateDialog({
               <div className="flex justify-between space-x-2 border-t bg-background px-6 py-4">
                 <AddSpecificCustomFieldButton
                   candidateId={candidate._id}
+                  candidateName={candidate.name}
                   onSave={(newField) => {
                     handleAddCustomField(
                       newField,
