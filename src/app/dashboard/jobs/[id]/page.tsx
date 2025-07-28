@@ -257,6 +257,10 @@ export default function JobProgressPage() {
           return true;
         });
       }
+      // Apply archived filter
+      currentCandidates = currentCandidates.filter(
+        (candidate) => showArchived || !candidate.isDeleted
+      );
 
       // Update columns
       const lanesArray = updatedLanes || [...lanes.lanes];
@@ -272,7 +276,7 @@ export default function JobProgressPage() {
 
       const updatedColumns = lanesArray.map((lane) => {
         const column = initialCandidateColumns.find((item) => item.id === lane);
-        const candidates = mergedCandidates.filter(
+        const candidates = currentCandidates.filter(
           (candidate) =>
             candidate.status === lane &&
             (showArchived ? candidate.isDeleted : !candidate.isDeleted)

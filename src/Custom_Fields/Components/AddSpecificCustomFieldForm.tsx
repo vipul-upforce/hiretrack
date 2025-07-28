@@ -4,7 +4,8 @@ import {
   SelectTrigger,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Formik, Form, FormikHelpers } from "formik";
+import { Formik, Form, FormikHelpers, FormikProps } from "formik";
+import { useEffect, useRef } from "react";
 import { SelectValue } from "@/components/ui/select";
 import React, { memo, useCallback, useState } from "react";
 import { CustomField } from "@/Custom_Fields/Types/CustomField";
@@ -62,7 +63,15 @@ export const AddSpecificCustomFieldForm = memo(
       ...initialValues,
       label: initialValues.label.split(" |||||(")[0],
     };
-    const checkForDuplicate = useCallback(
+    const formikRef = useRef<FormikProps<CustomField>>(null);
+
+  useEffect(() => {
+    if (formikRef.current) {
+      formikRef.current.submitForm();
+    }
+  }, []);
+
+  const checkForDuplicate = useCallback(
       (label: string, currentFieldId?: string) => {
         const trimmedLabel = label.trim().toLowerCase();
         return existingFields.some(
@@ -145,7 +154,7 @@ export const AddSpecificCustomFieldForm = memo(
         );
         setHasDuplicate(isDuplicate);
         if (isDuplicate) {
-          setFieldError("label", "");
+          setFieldError("label", "This label already exists");
         }
       },
       [checkForDuplicate, isEditMode, initialValues.id]
@@ -197,6 +206,7 @@ export const AddSpecificCustomFieldForm = memo(
             </DialogTitle>
           </DialogHeader>
           <Formik
+            innerRef={formikRef}
             initialValues={initValsWithLabel}
             validationSchema={validationSchema}
             onSubmit={onSubmit}

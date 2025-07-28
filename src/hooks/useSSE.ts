@@ -58,11 +58,11 @@ export const useSSE = (
         if (data.type === "candidateUpdate") {
           const encodedCandidate = data.candidate;
           const updatedCandidate = await getDecodedSSE(encodedCandidate);
-          console.log("Decoded candidate:", {
-            updatedCandidateId: updatedCandidate?._id,
-            status: updatedCandidate.status,
-            updatedCandidate,
-          });
+          // console.log("Decoded candidate:", {
+          //   updatedCandidateId: updatedCandidate?._id,
+          //   status: updatedCandidate.status,
+          //   updatedCandidate,
+          // });
 
           if (!updatedCandidate || !updatedCandidate._id) {
             // console.warn("Invalid candidate data received:", updatedCandidate);
@@ -79,11 +79,11 @@ export const useSSE = (
                 ...prev.slice(index + 1),
               ];
             }
-            console.log("AFTER SETTING THE UPDATED CANIDATE: ", {
-            updatedCandidateId: updatedCandidate?._id,
-            status: updatedCandidate.status,
-            updatedCandidate,
-          })
+          //   console.log("AFTER SETTING THE UPDATED CANIDATE: ", {
+          //   updatedCandidateId: updatedCandidate?._id,
+          //   status: updatedCandidate.status,
+          //   updatedCandidate,
+          // })
             return [...prev, updatedCandidate];
           });
 

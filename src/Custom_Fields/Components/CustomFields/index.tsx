@@ -2,7 +2,7 @@
 
 import { Label } from "@/components/ui/label";
 import { RenderField } from "./RenderField";
-import { useField, useFormikContext } from "formik";
+import { FieldMetaProps, useField, useFormikContext } from "formik";
 import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
 import { Dayjs } from "dayjs";
 import useRoles from "@/hooks/useRoles";
@@ -82,23 +82,7 @@ function CustomFields({
   // }
 
   // console.log("⛔⛔⛔⛔⛔⛔⛔⛔ values: ", values);
-  // Create useField hooks for each custom field
-  const customFieldHooks: { [key: string]: any } = {};
-  // debugger;
-  // console.log("ROLE AT CF:::::: ", role);
-  if (formNameObject?.fields) {
-    formNameObject.fields.forEach((field: CustomField) => {
-      if (field.jobId || field.candidateId) return;
 
-      const shouldValidate = allFields || (!allFields && !field.private);
-      // eslint-disable-next-line react-hooks/rules-of-hooks
-      const [fieldProps, fieldMeta] = useConditionallyValidatedField(
-        `customFields.${field.label}`,
-        shouldValidate
-      );
-      customFieldHooks[field.label] = { fieldProps, fieldMeta };
-    });
-  }
   // Focus on first field with error only after form submission
   useEffect(() => {
     if (
@@ -155,7 +139,12 @@ function CustomFields({
           return 0;
         })
         .map((field) => {
-          const fieldHook = customFieldHooks[field.label];
+          const shouldValidate = allFields || (!allFields && !field.private);
+          const [fieldProps, fieldMeta] = useConditionallyValidatedField(
+            `customFields.${field.label}`,
+            shouldValidate
+          );
+
           if (field.jobId && field.jobId !== values._id) {
             return null;
           }
@@ -191,19 +180,20 @@ function CustomFields({
                   ?.map((opt) => opt.trim())
                   .filter((opt) => opt !== ""),
                 setFieldError,
-                fieldHook, // Pass the field hook for additional functionality
+                fieldHook: { fieldProps, fieldMeta }, // Pass the field hook for additional functionality
                 isEditMode,
               })}
-              {fieldHook?.fieldMeta.touched && fieldHook?.fieldMeta.error && (
-                <div
-                  className="text-red-500 text-xs capitalize"
-                  style={{
-                    marginTop: "-5px",
-                  }}
-                >
-                  {fieldHook.fieldMeta.error}
-                </div>
-              )}
+              {(fieldMeta as FieldMetaProps<any>).touched &&
+                (fieldMeta as FieldMetaProps<any>).error && (
+                  <div
+                    className="text-red-500 text-xs capitalize"
+                    style={{
+                      marginTop: "-5px",
+                    }}
+                  >
+                    {(fieldMeta as FieldMetaProps<any>).error}
+                  </div>
+                )}
             </div>
           );
         })}

@@ -86,7 +86,7 @@ export default function DetailsDialogHeader({
                   </span>
                 )}
                 <span className="whitespace-nowrap text-sm font-normal text-gray-600 dark:text-gray-400  flex items-center gap-1">
-                  ₹{candidate.expectedCTC.toLocaleString()}
+                  ₹{candidate.expectedCTC.toLocaleString()} LPA
                 </span>
               </span>
             </div>
