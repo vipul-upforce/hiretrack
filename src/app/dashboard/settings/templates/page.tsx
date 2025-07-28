@@ -350,10 +350,21 @@ export default function EmailTemplatesPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
+      // Transform templates to match API expected format
+      const templatesPayload = {};
+      templates.forEach((template, index) => {
+        templatesPayload[index] = {
+          templateId: template.id,
+          templateName: template.name,
+          subject: template.subject,
+          html: template.content,
+        };
+      });
+
       const response = await fetch("/api/settings/templates", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ templates }),
+        body: JSON.stringify(templatesPayload),
       });
 
       if (response.ok) {

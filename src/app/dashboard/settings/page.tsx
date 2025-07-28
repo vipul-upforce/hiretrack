@@ -188,6 +188,8 @@ function Settings() {
                       router.push("/dashboard/settings/portal");
                     } else if (option.key === "templates") {
                       router.push("/dashboard/settings/templates");
+                    } else if (option.key === "logs") {
+                      router.push("/dashboard/settings/logs");
                     } else {
                       setOpenDialog(option.key);
                     }
@@ -213,7 +215,7 @@ function Settings() {
                 </Card>
 
                 {/* Dialog Component */}
-                {openDialog === option.key && option.key !== "portal" && option.key !== "templates" && (
+                {openDialog === option.key && option.key !== "portal" && option.key !== "templates" && option.key !== "logs" && (
                   <SettingDialog
                     isOpen={openDialog === option.key}
                     onClose={() => setOpenDialog(null)}
