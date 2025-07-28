@@ -816,56 +816,222 @@ export const editorOptions = {
 export const wierdFileNamePattern = /[^a-zA-Z0-9(). ]/g;
 // export const wierdFileNamePattern = /^(?!.*[()]{2,})[a-zA-Z0-9()]+$/g;
 
+// export const scoreColors: Record<number, { bg: string; text: string; border: string }> = {
+//   1: {
+//     bg: "bg-red-50 dark:bg-red-900/20",
+//     text: "text-red-800 dark:text-red-300",
+//     border: "border-red-800 dark:border-red-300",
+//   },
+//   2: {
+//     bg: "bg-red-50 dark:bg-red-900/20",
+//     text: "text-red-700 dark:text-red-300",
+//     border: "border-red-700 dark:border-red-300",
+//   },
+//   3: {
+//     bg: "bg-orange-50 dark:bg-red-900/20",
+//     text: "text-orange-700 dark:text-red-400",
+//     border: "border-orange-700 dark:border-red-400",
+//   },
+//   4: {
+//     bg: "bg-orange-50 dark:bg-orange-900/20",
+//     text: "text-orange-700 dark:text-orange-300",
+//     border: "border-orange-700 dark:border-orange-300",
+//   },
+//   5: {
+//     bg: "bg-amber-50 dark:bg-amber-900/20",
+//     text: "text-amber-700 dark:text-amber-300",
+//     border: "border-amber-700 dark:border-amber-300",
+//   },
+//   6: {
+//     bg: "bg-yellow-50 dark:bg-lime-900/20",
+//     text: "text-yellow-700 dark:text-lime-300",
+//     border: "border-yellow-700 dark:border-lime-300",
+//   },
+//   7: {
+//     bg: "bg-lime-50 dark:bg-teal-900/20",
+//     text: "text-lime-700 dark:text-teal-400",
+//     border: "border-lime-700 dark:border-teal-400",
+//   },
+//   8: {
+//     bg: "bg-emerald-50 dark:bg-teal-900/20",
+//     text: "text-emerald-700 dark:text-teal-300",
+//     border: "border-emerald-700 dark:border-teal-300",
+//   },
+//   9: {
+//     bg: "bg-green-50 dark:bg-emerald-900/20",
+//     text: "text-green-700 dark:text-emerald-300",
+//     border: "border-green-700 dark:border-emerald-300",
+//   },
+//   10: {
+//     bg: "bg-green-50 dark:bg-green-900/20",
+//     text: "text-green-700 dark:text-green-300",
+//     border: "border-green-700 dark:border-green-300",
+//   },
+// };
 
-export const scoreColors: Record<number, { bg: string; text: string; border: string }> = {
+// export const scoreColors: Record<
+//   number,
+//   { bg: string; text: string; border: string }
+// > = {
+//   1: {
+//     bg: "bg-red-200 dark:bg-red-900/20",
+//     text: "text-red-900 dark:text-red-300",
+//     border: "border-red-300 dark:border-red-700",
+//   },
+//   2: {
+//     bg: "bg-red-100 dark:bg-red-900/10",
+//     text: "text-red-700 dark:text-red-400",
+//     border: "border-red-200 dark:border-red-800",
+//   },
+//   3: {
+//     bg: "bg-red-100 dark:bg-red-900/10",
+//     text: "text-red-500 dark:text-red-400",
+//     border: "border-red-200 dark:border-red-800",
+//   },
+//   4: {
+//     bg: "bg-orange-100 dark:bg-orange-900/10",
+//     text: "text-orange-700 dark:text-orange-400",
+//     border: "border-orange-200 dark:border-orange-800",
+//   },
+//   5: {
+//     bg: "bg-amber-50 dark:bg-amber-900/10",
+//     text: "text-amber-500 dark:text-amber-400",
+//     border: "border-amber-200 dark:border-amber-800",
+//   },
+//   6: {
+//     bg: "bg-lime-500 dark:bg-lime-900/10",
+//     text: "text-lime-700 dark:text-lime-400",
+//     border: "border-lime-200 dark:border-lime-800",
+//   },
+//   7: {
+//     bg: "bg-indigo-100	dark:bg-teal-900/10",
+//     text: "text-teal-500 dark:text-teal-400",
+//     border: "border-teal-200 dark:border-teal-800",
+//   },
+//   8: {
+//     bg: "bg-teal-100 dark:bg-teal-900/10",
+//     text: "text-teal-700 dark:text-teal-400",
+//     border: "border-teal-200 dark:border-teal-800",
+//   },
+//   9: {
+//     bg: "bg-emerald-100 dark:bg-emerald-900/10",
+//     text: "text-emerald-700 dark:text-emerald-400",
+//     border: "border-emerald-200 dark:border-emerald-800",
+//   },
+//   10: {
+//     bg: "bg-green-100 dark:bg-green-900/10",
+//     text: "text-green-700 dark:text-green-400",
+//     border: "border-green-200 dark:border-green-800",
+//   },
+// };
+
+export const scoreColors: Record<
+  number,
+  {
+    bg: string;
+    text: string;
+    border: string;
+    dark: { bg: string; text: string; border: string };
+  }
+> = {
   1: {
-    bg: "bg-red-50 dark:bg-red-900/20",
-    text: "text-red-800 dark:text-red-300",
-    border: "border-red-800 dark:border-red-300",
+    bg: "rgba(254, 202, 202, 1)", // bg-red-200
+    text: "rgba(185, 28, 28, 1)", // text-red-900
+    border: "rgba(252, 165, 165, 1)", // border-red-300
+    dark: {
+      bg: "rgba(185, 28, 28, 0.2)", // dark:bg-red-900/20
+      text: "rgba(252, 165, 165, 1)", // dark:text-red-300
+      border: "rgba(159, 18, 18, 1)", // dark:border-red-700
+    },
   },
   2: {
-    bg: "bg-red-50 dark:bg-red-900/20",
-    text: "text-red-700 dark:text-red-300",
-    border: "border-red-700 dark:border-red-300",
+    bg: "rgba(254, 226, 226, 1)", // bg-red-100
+    text: "rgba(220, 38, 38, 1)", // text-red-700
+    border: "rgba(254, 202, 202, 1)", // border-red-200
+    dark: {
+      bg: "rgba(185, 28, 28, 0.1)", // dark:bg-red-900/10
+      text: "rgba(239, 68, 68, 1)", // dark:text-red-400
+      border: "rgba(153, 27, 27, 1)", // dark:border-red-800
+    },
   },
   3: {
-    bg: "bg-orange-50 dark:bg-red-900/20",
-    text: "text-orange-700 dark:text-red-400",
-    border: "border-orange-700 dark:border-red-400",
+    bg: "rgba(254, 226, 226, 1)", // bg-red-100
+    text: "rgba(239, 68, 68, 1)", // text-red-500
+    border: "rgba(254, 202, 202, 1)", // border-red-200
+    dark: {
+      bg: "rgba(185, 28, 28, 0.1)", // dark:bg-red-900/10
+      text: "rgba(239, 68, 68, 1)", // dark:text-red-400
+      border: "rgba(153, 27, 27, 1)", // dark:border-red-800
+    },
   },
   4: {
-    bg: "bg-orange-50 dark:bg-orange-900/20",
-    text: "text-orange-700 dark:text-orange-300",
-    border: "border-orange-700 dark:border-orange-300",
+    bg: "rgba(255, 237, 213, 1)", // bg-orange-100
+    text: "rgba(234, 88, 12, 1)", // text-orange-700
+    border: "rgba(251, 191, 36, 1)", // border-orange-200
+    dark: {
+      bg: "rgba(234, 88, 12, 0.1)", // dark:bg-orange-900/10
+      text: "rgba(249, 115, 22, 1)", // dark:text-orange-400
+      border: "rgba(194, 65, 12, 1)", // dark:border-orange-800
+    },
   },
   5: {
-    bg: "bg-amber-50 dark:bg-amber-900/20",
-    text: "text-amber-700 dark:text-amber-300",
-    border: "border-amber-700 dark:border-amber-300",
+    bg: "rgba(254, 243, 199, 5)", // bg-amber-50
+    text: "rgba(245, 158, 11, 1)", // text-amber-500
+    border: "rgba(252, 211, 77, 1)", // border-amber-200
+    dark: {
+      bg: "rgba(254, 243, 199, 1)", // dark:bg-amber-9010
+      text: "rgba(151, 191, 36, 1)", // dark:text-amber-400
+      border: "rgba(180, 83, 9, 1)", // dark:border-amber-800
+    },
   },
   6: {
-    bg: "bg-yellow-50 dark:bg-lime-900/20",
-    text: "text-yellow-700 dark:text-lime-300",
-    border: "border-yellow-700 dark:border-lime-300",
+    bg: "rgba(236, 252, 203, 1)", // bg-lime-500
+    text: "rgba(101, 163, 13, 1)", // text-lime-700
+    border: "rgba(190, 242, 100, 1)", // border-lime-200
+    dark: {
+      bg: "rgba(77, 124, 15, 0.1)", // dark:bg-lime-900/10
+      text: "rgba(163, 230, 53, 1)", // dark:text-lime-400
+      border: "rgba(101, 163, 13, 1)", // dark:border-lime-800
+    },
   },
   7: {
-    bg: "bg-lime-50 dark:bg-teal-900/20",
-    text: "text-lime-700 dark:text-teal-400",
-    border: "border-lime-700 dark:border-teal-400",
+    bg: "rgba(204, 251, 241, 1)", // bg-teal-100
+    text: "rgba(13, 148, 136, 1)", // text-teal-500
+    border: "rgba(45, 212, 191, 1)", // border-teal-200
+    dark: {
+      bg: "rgba(17, 94, 89, 0.1)", // dark:bg-teal-900/10
+      text: "rgba(45, 212, 191, 1)", // dark:text-teal-400
+      border: "rgba(19, 78, 74, 1)", // dark:border-teal-800
+    },
   },
   8: {
-    bg: "bg-emerald-50 dark:bg-teal-900/20",
-    text: "text-emerald-700 dark:text-teal-300",
-    border: "border-emerald-700 dark:border-teal-300",
+    bg: "rgba(204, 251, 241, 1)", // bg-teal-100
+    text: "rgba(15, 118, 110, 1)", // text-teal-700
+    border: "rgba(45, 212, 191, 1)", // border-teal-200
+    dark: {
+      bg: "rgba(17, 94, 89, 0.1)", // dark:bg-teal-900/10
+      text: "rgba(45, 212, 191, 1)", // dark:text-teal-400
+      border: "rgba(19, 78, 74, 1)", // dark:border-teal-800
+    },
   },
   9: {
-    bg: "bg-green-50 dark:bg-emerald-900/20",
-    text: "text-green-700 dark:text-emerald-300",
-    border: "border-green-700 dark:border-emerald-300",
+    bg: "rgba(209, 250, 229, 1)", // bg-emerald-100
+    text: "rgba(16, 185, 129, 1)", // text-emerald-700
+    border: "rgba(52, 211, 153, 1)", // border-emerald-200
+    dark: {
+      bg: "rgba(6, 78, 59, 0.1)", // dark:bg-emerald-900/10
+      text: "rgba(52, 211, 153, 1)", // dark:text-emerald-400
+      border: "rgba(6, 95, 70, 1)", // dark:border-emerald-800
+    },
   },
   10: {
-    bg: "bg-green-50 dark:bg-green-900/20",
-    text: "text-green-700 dark:text-green-300",
-    border: "border-green-700 dark:border-green-300",
+    bg: "rgba(220, 252, 231, 1)", // bg-green-100
+    text: "rgba(22, 163, 74, 1)", // text-green-700
+    border: "rgba(74, 222, 128, 1)", // border-green-200
+    dark: {
+      bg: "rgba(20, 83, 45, 0.1)", // dark:bg-green-900/10
+      text: "rgba(74, 222, 128, 1)", // dark:text-green-400
+      border: "rgba(22, 101, 52, 1)", // dark:border-green-800
+    },
   },
 };

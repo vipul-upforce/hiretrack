@@ -38,6 +38,7 @@ import { User as UserIcon, FileText, MessageSquare, Clock } from "lucide-react";
 import { HistoryAndLogTable, LogsTable } from "../Candidate/HisotryAndLogTable";
 import ResumeEvaluationDetails from "../Candidate/ResumeEvaluationDetails";
 import { scoreColors } from "@/lib/constants";
+import CandidateScoreCard from "../Utils/candidate-score-card";
 
 const labelClass = "font-semibold text-base";
 
@@ -314,10 +315,13 @@ export function CandidateDetailsDialog({
         <div className="flex-1 overflow-y-auto px-6 py-4">
           <TabsContent value="overview" className="space-y-6 mt-0">
             {/* AI Assessment Scores Section */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                AI Assessment Scores
-              </h3>
+            {/* <div className="space-y-4">
+              {localCandidate.scores.overall !== undefined && (
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  AI Assessment Scores
+                </h3>
+              )}
+
               <div className="grid grid-cols-3 gap-4">
                 {localCandidate.scores?.overall !== undefined &&
                   (() => {
@@ -331,11 +335,19 @@ export function CandidateDetailsDialog({
 
                     return (
                       <div
+                        style={{
+                          backgroundColor: scoreColor.bg,
+                          color: scoreColor.text,
+                          borderColor: scoreColor.border,
+                        }}
                         className={`${scoreColor.bg} ${scoreColor.border} border rounded-lg p-4 relative`}
                       >
                         <div className="absolute top-3 right-3">
                           <svg
                             className={`w-5 h-5 ${scoreColor.text}`}
+                            style={{
+                              color: scoreColor.text,
+                            }}
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -351,6 +363,9 @@ export function CandidateDetailsDialog({
                         <div className="text-center">
                           <div
                             className={`text-2xl font-bold ${scoreColor.text}`}
+                            style={{
+                              color: scoreColor.text,
+                            }}
                           >
                             {localCandidate.scores.overall}/10
                           </div>
@@ -377,10 +392,18 @@ export function CandidateDetailsDialog({
                     return (
                       <div
                         className={`${scoreColor.bg} ${scoreColor.border} border rounded-lg p-4 relative`}
+                        style={{
+                          backgroundColor: scoreColor.bg,
+                          color: scoreColor.text,
+                          borderColor: scoreColor.border,
+                        }}
                       >
                         <div className="absolute top-3 right-3">
                           <svg
                             className={`w-5 h-5 ${scoreColor.text}`}
+                            style={{
+                              color: scoreColor.text,
+                            }}
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -396,6 +419,9 @@ export function CandidateDetailsDialog({
                         <div className="text-center">
                           <div
                             className={`text-2xl font-bold ${scoreColor.text}`}
+                            style={{
+                              color: scoreColor.text,
+                            }}
                           >
                             {localCandidate.scores.experience}/10
                           </div>
@@ -455,7 +481,8 @@ export function CandidateDetailsDialog({
                     );
                   })()}
               </div>
-            </div>
+            </div> */}
+            <CandidateScoreCard candidate={candidate} />
 
             {/* Detailed AI Evaluation */}
             <div className="space-y-4">
@@ -467,7 +494,7 @@ export function CandidateDetailsDialog({
                 localCandidate={localCandidate}
                 isReEvaluating={isReEvaluating}
                 isEvaluatingFor={isEvaluatingFor}
-                onReEvaluate={handleReEvaluation}
+                onReEvaluate={() => setConfirmReEvaluateOpen(true)}
               />
             </div>
 

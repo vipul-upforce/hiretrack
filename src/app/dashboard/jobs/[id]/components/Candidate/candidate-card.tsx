@@ -53,6 +53,7 @@ import AddFollowUpDialog from "../Dialogs/add-followup-dialog";
 import ConfirmAndRemarkDialog from "../Dialogs/mark-as-done-dialog";
 import { useUnassignHandlers } from "../../hooks/useUnassignHandlers";
 import { cn } from "@/lib/utils";
+import AttachmentsPopover from "../Remarks/attachments-popover";
 
 interface CandidateCardProps {
   candidate: Candidate;
@@ -332,7 +333,7 @@ export function CandidateCard({
         {/* Experience, Location, CTC */}
         <div className="mb-3 space-y-2">
           <div className="flex items-center gap-2 text-sm">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            <div className="w-2 h-2 bg-green-500 rounded-full mt-1.5 min-w-2"></div>
             <span className="font-semibold text-gray-700 dark:text-gray-300">
               Experience:
             </span>
@@ -341,7 +342,7 @@ export function CandidateCard({
             </span>
           </div>
           <div className="flex items-center gap-2 text-sm">
-            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+            <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 min-w-2"></div>
             <span className="font-semibold text-gray-700 dark:text-gray-300">
               Location:
             </span>
@@ -350,7 +351,7 @@ export function CandidateCard({
             </span>
           </div>
           <div className="flex items-center gap-2 text-sm">
-            <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+            <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 min-w-2"></div>
             <span className="font-semibold text-gray-700 dark:text-gray-300">
               CTC:
             </span>
@@ -363,7 +364,7 @@ export function CandidateCard({
         {/* Skills */}
         <div className="mb-3">
           <div className="flex items-center gap-2 text-sm">
-            <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+            <div className="w-2 h-2 bg-indigo-500 rounded-full mt-1.5 min-w-2"></div>
             <span className="font-semibold text-gray-700 dark:text-gray-300">
               Skills:
             </span>
@@ -440,13 +441,42 @@ export function CandidateCard({
                 })
                 .map(([key, value], i) => (
                   <div key={i} className="flex items-start gap-2 text-sm">
-                    <div className="w-2 h-2 bg-orange-500 rounded-full mt-1.5"></div>
+                    <div className="w-2 h-2 bg-orange-500 rounded-full mt-1.5 min-w-2"></div>
                     <span className="font-semibold text-gray-700 dark:text-gray-300">
-                      {key}:
+                      {key.split(" |||||(")[0]}:
                     </span>
-                    <span className="font-semibold text-orange-700 dark:text-orange-400">
+                    {/* <span className="font-semibold text-orange-700 dark:text-orange-400">
                       {String(value)}
-                    </span>
+                    </span> */}
+                    {typeof value === "string" ? (
+                      <span className="font-semibold text-orange-700 dark:text-orange-400">
+                        {value}
+                      </span>
+                    ) : Array.isArray(value) && value.length > 0 ? (
+                      <AttachmentsPopover
+                        attachments={value.map((file, index) => {
+                          if (typeof file === "string") {
+                            return {
+                              id: "",
+                              name: "",
+                              url: "",
+                              type: "",
+                              size: 0,
+                            };
+                          }
+                          return {
+                            id: `${key}-${index}-${file.name}`,
+                            name: file.name,
+                            url: file.base64 || "#",
+                            type: file.type || "unknown",
+                            size: file.size || 0,
+                          };
+                        })}
+                        onMoreClick={() => null}
+                      />
+                    ) : (
+                      "default"
+                    )}
                   </div>
                 ))}
             </div>

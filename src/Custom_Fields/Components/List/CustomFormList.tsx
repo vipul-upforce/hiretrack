@@ -22,7 +22,7 @@ function CustomFieldFormList() {
       {/* <Separator className="my-4" /> */}
       <AddFormID isOpen={isOpen} setIsOpen={setIsOpen} />
 
-      <div className="flex flex-col py-4 gap-4">
+      <div className="flex flex-col py-4 gap-4 sticky top-0">
         {Object.entries(customFields).map(([formId, form]) => {
           const fields = form.fields.filter(
             (field) => !field.candidateId && !field.jobId
