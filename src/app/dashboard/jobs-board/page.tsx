@@ -265,7 +265,7 @@ export default function KanbanPage() {
   return (
     <div className="h-screen flex flex-col overflow-hidden w-full">
       {/* Header section with improved design */}
-      <div className="flex-shrink-0 px-4 pb-2">
+      <div className="flex-shrink-0 px-4 pb-2 border-b border-gray-200 dark:border-gray-700">
         <Card className="border-0 shadow-none bg-transparent">
           <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-2 py-3 px-0">
             {/* Title */}
@@ -305,21 +305,23 @@ export default function KanbanPage() {
       </div>
 
       {/* <CandidatesPage /> */}
-      <div className="flex-1 overflow-hidden px-4 pb-4">
+      <div className="flex-1 overflow-hidden px-4 pb-4 mt-4">
         <DragDropContext onDragEnd={onDragEnd}>
-          <div className="h-full flex gap-3 overflow-x-auto w-full">
-            {columns.map((column) => (
-              <KanbanColumn
-                key={column.id}
-                column={column}
-                isCreatingJob={isCreatingJob}
-                setSelectedJob={setSelectedJob}
-                setIsDetailsOpen={setIsDetailsOpen}
-                setIsEditMode={setIsEditMode}
-                handleDeleteClick={handleDeleteClick}
-                setDuplicate={setDuplicate}
-              />
-            ))}
+          <div className="h-full overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 hover:scrollbar-thumb-gray-400 dark:hover:scrollbar-thumb-gray-500">
+            <div className="h-full flex gap-1 w-max min-w-full">
+              {columns.map((column) => (
+                <KanbanColumn
+                  key={column.id}
+                  column={column}
+                  isCreatingJob={isCreatingJob}
+                  setSelectedJob={setSelectedJob}
+                  setIsDetailsOpen={setIsDetailsOpen}
+                  setIsEditMode={setIsEditMode}
+                  handleDeleteClick={handleDeleteClick}
+                  setDuplicate={setDuplicate}
+                />
+              ))}
+            </div>
           </div>
         </DragDropContext>
       </div>

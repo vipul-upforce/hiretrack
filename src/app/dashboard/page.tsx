@@ -9,6 +9,7 @@ import DashboardLoader from "./components/dashboard-loader";
 import ActionItems from "@/components/actionitems";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
+import { Search } from "lucide-react";
 import { RenderTodaysInterviews } from "./components/RenderTodaysInterviews";
 import { RenderInterviewerAssignments } from "./components/RenderInterviewerAssignments";
 import { MultiSelect } from "@/components/ui/multi-select";
@@ -545,11 +546,59 @@ export default function DashboardPage() {
     }))
     ?.sort((a) => (a.label === "Me" ? -1 : 1));
   return (
-    <div
-      ref={scrollContainerRef}
-      className="space-y-6 h-screen overflow-y-auto px-4 mt-2 mb-4"
-    >
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="h-screen flex flex-col overflow-hidden w-full">
+      {/* Header section with improved design */}
+      <div className="flex-shrink-0 px-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+        <Card className="border-0 shadow-none bg-transparent">
+          <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-2 py-3 px-0">
+            {/* Title */}
+            <CardTitle className="line-clamp-2 md:mr-2 text-xl font-bold">
+              All Assignments
+            </CardTitle>
+
+            {/* Right Section - Search and Controls */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3">
+              <div className="flex gap-2 items-center">
+                <Input
+                  placeholder="Search assignments..."
+                  value={searchText}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const sanitizedValue = value.replace(/[/\\*+?|{}[\]()^$]/g, "");
+                    setSearchText(sanitizedValue);
+                  }}
+                  className="max-w-lg w-96"
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter") {
+                      applyFilter();
+                    }
+                  }}
+                />
+                <Button variant="secondary" onClick={applyFilter}>
+                  <Search className="h-4 w-4 mr-2" />
+                  Apply
+                </Button>
+                {(user?.role === "admin" || user?.role === "hr") && (
+                  <MultiSelect
+                    placeholder="Assigned to"
+                    open={open}
+                    setOpen={setOpen}
+                    value={selectedAssignedTo}
+                    setValue={setSelectedAssignedTo}
+                    options={options}
+                  />
+                )}
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+      </div>
+
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 min-h-0 px-4 pb-4 mt-4 space-y-6 overflow-y-auto"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Total Interviews</CardTitle>
@@ -605,41 +654,9 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Search Input and Filter Button */}
-      <div className="mt-6 flex gap-2 items-center justify-end gap-4">
-        <Input
-          placeholder="Search assignments..."
-          value={searchText}
-          onChange={(e) => {
-            const value = e.target.value;
-            const sanitizedValue = value.replace(/[/\\*+?|{}[\]()^$]/g, "");
-            setSearchText(sanitizedValue);
-          }}
-          className="max-w-md"
-          onKeyPress={(e) => {
-            if (e.key === "Enter") {
-              applyFilter();
-            }
-          }}
-        />
-        <div className="flex gap-4">
-          <Button onClick={applyFilter}>Filter</Button>
-          {(user?.role === "admin" || user?.role === "hr") && (
-            <MultiSelect
-              placeholder="Assigned to"
-              open={open}
-              setOpen={setOpen}
-              value={selectedAssignedTo}
-              setValue={setSelectedAssignedTo}
-              options={options}
-            />
-          )}
-        </div>
-      </div>
 
       {shouldShowAssignments ? (
         <div>
-          <h2 className="text-2xl font-bold mb-4">All Assignments</h2>
           {isLoading ? (
             <DashboardLoader />
           ) : (
@@ -838,6 +855,7 @@ export default function DashboardPage() {
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }

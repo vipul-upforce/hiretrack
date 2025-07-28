@@ -143,15 +143,20 @@ function Settings() {
   ];
 
   return (
-    <div className="space-y-6 h-screen overflow-y-auto px-4 mt-2 mb-4">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-          Settings
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          Manage your organization's configuration and preferences
-        </p>
+    <div className="h-screen flex flex-col overflow-hidden w-full">
+      {/* Header section with improved design */}
+      <div className="flex-shrink-0 px-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+        <Card className="border-0 shadow-none bg-transparent">
+          <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-2 py-3 px-0">
+            {/* Title */}
+            <CardTitle className="line-clamp-2 md:mr-2 text-xl font-bold">
+              Settings
+            </CardTitle>
+          </CardHeader>
+        </Card>
       </div>
+
+      <div className="flex-1 min-h-0 px-4 pb-4 mt-4 space-y-8 overflow-y-auto">
 
       {settingGroups.map((group) => (
         <div key={group.title} className="space-y-4">
@@ -171,16 +176,18 @@ function Settings() {
           </div>
 
           {/* Settings Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {group.settings.map((option) => (
               <div key={option.key}>
                 <Card
-                  className="h-full transition-all duration-200 cursor-pointer border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md bg-white dark:bg-gray-800"
+                  className="h-full transition-all duration-200 cursor-pointer border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-lg bg-white dark:bg-black"
                   onClick={() => {
                     if (option.key === "users") {
                       router.push("/dashboard/users");
                     } else if (option.key === "portal") {
                       router.push("/dashboard/settings/portal");
+                    } else if (option.key === "templates") {
+                      router.push("/dashboard/settings/templates");
                     } else {
                       setOpenDialog(option.key);
                     }
@@ -206,7 +213,7 @@ function Settings() {
                 </Card>
 
                 {/* Dialog Component */}
-                {openDialog === option.key && option.key !== "portal" && (
+                {openDialog === option.key && option.key !== "portal" && option.key !== "templates" && (
                   <SettingDialog
                     isOpen={openDialog === option.key}
                     onClose={() => setOpenDialog(null)}
@@ -234,10 +241,10 @@ function Settings() {
             </p>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <AddCustomFieldButton />
           <Card
-            className="h-full transition-all duration-200 cursor-pointer border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md bg-white dark:bg-gray-800"
+            className="h-full transition-all duration-200 cursor-pointer border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-lg bg-white dark:bg-black"
             onClick={() => setOpenDialog("tags")}
           >
             <CardHeader className="pb-3">
@@ -272,6 +279,7 @@ function Settings() {
             }}
           />
         )}
+      </div>
       </div>
     </div>
   );

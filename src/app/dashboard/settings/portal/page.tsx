@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Upload, X, Palette, Eye, Save, RefreshCw, Moon, Sun, ArrowLeft, Code, Star, Settings, Image as ImageIcon, PaintBucket, FileCode } from "lucide-react";
+import { Upload, X, Palette, Eye, Save, RefreshCw, Moon, Sun, ArrowLeft, Code, Star, Settings, Image as ImageIcon, PaintBucket, FileCode, Home, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useTheme } from "@/components/theme-provider";
@@ -15,6 +15,7 @@ import { HexColorPicker } from "react-colorful";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { Editor } from "@monaco-editor/react";
+import Link from "next/link";
 
 interface FileUpload {
   id: string;
@@ -342,35 +343,54 @@ export default function PortalConfigurationPage() {
   }
 
   return (
-    <div className="w-full py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push("/dashboard/settings")}
-            className="h-8 w-8 p-0"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold">Portal Configuration</h1>
-            <p className="text-muted-foreground mt-2">
-              Customize your portal appearance and branding
-            </p>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={fetchSettings}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
-          <Button onClick={handleSave} disabled={saving}>
-            <Save className="h-4 w-4 mr-2" />
-            {saving ? "Saving..." : "Save Changes"}
-          </Button>
-        </div>
+    <div className="h-screen flex flex-col overflow-hidden w-full">
+      {/* Header section with improved design and breadcrumbs */}
+      <div className="flex-shrink-0 px-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+        <Card className="border-0 shadow-none bg-transparent">
+          <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-2 py-3 px-0">
+            {/* Title and Breadcrumbs */}
+            <div className="flex flex-col gap-2">
+              {/* Breadcrumbs */}
+              <nav className="flex items-center text-sm text-muted-foreground font-medium">
+                <Link
+                  href="/dashboard"
+                  className="flex items-center hover:text-foreground transition-colors"
+                >
+                  <Home className="h-4 w-4 mr-2" />
+                  Dashboard
+                </Link>
+                <ChevronRight className="h-4 w-4 mx-2" />
+                <Link
+                  href="/dashboard/settings"
+                  className="hover:text-foreground transition-colors"
+                >
+                  Settings
+                </Link>
+                <ChevronRight className="h-4 w-4 mx-2" />
+                <span className="text-foreground font-semibold">
+                  Portal Configuration
+                </span>
+              </nav>
+            </div>
+
+            {/* Right Section - Action Buttons */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3">
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={fetchSettings}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh
+                </Button>
+                <Button onClick={handleSave} disabled={saving}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {saving ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
       </div>
+
+      <div className="flex-1 min-h-0 px-4 pb-4 mt-4 overflow-y-auto">
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
@@ -820,6 +840,7 @@ export default function PortalConfigurationPage() {
             </CardContent>
           </Card>
         </div>
+      </div>
       </div>
     </div>
   );

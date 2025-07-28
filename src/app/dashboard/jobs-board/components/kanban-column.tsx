@@ -35,33 +35,31 @@ const KanbanColumn = ({
   //   const router = useRouter();
 
   return (
-    <div className="flex-1 min-w-0">
-      <Card className="h-full flex flex-col border border-gray-200 dark:border-gray-700 shadow-none bg-transparent rounded-none">
-        <CardHeader className="py-3 flex-shrink-0 px-4 bg-transparent border-b border-gray-200 dark:border-gray-700 rounded-none">
-          <div className="flex items-center justify-between h-full">
-            <div className="flex items-center space-x-2">
-              <CardTitle className="text-base font-medium capitalize text-gray-700 dark:text-gray-300">
-                {column.title}
-                <span className="ml-2 text-sm text-muted-foreground">
-                  ({column.jobs.length})
-                </span>
-              </CardTitle>
-            </div>
+    <div className="flex-1 min-w-[450px] px-2">
+      <div className="h-full flex flex-col bg-gray-50/70 dark:bg-gray-800/30 rounded-lg p-3 min-w-0 w-full max-w-full">
+        <div className="py-3 flex-shrink-0 px-2 mb-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-300 truncate">
+              {column.title}
+            </h3>
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-700 px-2 py-1 rounded-full min-w-[24px] text-center shadow-sm">
+              {column.jobs.length}
+            </span>
           </div>
-        </CardHeader>
-        <CardContent className="flex-1 overflow-hidden p-0 bg-transparent rounded-none">
+        </div>
+        <div className="flex-1 overflow-hidden space-y-3 pr-2 min-w-0">
           <Droppable droppableId={column.id}>
             {(provided: any) => (
               <CustomScrollbar className="h-full">
                 <div
                   {...provided.droppableProps}
                   ref={provided.innerRef}
-                  className=""
+                  className="space-y-3 pb-4 min-w-0"
                 >
                   {isCreatingJob && column.id === "draft" && (
-                    <div className="animate-pulse bg-muted/50 border rounded-lg p-3 shadow-sm">
-                      <div className="h-5 w-2/3 bg-muted rounded mb-2"></div>
-                      <div className="h-4 w-1/3 bg-muted rounded"></div>
+                    <div className="animate-pulse bg-gray-100 dark:bg-gray-800 rounded-xl p-4 shadow-sm">
+                      <div className="h-5 w-2/3 bg-gray-300 dark:bg-gray-700 rounded mb-2"></div>
+                      <div className="h-4 w-1/3 bg-gray-300 dark:bg-gray-700 rounded"></div>
                     </div>
                   )}
 
@@ -142,8 +140,8 @@ const KanbanColumn = ({
               </CustomScrollbar>
             )}
           </Droppable>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };

@@ -291,7 +291,7 @@ export default function JobProgressPage() {
             </Card>
           </div>
 
-          <div className="flex-1 overflow-hidden px-4 pb-4">
+          <div className="flex-1 overflow-hidden px-4 pb-2">
             <DragDropContext
               onDragStart={() => setIsDndDragging(true)}
               onDragEnd={(result: any) => {
@@ -308,7 +308,7 @@ export default function JobProgressPage() {
                   <div
                     {...provided.droppableProps}
                     ref={mergeRefs([provided.innerRef, scrollRef])}
-                    className="h-full flex gap-3 overflow-x-auto"
+                    className="h-full flex gap-1 overflow-x-auto"
                   >
                     {provided.placeholder}
                   </div>
@@ -359,7 +359,7 @@ export default function JobProgressPage() {
       />
 
       {/* <CandidatesPage /> */}
-      <div className="flex-1 overflow-hidden px-4 pb-4">
+      <div className="flex-1 overflow-hidden px-4 pb-2">
         <DragDropContext
           onDragStart={() => setIsDndDragging(true)}
           onDragEnd={(result: any) => {
@@ -376,7 +376,7 @@ export default function JobProgressPage() {
               <div
                 {...provided.droppableProps}
                 ref={mergeRefs([provided.innerRef, scrollRef])}
-                className="h-full flex gap-3 overflow-x-auto"
+                className="h-full flex gap-1 overflow-x-auto"
               >
                 {columns.map((column, index) => {
                   return (

@@ -32,7 +32,7 @@ import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
 import CustomFieldBadge from "./CustomFieldBadge";
 import { CalendarClockIcon } from "lucide-react";
 import { Trash2Icon } from "lucide-react";
-import { MapPin, Clock, DollarSign, Star } from "lucide-react";
+import { MapPin, Clock, Star, Mail, Calendar, Copy } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -53,6 +53,7 @@ import AddFollowUpDialog from "../Dialogs/add-followup-dialog";
 import ConfirmAndRemarkDialog from "../Dialogs/mark-as-done-dialog";
 import { useUnassignHandlers } from "../../hooks/useUnassignHandlers";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface CandidateCardProps {
   candidate: Candidate;
@@ -91,6 +92,7 @@ export function CandidateCard({
   const [user, setUser] = useState<User | null>(null);
   const [removeFUOpen, setRemoveFUOpenLocal] = useState(false);
   const { handleRemoveFollowUp } = useRemarkHandlers(candidate, user, refetch);
+  const { toast } = useToast();
 
   // State for menu actions
   const [isEditing, setIsEditing] = useState(false);
@@ -153,6 +155,25 @@ export function CandidateCard({
   const averageScore = calculateAverageScore();
   const showStar = averageScore > 7;
 
+  // Copy to clipboard function
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: "Copied!",
+        description: `${label} copied to clipboard`,
+        duration: 2000,
+      });
+    } catch (err) {
+      toast({
+        title: "Failed to copy",
+        description: "Could not copy to clipboard",
+        variant: "destructive",
+        duration: 2000,
+      });
+    }
+  };
+
   useEffect(() => {
     (async () => {
       const token = Cookies.get("token");
@@ -170,14 +191,25 @@ export function CandidateCard({
       {/* Main content area - will expand to fill available space */}
       <div className="flex-1 flex flex-col">
         {/* Header with name and buttons */}
-        <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-100 dark:border-gray-700">
+        <div className="flex justify-between items-start mb-4 pb-4 border-b border-gray-100 dark:border-gray-800">
           <div className="flex-1 pr-3">
-            <h3 className="font-bold text-base text-gray-900 dark:text-gray-100 leading-tight flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-2">
               {showStar && (
-                <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">High-scoring candidate</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
-              {candidate.name}
-            </h3>
+              <h3 className="font-bold text-xl text-gray-900 dark:text-gray-100 leading-tight truncate">
+                {candidate.name}
+              </h3>
+            </div>
             {candidate.tags && <TagsList candidate={candidate} />}
           </div>
           <div className="flex gap-1.5 flex-shrink-0">
@@ -202,7 +234,7 @@ export function CandidateCard({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-800"
+              className="h-8 w-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"
               onClick={(e) => {
                 e.stopPropagation();
                 onViewDetails(candidate);
@@ -217,7 +249,7 @@ export function CandidateCard({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-200 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700"
+                  className="h-8 w-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <MoreVertical className="h-4 w-4" />
@@ -329,94 +361,147 @@ export function CandidateCard({
           </div>
         </div>
 
-        {/* Experience, Location, CTC */}
-        <div className="mb-3 space-y-2">
-          <div className="flex items-center gap-2 text-sm">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span className="font-semibold text-gray-700 dark:text-gray-300">
-              Experience:
-            </span>
-            <span className="font-semibold text-green-700 dark:text-green-400">
-              {candidate.experience} years
-            </span>
+        {/* Key Information Grid */}
+        <div className="grid grid-cols-2 gap-x-6 gap-y-3 mb-5 text-sm">
+          <div className="flex items-center gap-2.5 text-gray-600 dark:text-gray-400 min-w-0">
+            <Clock className="h-4 w-4 flex-shrink-0" />
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="text-xs text-gray-500 dark:text-gray-500 uppercase tracking-wide truncate">Experience</span>
+              <span className="text-gray-900 dark:text-gray-100 font-semibold truncate">
+                {candidate.experience} years
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-sm">
-            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-            <span className="font-semibold text-gray-700 dark:text-gray-300">
-              Location:
-            </span>
-            <span className="font-semibold text-blue-700 dark:text-blue-400">
-              {candidate.location}
-            </span>
+          <div className="flex items-center gap-2.5 text-gray-600 dark:text-gray-400 min-w-0">
+            <MapPin className="h-4 w-4 flex-shrink-0" />
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="text-xs text-gray-500 dark:text-gray-500 uppercase tracking-wide truncate">Location</span>
+              <span className="text-gray-900 dark:text-gray-100 font-semibold truncate">
+                {candidate.location}
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-sm">
-            <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-            <span className="font-semibold text-gray-700 dark:text-gray-300">
-              CTC:
-            </span>
-            <span className="font-semibold text-purple-700 dark:text-purple-400">
-              {candidate.expectedCTC} LPA
-            </span>
+          <div className="flex items-center gap-2.5 text-gray-600 dark:text-gray-400 min-w-0">
+            <span className="h-4 w-4 flex-shrink-0 text-sm font-semibold">₹</span>
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="text-xs text-gray-500 dark:text-gray-500 uppercase tracking-wide truncate">Expected CTC</span>
+              <span className="text-gray-900 dark:text-gray-100 font-semibold truncate">
+                {candidate.expectedCTC} LPA
+              </span>
+            </div>
           </div>
+          <div className="flex items-center gap-2.5 text-gray-600 dark:text-gray-400 min-w-0">
+            <Calendar className="h-4 w-4 flex-shrink-0" />
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="text-xs text-gray-500 dark:text-gray-500 uppercase tracking-wide truncate">Notice Period</span>
+              <span className="text-gray-900 dark:text-gray-100 font-semibold truncate">
+                {candidate.noticePeriod ? `${candidate.noticePeriod} days` : '-'}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2.5 text-gray-600 dark:text-gray-400 min-w-0">
+            <span className="h-4 w-4 flex-shrink-0 text-sm font-semibold opacity-60">₹</span>
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="text-xs text-gray-500 dark:text-gray-500 uppercase tracking-wide truncate">Current CTC</span>
+              <span className="text-gray-900 dark:text-gray-100 font-semibold truncate">
+                {candidate.currentCTC ? `${candidate.currentCTC} LPA` : '-'}
+              </span>
+            </div>
+          </div>
+          {candidate.email && !candidate.currentCTC && (
+            <div className="flex items-center gap-2.5 text-gray-600 dark:text-gray-400 min-w-0">
+              <Mail className="h-4 w-4 flex-shrink-0" />
+              <div className="flex flex-col min-w-0 flex-1">
+                <span className="text-xs text-gray-500 dark:text-gray-500 uppercase tracking-wide truncate">Email</span>
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-gray-900 dark:text-gray-100 font-semibold truncate flex-1 min-w-0">
+                    {candidate.email}
+                  </span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      copyToClipboard(candidate.email, "Email");
+                    }}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors flex-shrink-0"
+                  >
+                    <Copy className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Skills */}
-        <div className="mb-3">
-          <div className="flex items-center gap-2 text-sm">
-            <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
-            <span className="font-semibold text-gray-700 dark:text-gray-300">
-              Skills:
-            </span>
-            <div className="flex flex-wrap gap-1">
-              {candidate.skills.slice(0, 3).map((skill, index) => (
+        {candidate.skills && candidate.skills.length > 0 && (
+          <div className="mb-5">
+            <div className="mb-2">
+              <span className="text-xs text-gray-500 dark:text-gray-500 uppercase tracking-wide font-medium truncate">Skills</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {candidate.skills.slice(0, 4).map((skill, index) => (
                 <Badge
                   key={`${candidate._id}-skill-${index}-${skill}`}
                   variant="secondary"
-                  className="text-xs bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200"
+                  className="text-xs px-2.5 py-1 bg-gray-100 text-gray-700 border border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 font-medium truncate max-w-full"
+                  title={skill}
                 >
                   {skill}
                 </Badge>
               ))}
-              {candidate.skills.length > 3 && (
+              {candidate.skills.length > 4 && (
                 <Badge
                   key="more-skills"
                   variant="secondary"
-                  className="text-xs bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200"
+                  className="text-xs px-2.5 py-1 bg-gray-50 text-gray-600 border border-gray-200 dark:bg-gray-900 dark:text-gray-400 dark:border-gray-700 font-medium flex-shrink-0"
                 >
-                  +{candidate.skills.length - 3}
+                  +{candidate.skills.length - 4} more
                 </Badge>
               )}
             </div>
           </div>
-        </div>
+        )}
 
         {/* Scores */}
         {candidate.scores && candidate.scores.overall !== undefined && (
-          <div className="flex gap-1 py-1 flex-wrap justify-start mb-2">
-            {candidate.scores.overall >= 0 && (
-              <CandidateScoreBadge
-                score={candidate.scores.overall}
-                category="Overall"
-              />
-            )}
-            {candidate.scores.experience >= 0 && (
-              <CandidateScoreBadge
-                score={candidate.scores.experience}
-                category="Exp"
-              />
-            )}
-            {candidate.scores.skills >= 0 && (
-              <CandidateScoreBadge
-                score={candidate.scores.skills}
-                category="Skills"
-              />
-            )}
-            {candidate.scores.affordability >= 0 && (
-              <CandidateScoreBadge
-                score={candidate.scores.affordability}
-                category="Affordability"
-              />
-            )}
+          <div className="mb-5">
+            <div className="mb-2">
+              <span className="text-xs text-gray-500 dark:text-gray-500 uppercase tracking-wide font-medium truncate">Evaluation Scores</span>
+            </div>
+            <div className="flex gap-2 flex-wrap justify-start">
+              {candidate.scores.overall >= 0 && (
+                <div className="truncate">
+                  <CandidateScoreBadge
+                    score={candidate.scores.overall}
+                    category="Overall"
+                  />
+                </div>
+              )}
+              {candidate.scores.experience >= 0 && (
+                <div className="truncate">
+                  <CandidateScoreBadge
+                    score={candidate.scores.experience}
+                    category="Exp"
+                  />
+                </div>
+              )}
+              {candidate.scores.skills >= 0 && (
+                <div className="truncate">
+                  <CandidateScoreBadge
+                    score={candidate.scores.skills}
+                    category="Skills"
+                  />
+                </div>
+              )}
+              {candidate.scores.affordability >= 0 && (
+                <div className="truncate">
+                  <CandidateScoreBadge
+                    score={candidate.scores.affordability}
+                    category="Affordability"
+                  />
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -439,12 +524,11 @@ export function CandidateCard({
                   return field?.showOnCard;
                 })
                 .map(([key, value], i) => (
-                  <div key={i} className="flex items-start gap-2 text-sm">
-                    <div className="w-2 h-2 bg-orange-500 rounded-full mt-1.5"></div>
-                    <span className="font-semibold text-gray-700 dark:text-gray-300">
+                  <div key={i} className="text-sm">
+                    <span className="text-gray-600 dark:text-gray-400 truncate">
                       {key}:
                     </span>
-                    <span className="font-semibold text-orange-700 dark:text-orange-400">
+                    <span className="ml-1 text-gray-900 dark:text-gray-100 font-medium truncate">
                       {String(value)}
                     </span>
                   </div>
@@ -455,18 +539,18 @@ export function CandidateCard({
 
       {/* Follow-up Section - Always at bottom */}
       {candidate.followUp && candidate.followUp.note && (
-        <div className="mt-auto mb-2 p-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 flex-1">
-              <Bell className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+        <div className="mt-auto mb-2 p-3 bg-gray-50 dark:bg-gray-900/70 rounded-md border border-gray-200 dark:border-gray-800">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-start gap-2 flex-1">
+              <Bell className="h-3.5 w-3.5 text-gray-600 dark:text-gray-400 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
                 {candidate.followUp.date && (
-                  <div className="text-xs text-amber-600 dark:text-amber-400 mb-1">
+                  <div className="text-xs text-gray-600 dark:text-gray-400 mb-0.5">
                     {formatDate(candidate.followUp.date)} at{" "}
                     {formatTime(candidate.followUp.date)}
                   </div>
                 )}
-                <p className="text-sm text-amber-800 dark:text-amber-200 leading-relaxed">
+                <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed break-words">
                   {candidate.followUp.note as string}
                 </p>
               </div>
@@ -514,30 +598,26 @@ export function CandidateCard({
         />
       )}
 
-      {/* Interview details footer - Always at bottom */}
+      {/* Interview details footer - Fixed at bottom */}
       {candidate.assignment &&
         candidate.assignment.interviewerId &&
         typeof candidate.assignment.interviewerId === "object" &&
         candidate.assignment.interviewerId._id &&
         candidate.assignment.interviewerId.name && (
-          <div className="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 -mx-3 -mb-3 px-3 py-2 mt-auto">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-1.5">
+          <div className="border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/70 -mx-4 -mb-4 px-4 py-1.5">
+            <div className="flex items-center justify-between gap-2 min-h-[20px]">
+              <div className="flex items-center gap-1.5 min-w-0 flex-1">
                 <CalendarClockIcon
-                  size={14}
-                  className="text-gray-500 dark:text-gray-400"
+                  size={12}
+                  className="text-gray-400 dark:text-gray-500 flex-shrink-0"
                 />
-                <span className="text-xs text-gray-600 dark:text-gray-400">
-                  {candidate.assignment.interviewerId.name}
+                <span className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                  Assigned to <span className="font-semibold">{candidate.assignment.interviewerId.name}</span>
                 </span>
               </div>
               {candidate.assignment?.time && (
-                <div className="text-xs text-gray-500 dark:text-gray-500">
-                  {candidate.assignment?.time &&
-                    formatDate(candidate.assignment?.time)}{" "}
-                  at{" "}
-                  {candidate.assignment?.time &&
-                    formatTime(candidate.assignment?.time)}
+                <div className="text-xs text-gray-500 dark:text-gray-500 flex-shrink-0">
+                  {formatDate(candidate.assignment?.time)} • {formatTime(candidate.assignment?.time)}
                 </div>
               )}
             </div>
@@ -551,7 +631,7 @@ export function CandidateCard({
       {onDashboard ? (
         <div
           className={cn(
-            "bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-black border border-gray-200 dark:border-gray-700 p-4 shadow-sm cursor-pointer hover:shadow-lg transition-all duration-200 h-full hover:border-blue-200 dark:hover:border-blue-700 hover:scale-[1.02]",
+            "bg-white dark:bg-black border border-gray-200 dark:border-gray-800 p-4 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 h-full hover:border-gray-300 dark:hover:border-gray-700",
             className
           )}
         >
@@ -565,7 +645,7 @@ export function CandidateCard({
               {...provided.draggableProps}
               {...provided.dragHandleProps}
               className={cn(
-                "bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-black border border-gray-200 dark:border-gray-700 p-4 shadow-sm cursor-grab active:cursor-grabbing relative overflow-visible hover:shadow-lg transition-all duration-200 hover:border-blue-200 dark:hover:border-blue-700 hover:scale-[1.02]",
+                "bg-white dark:bg-black border border-gray-200 dark:border-gray-800 p-4 shadow-sm cursor-grab active:cursor-grabbing relative overflow-visible hover:shadow-md transition-all duration-200 hover:border-gray-300 dark:hover:border-gray-700",
                 className
               )}
             >

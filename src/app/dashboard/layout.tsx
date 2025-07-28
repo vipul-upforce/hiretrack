@@ -235,57 +235,56 @@ export default function DashboardLayout({
     <div className="flex flex-col h-full">
       <div
         className={cn(
-          "flex items-center transition-all duration-200 border-b",
+          "flex items-center transition-all duration-200",
           isCollapsed ? "h-16 justify-center px-2" : "h-16 justify-between px-4"
         )}
       >
-        <div className="flex items-center justify-center flex-1">
-          {shouldShowPortalData && portalConfigData ? (
-            <img
-              src={getLogoUrl(
-                portalConfigData.portalLogo?.url,
-                portalConfigData.portalLogoDark?.url
+        {isCollapsed ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="h-8 w-8 rounded-full flex-shrink-0"
+            aria-label="Expand sidebar"
+          >
+            <ChevronRight className="h-4 w-4 transition-transform duration-1000 ease-in-out rotate-0" />
+          </Button>
+        ) : (
+          <>
+            <div className="flex items-center justify-center flex-1">
+              {shouldShowPortalData && portalConfigData ? (
+                <img
+                  src={getLogoUrl(
+                    portalConfigData.portalLogo?.url,
+                    portalConfigData.portalLogoDark?.url
+                  )}
+                  alt={portalConfigData.portalName || "Portal Logo"}
+                  className="object-contain rounded transition-all duration-200 h-8 w-auto max-w-[180px]"
+                />
+              ) : !isLoading ? (
+                <img
+                  src={theme === "dark" ? "/logo_dark.png" : "/logo.png"}
+                  alt="Dashboard"
+                  className="object-contain rounded transition-all duration-200 h-8 w-auto max-w-[180px]"
+                />
+              ) : (
+                <div className="flex items-center justify-center">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                </div>
               )}
-              alt={portalConfigData.portalName || "Portal Logo"}
-              className={cn(
-                "object-contain rounded transition-all duration-200",
-                isCollapsed ? "h-6 w-auto max-w-[40px]" : "h-8 w-auto max-w-[180px]"
-              )}
-            />
-          ) : !isLoading ? (
-            <img
-              src={theme === "dark" ? "/logo_dark.png" : "/logo.png"}
-              alt="Dashboard"
-              className={cn(
-                "object-contain rounded transition-all duration-200",
-                isCollapsed ? "h-6 w-auto max-w-[40px]" : "h-8 w-auto max-w-[180px]"
-              )}
-            />
-          ) : (
-            <div className="flex items-center justify-center">
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
             </div>
-          )}
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className={cn(
-            "h-8 w-8 rounded-full flex-shrink-0",
-            isCollapsed && "mt-1mb-2"
-          )}
-          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          <ChevronRight
-            className={cn(
-              "h-4 w-4 transition-transform duration-1000 ease-in-out",
-              isCollapsed ? "rotate-0" : "rotate-180"
-            )}
-          />
-        </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="h-8 w-8 rounded-full flex-shrink-0"
+              aria-label="Collapse sidebar"
+            >
+              <ChevronRight className="h-4 w-4 transition-transform duration-1000 ease-in-out rotate-180" />
+            </Button>
+          </>
+        )}
       </div>
-      <Separator />
       <div className="flex-1 px-3 mt-2">
         <div className="space-y-2">
           {sidebarItems.map((item) => {

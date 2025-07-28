@@ -30,7 +30,7 @@ function AddCustomFields() {
   return (
     <div className="group">
       <Card
-        className="h-full transition-all duration-200 cursor-pointer border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md bg-white dark:bg-gray-800"
+        className="h-full transition-all duration-200 cursor-pointer border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-lg bg-white dark:bg-black"
         onClick={onClick}
       >
         <CardHeader className="pb-3">
