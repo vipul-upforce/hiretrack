@@ -230,33 +230,33 @@ export function QuickSelectAndFilter({
       if (filters.logicalOperator === "AND") {
         // AND logic: candidate must match ALL active filters
         filtered = filtered.filter((candidate) => {
-          console.log(`Checking candidate ${candidate.name} with AND logic:`);
+          // console.log(`Checking candidate ${candidate.name} with AND logic:`);
           // Check if candidate matches ALL active filters
           for (const { filter, key } of activeFilters) {
             const filterResult = filter(candidate);
             console.log(`  ${key}: ${filterResult}`);
             if (!filterResult) {
-              console.log(`  ❌ Excluding ${candidate.name} - failed ${key}`);
+              // console.log(`  ❌ Excluding ${candidate.name} - failed ${key}`);
               return false; // If any filter fails, exclude this candidate
             }
           }
-          console.log(`  ✅ Including ${candidate.name} - all filters passed`);
+          // console.log(`  ✅ Including ${candidate.name} - all filters passed`);
           return true; // All filters passed
         });
       } else {
         // OR logic: candidate must match AT LEAST ONE active filter
         filtered = filtered.filter((candidate) => {
-          console.log(`Checking candidate ${candidate.name} with OR logic:`);
+          // console.log(`Checking candidate ${candidate.name} with OR logic:`);
           // Check if candidate matches AT LEAST ONE active filter
           for (const { filter, key } of activeFilters) {
             const filterResult = filter(candidate);
-            console.log(`  ${key}: ${filterResult}`);
+            // console.log(`  ${key}: ${filterResult}`);
             if (filterResult) {
-              console.log(`  ✅ Including ${candidate.name} - passed ${key}`);
+              // console.log(`  ✅ Including ${candidate.name} - passed ${key}`);
               return true; // If any filter passes, include this candidate
             }
           }
-          console.log(`  ❌ Excluding ${candidate.name} - no filters passed`);
+          // console.log(`  ❌ Excluding ${candidate.name} - no filters passed`);
           return false; // No filters passed
         });
       }

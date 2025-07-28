@@ -382,6 +382,7 @@ export default function ModernLoginComponent({
 
   useEffect(() => {
     const token = Cookies.get("token");
+    // new Promise(() => setTimeout(() => {}, 1000));
     if (token) {
       router.push("/dashboard");
     }

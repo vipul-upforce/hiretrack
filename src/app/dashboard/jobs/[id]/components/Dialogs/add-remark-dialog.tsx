@@ -179,7 +179,7 @@ const AddRemarksDialog = ({
           />
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <Label htmlFor="rating">Rating:</Label>
+              <Label htmlFor="rating">Ratings:</Label>
               <Rating
                 name="half-rating"
                 onChange={(e, value) => {
@@ -190,7 +190,7 @@ const AddRemarksDialog = ({
                 precision={0.5}
                 sx={{
                   "& .MuiRating-iconEmpty": {
-                    color: "rgba(255, 255, 255, 0.3)",
+                    color: "rgb(156 163 175)",
                   },
                   "& .MuiRating-iconFilled": {
                     color: "#fbbf24",

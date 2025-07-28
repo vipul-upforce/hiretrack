@@ -201,7 +201,8 @@ export default function JobProgressPage() {
 
       // Use filtered candidates if available, otherwise use merged candidates
       const candidatesToUse =
-        filteredCandidates.length > 0 ? filteredCandidates : mergedCandidates;
+        // filteredCandidates.length > 0 ? filteredCandidates : mergedCandidates;
+        filteredCandidates.length > 0 ? filteredCandidates : [];
 
       const updatedColumns = lanesArray.map((lane) => {
         const column = initialCandidateColumns.find((item) => item.id === lane);
