@@ -123,7 +123,7 @@ export default function VerifyOtpForm() {
                 required
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" variant="primary" className="w-full" disabled={isLoading}>
               {isLoading ? "Verifying..." : "Verify"}
             </Button>
           </form>

@@ -57,58 +57,253 @@ body {
 
 @layer base {
   :root {
+    /* Base shadcn colors */
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
     --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
+    
+    /* Enhanced semantic colors */
+    --primary: 217 91% 60%;         /* Blue-500 */
+    --primary-hover: 217 91% 55%;   /* Blue-600 */
+    --primary-active: 217 91% 50%;  /* Blue-700 */
     --primary-foreground: 0 0% 98%;
+    
     --secondary: 0 0% 96.1%;
+    --secondary-hover: 0 0% 94%;
+    --secondary-active: 0 0% 92%;
     --secondary-foreground: 0 0% 9%;
+    
     --muted: 0 0% 96.1%;
     --muted-foreground: 0 0% 45.1%;
     --accent: 0 0% 96.1%;
     --accent-foreground: 0 0% 9%;
+    
+    /* Enhanced state colors */
+    --success: 142 76% 36%;         /* Green-600 */
+    --success-hover: 142 76% 31%;   /* Green-700 */
+    --success-foreground: 0 0% 98%;
+    
+    --warning: 38 92% 50%;          /* Amber-500 */
+    --warning-hover: 38 92% 45%;    /* Amber-600 */
+    --warning-foreground: 0 0% 9%;
+    
     --destructive: 0 84.2% 60.2%;
+    --destructive-hover: 0 84% 55%;
     --destructive-foreground: 0 0% 98%;
+    
+    --info: 199 89% 48%;            /* Sky-500 */
+    --info-hover: 199 89% 43%;      /* Sky-600 */
+    --info-foreground: 0 0% 98%;
+    
+    /* Surface and border colors */
+    --surface: 0 0% 100%;
+    --surface-hover: 0 0% 98%;
+    --surface-active: 0 0% 96%;
+    
     --border: 0 0% 89.8%;
+    --border-hover: 0 0% 85%;
+    --border-focus: var(--primary);
+    
     --input: 0 0% 89.8%;
+    --input-bg: var(--surface);
+    --input-border: var(--border);
+    --input-border-hover: var(--border-hover);
+    --input-border-focus: var(--primary);
+    
     --ring: 0 0% 3.9%;
+    
+    /* Chart colors */
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+    
+    /* Design system variables */
     --radius: 0.5rem;
+    
+    /* Spacing scale */
+    --space-xs: 0.25rem;    /* 4px */
+    --space-sm: 0.5rem;     /* 8px */
+    --space-md: 0.75rem;    /* 12px */
+    --space-lg: 1rem;       /* 16px */
+    --space-xl: 1.5rem;     /* 24px */
+    --space-2xl: 2rem;      /* 32px */
+    --space-3xl: 3rem;      /* 48px */
+    
+    /* Form field spacing */
+    --form-field-gap: var(--space-sm);
+    --form-section-gap: var(--space-xl);
+    --form-group-gap: var(--space-lg);
+    
+    /* Container spacing */
+    --container-padding-sm: var(--space-lg);
+    --container-padding-md: var(--space-xl);
+    --container-padding-lg: var(--space-2xl);
+    
+    /* Component sizing */
+    --button-height-sm: 2rem;       /* 32px */
+    --button-height-md: 2.25rem;    /* 36px */
+    --button-height-lg: 2.5rem;     /* 40px */
+    --button-height-xl: 3rem;       /* 48px */
+    
+    --button-padding-x-sm: 0.75rem;
+    --button-padding-x-md: 1rem;
+    --button-padding-x-lg: 1.5rem;
+    --button-padding-x-xl: 2rem;
+    
+    --input-height-sm: 2rem;
+    --input-height-md: 2.25rem;
+    --input-height-lg: 2.5rem;
+    
+    --input-padding-x: 0.75rem;
+    --input-padding-y: 0.5rem;
+    
+    /* Dialog sizes */
+    --dialog-width-xs: 320px;
+    --dialog-width-sm: 400px;
+    --dialog-width-md: 500px;
+    --dialog-width-lg: 700px;
+    --dialog-width-xl: 900px;
+    --dialog-width-2xl: 1200px;
+    
+    --dialog-max-height: 90vh;
+    --dialog-header-height: 4rem;
+    --dialog-footer-height: 4rem;
+    
+    /* Border radius scale */
+    --radius-none: 0;
+    --radius-sm: 0.125rem;    /* 2px */
+    --radius-md: 0.375rem;    /* 6px */
+    --radius-lg: 0.5rem;      /* 8px */
+    --radius-xl: 0.75rem;     /* 12px */
+    --radius-2xl: 1rem;       /* 16px */
+    --radius-full: 9999px;
+    
+    /* Component border radius */
+    --button-radius: var(--radius-md);
+    --input-radius: var(--radius-md);
+    --card-radius: var(--radius-lg);
+    --dialog-radius: var(--radius-xl);
+    
+    /* Focus states */
+    --focus-ring-width: 2px;
+    --focus-ring-offset: 2px;
+    --focus-ring-color: hsl(var(--primary) / 0.2);
+    
+    /* Transition durations */
+    --transition-fast: 150ms;
+    --transition-normal: 200ms;
+    --transition-slow: 300ms;
+    
+    /* Animation easings */
+    --ease-out: cubic-bezier(0, 0, 0.2, 1);
+    --ease-in: cubic-bezier(0.4, 0, 1, 1);
+    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Elevation shadows */
+    --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    
+    /* Component shadows */
+    --button-shadow: var(--shadow-sm);
+    --card-shadow: var(--shadow-sm);
+    --dialog-shadow: var(--shadow-xl);
+    --dropdown-shadow: var(--shadow-lg);
+    
+    /* State colors */
+    --state-hover: rgb(0 0 0 / 0.05);
+    --state-active: rgb(0 0 0 / 0.1);
+    --state-focus: hsl(var(--primary) / 0.2);
+    --state-disabled: rgb(0 0 0 / 0.05);
   }
 
   .dark {
+    /* Enhanced dark theme */
     --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
     --card: 0 0% 3.9%;
     --card-foreground: 0 0% 98%;
     --popover: 0 0% 3.9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
+    
+    --primary: 217 91% 65%;         /* Lighter blue for dark mode */
+    --primary-hover: 217 91% 70%;
+    --primary-active: 217 91% 75%;
     --primary-foreground: 0 0% 9%;
+    
     --secondary: 0 0% 14.9%;
+    --secondary-hover: 0 0% 18%;
+    --secondary-active: 0 0% 22%;
     --secondary-foreground: 0 0% 98%;
+    
     --muted: 0 0% 14.9%;
     --muted-foreground: 0 0% 63.9%;
     --accent: 0 0% 14.9%;
     --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
+    
+    --success: 142 69% 65%;         /* Bright green for dark mode */
+    --success-hover: 142 69% 70%;
+    --success-foreground: 0 0% 9%;   /* Dark text on bright green */
+    
+    --warning: 38 92% 65%;          /* Brighter amber for dark mode */
+    --warning-hover: 38 92% 70%;
+    --warning-foreground: 0 0% 9%;   /* Dark text still works with bright amber */
+    
+    --destructive: 0 84% 58%;       /* Balanced red for dark mode */ 
+    --destructive-hover: 0 84% 63%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --info: 199 89% 55%;            /* Darker blue for better contrast */
+    --info-hover: 199 89% 60%;
+    --info-foreground: 0 0% 100%;    /* Pure white text for maximum contrast */
+    
+    /* Dark surface colors */
+    --surface: 0 0% 3.9%;
+    --surface-hover: 0 0% 8%;
+    --surface-active: 0 0% 12%;
+    
+    /* Dark borders */
     --border: 0 0% 14.9%;
+    --border-hover: 0 0% 20%;
+    --border-focus: var(--primary);
+    
     --input: 0 0% 14.9%;
+    --input-bg: 0 0% 6%;
+    --input-border: 0 0% 18%;
+    --input-border-hover: 0 0% 25%;
+    --input-border-focus: var(--primary);
+    
     --ring: 0 0% 83.1%;
+    
+    /* Chart colors for dark mode */
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    
+    /* Dark mode shadows */
+    --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.4), 0 8px 10px -6px rgb(0 0 0 / 0.4);
+    
+    /* Dark state colors */
+    --state-hover: rgb(255 255 255 / 0.05);
+    --state-active: rgb(255 255 255 / 0.1);
+    --state-focus: hsl(var(--primary) / 0.3);
+    --state-disabled: rgb(255 255 255 / 0.05);
+    
+    /* Dark focus ring */
+    --focus-ring-color: hsl(var(--primary) / 0.3);
   }
 }
 
@@ -122,55 +317,159 @@ body {
   }
 }
 
-/* Global dark mode improvements */
-.dark {
-  /* Improve secondary text readability */
-  --muted-foreground: 0 0% 70%;
-
-  /* Better button contrast */
-  --primary: 0 0% 98%;
-  --primary-foreground: 0 0% 9%;
-  --secondary: 0 0% 14.9%;
-  --secondary-foreground: 0 0% 98%;
-
-  /* Improved borders */
-  --border: 0 0% 20%;
-  --input: 0 0% 20%;
+/* Design System Utility Classes */
+@layer utilities {
+  /* Spacing utilities using design system variables */
+  .space-xs { gap: var(--space-xs); }
+  .space-sm { gap: var(--space-sm); }
+  .space-md { gap: var(--space-md); }
+  .space-lg { gap: var(--space-lg); }
+  .space-xl { gap: var(--space-xl); }
+  .space-2xl { gap: var(--space-2xl); }
+  .space-3xl { gap: var(--space-3xl); }
+  
+  /* Form spacing utilities */
+  .form-field-gap { gap: var(--form-field-gap); }
+  .form-section-gap { gap: var(--form-section-gap); }
+  .form-group-gap { gap: var(--form-group-gap); }
+  
+  /* Container padding utilities */
+  .container-padding-sm { padding: var(--container-padding-sm); }
+  .container-padding-md { padding: var(--container-padding-md); }
+  .container-padding-lg { padding: var(--container-padding-lg); }
+  
+  /* Component size utilities */
+  .btn-sm { 
+    height: var(--button-height-sm); 
+    padding-left: var(--button-padding-x-sm); 
+    padding-right: var(--button-padding-x-sm); 
+  }
+  .btn-md { 
+    height: var(--button-height-md); 
+    padding-left: var(--button-padding-x-md); 
+    padding-right: var(--button-padding-x-md); 
+  }
+  .btn-lg { 
+    height: var(--button-height-lg); 
+    padding-left: var(--button-padding-x-lg); 
+    padding-right: var(--button-padding-x-lg); 
+  }
+  .btn-xl { 
+    height: var(--button-height-xl); 
+    padding-left: var(--button-padding-x-xl); 
+    padding-right: var(--button-padding-x-xl); 
+  }
+  
+  /* Input size utilities */
+  .input-sm { height: var(--input-height-sm); }
+  .input-md { height: var(--input-height-md); }
+  .input-lg { height: var(--input-height-lg); }
+  
+  /* Dialog size utilities */
+  .dialog-xs { max-width: var(--dialog-width-xs); }
+  .dialog-sm { max-width: var(--dialog-width-sm); }
+  .dialog-md { max-width: var(--dialog-width-md); }
+  .dialog-lg { max-width: var(--dialog-width-lg); }
+  .dialog-xl { max-width: var(--dialog-width-xl); }
+  .dialog-2xl { max-width: var(--dialog-width-2xl); }
+  
+  /* Border radius utilities */
+  .radius-sm { border-radius: var(--radius-sm); }
+  .radius-md { border-radius: var(--radius-md); }
+  .radius-lg { border-radius: var(--radius-lg); }
+  .radius-xl { border-radius: var(--radius-xl); }
+  .radius-2xl { border-radius: var(--radius-2xl); }
+  
+  /* Shadow utilities */
+  .shadow-xs { box-shadow: var(--shadow-xs); }
+  .shadow-sm { box-shadow: var(--shadow-sm); }
+  .shadow-md { box-shadow: var(--shadow-md); }
+  .shadow-lg { box-shadow: var(--shadow-lg); }
+  .shadow-xl { box-shadow: var(--shadow-xl); }
+  
+  /* Semantic color utilities */
+  .bg-success { background-color: hsl(var(--success)); }
+  .bg-success-hover:hover { background-color: hsl(var(--success-hover)); }
+  .text-success { color: hsl(var(--success)); }
+  .text-success-foreground { color: hsl(var(--success-foreground)); }
+  
+  .bg-warning { background-color: hsl(var(--warning)); }
+  .bg-warning-hover:hover { background-color: hsl(var(--warning-hover)); }
+  .text-warning { color: hsl(var(--warning)); }
+  .text-warning-foreground { color: hsl(var(--warning-foreground)); }
+  
+  .bg-info { background-color: hsl(var(--info)); }
+  .bg-info-hover:hover { background-color: hsl(var(--info-hover)); }
+  .text-info { color: hsl(var(--info)); }
+  .text-info-foreground { color: hsl(var(--info-foreground)); }
+  
+  /* Focus utilities */
+  .focus-ring {
+    outline: var(--focus-ring-width) solid var(--focus-ring-color);
+    outline-offset: var(--focus-ring-offset);
+  }
+  
+  /* Transition utilities */
+  .transition-fast { transition-duration: var(--transition-fast); }
+  .transition-normal { transition-duration: var(--transition-normal); }
+  .transition-slow { transition-duration: var(--transition-slow); }
+  
+  /* State utilities */
+  .hover-state:hover { background-color: var(--state-hover); }
+  .active-state:active { background-color: var(--state-active); }
+  .disabled-state:disabled { 
+    background-color: var(--state-disabled); 
+    opacity: 0.5; 
+    cursor: not-allowed; 
+  }
 }
 
-/* Custom button variants for better dark mode */
-.btn-dark-primary {
-  @apply bg-gray-800 text-white shadow hover:bg-gray-700 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600;
-}
-
-.btn-dark-secondary {
-  @apply bg-gray-200 text-gray-900 shadow-sm hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500;
-}
-
-.btn-dark-outline {
-  @apply border border-gray-300 bg-white text-gray-900 shadow-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700;
-}
-
-/* Improved text colors for dark mode */
-.dark .text-muted {
-  @apply text-gray-400;
-}
-
-.dark .text-secondary {
-  @apply text-gray-300;
-}
-
-/* Better form styling in dark mode */
-/* .dark input,
-.dark textarea,
-.dark select {
-  @apply bg-gray-800 border-gray-600 text-gray-100;
-} */
-
+/* Enhanced input focus styles */
 .dark input:focus,
 .dark textarea:focus,
 .dark select:focus {
-  @apply border-gray-500 ring-gray-500;
+  border-color: hsl(var(--input-border-focus));
+  box-shadow: 0 0 0 var(--focus-ring-width) var(--focus-ring-color);
+}
+
+/* Material-UI Rating component styles for both themes */
+
+/* Light mode Rating styles */
+.MuiRating-root {
+  color: #f59e0b; /* Amber color for filled stars */
+}
+
+.MuiRating-iconEmpty {
+  color: #e5e7eb !important; /* Light gray for empty stars */
+  stroke: #d1d5db; /* Light gray border for empty stars */
+  stroke-width: 1px;
+}
+
+.MuiRating-iconFilled {
+  color: #f59e0b !important; /* Amber for filled stars */
+}
+
+.MuiRating-iconHover {
+  color: #d97706 !important; /* Darker amber on hover */
+}
+
+/* Dark mode Rating styles */
+.dark .MuiRating-root {
+  color: #fbbf24; /* Brighter amber for dark mode */
+}
+
+.dark .MuiRating-iconEmpty {
+  color: #374151 !important; /* Dark gray for empty stars */
+  stroke: #6b7280; /* Gray border for empty stars */
+  stroke-width: 1px;
+}
+
+.dark .MuiRating-iconFilled {
+  color: #fbbf24 !important; /* Brighter amber for filled stars */
+}
+
+.dark .MuiRating-iconHover {
+  color: #f59e0b !important; /* Darker amber on hover */
 }
 
 /* Fix autofilled input styling in dark mode */

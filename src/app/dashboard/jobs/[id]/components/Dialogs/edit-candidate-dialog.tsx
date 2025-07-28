@@ -504,7 +504,7 @@ export function EditCandidateDialog({
                       // scrollToErrorMassage(errors);
                     }}
                     type={Object.keys(errors).length == 0 ? "button" : "submit"}
-                    className="bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-500 dark:hover:bg-blue-600"
+                    variant="success"
                   >
                     {isSubmitting ? "Saving..." : "Save Changes"}
                   </Button>

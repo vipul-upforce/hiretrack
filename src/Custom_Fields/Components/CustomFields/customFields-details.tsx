@@ -1,6 +1,7 @@
 "use client";
 
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { PDFViewer } from "@/components/ui/pdf-viewer";
 import { ImageGallery } from "@/components/ui/image-gallery";
 import { useCustomFields } from "@/Custom_Fields/hooks/use-customFields";
@@ -249,27 +250,33 @@ const CustomFieldsData = ({ customFields: cfWOFormatting }: FormValues) => {
                                 </span>
                               </div>
                             </div>
-                            <a
-                              href={file.base64}
-                              download={file.name}
-                              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+                            <Button
+                              asChild
+                              variant="info"
+                              size="sm"
+                              className="text-xs"
                             >
-                              <svg
-                                className="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                                xmlns="http://www.w3.org/2000/svg"
+                              <a
+                                href={file.base64}
+                                download={file.name}
                               >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                                />
-                              </svg>
-                              Download
-                            </a>
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                                  />
+                                </svg>
+                                Download
+                              </a>
+                            </Button>
                           </div>
                         ))}
                     </div>

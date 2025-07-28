@@ -650,12 +650,12 @@ const CustomFieldForm = memo(
                 <div className="flex justify-end">
                   <Button
                     type="submit"
-                    variant="primary"
+                    variant="success"
+                    size="lg"
                     disabled={
                       !isEditMode &&
                       (hasDuplicate || Object.keys(errors).length > 0)
                     }
-                    className="px-8 py-3 text-lg font-medium min-w-[120px]"
                   >
                     {isEditMode ? "Update Field" : "Create Field"}
                   </Button>

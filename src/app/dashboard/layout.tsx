@@ -317,14 +317,11 @@ export default function DashboardLayout({
       </div>
       <div className="px-3 pb-4 mt-auto space-y-2">
         {/* Theme Toggle */}
-        <div className="flex justify-center mb-2">
+        <div className="flex justify-start mb-2">
           <ThemeToggle
             variant="ghost"
-            size="sm"
-            className={cn(
-              "w-full",
-              isCollapsed ? "justify-center" : "justify-start"
-            )}
+            size="icon"
+            className="h-8 w-8 rounded-full"
           />
         </div>
         <div className="mt-auto space-y-2">

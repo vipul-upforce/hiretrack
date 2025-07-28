@@ -83,7 +83,7 @@ export function CreateLaneDialog({ onAddLane }: CreateLaneDialogProps) {
             >
               Cancel
             </Button>
-            <Button type="submit">Add Lane</Button>
+            <Button type="submit" variant="success">Add Lane</Button>
           </div>
         </form>
       </DialogContent>

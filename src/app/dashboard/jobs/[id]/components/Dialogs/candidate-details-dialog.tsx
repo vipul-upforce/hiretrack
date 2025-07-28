@@ -785,7 +785,7 @@ export function CandidateDetailsDialog({
               <div className="flex gap-2">
                 <Button
                   className={user?.role == "interviewer" ? "hidden" : ""}
-                  variant="dark-primary"
+                  variant="primary"
                   onClick={() => setIsAssigning(true)}
                 >
                   Assign To
@@ -793,7 +793,7 @@ export function CandidateDetailsDialog({
                 <Button
                   onClick={handleUnassign}
                   disabled={!localCandidate.assignment}
-                  variant="dark-outline"
+                  variant="outline"
                 >
                   Mark As Done
                 </Button>
@@ -802,7 +802,7 @@ export function CandidateDetailsDialog({
                   <Button
                     onClick={() => setIsAddingFollowUp(true)}
                     // disabled={!localCandidate.assignment}
-                    variant="dark-outline"
+                    variant="outline"
                   >
                     {localCandidate?.followUp
                       ? "Edit Follow Up"
@@ -818,7 +818,7 @@ export function CandidateDetailsDialog({
                     user?.role === "candidate" &&
                     user.email !== candidate?.email
                   }
-                  variant="dark-secondary"
+                  variant="secondary"
                   onClick={handleEditClick}
                 >
                   Edit
@@ -826,7 +826,7 @@ export function CandidateDetailsDialog({
               )}
               {!hideCloseButtons && (
                 <Button
-                  variant="dark-outline"
+                  variant="outline"
                   onClick={() => {
                     onOpenChange(false);
                     setNewRemark("");
@@ -842,7 +842,7 @@ export function CandidateDetailsDialog({
         ) : (
           <div>
             <Button
-              variant="dark-primary"
+              variant="primary"
               onClick={() => setIsAssigningJob(true)}
             >
               Assign Job

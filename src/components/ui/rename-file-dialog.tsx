@@ -66,7 +66,7 @@ export function RenameFileDialog({
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={newName.length < 3}>
+            <Button type="submit" variant="success" disabled={newName.length < 3}>
               Rename
             </Button>
           </DialogFooter>

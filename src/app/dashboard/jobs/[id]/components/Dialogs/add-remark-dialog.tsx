@@ -230,7 +230,7 @@ const AddRemarksDialog = ({
           </Button>
           <Button
             onClick={handleAddRemark}
-            className="bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-500 dark:hover:bg-blue-600"
+            variant="info"
           >
             Add Remark
           </Button>
