@@ -141,7 +141,7 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle>
             {step === "email" ? "Forgot Password" : "Select Organization"}

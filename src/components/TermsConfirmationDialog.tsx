@@ -49,13 +49,13 @@ export function TermsConfirmationDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="w-full max-w-md mx-4 rounded-lg">
-        <DialogHeader className="text-left">
+      <DialogContent size="md">
+        <DialogHeader>
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
               <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
-            <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
+            <DialogTitle>
               Confirm Application
             </DialogTitle>
           </div>

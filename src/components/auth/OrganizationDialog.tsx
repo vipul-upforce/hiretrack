@@ -44,7 +44,7 @@ const OrganizationDialog: React.FC<OrganizationDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle>Select an Organization</DialogTitle>
           <DialogDescription>

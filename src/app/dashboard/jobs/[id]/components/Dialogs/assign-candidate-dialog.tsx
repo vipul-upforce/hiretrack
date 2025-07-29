@@ -99,9 +99,9 @@ export function AssignCandidateDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[40vw] xl:max-w-[25vw] h-[55vh] p-0 overflow-hidden flex flex-col justify-start">
-        <DialogHeader className="px-6 pt-6">
-          <DialogTitle className="flex justify-between align-center">
+      <DialogContent size="lg" className="p-0 overflow-hidden flex flex-col justify-start">
+        <DialogHeader>
+          <DialogTitle>
             Assign Candidate
           </DialogTitle>
         </DialogHeader>

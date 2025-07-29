@@ -162,13 +162,13 @@ body {
     --input-padding-x: 0.75rem;
     --input-padding-y: 0.5rem;
     
-    /* Dialog sizes */
-    --dialog-width-xs: 320px;
-    --dialog-width-sm: 400px;
-    --dialog-width-md: 500px;
-    --dialog-width-lg: 700px;
-    --dialog-width-xl: 900px;
-    --dialog-width-2xl: 1200px;
+    /* Dialog sizes - responsive with mobile-first approach */
+    --dialog-width-xs: min(320px, 90vw);
+    --dialog-width-sm: min(400px, 90vw);
+    --dialog-width-md: min(500px, 90vw);
+    --dialog-width-lg: min(700px, 90vw);
+    --dialog-width-xl: min(900px, 95vw);
+    --dialog-width-2xl: min(1200px, 95vw);
     
     --dialog-max-height: 90vh;
     --dialog-header-height: 4rem;
@@ -365,13 +365,80 @@ body {
   .input-md { height: var(--input-height-md); }
   .input-lg { height: var(--input-height-lg); }
   
-  /* Dialog size utilities */
-  .dialog-xs { max-width: var(--dialog-width-xs); }
-  .dialog-sm { max-width: var(--dialog-width-sm); }
-  .dialog-md { max-width: var(--dialog-width-md); }
-  .dialog-lg { max-width: var(--dialog-width-lg); }
-  .dialog-xl { max-width: var(--dialog-width-xl); }
-  .dialog-2xl { max-width: var(--dialog-width-2xl); }
+  /* Dialog size utilities - responsive with proper margins */
+  .dialog-xs { 
+    max-width: var(--dialog-width-xs); 
+    margin: var(--space-lg);
+    max-height: var(--dialog-max-height);
+  }
+  .dialog-sm { 
+    max-width: var(--dialog-width-sm); 
+    margin: var(--space-lg);
+    max-height: var(--dialog-max-height);
+  }
+  .dialog-md { 
+    max-width: var(--dialog-width-md); 
+    margin: var(--space-lg);
+    max-height: var(--dialog-max-height);
+  }
+  .dialog-lg { 
+    max-width: var(--dialog-width-lg); 
+    margin: var(--space-lg);
+    max-height: var(--dialog-max-height);
+  }
+  .dialog-xl { 
+    max-width: var(--dialog-width-xl); 
+    margin: var(--space-md);
+    max-height: var(--dialog-max-height);
+  }
+  .dialog-2xl { 
+    max-width: var(--dialog-width-2xl); 
+    margin: var(--space-md);
+    max-height: var(--dialog-max-height);
+  }
+  
+  /* Mobile-specific dialog adjustments */
+  @media (max-width: 640px) {
+    .dialog-xs, .dialog-sm, .dialog-md, .dialog-lg { 
+      margin: var(--space-sm);
+      max-width: calc(100vw - 2 * var(--space-sm));
+      max-height: calc(100vh - 2 * var(--space-sm));
+    }
+    .dialog-xl, .dialog-2xl { 
+      margin: var(--space-xs);
+      max-width: calc(100vw - 2 * var(--space-xs));
+      max-height: calc(100vh - 2 * var(--space-xs));
+    }
+    
+    /* Ensure dialog content is properly sized on mobile */
+    .dialog-xs, .dialog-sm, .dialog-md, .dialog-lg, .dialog-xl, .dialog-2xl {
+      display: flex;
+      flex-direction: column;
+    }
+  }
+  
+  /* Dialog responsive content utilities */
+  .dialog-responsive-content {
+    display: flex;
+    flex-direction: column;
+    max-height: 100%;
+    overflow: hidden;
+  }
+  
+  .dialog-scrollable-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: var(--space-sm) 0;
+  }
+  
+  /* Tablet adjustments */
+  @media (min-width: 641px) and (max-width: 1024px) {
+    .dialog-xl, .dialog-2xl {
+      max-width: 85vw;
+      margin: var(--space-md);
+    }
+  }
   
   /* Border radius utilities */
   .radius-sm { border-radius: var(--radius-sm); }

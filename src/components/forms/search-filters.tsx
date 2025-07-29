@@ -551,7 +551,7 @@ export function SearchFilters({
                     )}
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+                <DialogContent size="2xl" className="overflow-hidden flex flex-col">
                   <DialogHeader>
                     <DialogTitle>Configure Custom Fields</DialogTitle>
                     <DialogDescription>
@@ -645,7 +645,7 @@ export function SearchFilters({
                     </div>
                   </div>
 
-                  <DialogFooter className="gap-2 mt-4">
+                  <DialogFooter>
                     <Button type="button" size="sm" onClick={addMetaField}>
                       Add Fields <Plus className="h-4 w-4" />
                     </Button>

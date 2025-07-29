@@ -205,11 +205,10 @@ function FormIDCard({ formId, formName, fields }: CardProps) {
               the form &quot;{formName}&quot;? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="border-t dark:border-gray-700 pt-4">
+          <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setShowDeleteAllIndDialog(false)}
-              className="dark:bg-gray-900 dark:hover:bg-gray-800 dark:text-gray-100 dark:border-gray-600"
             >
               Cancel
             </Button>
@@ -235,11 +234,10 @@ function FormIDCard({ formId, formName, fields }: CardProps) {
               form &quot;{formName}&quot;? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="border-t dark:border-gray-700 pt-4">
+          <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setShowDeleteDialog(false)}
-              className="dark:bg-gray-900 dark:hover:bg-gray-800 dark:text-gray-100 dark:border-gray-600"
             >
               Cancel
             </Button>

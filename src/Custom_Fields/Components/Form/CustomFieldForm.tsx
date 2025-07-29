@@ -301,7 +301,7 @@ const CustomFieldForm = memo(
             setFieldError,
           }) => (
             <form onSubmit={handleSubmit} className="flex flex-col h-full">
-              <div className="flex-1 overflow-y-auto space-y-8 px-4 pt-4">
+              <div className="flex-1 overflow-y-auto space-y-8 pb-6">
                 <div>
                   <Label
                     htmlFor="label"
@@ -703,7 +703,7 @@ const CustomFieldForm = memo(
                 )}
               </div>
 
-              <div className="sticky bottom-0 pt-4 pb-2 border-t border-gray-200 dark:border-gray-600 mt-4 px-4">
+              <div className="sticky bottom-0 bg-background border-t border-gray-200 dark:border-gray-600 px-6 py-4">
                 <div className="flex justify-end">
                   <Button
                     type="submit"

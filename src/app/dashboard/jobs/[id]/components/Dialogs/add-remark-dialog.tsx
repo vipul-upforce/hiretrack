@@ -162,7 +162,7 @@ const AddRemarksDialog = ({
       <DialogTrigger asChild>
         <div></div>
       </DialogTrigger>
-      <DialogContent className="w-[700px] p-6">
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>Add Remarks for {candidate.name}</DialogTitle>
           <DialogDescription>

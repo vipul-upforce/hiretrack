@@ -402,7 +402,7 @@ export default function ApplyJobsContent({
                           </span>
                         ))}
                         {job.skills.length > 3 && (
-                          <span className="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                          <span className="px-3 py-1 text-xs font-medium rounded-full bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-500">
                             +{job.skills.length - 3} more
                           </span>
                         )}

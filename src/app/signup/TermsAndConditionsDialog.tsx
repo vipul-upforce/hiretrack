@@ -21,9 +21,9 @@ export function TermsAndConditionsDialog({
 }: TermsAndConditionsDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh] flex flex-col">
+      <DialogContent size="lg" className="flex flex-col">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-center">
+          <DialogTitle>
             Terms and Conditions
           </DialogTitle>
         </DialogHeader>
@@ -396,7 +396,7 @@ export function TermsAndConditionsDialog({
           </div>
         </div>
 
-        <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-4">
+        <DialogFooter>
           <Button
             variant="outline"
             onClick={() => onAccept?.(false)}
