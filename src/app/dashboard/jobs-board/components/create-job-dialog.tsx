@@ -217,7 +217,7 @@ export function CreateJobDialog({
         </Button>
       </DialogTrigger>
       <DialogContent size="2xl" className="max-h-[90vh] p-0 overflow-hidden flex flex-col">
-        <DialogHeader>
+        <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle>
             Create New Job Position
           </DialogTitle>
@@ -236,7 +236,7 @@ export function CreateJobDialog({
                 <JobForm />
                 <CustomFields formName={formName} />
               </div>
-              <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4 mt-auto">
+              <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10 mt-auto">
                 <Button
                   type="button"
                   variant="outline"

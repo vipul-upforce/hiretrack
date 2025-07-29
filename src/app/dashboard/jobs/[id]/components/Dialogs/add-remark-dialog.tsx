@@ -162,15 +162,15 @@ const AddRemarksDialog = ({
       <DialogTrigger asChild>
         <div></div>
       </DialogTrigger>
-      <DialogContent size="lg">
-        <DialogHeader>
+      <DialogContent size="lg" className="p-0 overflow-hidden flex flex-col">
+        <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle>Add Remarks for {candidate.name}</DialogTitle>
           <DialogDescription>
             Add your observations and feedback for this candidate. You can
             include a rating and set privacy preferences.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           <Textarea
             placeholder="Add a remark..."
             className="max-h-80 overflow-y-auto"
@@ -224,7 +224,7 @@ const AddRemarksDialog = ({
             </div>
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="border-t bg-background px-6 py-4 sticky bottom-0 z-10">
           <Button variant="secondary" onClick={() => onOpenChange(false)}>
             No Remarks
           </Button>

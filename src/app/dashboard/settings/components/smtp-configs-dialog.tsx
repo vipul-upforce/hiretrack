@@ -18,6 +18,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const mailProviders = [
   { key: "", label: "Select Mail Providers" },
@@ -211,7 +218,7 @@ export default function SMTPConfigs({ onClose }: { onClose: () => void }) {
 
     await testConnection(values.mailProvider, credentials);
   };
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <div className="px-6 py-4">Loading...</div>;
 
   const formFields = [
     {
@@ -277,132 +284,142 @@ export default function SMTPConfigs({ onClose }: { onClose: () => void }) {
   ];
 
   return (
-    <Formik
-      initialValues={initialValues}
-      validationSchema={validationSchema}
-      onSubmit={handleSubmit}
-      enableReinitialize
-    >
-      {({ values, handleChange, handleBlur, handleSubmit, isSubmitting }) => (
-        <Form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="mailProvider">Mail Provider</Label>
-            <select
-              id="mailProvider"
-              name="mailProvider"
-              value={values.mailProvider}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              className="border rounded p-2 w-full"
-            >
-              {/* <option value="" label="Select mail provider" /> */}
-              {mailProviders.map((provider) => (
-                <option
-                  key={provider.key}
-                  value={provider.key}
-                  label={provider.label}
-                />
-              ))}
-            </select>
-            <ErrorMessage
-              name="mailProvider"
-              component="div"
-              className="text-red-500 text-sm"
-            />
-          </div>
-
-          {formFields
-            .filter((field) => field.condition === values.mailProvider)
-            .map(({ label, name, placeholder }) => (
-              <div key={name} className="space-y-2">
-                <Label htmlFor={name}>{label}</Label>
-                <Input
-                  id={name}
-                  name={name}
-                  value={values[name]}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  placeholder={placeholder}
-                />
+    <>
+      <Formik
+        initialValues={initialValues}
+        validationSchema={validationSchema}
+        onSubmit={handleSubmit}
+        enableReinitialize
+      >
+        {({ values, handleChange, handleBlur, handleSubmit, isSubmitting, setFieldValue }) => (
+          <Form onSubmit={handleSubmit} className="flex flex-col h-full">
+            <div className="px-6 py-4 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="mailProvider">Mail Provider</Label>
+                <Select
+                  value={values.mailProvider}
+                  onValueChange={(value) => setFieldValue("mailProvider", value)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select mail provider" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {mailProviders.filter(p => p.key !== "").map((provider) => (
+                      <SelectItem key={provider.key} value={provider.key}>
+                        {provider.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <ErrorMessage
-                  name={name}
+                  name="mailProvider"
                   component="div"
                   className="text-red-500 text-sm"
                 />
               </div>
-            ))}
 
-          {values.mailProvider === "smtp" && (
-            <div className="space-y-2 relative">
-              <Label htmlFor="smtp_password">SMTP Password</Label>
-              <div className="relative">
-                <Input
-                  id="smtp_password"
-                  name="smtp_password"
-                  type={showPassword ? "text" : "password"}
-                  value={values.smtp_password}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  placeholder="Password"
-                />
-                <button
-                  type="button"
-                  className="absolute right-3 top-2.5 text-gray-500"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {!showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-              </div>
-              <ErrorMessage
-                name="smtp_password"
-                component="div"
-                className="text-red-500 text-sm"
-              />
-            </div>
-          )}
-
-          {values.mailProvider && (
-            <div className="flex justify-end space-x-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleTestConnection(values)}
-                disabled={isTesting}
-              >
-                {isTesting ? "Testing..." : "Test Connection"}
-              </Button>
-            </div>
-          )}
-
-          <div className="w-full flex justify-end">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div>
-                    <Button
-                      type="submit"
-                      variant="primary"
-                      disabled={
-                        isSubmitting || isUpdating || !isConnectionSuccessful
-                      }
-                      title={
-                        !isConnectionSuccessful
-                          ? "Test the connection before saving."
-                          : ""
-                      }
-                    >
-                      {isSubmitting || isUpdating ? "Saving..." : "Save"}
-                    </Button>
+              {formFields
+                .filter((field) => field.condition === values.mailProvider)
+                .map(({ label, name, placeholder }) => (
+                  <div key={name} className="space-y-2">
+                    <Label htmlFor={name}>{label}</Label>
+                    <Input
+                      id={name}
+                      name={name}
+                      value={values[name]}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      placeholder={placeholder}
+                    />
+                    <ErrorMessage
+                      name={name}
+                      component="div"
+                      className="text-red-500 text-sm"
+                    />
                   </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Test Connection To Make It Enable</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-        </Form>
-      )}
-    </Formik>
+                ))}
+
+              {values.mailProvider === "smtp" && (
+                <div className="space-y-2 relative">
+                  <Label htmlFor="smtp_password">SMTP Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="smtp_password"
+                      name="smtp_password"
+                      type={showPassword ? "text" : "password"}
+                      value={values.smtp_password}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      placeholder="Password"
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-3 top-2.5 text-gray-500"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {!showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
+                  <ErrorMessage
+                    name="smtp_password"
+                    component="div"
+                    className="text-red-500 text-sm"
+                  />
+                </div>
+              )}
+
+              {values.mailProvider && (
+                <div className="flex justify-end space-x-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => handleTestConnection(values)}
+                    disabled={isTesting}
+                  >
+                    {isTesting ? "Testing..." : "Test Connection"}
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 border-t border-border/10 px-6 py-4 mt-auto">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={onClose}
+                disabled={isSubmitting || isUpdating}
+              >
+                Cancel
+              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <Button
+                        type="submit"
+                        variant="default"
+                        disabled={
+                          isSubmitting || isUpdating || !isConnectionSuccessful
+                        }
+                        title={
+                          !isConnectionSuccessful
+                            ? "Test the connection before saving."
+                            : ""
+                        }
+                      >
+                        {isSubmitting || isUpdating ? "Saving..." : "Save"}
+                      </Button>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Test Connection To Make It Enable</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </Form>
+        )}
+      </Formik>
+    </>
   );
 }

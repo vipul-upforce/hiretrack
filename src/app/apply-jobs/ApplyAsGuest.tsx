@@ -33,6 +33,7 @@ if (typeof window !== "undefined" && !pdfjs.GlobalWorkerOptions.workerSrc) {
 import { candidateSchema } from "../dashboard/jobs/[id]/schemas/candidate-schema";
 import { useApplyHandler } from "./useApplyHandler";
 import { TermsConfirmationDialog } from "@/components/TermsConfirmationDialog";
+import { User } from "lucide-react";
 
 // New function to store application status in localStorage
 const storeGuestApplication = (jobId: string, candidateId: string) => {
@@ -108,6 +109,8 @@ interface CreateCandidateDialogProps {
   resumeFile?: File | null;
   closeParent: () => void;
   jobTitle?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
 }
 
 const getInitialValues = (customFields: CustomFieldValues) => ({
@@ -178,6 +181,8 @@ export function ApplyAsGuestDialog({
   resumeFile,
   closeParent,
   jobTitle,
+  primaryColor = "#6366f1",
+  secondaryColor = "#8b5cf6",
 }: CreateCandidateDialogProps) {
   const { toast } = useToast();
   const [createGuestCandidate] = useCreateGuestCandidateMutation();
@@ -400,18 +405,58 @@ export function ApplyAsGuestDialog({
         <button
           type="button"
           disabled={isSendingEmail || hasAlreadyApplied}
-          className={`w-full md:w-fit inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${hasAlreadyApplied && "bg-gray-200 text-gray-600"}`}
+          className="w-full md:w-fit inline-flex items-center justify-center rounded-lg px-6 py-3 text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+          style={
+            hasAlreadyApplied
+              ? {
+                  backgroundColor: "#f3f4f6",
+                  color: "#6b7280",
+                  border: "1px solid #d1d5db",
+                }
+              : {
+                  backgroundColor: `${primaryColor}15`,
+                  color: primaryColor,
+                  border: `2px solid ${primaryColor}`,
+                }
+          }
+          onMouseEnter={(e) => {
+            if (!hasAlreadyApplied && !isSendingEmail) {
+              const target = e.target as HTMLElement;
+              target.style.backgroundColor = primaryColor;
+              target.style.color = 'white';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!hasAlreadyApplied && !isSendingEmail) {
+              const target = e.target as HTMLElement;
+              target.style.backgroundColor = `${primaryColor}15`;
+              target.style.color = primaryColor;
+            }
+          }}
         >
-          {isSendingEmail
-            ? "Processing..."
-            : hasAlreadyApplied
-              ? "Applied"
-              : "Apply As Guest"}
+          {isSendingEmail ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 mr-2" style={{ borderColor: primaryColor }}></div>
+              Processing...
+            </>
+          ) : hasAlreadyApplied ? (
+            <>
+              <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              Applied
+            </>
+          ) : (
+            <>
+              <User className="w-4 h-4 mr-2" />
+              Apply As Guest
+            </>
+          )}
         </button>
       </DialogTrigger>
       <DialogContent className="w-full h-full max-w-none max-h-none m-0 p-0 rounded-none sm:rounded-lg sm:w-[95vw] sm:h-[95vh] sm:max-w-[95vw] sm:max-h-[95vh] md:w-[90vw] md:h-[90vh] md:max-w-[90vw] md:max-h-[90vh] lg:w-[85vw] lg:h-[85vh] lg:max-w-[85vw] lg:max-h-[85vh] xl:w-[80vw] xl:h-[80vh] xl:max-w-[80vw] xl:max-h-[80vh] overflow-hidden flex flex-col justify-center">
         <DialogHeader
-          className={`px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0 text-left ${hasAlreadyApplied && "hidden"}`}
+          className={`px-6 py-4 flex-shrink-0 text-left ${hasAlreadyApplied && "hidden"}`}
         >
           <DialogTitle className="text-left text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Apply</DialogTitle>
           {jobTitle && (
@@ -468,7 +513,7 @@ export function ApplyAsGuestDialog({
             {({ isSubmitting, errors, touched, setFieldValue }) => (
               <Form className="flex flex-col flex-1 min-h-0 sticky top-0 overflow-y-clip">
                 <FormUpdater parsedResumeData={parsedResumeData} />
-                <div className="flex-1 overflow-hidden px-4 py-2 border-t">
+                <div className="flex-1 overflow-hidden px-6 py-4 border-t">
                   <CandidateForm
                     onFileUpload={async (file: File) => {
                       setFieldValue("resume", file);
@@ -476,21 +521,56 @@ export function ApplyAsGuestDialog({
                     }}
                   />
                 </div>
-                <div className="flex-shrink-0 flex justify-end space-x-2 border-t bg-background px-4 sm:px-6 py-3 sm:py-4 safe-area-inset-bottom">
+                <div className="flex-shrink-0 flex justify-end space-x-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10 safe-area-inset-bottom">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => setIsOpen(false)}
-                    className="flex-1 sm:flex-none"
+                    className="flex-1 sm:flex-none transition-all duration-200 hover:shadow-md"
+                    style={{
+                      borderColor: '#d1d5db',
+                      color: '#6b7280',
+                    }}
+                    onMouseEnter={(e) => {
+                      const target = e.target as HTMLElement;
+                      target.style.borderColor = '#9ca3af';
+                      target.style.backgroundColor = '#f9fafb';
+                    }}
+                    onMouseLeave={(e) => {
+                      const target = e.target as HTMLElement;
+                      target.style.borderColor = '#d1d5db';
+                      target.style.backgroundColor = 'transparent';
+                    }}
                   >
                     Cancel
                   </Button>
                   <Button
                     type={Object.keys(errors).length == 0 ? "button" : "submit"}
                     onClick={handleApply}
-                    className="flex-1 sm:flex-none"
+                    className="flex-1 sm:flex-none transition-all duration-200 hover:shadow-md text-white"
+                    style={{
+                      backgroundColor: primaryColor,
+                      borderColor: primaryColor,
+                    }}
+                    onMouseEnter={(e) => {
+                      const target = e.target as HTMLElement;
+                      target.style.backgroundColor = secondaryColor;
+                      target.style.borderColor = secondaryColor;
+                    }}
+                    onMouseLeave={(e) => {
+                      const target = e.target as HTMLElement;
+                      target.style.backgroundColor = primaryColor;
+                      target.style.borderColor = primaryColor;
+                    }}
                   >
-                    {isSubmitting ? "Saving..." : "Apply"}
+                    {isSubmitting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Saving...
+                      </>
+                    ) : (
+                      "Apply"
+                    )}
                   </Button>
                 </div>
               </Form>

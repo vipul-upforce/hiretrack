@@ -14,7 +14,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Home, ChevronRight } from "lucide-react";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import LoaderSkeletonUsers from "./components/loader-skeleton-users";
@@ -128,14 +129,31 @@ function UsersPage() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden w-full">
-      {/* Header section with improved design */}
+      {/* Header section with improved design and breadcrumbs */}
       <div className="flex-shrink-0 px-4 pb-2 border-b border-gray-200 dark:border-gray-700">
         <Card className="border-0 shadow-none bg-transparent">
           <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-2 py-3 px-0">
-            {/* Title */}
-            <CardTitle className="line-clamp-2 md:mr-2 text-xl font-bold">
-              Users
-            </CardTitle>
+            {/* Left Section - Breadcrumbs */}
+            <div className="flex items-center text-sm text-muted-foreground">
+              <Link
+                href="/dashboard"
+                className="flex items-center hover:text-foreground transition-colors"
+              >
+                <Home className="h-4 w-4 mr-2" />
+                Dashboard
+              </Link>
+              <ChevronRight className="h-4 w-4 mx-2" />
+              <Link
+                href="/dashboard/settings"
+                className="hover:text-foreground transition-colors"
+              >
+                Settings
+              </Link>
+              <ChevronRight className="h-4 w-4 mx-2" />
+              <span className="text-foreground font-semibold">
+                User Management
+              </span>
+            </div>
 
             {/* Right Section - Create User Button */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3">

@@ -148,6 +148,36 @@ export default function DashboardLayout({
   const router = useRouter();
   const { toast } = useToast();
 
+  // Handle responsive sidebar behavior
+  useEffect(() => {
+    const handleResize = () => {
+      const isSmallScreen = window.innerWidth < 1200;
+      const userPreference = sessionStorage.getItem('sidebar-user-preference');
+      
+      // On small screens, default to collapsed unless user has explicitly expanded
+      if (isSmallScreen) {
+        if (userPreference === 'expanded') {
+          setIsCollapsed(false);
+        } else {
+          setIsCollapsed(true);
+        }
+      } else {
+        // On large screens, respect user preference or default to expanded
+        if (userPreference === 'collapsed') {
+          setIsCollapsed(true);
+        } else {
+          setIsCollapsed(false);
+        }
+      }
+    };
+
+    // Initial check
+    handleResize();
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []); // Remove isCollapsed dependency to avoid infinite loops
+
   const handleLogout = () => {
     Cookies.remove("token");
     setUserData(null);
@@ -243,7 +273,10 @@ export default function DashboardLayout({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={() => {
+              setIsCollapsed(!isCollapsed);
+              sessionStorage.setItem('sidebar-user-preference', 'expanded');
+            }}
             className="h-8 w-8 rounded-full flex-shrink-0"
             aria-label="Expand sidebar"
           >
@@ -276,7 +309,10 @@ export default function DashboardLayout({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setIsCollapsed(!isCollapsed)}
+              onClick={() => {
+                setIsCollapsed(!isCollapsed);
+                sessionStorage.setItem('sidebar-user-preference', 'collapsed');
+              }}
               className="h-8 w-8 rounded-full flex-shrink-0"
               aria-label="Collapse sidebar"
             >

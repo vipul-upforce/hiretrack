@@ -447,10 +447,9 @@ export function EditCandidateDialog({
       <DialogContent
         className={`sm:max-w-[80vw] ${
           candidate.resume ? "xl:max-w-[65vw]" : "xl:max-w-[50vw]"
-        } h-[90vh] p-0 flex flex-col justify-between overflow-hidden`}
+        } h-[90vh] flex flex-col justify-between overflow-hidden`}
       >
-        <DialogHeader className="px-6 py-8 border-b">
-          {/* <DialogHeader className='flex-shrink-0 px-6 py-4 border-b'> */}
+        <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle>Edit Candidate</DialogTitle>
         </DialogHeader>
         <Formik
@@ -461,9 +460,9 @@ export function EditCandidateDialog({
         >
           {({ isSubmitting, errors, setFieldValue, dirty }) => (
             // <Form className='flex flex-col h-[calc(90vh-80px)] overflow-hidden border-t '>
-            <Form className="flex flex-col flex-1 min-h-0 sticky top-0 overflow-y-clip">
+            <Form className="flex flex-col flex-1 min-h-0 overflow-hidden">
               <FormUpdater parsedResumeData={parsedResumeData} />
-              <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 pt-0 h-full">
+              <div className="flex-1 overflow-y-auto px-6 py-4">
                 <CandidateForm
                   onFileUpload={async (file: File) => {
                     setFieldValue("resume", file);
@@ -472,7 +471,7 @@ export function EditCandidateDialog({
                   isEditMode={true}
                 />
               </div>
-              <div className="flex justify-between space-x-2 border-t bg-background px-6 py-4">
+              <div className="flex justify-between space-x-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10">
                 <AddSpecificCustomFieldButton
                   candidateId={candidate._id}
                   candidateName={candidate.name}

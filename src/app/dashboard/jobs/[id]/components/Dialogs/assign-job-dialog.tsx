@@ -96,7 +96,7 @@ export function AssignJobDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="p-0 overflow-hidden flex flex-col justify-start">
-        <DialogHeader className="px-6 pt-6">
+        <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle className="flex justify-between align-center">
             Assign Job
           </DialogTitle>
@@ -110,7 +110,7 @@ export function AssignJobDialog({
         >
           {({ errors, touched, isSubmitting, setFieldValue }) => (
             <Form className="flex-1 flex flex-col h-full overflow-y-scroll ">
-              <div className="flex-1 overflow-y-auto px-6 py-4 pt-0 space-y-6">
+              <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
                 <div className="grid gap-4 py-4">
                   <div className="grid gap-2">
                     <Label htmlFor="interviewerId">Assign To</Label>
@@ -146,7 +146,7 @@ export function AssignJobDialog({
                 </div>
               </div>
 
-              <div className="flex relative bottom-0 justify-between w-full space-x-2 border-t bg-background px-6 py-4">
+              <div className="flex relative bottom-0 justify-between w-full space-x-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10">
                 <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting ? "Assigning..." : "Assign"}
                 </Button>

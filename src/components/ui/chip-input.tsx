@@ -87,7 +87,7 @@ export function ChipInput({
                 <Badge
                   key={item}
                   variant="secondary"
-                  className="bg-muted hover:bg-muted dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-100 dark:border-gray-600 break-all"
+                  className="bg-muted hover:bg-muted/80 break-all"
                 >
                   {item}
                   <button

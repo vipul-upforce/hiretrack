@@ -49,8 +49,8 @@ export function TermsConfirmationDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent size="md">
-        <DialogHeader>
+      <DialogContent size="md" className="p-0 overflow-hidden flex flex-col">
+        <DialogHeader className="px-6 py-4">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
               <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -64,7 +64,7 @@ export function TermsConfirmationDialog({
           </p>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
           {/* Terms and Conditions */}
           <div className="space-y-4">
             <div className="flex items-start gap-3">
@@ -115,7 +115,7 @@ export function TermsConfirmationDialog({
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 pt-4">
+        <div className="flex flex-col sm:flex-row gap-3 border-t bg-background px-6 py-4 sticky bottom-0 z-10">
           <Button
             type="button"
             variant="outline"

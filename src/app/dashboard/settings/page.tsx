@@ -33,11 +33,17 @@ import {
   UserCheck,
   Cog,
   Sparkles,
+  ExternalLink,
 } from "lucide-react";
 
 function Settings() {
   const [openDialog, setOpenDialog] = useState<string | null>(null);
   const router = useRouter();
+
+  // Helper function to check if setting opens in new page
+  const opensInNewPage = (key: string) => {
+    return ["users", "portal", "templates", "logs"].includes(key);
+  };
 
   const settingGroups = [
     {
@@ -195,7 +201,7 @@ function Settings() {
                     }
                   }}
                 >
-                  <CardHeader className="pb-3">
+                  <CardHeader className="pb-3 relative">
                     <div className="flex items-start gap-3">
                       <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700">
                         <option.icon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
@@ -205,6 +211,11 @@ function Settings() {
                           {option.title}
                         </CardTitle>
                       </div>
+                      {opensInNewPage(option.key) && (
+                        <div className="absolute top-4 right-4">
+                          <ExternalLink className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500 opacity-60" />
+                        </div>
+                      )}
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0">

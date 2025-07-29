@@ -316,7 +316,7 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
   };
 
   return (
-    <div className="bg-card rounded-lg p-6 h-[80vh] flex flex-col font-sans">
+    <div className="flex-1 overflow-y-auto px-6 py-4 flex flex-col font-sans">
       {/* Tabs */}
       <div className="flex border-b mb-6 flex-shrink-0 justify-between">
         <div className="flex space-x-2">

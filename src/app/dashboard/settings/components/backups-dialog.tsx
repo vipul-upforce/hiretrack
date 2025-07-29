@@ -112,7 +112,7 @@ export default function BackupsDialog() {
   };
 
   return (
-    <div className="">
+    <div className="flex-1 overflow-y-auto px-6 py-4">
       <Button
         className="w-full mb-2"
         variant="primary"

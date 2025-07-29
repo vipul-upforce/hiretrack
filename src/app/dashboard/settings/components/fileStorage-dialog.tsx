@@ -18,6 +18,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useTestConnection } from "@/hooks/use-test-connection";
 import * as jose from "jose";
 import CryptoJS from "crypto-js";
@@ -204,282 +211,296 @@ export default function FileStorageOptions({
     });
   };
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <div className="px-6 py-4">Loading...</div>;
 
   return (
-    <Formik
-      initialValues={initialValues}
-      validationSchema={validationSchema}
-      onSubmit={handleSubmit}
-      enableReinitialize
-    >
-      {({ values, handleChange, isSubmitting, setFieldValue }) => (
-        <Form className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="fileStorage">Select Storage Option</Label>
-            <select
-              id="storageType"
-              name="storageType"
-              value={values.storageType}
-              onChange={handleChange}
-              className="border rounded-md p-2 w-full"
-            >
-              {storageOptions.map(({ key, label }) => (
-                <option key={key} value={key}>
-                  {label}
-                </option>
-              ))}
-            </select>
-            <ErrorMessage
-              name="fileStorage"
-              component="div"
-              className="text-red-500 text-sm"
-            />
-          </div>
-
-          {values.storageType === "cloudinary" && (
-            <div className="space-y-3">
-              <div>
-                <Label htmlFor="cloudinaryCloudName">Cloud Name</Label>
-                <Input
-                  id="cloudinaryCloudName"
-                  name="cloudinaryCloudName"
-                  value={values.cloudinaryCloudName}
-                  onChange={(e) =>
-                    setFieldValue("cloudinaryCloudName", e.target.value.trim())
-                  }
-                />
-                <ErrorMessage
-                  name="cloudinaryCloudName"
-                  component="div"
-                  className="text-red-500 text-sm"
-                />
-              </div>
-              <div>
-                <Label htmlFor="cloudinaryApiKey">Cloudinary API Key</Label>
-                <div className="relative">
-                  <Input
-                    id="cloudinaryApiKey"
-                    name="cloudinaryApiKey"
-                    type={showKey ? "text" : "password"}
-                    value={values.cloudinaryApiKey}
-                    onChange={(e) =>
-                      setFieldValue("cloudinaryApiKey", e.target.value.trim())
-                    }
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent"
-                    onClick={() => setShowKey(!showKey)}
-                  >
-                    {!showKey ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-                <ErrorMessage
-                  name="cloudinaryApiKey"
-                  component="div"
-                  className="text-red-500 text-sm"
-                />
-              </div>
-              <div>
-                <Label htmlFor="cloudinaryApiSecret">
-                  Cloudinary API Secret
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="cloudinaryApiSecret"
-                    name="cloudinaryApiSecret"
-                    type={showSecret ? "text" : "password"}
-                    value={values.cloudinaryApiSecret}
-                    onChange={(e) =>
-                      setFieldValue(
-                        "cloudinaryApiSecret",
-                        e.target.value.trim()
-                      )
-                    }
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent"
-                    onClick={() => setShowSecret(!showSecret)}
-                  >
-                    {!showSecret ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-                <ErrorMessage
-                  name="cloudinaryApiSecret"
-                  component="div"
-                  className="text-red-500 text-sm"
-                />
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => handleTestConnection(values)}
-                  disabled={isTesting}
+    <>
+      <Formik
+        initialValues={initialValues}
+        validationSchema={validationSchema}
+        onSubmit={handleSubmit}
+        enableReinitialize
+      >
+        {({ values, handleChange, isSubmitting, setFieldValue }) => (
+          <Form className="flex flex-col h-full">
+            <div className="px-6 py-4 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="fileStorage">Select Storage Option</Label>
+                <Select
+                  value={values.storageType}
+                  onValueChange={(value) => setFieldValue("storageType", value)}
                 >
-                  {isTesting ? "Testing..." : "Test Credentials"}
-                </Button>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select storage option" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {storageOptions.map(({ key, label }) => (
+                      <SelectItem key={key} value={key}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <ErrorMessage
+                  name="storageType"
+                  component="div"
+                  className="text-red-500 text-sm"
+                />
               </div>
-            </div>
-          )}
 
-          {values.storageType === "s3" && (
-            <div className="space-y-3">
-              <div>
-                <Label htmlFor="awsRegion">AWS Region</Label>
-                <Input
-                  id="awsRegion"
-                  name="awsRegion"
-                  value={values.awsRegion}
-                  onChange={(e) =>
-                    setFieldValue("awsRegion", e.target.value.trim())
-                  }
-                />
-                <ErrorMessage
-                  name="awsRegion"
-                  component="div"
-                  className="text-red-500 text-sm"
-                />
-              </div>
-              <div>
-                <Label htmlFor="awsAccessKeyId">AWS Access Key ID</Label>
-                <div className="relative">
-                  <Input
-                    id="awsAccessKeyId"
-                    name="awsAccessKeyId"
-                    type={showKey ? "text" : "password"}
-                    value={values.awsAccessKeyId}
-                    onChange={(e) =>
-                      setFieldValue("awsAccessKeyId", e.target.value.trim())
-                    }
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent"
-                    onClick={() => setShowKey(!showKey)}
-                  >
-                    {!showKey ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-                <ErrorMessage
-                  name="awsAccessKeyId"
-                  component="div"
-                  className="text-red-500 text-sm"
-                />
-              </div>
-              <div>
-                <Label htmlFor="awsSecretAccessKey">
-                  AWS Secret Access Key
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="awsSecretAccessKey"
-                    name="awsSecretAccessKey"
-                    type={showSecret ? "text" : "password"}
-                    value={values.awsSecretAccessKey}
-                    onChange={(e) =>
-                      setFieldValue("awsSecretAccessKey", e.target.value.trim())
-                    }
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent"
-                    onClick={() => setShowSecret(!showSecret)}
-                  >
-                    {!showSecret ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-                <ErrorMessage
-                  name="awsSecretAccessKey"
-                  component="div"
-                  className="text-red-500 text-sm"
-                />
-              </div>
-              <div>
-                <Label htmlFor="awsBucketName">AWS Bucket Name</Label>
-                <Input
-                  id="awsBucketName"
-                  name="awsBucketName"
-                  value={values.awsBucketName}
-                  onChange={(e) =>
-                    setFieldValue("awsBucketName", e.target.value.trim())
-                  }
-                />
-                <ErrorMessage
-                  name="awsBucketName"
-                  component="div"
-                  className="text-red-500 text-sm"
-                />
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => handleTestConnection(values)}
-                  disabled={isTesting}
-                >
-                  {isTesting ? "Testing..." : "Test Credentials"}
-                </Button>
-              </div>
-            </div>
-          )}
-
-          <div className="w-full flex justify-end">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
+              {values.storageType === "cloudinary" && (
+                <div className="space-y-3">
                   <div>
+                    <Label htmlFor="cloudinaryCloudName">Cloud Name</Label>
+                    <Input
+                      id="cloudinaryCloudName"
+                      name="cloudinaryCloudName"
+                      value={values.cloudinaryCloudName}
+                      onChange={(e) =>
+                        setFieldValue("cloudinaryCloudName", e.target.value.trim())
+                      }
+                    />
+                    <ErrorMessage
+                      name="cloudinaryCloudName"
+                      component="div"
+                      className="text-red-500 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="cloudinaryApiKey">Cloudinary API Key</Label>
+                    <div className="relative">
+                      <Input
+                        id="cloudinaryApiKey"
+                        name="cloudinaryApiKey"
+                        type={showKey ? "text" : "password"}
+                        value={values.cloudinaryApiKey}
+                        onChange={(e) =>
+                          setFieldValue("cloudinaryApiKey", e.target.value.trim())
+                        }
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent"
+                        onClick={() => setShowKey(!showKey)}
+                      >
+                        {!showKey ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                    <ErrorMessage
+                      name="cloudinaryApiKey"
+                      component="div"
+                      className="text-red-500 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="cloudinaryApiSecret">
+                      Cloudinary API Secret
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="cloudinaryApiSecret"
+                        name="cloudinaryApiSecret"
+                        type={showSecret ? "text" : "password"}
+                        value={values.cloudinaryApiSecret}
+                        onChange={(e) =>
+                          setFieldValue(
+                            "cloudinaryApiSecret",
+                            e.target.value.trim()
+                          )
+                        }
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent"
+                        onClick={() => setShowSecret(!showSecret)}
+                      >
+                        {!showSecret ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                    <ErrorMessage
+                      name="cloudinaryApiSecret"
+                      component="div"
+                      className="text-red-500 text-sm"
+                    />
+                  </div>
+                  <div className="flex justify-end space-x-2">
                     <Button
-                      type="submit"
-                      variant="primary"
-                      disabled={
-                        values.storageType !== "local" &&
-                        (isSubmitting || isUpdating || !isConnectionSuccessful)
-                      }
-                      title={
-                        !isConnectionSuccessful
-                          ? "Test the connection before saving."
-                          : ""
-                      }
+                      type="button"
+                      variant="outline"
+                      onClick={() => handleTestConnection(values)}
+                      disabled={isTesting}
                     >
-                      {isSubmitting || isUpdating ? "Saving..." : "Save"}
+                      {isTesting ? "Testing..." : "Test Credentials"}
                     </Button>
                   </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Test Connection To Make It Enable</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-        </Form>
-      )}
-    </Formik>
+                </div>
+              )}
+
+              {values.storageType === "s3" && (
+                <div className="space-y-3">
+                  <div>
+                    <Label htmlFor="awsRegion">AWS Region</Label>
+                    <Input
+                      id="awsRegion"
+                      name="awsRegion"
+                      value={values.awsRegion}
+                      onChange={(e) =>
+                        setFieldValue("awsRegion", e.target.value.trim())
+                      }
+                    />
+                    <ErrorMessage
+                      name="awsRegion"
+                      component="div"
+                      className="text-red-500 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="awsAccessKeyId">AWS Access Key ID</Label>
+                    <div className="relative">
+                      <Input
+                        id="awsAccessKeyId"
+                        name="awsAccessKeyId"
+                        type={showKey ? "text" : "password"}
+                        value={values.awsAccessKeyId}
+                        onChange={(e) =>
+                          setFieldValue("awsAccessKeyId", e.target.value.trim())
+                        }
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent"
+                        onClick={() => setShowKey(!showKey)}
+                      >
+                        {!showKey ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                    <ErrorMessage
+                      name="awsAccessKeyId"
+                      component="div"
+                      className="text-red-500 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="awsSecretAccessKey">
+                      AWS Secret Access Key
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="awsSecretAccessKey"
+                        name="awsSecretAccessKey"
+                        type={showSecret ? "text" : "password"}
+                        value={values.awsSecretAccessKey}
+                        onChange={(e) =>
+                          setFieldValue("awsSecretAccessKey", e.target.value.trim())
+                        }
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent"
+                        onClick={() => setShowSecret(!showSecret)}
+                      >
+                        {!showSecret ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                    <ErrorMessage
+                      name="awsSecretAccessKey"
+                      component="div"
+                      className="text-red-500 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="awsBucketName">AWS Bucket Name</Label>
+                    <Input
+                      id="awsBucketName"
+                      name="awsBucketName"
+                      value={values.awsBucketName}
+                      onChange={(e) =>
+                        setFieldValue("awsBucketName", e.target.value.trim())
+                      }
+                    />
+                    <ErrorMessage
+                      name="awsBucketName"
+                      component="div"
+                      className="text-red-500 text-sm"
+                    />
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => handleTestConnection(values)}
+                      disabled={isTesting}
+                    >
+                      {isTesting ? "Testing..." : "Test Credentials"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 border-t border-border/10 px-6 py-4 mt-auto">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={onClose}
+                disabled={isSubmitting || isUpdating}
+              >
+                Cancel
+              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <Button
+                        type="submit"
+                        variant="default"
+                        disabled={
+                          values.storageType !== "local" &&
+                          (isSubmitting || isUpdating || !isConnectionSuccessful)
+                        }
+                        title={
+                          !isConnectionSuccessful
+                            ? "Test the connection before saving."
+                            : ""
+                        }
+                      >
+                        {isSubmitting || isUpdating ? "Saving..." : "Save"}
+                      </Button>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Test Connection To Make It Enable</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </Form>
+        )}
+      </Formik>
+    </>
   );
 }

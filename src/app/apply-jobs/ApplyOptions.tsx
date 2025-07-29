@@ -2,10 +2,10 @@ import { CreateCandidateDialog } from "../dashboard/jobs/[id]/components/Dialogs
 import { Button } from "@/components/ui/button";
 import useRoles from "@/hooks/useRoles";
 import { Dialog } from "@headlessui/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ApplyAsGuestDialog } from "./ApplyAsGuest";
-import { X } from "lucide-react";
+import { X, UserPlus, LogIn, User } from "lucide-react";
 
 // Define a type for the job object
 interface Job {
@@ -35,8 +35,34 @@ export default function ApplyOptions({
   readOnly,
 }: JobModalProps) {
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
+  const [primaryColor, setPrimaryColor] = useState<string>("#6366f1");
+  const [secondaryColor, setSecondaryColor] = useState<string>("#8b5cf6");
   const roles = useRoles();
   const router = useRouter();
+
+  // Fetch portal colors
+  useEffect(() => {
+    const fetchPortalColors = async () => {
+      try {
+        const response = await fetch("/api/settings/portal");
+        if (response.ok) {
+          const data = await response.json();
+          if (data.primaryColor) {
+            setPrimaryColor(data.primaryColor);
+          }
+          if (data.secondaryColor) {
+            setSecondaryColor(data.secondaryColor);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch portal colors:", error);
+      }
+    };
+    
+    if (isOptionsOpen) {
+      fetchPortalColors();
+    }
+  }, [isOptionsOpen]);
 
   if (!job) return null;
 
@@ -70,7 +96,7 @@ export default function ApplyOptions({
         aria-hidden="true"
       />
       <div className="fixed inset-0 flex items-center justify-center p-4 z-50">
-        <Dialog.Panel className="relative w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-gray-900 p-6 text-left align-middle shadow-2xl transition-all border border-gray-200 dark:border-gray-700">
+        <Dialog.Panel className="relative w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-gray-900 p-6 text-left align-middle shadow-2xl transition-all border border-gray-200 dark:border-gray-700 backdrop-blur-sm">
           <button
             type="button"
             className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
@@ -80,8 +106,19 @@ export default function ApplyOptions({
           </button>
 
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-              <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div 
+              className="w-10 h-10 rounded-full flex items-center justify-center"
+              style={{
+                backgroundColor: `${primaryColor}15`,
+              }}
+            >
+              <svg 
+                className="w-5 h-5" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+                style={{ color: primaryColor }}
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
@@ -104,15 +141,45 @@ export default function ApplyOptions({
                   <Button 
                     onClick={handleSignupRedirect} 
                     variant="outline"
-                    className="w-full py-2.5 text-sm font-medium border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    className="w-full py-3 text-sm font-medium transition-all duration-200 border-2 hover:shadow-md"
+                    style={{
+                      borderColor: primaryColor,
+                      color: primaryColor,
+                    }}
+                    onMouseEnter={(e) => {
+                      const target = e.target as HTMLElement;
+                      target.style.backgroundColor = primaryColor;
+                      target.style.color = 'white';
+                    }}
+                    onMouseLeave={(e) => {
+                      const target = e.target as HTMLElement;
+                      target.style.backgroundColor = 'transparent';
+                      target.style.color = primaryColor;
+                    }}
                   >
+                    <UserPlus className="w-4 h-4 mr-2" />
                     Sign Up
                   </Button>
                   <Button 
                     onClick={handleLoginRedirect} 
                     variant="outline"
-                    className="w-full py-2.5 text-sm font-medium border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    className="w-full py-3 text-sm font-medium transition-all duration-200 border-2 hover:shadow-md"
+                    style={{
+                      borderColor: secondaryColor,
+                      color: secondaryColor,
+                    }}
+                    onMouseEnter={(e) => {
+                      const target = e.target as HTMLElement;
+                      target.style.backgroundColor = secondaryColor;
+                      target.style.color = 'white';
+                    }}
+                    onMouseLeave={(e) => {
+                      const target = e.target as HTMLElement;
+                      target.style.backgroundColor = 'transparent';
+                      target.style.color = secondaryColor;
+                    }}
                   >
+                    <LogIn className="w-4 h-4 mr-2" />
                     Login
                   </Button>
                 </div>
@@ -121,7 +188,16 @@ export default function ApplyOptions({
                     <span className="w-full border-t border-gray-200 dark:border-gray-700" />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-white dark:bg-gray-900 px-2 text-gray-500 dark:text-gray-400">Or</span>
+                    <span 
+                      className="bg-white dark:bg-gray-900 px-3 py-1 rounded-full text-xs font-medium"
+                      style={{
+                        color: `${primaryColor}80`,
+                        backgroundColor: `${primaryColor}05`,
+                        border: `1px solid ${primaryColor}20`,
+                      }}
+                    >
+                      Or
+                    </span>
                   </div>
                 </div>
                 <div className="w-full flex justify-center">
@@ -131,6 +207,8 @@ export default function ApplyOptions({
                     setIsOpen={setIsFormDialogOpen}
                     closeParent={onClose}
                     jobTitle={job.title}
+                    primaryColor={primaryColor}
+                    secondaryColor={secondaryColor}
                   />
                 </div>
               </>

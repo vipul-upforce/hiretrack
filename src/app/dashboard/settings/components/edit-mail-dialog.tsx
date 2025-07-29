@@ -17,6 +17,13 @@ import {
 import { Data, defaultTemplates, editorOptions } from "@/lib/constants";
 import type { IEmailTemplatesConfig } from "./types";
 import { useTheme } from "@/components/theme-provider";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function EmailTemplateEditor({
   onClose,
@@ -299,37 +306,41 @@ export default function EmailTemplateEditor({
   if (isLoading) return <div>Loading...</div>;
 
   return (
-    <Formik
-      initialValues={initialValues}
-      onSubmit={handleSubmit}
-      enableReinitialize
-    >
-      {({ values, handleSubmit, setFieldValue, isSubmitting }) => {
-        const variableAnalysis = analyzeVariableUsage(values);
+    <div className="flex-1 overflow-y-auto px-6 py-4">
+      <Formik
+        initialValues={initialValues}
+        onSubmit={handleSubmit}
+        enableReinitialize
+      >
+        {({ values, handleSubmit, setFieldValue, isSubmitting }) => {
+          const variableAnalysis = analyzeVariableUsage(values);
 
-        return (
-          <Form onSubmit={handleSubmit}>
-            <div className="flex flex-col max-h-[95vh]">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(95vh-120px)]">
+          return (
+            <Form onSubmit={handleSubmit}>
+              <div className="flex flex-col h-full">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1">
                 <div className="space-y-4 overflow-y-auto p-2">
                   <div className="space-y-2">
                     <Label htmlFor="templateType">
                       Select Template to Edit
                     </Label>
-                    <select
-                      id="templateType"
+                    <Select
                       value={selectedTemplate}
-                      onChange={(e) => setSelectedTemplate(e.target.value)}
-                      className="border rounded p-2 w-full"
+                      onValueChange={setSelectedTemplate}
                     >
-                      {Object.entries(defaultTemplates).map(
-                        ([key, template]) => (
-                          <option key={key} value={key}>
-                            {template.templateName}
-                          </option>
-                        )
-                      )}
-                    </select>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select template" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(defaultTemplates).map(
+                          ([key, template]) => (
+                            <SelectItem key={key} value={key}>
+                              {template.templateName}
+                            </SelectItem>
+                          )
+                        )}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="space-y-2">
@@ -612,8 +623,9 @@ export default function EmailTemplateEditor({
               </div>
             </div>
           </Form>
-        );
-      }}
-    </Formik>
+          );
+        }}
+      </Formik>
+    </div>
   );
 }

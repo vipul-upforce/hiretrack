@@ -2,6 +2,13 @@
 import { useState } from 'react';
 import { ChevronDown, Filter, LayoutList, LayoutGrid } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function CandidatesPage() {
     const [view, setView] = useState<'board' | 'list'>('board');
@@ -54,26 +61,41 @@ export default function CandidatesPage() {
                     </button>
 
                     {showFilters && (
-                        <div className="absolute right-0 mt-2 w-72 bg-white shadow-lg rounded-lg p-4 border z-10">
+                        <div className="absolute right-0 mt-2 w-72 bg-background shadow-lg rounded-lg p-4 border z-10">
                             <h4 className="font-medium mb-2">Filter Candidates</h4>
                             <div className="space-y-4">
                                 <div>
-                                    <label className="text-sm text-gray-500">Assigned To</label>
-                                    <select className="w-full border px-2 py-1 rounded mt-1">
-                                        <option>All Assignees</option>
-                                    </select>
+                                    <label className="text-sm text-muted-foreground">Assigned To</label>
+                                    <Select>
+                                        <SelectTrigger className="w-full mt-1">
+                                            <SelectValue placeholder="All Assignees" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Assignees</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                                 <div>
-                                    <label className="text-sm text-gray-500">AI Score Range</label>
-                                    <select className="w-full border px-2 py-1 rounded mt-1">
-                                        <option>All Scores</option>
-                                    </select>
+                                    <label className="text-sm text-muted-foreground">AI Score Range</label>
+                                    <Select>
+                                        <SelectTrigger className="w-full mt-1">
+                                            <SelectValue placeholder="All Scores" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Scores</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                                 <div>
-                                    <label className="text-sm text-gray-500">Application Date</label>
-                                    <select className="w-full border px-2 py-1 rounded mt-1">
-                                        <option>All Time</option>
-                                    </select>
+                                    <label className="text-sm text-muted-foreground">Application Date</label>
+                                    <Select>
+                                        <SelectTrigger className="w-full mt-1">
+                                            <SelectValue placeholder="All Time" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Time</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                             </div>
                         </div>
