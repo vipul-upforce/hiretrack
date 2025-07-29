@@ -5,6 +5,8 @@ image: node:20.17.0
 variables:
   VM_DEST_DIR: "/root" # Where tarball is sent and extracted
   VM_HOST: "$VM_HOST"
+  SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar" # Defines the location of the analysis task cache
+  GIT_DEPTH: "0" # Tells git to fetch all the branches of the project, required by the analysis task
 
 # Cache node_modules to speed up builds
 cache:
@@ -12,8 +14,28 @@ cache:
     - node_modules/
 
 stages:
+  - scan
   - build
   - deploy
+
+sonarcloud-check:
+  stage: scan
+  image:
+    name: sonarsource/sonar-scanner-cli:latest
+    entrypoint: [""]
+  cache:
+    key: "${CI_JOB_NAME}"
+    paths:
+      - .sonar/cache
+  script:
+    - sonar-scanner
+  only:
+    - main-backup
+    - merge_requests
+  variables:
+    SONAR_TOKEN: "$SONAR_TOKEN"
+    SONAR_HOST_URL: "$SONAR_HOST_URL"
+  allow_failure: true # Allows pipeline to continue even if SonarQube fails (optional)
 
 build:
   stage: build
@@ -35,15 +57,10 @@ build:
       echo "NEXT_PUBLIC_RECAPTCHA_SITE_KEY=$NEXT_PUBLIC_RECAPTCHA_SITE_KEY" >> .env
       echo "RECAPTCHA_SECRET_KEY=$RECAPTCHA_SECRET_KEY" >> .env
       echo "ALLOWED_ORIGINS=$ALLOWED_ORIGINS" >> .env
-      # Add other variables if needed, e.g.:
-      # echo "NEXTAUTH_SECRET=$NEXTAUTH_SECRET" >> .env
     # Debug: Show .env contents (remove after testing)
     - cat .env
     - npm ci --legacy-peer-deps
-    # Skip linting (temporary fix)
     - npx next build
-    # - rm -r node_modules
-    # - npm i next --force
     # Create tarball in a temp directory, excluding .next and server.log
     - mkdir -p temp
     - tar --exclude='./.git' --exclude='./temp' -czvf temp/hiretrack-v1-gl.tar.gz .
@@ -75,8 +92,6 @@ deploy:
         rm -rf hiretrack-latest
         mkdir -p hiretrack-latest
         tar -xzvf hiretrack-v1-gl.tar.gz -C hiretrack-latest
-        # cp /root/.env.production .env.local
-        # pm2 kill && pm2 start "npm run start" --name "hiretrack-latest-deployed-by-gitlab"
         cd hiretrack-latest
         pm2 kill && pm2 start npm --name "hiretrack-latest-deployed-by-gitlab" -- start
         # Clean up the tarball
