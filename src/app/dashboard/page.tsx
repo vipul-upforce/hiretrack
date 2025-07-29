@@ -598,7 +598,7 @@ export default function DashboardPage() {
         ref={scrollContainerRef}
         className="flex-1 min-h-0 px-4 pb-4 mt-4 space-y-6 overflow-y-auto"
       >
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-3 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Total Interviews</CardTitle>
@@ -683,7 +683,7 @@ export default function DashboardPage() {
                 // ) :
 
                 assignments?.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 xl:grid-cols-3 lg:grid-cols-2 gap-4">
                     {assignments.map((assignment, index) => (
                       <div
                         key={assignment.id || assignment._id}

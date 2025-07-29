@@ -77,7 +77,7 @@
 }
 
 .dark .rmdp-time-picker div .rmdp-am {
-    color: #fff;
+    color: hsl(var(--foreground));
 }
 
 .rmdp-container {
@@ -104,4 +104,32 @@
 .dark .wren-picker .flex.items-center.justify-between.gap-2.p-3 {
     background: hsl(var(--muted) / 0.1);
     border-top: 1px solid hsl(var(--border) / 0.5);
+}
+
+/* Additional dark mode styles for better coverage */
+.dark .wren-picker.rmdp-wrapper .rmdp-day.rmdp-disabled {
+    color: hsl(var(--muted-foreground) / 0.5);
+}
+
+.dark .wren-picker.rmdp-wrapper .rmdp-month-picker,
+.dark .wren-picker.rmdp-wrapper .rmdp-year-picker {
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+}
+
+.dark .wren-picker.rmdp-wrapper .rmdp-month-picker div,
+.dark .wren-picker.rmdp-wrapper .rmdp-year-picker div {
+    color: hsl(var(--foreground));
+}
+
+.dark .wren-picker.rmdp-wrapper .rmdp-month-picker div:hover,
+.dark .wren-picker.rmdp-wrapper .rmdp-year-picker div:hover {
+    background: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+}
+
+.dark .wren-picker.rmdp-wrapper .rmdp-time-picker select {
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    border-color: hsl(var(--border));
 }

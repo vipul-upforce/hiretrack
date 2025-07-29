@@ -68,7 +68,7 @@ const ConfirmAndRemarkDialog = ({
           {message && <DialogDescription>{message}</DialogDescription>}
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-6 py-4">
-          <div>
+          <div className="mb-6">
             <Label htmlFor="remark-textarea">Remark</Label>
             <Textarea
               id="remark-textarea"

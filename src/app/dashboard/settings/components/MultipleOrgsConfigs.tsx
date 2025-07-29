@@ -69,44 +69,57 @@ export default function MultipleOrgsConfigs({
     }
   };
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <div className="px-6 py-4">Loading...</div>;
 
   return (
-    <Formik<multipleOrgsValues>
-      initialValues={initialValues}
-      validationSchema={validationSchema}
-      onSubmit={handleSubmit}
-      enableReinitialize
-    >
-      {({ values, setFieldValue, handleSubmit, isSubmitting }) => (
-        <Form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="multipleOrg"
-              checked={values.multipleOrg}
-              disabled={error && "status" in error && error?.status === 403}
-              onCheckedChange={(checked) =>
-                setFieldValue("multipleOrg", Boolean(checked))
-              }
-            />
-            <Label htmlFor="multipleOrg">Allow multiple organizations</Label>
-          </div>
-          <ErrorMessage
-            name="multipleOrg"
-            component="div"
-            className="text-red-500 text-sm"
-          />
-          <div className="w-full flex justify-end">
-            <Button
-              type="submit"
-              disabled={isSubmitting || isUpdating}
-              variant="primary"
-            >
-              {isSubmitting || isUpdating ? "Saving..." : "Save"}
-            </Button>
-          </div>
-        </Form>
-      )}
-    </Formik>
+    <>
+      <Formik<multipleOrgsValues>
+        initialValues={initialValues}
+        validationSchema={validationSchema}
+        onSubmit={handleSubmit}
+        enableReinitialize
+      >
+        {({ values, setFieldValue, handleSubmit, isSubmitting }) => (
+          <Form onSubmit={handleSubmit} className="flex flex-col h-full">
+            <div className="px-6 py-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="multipleOrg"
+                  checked={values.multipleOrg}
+                  disabled={error && "status" in error && error?.status === 403}
+                  onCheckedChange={(checked) =>
+                    setFieldValue("multipleOrg", Boolean(checked))
+                  }
+                />
+                <Label htmlFor="multipleOrg">Allow multiple organizations</Label>
+              </div>
+              <ErrorMessage
+                name="multipleOrg"
+                component="div"
+                className="text-red-500 text-sm"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 border-t border-border/10 px-6 py-4 mt-auto">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={onClose}
+                disabled={isSubmitting || isUpdating}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting || isUpdating}
+                variant="default"
+              >
+                {isSubmitting || isUpdating ? "Saving..." : "Save"}
+              </Button>
+            </div>
+          </Form>
+        )}
+      </Formik>
+    </>
   );
 }

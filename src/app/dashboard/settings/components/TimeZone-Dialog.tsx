@@ -102,58 +102,68 @@ export default function TimeZoneSelect({ onClose }: { onClose: () => void }) {
     }
   };
 
-  if (isLoading) return <div className="flex-1 overflow-y-auto px-6 py-4">Loading...</div>;
+  if (isLoading) return <div className="px-6 py-4">Loading...</div>;
 
   return (
-    <div className="flex-1 overflow-y-auto px-6 py-4">
-    <Formik<TimeZoneValues>
-      initialValues={initialValues}
-      validationSchema={validationSchema}
-      onSubmit={handleSubmit}
-      enableReinitialize
-    >
-      {({
-        values,
-        setFieldValue,
-        handleSubmit,
-        isSubmitting,
-        errors,
-        touched,
-      }) => (
-        <Form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="timeZone">Timezone</Label>
-            <div>
-              <Combobox
-                options={TIMEZONES.map((tz) => ({
-                  value: tz.name,
-                  label: `${tz.name} (${tz.offset})`,
-                }))}
-                placeholder="Select a timezone..."
-                value={values.timeZone}
-                onValueChange={(value) => setFieldValue("timeZone", value)}
-                width="100%"
-              />
+    <>
+      <Formik<TimeZoneValues>
+        initialValues={initialValues}
+        validationSchema={validationSchema}
+        onSubmit={handleSubmit}
+        enableReinitialize
+      >
+        {({
+          values,
+          setFieldValue,
+          handleSubmit,
+          isSubmitting,
+          errors,
+          touched,
+        }) => (
+          <Form onSubmit={handleSubmit} className="flex flex-col h-full">
+            <div className="px-6 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="timeZone">Timezone</Label>
+                <div>
+                  <Combobox
+                    options={TIMEZONES.map((tz) => ({
+                      value: tz.name,
+                      label: `${tz.name} (${tz.offset})`,
+                    }))}
+                    placeholder="Select a timezone..."
+                    value={values.timeZone}
+                    onValueChange={(value) => setFieldValue("timeZone", value)}
+                    width="100%"
+                  />
+                </div>
+                <ErrorMessage
+                  name="timeZone"
+                  component="div"
+                  className="text-red-500 text-sm"
+                />
+              </div>
             </div>
-            <ErrorMessage
-              name="timeZone"
-              component="div"
-              className="text-red-500 text-sm"
-            />
-          </div>
 
-          <div className="w-full flex justify-end">
-            <Button
-              type="submit"
-              disabled={isSubmitting || isUpdating}
-              variant="primary"
-            >
-              {isSubmitting || isUpdating ? "Saving..." : "Save"}
-            </Button>
-          </div>
-        </Form>
-      )}
-    </Formik>
-    </div>
+            <div className="flex justify-end gap-2 border-t border-border/10 px-6 py-4 mt-auto">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={isSubmitting || isUpdating}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting || isUpdating}
+                variant="default"
+              >
+                {isSubmitting || isUpdating ? "Saving..." : "Save"}
+              </Button>
+            </div>
+          </Form>
+        )}
+      </Formik>
+    </>
   );
 }

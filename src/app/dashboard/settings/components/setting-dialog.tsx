@@ -71,12 +71,14 @@ const SettingDialog = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className={`overflow-hidden flex flex-col ${
+        className={`flex flex-col ${
           setting.key === "portal" ||
           setting.key === "templates" ||
           setting.key === "logs"
-            ? "max-w-7xl w-[90vw] min-h-[95vh]"
-            : ""
+            ? "max-w-7xl w-[90vw] min-h-[95vh] overflow-hidden"
+            : setting.key === "timezone"
+            ? "max-w-2xl w-[90vw] overflow-visible"
+            : "overflow-hidden"
         }`}
       >
         <DialogHeader className="px-6 py-4 pr-12">
@@ -85,7 +87,18 @@ const SettingDialog = ({
         </DialogHeader>
 
         {ComponentToRender && setting.key !== "tags" ? (
-          <ComponentToRender onClose={onClose} isOpen={isOpen} />
+          setting.key === "timezone" || 
+          setting.key === "fs" ||
+          setting.key === "mail" ||
+          setting.key === "multipleorgs" ||
+          setting.key === "gemini" ||
+          setting.key === "twoFA" ? (
+            <ComponentToRender onClose={onClose} isOpen={isOpen} />
+          ) : (
+            <div className="flex-1 overflow-y-auto px-6 py-4">
+              <ComponentToRender onClose={onClose} isOpen={isOpen} />
+            </div>
+          )
         ) : (
           <div className="flex-1 overflow-y-auto px-6 py-4">
             <p>No settings available for this option.</p>

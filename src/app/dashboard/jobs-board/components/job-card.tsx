@@ -83,7 +83,7 @@ const JobCard = ({
                           <AlertTriangle className="h-4 w-4" />
                         </div>
                       </TooltipTrigger>
-                      <TooltipContent className="bg-white border border-gray-200 text-black">
+                      <TooltipContent className="bg-popover border border-border text-popover-foreground">
                         <p>
                           Candidates cannot apply until this job is published.
                         </p>

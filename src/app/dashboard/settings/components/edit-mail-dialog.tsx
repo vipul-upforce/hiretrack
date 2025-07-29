@@ -17,6 +17,13 @@ import {
 import { Data, defaultTemplates, editorOptions } from "@/lib/constants";
 import type { IEmailTemplatesConfig } from "./types";
 import { useTheme } from "@/components/theme-provider";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function EmailTemplateEditor({
   onClose,
@@ -317,20 +324,23 @@ export default function EmailTemplateEditor({
                     <Label htmlFor="templateType">
                       Select Template to Edit
                     </Label>
-                    <select
-                      id="templateType"
+                    <Select
                       value={selectedTemplate}
-                      onChange={(e) => setSelectedTemplate(e.target.value)}
-                      className="border rounded p-2 w-full"
+                      onValueChange={setSelectedTemplate}
                     >
-                      {Object.entries(defaultTemplates).map(
-                        ([key, template]) => (
-                          <option key={key} value={key}>
-                            {template.templateName}
-                          </option>
-                        )
-                      )}
-                    </select>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select template" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(defaultTemplates).map(
+                          ([key, template]) => (
+                            <SelectItem key={key} value={key}>
+                              {template.templateName}
+                            </SelectItem>
+                          )
+                        )}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="space-y-2">
