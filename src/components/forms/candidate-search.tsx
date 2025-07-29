@@ -230,7 +230,7 @@ function CandidateSearch() {
                 <Button
                   type="submit"
                   disabled={isSearching || !isValid}
-                  variant="default"
+                  variant="primary"
                   className="px-8"
                   size="lg"
                 >

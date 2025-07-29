@@ -211,7 +211,7 @@ export function CreateJobDialog({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button>
+        <Button variant="primary">
           <Plus className="h-4 w-4 mr-2" />
           Create Job
         </Button>
@@ -246,6 +246,7 @@ export function CreateJobDialog({
                 </Button>
                 <Button
                   type="submit"
+                  variant="primary"
                   onClick={() => scrollToError(errors)}
                   disabled={isSubmitting}
                 >

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { useGetPortalConfigsQuery, useUpdatePortalConfigsMutation } from "@/lib/features/settings/settingsApi";
 import { Upload, X, Palette, Eye, Save, RefreshCw, Moon, Sun, ArrowLeft, Code, Star, Settings, Image as ImageIcon, PaintBucket, FileCode, Home, ChevronRight, Expand, Minimize2 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -96,8 +97,8 @@ const predefinedColorCombinations = [
 export default function PortalConfigurationPage() {
   const { theme } = useTheme();
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const { data: portalData, isLoading: loading, refetch } = useGetPortalConfigsQuery(undefined);
+  const [updatePortalConfigs, { isLoading: saving }] = useUpdatePortalConfigsMutation();
   const [settings, setSettings] = useState<PortalSettings>({
     portalName: "",
     portalLogo: null,
@@ -115,43 +116,35 @@ export default function PortalConfigurationPage() {
   const [isFooterExpanded, setIsFooterExpanded] = useState<boolean>(false);
 
   useEffect(() => {
-    fetchSettings();
-  }, []);
+    if (portalData) {
+      loadPortalData(portalData);
+    }
+  }, [portalData]);
 
-  const fetchSettings = async () => {
-    try {
-      const response = await fetch("/api/settings/portal");
-      if (response.ok) {
-        const data = await response.json();
-        setSettings({
-          portalName: data.portalName || "",
-          portalLogo: data.portalLogo || null,
-          portalLogoDark: data.portalLogoDark || null,
-          portalFavicon: data.portalFavicon || null,
-          portalHeader: data.portalHeader || null,
-          portalFooter: data.portalFooter || null,
-          primaryColor: data.primaryColor || "#6366f1",
-          secondaryColor: data.secondaryColor || "#8b5cf6",
-        });
+  const loadPortalData = async (data: any) => {
+    setSettings({
+      portalName: data.portalName || "",
+      portalLogo: data.portalLogo || null,
+      portalLogoDark: data.portalLogoDark || null,
+      portalFavicon: data.portalFavicon || null,
+      portalHeader: data.portalHeader || null,
+      portalFooter: data.portalFooter || null,
+      primaryColor: data.primaryColor || "#6366f1",
+      secondaryColor: data.secondaryColor || "#8b5cf6",
+    });
 
-        // Load HTML content for header/footer
-        if (data.portalHeader?.url) {
-          fetch(data.portalHeader.url)
-            .then(res => res.text())
-            .then(html => setHeaderHtml(html))
-            .catch(err => console.error("Failed to load header HTML:", err));
-        }
-        if (data.portalFooter?.url) {
-          fetch(data.portalFooter.url)
-            .then(res => res.text())
-            .then(html => setFooterHtml(html))
-            .catch(err => console.error("Failed to load footer HTML:", err));
-        }
-      }
-    } catch (error) {
-      toast.error("Failed to load portal settings");
-    } finally {
-      setLoading(false);
+    // Load HTML content for header/footer
+    if (data.portalHeader?.url) {
+      fetch(data.portalHeader.url)
+        .then(res => res.text())
+        .then(html => setHeaderHtml(html))
+        .catch(err => console.error("Failed to load header HTML:", err));
+    }
+    if (data.portalFooter?.url) {
+      fetch(data.portalFooter.url)
+        .then(res => res.text())
+        .then(html => setFooterHtml(html))
+        .catch(err => console.error("Failed to load footer HTML:", err));
     }
   };
 
@@ -181,7 +174,6 @@ export default function PortalConfigurationPage() {
   };
 
   const handleSave = async () => {
-    setSaving(true);
     try {
       // Prepare payload - exclude HTML file references, only send HTML content
       const { portalHeader, portalFooter, ...settingsWithoutHtmlFiles } = settings;
@@ -191,23 +183,11 @@ export default function PortalConfigurationPage() {
         portalFooterHtml: footerHtml,
       };
 
-      const response = await fetch("/api/settings/portal", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        toast.success("Portal settings saved successfully");
-        // Refresh settings to get updated file references
-        await fetchSettings();
-      } else {
-        toast.error("Failed to save portal settings");
-      }
+      await updatePortalConfigs(payload).unwrap();
+      toast.success("Portal settings saved successfully");
+      // The portal colors will automatically update due to cache invalidation
     } catch (error) {
-      toast.error("An error occurred while saving");
-    } finally {
-      setSaving(false);
+      toast.error("Failed to save portal settings");
     }
   };
 
@@ -378,11 +358,11 @@ export default function PortalConfigurationPage() {
             {/* Right Section - Action Buttons */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3">
               <div className="flex gap-2">
-                <Button variant="outline" onClick={fetchSettings}>
+                <Button variant="outline" onClick={() => refetch()}>
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Refresh
                 </Button>
-                <Button onClick={handleSave} disabled={saving}>
+                <Button variant="primary" onClick={handleSave} disabled={saving}>
                   <Save className="h-4 w-4 mr-2" />
                   {saving ? "Saving..." : "Save Changes"}
                 </Button>

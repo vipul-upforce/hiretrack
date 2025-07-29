@@ -261,6 +261,78 @@ export default function DashboardLayout({
   const shouldShowPortalData = Boolean(
     portalConfigData && userData && portalConfigData.portalName
   );
+
+  // Inject portal colors as CSS custom properties
+  useEffect(() => {
+    console.log('Portal config data:', portalConfigData);
+    if (portalConfigData?.primaryColor && portalConfigData?.secondaryColor) {
+      console.log('Injecting portal colors:', {
+        primary: portalConfigData.primaryColor,
+        secondary: portalConfigData.secondaryColor
+      });
+      const root = document.documentElement;
+      root.style.setProperty('--portal-primary', portalConfigData.primaryColor);
+      root.style.setProperty('--portal-secondary', portalConfigData.secondaryColor);
+      
+      // Create lighter and darker variants for hover states
+      const primaryRgb = hexToRgb(portalConfigData.primaryColor);
+      const secondaryRgb = hexToRgb(portalConfigData.secondaryColor);
+      
+      if (primaryRgb) {
+        root.style.setProperty('--portal-primary-rgb', `${primaryRgb.r}, ${primaryRgb.g}, ${primaryRgb.b}`);
+        root.style.setProperty('--portal-primary-hover', darkenColor(portalConfigData.primaryColor, 10));
+        root.style.setProperty('--portal-primary-light', lightenColor(portalConfigData.primaryColor, 10));
+        
+        // Update focus ring colors to use portal primary
+        root.style.setProperty('--focus-ring-color', `rgba(${primaryRgb.r}, ${primaryRgb.g}, ${primaryRgb.b}, 0.2)`);
+        root.style.setProperty('--input-border-focus', portalConfigData.primaryColor);
+      }
+      
+      if (secondaryRgb) {
+        root.style.setProperty('--portal-secondary-rgb', `${secondaryRgb.r}, ${secondaryRgb.g}, ${secondaryRgb.b}`);
+        root.style.setProperty('--portal-secondary-hover', darkenColor(portalConfigData.secondaryColor, 10));
+        root.style.setProperty('--portal-secondary-light', lightenColor(portalConfigData.secondaryColor, 10));
+      }
+    }
+  }, [portalConfigData]);
+
+  // Helper functions for color manipulation
+  const hexToRgb = (hex: string) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    } : null;
+  };
+
+  const darkenColor = (hex: string, percent: number) => {
+    const rgb = hexToRgb(hex);
+    if (!rgb) return hex;
+    
+    const factor = (100 - percent) / 100;
+    const r = Math.round(rgb.r * factor);
+    const g = Math.round(rgb.g * factor);
+    const b = Math.round(rgb.b * factor);
+    
+    // Ensure we always return a valid 6-digit hex
+    const result = ((r << 16) + (g << 8) + b).toString(16).padStart(6, '0');
+    return `#${result}`;
+  };
+
+  const lightenColor = (hex: string, percent: number) => {
+    const rgb = hexToRgb(hex);
+    if (!rgb) return hex;
+    
+    const factor = percent / 100;
+    const r = Math.round(rgb.r + (255 - rgb.r) * factor);
+    const g = Math.round(rgb.g + (255 - rgb.g) * factor);
+    const b = Math.round(rgb.b + (255 - rgb.b) * factor);
+    
+    // Ensure we always return a valid 6-digit hex
+    const result = ((r << 16) + (g << 8) + b).toString(16).padStart(6, '0');
+    return `#${result}`;
+  };
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       <div
@@ -332,14 +404,23 @@ export default function DashboardLayout({
             ) {
               return null;
             }
+            const isActive = item.title === "Settings" 
+              ? pathname.startsWith("/dashboard/settings")
+              : pathname === item.href;
+            
             return (
               <Link key={item.href} href={item.href}>
                 <span
                   className={cn(
                     "w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent",
-                    pathname === item.href && "bg-accent",
+                    isActive && "portal-nav-active",
                     isCollapsed ? "justify-center" : "justify-start"
                   )}
+                  style={isActive ? {
+                    backgroundColor: `rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)`,
+                    color: `var(--portal-primary, #6366f1)`,
+                    borderLeft: `3px solid var(--portal-primary, #6366f1)`
+                  } : {}}
                 >
                   {item.icon}
                   <span className={cn("", isCollapsed && "hidden")}>
