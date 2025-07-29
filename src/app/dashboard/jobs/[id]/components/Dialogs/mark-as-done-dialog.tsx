@@ -20,7 +20,6 @@ const ConfirmAndRemarkDialog = ({
   isLoading = false,
   loadingText = "Marking as done...",
   message,
-  className = "sm:max-w-[600px]",
   title = "Mark as Done",
 }: {
   isOpen: boolean;
@@ -29,7 +28,6 @@ const ConfirmAndRemarkDialog = ({
   onCancel: () => void;
   isLoading?: boolean;
   loadingText?: string;
-  className?: string;
   title?: string;
   assignmentId?: string;
   onAddHistoryEntry?: (historyEntry: any) => void;
@@ -64,7 +62,7 @@ const ConfirmAndRemarkDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className={className}>
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {message && <DialogDescription>{message}</DialogDescription>}

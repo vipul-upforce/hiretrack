@@ -475,7 +475,7 @@ export function CandidateCard({
                 <Badge
                   key="more-skills"
                   variant="secondary"
-                  className="text-xs px-2.5 py-1 bg-gray-50 text-gray-600 border border-gray-200 dark:bg-gray-900 dark:text-gray-400 dark:border-gray-700 font-medium flex-shrink-0"
+                  className="text-xs px-2.5 py-1 bg-gray-200 text-gray-700 border border-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:border-gray-500 font-medium flex-shrink-0"
                 >
                   +{candidate.skills.length - 4} more
                 </Badge>

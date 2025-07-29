@@ -216,9 +216,9 @@ export function CreateJobDialog({
           Create Job
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[80vw] xl:max-w-[50vw] h-[90vh] p-0 overflow-hidden flex flex-col justify-center ">
-        <DialogHeader className="px-6 py-2 pb-0">
-          <DialogTitle className="text-lg font-semibold">
+      <DialogContent size="2xl" className="max-h-[90vh] p-0 overflow-hidden flex flex-col">
+        <DialogHeader>
+          <DialogTitle>
             Create New Job Position
           </DialogTitle>
           <DialogDescription>

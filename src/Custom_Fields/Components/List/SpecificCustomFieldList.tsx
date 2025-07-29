@@ -456,7 +456,7 @@ export const CustomFieldItem = React.memo(
                                 </span>
                               ))}
                               {field.options.length > 3 && (
-                                <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300 text-xs rounded-md font-medium">
+                                <span className="px-2 py-0.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs rounded-md font-medium border border-gray-300 dark:border-gray-500">
                                   +{field.options.length - 3}
                                 </span>
                               )}
@@ -525,20 +525,19 @@ export const CustomFieldItem = React.memo(
           </Card>
         </div>
         <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-          <DialogContent aria-describedby="delete-field-description" className="bg-white dark:bg-black border dark:border-gray-800">
+          <DialogContent size="sm" aria-describedby="delete-field-description">
             <DialogHeader>
-              <DialogTitle className="text-gray-900 dark:text-gray-100">Delete Personalized Field</DialogTitle>
-              <DialogDescription id="delete-field-description" className="text-gray-600 dark:text-gray-400">
+              <DialogTitle>Delete Personalized Field</DialogTitle>
+              <DialogDescription id="delete-field-description">
                 Are you sure you want to delete the field "
                 {field.label.split(" |||||(")[0]}
                 "? This action cannot be undone.
               </DialogDescription>
             </DialogHeader>
-            <DialogFooter className="border-t dark:border-gray-700 pt-4">
+            <DialogFooter>
               <Button
                 variant="outline"
                 onClick={() => setShowDeleteDialog(false)}
-                className="dark:bg-gray-900 dark:hover:bg-gray-800 dark:text-gray-100 dark:border-gray-600"
               >
                 Cancel
               </Button>
