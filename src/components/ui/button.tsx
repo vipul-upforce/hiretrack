@@ -12,7 +12,7 @@ const buttonVariants = cva(
         default:
           "bg-primary text-primary-foreground shadow-[var(--button-shadow)] hover:bg-[hsl(var(--primary-hover))] rounded-[var(--button-radius)]",
         primary:
-          "bg-primary text-primary-foreground shadow-[var(--button-shadow)] hover:bg-[hsl(var(--primary-hover))] rounded-[var(--button-radius)]",
+          "text-white shadow-[var(--button-shadow)] rounded-[var(--button-radius)]",
         secondary:
           "bg-secondary text-secondary-foreground shadow-[var(--button-shadow)] hover:bg-[hsl(var(--secondary-hover))] rounded-[var(--button-radius)]",
         success:
@@ -64,6 +64,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
+        data-variant={variant}
         ref={ref}
         {...props}
       />

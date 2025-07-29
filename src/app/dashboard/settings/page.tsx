@@ -186,7 +186,7 @@ function Settings() {
             {group.settings.map((option) => (
               <div key={option.key}>
                 <Card
-                  className="h-full transition-all duration-200 cursor-pointer border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-lg bg-white dark:bg-black"
+                  className="h-full transition-all duration-200 cursor-pointer border border-gray-200 dark:border-gray-800 hover:shadow-lg bg-white dark:bg-black card-hover-border"
                   onClick={() => {
                     if (option.key === "users") {
                       router.push("/dashboard/users");
@@ -257,7 +257,7 @@ function Settings() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <AddCustomFieldButton />
           <Card
-            className="h-full transition-all duration-200 cursor-pointer border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-lg bg-white dark:bg-black"
+            className="h-full transition-all duration-200 cursor-pointer border border-gray-200 dark:border-gray-800 hover:shadow-lg bg-white dark:bg-black card-hover-border"
             onClick={() => setOpenDialog("tags")}
           >
             <CardHeader className="pb-3">

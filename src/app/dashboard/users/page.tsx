@@ -157,7 +157,7 @@ function UsersPage() {
 
             {/* Right Section - Create User Button */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3">
-              <Button onClick={() => router.push("/auth/signup")}>
+              <Button variant="primary" onClick={() => router.push("/auth/signup")}>
                 <UserPlus className="h-4 w-4 mr-2" />
                 Create User
               </Button>

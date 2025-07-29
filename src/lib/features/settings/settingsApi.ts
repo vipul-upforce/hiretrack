@@ -143,6 +143,7 @@ export const settingsApi = createApi({
         url: `/settings/portal`,
         method: "get",
       }),
+      providesTags: ["Settings"],
     }),
     updatePortalConfigs: builder.mutation({
       query: (portalConfigs) => {
@@ -152,6 +153,7 @@ export const settingsApi = createApi({
           body: portalConfigs,
         };
       },
+      invalidatesTags: ["Settings"],
     }),
     createResetToken: builder.mutation({
       query: ({ email, selectedOrgId }) => ({

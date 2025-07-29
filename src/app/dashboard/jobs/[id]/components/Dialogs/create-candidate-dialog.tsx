@@ -454,7 +454,7 @@ export function CreateCandidateDialog({
               : "Apply Now"}
           </button>
         ) : (
-          <Button variant="outline">
+          <Button variant="primary">
             <Plus className="h-4 w-4 mr-2" />
             Add Candidate
           </Button>

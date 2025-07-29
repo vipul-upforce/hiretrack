@@ -52,8 +52,16 @@ export function TermsConfirmationDialog({
       <DialogContent size="md" className="p-0 overflow-hidden flex flex-col">
         <DialogHeader className="px-6 py-4">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-              <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <div 
+              className="w-10 h-10 rounded-full flex items-center justify-center"
+              style={{ 
+                backgroundColor: 'rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)' 
+              }}
+            >
+              <Shield 
+                className="w-5 h-5" 
+                style={{ color: 'var(--portal-primary, #6366f1)' }}
+              />
             </div>
             <DialogTitle>
               Confirm Application
@@ -80,7 +88,16 @@ export function TermsConfirmationDialog({
                   <button
                     type="button"
                     onClick={openTerms}
-                    className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline inline-flex items-center gap-1 font-medium"
+                    className="underline inline-flex items-center gap-1 font-medium transition-colors"
+                    style={{
+                      color: 'var(--portal-primary, #6366f1)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = 'var(--portal-primary-hover, #5b5fd6)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = 'var(--portal-primary, #6366f1)';
+                    }}
                   >
                     <FileText className="w-3 h-3" />
                     Terms and Conditions
@@ -103,7 +120,16 @@ export function TermsConfirmationDialog({
                   <button
                     type="button"
                     onClick={openPrivacy}
-                    className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline inline-flex items-center gap-1 font-medium"
+                    className="underline inline-flex items-center gap-1 font-medium transition-colors"
+                    style={{
+                      color: 'var(--portal-primary, #6366f1)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = 'var(--portal-primary-hover, #5b5fd6)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = 'var(--portal-primary, #6366f1)';
+                    }}
                   >
                     <Shield className="w-3 h-3" />
                     Privacy Policy
@@ -128,7 +154,8 @@ export function TermsConfirmationDialog({
           <Button
             onClick={handleConfirm}
             disabled={!termsAccepted || !privacyAccepted || isLoading}
-            className="sm:flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+            variant="primary"
+            className="sm:flex-1"
           >
             {isLoading ? "Submitting..." : "Confirm & Submit Application"}
           </Button>

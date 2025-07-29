@@ -489,6 +489,194 @@ body {
     opacity: 0.5; 
     cursor: not-allowed; 
   }
+
+  /* Portal Color Utilities - Conservative Application */
+  .portal-primary { 
+    background-color: var(--portal-primary, hsl(var(--primary))); 
+    color: white;
+  }
+  
+  .portal-primary-hover:hover { 
+    background-color: var(--portal-primary-hover, hsl(var(--primary-hover))); 
+  }
+  
+  .portal-secondary { 
+    background-color: var(--portal-secondary, hsl(var(--secondary))); 
+    color: white;
+  }
+  
+  .portal-secondary-hover:hover { 
+    background-color: var(--portal-secondary-hover, hsl(var(--secondary-hover))); 
+  }
+  
+  .text-portal-primary { 
+    color: var(--portal-primary, hsl(var(--primary))); 
+  }
+  
+  .text-portal-secondary { 
+    color: var(--portal-secondary, hsl(var(--secondary))); 
+  }
+  
+  .border-portal-primary { 
+    border-color: var(--portal-primary, hsl(var(--primary))); 
+  }
+  
+  .border-portal-secondary { 
+    border-color: var(--portal-secondary, hsl(var(--secondary))); 
+  }
+
+  /* Apply portal colors to primary buttons - theme aware */
+  button[data-variant="primary"],
+  [data-variant="primary"] {
+    background-color: var(--portal-primary, #6366f1) !important;
+    border-color: var(--portal-primary, #6366f1) !important;
+    color: white !important;
+  }
+  
+  [data-variant="primary"]:hover {
+    background-color: var(--portal-primary-hover, hsl(var(--primary-hover))) !important;
+    border-color: var(--portal-primary-hover, hsl(var(--primary-hover))) !important;
+    color: white !important;
+  }
+  
+  [data-variant="primary"]:focus-visible {
+    background-color: var(--portal-primary, hsl(var(--primary))) !important;
+    outline: 2px solid var(--portal-primary, hsl(var(--primary))) !important;
+    outline-offset: 2px;
+  }
+  
+  [data-variant="primary"]:disabled {
+    background-color: var(--portal-primary, hsl(var(--primary))) !important;
+    opacity: 0.5 !important;
+    color: white !important;
+  }
+
+  /* Dark theme specific adjustments for portal colors */
+  .dark [data-variant="primary"] {
+    background-color: var(--portal-primary, hsl(var(--primary))) !important;
+    border-color: var(--portal-primary, hsl(var(--primary))) !important;
+    color: white !important;
+  }
+  
+  .dark [data-variant="primary"]:hover {
+    background-color: var(--portal-primary-hover, hsl(var(--primary-hover))) !important;
+    border-color: var(--portal-primary-hover, hsl(var(--primary-hover))) !important;
+    color: white !important;
+  }
+
+  /* Apply portal secondary color to info buttons */
+  button[data-variant="info"],
+  [data-variant="info"] {
+    background-color: var(--portal-secondary, #10b981) !important;
+    border-color: var(--portal-secondary, #10b981) !important;
+    color: white !important;
+  }
+  
+  [data-variant="info"]:hover {
+    background-color: var(--portal-secondary-hover, hsl(var(--info-hover))) !important;
+    border-color: var(--portal-secondary-hover, hsl(var(--info-hover))) !important;
+    color: white !important;
+  }
+  
+  [data-variant="info"]:focus-visible {
+    background-color: var(--portal-secondary, hsl(var(--info))) !important;
+    outline: 2px solid var(--portal-secondary, hsl(var(--info))) !important;
+    outline-offset: 2px;
+  }
+  
+  [data-variant="info"]:disabled {
+    background-color: var(--portal-secondary, hsl(var(--info))) !important;
+    opacity: 0.5 !important;
+    color: white !important;
+  }
+
+  /* Dark theme specific adjustments for info buttons */
+  .dark [data-variant="info"] {
+    background-color: var(--portal-secondary, hsl(var(--info))) !important;
+    border-color: var(--portal-secondary, hsl(var(--info))) !important;
+    color: white !important;
+  }
+  
+  .dark [data-variant="info"]:hover {
+    background-color: var(--portal-secondary-hover, hsl(var(--info-hover))) !important;
+    border-color: var(--portal-secondary-hover, hsl(var(--info-hover))) !important;
+    color: white !important;
+  }
+
+  /* Card hover effects with muted portal primary */
+  .card-hover-border:hover {
+    border-color: rgba(var(--portal-primary-rgb, 99, 102, 241), 0.3) !important;
+    transition: border-color 200ms ease-in-out;
+  }
+  
+  /* For cards that might have cursor-pointer */
+  .cursor-pointer:hover {
+    border-color: rgba(var(--portal-primary-rgb, 99, 102, 241), 0.25) !important;
+    transition: border-color 200ms ease-in-out;
+  }
+  
+  /* Slightly different opacity for dark mode for better visibility */
+  .dark .card-hover-border:hover {
+    border-color: rgba(var(--portal-primary-rgb, 99, 102, 241), 0.4) !important;
+  }
+  
+  .dark .cursor-pointer:hover {
+    border-color: rgba(var(--portal-primary-rgb, 99, 102, 241), 0.35) !important;
+  }
+
+  /* Form Control Theming with Portal Colors */
+  
+  /* Checkbox styling */
+  input[type="checkbox"]:checked {
+    background-color: var(--portal-primary, hsl(var(--primary))) !important;
+    border-color: var(--portal-primary, hsl(var(--primary))) !important;
+  }
+  
+  input[type="checkbox"]:checked:hover {
+    background-color: var(--portal-primary-hover, hsl(var(--primary-hover))) !important;
+    border-color: var(--portal-primary-hover, hsl(var(--primary-hover))) !important;
+  }
+  
+  input[type="checkbox"]:focus {
+    border-color: var(--portal-primary, hsl(var(--primary))) !important;
+    box-shadow: 0 0 0 2px rgba(var(--portal-primary-rgb, 99, 102, 241), 0.2) !important;
+  }
+
+  /* Radio button styling */
+  input[type="radio"]:checked {
+    background-color: var(--portal-primary, hsl(var(--primary))) !important;
+    border-color: var(--portal-primary, hsl(var(--primary))) !important;
+  }
+  
+  input[type="radio"]:checked:hover {
+    background-color: var(--portal-primary-hover, hsl(var(--primary-hover))) !important;
+    border-color: var(--portal-primary-hover, hsl(var(--primary-hover))) !important;
+  }
+  
+  input[type="radio"]:focus {
+    border-color: var(--portal-primary, hsl(var(--primary))) !important;
+    box-shadow: 0 0 0 2px rgba(var(--portal-primary-rgb, 99, 102, 241), 0.2) !important;
+  }
+
+  /* Switch/Toggle styling (if using custom switches) */
+  .switch:checked {
+    background-color: var(--portal-primary, hsl(var(--primary))) !important;
+  }
+  
+  .switch:checked:hover {
+    background-color: var(--portal-primary-hover, hsl(var(--primary-hover))) !important;
+  }
+
+  /* Dark theme adjustments for form controls */
+  .dark input[type="checkbox"]:checked {
+    background-color: var(--portal-primary, hsl(var(--primary))) !important;
+    border-color: var(--portal-primary, hsl(var(--primary))) !important;
+  }
+  
+  .dark input[type="radio"]:checked {
+    background-color: var(--portal-primary, hsl(var(--primary))) !important;
+    border-color: var(--portal-primary, hsl(var(--primary))) !important;
+  }
 }
 
 /* Enhanced input focus styles */
