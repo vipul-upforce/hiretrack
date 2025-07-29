@@ -35,7 +35,7 @@ sonarcloud-check:
   variables:
     SONAR_TOKEN: "$SONAR_TOKEN"
     SONAR_HOST_URL: "$SONAR_HOST_URL"
-  allow_failure: true # Allows pipeline to continue even if SonarQube fails (optional)
+  # allow_failure: false # Allows pipeline to continue even if SonarQube fails (optional)
 
 build:
   stage: build
