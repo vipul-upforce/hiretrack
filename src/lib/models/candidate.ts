@@ -12,6 +12,8 @@ export interface ICandidate {
     | mongoose.Schema.Types.ObjectId
     | { _id: string; title: string; description: string };
   name: string;
+  email: string;
+  contact: string; // Contact number - required
   location: string;
   organizationId: string;
   experience: number;
@@ -68,7 +70,6 @@ export interface ICandidate {
       | object; // Add object type to allow MongoDB documents
   };
   followUp?: FollowUp;
-  email?: string;
   scores?: {
     overall: number;
     experience: number;
@@ -91,6 +92,8 @@ export const candidateSchema = new Schema(
     },
     organizationId: String,
     name: { type: String, required: true },
+    email: { type: String, required: true },
+    contact: { type: String, required: true },
     location: { type: String, required: false },
     experience: { type: Number, required: false },
     skills: [{ type: String }],
@@ -179,7 +182,6 @@ export const candidateSchema = new Schema(
       type: Object,
       default: {},
     },
-    email: { type: String, required: false },
     scores: {
       overall: {
         type: Number,

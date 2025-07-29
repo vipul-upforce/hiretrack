@@ -163,7 +163,7 @@ export const HistoryAndLogTable: React.FC<{
 
           {user?.role !== "interviewer" && (
             <Button
-              variant="dark-outline"
+              variant="outline"
               size="sm"
               onClick={() =>
                 user?.role !== "interviewer" && setShowLogTable((prev) => !prev)

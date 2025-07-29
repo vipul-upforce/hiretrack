@@ -36,6 +36,36 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { fieldTypes } from "@/Custom_Fields/utils";
 import { validationSchema } from "@/Custom_Fields/utils/validations";
+import {
+  Type,
+  FileText,
+  Hash,
+  ChevronDown,
+  List,
+  Circle,
+  CheckSquare,
+  Calendar,
+  Clock,
+  CalendarClock,
+  Lock,
+  Upload,
+  Check,
+} from "lucide-react";
+
+const fieldTypeIcons: Record<string, React.ElementType> = {
+  text: Type,
+  textarea: FileText,
+  number: Hash,
+  select: ChevronDown,
+  multiSelect: List,
+  radio: Circle,
+  checkbox: CheckSquare,
+  date: Calendar,
+  time: Clock,
+  datetime: CalendarClock,
+  password: Lock,
+  file: Upload,
+};
 
 const CustomFieldForm = memo(
   ({ isOpen, handleClose, initialValue, isEditMode }: CustomFieldFormProps) => {
@@ -230,8 +260,8 @@ const CustomFieldForm = memo(
       <CustomFieldDialog
         isOpen={isOpen}
         onClose={handleClose}
-        title="Global Meta Fields"
-        regular
+        title="Meta Field"
+        regular={false}
       >
         {/* <AlertDialog open={duplicationAlert} onOpenChange={setDuplicationAlert}>
           <AlertDialogContent>
@@ -270,233 +300,423 @@ const CustomFieldForm = memo(
             setFieldValue,
             setFieldError,
           }) => (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="label" className="flex pb-2">
-                  Field Label<p className="text-red-500">*</p>
-                </Label>
-                <Input
-                  id="label"
-                  {...getFieldProps("label")}
-                  onChange={(e) =>
-                    handleLabelChange(e, setFieldValue, setFieldError)
-                  }
-                />
-                {errors.label && touched.label && (
-                  <div className="text-red-500 text-xs pt-1">
-                    {errors.label}
-                  </div>
-                )}
-                {hasDuplicate && touched.label && (
-                  <div className="text-red-500 text-xs pt-1">
-                    Already exists
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="fieldType">Field Type</Label>
-                <Select
-                  onValueChange={(value) =>
-                    onValuesChange(value, values, setFieldValue)
-                  }
-                  value={values.type}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select field type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {fieldTypes.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {["select", "multiSelect", "radio", "checkbox"].includes(
-                values.type
-              ) && (
+            <form onSubmit={handleSubmit} className="flex flex-col h-full">
+              <div className="flex-1 overflow-y-auto space-y-8 px-4 pt-4">
                 <div>
-                  <Label htmlFor="options">Options ( Hit Enter to Add )</Label>
-                  <ChipInput
-                    value={values.options}
-                    onChange={(newOptions) =>
-                      setFieldValue(
-                        "options",
-                        newOptions
-                          .map((option) => option.trim())
-                          .filter((option) => option !== "")
-                      )
+                  <Label
+                    htmlFor="label"
+                    className="text-lg font-medium flex items-center gap-1 pb-3"
+                  >
+                    Field Label<span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="label"
+                    {...getFieldProps("label")}
+                    onChange={(e) =>
+                      handleLabelChange(e, setFieldValue, setFieldError)
                     }
-                    placeholder="Add options..."
-                    suggestions={[]}
+                    className="text-lg py-3 px-4"
+                    placeholder="Enter field label..."
                   />
-                  {errors.options && touched.options && (
-                    <div className="text-red-500">{errors.options}</div>
+                  {errors.label && touched.label && (
+                    <div className="text-red-500 text-sm pt-2 flex items-center gap-1">
+                      <span>⚠️</span> {errors.label}
+                    </div>
+                  )}
+                  {hasDuplicate && touched.label && (
+                    <div className="text-red-500 text-sm pt-2 flex items-center gap-1">
+                      <span>⚠️</span> Label already exists
+                    </div>
                   )}
                 </div>
-              )}
 
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="isRequired"
-                  checked={values.required}
-                  onCheckedChange={(checked) =>
-                    setFieldValue("required", checked)
-                  }
-                />
-                <Label htmlFor="isRequired">Required Field</Label>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="isPrivate"
-                  checked={values.private}
-                  onCheckedChange={(checked) =>
-                    setFieldValue("private", checked)
-                  }
-                />
-                <Label htmlFor="isPrivate">Hide from Candidates</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="isPrivateInt"
-                  checked={values.privateInt}
-                  onCheckedChange={(checked) =>
-                    setFieldValue("privateInt", checked)
-                  }
-                />
-                <Label htmlFor="isPrivateInt">Hide from Interviewer</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="showOnCard"
-                  checked={values.showOnCard}
-                  onCheckedChange={(checked) =>
-                    setFieldValue("showOnCard", checked)
-                  }
-                />
-                <Label htmlFor="showOnCard">Show On Card</Label>
-              </div>
-
-              {[
-                "date",
-                "datetime",
-                "time",
-                "file",
-                "textarea",
-                "password",
-              ].includes(values.type) ? null : (
-                <>
-                  {["select", "radio", "checkbox", "multiSelect"].includes(
-                    values.type
-                  ) ? (
-                    <div>
-                      <Label htmlFor="defaultValue">Default Value</Label>
-                      {values.type === "multiSelect" ||
-                      values.type === "checkbox" ? (
-                        <ChipInput
-                          value={values.defaultValue as string[]}
-                          onChange={(newOptions) =>
-                            setFieldValue(
-                              "defaultValue",
-                              newOptions
-                                .map((option) => option.trim())
-                                .filter((option) => option !== "")
-                            )
+                <div>
+                  <Label htmlFor="fieldType" className="text-lg font-medium">
+                    Field Type
+                  </Label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mt-3">
+                    {fieldTypes.map((type) => {
+                      const IconComponent = fieldTypeIcons[type.value];
+                      const isSelected = values.type === type.value;
+                      return (
+                        <div
+                          key={type.value}
+                          className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
+                            isSelected
+                              ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md"
+                              : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                          }`}
+                          onClick={() =>
+                            onValuesChange(type.value, values, setFieldValue)
                           }
-                          onSuggestionClick={(suggestion) => {
-                            setFieldValue("defaultValue", [
-                              ...(values.defaultValue as string[]),
-                              suggestion,
-                            ]);
-                          }}
-                          suggestions={
-                            values.options
-                              ?.filter(
-                                (option) =>
-                                  !values.defaultValue?.includes(option)
-                              )
-                              .map((option) => option.trim())
-                              .filter((option) => option !== "") || []
-                          }
-                        />
-                      ) : (
-                        <Select
-                          {...getFieldProps("defaultValue")}
-                          onValueChange={(value) => {
-                            if (value === "-1") {
-                              setFieldValue("defaultValue", "");
-                            } else {
-                              setFieldValue("defaultValue", value.trim());
-                            }
-                          }}
-                          value={String(values.defaultValue || "")}
                         >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select default value" />
-                          </SelectTrigger>
-                          <Button
-                            style={{
-                              marginLeft: "-10px",
-                              color: "#797979",
-                            }}
-                            variant="link"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setFieldValue("defaultValue", "");
-                            }}
-                          >
-                            Clear
-                          </Button>
-                          <SelectContent>
-                            {values.options?.map((option) => (
-                              <SelectItem key={option} value={option}>
-                                {option}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    </div>
-                  ) : (
-                    <div>
-                      <Label htmlFor="defaultValue">Default Value</Label>
-                      {values.type === "number" ? (
-                        <Input
-                          id="defaultValue"
-                          value={values.defaultValue || ""}
-                          onChange={(e) =>
-                            handleNumberInputChange(e, setFieldValue)
-                          }
-                          type="text"
-                          inputMode="numeric"
-                          pattern="[0-9]*"
-                        />
-                      ) : (
-                        <Input
-                          id="defaultValue"
-                          {...getFieldProps("defaultValue")}
-                        />
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
+                          {isSelected && (
+                            <div className="absolute -top-2 -right-2 bg-blue-500 text-white rounded-full p-1">
+                              <Check className="h-3 w-3" />
+                            </div>
+                          )}
+                          <div className="flex flex-col items-center text-center gap-2">
+                            <IconComponent
+                              className={`h-6 w-6 ${
+                                isSelected
+                                  ? "text-blue-600 dark:text-blue-400"
+                                  : "text-gray-500 dark:text-gray-400"
+                              }`}
+                            />
+                            <span
+                              className={`text-sm font-medium ${
+                                isSelected
+                                  ? "text-blue-700 dark:text-blue-300"
+                                  : "text-gray-700 dark:text-gray-300"
+                              }`}
+                            >
+                              {type.label}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
 
-              <div className="flex justify-end pt-4">
-                <Button
-                  type="submit"
-                  variant="primary"
-                  disabled={
-                    !isEditMode &&
-                    (hasDuplicate || Object.keys(errors).length > 0)
-                  }
-                >
-                  Save
-                </Button>
+                {["select", "multiSelect", "radio", "checkbox"].includes(
+                  values.type
+                ) && (
+                  <div>
+                    <Label
+                      htmlFor="options"
+                      className="text-lg font-medium block pb-3"
+                    >
+                      Options{" "}
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        (Hit Enter to Add)
+                      </span>
+                    </Label>
+                    <ChipInput
+                      value={values.options}
+                      onChange={(newOptions) =>
+                        setFieldValue(
+                          "options",
+                          newOptions
+                            .map((option) => option.trim())
+                            .filter((option) => option !== "")
+                        )
+                      }
+                      placeholder="Type an option and press Enter..."
+                      suggestions={[]}
+                      // className="text-lg"
+                    />
+                    {errors.options && touched.options && (
+                      <div className="text-red-500 text-sm pt-2 flex items-center gap-1">
+                        <span>⚠️</span> {errors.options}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div>
+                  <Label className="text-lg font-medium mb-4 block">
+                    Field Options
+                  </Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div
+                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
+                        values.required
+                          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md"
+                          : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                      }`}
+                      onClick={() =>
+                        setFieldValue("required", !values.required)
+                      }
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                              values.required
+                                ? "bg-blue-500 border-blue-500"
+                                : "border-gray-300 dark:border-gray-600"
+                            }`}
+                          >
+                            {values.required && (
+                              <Check className="h-3 w-3 text-white" />
+                            )}
+                          </div>
+                          <div>
+                            <div
+                              className={`font-medium ${
+                                values.required
+                                  ? "text-blue-700 dark:text-blue-300"
+                                  : "text-gray-700 dark:text-gray-300"
+                              }`}
+                            >
+                              Required Field
+                            </div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              Users must fill this field
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
+                        values.private
+                          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md"
+                          : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                      }`}
+                      onClick={() => setFieldValue("private", !values.private)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                              values.private
+                                ? "bg-blue-500 border-blue-500"
+                                : "border-gray-300 dark:border-gray-600"
+                            }`}
+                          >
+                            {values.private && (
+                              <Check className="h-3 w-3 text-white" />
+                            )}
+                          </div>
+                          <div>
+                            <div
+                              className={`font-medium ${
+                                values.private
+                                  ? "text-blue-700 dark:text-blue-300"
+                                  : "text-gray-700 dark:text-gray-300"
+                              }`}
+                            >
+                              Hide from Candidates
+                            </div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              Candidates cannot see this field
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
+                        values.privateInt
+                          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md"
+                          : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                      }`}
+                      onClick={() =>
+                        setFieldValue("privateInt", !values.privateInt)
+                      }
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                              values.privateInt
+                                ? "bg-blue-500 border-blue-500"
+                                : "border-gray-300 dark:border-gray-600"
+                            }`}
+                          >
+                            {values.privateInt && (
+                              <Check className="h-3 w-3 text-white" />
+                            )}
+                          </div>
+                          <div>
+                            <div
+                              className={`font-medium ${
+                                values.privateInt
+                                  ? "text-blue-700 dark:text-blue-300"
+                                  : "text-gray-700 dark:text-gray-300"
+                              }`}
+                            >
+                              Hide from Interviewer
+                            </div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              Interviewers cannot see this field
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
+                        values.showOnCard
+                          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md"
+                          : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                      }`}
+                      onClick={() =>
+                        setFieldValue("showOnCard", !values.showOnCard)
+                      }
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                              values.showOnCard
+                                ? "bg-blue-500 border-blue-500"
+                                : "border-gray-300 dark:border-gray-600"
+                            }`}
+                          >
+                            {values.showOnCard && (
+                              <Check className="h-3 w-3 text-white" />
+                            )}
+                          </div>
+                          <div>
+                            <div
+                              className={`font-medium ${
+                                values.showOnCard
+                                  ? "text-blue-700 dark:text-blue-300"
+                                  : "text-gray-700 dark:text-gray-300"
+                              }`}
+                            >
+                              Show On Card
+                            </div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              Display this field on candidate cards
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {[
+                  "date",
+                  "datetime",
+                  "time",
+                  "file",
+                  "textarea",
+                  "password",
+                ].includes(values.type) ? null : (
+                  <>
+                    {["select", "radio", "checkbox", "multiSelect"].includes(
+                      values.type
+                    ) ? (
+                      <div>
+                        <Label
+                          htmlFor="defaultValue"
+                          className="text-lg font-medium block pb-3"
+                        >
+                          Default Value
+                        </Label>
+                        {values.type === "multiSelect" ||
+                        values.type === "checkbox" ? (
+                          <ChipInput
+                            value={values.defaultValue as string[]}
+                            onChange={(newOptions) =>
+                              setFieldValue(
+                                "defaultValue",
+                                newOptions
+                                  .map((option) => option.trim())
+                                  .filter((option) => option !== "")
+                              )
+                            }
+                            onSuggestionClick={(suggestion) => {
+                              setFieldValue("defaultValue", [
+                                ...(values.defaultValue as string[]),
+                                suggestion,
+                              ]);
+                            }}
+                            suggestions={
+                              values.options
+                                ?.filter(
+                                  (option) =>
+                                    !values.defaultValue?.includes(option)
+                                )
+                                .map((option) => option.trim())
+                                .filter((option) => option !== "") || []
+                            }
+                          />
+                        ) : (
+                          <Select
+                            {...getFieldProps("defaultValue")}
+                            onValueChange={(value) => {
+                              if (value === "-1") {
+                                setFieldValue("defaultValue", "");
+                              } else {
+                                setFieldValue("defaultValue", value.trim());
+                              }
+                            }}
+                            value={String(values.defaultValue || "")}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select default value" />
+                            </SelectTrigger>
+                            <Button
+                              style={{
+                                marginLeft: "-10px",
+                                color: "#797979",
+                              }}
+                              variant="link"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setFieldValue("defaultValue", "");
+                              }}
+                            >
+                              Clear
+                            </Button>
+                            <SelectContent>
+                              {values.options?.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </div>
+                    ) : (
+                      <div>
+                        <Label
+                          htmlFor="defaultValue"
+                          className="text-lg font-medium block pb-3"
+                        >
+                          Default Value
+                        </Label>
+                        {values.type === "number" ? (
+                          <Input
+                            id="defaultValue"
+                            value={values.defaultValue || ""}
+                            onChange={(e) =>
+                              handleNumberInputChange(e, setFieldValue)
+                            }
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            className="text-lg py-3 px-4"
+                            placeholder="Enter default number..."
+                          />
+                        ) : (
+                          <Input
+                            id="defaultValue"
+                            {...getFieldProps("defaultValue")}
+                            className="text-lg py-3 px-4"
+                            placeholder="Enter default value..."
+                          />
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              <div className="sticky bottom-0 pt-4 pb-2 border-t border-gray-200 dark:border-gray-600 mt-4 px-4">
+                <div className="flex justify-end">
+                  <Button
+                    type="submit"
+                    variant="success"
+                    size="lg"
+                    disabled={
+                      !isEditMode &&
+                      (hasDuplicate || Object.keys(errors).length > 0)
+                    }
+                  >
+                    {isEditMode ? "Update Field" : "Create Field"}
+                  </Button>
+                </div>
               </div>
             </form>
           )}

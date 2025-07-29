@@ -53,9 +53,14 @@ export async function middleware(request: NextRequest) {
   if (!allowedOrigins.includes(origin))
     return NextResponse.json({ error: "Origin Not Allowed" }, { status: 401 });
   let userData: { role: string } | undefined;
-  const token = request.cookies.get("token");
-  if (token?.value) {
-    const decryptedResponse = await verifyAndDecryptToken(String(token?.value));
+  
+  // SECURITY FIX: Check both httpOnly and regular tokens for backward compatibility
+  const httpOnlyToken = request.cookies.get("auth_token");
+  const regularToken = request.cookies.get("token");
+  const token = httpOnlyToken?.value || regularToken?.value;
+  
+  if (token) {
+    const decryptedResponse = await verifyAndDecryptToken(String(token));
     if (decryptedResponse.success) {
       userData = decryptedResponse.user as unknown as {
         role: string;
@@ -227,6 +232,7 @@ const apiExemptPaths = [
   "/api/auth/login",
   "/api/auth/signup",
   "/api/organization",
+  "/api/orgs",
   "/api/auth/forgot-password",
   "/api/auth/reset-password",
   "/api/event-mail",
@@ -241,6 +247,7 @@ const apiExemptPaths = [
   "/api/auth/2fa/send-otp",
   "/api/auth/2fa/verify-otp",
   "/api/settings/twofa",
+  "/api/settings/portal",
   "/api/organization/tags"
 ];
 

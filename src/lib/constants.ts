@@ -974,6 +974,7 @@ export const scoreColors: Record<
       border: "rgba(194, 65, 12, 1)", // dark:border-orange-800
     },
   },
+  // Average (5): Purple theme
   5: {
     bg: "rgba(254, 243, 199, 5)", // bg-amber-50
     text: "rgba(245, 158, 11, 1)", // text-amber-500
@@ -984,6 +985,7 @@ export const scoreColors: Record<
       border: "rgba(180, 83, 9, 1)", // dark:border-amber-800
     },
   },
+  // Above Average (6): Indigo theme
   6: {
     bg: "rgba(236, 252, 203, 1)", // bg-lime-500
     text: "rgba(101, 163, 13, 1)", // text-lime-700
@@ -994,6 +996,7 @@ export const scoreColors: Record<
       border: "rgba(101, 163, 13, 1)", // dark:border-lime-800
     },
   },
+  // Good (7): Teal theme
   7: {
     bg: "rgba(204, 251, 241, 1)", // bg-teal-100
     text: "rgba(13, 148, 136, 1)", // text-teal-500
@@ -1014,6 +1017,7 @@ export const scoreColors: Record<
       border: "rgba(19, 78, 74, 1)", // dark:border-teal-800
     },
   },
+  // Excellent (9-10): Green theme
   9: {
     bg: "rgba(209, 250, 229, 1)", // bg-emerald-100
     text: "rgba(16, 185, 129, 1)", // text-emerald-700

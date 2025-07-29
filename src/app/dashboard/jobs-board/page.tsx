@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { DragDropContext } from "@hello-pangea/dnd";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext, useCallback } from "react";
 import { CreateJobDialog } from "./components/create-job-dialog";
 import { JobDetailsDialog } from "./components/job-details-dialog";
 import { initialColumns } from "./data/initial-data";
@@ -32,6 +32,11 @@ import { verifyAndDecryptJWTToken } from "@/lib/auth";
 // import withAuthGuard from "@/components/withAuthGuard";
 // import { NextPage } from "next";
 import KanbanColumn from "./components/kanban-column";
+import { Button } from "@/components/ui/button";
+import { Settings2 } from "lucide-react";
+import { CustomFieldsContext } from "@/Custom_Fields/Context";
+import CustomFieldDialog from "@/Custom_Fields/Components/Common/CustomFieldDialog";
+import Stepper from "@/Custom_Fields/Components/Stepper";
 interface User {
   role: string;
   organizationId: string;
@@ -43,7 +48,75 @@ interface KanbanColumn {
   jobs: Job[];
 }
 
-export default function KanbanPage() {
+// Dialog component that auto-selects job position form
+function JobCustomFieldsDialog({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const context = useContext(CustomFieldsContext);
+  const { setStepName, customFields, stepName, selectedFormId, selecteFormIdTarget } = context;
+  const [hasAutoSelected, setHasAutoSelected] = useState(false);
+
+  console.log('JobCustomFieldsDialog context:', {
+    customFieldsKeys: Object.keys(customFields || {}),
+    customFieldsCount: Object.keys(customFields || {}).length,
+    stepName,
+    selectedFormId,
+    hasContext: !!context,
+    isOpen,
+    hasAutoSelected
+  });
+
+  // Auto-select job position form when dialog opens
+  useEffect(() => {
+    if (isOpen && !hasAutoSelected && customFields && Object.keys(customFields).length > 0) {
+      console.log('Attempting to auto-select job position form...');
+      
+      // Find the "job position" form ID
+      const jobPositionFormEntry = Object.entries(customFields).find(
+        ([_, form]) => {
+          console.log('Checking form:', form.formName, 'normalized:', form.formName.toLowerCase());
+          return form.formName.toLowerCase() === 'job position';
+        }
+      );
+      
+      if (jobPositionFormEntry) {
+        const [formId] = jobPositionFormEntry;
+        console.log('Found job position form, selecting:', formId);
+        selecteFormIdTarget(formId);
+        setStepName("formCustomFieldList");
+        setHasAutoSelected(true);
+      } else {
+        console.log('No job position form found, staying on FormList');
+        setStepName("FormList");
+        setHasAutoSelected(true);
+      }
+    }
+  }, [isOpen, hasAutoSelected, customFields, selecteFormIdTarget, setStepName]);
+
+  const handleClose = useCallback(() => {
+    console.log('JobCustomFieldsDialog closing, resetting to FormList');
+    setStepName("FormList");
+    setHasAutoSelected(false);
+    onClose();
+  }, [setStepName, onClose]);
+
+  // Reset auto-selection flag when dialog closes
+  useEffect(() => {
+    if (!isOpen) {
+      setHasAutoSelected(false);
+    }
+  }, [isOpen]);
+
+  return (
+    <CustomFieldDialog
+      isOpen={isOpen}
+      onClose={handleClose}
+      title="Personalized form fields"
+    >
+      <Stepper />
+    </CustomFieldDialog>
+  );
+}
+
+function KanbanPage() {
   const [columns, setColumns] = useState<KanbanColumn[]>(initialColumns);
   const [user, setUser] = useState<User | null>(null);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
@@ -66,6 +139,7 @@ export default function KanbanPage() {
   const [jobToDelete, setJobToDelete] = useState<string | null>(null);
   const [isCreatingJob, setIsCreatingJob] = useState(false);
   const [duplicate, setDuplicate] = useState(false);
+  const [isCustomFieldsOpen, setIsCustomFieldsOpen] = useState(false);
   useEffect(() => {
     (async () => {
       const token = Cookies.get("token");
@@ -265,7 +339,7 @@ export default function KanbanPage() {
   return (
     <div className="h-screen flex flex-col overflow-hidden w-full">
       {/* Header section with improved design */}
-      <div className="flex-shrink-0 px-4 pb-2">
+      <div className="flex-shrink-0 px-4 pb-2 border-b border-gray-200 dark:border-gray-700">
         <Card className="border-0 shadow-none bg-transparent">
           <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-2 py-3 px-0">
             {/* Title */}
@@ -294,6 +368,14 @@ export default function KanbanPage() {
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsCustomFieldsOpen(true)}
+                  className="flex items-center gap-2"
+                >
+                  <Settings2 className="h-4 w-4" />
+                  Personalized form fields
+                </Button>
                 <CreateJobDialog
                   onJobCreated={handleJobCreated}
                   userRole={user?.role}
@@ -305,21 +387,23 @@ export default function KanbanPage() {
       </div>
 
       {/* <CandidatesPage /> */}
-      <div className="flex-1 overflow-hidden px-4 pb-4">
+      <div className="flex-1 overflow-hidden px-4 pb-4 mt-4">
         <DragDropContext onDragEnd={onDragEnd}>
-          <div className="h-full flex gap-3 overflow-x-auto w-full">
-            {columns.map((column) => (
-              <KanbanColumn
-                key={column.id}
-                column={column}
-                isCreatingJob={isCreatingJob}
-                setSelectedJob={setSelectedJob}
-                setIsDetailsOpen={setIsDetailsOpen}
-                setIsEditMode={setIsEditMode}
-                handleDeleteClick={handleDeleteClick}
-                setDuplicate={setDuplicate}
-              />
-            ))}
+          <div className="h-full overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 hover:scrollbar-thumb-gray-400 dark:hover:scrollbar-thumb-gray-500">
+            <div className="h-full flex gap-1 w-max min-w-full">
+              {columns.map((column) => (
+                <KanbanColumn
+                  key={column.id}
+                  column={column}
+                  isCreatingJob={isCreatingJob}
+                  setSelectedJob={setSelectedJob}
+                  setIsDetailsOpen={setIsDetailsOpen}
+                  setIsEditMode={setIsEditMode}
+                  handleDeleteClick={handleDeleteClick}
+                  setDuplicate={setDuplicate}
+                />
+              ))}
+            </div>
           </div>
         </DragDropContext>
       </div>
@@ -366,9 +450,17 @@ export default function KanbanPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Custom Fields Dialog */}
+      <JobCustomFieldsDialog 
+        isOpen={isCustomFieldsOpen} 
+        onClose={() => setIsCustomFieldsOpen(false)} 
+      />
     </div>
   );
 }
+
+export default KanbanPage;
 
 // export default withAuthGuard(KanbanPage, {
 //   requiredRoles: ["admin", "hr"],

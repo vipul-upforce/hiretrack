@@ -107,7 +107,7 @@ const AddFollowUpDialog = ({
                 handleAddFollowUp();
                 onAddingFollowup();
               }}
-              className="bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-500 dark:hover:bg-blue-600"
+              variant="info"
             >
               {candidate?.followUp?.note && candidate?.followUp?.note.length > 0
                 ? "Update Followup"

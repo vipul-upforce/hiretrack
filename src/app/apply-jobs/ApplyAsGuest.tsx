@@ -25,8 +25,14 @@ import { Resume } from "@/lib/redux/types";
 import { parseResumeFromPdf } from "@/lib/parse-resume-from-pdf";
 import FormUpdater from "../dashboard/jobs/[id]/components/Utils/FormUpdater";
 import * as pdfjs from "pdfjs-dist";
+
+// Configure PDF.js worker
+if (typeof window !== "undefined" && !pdfjs.GlobalWorkerOptions.workerSrc) {
+  pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+}
 import { candidateSchema } from "../dashboard/jobs/[id]/schemas/candidate-schema";
 import { useApplyHandler } from "./useApplyHandler";
+import { TermsConfirmationDialog } from "@/components/TermsConfirmationDialog";
 
 // New function to store application status in localStorage
 const storeGuestApplication = (jobId: string, candidateId: string) => {
@@ -101,6 +107,7 @@ interface CreateCandidateDialogProps {
   setIsOpen: (isOpen: boolean) => void;
   resumeFile?: File | null;
   closeParent: () => void;
+  jobTitle?: string;
 }
 
 const getInitialValues = (customFields: CustomFieldValues) => ({
@@ -118,6 +125,7 @@ const getInitialValues = (customFields: CustomFieldValues) => ({
   time: undefined,
   customFields: { ...customFields },
   email: "",
+  contact: "",
 });
 
 const handleFileParse = async (
@@ -169,6 +177,7 @@ export function ApplyAsGuestDialog({
   setIsOpen,
   resumeFile,
   closeParent,
+  jobTitle,
 }: CreateCandidateDialogProps) {
   const { toast } = useToast();
   const [createGuestCandidate] = useCreateGuestCandidateMutation();
@@ -186,6 +195,8 @@ export function ApplyAsGuestDialog({
   const [resetForm, setResetForm] = useState(false);
   const [hasAlreadyApplied, setHasAlreadyApplied] = useState(false);
   const { formikRef, handleApply } = useApplyHandler<CandidateFormValues>();
+  const [showTermsDialog, setShowTermsDialog] = useState(false);
+  const [pendingFormValues, setPendingFormValues] = useState<any>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -202,7 +213,21 @@ export function ApplyAsGuestDialog({
     }
   }, [isOpen, resumeFile, jobId]);
 
+  const handleTermsConfirm = () => {
+    if (pendingFormValues) {
+      setShowTermsDialog(false);
+      actualSubmit(pendingFormValues);
+      setPendingFormValues(null);
+    }
+  };
+
   const handleSubmit = async (values: CandidateFormValues) => {
+    // Show terms confirmation dialog first
+    setPendingFormValues(values);
+    setShowTermsDialog(true);
+  };
+
+  const actualSubmit = async (values: CandidateFormValues) => {
     // console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
     // First check if already applied
     if (hasAppliedAsGuest(jobId)) {
@@ -267,6 +292,7 @@ export function ApplyAsGuestDialog({
           parseFloat(String(values.noticePeriod)).toFixed(0)
         ),
         email: values.email || parsedResumeData?.profile?.email,
+        contact: values.contact,
         ...(values.assignee && values.time
           ? {
               assignee: values.assignee === "-1" ? "" : values.assignee,
@@ -292,6 +318,13 @@ export function ApplyAsGuestDialog({
         remarks: [],
       };
 
+      // Debug: Log the candidate data being sent
+      console.log("Guest candidate data being sent:", candidateData);
+      console.log("JobId value:", jobId);
+      console.log("JobId type:", typeof jobId);
+      console.log("candidateData.jobId:", candidateData.jobId);
+      console.log("candidateData.jobId._id:", candidateData.jobId._id);
+
       // Step 1: Create the candidate
       const createdCandidate =
         await createGuestCandidate(candidateData).unwrap();
@@ -301,9 +334,14 @@ export function ApplyAsGuestDialog({
       storeGuestApplication(jobId, candidateId);
 
       if (values.resume && values.resume.type === "application/pdf") {
-        const pageCount = await checkPdfPageCount(values.resume);
-        if (pageCount <= 4) {
-          evaluateCandidate(candidateId, evaluateCandidateMutation);
+        try {
+          const pageCount = await checkPdfPageCount(values.resume);
+          if (pageCount <= 4) {
+            evaluateCandidate(candidateId, evaluateCandidateMutation);
+          }
+        } catch (pdfError) {
+          console.warn("PDF page count check failed, skipping AI evaluation:", pdfError);
+          // Continue with submission even if PDF check fails
         }
       }
 
@@ -319,24 +357,29 @@ export function ApplyAsGuestDialog({
       setIsOpen(false);
       closeParent();
     } catch (error) {
-      if (typeof error === "object" && error !== null && "data" in error) {
-        const errorData = (error as { data?: { error?: string } }).data;
-        if (
-          typeof errorData === "object" &&
-          errorData !== null &&
-          "error" in errorData
-        ) {
-          toast({
-            title: "Error",
-            description: errorData.error || "Failed to create candidate",
-            variant: "destructive",
-          });
-          return;
+      console.error("Guest application error:", error);
+      
+      let errorMessage = "Failed to create candidate due to an unexpected error.";
+      
+      // Handle RTK Query error format
+      if (typeof error === "object" && error !== null) {
+        if ("data" in error) {
+          const errorData = (error as { data?: any }).data;
+          if (errorData?.error) {
+            errorMessage = errorData.error;
+          } else if (errorData?.message) {
+            errorMessage = errorData.message;
+          } else if (typeof errorData === "string") {
+            errorMessage = errorData;
+          }
+        } else if ("message" in error && typeof (error as any).message === "string") {
+          errorMessage = (error as any).message;
         }
       }
+      
       toast({
         title: "Error",
-        description: "Failed to create candidate due to an unexpected error.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -368,9 +411,14 @@ export function ApplyAsGuestDialog({
       </DialogTrigger>
       <DialogContent className="w-full h-full max-w-none max-h-none m-0 p-0 rounded-none sm:rounded-lg sm:w-[95vw] sm:h-[95vh] sm:max-w-[95vw] sm:max-h-[95vh] md:w-[90vw] md:h-[90vh] md:max-w-[90vw] md:max-h-[90vh] lg:w-[85vw] lg:h-[85vh] lg:max-w-[85vw] lg:max-h-[85vh] xl:w-[80vw] xl:h-[80vh] xl:max-w-[80vw] xl:max-h-[80vh] overflow-hidden flex flex-col justify-center">
         <DialogHeader
-          className={`px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0 ${hasAlreadyApplied && "hidden"}`}
+          className={`px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0 text-left ${hasAlreadyApplied && "hidden"}`}
         >
-          <DialogTitle className="text-lg sm:text-xl">Apply</DialogTitle>
+          <DialogTitle className="text-left text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Apply</DialogTitle>
+          {jobTitle && (
+            <p className="text-left text-sm text-gray-600 dark:text-gray-400 mt-1">
+              Applying for: {jobTitle}
+            </p>
+          )}
         </DialogHeader>
         {hasAlreadyApplied ? (
           <div className="p-4 sm:p-6 text-center flex flex-col justify-center items-center h-full">
@@ -450,6 +498,16 @@ export function ApplyAsGuestDialog({
           </Formik>
         )}
       </DialogContent>
+      
+      <TermsConfirmationDialog
+        isOpen={showTermsDialog}
+        onClose={() => {
+          setShowTermsDialog(false);
+          setPendingFormValues(null);
+        }}
+        onConfirm={handleTermsConfirm}
+        isLoading={isSendingEmail}
+      />
     </Dialog>
   );
 }

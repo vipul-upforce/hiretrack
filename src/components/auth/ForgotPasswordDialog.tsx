@@ -191,7 +191,7 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={isSubmitting || isLoading}>
+                  <Button type="submit" variant="primary" disabled={isSubmitting || isLoading}>
                     {isSubmitting || isLoading
                       ? "Sending..."
                       : "Send Reset Link"}
@@ -260,7 +260,7 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
                   >
                     Back
                   </Button>
-                  <Button type="submit" disabled={isSubmitting || isLoading}>
+                  <Button type="submit" variant="primary" disabled={isSubmitting || isLoading}>
                     {isSubmitting || isLoading ? "Sending..." : "Continue"}
                   </Button>
                 </div>

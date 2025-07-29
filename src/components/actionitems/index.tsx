@@ -77,6 +77,7 @@ function ActionItems({
           experience: assignment.experience,
           skills: assignment.skills,
           expectedCTC: assignment.expectedCTC,
+          contact: assignment.contact,
           currentCTC: assignment.currentCTC,
           noticePeriod: assignment.noticePeriod,
           resume: assignment.resume,

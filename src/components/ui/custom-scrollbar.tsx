@@ -82,7 +82,7 @@ export function CustomScrollbar({
       </div>
 
       {showScrollbar && (
-        <div className="absolute right-1 top-0 bottom-0 w-1.5">
+        <div className="absolute -right-2 top-0 bottom-0 w-1.5">
           <div
             className="absolute right-0 w-1 bg-muted-foreground/30 rounded-full hover:bg-muted-foreground/50 cursor-pointer dark:bg-muted-foreground/20 dark:hover:bg-muted-foreground/40"
             style={{

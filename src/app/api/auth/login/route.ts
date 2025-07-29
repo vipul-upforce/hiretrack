@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
 import dbConnect, { CandidateAccount, Settings } from "@/lib/mongodb";
 import { signToken } from "@/lib/jwt";
@@ -6,8 +6,10 @@ import { User, Organization } from "@/lib/mongodb";
 import { OneOfMulOrganization } from "@/components/auth/OrganizationDialog";
 import { IUser } from "@/lib/models/user";
 import { IUCandidateAccount } from "@/lib/models/candidateAccount";
+import { setSecureAuthTokens } from "@/lib/secureTokens";
+import { loginRateLimiter } from "@/lib/rateLimiter";
 
-export async function POST(req: Request) {
+async function handleLogin(req: NextRequest) {
   try {
     await dbConnect();
     const { email, password, orgId } = await req.json();
@@ -485,13 +487,17 @@ const returnTokenBasedResponse = async (obj: unknown) => {
     user: token,
   });
 
-  response.cookies.set("token", token, {
-    httpOnly: false,
-    sameSite: "strict",
-    // expires: new Date(Date.now() + 2 * 60 * 1000),
-    expires: 30,
-    // maxAge: 30 * 24 * 60 * 60,
+  // SECURITY FIX: Use secure token system with improved security
+  setSecureAuthTokens(response, token, {
+    expires: 30, // 30 days
+    maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
   });
 
   return response;
 };
+
+// Export with rate limiting
+export async function POST(req: Request) {
+  // SECURITY FIX: Apply rate limiting to prevent brute force attacks
+  return loginRateLimiter(req as NextRequest, handleLogin);
+}

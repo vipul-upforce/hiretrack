@@ -13,6 +13,7 @@ export function CandidateScoreBadge({
   const normalizedScore = Math.max(1, Math.min(10, score));
   const roundedScore = Math.round(normalizedScore);
   const { bg, text, border } = scoreColors[roundedScore] || scoreColors[1];
+  // const { bg, text, border } = scoreColors[roundedScore] || scoreColors[1];
   const displayScore = score?.toFixed(1);
 
   return (

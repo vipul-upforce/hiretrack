@@ -31,6 +31,7 @@ import FormUpdater from "../Utils/FormUpdater";
 import Cookies from "js-cookie";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { useApplyHandler } from "@/app/apply-jobs/useApplyHandler";
+import { TermsConfirmationDialog } from "@/components/TermsConfirmationDialog";
 // New function to call the evaluate API
 async function evaluateCandidate(
   candidateId: string,
@@ -72,6 +73,7 @@ interface CreateCandidateDialogProps {
   setIsOpen: (isOpen: boolean) => void;
   resumeFile?: File | null;
   isCreating?: (isCreating: boolean) => void;
+  jobTitle?: string;
 }
 
 const getInitialValues = (customFields: CustomFieldValues) => ({
@@ -130,6 +132,12 @@ const checkPdfPageCount = async (file: File): Promise<number> => {
       try {
         // Dynamically import pdfjs only on client side
         const pdfjs = await import("pdfjs-dist");
+
+        // Configure worker if not already set
+        if (!pdfjs.GlobalWorkerOptions.workerSrc) {
+          pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+        }
+
         const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
         resolve(pdf.numPages);
       } catch (error) {
@@ -146,6 +154,7 @@ export function CreateCandidateDialog({
   isOpen,
   setIsOpen,
   resumeFile,
+  jobTitle,
   // isCreating,
 }: CreateCandidateDialogProps) {
   const { toast } = useToast();
@@ -171,6 +180,9 @@ export function CreateCandidateDialog({
   const [user, setuser] = useState<User | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [showTermsDialog, setShowTermsDialog] = useState(false);
+  const [pendingFormValues, setPendingFormValues] =
+    useState<CandidateFormValues | null>(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -200,7 +212,21 @@ export function CreateCandidateDialog({
     }
   }, [isOpen, resumeFile, isClient]);
 
+  const handleTermsConfirm = () => {
+    if (pendingFormValues) {
+      setShowTermsDialog(false);
+      actualSubmit(pendingFormValues);
+      setPendingFormValues(null);
+    }
+  };
+
   const handleSubmit = async (values: CandidateFormValues) => {
+    // Show terms confirmation dialog first
+    setPendingFormValues(values);
+    setShowTermsDialog(true);
+  };
+
+  const actualSubmit = async (values: CandidateFormValues) => {
     const fileNames = values.attachments.map((file) => file.name);
     const hasDuplicates = new Set(fileNames).size !== fileNames.length;
 
@@ -278,16 +304,28 @@ export function CreateCandidateDialog({
         remarks: [],
       };
 
+      // Debug: Log the candidate data being sent
+      console.log("Candidate data being sent:", candidateData);
+      console.log("JobId value:", jobId);
+
       // Step 1: Create the candidate
       setIsCreating(true);
       const createdCandidate = await createCandidate(candidateData).unwrap();
       const candidateId = createdCandidate._id;
       if (values.resume && values.resume.type === "application/pdf") {
-        const pageCount = await checkPdfPageCount(values.resume);
-        if (pageCount && pageCount <= 4) {
-          // setTimeout(() => {
-          evaluateCandidate(candidateId, evaluateCandidateMutation);
-          // }, 2000);
+        try {
+          const pageCount = await checkPdfPageCount(values.resume);
+          if (pageCount && pageCount <= 4) {
+            // setTimeout(() => {
+            evaluateCandidate(candidateId, evaluateCandidateMutation);
+            // }, 2000);
+          }
+        } catch (pdfError) {
+          console.warn(
+            "PDF page count check failed, skipping AI evaluation:",
+            pdfError
+          );
+          // Continue with submission even if PDF check fails
         }
       }
 
@@ -336,7 +374,7 @@ export function CreateCandidateDialog({
         };
         await updateCandidateHistory({
           candidateId: createdCandidate._id,
-          jobId: candidateData.jobId._id,
+          jobId: candidateData.jobId,
           newEntry: newHistoryEntry,
         }).unwrap();
       }
@@ -350,24 +388,33 @@ export function CreateCandidateDialog({
       //   description: "Candidate added successfully",
       // });
     } catch (error) {
-      if (typeof error === "object" && error !== null && "data" in error) {
-        const errorData = (error as { data?: { error?: string } }).data;
-        if (
-          typeof errorData === "object" &&
-          errorData !== null &&
-          "error" in errorData
+      console.error("Create candidate error:", error);
+
+      let errorMessage =
+        "Failed to create candidate due to an unexpected error.";
+
+      // Handle RTK Query error format
+      if (typeof error === "object" && error !== null) {
+        if ("data" in error) {
+          const errorData = (error as { data?: any }).data;
+          if (errorData?.error) {
+            errorMessage = errorData.error;
+          } else if (errorData?.message) {
+            errorMessage = errorData.message;
+          } else if (typeof errorData === "string") {
+            errorMessage = errorData;
+          }
+        } else if (
+          "message" in error &&
+          typeof (error as any).message === "string"
         ) {
-          toast({
-            title: "Error",
-            description: errorData.error || "Failed to create candidate",
-            variant: "destructive",
-          });
-          return;
+          errorMessage = (error as any).message;
         }
       }
+
       toast({
         title: "Error",
-        description: "Failed to create candidate due to an unexpected error.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -416,12 +463,17 @@ export function CreateCandidateDialog({
       <DialogContent
         className={`sm:max-w-[80vw] xl:max-w-[65vw] h-[100vh] sm:h-[90vh] p-0 overflow-hidden flex flex-col`}
       >
-        <DialogHeader className="flex-shrink-0 px-6 py-4 border-b">
-          <DialogTitle>
+        <DialogHeader className="flex-shrink-0 px-6 py-4 border-b text-left">
+          <DialogTitle className="text-left text-xl font-bold text-gray-900 dark:text-white">
             {user && user.role === "candidate"
               ? "Add Application"
               : "Add New Candidate"}
           </DialogTitle>
+          {jobTitle && (
+            <p className="text-left text-sm text-gray-600 dark:text-gray-400 mt-1">
+              Applying for: {jobTitle}
+            </p>
+          )}
         </DialogHeader>
         <Formik
           innerRef={formikRef}
@@ -484,6 +536,16 @@ export function CreateCandidateDialog({
           )}
         </Formik>
       </DialogContent>
+
+      <TermsConfirmationDialog
+        isOpen={showTermsDialog}
+        onClose={() => {
+          setShowTermsDialog(false);
+          setPendingFormValues(null);
+        }}
+        onConfirm={handleTermsConfirm}
+        isLoading={isCreating || isAdding || isEvaluating || isSendingEmail}
+      />
     </Dialog>
   );
 }

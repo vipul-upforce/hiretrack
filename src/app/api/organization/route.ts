@@ -218,10 +218,15 @@ export async function GET(req: NextRequest) {
   //     organizationId = userData.organizationId || "";
   //   }
   // }
-  await connectToDatabase();
-  if (!Settings) {
-    throw new Error("Not connected to Database");
-  }
+  
+  try {
+    await connectToDatabase();
+    if (!Settings) {
+      return NextResponse.json(
+        { error: "Settings model not found" },
+        { status: 500 }
+      );
+    }
   // if (organizationId != "") {
   //   const settings = await Settings.find({
   //     organizationId: String(organizationId),
@@ -244,21 +249,28 @@ export async function GET(req: NextRequest) {
       gemini: 0,
     }
   );
-  // console.log("⛔⛔⛔ ", settings);
-  if (settings.length > 1 || settings.length === 0) {
+    // console.log("⛔⛔⛔ ", settings);
+    if (settings.length > 1 || settings.length === 0) {
+      return NextResponse.json({
+        allow: true,
+        data: settings,
+      });
+    } else if (settings.length === 1 && settings[0].multipleOrg !== false) {
+      return NextResponse.json({
+        allow: true,
+        data: settings,
+      });
+    }
     return NextResponse.json({
-      allow: true,
+      allow: false,
       data: settings,
     });
-  } else if (settings.length === 1 && settings[0].multipleOrg !== false) {
-    return NextResponse.json({
-      allow: true,
-      data: settings,
-    });
+    // }
+  } catch (error) {
+    console.error("Organization API error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
-  return NextResponse.json({
-    allow: false,
-    data: settings,
-  });
-  // }
 }

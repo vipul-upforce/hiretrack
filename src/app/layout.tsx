@@ -21,7 +21,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <title>Hiretrack</title>
+        <title>Loading...</title>
         <link rel="icon" href="/favicon.png" />
         <script
           dangerouslySetInnerHTML={{

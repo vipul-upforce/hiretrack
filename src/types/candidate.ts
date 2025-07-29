@@ -18,6 +18,8 @@ export interface Candidate {
     skills?: string[];
   };
   name: string;
+  email: string;
+  contact: string;
   location: string;
   experience: number;
   skills: string[];
@@ -54,7 +56,6 @@ export interface Candidate {
     description: string;
   };
   history?: ICandidateHistory[];
-  email?: string;
   isDeleted?: boolean;
   scores?: {
     overall: number;

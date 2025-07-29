@@ -6,7 +6,6 @@ import {
   DroppableProvided,
   DraggableProvided,
 } from "@hello-pangea/dnd";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { GripVertical } from "lucide-react";
 import { CandidateCard } from "../Candidate/candidate-card";
 import { Candidate } from "@/types/candidate";
@@ -201,16 +200,16 @@ export function KanbanColumn({
         <div
           ref={provided.innerRef}
           {...provided.draggableProps}
-          className="w-96 flex-shrink-0 mt-1 bg-card"
+          className={`flex-1 min-w-[450px] ${index === 0 ? 'pl-0 pr-1' : 'px-1'}`}
           style={{
             ...provided.draggableProps.style,
             userSelect: "none",
             // opacity: snapshot.isDragging ? 0.8 : 1,
           }}
         >
-          <Card className="h-full flex flex-col border border-gray-200 dark:border-gray-700 shadow-none bg-transparent rounded-none">
-            <CardHeader className="py-3 flex-shrink-0 px-4 bg-transparent border-b border-gray-200 dark:border-gray-700 rounded-none">
-              <div className="flex items-center justify-between h-full">
+          <div className="h-full flex flex-col bg-gray-50/70 dark:bg-gray-800/30 rounded-xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm p-2 min-w-0 w-full max-w-full">
+            <div className="py-2 flex-shrink-0 px-2 mb-2">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <div
                     {...provided.dragHandleProps}
@@ -221,51 +220,46 @@ export function KanbanColumn({
                     }}
                     className="cursor-grab active:cursor-grabbing"
                   >
-                    <GripVertical className="h-5 w-5 text-muted-foreground" />
+                    <GripVertical className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                   </div>
-                  <CardTitle
-                    className="text-base font-medium capitalize text-gray-700 dark:text-gray-300"
-                    style={{ overflowWrap: "anywhere" }}
-                  >
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-300 truncate">
                     {column.title}
-                    <span className="ml-2 text-sm text-muted-foreground">
-                      (
-                      {
-                        column.candidates.filter(
-                          (candidate) =>
-                            candidate?.jobId?._id?.toString() ===
-                            jobId?.toString()
-                        ).length
-                      }
-                      )
-                    </span>
-                  </CardTitle>
+                  </h3>
                 </div>
-                <LaneOptionsMenu
-                  laneId={column.id}
-                  onSort={handleSort}
-                  handleDeleteLane={handleDeleteLane}
-                  setLaneToDelete={setLaneToDelete}
-                  setLaneToEdit={setLaneToEdit}
-                  onEdit={handleEditLane}
-                  isOpen={isLaneOptionsOpen && column.id === isLaneOpsOpenFor}
-                  setIsOpen={(open) => {
-                    setIsLaneOptionsOpen(open);
-                    setIsLaneOpsOpenFor(open ? column.id : null);
-                  }}
-                />
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-700 px-2 py-1 rounded-full min-w-[24px] text-center shadow-sm">
+                    {
+                      column.candidates.filter(
+                        (candidate) =>
+                          candidate?.jobId?._id?.toString() ===
+                          jobId?.toString()
+                      ).length
+                    }
+                  </span>
+                  <LaneOptionsMenu
+                    laneId={column.id}
+                    onSort={handleSort}
+                    handleDeleteLane={handleDeleteLane}
+                    setLaneToDelete={setLaneToDelete}
+                    setLaneToEdit={setLaneToEdit}
+                    onEdit={handleEditLane}
+                    isOpen={isLaneOptionsOpen && column.id === isLaneOpsOpenFor}
+                    setIsOpen={(open) => {
+                      setIsLaneOptionsOpen(open);
+                      setIsLaneOpsOpenFor(open ? column.id : null);
+                    }}
+                  />
+                </div>
               </div>
-            </CardHeader>
-            <CardContent
-              className={`flex-1 overflow-hidden p-0 bg-transparent rounded-none`}
-            >
+            </div>
+            <div className="flex-1 overflow-hidden space-y-2 pr-2 min-w-0">
               <Droppable droppableId={column.id} type="candidate">
                 {(provided: DroppableProvided) => (
                   <CustomScrollbar isDragging={isDragging} className="h-full">
                     <div
                       {...provided.droppableProps}
                       ref={provided.innerRef}
-                      className={`space-y-3 min-h-full rounded-lg relative`}
+                      className={`space-y-2 pb-2 min-w-0`}
                       onDragOver={(e) => {
                         if (
                           e.dataTransfer.types.includes("Files") &&
@@ -313,7 +307,6 @@ export function KanbanColumn({
                         }
                         return (
                           <CandidateCard
-                            className="mt-2 mx-1"
                             key={`${column.id}-${candidate._id}`}
                             // setIsDragging={() => setIsDragging(true)}
                             candidate={candidate}
@@ -363,8 +356,8 @@ export function KanbanColumn({
                   </CustomScrollbar>
                 )}
               </Droppable>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       )}
     </Draggable>

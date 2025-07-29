@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
+import { Button } from "@/components/ui/button";
 
 interface FileUploaderProps {
   onSubmit: (files: File[]) => void;
@@ -52,12 +53,13 @@ export function FileUploader({ onSubmit }: FileUploaderProps) {
               <li key={index}>{file.name}</li>
             ))}
           </ul>
-          <button
+          <Button
             onClick={handleSubmit}
-            className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            variant="info"
+            className="mt-4"
           >
             Process Files
-          </button>
+          </Button>
         </div>
       )}
     </div>

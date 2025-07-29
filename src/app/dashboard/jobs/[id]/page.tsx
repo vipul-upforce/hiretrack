@@ -33,6 +33,12 @@ import { useSSE } from "@/hooks/useSSE";
 import { mergeRefs } from "react-merge-refs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { QuickSelectAndFilter } from "./components/QuickSelectAndFilter";
+import { Button } from "@/components/ui/button";
+import { Settings2 } from "lucide-react";
+import { CustomFieldsContext } from "@/Custom_Fields/Context";
+import CustomFieldDialog from "@/Custom_Fields/Components/Common/CustomFieldDialog";
+import Stepper from "@/Custom_Fields/Components/Stepper";
+import { useContext, useCallback } from "react";
 
 interface FilterState {
   search: string;
@@ -105,6 +111,7 @@ export default function JobProgressPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLaneEditOpen, setIsLaneEditOpen] = useState(false);
   const [isFileOver, setIsFileOver] = useState(false);
+  const [isCustomFieldsOpen, setIsCustomFieldsOpen] = useState(false);
 
   const {
     handleAddLane,
@@ -367,7 +374,8 @@ export default function JobProgressPage() {
               </CardHeader>
             </Card>
           </div>
-          <div className="flex-1 overflow-hidden px-4 pb-4">
+
+          <div className="flex-1 overflow-hidden px-4 pb-2">
             <DragDropContext
               onDragStart={() => setIsDndDragging(true)}
               onDragEnd={(result: any) => {
@@ -380,7 +388,7 @@ export default function JobProgressPage() {
                   <div
                     {...provided.droppableProps}
                     ref={mergeRefs([provided.innerRef, scrollRef])}
-                    className="h-full flex gap-3 overflow-x-auto"
+                    className="h-full flex gap-0.5 overflow-x-auto"
                   >
                     {provided.placeholder}
                   </div>
@@ -410,6 +418,14 @@ export default function JobProgressPage() {
             links={[{ title: "Jobs", href: "/dashboard/jobs-board" }]}
           />
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsCustomFieldsOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <Settings2 className="h-4 w-4" />
+              Personalized form fields
+            </Button>
             <CreateLaneDialog onAddLane={handleAddLane} />
             <CreateCandidateDialog
               jobId={id as string}
@@ -429,7 +445,8 @@ export default function JobProgressPage() {
         onShowArchivedChange={setShowArchived}
       />
 
-      <div className="flex-1 overflow-hidden px-4 pb-4">
+      {/* <CandidatesPage /> */}
+      <div className="flex-1 overflow-hidden px-4 pb-2 pt-2">
         <DragDropContext
           onDragStart={() => setIsDndDragging(true)}
           onDragEnd={(result: any) => {
@@ -442,7 +459,7 @@ export default function JobProgressPage() {
               <div
                 {...provided.droppableProps}
                 ref={mergeRefs([provided.innerRef, scrollRef])}
-                className="h-full flex gap-3 overflow-x-auto"
+                className="h-full flex gap-1 overflow-x-auto"
               >
                 {columns.map((column, index) => (
                   <KanbanColumn
@@ -512,6 +529,102 @@ export default function JobProgressPage() {
         onConfirm={() => laneToDelete && handleConfirmDeleteLane(laneToDelete)}
         onCancel={() => setIsConfirmLaneDeleteOpen(false)}
       />
+
+      {/* Custom Fields Dialog */}
+      <CandidateCustomFieldsDialog
+        isOpen={isCustomFieldsOpen}
+        onClose={() => setIsCustomFieldsOpen(false)}
+      />
     </div>
+  );
+}
+
+// Dialog component that auto-selects candidate form
+function CandidateCustomFieldsDialog({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+}) {
+  const context = useContext(CustomFieldsContext);
+  const {
+    setStepName,
+    customFields,
+    stepName,
+    selectedFormId,
+    selecteFormIdTarget,
+  } = context;
+  const [hasAutoSelected, setHasAutoSelected] = useState(false);
+
+  console.log("CandidateCustomFieldsDialog context:", {
+    customFieldsKeys: Object.keys(customFields || {}),
+    customFieldsCount: Object.keys(customFields || {}).length,
+    stepName,
+    selectedFormId,
+    hasContext: !!context,
+    isOpen,
+    hasAutoSelected,
+  });
+
+  // Auto-select candidate form when dialog opens
+  useEffect(() => {
+    if (
+      isOpen &&
+      !hasAutoSelected &&
+      customFields &&
+      Object.keys(customFields).length > 0
+    ) {
+      console.log("Attempting to auto-select candidate form...");
+
+      // Find the "candidate" form ID
+      const candidateFormEntry = Object.entries(customFields).find(
+        ([_, form]) => {
+          console.log(
+            "Checking form:",
+            form.formName,
+            "normalized:",
+            form.formName.toLowerCase()
+          );
+          return form.formName.toLowerCase() === "candidate";
+        }
+      );
+
+      if (candidateFormEntry) {
+        const [formId] = candidateFormEntry;
+        console.log("Found candidate form, selecting:", formId);
+        selecteFormIdTarget(formId);
+        setStepName("formCustomFieldList");
+        setHasAutoSelected(true);
+      } else {
+        console.log("No candidate form found, staying on FormList");
+        setStepName("FormList");
+        setHasAutoSelected(true);
+      }
+    }
+  }, [isOpen, hasAutoSelected, customFields, selecteFormIdTarget, setStepName]);
+
+  const handleClose = useCallback(() => {
+    console.log("CandidateCustomFieldsDialog closing, resetting to FormList");
+    setStepName("FormList");
+    setHasAutoSelected(false);
+    onClose();
+  }, [setStepName, onClose]);
+
+  // Reset auto-selection flag when dialog closes
+  useEffect(() => {
+    if (!isOpen) {
+      setHasAutoSelected(false);
+    }
+  }, [isOpen]);
+
+  return (
+    <CustomFieldDialog
+      isOpen={isOpen}
+      onClose={handleClose}
+      title="Personalized form fields"
+    >
+      <Stepper />
+    </CustomFieldDialog>
   );
 }

@@ -66,16 +66,16 @@ const JobCard = ({
             ref={provided.innerRef}
             {...provided.draggableProps}
             {...provided.dragHandleProps}
-            className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-black border border-gray-200 dark:border-gray-700 p-4 shadow-sm cursor-pointer hover:shadow-lg transition-all duration-200 relative mx-1 mt-2 hover:border-blue-200 dark:hover:border-blue-700 hover:scale-[1.02]"
+            className="bg-white dark:bg-black border border-gray-200 dark:border-gray-700 p-5 rounded-xl shadow-sm cursor-pointer hover:shadow-lg transition-shadow duration-200 relative w-full max-w-full min-w-0"
           >
             {/* Header Section - Job Title and Actions */}
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100 leading-tight">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100 dark:border-gray-800">
+              <h3 className="font-bold text-xl text-gray-900 dark:text-gray-100 leading-tight truncate pr-3">
                 {job.title}
               </h3>
               <div className="flex items-center gap-1">
-                {/* Warning Icon for Unpublished Jobs */}
-                {!job.isPublished && (
+                {/* Warning Icon for Unpublished Jobs in Open Lane */}
+                {!job.isPublished && job.status === "open" && (
                   <TooltipProvider>
                     <Tooltip delayDuration={0}>
                       <TooltipTrigger asChild>
@@ -117,7 +117,10 @@ const JobCard = ({
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent
+                    align="end"
+                    className="w-auto min-w-[120px] max-w-[200px]"
+                  >
                     <DropdownMenuItem
                       onClick={(e) => {
                         e.stopPropagation();
@@ -186,44 +189,71 @@ const JobCard = ({
               </div>
             </div>
 
-            {/* Subtle Separator after Header */}
-            <div className="border-b border-gray-100 dark:border-gray-800 mb-4"></div>
-
             {/* Job Details */}
-            <div className="mb-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full min-w-2"></div>
-                <p className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                  {job.candidateCount} Candidates
-                </p>
+            <div className="mb-5 space-y-4">
+              {/* Candidates Count */}
+              <div className="flex items-center gap-2.5 text-sm">
+                <div className="h-4 w-4 flex items-center justify-center">
+                  <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full"></div>
+                </div>
+                <div className="flex flex-col min-w-0 flex-1">
+                  <span className="text-xs text-gray-500 dark:text-gray-500 uppercase tracking-wide truncate">
+                    Candidates
+                  </span>
+                  <span className="text-gray-900 dark:text-gray-100 font-semibold truncate">
+                    {job.candidateCount} applicants
+                  </span>
+                </div>
               </div>
 
               {/* Experience */}
               {(job.experience || job.experience === 0) && (
-                <div className="flex items-center gap-2 text-sm">
-                  <div className="w-2 h-2 bg-green-500 rounded-full mt-1.5 min-w-2"></div>
-                  <span className="font-semibold text-gray-700 dark:text-gray-300">
-                    Experience:
-                  </span>
-                  <span className="font-semibold text-green-700 dark:text-green-400">
-                    {job.experience} years
-                  </span>
+                <div className="flex items-center gap-2.5 text-sm">
+                  <div className="h-4 w-4 flex items-center justify-center">
+                    <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full"></div>
+                  </div>
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <span className="text-xs text-gray-500 dark:text-gray-500 uppercase tracking-wide truncate">
+                      Experience Required
+                    </span>
+                    <span className="text-gray-900 dark:text-gray-100 font-semibold truncate">
+                      {job.experience} years
+                    </span>
+                  </div>
                 </div>
               )}
 
               {/* Skills */}
               {job.skills && job.skills.length > 0 && (
-                <div className="flex items-start gap-2 text-sm">
-                  <div className="w-2 h-2 bg-indigo-500 rounded-full mt-1.5 min-w-2"></div>
-                  <span className="font-semibold text-gray-700 dark:text-gray-300">
-                    Skills:
-                  </span>
-                  <span className="font-semibold text-indigo-700 dark:text-indigo-400">
-                    {job.skills.slice(0, 3).join(", ")}
-                    {job.skills.length > 3
-                      ? ` +${job.skills.length - 3} more`
-                      : ""}
-                  </span>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="h-4 w-4 flex items-center justify-center">
+                      <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full"></div>
+                    </div>
+                    <span className="text-xs text-gray-500 dark:text-gray-500 uppercase tracking-wide font-medium truncate">
+                      Skills Required
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2 ml-6">
+                    {job.skills.slice(0, 4).map((skill, index) => (
+                      <Badge
+                        key={`${job._id}-skill-${index}-${skill}`}
+                        variant="secondary"
+                        className="text-xs px-2.5 py-1 bg-gray-100 text-gray-700 border border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 font-medium truncate max-w-full"
+                        title={skill}
+                      >
+                        {skill}
+                      </Badge>
+                    ))}
+                    {job.skills.length > 4 && (
+                      <Badge
+                        variant="secondary"
+                        className="text-xs px-2.5 py-1 bg-gray-50 text-gray-600 border border-gray-200 dark:bg-gray-900 dark:text-gray-400 dark:border-gray-700 font-medium flex-shrink-0"
+                      >
+                        +{job.skills.length - 4} more
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -239,7 +269,7 @@ const JobCard = ({
                 }
                 return field?.showOnCard;
               }).length > 0 && (
-                <div className="mb-4 space-y-3">
+                <div className="mb-5 space-y-3">
                   {Object.entries(job.customFields)
                     .filter(([key, value]) => {
                       const field = formNameObject?.fields.find(
@@ -251,57 +281,38 @@ const JobCard = ({
                       return field?.showOnCard;
                     })
                     .map(([key, value], i) => (
-                      <div key={i} className="flex items-start gap-2 text-sm ">
-                        <div className="w-2 h-2 bg-orange-500 rounded-full mt-1.5 min-w-2"></div>
-                        <span className="font-semibold text-gray-700 dark:text-gray-300">
-                          {key.split(" |||||(")[0]}:
-                        </span>
-                        {/* <span className="font-semibold text-orange-700 dark:text-orange-400">
-                          {String(value)}
-                        </span> */}
-                        {typeof value === "string" ? (
-                          <span className="font-semibold text-orange-700 dark:text-orange-400">
-                            {value}
+                      <div
+                        key={i}
+                        className="flex items-center gap-2.5 text-sm"
+                      >
+                        <div className="h-4 w-4 flex items-center justify-center">
+                          <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full"></div>
+                        </div>
+                        <div className="flex flex-col min-w-0 flex-1">
+                          <span className="text-xs text-gray-500 dark:text-gray-500 uppercase tracking-wide truncate">
+                            {key.split(" |||||(")[0]}
                           </span>
-                        ) : Array.isArray(value) && value.length > 0 ? (
-                          <AttachmentsPopover
-                            attachments={value.map((file, index) => {
-                              if (typeof file === "string") {
-                                return {
-                                  id: "",
-                                  name: "",
-                                  url: "",
-                                  type: "",
-                                  size: 0,
-                                };
-                              }
-                              return {
-                                id: `${key}-${index}-${file.name}`,
-                                name: file.name,
-                                url: file.base64 || "#",
-                                type: file.type || "unknown",
-                                size: file.size || 0,
-                              };
-                            })}
-                            onMoreClick={() => null}
-                          />
-                        ) : (
-                          ""
-                        )}
+                          <span className="text-gray-900 dark:text-gray-100 font-semibold truncate">
+                            {String(value)}
+                          </span>
+                        </div>
                       </div>
                     ))}
                 </div>
               )}
 
             {/* Footer - Created Date */}
-            <div className="text-xs text-muted-foreground mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center gap-2">
-              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
-              Created{" "}
-              {job.tracking?.createdAt
-                ? formatDistanceToNow(new Date(job.tracking.createdAt), {
-                    addSuffix: true,
-                  })
-                : "recently"}
+            <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800">
+              <div className="flex items-center justify-end">
+                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                  Created{" "}
+                  {job.tracking?.createdAt
+                    ? formatDistanceToNow(new Date(job.tracking.createdAt), {
+                        addSuffix: true,
+                      })
+                    : "recently"}
+                </span>
+              </div>
             </div>
           </div>
         )}

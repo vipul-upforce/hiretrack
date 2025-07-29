@@ -143,7 +143,7 @@ export default function RemarkInputSection({
             </div>
 
             <Button
-              variant="dark-primary"
+              variant="primary"
               onClick={() => {
                 removeFU && handleRemoveFollowUp();
                 handleAddRemark();

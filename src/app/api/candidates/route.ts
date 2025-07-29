@@ -108,6 +108,8 @@ export async function POST(request: NextRequest) {
           jobId: data.jobId,
           organizationId: organizationId,
           name: data.name,
+          email: data.email || "",
+          contact: data.contact || "",
           location: data.location,
           experience: data.experience,
           skills: data.skills,
@@ -154,7 +156,6 @@ export async function POST(request: NextRequest) {
             size: attachment.size,
           })),
           customFields: data.customFields,
-          email: data.email || "",
         };
 
         if (!Candidate) {

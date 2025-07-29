@@ -8,7 +8,6 @@ import {
 } from "@/components/ui/dialog";
 import SMTPConfigs from "./smtp-configs-dialog";
 import FileStorageOptions from "./fileStorage-dialog";
-import PortalConfigs from "./portalConfig-dialog";
 import GeminiConfigs from "./gemini";
 import MultipleOrgsConfigs from "./MultipleOrgsConfigs";
 import BackupsDialog from "./backups-dialog";
@@ -32,7 +31,6 @@ const settingComponents: Record<
 > = {
   mail: SMTPConfigs,
   fs: FileStorageOptions,
-  portal: PortalConfigs,
   gemini: GeminiConfigs,
   multipleorgs: MultipleOrgsConfigs,
   backups: BackupsDialog,

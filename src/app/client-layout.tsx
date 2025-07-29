@@ -38,7 +38,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
     if (!isHydrated) return;
 
     // Update document title
-    const title = uriOrgName || user?.organizationInfo?.name || "Hiretrack";
+    const title = uriOrgName || user?.organizationInfo?.name || "Loading...";
     document.title = title;
 
     // Update favicon

@@ -9,6 +9,7 @@ import DashboardLoader from "./components/dashboard-loader";
 import ActionItems from "@/components/actionitems";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
+import { Search } from "lucide-react";
 import { RenderTodaysInterviews } from "./components/RenderTodaysInterviews";
 import { RenderInterviewerAssignments } from "./components/RenderInterviewerAssignments";
 import { MultiSelect } from "@/components/ui/multi-select";
@@ -32,6 +33,7 @@ export interface Assignment {
   jobTitle: string;
   interviewDate: string;
   status: string;
+  contact: string;
   assignment: {
     assignedAt: string;
     time: string;
@@ -453,6 +455,7 @@ export default function DashboardPage() {
                   id: sseCandidate._id!,
                   _id: sseCandidate._id,
                   candidateName: sseCandidate.name,
+                  contact: sseCandidate.contact,
                   jobTitle: sseCandidate.jobId.title,
                   interviewDate: sseCandidate.assignment.time,
                   status: sseCandidate.status || "pending",
@@ -545,299 +548,318 @@ export default function DashboardPage() {
     }))
     ?.sort((a) => (a.label === "Me" ? -1 : 1));
   return (
-    <div
-      ref={scrollContainerRef}
-      className="space-y-6 h-screen overflow-y-auto px-4 mt-2 mb-4"
-    >
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Total Interviews</CardTitle>
+    <div className="h-screen flex flex-col overflow-hidden w-full">
+      {/* Header section with improved design */}
+      <div className="flex-shrink-0 px-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+        <Card className="border-0 shadow-none bg-transparent">
+          <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-2 py-3 px-0">
+            {/* Title */}
+            <CardTitle className="line-clamp-2 md:mr-2 text-xl font-bold">
+              All Assignments
+            </CardTitle>
+
+            {/* Right Section - Search and Controls */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3">
+              <div className="flex gap-2 items-center">
+                <Input
+                  placeholder="Search assignments..."
+                  value={searchText}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const sanitizedValue = value.replace(
+                      /[/\\*+?|{}[\]()^$]/g,
+                      ""
+                    );
+                    setSearchText(sanitizedValue);
+                  }}
+                  className="max-w-lg w-96"
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter") {
+                      applyFilter();
+                    }
+                  }}
+                />
+                <Button variant="secondary" onClick={applyFilter}>
+                  <Search className="h-4 w-4 mr-2" />
+                  Apply
+                </Button>
+                {(user?.role === "admin" || user?.role === "hr") && (
+                  <MultiSelect
+                    placeholder="Assigned to"
+                    open={open}
+                    setOpen={setOpen}
+                    value={selectedAssignedTo}
+                    setValue={setSelectedAssignedTo}
+                    options={options}
+                  />
+                )}
+              </div>
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold flex justify-start">
-              {isLoading ? (
-                <LoadingSpinner />
-              ) : (
-                assignmentsCounts?.totalInterviews
-              )}
-              {/* {isLoading ? (
+        </Card>
+      </div>
+
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 min-h-0 px-4 pb-4 mt-4 space-y-6 overflow-y-auto"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Total Interviews</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold flex justify-start">
+                {isLoading ? (
+                  <LoadingSpinner />
+                ) : (
+                  assignmentsCounts?.totalInterviews
+                )}
+                {/* {isLoading ? (
                 <LoadingSpinner />
               ) : isInterviewer ? (
                 interviewerAssignments?.length
               ) : (
                 assignments?.length
               )} */}
-            </div>
-          </CardContent>
-        </Card>
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">This Week</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold flex justify-start">
-              {isLoading ? (
-                <LoadingSpinner />
-              ) : (
-                assignmentsCounts?.thisweeksInterviews
-              )}
-              {/* {isLoading ? <LoadingSpinner /> : thisWeekAssignments?.length} */}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Today</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold flex justify-start">
-              {isLoading ? (
-                <LoadingSpinner />
-              ) : (
-                assignmentsCounts?.todaysInterviews
-              )}
-              {/* {isLoading ? <LoadingSpinner /> : todayAssignments?.length} */}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Search Input and Filter Button */}
-      <div className="mt-6 flex gap-2 items-center justify-end gap-4">
-        <Input
-          placeholder="Search assignments..."
-          value={searchText}
-          onChange={(e) => {
-            const value = e.target.value;
-            const sanitizedValue = value.replace(/[/\\*+?|{}[\]()^$]/g, "");
-            setSearchText(sanitizedValue);
-          }}
-          className="max-w-md"
-          onKeyPress={(e) => {
-            if (e.key === "Enter") {
-              applyFilter();
-            }
-          }}
-        />
-        <div className="flex gap-4">
-          <Button onClick={applyFilter}>Filter</Button>
-          {(user?.role === "admin" || user?.role === "hr") && (
-            <MultiSelect
-              placeholder="Assigned to"
-              open={open}
-              setOpen={setOpen}
-              value={selectedAssignedTo}
-              setValue={setSelectedAssignedTo}
-              options={options}
-            />
-          )}
-        </div>
-      </div>
-
-      {shouldShowAssignments ? (
-        <div>
-          <h2 className="text-2xl font-bold mb-4">All Assignments</h2>
-          {isLoading ? (
-            <DashboardLoader />
-          ) : (
-            <>
-              {
-                // sseCandidates?.length > 0 ? (
-                //   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                //     {sseCandidates.map((assignment, index) => (
-                //       <div
-                //         key={assignment.id || assignment._id}
-                //         ref={
-                //           index === sseCandidates.length - 1
-                //             ? lastElementRef
-                //             : null
-                //         }
-                //       >
-                //         <ActionItems
-                //           assignment={assignment}
-                //           fetchAssignments={() => fetchAssignments(1, false)}
-                //         />
-                //       </div>
-                //     ))}
-                //   </div>
-                // ) :
-
-                assignments?.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {assignments.map((assignment, index) => (
-                      <div
-                        key={assignment.id || assignment._id}
-                        ref={
-                          index === assignments.length - 1
-                            ? lastElementRef
-                            : null
-                        }
-                      >
-                        <ActionItems
-                          assignment={
-                            sseCandidates.length > 0 &&
-                            assignment._id === sseCandidates[0]._id
-                              ? sseCandidates[0]
-                              : assignment
-                          }
-                          assignments={assignments}
-                          setAssignments={setAssignments}
-                          fetchAssignments={() => {}}
-                          // fetchAssignments={() => fetchAssignmentsNoReload()}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-lg font-semibold text-gray-500 text-center py-10 w-full flex justify-center items-center">
-                    No assignments found.
-                  </p>
-                )
-              }
-
-              {/* Loading indicator for infinite scroll */}
-              {isLoadingMore && (
-                <div className="flex justify-center items-center py-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">This Week</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold flex justify-start">
+                {isLoading ? (
                   <LoadingSpinner />
-                  <span className="ml-2 text-gray-500">
-                    Loading more assignments...
-                  </span>
-                </div>
-              )}
-            </>
-          )}
+                ) : (
+                  assignmentsCounts?.thisweeksInterviews
+                )}
+                {/* {isLoading ? <LoadingSpinner /> : thisWeekAssignments?.length} */}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Today</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold flex justify-start">
+                {isLoading ? (
+                  <LoadingSpinner />
+                ) : (
+                  assignmentsCounts?.todaysInterviews
+                )}
+                {/* {isLoading ? <LoadingSpinner /> : todayAssignments?.length} */}
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      ) : (
-        <div className="mt-6 space-y-8">
+
+        {shouldShowAssignments ? (
           <div>
-            <h2 className="text-2xl font-bold mb-4">Today's Interviews</h2>
             {isLoading ? (
               <DashboardLoader />
-            ) : todayAssignments?.length > 0 ? (
-              // <RenderTodaysInterviews
-              //   todayAssignments={
-              //     sseCandidates.length > 0
-              //       ? ([
-              //           ...sseCandidates.filter((candidate) => {
-              //             // debugger;
-              //             return (
-              //               candidate.assignment &&
-              //               typeof candidate.assignment.interviewerId ===
-              //                 "object" &&
-              //               "_id" in candidate.assignment.interviewerId &&
-              //               candidate.assignment.interviewerId._id.toString() ===
-              //                 user?.id?.toString()
-              //             );
-              //           }),
-
-              //           ...todayAssignments.filter(
-              //             (older) =>
-              //               older.assignment &&
-              //               !sseCandidates.some(
-              //                 (latest) => latest._id === older._id
-              //               )
-              //           ),
-              //         ] as (Candidate & Assignment)[])
-              //       : todayAssignments
-              //   }
-              // />
-              <RenderTodaysInterviews
-                todayAssignments={
-                  sseCandidates.length > 0
-                    ? ([
-                        ...sseCandidates.filter((candidate) => {
-                          // Check if the interview is scheduled for today
-                          const isToday =
-                            candidate.assignment?.time &&
-                            new Date(
-                              candidate.assignment.time
-                            ).toDateString() === new Date().toDateString();
-
-                          // Keep existing conditions for interviewerId
-                          return (
-                            isToday &&
-                            candidate.assignment &&
-                            typeof candidate.assignment.interviewerId ===
-                              "object" &&
-                            "_id" in candidate.assignment.interviewerId &&
-                            candidate.assignment.interviewerId._id.toString() ===
-                              user?.id?.toString()
-                          );
-                        }),
-
-                        ...todayAssignments.filter(
-                          (older) =>
-                            older.assignment &&
-                            !sseCandidates.some(
-                              (latest) => latest._id === older._id
-                            ) &&
-                            older.assignment?.time &&
-                            new Date(older.assignment.time).toDateString() ===
-                              new Date().toDateString()
-                        ),
-                      ] as (Candidate & Assignment)[])
-                    : todayAssignments.filter((assignment) => {
-                        return (
-                          assignment.assignment?.time &&
-                          new Date(
-                            assignment.assignment.time
-                          ).toDateString() === new Date().toDateString()
-                        );
-                      })
-                }
-              />
             ) : (
-              <p className="text-lg font-semibold text-gray-500 text-center py-10 w-full flex justify-center items-center">
-                No interviews scheduled for today.
-              </p>
+              <>
+                {
+                  // sseCandidates?.length > 0 ? (
+                  //   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  //     {sseCandidates.map((assignment, index) => (
+                  //       <div
+                  //         key={assignment.id || assignment._id}
+                  //         ref={
+                  //           index === sseCandidates.length - 1
+                  //             ? lastElementRef
+                  //             : null
+                  //         }
+                  //       >
+                  //         <ActionItems
+                  //           assignment={assignment}
+                  //           fetchAssignments={() => fetchAssignments(1, false)}
+                  //         />
+                  //       </div>
+                  //     ))}
+                  //   </div>
+                  // ) :
+
+                  assignments?.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {assignments.map((assignment, index) => (
+                        <div
+                          key={assignment.id || assignment._id}
+                          ref={
+                            index === assignments.length - 1
+                              ? lastElementRef
+                              : null
+                          }
+                        >
+                          <ActionItems
+                            assignment={
+                              sseCandidates.length > 0 &&
+                              assignment._id === sseCandidates[0]._id
+                                ? sseCandidates[0]
+                                : assignment
+                            }
+                            assignments={assignments}
+                            setAssignments={setAssignments}
+                            fetchAssignments={() => {}}
+                            // fetchAssignments={() => fetchAssignmentsNoReload()}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-lg font-semibold text-gray-500 text-center py-10 w-full flex justify-center items-center">
+                      No assignments found.
+                    </p>
+                  )
+                }
+
+                {/* Loading indicator for infinite scroll */}
+                {isLoadingMore && (
+                  <div className="flex justify-center items-center py-8">
+                    <LoadingSpinner />
+                    <span className="ml-2 text-gray-500">
+                      Loading more assignments...
+                    </span>
+                  </div>
+                )}
+              </>
             )}
           </div>
-
-          {isInterviewer && (
+        ) : (
+          <div className="mt-6 space-y-8">
             <div>
-              <h2 className="text-2xl font-bold mb-4">All My Assignments</h2>
+              <h2 className="text-2xl font-bold mb-4">Today's Interviews</h2>
               {isLoading ? (
                 <DashboardLoader />
-              ) : interviewerAssignments?.length > 0 ? (
-                <RenderInterviewerAssignments
-                  interviewerAssignments={
+              ) : todayAssignments?.length > 0 ? (
+                // <RenderTodaysInterviews
+                //   todayAssignments={
+                //     sseCandidates.length > 0
+                //       ? ([
+                //           ...sseCandidates.filter((candidate) => {
+                //             // debugger;
+                //             return (
+                //               candidate.assignment &&
+                //               typeof candidate.assignment.interviewerId ===
+                //                 "object" &&
+                //               "_id" in candidate.assignment.interviewerId &&
+                //               candidate.assignment.interviewerId._id.toString() ===
+                //                 user?.id?.toString()
+                //             );
+                //           }),
+
+                //           ...todayAssignments.filter(
+                //             (older) =>
+                //               older.assignment &&
+                //               !sseCandidates.some(
+                //                 (latest) => latest._id === older._id
+                //               )
+                //           ),
+                //         ] as (Candidate & Assignment)[])
+                //       : todayAssignments
+                //   }
+                // />
+                <RenderTodaysInterviews
+                  todayAssignments={
                     sseCandidates.length > 0
                       ? ([
                           ...sseCandidates.filter((candidate) => {
-                            // debugger;
+                            // Check if the interview is scheduled for today
+                            const isToday =
+                              candidate.assignment?.time &&
+                              new Date(
+                                candidate.assignment.time
+                              ).toDateString() === new Date().toDateString();
+
+                            // Keep existing conditions for interviewerId
                             return (
+                              isToday &&
                               candidate.assignment &&
                               typeof candidate.assignment.interviewerId ===
                                 "object" &&
                               "_id" in candidate.assignment.interviewerId &&
                               candidate.assignment.interviewerId._id.toString() ===
-                                user.id?.toString()
+                                user?.id?.toString()
                             );
                           }),
 
-                          ...interviewerAssignments.filter(
+                          ...todayAssignments.filter(
                             (older) =>
                               older.assignment &&
                               !sseCandidates.some(
                                 (latest) => latest._id === older._id
-                              )
+                              ) &&
+                              older.assignment?.time &&
+                              new Date(older.assignment.time).toDateString() ===
+                                new Date().toDateString()
                           ),
                         ] as (Candidate & Assignment)[])
-                      : interviewerAssignments
+                      : todayAssignments.filter((assignment) => {
+                          return (
+                            assignment.assignment?.time &&
+                            new Date(
+                              assignment.assignment.time
+                            ).toDateString() === new Date().toDateString()
+                          );
+                        })
                   }
                 />
               ) : (
                 <p className="text-lg font-semibold text-gray-500 text-center py-10 w-full flex justify-center items-center">
-                  No assignments found.
+                  No interviews scheduled for today.
                 </p>
               )}
             </div>
-          )}
-        </div>
-      )}
+
+            {isInterviewer && (
+              <div>
+                <h2 className="text-2xl font-bold mb-4">All My Assignments</h2>
+                {isLoading ? (
+                  <DashboardLoader />
+                ) : interviewerAssignments?.length > 0 ? (
+                  <RenderInterviewerAssignments
+                    interviewerAssignments={
+                      sseCandidates.length > 0
+                        ? ([
+                            ...sseCandidates.filter((candidate) => {
+                              // debugger;
+                              return (
+                                candidate.assignment &&
+                                typeof candidate.assignment.interviewerId ===
+                                  "object" &&
+                                "_id" in candidate.assignment.interviewerId &&
+                                candidate.assignment.interviewerId._id.toString() ===
+                                  user.id?.toString()
+                              );
+                            }),
+
+                            ...interviewerAssignments.filter(
+                              (older) =>
+                                older.assignment &&
+                                !sseCandidates.some(
+                                  (latest) => latest._id === older._id
+                                )
+                            ),
+                          ] as (Candidate & Assignment)[])
+                        : interviewerAssignments
+                    }
+                  />
+                ) : (
+                  <p className="text-lg font-semibold text-gray-500 text-center py-10 w-full flex justify-center items-center">
+                    No assignments found.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

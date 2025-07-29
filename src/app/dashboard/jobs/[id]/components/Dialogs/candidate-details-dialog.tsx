@@ -34,7 +34,18 @@ import { candidateDetailsFields } from "../Candidate/candidate-details-fields";
 import AddFollowUpDialog from "./add-followup-dialog";
 import ConfirmAndRemarkDialog from "./mark-as-done-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User as UserIcon, FileText, MessageSquare, Clock } from "lucide-react";
+import {
+  User as UserIcon,
+  FileText,
+  MessageSquare,
+  Clock,
+  Mail,
+  Phone,
+  Bell,
+  Edit,
+  Trash2,
+  Copy,
+} from "lucide-react";
 import { HistoryAndLogTable, LogsTable } from "../Candidate/HisotryAndLogTable";
 import ResumeEvaluationDetails from "../Candidate/ResumeEvaluationDetails";
 import { scoreColors } from "@/lib/constants";
@@ -314,15 +325,162 @@ export function CandidateDetailsDialog({
 
         <div className="flex-1 overflow-y-auto px-6 py-4">
           <TabsContent value="overview" className="space-y-6 mt-0">
-            {/* AI Assessment Scores Section */}
-            {/* <div className="space-y-4">
-              {localCandidate.scores.overall !== undefined && (
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  AI Assessment Scores
-                </h3>
+            {/* Contact Information Section */}
+            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                Contact Information
+              </h3>
+              <div className="flex flex-wrap gap-x-8 gap-y-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <UserIcon className="h-5 w-5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      Name
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                        {localCandidate.name}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0"
+                        onClick={() =>
+                          handleCandidateInfoCopy(localCandidate.name || "")
+                        }
+                        title="Copy name"
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 min-w-0">
+                  <Mail className="h-5 w-5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      Email
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                        {localCandidate.email}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0"
+                        onClick={() =>
+                          handleCandidateInfoCopy(localCandidate.email || "")
+                        }
+                        title="Copy email"
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                {localCandidate.contact && (
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Phone className="h-5 w-5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        Contact
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                          {localCandidate.contact}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0"
+                          onClick={() =>
+                            handleCandidateInfoCopy(
+                              localCandidate.contact || ""
+                            )
+                          }
+                          title="Copy contact"
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Follow-up Section */}
+            {localCandidate.followUp &&
+              localCandidate.followUp.note &&
+              user?.role !== "interviewer" && (
+                <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4 border-l-4 border-amber-400 dark:border-amber-500">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 flex-1">
+                      <Bell className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="font-semibold text-amber-800 dark:text-amber-200">
+                            Follow-up Reminder
+                          </h4>
+                          {localCandidate.followUp.date && (
+                            <span className="text-xs text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-800/50 px-2 py-1 rounded">
+                              {new Date(
+                                localCandidate.followUp.date
+                              ).toLocaleDateString()}{" "}
+                              at{" "}
+                              {new Date(
+                                localCandidate.followUp.date
+                              ).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-amber-800 dark:text-amber-200 text-sm leading-relaxed">
+                          {localCandidate.followUp.note}
+                        </p>
+                      </div>
+                    </div>
+                    {(user?.role === "admin" || user?.role === "hr") && (
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-800/30"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsAddingFollowUp(true);
+                          }}
+                          title="Edit Follow-up"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-100 dark:hover:bg-red-800/30"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveFollowUp();
+                          }}
+                          title="Remove Follow-up"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
               )}
 
-              <div className="grid grid-cols-3 gap-4">
+            {/* AI Assessment Scores Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                AI Assessment Scores
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {localCandidate.scores?.overall !== undefined &&
                   (() => {
                     const normalizedScore = Math.max(
@@ -335,12 +493,7 @@ export function CandidateDetailsDialog({
 
                     return (
                       <div
-                        style={{
-                          backgroundColor: scoreColor.bg,
-                          color: scoreColor.text,
-                          borderColor: scoreColor.border,
-                        }}
-                        className={`${scoreColor.bg} ${scoreColor.border} border rounded-lg p-4 relative`}
+                        className={`${scoreColor.border} border-2 bg-transparent rounded-lg p-4 relative`}
                       >
                         <div className="absolute top-3 right-3">
                           <svg
@@ -391,12 +544,7 @@ export function CandidateDetailsDialog({
 
                     return (
                       <div
-                        className={`${scoreColor.bg} ${scoreColor.border} border rounded-lg p-4 relative`}
-                        style={{
-                          backgroundColor: scoreColor.bg,
-                          color: scoreColor.text,
-                          borderColor: scoreColor.border,
-                        }}
+                        className={`${scoreColor.border} border-2 bg-transparent rounded-lg p-4 relative`}
                       >
                         <div className="absolute top-3 right-3">
                           <svg
@@ -447,7 +595,7 @@ export function CandidateDetailsDialog({
 
                     return (
                       <div
-                        className={`${scoreColor.bg} ${scoreColor.border} border rounded-lg p-4 relative`}
+                        className={`${scoreColor.border} border-2 bg-transparent rounded-lg p-4 relative`}
                       >
                         <div className="absolute top-3 right-3">
                           <svg
@@ -481,8 +629,7 @@ export function CandidateDetailsDialog({
                     );
                   })()}
               </div>
-            </div> */}
-            <CandidateScoreCard candidate={candidate} />
+            </div>
 
             {/* Detailed AI Evaluation */}
             <div className="space-y-4">
@@ -650,7 +797,7 @@ export function CandidateDetailsDialog({
               <div className="flex gap-2">
                 <Button
                   className={user?.role == "interviewer" ? "hidden" : ""}
-                  variant="dark-primary"
+                  variant="primary"
                   onClick={() => setIsAssigning(true)}
                 >
                   Assign To
@@ -658,7 +805,7 @@ export function CandidateDetailsDialog({
                 <Button
                   onClick={handleUnassign}
                   disabled={!localCandidate.assignment}
-                  variant="dark-outline"
+                  variant="outline"
                 >
                   Mark As Done
                 </Button>
@@ -667,7 +814,7 @@ export function CandidateDetailsDialog({
                   <Button
                     onClick={() => setIsAddingFollowUp(true)}
                     // disabled={!localCandidate.assignment}
-                    variant="dark-outline"
+                    variant="outline"
                   >
                     {localCandidate?.followUp
                       ? "Edit Follow Up"
@@ -683,7 +830,7 @@ export function CandidateDetailsDialog({
                     user?.role === "candidate" &&
                     user.email !== candidate?.email
                   }
-                  variant="dark-secondary"
+                  variant="secondary"
                   onClick={handleEditClick}
                 >
                   Edit
@@ -691,7 +838,7 @@ export function CandidateDetailsDialog({
               )}
               {!hideCloseButtons && (
                 <Button
-                  variant="dark-outline"
+                  variant="outline"
                   onClick={() => {
                     onOpenChange(false);
                     setNewRemark("");
@@ -706,10 +853,7 @@ export function CandidateDetailsDialog({
           </div>
         ) : (
           <div>
-            <Button
-              variant="dark-primary"
-              onClick={() => setIsAssigningJob(true)}
-            >
+            <Button variant="primary" onClick={() => setIsAssigningJob(true)}>
               Assign Job
             </Button>
           </div>

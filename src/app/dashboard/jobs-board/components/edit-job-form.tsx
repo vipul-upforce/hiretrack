@@ -310,6 +310,7 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
             <div>
               <AddSpecificCustomFieldButton
                 jobId={job._id}
+                jobTitle={job.title}
                 onSave={(newField) => {
                   handleAddCustomField(newField, selectedFormId?.formId || "");
                 }}

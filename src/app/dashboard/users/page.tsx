@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { UserPlus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import LoaderSkeletonUsers from "./components/loader-skeleton-users";
@@ -126,14 +127,32 @@ function UsersPage() {
   }
 
   return (
-    <div className="w-[100%] py-6 px-4 mt-2">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Users</CardTitle>
-          <Button variant="outline" onClick={() => router.push("/auth/signup")}>
-            Create User
-          </Button>
-        </CardHeader>
+    <div className="h-screen flex flex-col overflow-hidden w-full">
+      {/* Header section with improved design */}
+      <div className="flex-shrink-0 px-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+        <Card className="border-0 shadow-none bg-transparent">
+          <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-2 py-3 px-0">
+            {/* Title */}
+            <CardTitle className="line-clamp-2 md:mr-2 text-xl font-bold">
+              Users
+            </CardTitle>
+
+            {/* Right Section - Create User Button */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3">
+              <Button onClick={() => router.push("/auth/signup")}>
+                <UserPlus className="h-4 w-4 mr-2" />
+                Create User
+              </Button>
+            </div>
+          </CardHeader>
+        </Card>
+      </div>
+
+      <div className="flex-1 min-h-0 px-4 pb-4 mt-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>All Users</CardTitle>
+          </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
@@ -203,6 +222,7 @@ function UsersPage() {
           name={selectedPasswordUser.name}
         />
       )}
+      </div>
     </div>
   );
 }
