@@ -30,7 +30,7 @@ sonarcloud-check:
   script:
     - sonar-scanner
   only:
-    - master
+    - main-backup
     - merge_requests
   variables:
     SONAR_TOKEN: "$SONAR_TOKEN"
