@@ -73,6 +73,9 @@ export default function ApplyJobsContent({
   // Portal settings for styling
   const [primaryColor, setPrimaryColor] = useState<string>("#6366f1");
   const [secondaryColor, setSecondaryColor] = useState<string>("#8b5cf6");
+  const [logoUrl, setLogoUrl] = useState<string>("");
+  const [portalName, setPortalName] = useState<string>("");
+
 
   const {
     data: jobs,
@@ -91,26 +94,123 @@ export default function ApplyJobsContent({
   async function checkAllowance() {
     const urlOrgName = searchParams?.get("o") || orgName;
 
-    const data = await fetch("/api/organization");
-    if (!data.ok) {
-      return;
-    }
-    const allowance = await data?.json();
+    try {
+      // Fetch both organization data and portal settings
+      const [orgResponse, portalResponse] = await Promise.all([
+        fetch("/api/organization"),
+        fetch("/api/settings/portal")
+      ]);
 
-    if (urlOrgName) {
-      setInvalidPage(false);
-      const config = allowance?.data?.find(
-        (org: ISettings) => org?.portalConfigs?.portalName === urlOrgName
-      ).portalConfigs;
+      if (!orgResponse.ok) {
+        return;
+      }
+
+      const allowance = await orgResponse.json();
+      let portalData = null;
       
-      // Set portal colors
+      if (portalResponse.ok) {
+        portalData = await portalResponse.json();
+      }
+
+      if (urlOrgName) {
+        setInvalidPage(false);
+        const config = allowance?.data?.find(
+          (org: ISettings) => org?.portalConfigs?.portalName === urlOrgName
+        ).portalConfigs;
+        
+        // Set portal colors and branding from organization config
+        if (config?.primaryColor) {
+          setPrimaryColor(config.primaryColor);
+        }
+        if (config?.secondaryColor) {
+          setSecondaryColor(config.secondaryColor);
+        }
+        if (config?.portalLogo?.url) {
+          setLogoUrl(config.portalLogo.url);
+        }
+        if (config?.portalName) {
+          setPortalName(config.portalName);
+        }
+        
+        // Override with portal settings if available (more up-to-date)
+        if (portalData) {
+          if (portalData.primaryColor) {
+            setPrimaryColor(portalData.primaryColor);
+          }
+          if (portalData.secondaryColor) {
+            setSecondaryColor(portalData.secondaryColor);
+          }
+          if (portalData.portalLogo) {
+            const logoUrl = typeof portalData.portalLogo === 'string' 
+              ? portalData.portalLogo 
+              : portalData.portalLogo?.url;
+            if (logoUrl) {
+              setLogoUrl(logoUrl);
+            }
+          }
+          if (portalData.portalName) {
+            setPortalName(portalData.portalName);
+          }
+        }
+        
+        if (config?.portalHeader?.url && config?.portalFooter?.url) {
+          const [headerRes, footerRes] = await Promise.all([
+            fetch(config.portalHeader.url),
+            fetch(config.portalFooter.url),
+          ]);
+          const [headerHTML, footerHTML] = await Promise.all([
+            headerRes.text(),
+            footerRes.text(),
+          ]);
+
+          setLayoutState({
+            headerHTML,
+            footerHTML,
+          });
+        }
+        return;
+      }
+
+      if (allowance.allow) {
+        setInvalidPage(true);
+      }
+      const config = allowance?.data?.[0]?.portalConfigs;
+
+      // Set portal colors and branding for default org
       if (config?.primaryColor) {
         setPrimaryColor(config.primaryColor);
       }
       if (config?.secondaryColor) {
         setSecondaryColor(config.secondaryColor);
       }
-      
+      if (config?.portalLogo?.url) {
+        setLogoUrl(config.portalLogo.url);
+      }
+      if (config?.portalName) {
+        setPortalName(config.portalName);
+      }
+
+      // Override with portal settings if available (more up-to-date)
+      if (portalData) {
+        if (portalData.primaryColor) {
+          setPrimaryColor(portalData.primaryColor);
+        }
+        if (portalData.secondaryColor) {
+          setSecondaryColor(portalData.secondaryColor);
+        }
+        if (portalData.portalLogo) {
+          const logoUrl = typeof portalData.portalLogo === 'string' 
+            ? portalData.portalLogo 
+            : portalData.portalLogo?.url;
+          if (logoUrl) {
+            setLogoUrl(logoUrl);
+          }
+        }
+        if (portalData.portalName) {
+          setPortalName(portalData.portalName);
+        }
+      }
+
       if (config?.portalHeader?.url && config?.portalFooter?.url) {
         const [headerRes, footerRes] = await Promise.all([
           fetch(config.portalHeader.url),
@@ -126,42 +226,22 @@ export default function ApplyJobsContent({
           footerHTML,
         });
       }
-      return;
-    }
-
-    if (allowance.allow) {
-      setInvalidPage(true);
-    }
-    const config = allowance?.data?.[0]?.portalConfigs;
-
-    // Set portal colors for default org
-    if (config?.primaryColor) {
-      setPrimaryColor(config.primaryColor);
-    }
-    if (config?.secondaryColor) {
-      setSecondaryColor(config.secondaryColor);
-    }
-
-    if (config?.portalHeader?.url && config?.portalFooter?.url) {
-      const [headerRes, footerRes] = await Promise.all([
-        fetch(config.portalHeader.url),
-        fetch(config.portalFooter.url),
-      ]);
-      const [headerHTML, footerHTML] = await Promise.all([
-        headerRes.text(),
-        footerRes.text(),
-      ]);
-
-      setLayoutState({
-        headerHTML,
-        footerHTML,
-      });
+    } catch (error) {
+      console.error('Error fetching portal settings:', error);
     }
   }
 
   useEffect(() => {
     checkAllowance();
   }, [searchParams, orgName]);
+
+  // Set CSS variables for dynamic theming
+  useEffect(() => {
+    document.documentElement.style.setProperty('--portal-primary', primaryColor);
+    document.documentElement.style.setProperty('--portal-secondary', secondaryColor);
+    document.documentElement.style.setProperty('--portal-logo', logoUrl ? `url('${logoUrl}')` : 'none');
+    document.documentElement.style.setProperty('--portal-name', `"${portalName || 'Your Portal Name'}"`);
+  }, [primaryColor, secondaryColor, logoUrl, portalName]);
 
   const pageInit = async () => {
     // debugger;
@@ -316,7 +396,15 @@ export default function ApplyJobsContent({
                 <Input
                   type="text"
                   placeholder="Search..."
-                  className="pl-12 pr-4 py-3 border rounded-xl bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full"
+                  className="pl-12 pr-4 py-3 border rounded-xl bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 focus:ring-2 w-full transition-colors"
+                  onFocus={(e) => {
+                    e.target.style.borderColor = primaryColor;
+                    e.target.style.boxShadow = `0 0 0 2px ${primaryColor}20`;
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = 'rgb(209 213 219)';
+                    e.target.style.boxShadow = 'none';
+                  }}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyDown={(e) => {
@@ -329,7 +417,19 @@ export default function ApplyJobsContent({
               </div>
               <Button 
                 onClick={handleSearch} 
-                className="px-6 py-3 text-sm font-semibold rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+                className="px-6 py-3 text-sm font-semibold rounded-xl text-white transition-colors"
+                style={{
+                  backgroundColor: primaryColor,
+                  borderColor: primaryColor,
+                }}
+                onMouseEnter={(e) => {
+                  const target = e.target as HTMLElement;
+                  target.style.backgroundColor = secondaryColor;
+                }}
+                onMouseLeave={(e) => {
+                  const target = e.target as HTMLElement;
+                  target.style.backgroundColor = primaryColor;
+                }}
               >
                 <Search className="w-4 h-4 mr-2" />
                 Search
@@ -396,7 +496,12 @@ export default function ApplyJobsContent({
                         {job.skills.slice(0, 3).map((skill, i) => (
                           <span
                             key={i}
-                            className="px-3 py-1 text-xs font-medium rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
+                            className="px-3 py-1 text-xs font-medium rounded-full border"
+                            style={{
+                              backgroundColor: `${primaryColor}10`,
+                              color: primaryColor,
+                              borderColor: `${primaryColor}30`,
+                            }}
                           >
                             {skill}
                           </span>

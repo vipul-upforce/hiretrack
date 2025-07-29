@@ -86,14 +86,14 @@ export const BaseDialog = React.forwardRef<
           )}
         </DialogHeader>
         
-        <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 py-2">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 px-6 py-4">
           {children}
         </div>
         
         {showFooter && (primaryAction || secondaryAction || footerContent) && (
           <DialogFooter className={cn("flex-shrink-0", footerClassName)}>
             {footerContent}
-            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:gap-[var(--space-sm)] w-full sm:w-auto">
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:gap-2 w-full sm:w-auto">
               {secondaryAction && (
                 <Button
                   variant={secondaryAction.variant || "outline"}

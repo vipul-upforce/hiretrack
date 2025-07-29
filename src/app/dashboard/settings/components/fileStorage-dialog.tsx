@@ -207,14 +207,15 @@ export default function FileStorageOptions({
   if (isLoading) return <div>Loading...</div>;
 
   return (
-    <Formik
-      initialValues={initialValues}
-      validationSchema={validationSchema}
-      onSubmit={handleSubmit}
-      enableReinitialize
-    >
-      {({ values, handleChange, isSubmitting, setFieldValue }) => (
-        <Form className="space-y-4">
+    <div className="flex-1 overflow-y-auto px-6 py-4">
+      <Formik
+        initialValues={initialValues}
+        validationSchema={validationSchema}
+        onSubmit={handleSubmit}
+        enableReinitialize
+      >
+        {({ values, handleChange, isSubmitting, setFieldValue }) => (
+          <Form className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="fileStorage">Select Storage Option</Label>
             <select
@@ -478,8 +479,9 @@ export default function FileStorageOptions({
               </Tooltip>
             </TooltipProvider>
           </div>
-        </Form>
-      )}
-    </Formik>
+          </Form>
+        )}
+      </Formik>
+    </div>
   );
 }

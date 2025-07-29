@@ -79,8 +79,8 @@ export function EditUserDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
+      <DialogContent className="p-0 overflow-hidden flex flex-col">
+        <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle>Edit User</DialogTitle>
         </DialogHeader>
         <Formik
@@ -100,7 +100,7 @@ export function EditUserDialog({
             values,
             setFieldValue,
           }) => (
-            <Form className="space-y-4">
+            <Form className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
               <div>
                 <Label>Name</Label>
                 <Field
@@ -166,7 +166,7 @@ export function EditUserDialog({
                 </Label>
               </div>
 
-              <div className="flex justify-end">
+              <div className="flex justify-end border-t bg-background px-6 py-4 sticky bottom-0 z-10">
                 <Button
                   type="submit"
                   disabled={isUpdating}

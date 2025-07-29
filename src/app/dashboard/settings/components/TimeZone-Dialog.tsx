@@ -102,9 +102,10 @@ export default function TimeZoneSelect({ onClose }: { onClose: () => void }) {
     }
   };
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <div className="flex-1 overflow-y-auto px-6 py-4">Loading...</div>;
 
   return (
+    <div className="flex-1 overflow-y-auto px-6 py-4">
     <Formik<TimeZoneValues>
       initialValues={initialValues}
       validationSchema={validationSchema}
@@ -153,5 +154,6 @@ export default function TimeZoneSelect({ onClose }: { onClose: () => void }) {
         </Form>
       )}
     </Formik>
+    </div>
   );
 }

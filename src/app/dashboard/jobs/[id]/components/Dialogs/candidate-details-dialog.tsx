@@ -250,7 +250,7 @@ export function CandidateDetailsDialog({
   // console.log("TimeLine Items: ", timeLineItems);
   const validTimeLineItems = timeLineItems.filter((item) => item.title !== "");
   const header = (
-    <DialogHeader className="px-6 pt-6">
+    <DialogHeader className="px-6 pt-6 pr-12">
       {localCandidate && (
         <DetailsDialogHeader
           candidate={localCandidate}

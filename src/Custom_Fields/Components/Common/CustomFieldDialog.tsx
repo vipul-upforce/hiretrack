@@ -22,13 +22,13 @@ function CustomFieldDialog({
     <Dialog open={isOpen} onOpenChange={onClose} modal={modal}>
       <DialogContent
         size={!regular ? "2xl" : "lg"}
-        className="flex flex-col overflow-hidden p-0"
+        className="p-0 flex flex-col overflow-hidden"
         aria-describedby="custom-field-dialog-description"
       >
-        <DialogHeader className="px-6 pt-6 pb-4">
+        <DialogHeader className="px-6 py-4">
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 px-6">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 px-6 py-4">
           {children}
         </div>
       </DialogContent>

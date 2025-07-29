@@ -50,14 +50,14 @@ const AddFollowUpDialog = ({
       <DialogTrigger asChild>
         <div></div>
       </DialogTrigger>
-      <DialogContent className="w-[700px] p-6">
-        <DialogHeader>
+      <DialogContent className="w-[700px] p-0 overflow-hidden flex flex-col">
+        <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle>Create A Followup for {candidate.name}</DialogTitle>
           <DialogDescription>
             Schedule a follow-up reminder for this candidate.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           <Textarea
             placeholder="Add the note..."
             className="max-h-80 overflow-y-auto"
@@ -82,7 +82,7 @@ const AddFollowUpDialog = ({
             onChange={(date: Dayjs | null) => setNewFollowUpDate(date)}
           />
         </div>
-        <DialogFooter className="flex justify-between items-center">
+        <DialogFooter className="flex justify-between items-center border-t bg-background px-6 py-4 sticky bottom-0 z-10">
           <div className="flex-1">
             {candidate?.followUp?.note &&
               candidate?.followUp?.note.length > 0 && (

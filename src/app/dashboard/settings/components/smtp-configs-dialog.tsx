@@ -277,14 +277,15 @@ export default function SMTPConfigs({ onClose }: { onClose: () => void }) {
   ];
 
   return (
-    <Formik
-      initialValues={initialValues}
-      validationSchema={validationSchema}
-      onSubmit={handleSubmit}
-      enableReinitialize
-    >
-      {({ values, handleChange, handleBlur, handleSubmit, isSubmitting }) => (
-        <Form onSubmit={handleSubmit} className="space-y-4">
+    <div className="flex-1 overflow-y-auto px-6 py-4">
+      <Formik
+        initialValues={initialValues}
+        validationSchema={validationSchema}
+        onSubmit={handleSubmit}
+        enableReinitialize
+      >
+        {({ values, handleChange, handleBlur, handleSubmit, isSubmitting }) => (
+          <Form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="mailProvider">Mail Provider</Label>
             <select
@@ -401,8 +402,9 @@ export default function SMTPConfigs({ onClose }: { onClose: () => void }) {
               </Tooltip>
             </TooltipProvider>
           </div>
-        </Form>
-      )}
-    </Formik>
+          </Form>
+        )}
+      </Formik>
+    </div>
   );
 }

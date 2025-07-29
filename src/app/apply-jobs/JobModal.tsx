@@ -172,8 +172,11 @@ export default function JobModal({
                     {job.skills.map((skill: string, i: number) => (
                       <span
                         key={i}
-                        className="inline-flex items-center px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-sm font-medium rounded-full"
+                        className="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full border"
                         style={{
+                          backgroundColor: `${primaryColor}10`,
+                          color: primaryColor,
+                          borderColor: `${primaryColor}30`,
                           wordBreak: "break-word",
                           overflowWrap: "break-word",
                         }}
@@ -193,8 +196,16 @@ export default function JobModal({
                     {/* Experience */}
                     <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                          <Briefcase className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        <div 
+                          className="p-2 rounded-lg"
+                          style={{
+                            backgroundColor: `${primaryColor}15`,
+                          }}
+                        >
+                          <Briefcase 
+                            className="w-5 h-5"
+                            style={{ color: primaryColor }}
+                          />
                         </div>
                         <div>
                           <p className="text-sm text-gray-600 dark:text-gray-400">Experience</p>
@@ -209,8 +220,16 @@ export default function JobModal({
                     {(job as JobWithSalary)?.salary && (
                       <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
                         <div className="flex items-center gap-3">
-                          <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-                            <span className="text-lg font-bold text-green-600 dark:text-green-400">₹</span>
+                          <div 
+                            className="p-2 rounded-lg flex items-center justify-center"
+                            style={{
+                              backgroundColor: `${secondaryColor}15`,
+                            }}
+                          >
+                            <span 
+                              className="text-lg font-bold"
+                              style={{ color: secondaryColor }}
+                            >₹</span>
                           </div>
                           <div>
                             <p className="text-sm text-gray-600 dark:text-gray-400">Salary</p>
@@ -246,7 +265,13 @@ export default function JobModal({
                   {/* Close button - hidden on mobile, visible on desktop */}
                   <button
                     type="button"
-                    className="hidden sm:inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                    className="hidden sm:inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 transition-colors"
+                    onFocus={(e) => {
+                      e.target.style.boxShadow = `0 0 0 2px ${primaryColor}20`;
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.boxShadow = 'none';
+                    }}
                     onClick={onClose}
                   >
                     Close
@@ -257,11 +282,30 @@ export default function JobModal({
                     <button
                       onClick={handleContinue}
                       disabled={alreadyApplied || readOnly}
-                      className={`flex items-center justify-center w-full sm:w-auto px-8 py-3 text-sm font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+                      className={`flex items-center justify-center w-full sm:w-auto px-8 py-3 text-sm font-semibold rounded-lg focus:outline-none focus:ring-2 transition-colors ${
                         alreadyApplied || readOnly
                           ? "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 cursor-not-allowed"
-                          : "bg-blue-600 hover:bg-blue-700 text-white"
+                          : "text-white"
                       }`}
+                      style={
+                        alreadyApplied || readOnly
+                          ? {}
+                          : ({
+                              backgroundColor: primaryColor,
+                            } as React.CSSProperties)
+                      }
+                      onMouseEnter={(e) => {
+                        if (!alreadyApplied && !readOnly) {
+                          const target = e.target as HTMLElement;
+                          target.style.backgroundColor = secondaryColor;
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!alreadyApplied && !readOnly) {
+                          const target = e.target as HTMLElement;
+                          target.style.backgroundColor = primaryColor;
+                        }
+                      }}
                     >
                       {alreadyApplied ? (
                         <>

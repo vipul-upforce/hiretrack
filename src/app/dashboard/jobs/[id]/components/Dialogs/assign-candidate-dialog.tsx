@@ -99,7 +99,7 @@ export function AssignCandidateDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent size="lg" className="p-0 overflow-hidden flex flex-col justify-start">
+      <DialogContent size="lg" className="overflow-hidden flex flex-col justify-start">
         <DialogHeader>
           <DialogTitle>
             Assign Candidate
@@ -115,8 +115,8 @@ export function AssignCandidateDialog({
           enableReinitialize
         >
           {({ values, errors, touched, isSubmitting, setFieldValue }) => (
-            <Form className="flex-1 flex flex-col h-full overflow-y-scroll">
-              <div className="flex-1 overflow-y-auto px-6 py-4 pt-0 space-y-6">
+            <Form className="flex-1 flex flex-col h-full overflow-hidden">
+              <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
                 <div className="grid gap-4 py-4">
                   <div className="grid gap-2">
                     <Label htmlFor="interviewerId">Assign To</Label>
@@ -223,7 +223,7 @@ export function AssignCandidateDialog({
                 </div>
               </div>
 
-              <div className="flex relative bottom-0 justify-between w-full space-x-2 border-t bg-background px-6 py-4">
+              <div className="flex relative bottom-0 justify-between w-full space-x-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10">
                 <div>
                   {candidate.assignment && (
                     <Button

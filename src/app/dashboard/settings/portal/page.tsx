@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Upload, X, Palette, Eye, Save, RefreshCw, Moon, Sun, ArrowLeft, Code, Star, Settings, Image as ImageIcon, PaintBucket, FileCode, Home, ChevronRight } from "lucide-react";
+import { Upload, X, Palette, Eye, Save, RefreshCw, Moon, Sun, ArrowLeft, Code, Star, Settings, Image as ImageIcon, PaintBucket, FileCode, Home, ChevronRight, Expand, Minimize2 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useTheme } from "@/components/theme-provider";
@@ -111,6 +111,8 @@ export default function PortalConfigurationPage() {
   const [previewTheme, setPreviewTheme] = useState<"light" | "dark">("light");
   const [headerHtml, setHeaderHtml] = useState<string>("");
   const [footerHtml, setFooterHtml] = useState<string>("");
+  const [isHeaderExpanded, setIsHeaderExpanded] = useState<boolean>(false);
+  const [isFooterExpanded, setIsFooterExpanded] = useState<boolean>(false);
 
   useEffect(() => {
     fetchSettings();
@@ -154,9 +156,9 @@ export default function PortalConfigurationPage() {
   };
 
   const handleFileUpload = async (file: File, type: keyof PortalSettings) => {
-    // Validate favicon size
-    if (type === "portalFavicon" && (file.width > 32 || file.height > 32)) {
-      toast.error("Favicon must be 32x32 pixels or smaller");
+    // Validate favicon size (check file size instead of dimensions)
+    if (type === "portalFavicon" && file.size > 50000) { // 50KB limit for favicon
+      toast.error("Favicon must be smaller than 50KB");
       return;
     }
 
@@ -570,30 +572,72 @@ export default function PortalConfigurationPage() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="headerHtml">HTML Code</Label>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setHeaderHtml(`<!-- Custom Portal Header -->
-<div style="background: linear-gradient(135deg, var(--portal-primary, ${settings.primaryColor}), var(--portal-secondary, ${settings.secondaryColor})); padding: 1rem; color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-  <div style="display: flex; align-items: center; justify-content: space-between; max-width: 1200px; margin: 0 auto;">
-    <div style="display: flex; align-items: center; gap: 1rem;">
-      <h1 style="margin: 0; font-size: 1.5rem; font-weight: 600;">${settings.portalName || 'Your Portal Name'}</h1>
-    </div>
-    <nav style="display: flex; gap: 1.5rem;">
-      <a href="#jobs" style="color: white; text-decoration: none; padding: 0.5rem 1rem; border-radius: 0.375rem; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'" onmouseout="this.style.backgroundColor='transparent'">Jobs</a>
-      <a href="#about" style="color: white; text-decoration: none; padding: 0.5rem 1rem; border-radius: 0.375rem; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'" onmouseout="this.style.backgroundColor='transparent'">About</a>
-      <a href="#contact" style="color: white; text-decoration: none; padding: 0.5rem 1rem; border-radius: 0.375rem; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'" onmouseout="this.style.backgroundColor='transparent'">Contact</a>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setHeaderHtml(`<style>
+  .portal-header {
+    background: linear-gradient(135deg, var(--portal-primary, #6366f1), var(--portal-secondary, #8b5cf6));
+    padding: 1rem 2rem;
+    color: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  .portal-header-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .portal-header-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+  .portal-header-nav {
+    display: flex;
+    gap: 1rem;
+  }
+  .portal-header-link {
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    transition: background-color 0.2s ease;
+    font-weight: 500;
+  }
+  .portal-header-link:hover {
+    background-color: rgba(255,255,255,0.15);
+  }
+</style>
+<div class="portal-header">
+  <div class="portal-header-container">
+    <h1 class="portal-header-title">Your Company</h1>
+    <nav class="portal-header-nav">
+      <a href="#jobs" class="portal-header-link">Open Positions</a>
+      <a href="#about" class="portal-header-link">About Us</a>
+      <a href="#contact" class="portal-header-link">Contact</a>
     </nav>
   </div>
 </div>`)}
-                      >
-                        Insert Example
-                      </Button>
+                        >
+                          Insert Example
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setIsHeaderExpanded(!isHeaderExpanded)}
+                        >
+                          {isHeaderExpanded ? <Minimize2 className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
+                        </Button>
+                      </div>
                     </div>
                     <div className="border rounded-lg overflow-hidden">
                       <Editor
-                        height="300px"
+                        height={isHeaderExpanded ? "600px" : "200px"}
                         language="html"
                         theme={theme === "dark" ? "vs-dark" : "vs"}
                         value={headerHtml}
@@ -628,44 +672,74 @@ export default function PortalConfigurationPage() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="footerHtml">HTML Code</Label>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setFooterHtml(`<!-- Custom Portal Footer -->
-<div style="background: var(--portal-primary, ${settings.primaryColor}); color: white; padding: 2rem 1rem; margin-top: 2rem;">
-  <div style="max-width: 1200px; margin: 0 auto;">
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; margin-bottom: 2rem;">
-      <div>
-        <h3 style="margin: 0 0 1rem 0; font-size: 1.125rem; font-weight: 600;">${settings.portalName || 'Your Company'}</h3>
-        <p style="margin: 0; opacity: 0.9; line-height: 1.5;">Building the future of work through innovative recruitment solutions.</p>
-      </div>
-      <div>
-        <h4 style="margin: 0 0 1rem 0; font-weight: 600;">Quick Links</h4>
-        <ul style="margin: 0; padding: 0; list-style: none;">
-          <li style="margin-bottom: 0.5rem;"><a href="#jobs" style="color: white; text-decoration: none; opacity: 0.9;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.9'">Open Positions</a></li>
-          <li style="margin-bottom: 0.5rem;"><a href="#about" style="color: white; text-decoration: none; opacity: 0.9;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.9'">About Us</a></li>
-          <li style="margin-bottom: 0.5rem;"><a href="#contact" style="color: white; text-decoration: none; opacity: 0.9;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.9'">Contact</a></li>
-        </ul>
-      </div>
-      <div>
-        <h4 style="margin: 0 0 1rem 0; font-weight: 600;">Contact Info</h4>
-        <p style="margin: 0 0 0.5rem 0; opacity: 0.9;">careers@company.com</p>
-        <p style="margin: 0; opacity: 0.9;">+1 (555) 123-4567</p>
-      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setFooterHtml(`<style>
+  .portal-footer {
+    background: linear-gradient(135deg, var(--portal-primary, #6366f1), var(--portal-secondary, #8b5cf6));
+    color: white;
+    padding: 2rem;
+    margin-top: 2rem;
+    text-align: center;
+  }
+  .portal-footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .portal-footer h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+  .portal-footer p {
+    margin: 0;
+    opacity: 0.9;
+  }
+  .portal-footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin: 1.5rem 0;
+  }
+  .portal-footer-link {
+    color: white;
+    text-decoration: none;
+    transition: opacity 0.2s ease;
+  }
+  .portal-footer-link:hover {
+    opacity: 0.8;
+  }
+</style>
+<div class="portal-footer">
+  <div class="portal-footer-container">
+    <h3>Your Company</h3>
+    <div class="portal-footer-links">
+      <a href="#" class="portal-footer-link">Privacy Policy</a>
+      <a href="#" class="portal-footer-link">Terms of Service</a>
+      <a href="#" class="portal-footer-link">Contact Us</a>
     </div>
-    <div style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 1rem; text-align: center;">
-      <p style="margin: 0; opacity: 0.8; font-size: 0.875rem;">&copy; 2024 ${settings.portalName || 'Your Company'}. All rights reserved.</p>
-    </div>
+    <p>&copy; 2024 Your Company. All rights reserved.</p>
   </div>
 </div>`)}
-                      >
-                        Insert Example
-                      </Button>
+                        >
+                          Insert Example
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setIsFooterExpanded(!isFooterExpanded)}
+                        >
+                          {isFooterExpanded ? <Minimize2 className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
+                        </Button>
+                      </div>
                     </div>
                     <div className="border rounded-lg overflow-hidden">
                       <Editor
-                        height="300px"
+                        height={isFooterExpanded ? "600px" : "200px"}
                         language="html"
                         theme={theme === "dark" ? "vs-dark" : "vs"}
                         value={footerHtml}

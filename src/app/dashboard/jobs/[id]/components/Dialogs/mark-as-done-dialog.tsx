@@ -62,12 +62,12 @@ const ConfirmAndRemarkDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent size="lg">
-        <DialogHeader>
+      <DialogContent className="overflow-hidden flex flex-col" size="lg">
+        <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle>{title}</DialogTitle>
           {message && <DialogDescription>{message}</DialogDescription>}
         </DialogHeader>
-        <div className="space-y-4 py-4 pt-0">
+        <div className="flex-1 overflow-y-auto px-6 py-4">
           <div>
             <Label htmlFor="remark-textarea">Remark</Label>
             <Textarea
@@ -88,7 +88,7 @@ const ConfirmAndRemarkDialog = ({
             />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="px-6 py-4">
           <Button
             variant="outline"
             onClick={handleCancel}

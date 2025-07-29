@@ -71,15 +71,15 @@ const SettingDialog = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className={`${
+        className={`overflow-hidden flex flex-col ${
           setting.key === "portal" ||
           setting.key === "templates" ||
           setting.key === "logs"
-            ? "max-w-7xl w-[90vw] min-h-[95vh] flex flex-col p-4"
+            ? "max-w-7xl w-[90vw] min-h-[95vh]"
             : ""
         }`}
       >
-        <DialogHeader>
+        <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle>{setting.title}</DialogTitle>
           <DialogDescription>{setting.description}</DialogDescription>
         </DialogHeader>
@@ -87,7 +87,9 @@ const SettingDialog = ({
         {ComponentToRender && setting.key !== "tags" ? (
           <ComponentToRender onClose={onClose} isOpen={isOpen} />
         ) : (
-          <p>No settings available for this option.</p>
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            <p>No settings available for this option.</p>
+          </div>
         )}
       </DialogContent>
     </Dialog>
