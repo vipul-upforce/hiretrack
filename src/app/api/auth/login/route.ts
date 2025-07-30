@@ -1,13 +1,13 @@
 import { NextResponse, NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
 import dbConnect, { CandidateAccount, Settings } from "@/lib/mongodb";
-import { signToken } from "@/lib/jwt";
 import { User, Organization } from "@/lib/mongodb";
 import { OneOfMulOrganization } from "@/components/auth/OrganizationDialog";
 import { IUser } from "@/lib/models/user";
 import { IUCandidateAccount } from "@/lib/models/candidateAccount";
 import { setSecureAuthTokens } from "@/lib/secureTokens";
 import { loginRateLimiter } from "@/lib/rateLimiter";
+import { signToken } from "@/app/actions/auth";
 
 async function handleLogin(req: NextRequest) {
   try {
@@ -480,7 +480,7 @@ const checkMultipleOrgs = async (
 };
 
 const returnTokenBasedResponse = async (obj: unknown) => {
-  const token = signToken(obj);
+  const token = await signToken(obj);
 
   const response = NextResponse.json({
     message: "Logged In Successfully",
