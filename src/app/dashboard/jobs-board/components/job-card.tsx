@@ -14,6 +14,7 @@ import {
   MoreHorizontal,
   Edit,
   AlertTriangle,
+  BarChart3,
 } from "lucide-react";
 import {
   Tooltip,
@@ -33,6 +34,10 @@ import ConfirmationDialog from "../../jobs/[id]/components/Dialogs/ConfirmationD
 import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
 import CustomFieldBadge from "../../jobs/[id]/components/Candidate/CustomFieldBadge";
 import { formatDistanceToNow } from "date-fns";
+import { JobAnalyticsModal } from "./JobAnalyticsModal";
+import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import Cookies from "js-cookie";
+import { useEffect } from "react";
 
 interface JobCardProps {
   job: Job;
@@ -54,8 +59,29 @@ const JobCard = ({
   setDuplicate,
 }: JobCardProps) => {
   const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
+  const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
+  const [organizationId, setOrganizationId] = useState<string>("");
   const { formNameObject } = useCustomForm("Job Position");
   const router = useRouter();
+
+  // Get user's organization ID
+  useEffect(() => {
+    const getUserOrganization = async () => {
+      try {
+        const token = Cookies.get("token");
+        if (token) {
+          const decryptedResponse = await verifyAndDecryptJWTToken(token);
+          if (decryptedResponse.success && decryptedResponse.user) {
+            setOrganizationId(decryptedResponse.user.organizationId);
+          }
+        }
+      } catch (error) {
+        console.error("Error getting user organization:", error);
+      }
+    };
+    
+    getUserOrganization();
+  }, []);
 
 
   return (
@@ -92,6 +118,28 @@ const JobCard = ({
                   </TooltipProvider>
                 )}
 
+                {/* Analytics Icon */}
+                <TooltipProvider>
+                  <Tooltip delayDuration={0}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-gray-600 hover:text-gray-900 hover:bg-gray-200 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsAnalyticsOpen(true);
+                        }}
+                      >
+                        <BarChart3 className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-popover border border-border text-popover-foreground">
+                      <p>View Analytics</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
                 {/* Layout Icon for Opening Job Board */}
                 <Button
                   variant="ghost"
@@ -126,6 +174,15 @@ const JobCard = ({
                     >
                       <Layout className="h-4 w-4 mr-2" />
                       Open Board
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsAnalyticsOpen(true);
+                      }}
+                    >
+                      <BarChart3 className="h-4 w-4 mr-2" />
+                      View Analytics
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={(e) => {
@@ -319,6 +376,15 @@ const JobCard = ({
           }}
           onCancel={() => setIsDuplicateDialogOpen(false)}
           className="sm:max-w-[300px]"
+        />
+      )}
+
+      {isAnalyticsOpen && organizationId && (
+        <JobAnalyticsModal
+          isOpen={isAnalyticsOpen}
+          onClose={() => setIsAnalyticsOpen(false)}
+          job={job}
+          organizationId={organizationId}
         />
       )}
     </>
