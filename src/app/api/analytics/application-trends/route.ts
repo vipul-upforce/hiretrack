@@ -168,7 +168,10 @@ export async function GET(request: NextRequest) {
         },
       ];
 
-      const results = await Candidate.collection.aggregate(pipeline).toArray();
+      const results = await Candidate.collection.aggregate(pipeline, {
+        maxTimeMS: 15000, // 15 second timeout
+        allowDiskUse: false // Use memory only for better performance
+      }).toArray();
 
       // Process results to create trend data with additional analytics
       const trendData: TrendData[] = [];
@@ -289,6 +292,22 @@ export async function GET(request: NextRequest) {
 
     } catch (error) {
       console.error("Application trends analytics error:", error);
+      
+      // Handle specific error types with better messages
+      if (error.message?.includes('timeout') || error.message?.includes('maxTimeMS')) {
+        return createAnalyticsErrorResponse(
+          "Query timeout - please try a smaller date range or change granularity",
+          408
+        );
+      }
+      
+      if (error.message?.includes('memory')) {
+        return createAnalyticsErrorResponse(
+          "Dataset too large - please use weekly or monthly granularity", 
+          413
+        );
+      }
+      
       return createAnalyticsErrorResponse(
         "Failed to generate application trends analytics",
         500

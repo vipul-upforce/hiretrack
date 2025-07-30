@@ -20,76 +20,28 @@ export async function GET(request: NextRequest) {
 
       const { organizationId, dateRange, filters } = parseAnalyticsRequest(req);
 
-      // First, let's check if we have any jobs for this organization
-      // Handle both string and ObjectId organizationId formats
-      let orgIdAsObjectId;
+      // Handle both string and ObjectId organizationId formats for jobs collection
+      // Jobs use ObjectId, so we need to convert string organizationId to ObjectId
+      let jobsOrgId;
       try {
-        orgIdAsObjectId = new ObjectId(user.organizationId);
+        jobsOrgId = new ObjectId(user.organizationId);
       } catch (e) {
-        orgIdAsObjectId = null;
+        // If conversion fails, use string (fallback)
+        jobsOrgId = user.organizationId;
       }
       
       const orgIdQuery = {
-        $or: [
-          { organizationId: user.organizationId },
-          ...(orgIdAsObjectId ? [{ organizationId: orgIdAsObjectId }] : [])
-        ],
+        organizationId: jobsOrgId, // Jobs collection uses ObjectId
         isDeleted: { $ne: true },
       };
       
       const jobCount = await Job.countDocuments(orgIdQuery);
       
-      console.log("Job Performance - Job count for org:", jobCount);
-      console.log("Job Performance - User org ID:", user.organizationId);
-      console.log("Job Performance - User org ID type:", typeof user.organizationId);
-      console.log("Job Performance - Date range:", dateRange);
-      
-      // Let's also check total jobs in database (for debugging)
-      const totalJobsInDB = await Job.countDocuments({ isDeleted: { $ne: true } });
-      console.log("Job Performance - Total jobs in database:", totalJobsInDB);
-      
-      // Check for jobs with different organizationId formats
-      const jobsWithStringOrgId = await Job.countDocuments({
-        organizationId: { $type: "string" },
-        isDeleted: { $ne: true },
-      });
-      const jobsWithObjectIdOrgId = await Job.countDocuments({
-        organizationId: { $type: "objectId" },
-        isDeleted: { $ne: true },
-      });
-      console.log("Job Performance - Jobs with string orgId:", jobsWithStringOrgId);
-      console.log("Job Performance - Jobs with ObjectId orgId:", jobsWithObjectIdOrgId);
-      
-      // Also check if date range is too restrictive
-      const jobCountWithoutDateFilter = await Job.countDocuments({
-        $or: [
-          { organizationId: user.organizationId },
-          ...(orgIdAsObjectId ? [{ organizationId: orgIdAsObjectId }] : [])
-        ],
-        isDeleted: { $ne: true },
-      });
-      console.log("Job Performance - Job count without date filter:", jobCountWithoutDateFilter);
-      
-      // Also check candidate count
-      const candidateCount = await Candidate.countDocuments({
-        organizationId: user.organizationId,
-        isDeleted: { $ne: true },
-      });
-      
-      console.log("Job Performance - Candidate count for org:", candidateCount);
-      
-      // Let's also check a sample job to see its structure
-      const sampleJob = await Job.findOne({
-        organizationId: user.organizationId,
-        isDeleted: { $ne: true },
-      });
-      
-      console.log("Job Performance - Sample job:", sampleJob ? {
-        id: sampleJob._id,
-        title: sampleJob.title,
-        organizationId: sampleJob.organizationId,
-        tracking: sampleJob.tracking
-      } : "No jobs found");
+      // Minimal logging for production
+      if (process.env.NODE_ENV === 'development') {
+        console.log("Job Performance - Job count for org:", jobCount);
+        console.log("Job Performance - User org ID:", user.organizationId);
+      }
       
       if (jobCount === 0) {
         // Return empty data if no jobs
@@ -131,17 +83,13 @@ export async function GET(request: NextRequest) {
         // Match organization and date range
         {
           $match: {
-            $or: [
-              { organizationId: user.organizationId },
-              ...(orgIdAsObjectId ? [{ organizationId: orgIdAsObjectId }] : [])
-            ],
-            // Temporarily disable date range filter for debugging
-            // ...(dateRange && {
-            //   "tracking.createdAt": {
-            //     $gte: dateRange.start,
-            //     $lte: dateRange.end,
-            //   },
-            // }),
+            organizationId: jobsOrgId, // Use the properly typed organizationId
+            ...(dateRange && {
+              "tracking.createdAt": {
+                $gte: dateRange.start,
+                $lte: dateRange.end,
+              },
+            }),
             ...(filters?.jobIds?.length && {
               _id: { $in: filters.jobIds },
             }),
@@ -281,13 +229,14 @@ export async function GET(request: NextRequest) {
         },
       ];
 
-      const results = await Job.collection.aggregate(pipeline).toArray();
+      const results = await Job.collection.aggregate(pipeline, {
+        maxTimeMS: 15000, // 15 second timeout
+        allowDiskUse: false // Use memory only for better performance
+      }).toArray();
       
-      console.log("Job Performance - Aggregation results count:", results.length);
-      if (results.length > 0) {
-        console.log("Job Performance - Sample result:", JSON.stringify(results[0], null, 2));
-      } else {
-        console.log("Job Performance - No aggregation results");
+      // Development logging only
+      if (process.env.NODE_ENV === 'development') {
+        console.log("Job Performance - Aggregation results count:", results.length);
       }
 
       // Process results to create job performance data
@@ -335,20 +284,14 @@ export async function GET(request: NextRequest) {
       
       // For published/unpublished breakdown, we need to query the database again
       const publishedJobs = await Job.countDocuments({
-        $or: [
-          { organizationId: user.organizationId },
-          ...(orgIdAsObjectId ? [{ organizationId: orgIdAsObjectId }] : [])
-        ],
+        organizationId: jobsOrgId,
         status: 'open',
         isPublished: true,
         isDeleted: { $ne: true },
       });
       
       const unpublishedJobs = await Job.countDocuments({
-        $or: [
-          { organizationId: user.organizationId },
-          ...(orgIdAsObjectId ? [{ organizationId: orgIdAsObjectId }] : [])
-        ],
+        organizationId: jobsOrgId,
         status: 'open',
         $or: [
           { isPublished: false },
@@ -409,6 +352,22 @@ export async function GET(request: NextRequest) {
 
     } catch (error) {
       console.error("Job performance analytics error:", error);
+      
+      // Handle specific error types with better messages
+      if (error.message?.includes('timeout') || error.message?.includes('maxTimeMS')) {
+        return createAnalyticsErrorResponse(
+          "Query timeout - please try a smaller date range or reduce filters",
+          408
+        );
+      }
+      
+      if (error.message?.includes('memory')) {
+        return createAnalyticsErrorResponse(
+          "Dataset too large - please add filters to reduce data size", 
+          413
+        );
+      }
+      
       return createAnalyticsErrorResponse(
         "Failed to generate job performance analytics",
         500

@@ -274,9 +274,15 @@ export async function GET(request: NextRequest) {
 
       let results;
       try {
-        results = await Candidate.collection.aggregate(pipeline).toArray();
+        results = await Candidate.collection.aggregate(pipeline, {
+          maxTimeMS: 15000, // 15 second timeout
+          allowDiskUse: false // Use memory only for better performance
+        }).toArray();
       } catch (aggregationError) {
         console.error("Interview assignments - Aggregation failed:", aggregationError);
+        if (aggregationError.message?.includes('timeout')) {
+          throw new Error('Query timeout - please try a smaller date range or add more filters');
+        }
         throw new Error(`Aggregation failed: ${aggregationError.message}`);
       }
 

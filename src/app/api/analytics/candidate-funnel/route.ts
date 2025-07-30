@@ -90,7 +90,10 @@ export async function GET(request: NextRequest) {
         },
       ];
 
-      const results = await Candidate.collection.aggregate(pipeline).toArray();
+      const results = await Candidate.collection.aggregate(pipeline, {
+        maxTimeMS: 15000, // 15 second timeout
+        allowDiskUse: false // Use memory only for better performance
+      }).toArray();
       console.log("Candidate funnel aggregation results:", results.length, results);
 
       // Process results to create funnel data with conversion rates
@@ -182,6 +185,22 @@ export async function GET(request: NextRequest) {
 
     } catch (error) {
       console.error("Candidate funnel analytics error:", error);
+      
+      // Handle specific error types with better messages
+      if (error.message?.includes('timeout') || error.message?.includes('maxTimeMS')) {
+        return createAnalyticsErrorResponse(
+          "Query timeout - please try a smaller date range or add job filters",
+          408
+        );
+      }
+      
+      if (error.message?.includes('memory')) {
+        return createAnalyticsErrorResponse(
+          "Dataset too large - please add filters to reduce data size", 
+          413
+        );
+      }
+      
       return createAnalyticsErrorResponse(
         "Failed to generate candidate funnel analytics",
         500

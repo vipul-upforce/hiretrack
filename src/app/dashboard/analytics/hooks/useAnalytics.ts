@@ -113,18 +113,31 @@ export function useAnalytics<T = any>({
       const queryParams = buildQueryParams();
       const url = `/api/analytics/${endpoint}${queryParams ? `?${queryParams}` : ""}`;
       
+      // Create abort controller for timeout handling
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
+      
       const response = await fetch(url, {
         method: "GET",
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         // For authentication errors, don't retry
         if (response.status === 401 || response.status === 403) {
           throw new Error(`Access denied: Please check your permissions`);
+        }
+        if (response.status === 408 || response.status === 504) {
+          throw new Error('Request timed out. Please try a smaller date range or add filters.');
+        }
+        if (response.status === 429) {
+          throw new Error('Too many requests. Please wait a moment and try again.');
         }
         throw new Error(`Analytics API error: ${response.status} ${response.statusText}`);
       }
@@ -139,12 +152,26 @@ export function useAnalytics<T = any>({
       setLastFetch(new Date());
       setRetryCount(0); // Reset retry count on success
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Unknown error occurred";
+      let errorMessage = "Unknown error occurred";
+      
+      if (err instanceof Error) {
+        if (err.name === 'AbortError') {
+          errorMessage = 'Request timed out. Please try a smaller date range or add filters.';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
       setError(errorMessage);
       console.error("Analytics fetch error:", err);
       
-      // Only increment retry count for retriable errors (not auth errors)
-      if (isRetry && !errorMessage.includes("Access denied")) {
+      // Only increment retry count for retriable errors (not auth errors or timeouts)
+      const shouldRetry = isRetry && 
+                         !errorMessage.includes("Access denied") &&
+                         !errorMessage.includes("timeout") &&
+                         !errorMessage.includes("timed out");
+      
+      if (shouldRetry) {
         setRetryCount(prev => prev + 1);
       }
     } finally {
