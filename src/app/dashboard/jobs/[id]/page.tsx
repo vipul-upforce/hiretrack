@@ -16,7 +16,7 @@ import { useFetchJobByIdQuery } from "@/lib/features/job/jobApi";
 import { useFetchCandidatesQuery } from "@/lib/features/candidate/candidateApi";
 import { Candidate, CandidateColumn, CandidateStatus } from "@/types/candidate";
 import LoaderSkeleton from "./components/Lanes/loader-skeleton";
-import { useGetLanesQuery } from "@/lib/features/lane/laneApi";
+import { useGetLanesQuery, useGetJobLanesQuery } from "@/lib/features/lane/laneApi";
 import { User } from "@/lib/features/users/usersApi";
 import Cookies from "js-cookie";
 import { Breadcrumb } from "./components/Utils/breadcrumb";
@@ -88,10 +88,19 @@ export default function JobProgressPage() {
     isLoading: isCandidatesLoading,
     refetch,
   } = useFetchCandidatesQuery(id as string);
-  const { data: lanes, isLoading: isLanesLoading } = useGetLanesQuery(
-    user?.id || undefined,
-    { skip: !user?.id }
+  // NEW: Use job-specific lanes with fallback to user lanes
+  const { data: jobLanes, isLoading: isJobLanesLoading, error: jobLanesError } = useGetJobLanesQuery(
+    id as string,
+    { skip: !id }
   );
+  const { data: userLanes, isLoading: isUserLanesLoading } = useGetLanesQuery(
+    { userId: user?.id, jobId: id as string },
+    { skip: !user?.id || !id }
+  );
+
+  // Use job-specific lanes if available, fallback to user lanes
+  const lanes = jobLanes || userLanes;
+  const isLanesLoading = isJobLanesLoading || isUserLanesLoading;
   const [droppedFileData, setDroppedFileData] = useState<File | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLaneEditOpen, setIsLaneEditOpen] = useState(false);
@@ -110,6 +119,7 @@ export default function JobProgressPage() {
     columns,
     setColumns,
     user,
+    jobId: id, // NEW: Pass jobId for job-specific operations
     setIsConfirmLaneDeleteOpen,
     setIsLaneEditOpen,
     refetch,
@@ -196,7 +206,17 @@ export default function JobProgressPage() {
         }
       });
 
-      const lanesArray = updatedLanes || [...lanes.lanes];
+      // Handle different lane data structures
+      let lanesArray;
+      if (updatedLanes) {
+        lanesArray = updatedLanes;
+      } else if (jobLanes?.lanes) {
+        lanesArray = [...jobLanes.lanes];
+      } else if (userLanes?.lanes) {
+        lanesArray = [...userLanes.lanes];
+      } else {
+        lanesArray = ["applied", "screening", "shortlisted", "processing", "accepted", "rejected"];
+      }
 
       lanesArray.forEach((lane) => {
         if (!initialCandidateColumns.find((item) => item.id === lane)) {
@@ -469,7 +489,7 @@ export default function JobProgressPage() {
         isOpen={isConfirmLaneDeleteOpen}
         setIsOpen={setIsConfirmLaneDeleteOpen}
         title="Are you sure?"
-        message="This will remove the lane from all the jobs in this organization"
+        message="This will remove the lane from this job only. Other jobs will not be affected."
         onConfirm={() => laneToDelete && handleConfirmDeleteLane(laneToDelete)}
         onCancel={() => setIsConfirmLaneDeleteOpen(false)}
       />

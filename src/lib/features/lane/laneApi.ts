@@ -7,7 +7,17 @@ export const laneApi = createApi({
   tagTypes: ["Lane"],
   endpoints: (builder) => ({
     getLanes: builder.query({
-      query: (userId) => (userId ? `lanes?userId=${userId}` : "lanes"),
+      query: ({ userId, jobId }: { userId?: string; jobId?: string }) => {
+        const params = new URLSearchParams();
+        if (userId) params.append('userId', userId);
+        if (jobId) params.append('jobId', jobId);
+        return `lanes?${params.toString()}`;
+      },
+      providesTags: ["Lane"],
+    }),
+    // NEW: Get job-specific lanes
+    getJobLanes: builder.query({
+      query: (jobId: string) => `jobs/${jobId}/lanes`,
       providesTags: ["Lane"],
     }),
     updateLanes: builder.mutation<ILane, { userId: string; lanes: string[] }>({
@@ -42,12 +52,38 @@ export const laneApi = createApi({
       },
       invalidatesTags: ["Lane"],
     }),
+    // NEW: Delete job-specific lane
+    deleteJobLane: builder.mutation<
+      void,
+      { jobId: string; laneName: string }
+    >({
+      query: ({ jobId, laneName }) => ({
+        url: `jobs/${jobId}/lanes/${laneName}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Lane"],
+    }),
+    // NEW: Rename job-specific lane
+    renameJobLane: builder.mutation<
+      void,
+      { jobId: string; laneName: string; newLaneName: string }
+    >({
+      query: ({ jobId, laneName, newLaneName }) => ({
+        url: `jobs/${jobId}/lanes/${laneName}`,
+        method: "PATCH",
+        body: { newLaneName },
+      }),
+      invalidatesTags: ["Lane"],
+    }),
   }),
 });
 
 export const {
   useGetLanesQuery,
+  useGetJobLanesQuery,
   useUpdateLanesMutation,
   useEditLaneMutation,
   useDeleteLaneMutation,
+  useDeleteJobLaneMutation,
+  useRenameJobLaneMutation,
 } = laneApi;

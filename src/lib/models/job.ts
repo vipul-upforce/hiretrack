@@ -55,6 +55,14 @@ export const jobSchema = new mongoose.Schema({
     type: Object,
     default: {},
   },
+  lanes: {
+    type: [String],
+    default: undefined, // Will use organization default lanes if not set
+  },
+  useCustomLanes: {
+    type: Boolean,
+    default: false,
+  },
   isDeleted: Boolean,
 });
 
@@ -99,6 +107,8 @@ export interface IJob extends Document<mongoose.Types.ObjectId> {
   customFields: {
     [key: string]: object;
   };
+  lanes?: string[];
+  useCustomLanes: boolean;
   isDeleted?: boolean;
 }
 

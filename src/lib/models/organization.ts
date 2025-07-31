@@ -25,9 +25,19 @@ const organizationSchema = new Schema({
     ref: "User",
     required: true,
   },
-  lanes: {
+  defaultLanes: {
     type: [String],
     default: DEFAULT_LANES,
+  },
+  laneRestrictions: {
+    type: {
+      nonEditable: [String],
+      nonDeletable: [String],
+    },
+    default: {
+      nonEditable: ["applied", "accepted", "rejected"],
+      nonDeletable: ["applied", "accepted", "rejected"],
+    },
   },
   openJobCards: {
     type: [String],
@@ -59,10 +69,16 @@ export interface ITag {
   color: string;
 }
 
+export interface ILaneRestrictions {
+  nonEditable: string[];
+  nonDeletable: string[];
+}
+
 export interface IOrganization {
   name: string;
   adminId: Schema.Types.ObjectId;
-  lanes: string[];
+  defaultLanes: string[];
+  laneRestrictions: ILaneRestrictions;
   openJobCards: string[];
   customFields: Schema.Types.Mixed;
   tags: ITag[];

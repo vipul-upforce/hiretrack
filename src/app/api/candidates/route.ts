@@ -61,9 +61,9 @@ export async function POST(request: NextRequest) {
             { status: 404 }
           );
         }
-        const candidateStatus = organizationInfo.lanes.includes("applied")
+        const candidateStatus = (organizationInfo.defaultLanes || organizationInfo.lanes || ["applied"]).includes("applied")
           ? "applied"
-          : organizationInfo.lanes[0];
+          : (organizationInfo.defaultLanes || organizationInfo.lanes || ["applied"])[0];
         // resume
         if (data.attachments) {
           const images = data.attachments.filter((attachment: Attachment) =>

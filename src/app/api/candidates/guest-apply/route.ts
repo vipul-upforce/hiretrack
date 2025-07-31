@@ -100,9 +100,9 @@ export async function POST(request: NextRequest) {
     }
 
     const fileStorage = "local";
-    const candidateStatus = organizationInfo.lanes.includes("applied")
+    const candidateStatus = (organizationInfo.defaultLanes || organizationInfo.lanes || ["applied"]).includes("applied")
       ? "applied"
-      : organizationInfo.lanes[0];
+      : (organizationInfo.defaultLanes || organizationInfo.lanes || ["applied"])[0];
 
     if (data.attachments) {
       const images = data.attachments.filter((attachment: Attachment) =>
