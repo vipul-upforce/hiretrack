@@ -116,20 +116,7 @@ export async function GET(request: NextRequest) {
                 ],
               },
             },
-            pendingInterviews: {
-              $sum: {
-                $cond: [
-                  { 
-                    $and: [
-                      { $ne: ["$status", "accepted"] },
-                      { $ne: ["$status", "rejected"] },
-                    ]
-                  }, 
-                  1, 
-                  0
-                ],
-              },
-            },
+            pendingInterviews: { $sum: 1 },
             acceptedCandidates: {
               $sum: {
                 $cond: [{ $eq: ["$status", "accepted"] }, 1, 0],
@@ -356,7 +343,7 @@ export async function GET(request: NextRequest) {
             overallCompletionRate,
             overallSuccessRate,
             avgAssignmentsPerInterviewer,
-            activeInterviewers: assignmentData.filter(i => i.pending > 0).length,
+            activeInterviewers: assignmentData.length,
           },
           insights: {
             topPerformers,
