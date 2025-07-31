@@ -46,6 +46,12 @@ export const settingsApi = createApi({
         method: "GET",
       }),
     }),
+    getAIProvidersConfigs: builder.query({
+      query: () => ({
+        url: `/settings/ai-providers`,
+        method: "GET",
+      }),
+    }),
     get2FAConfigs: builder.query({
       query: () => ({
         url: `/settings/twofa`,
@@ -91,6 +97,14 @@ export const settingsApi = createApi({
         url: "/settings/gemini",
         method: "PUT",
         body: genimiConfig,
+      }),
+      invalidatesTags: ["Settings"],
+    }),
+    updateAIProviders: builder.mutation({
+      query: (aiProvidersConfig) => ({
+        url: "/settings/ai-providers",
+        method: "PUT",
+        body: aiProvidersConfig,
       }),
       invalidatesTags: ["Settings"],
     }),
@@ -175,8 +189,10 @@ export const {
   useUpdatePortalConfigsMutation,
   useTestConnectionMutation,
   useGetGeminiConfigsQuery,
+  useGetAIProvidersConfigsQuery,
   useGet2FAConfigsQuery,
   useUpdateGeminiMutation,
+  useUpdateAIProvidersMutation,
   useGetTimeZoneQuery,
   useUpdate2FAMutation,
   useUpdateTimeZoneMutation,

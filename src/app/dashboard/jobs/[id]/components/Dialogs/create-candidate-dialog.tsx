@@ -220,9 +220,15 @@ export function CreateCandidateDialog({
   };
 
   const handleSubmit = async (values: CandidateFormValues) => {
-    // Show terms confirmation dialog first
-    setPendingFormValues(values);
-    setShowTermsDialog(true);
+    // Only show terms confirmation dialog for candidates applying through portal
+    // Admin/HR users adding candidates internally should skip the terms dialog
+    if (user?.role === "candidate") {
+      setPendingFormValues(values);
+      setShowTermsDialog(true);
+    } else {
+      // Admin/HR users bypass terms dialog and submit directly
+      actualSubmit(values);
+    }
   };
 
   const actualSubmit = async (values: CandidateFormValues) => {
