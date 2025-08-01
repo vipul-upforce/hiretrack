@@ -48,10 +48,10 @@ export default function twoFASettings({ onClose }: { onClose: () => void }) {
       });
       refetch();
       onClose();
-    } catch {
+    } catch (e: any) {
       toast({
         title: "Error",
-        description: "Failed to update 2FA settings",
+        description: e.data.error || "Failed to update 2FA settings",
         variant: "destructive",
       });
     }
@@ -89,9 +89,9 @@ export default function twoFASettings({ onClose }: { onClose: () => void }) {
             </div>
 
             <div className="flex justify-end gap-2 border-t border-border/10 px-6 py-4 mt-auto">
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={onClose}
                 disabled={isSubmitting || isUpdating}
               >

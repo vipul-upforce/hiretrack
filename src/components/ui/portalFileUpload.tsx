@@ -7,6 +7,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { RenameFileDialog } from "./rename-file-dialog";
 import Cookies from "js-cookie";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import { useSelector } from "react-redux";
+import { User } from "@/lib/features/org/orgApi";
 
 interface FileUploadProps {
   onFileSelect: (files: File[]) => void;
@@ -85,19 +87,22 @@ export function PortalFileUpload({
     isExisting: false,
   });
   // const [user, setuser] = useState<User | null>(null);
+  const { user }: { user: User } = useSelector(
+    (state: any) => state.auth || {}
+  );
   // const [droppedFiles, setDroppedFiles] = useState<string[]>();
 
-  useEffect(() => {
-    (async () => {
-      const token = Cookies.get("token");
-      if (token) {
-        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-        if (decryptedResponse.success && decryptedResponse.user) {
-          // setuser(decryptedResponse.user);
-        }
-      }
-    })();
-  }, []);
+  // useEffect(() => {
+  //   (async () => {
+  //     const token = Cookies.get("token");
+  //     if (token) {
+  //       const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+  //       if (decryptedResponse.success && decryptedResponse.user) {
+  //         // setuser(decryptedResponse.user);
+  //       }
+  //     }
+  //   })();
+  // }, []);
 
   const handleRename = (newName: string) => {
     if (renameFile.file) {

@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   let createdOrg = null;
   let admin = null;
   let organizationId = "";
-  const token = req.cookies.get("token");
+  const token = req.cookies.get("auth_token");
   if (token?.value) {
     const decryptedResponse = await verifyAndDecryptToken(String(token?.value));
     const userData = decryptedResponse.user;

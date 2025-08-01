@@ -16,6 +16,7 @@ import OrganizationDialog from "@/components/auth/OrganizationDialog";
 import { LoginFormValues } from "@/types/login";
 import ReCAPTCHA from "react-google-recaptcha";
 import "./recaptcha-theme.css";
+import { useSelector } from "react-redux";
 
 // Animated Grid Pattern Component
 interface AnimatedGridPatternProps {
@@ -364,6 +365,7 @@ export default function LoginFormContent({
   const [organizations, setOrganizations] = useState<OneOfMulOrganization[]>(
     []
   );
+  const { user } = useSelector((state: any) => state.auth || {});
   const [loginFormValues, setLoginFormValues] = useState<LoginFormValues>();
   const [selectedOrg, setSelectedOrg] = useState<string>();
   const [isMultiple, setIsMultiple] = useState<boolean>(false);
@@ -387,11 +389,12 @@ export default function LoginFormContent({
   });
 
   useEffect(() => {
-    const token = Cookies.get("token");
-    if (token) {
+    console.log("🦊🦊🦊🦊 ", user);
+    // debugger;
+    if (user && user.id && user.role) {
       router.push("/dashboard");
     }
-  }, [router]);
+  }, [user]);
 
   useEffect(() => {
     async function checkAllowance() {
@@ -433,7 +436,9 @@ export default function LoginFormContent({
           if (data.portalFavicon?.url) {
             setPortalFavicon(data.portalFavicon.url);
             // Set favicon
-            const favicon = document.querySelector("link[rel*='icon']") as HTMLLinkElement;
+            const favicon = document.querySelector(
+              "link[rel*='icon']"
+            ) as HTMLLinkElement;
             if (favicon) {
               favicon.href = data.portalFavicon.url;
             } else {
@@ -483,14 +488,14 @@ export default function LoginFormContent({
     if (portalError || (!isLoadingPortal && !portalLogo && !portalLogoDark)) {
       return getDefaultLogo();
     }
-    
+
     // Use appropriate logo based on theme
     if (theme === "dark" && portalLogoDark) {
       return portalLogoDark;
     } else if (portalLogo) {
       return portalLogo;
     }
-    
+
     return "";
   };
 
@@ -517,8 +522,14 @@ export default function LoginFormContent({
   // Apply portal colors to CSS custom properties
   useEffect(() => {
     if (!portalError && !isLoadingPortal) {
-      document.documentElement.style.setProperty('--portal-primary', primaryColor);
-      document.documentElement.style.setProperty('--portal-secondary', secondaryColor);
+      document.documentElement.style.setProperty(
+        "--portal-primary",
+        primaryColor
+      );
+      document.documentElement.style.setProperty(
+        "--portal-secondary",
+        secondaryColor
+      );
     }
   }, [primaryColor, secondaryColor, portalError, isLoadingPortal]);
 
@@ -588,16 +599,16 @@ export default function LoginFormContent({
       </div>
 
       {/* Gradient Orbs */}
-      <div 
+      <div
         className="absolute top-1/4 left-1/4 w-72 h-72 rounded-full blur-3xl animate-pulse"
         style={{
-          background: `linear-gradient(135deg, ${primaryColor}20, ${secondaryColor}20)`
+          background: `linear-gradient(135deg, ${primaryColor}20, ${secondaryColor}20)`,
         }}
       />
-      <div 
+      <div
         className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl animate-pulse delay-1000"
         style={{
-          background: `linear-gradient(225deg, ${secondaryColor}15, ${primaryColor}15)`
+          background: `linear-gradient(225deg, ${secondaryColor}15, ${primaryColor}15)`,
         }}
       />
 
@@ -636,12 +647,12 @@ export default function LoginFormContent({
             <h1 className="text-4xl lg:text-6xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
               Smart Hiring
               <br />
-              <span 
+              <span
                 className="bg-clip-text text-transparent"
                 style={{
                   background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
-                  WebkitBackgroundClip: 'text',
-                  backgroundClip: 'text'
+                  WebkitBackgroundClip: "text",
+                  backgroundClip: "text",
                 }}
               >
                 Made Simple
@@ -664,7 +675,7 @@ export default function LoginFormContent({
                   transition={{ delay: 0.4 + index * 0.1 }}
                   className="flex items-center gap-2 px-3 py-1 bg-background/50 backdrop-blur-sm rounded-full border border-border/50"
                 >
-                  <Sparkles 
+                  <Sparkles
                     className="w-4 h-4"
                     style={{ color: primaryColor }}
                   />
@@ -705,7 +716,7 @@ export default function LoginFormContent({
                 <div className="mt-2">
                   <span
                     className="text-lg font-medium cursor-pointer"
-                    style={{ 
+                    style={{
                       color: primaryColor,
                       animation: selectedOrg
                         ? "fadeInOrg 0.9s ease-in-out forwards"
@@ -738,12 +749,16 @@ export default function LoginFormContent({
                         handleInputChange("companyName", e.target.value)
                       }
                       className="w-full pl-10 pr-4 py-3 bg-background/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:border-current transition-all"
-                      style={{
-                        '--tw-ring-color': `${primaryColor}50`,
-                        '--tw-border-opacity': '1'
-                      } as React.CSSProperties}
-                      onFocus={(e) => e.target.style.borderColor = primaryColor}
-                      onBlur={(e) => e.target.style.borderColor = ''}
+                      style={
+                        {
+                          "--tw-ring-color": `${primaryColor}50`,
+                          "--tw-border-opacity": "1",
+                        } as React.CSSProperties
+                      }
+                      onFocus={(e) =>
+                        (e.target.style.borderColor = primaryColor)
+                      }
+                      onBlur={(e) => (e.target.style.borderColor = "")}
                       placeholder="Enter your company name"
                     />
                   </div>
@@ -759,12 +774,14 @@ export default function LoginFormContent({
                     value={formData.email}
                     onChange={(e) => handleInputChange("email", e.target.value)}
                     className="w-full pl-10 pr-4 py-3 bg-background/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:border-current transition-all"
-                    style={{
-                      '--tw-ring-color': `${primaryColor}50`,
-                      '--tw-border-opacity': '1'
-                    } as React.CSSProperties}
-                    onFocus={(e) => e.target.style.borderColor = primaryColor}
-                    onBlur={(e) => e.target.style.borderColor = ''}
+                    style={
+                      {
+                        "--tw-ring-color": `${primaryColor}50`,
+                        "--tw-border-opacity": "1",
+                      } as React.CSSProperties
+                    }
+                    onFocus={(e) => (e.target.style.borderColor = primaryColor)}
+                    onBlur={(e) => (e.target.style.borderColor = "")}
                     placeholder="Enter your email"
                     required
                   />
@@ -782,12 +799,14 @@ export default function LoginFormContent({
                       handleInputChange("password", e.target.value)
                     }
                     className="w-full pl-10 pr-12 py-3 bg-background/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:border-current transition-all"
-                    style={{
-                      '--tw-ring-color': `${primaryColor}50`,
-                      '--tw-border-opacity': '1'
-                    } as React.CSSProperties}
-                    onFocus={(e) => e.target.style.borderColor = primaryColor}
-                    onBlur={(e) => e.target.style.borderColor = ''}
+                    style={
+                      {
+                        "--tw-ring-color": `${primaryColor}50`,
+                        "--tw-border-opacity": "1",
+                      } as React.CSSProperties
+                    }
+                    onFocus={(e) => (e.target.style.borderColor = primaryColor)}
+                    onBlur={(e) => (e.target.style.borderColor = "")}
                     placeholder="Enter your password"
                     required
                   />
@@ -840,7 +859,7 @@ export default function LoginFormContent({
                 disabled={isLoading || !captcha}
                 className="w-full text-white py-3 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 relative overflow-hidden group"
                 style={{
-                  background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
+                  background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
                 }}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}

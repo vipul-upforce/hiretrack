@@ -1,22 +1,23 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { NextPage } from "next";
 import AuthGuardLoading from "./ui/authGuardLoader";
-import Cookies from "js-cookie";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import { useSelector } from "react-redux";
+import { User } from "@/lib/features/org/orgApi";
 
-// In-memory cache for auth state (persists across navigations)
-let cachedAuthState: {
-  isAuthenticated: boolean;
-  userRole: string | null;
-  allowance: boolean | null;
+let allowanceCache: {
+  value: boolean | null;
+  timestamp: number | null;
+  userId: string | null;
 } = {
-  isAuthenticated: false,
-  userRole: null,
-  allowance: null,
+  value: null,
+  timestamp: null,
+  userId: null,
 };
+
+const CACHE_DURATION = 5 * 60 * 1000;
 
 interface AuthGuardOptions {
   requiredRoles?: string[];
@@ -31,7 +32,7 @@ const withAuthGuard = <P extends object>(
 ): NextPage<P> => {
   const {
     requiredRoles = [],
-    fallbackPath = "/dashbaord",
+    fallbackPath = "/dashboard",
     checkAllowance = false,
     allowAuthenticated = true,
   } = options;
@@ -40,154 +41,224 @@ const withAuthGuard = <P extends object>(
     WrappedComponent.displayName || WrappedComponent.name || "Component";
 
   const AuthGuardComponent: NextPage<P> = (props) => {
-    const [authState, setAuthState] = useState<
-      "loading" | "authorized" | "unauthorized"
-    >("loading");
+    const { user, isAuthenticated }: { user: User; isAuthenticated: boolean } =
+      useSelector((state: any) => state.auth || {});
+
     const router = useRouter();
     const pathname = usePathname();
 
-    useEffect(() => {
-      const checkOrgAllowance = async () => {
-        if (checkAllowance) {
-          if (cachedAuthState.allowance !== null) {
-            if (!cachedAuthState.allowance) {
-              router.replace(fallbackPath);
-              setAuthState("unauthorized");
-              return;
-            }
-            setAuthState("authorized");
-            return;
-          }
+    const getInitialAuthState = () => {
+      if (isAuthenticated === undefined) {
+        return "loading";
+      }
 
-          try {
-            const response = await fetch("/api/organization");
-            const allowance = await response.json();
-            cachedAuthState.allowance = allowance.allow;
-            if (!allowance.allow) {
-              router.replace(fallbackPath);
-              setAuthState("unauthorized");
-              return;
-            }
-            setAuthState("authorized");
-          } catch (error) {
-            console.error("Allowance check failed:", error);
-            router.replace(fallbackPath);
-            setAuthState("unauthorized");
-          }
-        } else {
-          setAuthState("authorized");
+      if (pathname === "/register/org" && checkAllowance) {
+        return "loading";
+      }
+
+      if (checkAllowance && !isAllowanceCacheValid()) {
+        return "loading";
+      }
+
+      if (!allowAuthenticated && isAuthenticated) {
+        return "unauthorized";
+      }
+
+      if (allowAuthenticated && !isAuthenticated) {
+        return "unauthorized";
+      }
+
+      if (
+        isAuthenticated &&
+        requiredRoles.length > 0 &&
+        (!user?.role || !requiredRoles.includes(user.role))
+      ) {
+        return "unauthorized";
+      }
+
+      return "authorized";
+    };
+    const [authState, setAuthState] = useState<
+      "loading" | "authorized" | "unauthorized"
+    >(getInitialAuthState);
+    const isCheckingAllowance = useRef(false);
+    const hasInitialized = useRef(false);
+
+    console.log("AuthGuard - Redux state:", {
+      isAuthenticated,
+      user: user?.id,
+      role: user?.role,
+    });
+
+    const isAllowanceCacheValid = useCallback(() => {
+      const currentUserId = user?.id || null;
+      return (
+        allowanceCache.value !== null &&
+        allowanceCache.timestamp !== null &&
+        allowanceCache.userId === currentUserId &&
+        Date.now() - allowanceCache.timestamp < CACHE_DURATION
+      );
+    }, [user?.id]);
+
+    const fetchAllowance = useCallback(async (): Promise<boolean> => {
+      const currentUserId = user?.id || null;
+
+      if (isAllowanceCacheValid()) {
+        console.log("Using cached allowance:", allowanceCache.value);
+        return allowanceCache.value!;
+      }
+
+      if (isCheckingAllowance.current) {
+        console.log("Allowance check already in progress");
+        return allowanceCache.value ?? false;
+      }
+
+      isCheckingAllowance.current = true;
+
+      try {
+        console.log("Fetching fresh allowance data...");
+        const response = await fetch("/api/organization");
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
-      };
 
-      const checkAuth = async () => {
-        // Check allowance if required (independent of authentication)
-        if (checkAllowance) {
-          if (cachedAuthState.allowance !== null) {
-            if (!cachedAuthState.allowance) {
+        const allowanceData = await response.json();
+
+        // Update cache
+        allowanceCache = {
+          value: allowanceData.allow,
+          timestamp: Date.now(),
+          userId: currentUserId,
+        };
+
+        console.log("Allowance cached:", allowanceData.allow);
+        return allowanceData.allow;
+      } catch (error) {
+        console.error("Allowance check failed:", error);
+        return false;
+      } finally {
+        isCheckingAllowance.current = false;
+      }
+    }, [user?.id, isAllowanceCacheValid]);
+
+    const performAuthCheck = useCallback(async () => {
+      console.log("Performing auth check...");
+
+      try {
+        if (pathname === "/register/org") {
+          if (checkAllowance) {
+            const hasAllowance = await fetchAllowance();
+            if (!hasAllowance) {
+              console.log("No allowance - redirecting");
               router.replace(fallbackPath);
               setAuthState("unauthorized");
               return;
             }
-          } else {
-            try {
-              const response = await fetch("/api/organization");
-              const allowance = await response.json();
-              cachedAuthState.allowance = allowance.allow;
-              if (!allowance.allow) {
-                router.replace(fallbackPath);
-                setAuthState("unauthorized");
-                return;
-              }
-            } catch (error) {
-              console.error("Allowance check failed:", error);
-              router.replace(fallbackPath);
-              setAuthState("unauthorized");
-              return;
-            }
           }
-        }
-
-        // Handle authentication
-        if (cachedAuthState.isAuthenticated && cachedAuthState.userRole) {
-          if (!allowAuthenticated) {
-            router.replace(fallbackPath);
-            setAuthState("unauthorized");
-            return;
-          }
-
-          if (
-            requiredRoles.length > 0 &&
-            !requiredRoles.includes(cachedAuthState.userRole)
-          ) {
-            router.replace(fallbackPath);
-            setAuthState("unauthorized");
-            return;
-          }
-
           setAuthState("authorized");
           return;
         }
 
-        // No cached auth, check token
-        const token = Cookies.get("token");
-        if (!token) {
-          if (allowAuthenticated) {
+        console.log("Checking auth state from Redux:", {
+          isAuthenticated,
+          userId: user?.id,
+        });
+
+        if (checkAllowance) {
+          const hasAllowance = await fetchAllowance();
+          if (!hasAllowance) {
+            console.log("No allowance - redirecting");
             router.replace(fallbackPath);
             setAuthState("unauthorized");
-          } else {
-            setAuthState("authorized"); // Allow unauthenticated users
+            return;
           }
-          return;
         }
 
-        const decryptedResponse = await verifyAndDecryptJWTToken(token);
-        if (decryptedResponse.success && decryptedResponse.user) {
-          cachedAuthState = {
-            isAuthenticated: true,
-            userRole: decryptedResponse.user.role,
-            allowance: cachedAuthState.allowance, // Preserve allowance state
-          };
-
-          if (!allowAuthenticated) {
-            router.replace(fallbackPath);
-            setAuthState("unauthorized");
-            return;
-          }
-
-          if (
-            requiredRoles.length > 0 &&
-            !requiredRoles.includes(decryptedResponse.user.role)
-          ) {
-            router.replace(fallbackPath);
-            setAuthState("unauthorized");
-            return;
-          }
-
-          setAuthState("authorized");
-        } else {
-          cachedAuthState = {
-            isAuthenticated: false,
-            userRole: null,
-            allowance: cachedAuthState.allowance,
-          };
+        if (!allowAuthenticated && isAuthenticated) {
+          console.log("Route doesn't allow authenticated users - redirecting");
           router.replace(fallbackPath);
           setAuthState("unauthorized");
+          return;
         }
-      };
 
-      if (pathname === "/register/org") {
-        checkOrgAllowance();
-      } else {
-        checkAuth();
+        if (allowAuthenticated && !isAuthenticated) {
+          console.log(
+            "Authentication required but user not authenticated - redirecting"
+          );
+          router.replace(fallbackPath);
+          setAuthState("unauthorized");
+          return;
+        }
+
+        if (
+          isAuthenticated &&
+          requiredRoles.length > 0 &&
+          (!user?.role || !requiredRoles.includes(user.role))
+        ) {
+          console.log(
+            "User role not authorized:",
+            user?.role,
+            "Required:",
+            requiredRoles
+          );
+          router.replace(fallbackPath);
+          setAuthState("unauthorized");
+          return;
+        }
+
+        console.log("Authorization successful");
+        setAuthState("authorized");
+      } catch (error) {
+        console.error("Auth check failed:", error);
+        setAuthState("unauthorized");
       }
-    }, [pathname]);
+    }, [
+      pathname,
+      checkAllowance,
+      allowAuthenticated,
+      isAuthenticated,
+      user?.id,
+      user?.role,
+      requiredRoles,
+      fetchAllowance,
+      router,
+      fallbackPath,
+    ]);
+
+    useEffect(() => {
+      if (isAuthenticated === undefined) {
+        console.log("Still loading auth state from Redux...");
+        setAuthState("loading");
+        return;
+      }
+
+      if (authState !== "loading" && !checkAllowance) {
+        return;
+      }
+
+      performAuthCheck();
+      hasInitialized.current = true;
+    }, [pathname, isAuthenticated, user?.id, user?.role, performAuthCheck]);
+
+    useEffect(() => {
+      const currentUserId = user?.id || null;
+      if (allowanceCache.userId && allowanceCache.userId !== currentUserId) {
+        console.log("User changed - clearing allowance cache");
+        allowanceCache = {
+          value: null,
+          timestamp: null,
+          userId: null,
+        };
+      }
+    }, [user?.id]);
 
     if (authState === "loading") {
       return <AuthGuardLoading />;
     }
 
     return authState === "authorized" ? (
-      <WrappedComponent {...props} user={{ role: cachedAuthState.userRole }} />
+      <WrappedComponent {...props} user={{ role: user?.role || null }} />
     ) : null;
   };
 

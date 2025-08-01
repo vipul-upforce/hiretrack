@@ -121,7 +121,7 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    const token = req.cookies.get("token");
+    const token = req.cookies.get("auth_token");
     if (!token?.value) {
       return NextResponse.json(
         { error: "Authentication token missing" },

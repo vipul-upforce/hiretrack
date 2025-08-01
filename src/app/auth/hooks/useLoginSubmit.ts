@@ -7,10 +7,15 @@ import { useCustomFields } from "@/Custom_Fields/hooks/use-customFields";
 import Cookies from "js-cookie";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import * as jose from "jose";
-import CryptoJS from "crypto-js";
+
+
 import { LoginFormValues, UserWithoutCF } from "@/types/login";
 import { useCallback } from "react";
 import { OneOfMulOrganization } from "@/components/auth/OrganizationDialog";
+import { signToken } from "@/lib/jwt";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchUserFromToken } from "@/lib/redux/authSlice";
+import { AppDispatch } from "@/lib/redux/store";
 
 interface HandleLoginSubmitProps {
   selectedOrg?: string;
@@ -32,28 +37,13 @@ export const useHandleLoginSubmit = ({
   const { toast } = useToast();
   const [login, { isLoading }] = useLoginMutation();
   const { setUserLoggedIn } = useCustomFields();
+    const dispatch = useDispatch<AppDispatch>();
+  
+  const  {user, isAuthenticated}  = useSelector((state: any) => state.auth);
+// debugger
+  
 
-  const signToken = async (payload: unknown) => {
-    const JWT_SECRET = "your_jwt_secret_key";
-    try {
-      const parsedPayload = payload;
-      const encryptedPayload = CryptoJS.AES.encrypt(
-        JSON.stringify(parsedPayload),
-        JWT_SECRET
-      ).toString();
-      const secretKey = new TextEncoder().encode(JWT_SECRET);
-      const jwt = await new jose.SignJWT({ user: encryptedPayload })
-        .setProtectedHeader({ alg: "HS256" })
-        .setIssuedAt()
-        .setExpirationTime("30d")
-        .sign(secretKey);
-      return jwt;
-    } catch {
-      throw new Error("Failed to sign token");
-    }
-  };
-
-  const getRedirectUrl = (userRole: string, organizationName?: string) => {
+  const getRedirectUrl = () => {
     const redirectTo =
       searchParams?.get("redirect") || searchParams?.get("returnUrl");
 
@@ -68,13 +58,14 @@ export const useHandleLoginSubmit = ({
       }
     }
 
-    if (userRole === "candidate") {
-      return isMultiple ? `/apply-jobs?o=${organizationName}` : "/apply-jobs";
+    if (user?.role === "candidate") {
+      return isMultiple ? `/apply-jobs?o=${user.organizationInfo?.name}` : "/apply-jobs";
     } else if (
-      userRole === "admin" ||
-      userRole === "interviewer" ||
-      userRole === "hr"
+      user?.role === "admin" ||
+      user?.role === "interviewer" ||
+      user?.role === "hr"
     ) {
+    
       return "/dashboard";
     }
 
@@ -86,6 +77,7 @@ export const useHandleLoginSubmit = ({
       values: LoginFormValues,
       { setStatus }: { setStatus: (message: string) => void }
     ) => {
+      debugger
       setLoginFormValues(values);
       try {
         const response = await login({
@@ -173,32 +165,43 @@ export const useHandleLoginSubmit = ({
           return;
         }
 
-        const userWithoutCustomFields: UserWithoutCF = {
-          ...decryptedResponse.user,
-        };
-        if (userWithoutCustomFields.organizationInfo) {
-          userWithoutCustomFields.organizationInfo = {
-            ...userWithoutCustomFields.organizationInfo,
-          };
-          delete userWithoutCustomFields.organizationInfo.customFields;
+        dispatch(fetchUserFromToken())
+
+        // const userWithoutCustomFields: UserWithoutCF = {
+        //   ...decryptedResponse.user,
+        // };
+        // if (userWithoutCustomFields.organizationInfo) {
+        //   userWithoutCustomFields.organizationInfo = {
+        //     ...userWithoutCustomFields.organizationInfo,
+        //   };
+        //   delete userWithoutCustomFields.organizationInfo.customFields;
+        // }
+        // const token = await signToken(userWithoutCustomFields);
+        // Cookies.set("token", String(token), { expires: 30 });
+        
+
+        const redirectUrl = getRedirectUrl();
+        console.log("REIRECTURL: ",redirectUrl)
+        // new Promise(()=>{})
+        // setTimeout(()=>{
+        // },4000)
+        console.log("user status: ",user, isAuthenticated)
+        if(isAuthenticated){
+          router.refresh();
+          router.push(redirectUrl);
+          window.location.href = redirectUrl;
+  
+          setUserLoggedIn(true);
+  
+          toast({
+            title: "Success",
+            description: "Login successful",
+            variant: "default",
+          });
+
         }
-        const token = await signToken(userWithoutCustomFields);
-        Cookies.set("token", String(token), { expires: 30 });
-        setUserLoggedIn(true);
-
-        toast({
-          title: "Success",
-          description: "Login successful",
-          variant: "default",
-        });
-
-        const redirectUrl = getRedirectUrl(
-          decryptedResponse.user.role,
-          decryptedResponse.user.organizationInfo?.name
-        );
-
-        router.push(redirectUrl);
       } catch (err: unknown) {
+        console.log(err)
         const errorMessage =
           err &&
           typeof err === "object" &&

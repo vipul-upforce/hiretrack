@@ -20,6 +20,8 @@ import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import twoFASettings from "./twofa-setting";
+import { useSelector } from "react-redux";
+import { User } from "@/lib/features/org/orgApi";
 export interface SettingComponentProps {
   onClose: () => void;
   isOpen?: boolean;
@@ -52,18 +54,22 @@ const SettingDialog = ({
   setting: { title: string; description: string; key: string; orgId?: string };
 }) => {
   const ComponentToRender = settingComponents[setting.key];
-  const [orgId, setOrgId] = useState("");
-  useEffect(() => {
-    (async () => {
-      const token = Cookies.get("token");
-      if (token) {
-        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-        if (decryptedResponse.success && decryptedResponse.user) {
-          setOrgId(decryptedResponse.user.organizationId);
-        }
-      }
-    })();
-  }, []);
+  // const [orgId, setOrgId] = useState("");
+  const { user }: { user: User } = useSelector(
+    (state: any) => state.auth || {}
+  );
+  const orgId = user.organizationId;
+  // useEffect(() => {
+  //   (async () => {
+  //     const token = Cookies.get("token");
+  //     if (token) {
+  //       const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+  //       if (decryptedResponse.success && decryptedResponse.user) {
+  //         setOrgId(decryptedResponse.user.organizationId);
+  //       }
+  //     }
+  //   })();
+  // }, []);
 
   if (setting.key === "tags")
     return <ManageTagsDialog onClose={onClose} isOpen={isOpen} orgId={orgId} />;
@@ -77,8 +83,8 @@ const SettingDialog = ({
           setting.key === "logs"
             ? "max-w-7xl w-[90vw] min-h-[95vh] overflow-hidden"
             : setting.key === "timezone"
-            ? "max-w-2xl w-[90vw] overflow-visible"
-            : "overflow-hidden"
+              ? "max-w-2xl w-[90vw] overflow-visible"
+              : "overflow-hidden"
         }`}
       >
         <DialogHeader className="px-6 py-4 pr-12">
@@ -87,7 +93,7 @@ const SettingDialog = ({
         </DialogHeader>
 
         {ComponentToRender && setting.key !== "tags" ? (
-          setting.key === "timezone" || 
+          setting.key === "timezone" ||
           setting.key === "fs" ||
           setting.key === "mail" ||
           setting.key === "multipleorgs" ||

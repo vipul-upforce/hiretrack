@@ -16,6 +16,8 @@ import OrganizationDialog from "@/components/auth/OrganizationDialog";
 import { LoginFormValues } from "@/types/login";
 import ReCAPTCHA from "react-google-recaptcha";
 import "../../app/auth/login/recaptcha-theme.css";
+import { useSelector } from "react-redux";
+import { User } from "@/lib/features/org/orgApi";
 
 // Animated Grid Pattern Component
 interface AnimatedGridPatternProps {
@@ -380,13 +382,17 @@ export default function ModernLoginComponent({
     setLoginFormValues,
   });
 
+  const { user }: { user: User } = useSelector(
+    (state: any) => state.auth || {}
+  );
+
   useEffect(() => {
-    const token = Cookies.get("token");
+    // const token = Cookies.get("token");
     // new Promise(() => setTimeout(() => {}, 1000));
-    if (token) {
+    if (user && user._id) {
       router.push("/dashboard");
     }
-  }, [router]);
+  }, [router, user]);
 
   useEffect(() => {
     async function checkAllowance() {

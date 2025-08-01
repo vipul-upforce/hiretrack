@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
     } = await req.json();
 
     let organizationId;
-    const token = req.cookies.get("token");
+    const token = req.cookies.get("auth_token");
     let decryptedResponse;
     if (token?.value) {
       decryptedResponse = await verifyAndDecryptToken(String(token?.value));
@@ -221,7 +221,7 @@ export async function POST(req: NextRequest) {
 // ⛔⛔⛔ for debug only
 export async function GET(req: NextRequest) {
   try {
-    const token = req.cookies.get("token");
+    const token = req.cookies.get("auth_token");
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
         String(token?.value)

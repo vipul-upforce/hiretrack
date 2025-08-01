@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      const token = request.cookies.get("token");
+      const token = request.cookies.get("auth_token");
       if (token?.value) {
         const decryptedResponse = await verifyAndDecryptToken(
           String(token?.value)

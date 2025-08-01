@@ -1,19 +1,21 @@
 "use client";
-
 import { Provider } from "react-redux";
-import { store } from "@/lib/store";
+import { persistor, store } from "@/lib/store";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { Toaster } from "@/components/ui/toaster";
 import { CustomFieldsProvider } from "@/Custom_Fields/Context/CustomFieldsContext";
 import { ThemeProvider } from "@/components/theme-provider";
+import { PersistGate } from "redux-persist/integration/react";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider defaultTheme="light" storageKey="hiretrack-theme">
       <LocalizationProvider dateAdapter={AdapterDayjs}>
         <Provider store={store}>
-          <CustomFieldsProvider>{children}</CustomFieldsProvider>
+          <PersistGate loading={<div>Loading...</div>} persistor={persistor}>
+            <CustomFieldsProvider>{children}</CustomFieldsProvider>
+          </PersistGate>
         </Provider>
       </LocalizationProvider>
       <Toaster />

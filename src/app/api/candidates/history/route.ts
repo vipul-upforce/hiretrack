@@ -245,7 +245,7 @@ export async function PUT(request: NextRequest) {
     let fileStorage = "local";
     let organizationId;
 
-    const token = request.cookies.get("token");
+    const token = request.cookies.get("auth_token");
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
         String(token?.value)

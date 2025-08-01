@@ -126,7 +126,7 @@ export async function GET(req: NextRequest) {
   try {
     await connectToDatabase();
     const searchParams = req.nextUrl.searchParams;
-    const token = req.cookies.get("token");
+    const token = req.cookies.get("auth_token");
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
         String(token?.value)

@@ -27,6 +27,7 @@ import type { User } from "@/lib/features/org/orgApi";
 import dayjs from "dayjs";
 import { MobileFileUpload } from "@/components/ui/file-upload-mobile";
 import { useSanitizeFiles } from "@/hooks/useSanitizeFiles";
+import { useSelector } from "react-redux";
 
 interface CandidateFormProps {
   onFileUpload?: (file: File) => Promise<string | void>; // Prop to handle file upload to a persistent storage
@@ -63,7 +64,8 @@ export function CandidateForm({
   const [currentBlobUrl, setCurrentBlobUrl] = useState<string | null>(null); // State to track only blob URLs for cleanup
   const [emailField, emailMeta] = useField("email");
   const [contactField, contactMeta] = useField("contact");
-  const [user, setuser] = useState<User | null>(null);
+  // const [user, setuser] = useState<User | null>(null);
+  const { user } = useSelector((state: any) => state.auth || {});
   const formRef = useRef<HTMLDivElement>(null);
   const { sanitizeFiles } = useSanitizeFiles();
 
@@ -104,17 +106,17 @@ export function CandidateForm({
       ? values.assignment.interviewerId
       : values.assignment?.interviewerId?._id || "";
 
-  useEffect(() => {
-    (async () => {
-      const token = Cookies.get("token");
-      if (token) {
-        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-        if (decryptedResponse.success && decryptedResponse.user) {
-          setuser(decryptedResponse.user);
-        }
-      }
-    })();
-  }, []);
+  // useEffect(() => {
+  //   (async () => {
+  //     const token = Cookies.get("token");
+  //     if (token) {
+  //       const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+  //       if (decryptedResponse.success && decryptedResponse.user) {
+  //         setuser(decryptedResponse.user);
+  //       }
+  //     }
+  //   })();
+  // }, []);
 
   useEffect(() => {
     // if (values.resume && !(values.resume as { url?: string }).url) {
@@ -169,15 +171,15 @@ export function CandidateForm({
                   variant="outline"
                   className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800 hover:from-blue-100 hover:to-indigo-100 dark:hover:from-blue-900/30 dark:hover:to-indigo-900/30 text-blue-700 dark:text-blue-300"
                   onClick={() => {
-                    const input = document.createElement('input');
-                    input.type = 'file';
-                    input.accept = '.pdf';
+                    const input = document.createElement("input");
+                    input.type = "file";
+                    input.accept = ".pdf";
                     input.onchange = async (e) => {
                       const files = (e.target as HTMLInputElement).files;
                       if (files && files.length > 0) {
                         const file = files[0];
                         const sanitizedFiles = sanitizeFiles([file]);
-                        
+
                         if (!user && file.size > 3 * 1024 * 1024) {
                           toast({
                             title: `File "${file.name}" exceeds 3MB. Please upload a smaller file.`,
@@ -191,7 +193,8 @@ export function CandidateForm({
                           file.size > 3 * 1024 * 1024
                         ) {
                           toast({
-                            title: "File size exceeds 3MB. Please upload a smaller file.",
+                            title:
+                              "File size exceeds 3MB. Please upload a smaller file.",
                             variant: "destructive",
                           });
                           return;
@@ -202,15 +205,18 @@ export function CandidateForm({
                           file.size > 5 * 1024 * 1024
                         ) {
                           toast({
-                            title: "File size exceeds 5MB. Please upload a smaller file.",
+                            title:
+                              "File size exceeds 5MB. Please upload a smaller file.",
                             variant: "destructive",
                           });
                           return;
                         }
-                        
+
                         setFieldValue("resume", sanitizedFiles[0]);
-                        setTempResumeUrl(URL.createObjectURL(sanitizedFiles[0]));
-                        
+                        setTempResumeUrl(
+                          URL.createObjectURL(sanitizedFiles[0])
+                        );
+
                         if (onFileUpload) {
                           await onFileUpload(sanitizedFiles[0]);
                         }
@@ -234,19 +240,20 @@ export function CandidateForm({
                   }}
                 >
                   <Paperclip className="w-4 h-4" />
-                  {resumeField.value ? 'Change Resume' : 'Select Resume'}
+                  {resumeField.value ? "Change Resume" : "Select Resume"}
                 </Button>
                 <span className="text-sm text-muted-foreground">
-                  PDF files only, max {user?.role === "candidate" ? "3MB" : "5MB"}
+                  PDF files only, max{" "}
+                  {user?.role === "candidate" ? "3MB" : "5MB"}
                 </span>
               </div>
-              
+
               {resumeField.value && (
                 <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
                   <div className="flex items-center gap-2">
                     <FileIcon className="w-4 h-4 text-green-600 dark:text-green-400" />
                     <span className="text-sm font-medium text-green-700 dark:text-green-300">
-                      {resumeField.value.name || 'Resume uploaded'}
+                      {resumeField.value.name || "Resume uploaded"}
                     </span>
                     {resumeField.value.size && (
                       <span className="text-xs text-green-600 dark:text-green-400">
@@ -322,7 +329,9 @@ export function CandidateForm({
                 placeholder="Enter contact number"
                 {...contactField}
                 className={
-                  contactMeta.error && contactMeta.touched ? "border-red-500" : ""
+                  contactMeta.error && contactMeta.touched
+                    ? "border-red-500"
+                    : ""
                 }
               />
               {contactMeta.touched && contactMeta.error && (
@@ -545,8 +554,8 @@ export function CandidateForm({
                   variant="outline"
                   className="flex items-center gap-2 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200 dark:border-purple-800 hover:from-purple-100 hover:to-pink-100 dark:hover:from-purple-900/30 dark:hover:to-pink-900/30 text-purple-700 dark:text-purple-300"
                   onClick={() => {
-                    const input = document.createElement('input');
-                    input.type = 'file';
+                    const input = document.createElement("input");
+                    input.type = "file";
                     input.multiple = true;
                     input.onchange = (e) => {
                       const files = (e.target as HTMLInputElement).files;
@@ -575,7 +584,9 @@ export function CandidateForm({
                             }
                             if (
                               user &&
-                              ["hr", "admin", "interviewer"].includes(user.role) &&
+                              ["hr", "admin", "interviewer"].includes(
+                                user.role
+                              ) &&
                               file.size > 5 * 1024 * 1024
                             ) {
                               toast({
@@ -593,13 +604,21 @@ export function CandidateForm({
                             );
                             if (fileExists) {
                               const fileExtension = file.name.split(".").pop();
-                              const baseName = file.name.replace(/\.[^/.]+$/, "");
+                              const baseName = file.name.replace(
+                                /\.[^/.]+$/,
+                                ""
+                              );
                               newFileName = `${baseName}_${uuidv4()}.${fileExtension}`;
                             }
-                            return new File([file], newFileName, { type: file.type });
+                            return new File([file], newFileName, {
+                              type: file.type,
+                            });
                           });
 
-                        const updatedFileSelection = [...currentFiles, ...newFiles];
+                        const updatedFileSelection = [
+                          ...currentFiles,
+                          ...newFiles,
+                        ];
                         if (updatedFileSelection.length > 2) {
                           toast({
                             title: "Maximum 2 files are allowed",
@@ -617,14 +636,18 @@ export function CandidateForm({
                   Add Attachments
                 </Button>
                 <span className="text-sm text-muted-foreground">
-                  Max 2 files, {user?.role === "candidate" ? "3MB each" : "5MB each"}
+                  Max 2 files,{" "}
+                  {user?.role === "candidate" ? "3MB each" : "5MB each"}
                 </span>
               </div>
-              
+
               {attachmentsField.value && attachmentsField.value.length > 0 && (
                 <div className="space-y-2">
                   {attachmentsField.value.map((file: File, index: number) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg"
+                    >
                       <div className="flex items-center gap-2">
                         <FileIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                         <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
@@ -640,7 +663,9 @@ export function CandidateForm({
                         size="sm"
                         className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                         onClick={() => {
-                          const updatedFiles = attachmentsField.value.filter((_: File, i: number) => i !== index);
+                          const updatedFiles = attachmentsField.value.filter(
+                            (_: File, i: number) => i !== index
+                          );
                           setFieldValue("attachments", updatedFiles);
                         }}
                       >
@@ -688,15 +713,15 @@ export function CandidateForm({
                   variant="outline"
                   className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800 hover:from-blue-100 hover:to-indigo-100 dark:hover:from-blue-900/30 dark:hover:to-indigo-900/30 text-blue-700 dark:text-blue-300"
                   onClick={() => {
-                    const input = document.createElement('input');
-                    input.type = 'file';
-                    input.accept = '.pdf';
+                    const input = document.createElement("input");
+                    input.type = "file";
+                    input.accept = ".pdf";
                     input.onchange = async (e) => {
                       const files = (e.target as HTMLInputElement).files;
                       if (files && files.length > 0) {
                         const file = files[0];
                         const sanitizedFiles = sanitizeFiles([file]);
-                        
+
                         if (!user && file.size > 3 * 1024 * 1024) {
                           toast({
                             title: `File "${file.name}" exceeds 3MB. Please upload a smaller file.`,
@@ -710,7 +735,8 @@ export function CandidateForm({
                           file.size > 3 * 1024 * 1024
                         ) {
                           toast({
-                            title: "File size exceeds 3MB. Please upload a smaller file.",
+                            title:
+                              "File size exceeds 3MB. Please upload a smaller file.",
                             variant: "destructive",
                           });
                           return;
@@ -721,15 +747,18 @@ export function CandidateForm({
                           file.size > 5 * 1024 * 1024
                         ) {
                           toast({
-                            title: "File size exceeds 5MB. Please upload a smaller file.",
+                            title:
+                              "File size exceeds 5MB. Please upload a smaller file.",
                             variant: "destructive",
                           });
                           return;
                         }
-                        
+
                         setFieldValue("resume", sanitizedFiles[0]);
-                        setTempResumeUrl(URL.createObjectURL(sanitizedFiles[0]));
-                        
+                        setTempResumeUrl(
+                          URL.createObjectURL(sanitizedFiles[0])
+                        );
+
                         if (onFileUpload) {
                           await onFileUpload(sanitizedFiles[0]);
                         }
@@ -753,19 +782,20 @@ export function CandidateForm({
                   }}
                 >
                   <Paperclip className="w-4 h-4" />
-                  {resumeField.value ? 'Change Resume' : 'Select Resume'}
+                  {resumeField.value ? "Change Resume" : "Select Resume"}
                 </Button>
                 <span className="text-sm text-muted-foreground">
-                  PDF files only, max {user?.role === "candidate" ? "3MB" : "5MB"}
+                  PDF files only, max{" "}
+                  {user?.role === "candidate" ? "3MB" : "5MB"}
                 </span>
               </div>
-              
+
               {resumeField.value && (
                 <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
                   <div className="flex items-center gap-2">
                     <FileIcon className="w-4 h-4 text-green-600 dark:text-green-400" />
                     <span className="text-sm font-medium text-green-700 dark:text-green-300">
-                      {resumeField.value.name || 'Resume uploaded'}
+                      {resumeField.value.name || "Resume uploaded"}
                     </span>
                     {resumeField.value.size && (
                       <span className="text-xs text-green-600 dark:text-green-400">
@@ -803,7 +833,10 @@ export function CandidateForm({
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2" data-form-field="name">
-                <Label htmlFor="name" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <Label
+                  htmlFor="name"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   Full Name <span className="text-red-500">*</span>
                 </Label>
                 <Input
@@ -811,8 +844,8 @@ export function CandidateForm({
                   placeholder="Enter full name"
                   {...nameField}
                   className={`h-9 px-3 transition-all duration-200 ${
-                    nameMeta.error && nameMeta.touched 
-                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" 
+                    nameMeta.error && nameMeta.touched
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                       : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
                   }`}
                 />
@@ -825,7 +858,10 @@ export function CandidateForm({
               </div>
 
               <div className="space-y-2" data-form-field="email">
-                <Label htmlFor="email" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <Label
+                  htmlFor="email"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   Email Address <span className="text-red-500">*</span>
                 </Label>
                 <Input
@@ -834,8 +870,8 @@ export function CandidateForm({
                   placeholder="Enter email address"
                   {...emailField}
                   className={`h-9 px-3 transition-all duration-200 ${
-                    emailMeta.error && emailMeta.touched 
-                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" 
+                    emailMeta.error && emailMeta.touched
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                       : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
                   }`}
                 />
@@ -848,7 +884,10 @@ export function CandidateForm({
               </div>
 
               <div className="space-y-2" data-form-field="contact">
-                <Label htmlFor="contact" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <Label
+                  htmlFor="contact"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   Contact Number <span className="text-red-500">*</span>
                 </Label>
                 <Input
@@ -857,8 +896,8 @@ export function CandidateForm({
                   placeholder="Enter contact number"
                   {...contactField}
                   className={`h-9 px-3 transition-all duration-200 ${
-                    contactMeta.error && contactMeta.touched 
-                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" 
+                    contactMeta.error && contactMeta.touched
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                       : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
                   }`}
                 />
@@ -871,7 +910,10 @@ export function CandidateForm({
               </div>
 
               <div className="space-y-2" data-form-field="location">
-                <Label htmlFor="location" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <Label
+                  htmlFor="location"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   Current Location <span className="text-red-500">*</span>
                 </Label>
                 <Input
@@ -880,7 +922,7 @@ export function CandidateForm({
                   {...locationField}
                   className={`h-9 px-3 transition-all duration-200 ${
                     locationMeta.error && locationMeta.touched
-                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" 
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                       : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
                   }`}
                 />
@@ -892,8 +934,14 @@ export function CandidateForm({
                 )}
               </div>
 
-              <div className="space-y-2 col-span-2" data-form-field="experience">
-                <Label htmlFor="experience" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <div
+                className="space-y-2 col-span-2"
+                data-form-field="experience"
+              >
+                <Label
+                  htmlFor="experience"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   Relevant Exp in Years <span className="text-red-500">*</span>
                 </Label>
                 <Input
@@ -904,7 +952,7 @@ export function CandidateForm({
                   {...experienceField}
                   className={`h-9 px-3 transition-all duration-200 w-full max-w-xs ${
                     experienceMeta.error && experienceMeta.touched
-                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" 
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                       : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
                   }`}
                 />
@@ -928,7 +976,8 @@ export function CandidateForm({
             </div>
             <div className="space-y-2" id="skills" data-form-field="skills">
               <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Skills (Hit Enter to Add) <span className="text-red-500">*</span>
+                Skills (Hit Enter to Add){" "}
+                <span className="text-red-500">*</span>
               </Label>
               <ChipInput
                 placeholder="Hit Enter to Add Skills"
@@ -957,7 +1006,10 @@ export function CandidateForm({
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2" data-form-field="expectedCTC">
-                <Label htmlFor="expectedCTC" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <Label
+                  htmlFor="expectedCTC"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   Expected CTC (LPA) <span className="text-red-500">*</span>
                 </Label>
                 <Input
@@ -980,7 +1032,10 @@ export function CandidateForm({
               </div>
 
               <div className="space-y-2" data-form-field="currentCTC">
-                <Label htmlFor="currentCTC" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <Label
+                  htmlFor="currentCTC"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   Current CTC (LPA) <span className="text-red-500">*</span>
                 </Label>
                 <Input
@@ -1002,8 +1057,14 @@ export function CandidateForm({
                 )}
               </div>
 
-              <div className="space-y-2 col-span-2" data-form-field="noticePeriod">
-                <Label htmlFor="noticePeriod" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <div
+                className="space-y-2 col-span-2"
+                data-form-field="noticePeriod"
+              >
+                <Label
+                  htmlFor="noticePeriod"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   Notice Period (days) <span className="text-red-500">*</span>
                 </Label>
                 <Input
@@ -1041,7 +1102,9 @@ export function CandidateForm({
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-3">
-                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Assign To</Label>
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Assign To
+                  </Label>
                   <Select
                     value={currentInterviewerId}
                     onValueChange={(value) =>
@@ -1076,7 +1139,9 @@ export function CandidateForm({
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Interview Time</Label>
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Interview Time
+                  </Label>
                   <DateTimePicker
                     value={
                       values.assignment?.time
@@ -1117,8 +1182,8 @@ export function CandidateForm({
                   variant="outline"
                   className="flex items-center gap-2 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200 dark:border-purple-800 hover:from-purple-100 hover:to-pink-100 dark:hover:from-purple-900/30 dark:hover:to-pink-900/30 text-purple-700 dark:text-purple-300"
                   onClick={() => {
-                    const input = document.createElement('input');
-                    input.type = 'file';
+                    const input = document.createElement("input");
+                    input.type = "file";
                     input.multiple = true;
                     input.onchange = (e) => {
                       const files = (e.target as HTMLInputElement).files;
@@ -1147,7 +1212,9 @@ export function CandidateForm({
                             }
                             if (
                               user &&
-                              ["hr", "admin", "interviewer"].includes(user.role) &&
+                              ["hr", "admin", "interviewer"].includes(
+                                user.role
+                              ) &&
                               file.size > 5 * 1024 * 1024
                             ) {
                               toast({
@@ -1165,13 +1232,21 @@ export function CandidateForm({
                             );
                             if (fileExists) {
                               const fileExtension = file.name.split(".").pop();
-                              const baseName = file.name.replace(/\.[^/.]+$/, "");
+                              const baseName = file.name.replace(
+                                /\.[^/.]+$/,
+                                ""
+                              );
                               newFileName = `${baseName}_${uuidv4()}.${fileExtension}`;
                             }
-                            return new File([file], newFileName, { type: file.type });
+                            return new File([file], newFileName, {
+                              type: file.type,
+                            });
                           });
 
-                        const updatedFileSelection = [...currentFiles, ...newFiles];
+                        const updatedFileSelection = [
+                          ...currentFiles,
+                          ...newFiles,
+                        ];
                         if (updatedFileSelection.length > 2) {
                           toast({
                             title: "Maximum 2 files are allowed",
@@ -1189,14 +1264,18 @@ export function CandidateForm({
                   Add Documents
                 </Button>
                 <span className="text-sm text-muted-foreground">
-                  Max 2 files, {user?.role === "candidate" ? "3MB each" : "5MB each"}
+                  Max 2 files,{" "}
+                  {user?.role === "candidate" ? "3MB each" : "5MB each"}
                 </span>
               </div>
-              
+
               {attachmentsField.value && attachmentsField.value.length > 0 && (
                 <div className="space-y-2">
                   {attachmentsField.value.map((file: File, index: number) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+                    >
                       <div className="flex items-center gap-2">
                         <FileIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                         <div className="flex flex-col min-w-0">
@@ -1214,7 +1293,9 @@ export function CandidateForm({
                         size="sm"
                         className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                         onClick={() => {
-                          const updatedFiles = attachmentsField.value.filter((_: File, i: number) => i !== index);
+                          const updatedFiles = attachmentsField.value.filter(
+                            (_: File, i: number) => i !== index
+                          );
                           setFieldValue("attachments", updatedFiles);
                         }}
                       >

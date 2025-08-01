@@ -17,6 +17,7 @@ import useRoles from "@/hooks/useRoles";
 import { useSSE } from "@/hooks/useSSE";
 import { Candidate } from "@/types/candidate";
 import { ITag } from "@/lib/models/organization";
+import { useSelector } from "react-redux";
 // import useRoles from "@/hooks/useRoles";
 interface User {
   name: string;
@@ -114,7 +115,7 @@ export default function DashboardPage() {
   const itemsPerPage = 48;
   const [open, setOpen] = useState(false);
   const [selectedAssignedTo, setSelectedAssignedTo] = useState("");
-  const [user, setUser] = useState<User | null>(null);
+  // const [user, setUser] = useState<User | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [assignedInterviewers, setAssignedInterviewers] = useState<
     Interviewer[]
@@ -126,6 +127,7 @@ export default function DashboardPage() {
     thisWeek: 0,
     today: 0,
   });
+  const { user } = useSelector((state: any) => state.auth || {});
 
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -332,19 +334,19 @@ export default function DashboardPage() {
     [isLoadingMore, hasMoreData, loadMoreData]
   );
 
-  const checkUser = async () => {
-    const user = Cookies.get("token");
-    if (user) {
-      const decryptedResponse = await verifyAndDecryptJWTToken(String(user));
-      if (decryptedResponse.success && decryptedResponse.user) {
-        setUser(decryptedResponse.user);
-      }
-    }
-  };
+  // const checkUser = async () => {
+  //   // const user = Cookies.get("token");
+  //   if (user) {
+  //     const decryptedResponse = await verifyAndDecryptJWTToken(String(user));
+  //     if (decryptedResponse.success && decryptedResponse.user) {
+  //       setUser(decryptedResponse.user);
+  //     }
+  //   }
+  // };
 
-  useEffect(() => {
-    checkUser();
-  }, []);
+  // useEffect(() => {
+  //   checkUser();
+  // }, []);
 
   useEffect(() => {
     // debugger;

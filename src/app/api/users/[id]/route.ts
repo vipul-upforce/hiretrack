@@ -144,7 +144,7 @@ export async function PUT(
 
     await User.findByIdAndUpdate(id, userData);
 
-    const token = req.cookies.get("token");
+    const token = req.cookies.get("auth_token");
     if (token) {
       const data = verifyAndDecryptToken(token.value);
       if (data.email === userData?.email) {

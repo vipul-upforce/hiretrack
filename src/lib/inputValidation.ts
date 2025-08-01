@@ -11,7 +11,7 @@ export const VALIDATION_PATTERNS = {
   objectId: /^[0-9a-fA-F]{24}$/,
   alphanumeric: /^[a-zA-Z0-9]+$/,
   slug: /^[a-zA-Z0-9-_]+$/,
-  safeString: /^[a-zA-Z0-9\s\-_.@]+$/,
+  safeString: /^[a-zA-Z0-9\s\-_.@]*$/,
   url: /^https?:\/\/.+/,
   phone: /^\+?[\d\s\-\(\)]+$/,
   filename: /^[a-zA-Z0-9\-_.]+$/

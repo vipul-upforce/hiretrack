@@ -24,6 +24,7 @@ import { sentStatusMailHandler } from "@/lib/utils";
 import { useSendStatusMailMutation } from "@/lib/features/org/orgApi";
 import { Switch } from "@/components/ui/switch";
 import { Eye, EyeOff } from "lucide-react";
+import { useSelector } from "react-redux";
 // import { sentRemarkMail } from "@/lib/utils";
 
 const AddRemarksDialog = ({
@@ -48,112 +49,111 @@ const AddRemarksDialog = ({
   const [isSubRemarkPrivate, setIsSubRemarkPrivate] = useState(true);
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
   const [sendStatusMail] = useSendStatusMailMutation();
+  const { user } = useSelector((state: any) => state.auth || {});
 
   const handleAddRemark = async () => {
-    const token = Cookies.get("token");
-    if (token) {
-      const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-      if (decryptedResponse.success && decryptedResponse.user) {
-        const user = decryptedResponse.user;
-        if (!newRemark.trim() || !user?.id) {
+    // const token = Cookies.get("token");
+    if (user) {
+      // const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+      // if (decryptedResponse.success && decryptedResponse.user) {
+      // const user = decryptedResponse.user;
+      if (!newRemark.trim() || !user?.id) {
+        toast({
+          title: "Error",
+          description: "Please add remarks",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      try {
+        const newRemarkObj = {
+          description: String(newRemark).trim(),
+          date: new Date().toISOString(),
+          rating: remarkRating ? Number(remarkRating) : undefined,
+          userId: {
+            _id: user.id,
+            name: user.name,
+            email: user.email,
+          },
+        };
+        const newRemarkHistoryObj = {
+          description: String(newRemark).trim(),
+          isPrivate: isSubRemarkPrivate,
+          date: new Date().toISOString(),
+          rating: remarkRatingHistory ? Number(remarkRatingHistory) : undefined,
+          userId: {
+            _id: user.id,
+            name: user.name,
+            email: user.email,
+          },
+        };
+
+        // debugger;
+        // const updateData = {
+        //   candidateId: candidate?._id,
+        //   jobId: candidate.jobId,
+        //   remarks: [...(candidate?.remarks || []), newRemarkObj],
+        // };
+        const updateData = {
+          _id: candidate?._id,
+          name: candidate.name,
+          remarks: [...(candidate?.remarks || []), newRemarkObj],
+        };
+
+        const newHistoryEntry = {
+          dateTime: new Date().toISOString(),
+          currentInterviewer: null,
+          previousInterviewer: null,
+          remark: newRemarkHistoryObj,
+          assignmentBy: user!.id,
+          title: null,
+          note: {
+            description: "",
+            date: "",
+            rating: 0,
+            userId: null,
+          },
+          attachments: [],
+        };
+        toast({
+          title: "Updating",
+          description: `Updating ${candidate.name}'s remarks`,
+        });
+        // debugger;
+        await updateCandidateHistory({
+          candidateId: candidate?._id,
+          jobId: candidate.jobId,
+          newEntry: newHistoryEntry,
+        }).unwrap();
+        const updatedCandidate = await updateCandidate(updateData).unwrap();
+        await sentStatusMailHandler(updatedCandidate, sendStatusMail);
+        // sentRemarkMail(result, sendEmail);
+
+        onOpenChange(false);
+
+        setNewRemark("");
+        setRemarkRating(null);
+        setRemarkRatingHistory(null);
+        setOpenRemarksFor("");
+
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        await refetch();
+
+        toast({
+          title: "Success",
+          description: "Remark added successfully",
+        });
+      } catch (error: unknown) {
+        if (error instanceof Error) {
           toast({
             title: "Error",
-            description: "Please add remarks",
+            description: error.message,
             variant: "destructive",
           });
-          return;
-        }
-
-        try {
-          const newRemarkObj = {
-            description: String(newRemark).trim(),
-            date: new Date().toISOString(),
-            rating: remarkRating ? Number(remarkRating) : undefined,
-            userId: {
-              _id: user.id,
-              name: user.name,
-              email: user.email,
-            },
-          };
-          const newRemarkHistoryObj = {
-            description: String(newRemark).trim(),
-            isPrivate: isSubRemarkPrivate,
-            date: new Date().toISOString(),
-            rating: remarkRatingHistory
-              ? Number(remarkRatingHistory)
-              : undefined,
-            userId: {
-              _id: user.id,
-              name: user.name,
-              email: user.email,
-            },
-          };
-
-          // debugger;
-          // const updateData = {
-          //   candidateId: candidate?._id,
-          //   jobId: candidate.jobId,
-          //   remarks: [...(candidate?.remarks || []), newRemarkObj],
-          // };
-          const updateData = {
-            _id: candidate?._id,
-            name: candidate.name,
-            remarks: [...(candidate?.remarks || []), newRemarkObj],
-          };
-
-          const newHistoryEntry = {
-            dateTime: new Date().toISOString(),
-            currentInterviewer: null,
-            previousInterviewer: null,
-            remark: newRemarkHistoryObj,
-            assignmentBy: user!.id,
-            title: null,
-            note: {
-              description: "",
-              date: "",
-              rating: 0,
-              userId: null,
-            },
-            attachments: [],
-          };
-          toast({
-            title: "Updating",
-            description: `Updating ${candidate.name}'s remarks`,
-          });
-          // debugger;
-          await updateCandidateHistory({
-            candidateId: candidate?._id,
-            jobId: candidate.jobId,
-            newEntry: newHistoryEntry,
-          }).unwrap();
-          const updatedCandidate = await updateCandidate(updateData).unwrap();
-          await sentStatusMailHandler(updatedCandidate, sendStatusMail);
-          // sentRemarkMail(result, sendEmail);
-
-          onOpenChange(false);
-
-          setNewRemark("");
-          setRemarkRating(null);
-          setRemarkRatingHistory(null);
-          setOpenRemarksFor("");
-
-          await new Promise((resolve) => setTimeout(resolve, 100));
-          await refetch();
-
-          toast({
-            title: "Success",
-            description: "Remark added successfully",
-          });
-        } catch (error: unknown) {
-          if (error instanceof Error) {
-            toast({
-              title: "Error",
-              description: error.message,
-              variant: "destructive",
-            });
-          }
         }
       }
+      // }
     }
   };
 
@@ -228,10 +228,7 @@ const AddRemarksDialog = ({
           <Button variant="secondary" onClick={() => onOpenChange(false)}>
             No Remarks
           </Button>
-          <Button
-            onClick={handleAddRemark}
-            variant="info"
-          >
+          <Button onClick={handleAddRemark} variant="info">
             Add Remark
           </Button>
         </DialogFooter>

@@ -56,8 +56,8 @@ export async function middleware(request: NextRequest) {
   
   // SECURITY FIX: Check both httpOnly and regular tokens for backward compatibility
   const httpOnlyToken = request.cookies.get("auth_token");
-  const regularToken = request.cookies.get("token");
-  const token = httpOnlyToken?.value || regularToken?.value;
+  // const regularToken = request.cookies.get("token");
+  const token = httpOnlyToken?.value;
   
   if (token) {
     const decryptedResponse = await verifyAndDecryptToken(String(token));

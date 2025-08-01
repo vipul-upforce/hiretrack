@@ -50,6 +50,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Editor } from "@monaco-editor/react";
 import Link from "next/link";
+import { useSelector } from "react-redux";
 
 interface FileUpload {
   id: string;
@@ -137,6 +138,7 @@ export default function PortalConfigurationPage() {
   } = useGetPortalConfigsQuery(undefined);
   const [updatePortalConfigs, { isLoading: saving }] =
     useUpdatePortalConfigsMutation();
+  const { user } = useSelector((state: any) => state.auth || {});
   const [settings, setSettings] = useState<PortalSettings>({
     portalName: "",
     portalLogo: null,
@@ -364,6 +366,16 @@ export default function PortalConfigurationPage() {
     );
   }
 
+  console.log("&&&&&&&&&& settings.portalName: ", settings.portalName, user);
+  console.log(
+    "dwdwdw ",
+    settings.portalName &&
+      settings.portalName !== "" &&
+      settings.portalName.length > 0
+      ? true
+      : false
+  );
+
   return (
     <div className="h-screen flex flex-col overflow-hidden w-full">
       {/* Header section with improved design and breadcrumbs */}
@@ -461,7 +473,13 @@ export default function PortalConfigurationPage() {
                       <Label htmlFor="portalName">Portal Name</Label>
                       <Input
                         id="portalName"
-                        value={settings.portalName}
+                        value={
+                          settings.portalName &&
+                          settings.portalName !== "" &&
+                          settings.portalName.length > 0
+                            ? settings.portalName
+                            : user.organizationInfo.name
+                        }
                         onChange={(e) =>
                           setSettings((prev) => ({
                             ...prev,

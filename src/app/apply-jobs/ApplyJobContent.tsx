@@ -3,7 +3,14 @@ import JobModal from "./JobModal";
 import { useFetchOpenJobQuery } from "@/lib/features/job/jobApi";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { LogOut, Search, MapPin, Calendar, Briefcase, ChevronRight } from "lucide-react";
+import {
+  LogOut,
+  Search,
+  MapPin,
+  Calendar,
+  Briefcase,
+  ChevronRight,
+} from "lucide-react";
 import Cookies from "js-cookie";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -19,6 +26,8 @@ import { JobCardSkeleton } from "./JobCardSkeleton";
 import { ISettings } from "@/lib/models/settings";
 import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
 import CustomFieldBadge from "../dashboard/jobs/[id]/components/Candidate/CustomFieldBadge";
+import { useDispatch, useSelector } from "react-redux";
+import { logout } from "@/lib/redux/authSlice";
 
 interface Job {
   _id: string;
@@ -54,6 +63,7 @@ export default function ApplyJobsContent({
     {},
     { skip: orgName === "" }
   );
+  const { user } = useSelector((state: any) => state.auth || null);
 
   const { toast } = useToast();
   const router = useRouter();
@@ -75,7 +85,7 @@ export default function ApplyJobsContent({
   const [secondaryColor, setSecondaryColor] = useState<string>("#8b5cf6");
   const [logoUrl, setLogoUrl] = useState<string>("");
   const [portalName, setPortalName] = useState<string>("");
-
+  const dispatch = useDispatch();
 
   const {
     data: jobs,
@@ -98,7 +108,7 @@ export default function ApplyJobsContent({
       // Fetch both organization data and portal settings
       const [orgResponse, portalResponse] = await Promise.all([
         fetch("/api/organization"),
-        fetch("/api/settings/portal")
+        fetch("/api/settings/portal"),
       ]);
 
       if (!orgResponse.ok) {
@@ -107,7 +117,7 @@ export default function ApplyJobsContent({
 
       const allowance = await orgResponse.json();
       let portalData = null;
-      
+
       if (portalResponse.ok) {
         portalData = await portalResponse.json();
       }
@@ -117,7 +127,7 @@ export default function ApplyJobsContent({
         const config = allowance?.data?.find(
           (org: ISettings) => org?.portalConfigs?.portalName === urlOrgName
         ).portalConfigs;
-        
+
         // Set portal colors and branding from organization config
         if (config?.primaryColor) {
           setPrimaryColor(config.primaryColor);
@@ -131,7 +141,7 @@ export default function ApplyJobsContent({
         if (config?.portalName) {
           setPortalName(config.portalName);
         }
-        
+
         // Override with portal settings if available (more up-to-date)
         if (portalData) {
           if (portalData.primaryColor) {
@@ -141,9 +151,10 @@ export default function ApplyJobsContent({
             setSecondaryColor(portalData.secondaryColor);
           }
           if (portalData.portalLogo) {
-            const logoUrl = typeof portalData.portalLogo === 'string' 
-              ? portalData.portalLogo 
-              : portalData.portalLogo?.url;
+            const logoUrl =
+              typeof portalData.portalLogo === "string"
+                ? portalData.portalLogo
+                : portalData.portalLogo?.url;
             if (logoUrl) {
               setLogoUrl(logoUrl);
             }
@@ -152,7 +163,7 @@ export default function ApplyJobsContent({
             setPortalName(portalData.portalName);
           }
         }
-        
+
         if (config?.portalHeader?.url && config?.portalFooter?.url) {
           const [headerRes, footerRes] = await Promise.all([
             fetch(config.portalHeader.url),
@@ -199,9 +210,10 @@ export default function ApplyJobsContent({
           setSecondaryColor(portalData.secondaryColor);
         }
         if (portalData.portalLogo) {
-          const logoUrl = typeof portalData.portalLogo === 'string' 
-            ? portalData.portalLogo 
-            : portalData.portalLogo?.url;
+          const logoUrl =
+            typeof portalData.portalLogo === "string"
+              ? portalData.portalLogo
+              : portalData.portalLogo?.url;
           if (logoUrl) {
             setLogoUrl(logoUrl);
           }
@@ -227,7 +239,7 @@ export default function ApplyJobsContent({
         });
       }
     } catch (error) {
-      console.error('Error fetching portal settings:', error);
+      console.error("Error fetching portal settings:", error);
     }
   }
 
@@ -237,26 +249,38 @@ export default function ApplyJobsContent({
 
   // Set CSS variables for dynamic theming
   useEffect(() => {
-    document.documentElement.style.setProperty('--portal-primary', primaryColor);
-    document.documentElement.style.setProperty('--portal-secondary', secondaryColor);
-    document.documentElement.style.setProperty('--portal-logo', logoUrl ? `url('${logoUrl}')` : 'none');
-    document.documentElement.style.setProperty('--portal-name', `"${portalName || 'Your Portal Name'}"`);
+    document.documentElement.style.setProperty(
+      "--portal-primary",
+      primaryColor
+    );
+    document.documentElement.style.setProperty(
+      "--portal-secondary",
+      secondaryColor
+    );
+    document.documentElement.style.setProperty(
+      "--portal-logo",
+      logoUrl ? `url('${logoUrl}')` : "none"
+    );
+    document.documentElement.style.setProperty(
+      "--portal-name",
+      `"${portalName || "Your Portal Name"}"`
+    );
   }, [primaryColor, secondaryColor, logoUrl, portalName]);
 
   const pageInit = async () => {
     // debugger;
-    const token = Cookies.get("token");
+    // const token = Cookies.get("token");
     const urlOrgName = searchParams?.get("o");
-    if (token) {
+    if (user) {
       try {
-        const decryptedResponse = await verifyAndDecryptJWTToken(token);
+        // const decryptedResponse = await verifyAndDecryptJWTToken(token);
         if (
-          decryptedResponse.success &&
-          decryptedResponse.user &&
-          decryptedResponse.user.organizationInfo &&
-          decryptedResponse.user.organizationInfo.name
+          // decryptedResponse.success &&
+          // decryptedResponse.user &&
+          user.organizationInfo &&
+          user.organizationInfo.name
         ) {
-          setOrgName(decryptedResponse.user.organizationInfo.name);
+          setOrgName(user.organizationInfo.name);
           setUserLoggedIn(true);
         } else {
           setOrgName(urlOrgName || "");
@@ -268,6 +292,10 @@ export default function ApplyJobsContent({
           description: "Please log in again",
           variant: "destructive",
         });
+        dispatch(logout());
+        await fetch("/api/auth/logout");
+
+        fetch("/api/auth/logout");
         router.push("/auth/login");
       }
     } else {
@@ -328,10 +356,11 @@ export default function ApplyJobsContent({
     }
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     // Clear user data and token
-    Cookies.remove("token");
-
+    // Cookies.remove("token");
+    dispatch(logout());
+    await fetch("/api/auth/logout");
     toast({
       title: "Logged out",
       description: "You have been successfully logged out",
@@ -341,10 +370,14 @@ export default function ApplyJobsContent({
   };
   console.log(jobs);
   return (
-    <div className={showHeaderFooter ? "flex flex-col min-h-screen relative" : "relative"}>
+    <div
+      className={
+        showHeaderFooter ? "flex flex-col min-h-screen relative" : "relative"
+      }
+    >
       {/* Background pattern */}
       <div className="fixed inset-0 -z-10">
-        <div 
+        <div
           className="absolute inset-0 opacity-5"
           style={{
             backgroundImage: `radial-gradient(circle at 20% 80%, ${primaryColor}22 0%, transparent 60%), 
@@ -352,7 +385,7 @@ export default function ApplyJobsContent({
                              radial-gradient(circle at 40% 40%, ${primaryColor}11 0%, transparent 50%)`,
           }}
         />
-        <div 
+        <div
           className="absolute inset-0 opacity-20"
           style={{
             backgroundImage: `linear-gradient(90deg, transparent 0%, ${primaryColor}05 50%, transparent 100%)`,
@@ -363,7 +396,11 @@ export default function ApplyJobsContent({
       {showHeaderFooter && (
         <div dangerouslySetInnerHTML={{ __html: layoutState?.headerHTML }} />
       )}
-      <main className={showHeaderFooter ? "flex-1 p-4 relative z-10" : "relative z-10"}>
+      <main
+        className={
+          showHeaderFooter ? "flex-1 p-4 relative z-10" : "relative z-10"
+        }
+      >
         <div className="container mx-auto p-2">
           <div className="py-4 flex flex-row justify-between items-start mb-8">
             <div>
@@ -371,7 +408,8 @@ export default function ApplyJobsContent({
                 Open Positions {orgName ? `for ${orgName}` : ""}
               </h1>
               <p className="text-gray-600 dark:text-gray-400 text-sm">
-                Discover amazing opportunities and take your career to the next level
+                Discover amazing opportunities and take your career to the next
+                level
               </p>
             </div>
 
@@ -389,7 +427,7 @@ export default function ApplyJobsContent({
               </Button>
             )}
           </div>
-          
+
           {jobs && jobs.length > 5 && (
             <div className="flex gap-3 mb-8 w-full flex-row">
               <div className="relative w-full flex flex-row items-center max-w-md">
@@ -402,8 +440,8 @@ export default function ApplyJobsContent({
                     e.target.style.boxShadow = `0 0 0 2px ${primaryColor}20`;
                   }}
                   onBlur={(e) => {
-                    e.target.style.borderColor = 'rgb(209 213 219)';
-                    e.target.style.boxShadow = 'none';
+                    e.target.style.borderColor = "rgb(209 213 219)";
+                    e.target.style.boxShadow = "none";
                   }}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -415,8 +453,8 @@ export default function ApplyJobsContent({
                 />
                 <Search className="absolute left-4 text-gray-400 h-5 w-5" />
               </div>
-              <Button 
-                onClick={handleSearch} 
+              <Button
+                onClick={handleSearch}
                 className="px-6 py-3 text-sm font-semibold rounded-xl text-white transition-colors"
                 style={{
                   backgroundColor: primaryColor,
@@ -472,7 +510,6 @@ export default function ApplyJobsContent({
                     setIsJobModalOpen(true);
                   }}
                 >
-
                   {/* Card content */}
                   <div className="flex flex-col h-full">
                     {/* Header section */}
@@ -483,8 +520,8 @@ export default function ApplyJobsContent({
                         </h2>
                         <ChevronRight className="w-5 h-5 text-gray-400" />
                       </div>
-                      
-                      <div 
+
+                      <div
                         className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed line-clamp-3 mb-4"
                         dangerouslySetInnerHTML={{
                           __html: job?.description || "No description found",
@@ -520,21 +557,33 @@ export default function ApplyJobsContent({
                       <div className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                           <Briefcase className="w-4 h-4" />
-                          <span className="font-medium">{job.experience} years exp</span>
+                          <span className="font-medium">
+                            {job.experience} years exp
+                          </span>
                         </div>
 
                         {job.salary && (
                           <div className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
-                            <span className="w-4 h-4 flex items-center justify-center text-sm font-semibold">₹</span>
+                            <span className="w-4 h-4 flex items-center justify-center text-sm font-semibold">
+                              ₹
+                            </span>
                             {job.salary?.inText || job.salary?.inText === "" ? (
                               <span className="text-sm font-semibold">
                                 {job.salary.inText}
                               </span>
                             ) : (
                               <span className="text-sm font-semibold">
-                                {job.salary?.min && job.salary.min !== 0 && `${job.salary.min}`}
-                                {job.salary?.min && job.salary.min !== 0 && job.salary?.max && job.salary.max !== 0 && "-"}
-                                {job.salary?.max && job.salary.max !== 0 && `${job.salary.max}`}
+                                {job.salary?.min &&
+                                  job.salary.min !== 0 &&
+                                  `${job.salary.min}`}
+                                {job.salary?.min &&
+                                  job.salary.min !== 0 &&
+                                  job.salary?.max &&
+                                  job.salary.max !== 0 &&
+                                  "-"}
+                                {job.salary?.max &&
+                                  job.salary.max !== 0 &&
+                                  `${job.salary.max}`}
                                 {(job.salary?.min || job.salary?.max) && " LPA"}
                               </span>
                             )}
@@ -543,47 +592,48 @@ export default function ApplyJobsContent({
                       </div>
 
                       {/* Custom fields */}
-                      {job?.customFields && Object.entries(job?.customFields)
-                        .filter(([key, value]) => {
-                          const field = formNameObject?.fields.find(
-                            (f) => f.label === key
-                          );
-                          if (field?.jobId && field.jobId !== job?._id)
-                            return false;
-                          if (
-                            (typeof value === "string" && value === "") ||
-                            (typeof value === "object" &&
-                              Object.keys(value).length === 0)
-                          ) {
-                            return false;
+                      {job?.customFields &&
+                        Object.entries(job?.customFields).filter(
+                          ([key, value]) => {
+                            const field = formNameObject?.fields.find(
+                              (f) => f.label === key
+                            );
+                            if (field?.jobId && field.jobId !== job?._id)
+                              return false;
+                            if (
+                              (typeof value === "string" && value === "") ||
+                              (typeof value === "object" &&
+                                Object.keys(value).length === 0)
+                            ) {
+                              return false;
+                            }
+                            return field?.showOnCard;
                           }
-                          return field?.showOnCard;
-                        }).length > 0 && (
-                        <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                          {Object.entries(job?.customFields)
-                            .filter(([key, value]) => {
-                              const field = formNameObject?.fields.find(
-                                (f) => f.label === key
-                              );
-                              if (field?.jobId && field.jobId !== job?._id)
-                                return false;
-                              if (
-                                (typeof value === "string" && value === "") ||
-                                (typeof value === "object" &&
-                                  Object.keys(value).length === 0)
-                              ) {
-                                return false;
-                              }
-                              return field?.showOnCard;
-                            })
-                            .map(([key, value], i) => (
-                              <div key={i}>
-                                <CustomFieldBadge kii={key} value={value} />
-                              </div>
-                            ))}
-                        </div>
-                      )}
-
+                        ).length > 0 && (
+                          <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                            {Object.entries(job?.customFields)
+                              .filter(([key, value]) => {
+                                const field = formNameObject?.fields.find(
+                                  (f) => f.label === key
+                                );
+                                if (field?.jobId && field.jobId !== job?._id)
+                                  return false;
+                                if (
+                                  (typeof value === "string" && value === "") ||
+                                  (typeof value === "object" &&
+                                    Object.keys(value).length === 0)
+                                ) {
+                                  return false;
+                                }
+                                return field?.showOnCard;
+                              })
+                              .map(([key, value], i) => (
+                                <div key={i}>
+                                  <CustomFieldBadge kii={key} value={value} />
+                                </div>
+                              ))}
+                          </div>
+                        )}
 
                       {/* Apply indicator */}
                       <div className="flex items-center justify-between pt-2">

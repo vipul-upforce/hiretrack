@@ -32,6 +32,7 @@ import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import { useApplyHandler } from "@/app/apply-jobs/useApplyHandler";
 import { AddSpecificCustomFieldButton } from "@/Custom_Fields/Components/AddSpecificCustomFieldButton";
 import { CustomFieldsContext } from "@/Custom_Fields/Context";
+import { useSelector } from "react-redux";
 
 interface EditCandidateDialogProps {
   candidate: Candidate;
@@ -138,7 +139,10 @@ export function EditCandidateDialog({
   );
   const pathname = usePathname();
   const [parsedResumeData, setParsedResume] = useState<Resume | null>(null);
-  const [user, setuser] = useState<User | null>(null);
+  // const [user, setuser] = useState<User | null>(null);
+  const { user }: { user: User } = useSelector(
+    (state: any) => state.auth || {}
+  );
   const { formikRef, handleApply } = useApplyHandler<any>();
   const {
     handleAddCustomField,
@@ -148,15 +152,15 @@ export function EditCandidateDialog({
     setSelectedFormId,
   } = useContext(CustomFieldsContext);
   useEffect(() => {
-    (async () => {
-      const token = Cookies.get("token");
-      if (token) {
-        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-        if (decryptedResponse.success && decryptedResponse.user) {
-          setuser(decryptedResponse.user);
-        }
-      }
-    })();
+    // (async () => {
+    //   const token = Cookies.get("token");
+    //   if (token) {
+    //     const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+    //     if (decryptedResponse.success && decryptedResponse.user) {
+    //       setuser(decryptedResponse.user);
+    //     }
+    //   }
+    // })();
     setStepName("Candidate");
     if (customFields) {
       const candidateForm = Object.entries(customFields).find(

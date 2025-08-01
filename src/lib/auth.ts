@@ -10,7 +10,7 @@ interface JWTPayload {
 export async function auth(request: NextRequest) {
   // SECURITY FIX: Check both httpOnly and regular tokens for backward compatibility
   const httpOnlyToken = request.cookies.get("auth_token");
-  const regularToken = request.cookies.get("token");
+  const regularToken = request.cookies.get("auth_token");
   const token = httpOnlyToken?.value || regularToken?.value;
   
   if (token) {

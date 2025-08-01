@@ -37,6 +37,7 @@ import { Settings2 } from "lucide-react";
 import { CustomFieldsContext } from "@/Custom_Fields/Context";
 import CustomFieldDialog from "@/Custom_Fields/Components/Common/CustomFieldDialog";
 import Stepper from "@/Custom_Fields/Components/Stepper";
+import { useSelector } from "react-redux";
 interface User {
   role: string;
   organizationId: string;
@@ -49,42 +50,64 @@ interface KanbanColumn {
 }
 
 // Dialog component that auto-selects job position form
-function JobCustomFieldsDialog({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+function JobCustomFieldsDialog({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+}) {
   const context = useContext(CustomFieldsContext);
-  const { setStepName, customFields, stepName, selectedFormId, selecteFormIdTarget } = context;
+  const {
+    setStepName,
+    customFields,
+    stepName,
+    selectedFormId,
+    selecteFormIdTarget,
+  } = context;
   const [hasAutoSelected, setHasAutoSelected] = useState(false);
 
-  console.log('JobCustomFieldsDialog context:', {
+  console.log("JobCustomFieldsDialog context:", {
     customFieldsKeys: Object.keys(customFields || {}),
     customFieldsCount: Object.keys(customFields || {}).length,
     stepName,
     selectedFormId,
     hasContext: !!context,
     isOpen,
-    hasAutoSelected
+    hasAutoSelected,
   });
 
   // Auto-select job position form when dialog opens
   useEffect(() => {
-    if (isOpen && !hasAutoSelected && customFields && Object.keys(customFields).length > 0) {
-      console.log('Attempting to auto-select job position form...');
-      
+    if (
+      isOpen &&
+      !hasAutoSelected &&
+      customFields &&
+      Object.keys(customFields).length > 0
+    ) {
+      console.log("Attempting to auto-select job position form...");
+
       // Find the "job position" form ID
       const jobPositionFormEntry = Object.entries(customFields).find(
         ([_, form]) => {
-          console.log('Checking form:', form.formName, 'normalized:', form.formName.toLowerCase());
-          return form.formName.toLowerCase() === 'job position';
+          console.log(
+            "Checking form:",
+            form.formName,
+            "normalized:",
+            form.formName.toLowerCase()
+          );
+          return form.formName.toLowerCase() === "job position";
         }
       );
-      
+
       if (jobPositionFormEntry) {
         const [formId] = jobPositionFormEntry;
-        console.log('Found job position form, selecting:', formId);
+        console.log("Found job position form, selecting:", formId);
         selecteFormIdTarget(formId);
         setStepName("formCustomFieldList");
         setHasAutoSelected(true);
       } else {
-        console.log('No job position form found, staying on FormList');
+        console.log("No job position form found, staying on FormList");
         setStepName("FormList");
         setHasAutoSelected(true);
       }
@@ -92,7 +115,7 @@ function JobCustomFieldsDialog({ isOpen, onClose }: { isOpen: boolean; onClose: 
   }, [isOpen, hasAutoSelected, customFields, selecteFormIdTarget, setStepName]);
 
   const handleClose = useCallback(() => {
-    console.log('JobCustomFieldsDialog closing, resetting to FormList');
+    console.log("JobCustomFieldsDialog closing, resetting to FormList");
     setStepName("FormList");
     setHasAutoSelected(false);
     onClose();
@@ -118,7 +141,10 @@ function JobCustomFieldsDialog({ isOpen, onClose }: { isOpen: boolean; onClose: 
 
 function KanbanPage() {
   const [columns, setColumns] = useState<KanbanColumn[]>(initialColumns);
-  const [user, setUser] = useState<User | null>(null);
+  // const [user, setUser] = useState<User | null>(null);
+  const { user }: { user: User } = useSelector(
+    (state: any) => state.auth || {}
+  );
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -140,17 +166,17 @@ function KanbanPage() {
   const [isCreatingJob, setIsCreatingJob] = useState(false);
   const [duplicate, setDuplicate] = useState(false);
   const [isCustomFieldsOpen, setIsCustomFieldsOpen] = useState(false);
-  useEffect(() => {
-    (async () => {
-      const token = Cookies.get("token");
-      if (token) {
-        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-        if (decryptedResponse.success && decryptedResponse.user) {
-          setUser(decryptedResponse.user);
-        }
-      }
-    })();
-  }, []);
+  // useEffect(() => {
+  //   (async () => {
+  //     const token = Cookies.get("token");
+  //     if (token) {
+  //       const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+  //       if (decryptedResponse.success && decryptedResponse.user) {
+  //         setUser(decryptedResponse.user);
+  //       }
+  //     }
+  //   })();
+  // }, []);
 
   useEffect(() => {
     if (user) {
@@ -452,9 +478,9 @@ function KanbanPage() {
       </AlertDialog>
 
       {/* Custom Fields Dialog */}
-      <JobCustomFieldsDialog 
-        isOpen={isCustomFieldsOpen} 
-        onClose={() => setIsCustomFieldsOpen(false)} 
+      <JobCustomFieldsDialog
+        isOpen={isCustomFieldsOpen}
+        onClose={() => setIsCustomFieldsOpen(false)}
       />
     </div>
   );

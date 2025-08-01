@@ -151,7 +151,7 @@ export async function PUT(req: NextRequest) {
   try {
     let organizationId;
     const data = await req.json();
-    const token = req.cookies.get("token");
+    const token = req.cookies.get("auth_token");
     let decryptedResponse;
     if (token?.value) {
       decryptedResponse = await verifyAndDecryptToken(String(token?.value));
@@ -240,7 +240,7 @@ export async function POST(req: NextRequest) {
     // console.log("~~~~~~~~~~~ ", candidateDetailsPage);
 
     let organizationId;
-    const token = req.cookies.get("token");
+    const token = req.cookies.get("auth_token");
     let decryptedResponse;
     if (token?.value) {
       decryptedResponse = await verifyAndDecryptToken(String(token?.value));
@@ -352,7 +352,7 @@ export async function POST(req: NextRequest) {
 // ⛔⛔⛔ for debug only
 export async function GET(req: NextRequest) {
   try {
-    const token = req.cookies.get("token");
+    const token = req.cookies.get("auth_token");
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
         String(token?.value)

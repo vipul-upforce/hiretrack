@@ -6,6 +6,8 @@ import Cookies from "js-cookie";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { IUser } from "@/lib/models/user";
 import { useTheme } from "@/components/theme-provider";
+import { useSelector } from "react-redux";
+import { User } from "@/lib/features/org/orgApi";
 
 interface PortalHeadProps {
   portalName?: string;
@@ -18,21 +20,24 @@ export default function PortalHead({
   portalLogo = "/default/favicon.png",
   isLoading = false,
 }: PortalHeadProps) {
-  const [user, setUser] = useState<IUser | null>(null);
+  // const [user, setUser] = useState<IUser | null>(null);
   const { theme } = useTheme();
+  const { user }: { user: User } = useSelector(
+    (state: any) => state.auth || {}
+  );
 
   // Get user from cookies when component mounts
-  useEffect(() => {
-    (async () => {
-      const user = Cookies.get("token");
-      if (user) {
-        const decryptedResponse = await verifyAndDecryptJWTToken(String(user));
-        if (decryptedResponse.success && decryptedResponse.user) {
-          setUser(decryptedResponse.user);
-        }
-      }
-    })();
-  }, []);
+  // useEffect(() => {
+  //   (async () => {
+  //     const user = Cookies.get("token");
+  //     if (user) {
+  //       const decryptedResponse = await verifyAndDecryptJWTToken(String(user));
+  //       if (decryptedResponse.success && decryptedResponse.user) {
+  //         setUser(decryptedResponse.user);
+  //       }
+  //     }
+  //   })();
+  // }, []);
 
   // Determine which logo to use
   const getLogoUrl = () => {

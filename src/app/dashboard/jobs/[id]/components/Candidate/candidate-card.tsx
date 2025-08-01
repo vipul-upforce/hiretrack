@@ -55,6 +55,7 @@ import { useUnassignHandlers } from "../../hooks/useUnassignHandlers";
 import { cn } from "@/lib/utils";
 import AttachmentsPopover from "../Remarks/attachments-popover";
 import { useToast } from "@/hooks/use-toast";
+import { useSelector } from "react-redux";
 
 interface CandidateCardProps {
   candidate: Candidate;
@@ -90,7 +91,8 @@ export function CandidateCard({
   onAddRemarkClick,
 }: CandidateCardProps) {
   const { formNameObject } = useCustomForm("Candidate");
-  const [user, setUser] = useState<User | null>(null);
+  // const [user, setUser] = useState<User | null>(null);
+  const { user } = useSelector((state: any) => state.auth || {});
   const [removeFUOpen, setRemoveFUOpenLocal] = useState(false);
   const { handleRemoveFollowUp } = useRemarkHandlers(candidate, user, refetch);
   const { toast } = useToast();
@@ -175,17 +177,17 @@ export function CandidateCard({
     }
   };
 
-  useEffect(() => {
-    (async () => {
-      const token = Cookies.get("token");
-      if (token) {
-        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-        if (decryptedResponse.success && decryptedResponse.user) {
-          setUser(decryptedResponse.user);
-        }
-      }
-    })();
-  }, []);
+  // useEffect(() => {
+  //   (async () => {
+  //     const token = Cookies.get("token");
+  //     if (token) {
+  //       const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+  //       if (decryptedResponse.success && decryptedResponse.user) {
+  //         setUser(decryptedResponse.user);
+  //       }
+  //     }
+  //   })();
+  // }, []);
 
   const renderCardContent = () => (
     <div className="flex flex-col h-full relative">

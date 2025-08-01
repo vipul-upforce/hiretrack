@@ -18,6 +18,7 @@ export function setSecureAuthTokens(
   token: string,
   options: SecureTokenOptions = {}
 ) {
+  console.log("UIUIUIUIUIU: ",response)
   const {
     maxAge = 30 * 24 * 60 * 60, // 30 days in seconds
     expires = 30, // 30 days (legacy format)
@@ -35,14 +36,14 @@ export function setSecureAuthTokens(
 
   // Set readable token for client-side (maintaining existing functionality)
   // This will be phased out in future migration
-  response.cookies.set("token", token, {
-    httpOnly: false, // Readable by client for existing functionality
-    secure: secureFlag,
-    sameSite: "strict",
-    maxAge: maxAge,
-    path: path,
-    domain: domain,
-  });
+  // response.cookies.set("token", token, {
+  //   httpOnly: false, // Readable by client for existing functionality
+  //   secure: secureFlag,
+  //   sameSite: "strict",
+  //   maxAge: maxAge,
+  //   path: path,
+  //   domain: domain,
+  // });
 
   // Set httpOnly token for server-side operations (enhanced security)
   response.cookies.set("auth_token", token, {
@@ -60,6 +61,7 @@ export function setSecureAuthTokens(
   response.headers.set("X-XSS-Protection", "1; mode=block");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
 
+  console.log("RESPONSE IN SESECUTEAUTHTOKEN: ",response)
   return response;
 }
 
@@ -77,9 +79,10 @@ export function clearAuthTokens(response: NextResponse) {
   };
 
   // Clear both tokens
-  response.cookies.set("token", "", cookieOptions);
+  // response.cookies.set("token", "", cookieOptions);
   response.cookies.set("auth_token", "", cookieOptions);
-
+  console.log("GONNA REMOVE THE TOKEN...")
+  response.cookies.delete("auth_token")
   return response;
 }
 

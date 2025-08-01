@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
     let organizationId;
     let role;
     let userData;
-    const token = req.cookies.get("token");
+    const token = req.cookies.get("auth_token");
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
         String(token?.value)
@@ -58,7 +58,7 @@ export async function PUT(req: NextRequest) {
   try {
     await dbConnect();
     let userData;
-    const token = req.cookies.get("token");
+    const token = req.cookies.get("auth_token");
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
         String(token?.value)

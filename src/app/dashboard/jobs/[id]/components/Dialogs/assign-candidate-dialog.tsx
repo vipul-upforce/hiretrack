@@ -35,6 +35,7 @@ import {
 import { useAssignCandidate } from "../../hooks/useAssignCandidate";
 import dayjs from "dayjs";
 import { useSanitizeFiles } from "@/hooks/useSanitizeFiles";
+import { useSelector } from "react-redux";
 
 export function AssignCandidateDialog({
   candidate,
@@ -46,7 +47,10 @@ export function AssignCandidateDialog({
   refetchAssignment,
   onSuccess,
 }: AssignCandidateDialogProps) {
-  const [user, setUser] = useState<User | null>(null);
+  // const [user, setUser] = useState<User | null>(null);
+  const { user }: { user: User } = useSelector(
+    (state: any) => state.auth || {}
+  );
   const { data: interviewers, refetch: refetchInterviewers } =
     useFetchInterviewersQuery();
   const {
@@ -66,17 +70,17 @@ export function AssignCandidateDialog({
   });
   const { sanitizeFiles } = useSanitizeFiles();
 
-  useEffect(() => {
-    (async () => {
-      const token = Cookies.get("token");
-      if (token) {
-        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-        if (decryptedResponse.success && decryptedResponse.user) {
-          setUser(decryptedResponse.user);
-        }
-      }
-    })();
-  }, []);
+  // useEffect(() => {
+  //   (async () => {
+  //     const token = Cookies.get("token");
+  //     if (token) {
+  //       const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+  //       if (decryptedResponse.success && decryptedResponse.user) {
+  //         setUser(decryptedResponse.user);
+  //       }
+  //     }
+  //   })();
+  // }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -99,11 +103,12 @@ export function AssignCandidateDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent size="lg" className="overflow-hidden flex flex-col justify-start">
+      <DialogContent
+        size="lg"
+        className="overflow-hidden flex flex-col justify-start"
+      >
         <DialogHeader>
-          <DialogTitle>
-            Assign Candidate
-          </DialogTitle>
+          <DialogTitle>Assign Candidate</DialogTitle>
         </DialogHeader>
 
         <Formik
@@ -243,11 +248,7 @@ export function AssignCandidateDialog({
                   >
                     Cancel
                   </Button>
-                  <Button
-                    type="submit"
-                    disabled={isSubmitting}
-                    variant="info"
-                  >
+                  <Button type="submit" disabled={isSubmitting} variant="info">
                     {isSubmitting ? "Assigning..." : "Assign"}
                   </Button>
                 </div>

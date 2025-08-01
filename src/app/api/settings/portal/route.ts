@@ -350,7 +350,7 @@ export async function GET(req: NextRequest) {
     let isAuthenticated = false;
     
     // Try to get organization from auth token
-    const token = req.cookies.get("token");
+    const token = req.cookies.get("auth_token");
     if (token?.value) {
       try {
         const decryptedResponse = await verifyAndDecryptToken(
@@ -441,7 +441,7 @@ export async function PUT(req: NextRequest) {
   try {
     await connectToDatabase();
 
-    const token = req.cookies.get("token")?.value;
+    const token = req.cookies.get("auth_token")?.value;
     // console.log(`[PUT] Token received: ${token ? "provided" : "not provided"}`);
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

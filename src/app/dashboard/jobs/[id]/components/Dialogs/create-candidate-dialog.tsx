@@ -32,6 +32,7 @@ import Cookies from "js-cookie";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { useApplyHandler } from "@/app/apply-jobs/useApplyHandler";
 import { TermsConfirmationDialog } from "@/components/TermsConfirmationDialog";
+import { useSelector } from "react-redux";
 // New function to call the evaluate API
 async function evaluateCandidate(
   candidateId: string,
@@ -177,7 +178,10 @@ export function CreateCandidateDialog({
     true
   );
   const [resetForm, setResetForm] = useState(false);
-  const [user, setuser] = useState<User | null>(null);
+  // const [user, setuser] = useState<User | null>(null);
+  const { user }: { user: User } = useSelector(
+    (state: any) => state.auth || {}
+  );
   const [isCreating, setIsCreating] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [showTermsDialog, setShowTermsDialog] = useState(false);
@@ -188,17 +192,17 @@ export function CreateCandidateDialog({
     setIsClient(true);
   }, []);
 
-  useEffect(() => {
-    (async () => {
-      const token = Cookies.get("token");
-      if (token) {
-        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-        if (decryptedResponse.success && decryptedResponse.user) {
-          setuser(decryptedResponse.user);
-        }
-      }
-    })();
-  }, []);
+  // useEffect(() => {
+  //   (async () => {
+  //     const token = Cookies.get("token");
+  //     if (token) {
+  //       const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+  //       if (decryptedResponse.success && decryptedResponse.user) {
+  //         setuser(decryptedResponse.user);
+  //       }
+  //     }
+  //   })();
+  // }, []);
 
   useEffect(() => {
     if (isOpen && isClient) {

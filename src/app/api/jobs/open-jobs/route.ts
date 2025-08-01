@@ -10,6 +10,7 @@ interface CustomField {
 export async function GET(request: NextRequest) {
   try {
     // SECURITY FIX: Validate query parameters for public endpoint
+    console.log("REQ INCOMING!!!! ")
     const validation = validateQueryParams(request.nextUrl.searchParams, {
       o: { 
         type: 'string',

@@ -1,11 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
 import { IUser } from "@/lib/models/user";
-import Cookies from "js-cookie";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
+
+import { useSelector } from "react-redux";
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<IUser | null>(null);
+  const { user } = useSelector((state: any) => state.auth || {});
+  console.log(user);
   const [uriOrgName, setOrgName] = useState<string>();
   const [isHydrated, setIsHydrated] = useState(false);
 
@@ -19,18 +20,6 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
       const orgname = window.location.href.split("=")[1];
       setOrgName(orgname);
     }
-  }, []);
-
-  useEffect(() => {
-    (async () => {
-      const user = Cookies.get("token");
-      if (user) {
-        const decryptedResponse = await verifyAndDecryptJWTToken(String(user));
-        if (decryptedResponse.success && decryptedResponse.user) {
-          setUser(decryptedResponse.user);
-        }
-      }
-    })();
   }, []);
 
   useEffect(() => {

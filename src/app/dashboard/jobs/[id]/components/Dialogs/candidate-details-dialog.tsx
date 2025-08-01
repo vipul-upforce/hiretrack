@@ -50,6 +50,7 @@ import { HistoryAndLogTable, LogsTable } from "../Candidate/HisotryAndLogTable";
 import ResumeEvaluationDetails from "../Candidate/ResumeEvaluationDetails";
 import { scoreColors } from "@/lib/constants";
 import CandidateScoreCard from "../Utils/candidate-score-card";
+import { useSelector } from "react-redux";
 
 const labelClass = "font-semibold text-base";
 
@@ -74,7 +75,10 @@ export function CandidateDetailsDialog({
   const [isAssigning, setIsAssigning] = useState(false);
   const [isAddingFollowUp, setIsAddingFollowUp] = useState(false);
   const [isAssigningJob, setIsAssigningJob] = useState(false);
-  const [user, setuser] = useState<User | null>(null);
+  // const [user, setuser] = useState<User | null>(null);
+  const { user }: { user: User } = useSelector(
+    (state: any) => state.auth || {}
+  );
   const [evaluateCandidateMutation] = useEvaluateCandidateMutation();
   const [confirmReEvaluateOpen, setConfirmReEvaluateOpen] = useState(false);
   const [isEditRemarkDialogOpen, setIsEditRemarkDialogOpen] = useState(false);
@@ -94,17 +98,17 @@ export function CandidateDetailsDialog({
     });
     setLocalCandidate(updatedCandidate!);
   };
-  useEffect(() => {
-    (async () => {
-      const token = Cookies.get("token");
-      if (token) {
-        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-        if (decryptedResponse.success && decryptedResponse.user) {
-          setuser(decryptedResponse.user);
-        }
-      }
-    })();
-  }, []);
+  // useEffect(() => {
+  //   (async () => {
+  //     const token = Cookies.get("token");
+  //     if (token) {
+  //       const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+  //       if (decryptedResponse.success && decryptedResponse.user) {
+  //         setuser(decryptedResponse.user);
+  //       }
+  //     }
+  //   })();
+  // }, []);
 
   const {
     newRemark,

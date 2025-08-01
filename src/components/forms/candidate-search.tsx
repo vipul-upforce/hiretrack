@@ -14,6 +14,8 @@ import { Candidate } from "@/types/candidate";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import withAuthGuard from "../withAuthGuard";
 import { SearchSchema } from "./searchSchema";
+import { useSelector } from "react-redux";
+import { User } from "@/lib/features/org/orgApi";
 
 export interface CandidateField {
   [key: string]: any;
@@ -46,7 +48,9 @@ function CandidateSearch() {
   const [totalPages, setTotalPages] = useState(0);
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-
+  const { user }: { user: User } = useSelector(
+    (state: any) => state.auth || {}
+  );
   const { toast } = useToast();
   const [OrgID, setOrgID] = useState("");
 
@@ -113,22 +117,22 @@ function CandidateSearch() {
 
   useEffect(() => {
     (async () => {
-      const token = Cookies.get("token");
-      if (token) {
-        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-        if (decryptedResponse.success && decryptedResponse.user) {
-          setOrgID(decryptedResponse.user.organizationId);
-          handleSearch({
-            name: "",
-            skills: [],
-            location: "",
-            createdAfter: "",
-            createdBefore: "",
-            logicOperator: "$and",
-            organizationId: decryptedResponse.user.organizationId,
-            page: currentPage,
-          });
-        }
+      // const token = Cookies.get("token");
+      if (user) {
+        // const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+        // if (decryptedResponse.success && decryptedResponse.user) {
+        setOrgID(user.organizationId);
+        handleSearch({
+          name: "",
+          skills: [],
+          location: "",
+          createdAfter: "",
+          createdBefore: "",
+          logicOperator: "$and",
+          organizationId: user.organizationId,
+          page: currentPage,
+        });
+        // }
       }
     })();
   }, []);
@@ -143,22 +147,22 @@ function CandidateSearch() {
   };
 
   const onPageChange = async (pageNumber: number) => {
-    const token = Cookies.get("token");
-    if (token) {
-      const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-      if (decryptedResponse.success && decryptedResponse.user) {
-        setOrgID(decryptedResponse.user.organizationId);
-        handleSearch({
-          name: "",
-          skills: [],
-          location: "",
-          createdAfter: "",
-          createdBefore: "",
-          logicOperator: "$and",
-          organizationId: decryptedResponse.user.organizationId,
-          page: pageNumber,
-        });
-      }
+    // const token = Cookies.get("token");
+    if (user) {
+      // const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+      // if (decryptedResponse.success && decryptedResponse.user) {
+      setOrgID(user.organizationId);
+      handleSearch({
+        name: "",
+        skills: [],
+        location: "",
+        createdAfter: "",
+        createdBefore: "",
+        logicOperator: "$and",
+        organizationId: user.organizationId,
+        page: pageNumber,
+      });
+      // }
     }
   };
   const sortedResults = sortField

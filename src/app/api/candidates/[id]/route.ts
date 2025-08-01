@@ -62,7 +62,7 @@ export async function PUT(
     await connectToDatabase();
     const data = await request.json();
     // console.log("🟢🟢🟢 INCOMING DATA: ", data);
-    const token = request.cookies.get("token");
+    const token = request.cookies.get("auth_token");
 
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
@@ -597,7 +597,7 @@ export async function GET(
   try {
     await connectToDatabase();
     let role = "";
-    const token = _request.cookies.get("token");
+    const token = _request.cookies.get("auth_token");
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
         String(token?.value)

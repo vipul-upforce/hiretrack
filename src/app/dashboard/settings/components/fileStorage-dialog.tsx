@@ -29,6 +29,7 @@ import { useTestConnection } from "@/hooks/use-test-connection";
 import * as jose from "jose";
 import CryptoJS from "crypto-js";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import { useSelector } from "react-redux";
 
 interface User {
   id: string;
@@ -49,7 +50,10 @@ export default function FileStorageOptions({
 }: {
   onClose: () => void;
 }) {
-  const [user, setuser] = useState<User | null>(null);
+  // const [user, setuser] = useState<User | null>(null);
+  const { user }: { user: User } = useSelector(
+    (state: any) => state.auth || {}
+  );
   const { toast } = useToast();
   const [showKey, setShowKey] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
@@ -82,17 +86,17 @@ export default function FileStorageOptions({
     } catch {}
   };
 
-  useEffect(() => {
-    (async () => {
-      const token = Cookies.get("token");
-      if (token) {
-        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-        if (decryptedResponse.success && decryptedResponse.user) {
-          setuser(decryptedResponse.user);
-        }
-      }
-    })();
-  }, []);
+  // useEffect(() => {
+  //   (async () => {
+  //     const token = Cookies.get("token");
+  //     if (token) {
+  //       const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+  //       if (decryptedResponse.success && decryptedResponse.user) {
+  //         setuser(decryptedResponse.user);
+  //       }
+  //     }
+  //   })();
+  // }, []);
 
   const initialValues = {
     storageType: data?.fileStorage?.storageType || "local",
@@ -257,7 +261,10 @@ export default function FileStorageOptions({
                       name="cloudinaryCloudName"
                       value={values.cloudinaryCloudName}
                       onChange={(e) =>
-                        setFieldValue("cloudinaryCloudName", e.target.value.trim())
+                        setFieldValue(
+                          "cloudinaryCloudName",
+                          e.target.value.trim()
+                        )
                       }
                     />
                     <ErrorMessage
@@ -275,7 +282,10 @@ export default function FileStorageOptions({
                         type={showKey ? "text" : "password"}
                         value={values.cloudinaryApiKey}
                         onChange={(e) =>
-                          setFieldValue("cloudinaryApiKey", e.target.value.trim())
+                          setFieldValue(
+                            "cloudinaryApiKey",
+                            e.target.value.trim()
+                          )
                         }
                       />
                       <Button
@@ -409,7 +419,10 @@ export default function FileStorageOptions({
                         type={showSecret ? "text" : "password"}
                         value={values.awsSecretAccessKey}
                         onChange={(e) =>
-                          setFieldValue("awsSecretAccessKey", e.target.value.trim())
+                          setFieldValue(
+                            "awsSecretAccessKey",
+                            e.target.value.trim()
+                          )
                         }
                       />
                       <Button
@@ -463,9 +476,9 @@ export default function FileStorageOptions({
             </div>
 
             <div className="flex justify-end gap-2 border-t border-border/10 px-6 py-4 mt-auto">
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={onClose}
                 disabled={isSubmitting || isUpdating}
               >
@@ -480,7 +493,9 @@ export default function FileStorageOptions({
                         variant="default"
                         disabled={
                           values.storageType !== "local" &&
-                          (isSubmitting || isUpdating || !isConnectionSuccessful)
+                          (isSubmitting ||
+                            isUpdating ||
+                            !isConnectionSuccessful)
                         }
                         title={
                           !isConnectionSuccessful

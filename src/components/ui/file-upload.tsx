@@ -6,6 +6,7 @@ import { Upload, File as FileIcon, Pencil, X } from "lucide-react";
 import { RenameFileDialog } from "./rename-file-dialog";
 import Cookies from "js-cookie";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import { useSelector } from "react-redux";
 interface FileUploadProps {
   onFileSelect: (files: File[]) => void;
   onExistingFilesChange?: (
@@ -75,20 +76,23 @@ export function FileUpload({
     file: null,
     isExisting: false,
   });
-  const [user, setuser] = useState<User | null>(null);
+  // const [user, setuser] = useState<User | null>(null);
+  const { user }: { user: User } = useSelector(
+    (state: any) => state.auth || {}
+  );
   // const [droppedFiles, setDroppedFiles] = useState<string[]>();
 
-  useEffect(() => {
-    (async () => {
-      const token = Cookies.get("token");
-      if (token) {
-        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-        if (decryptedResponse.success && decryptedResponse.user) {
-          setuser(decryptedResponse.user);
-        }
-      }
-    })();
-  }, []);
+  // useEffect(() => {
+  //   (async () => {
+  //     const token = Cookies.get("token");
+  //     if (token) {
+  //       const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+  //       if (decryptedResponse.success && decryptedResponse.user) {
+  //         setuser(decryptedResponse.user);
+  //       }
+  //     }
+  //   })();
+  // }, []);
 
   const handleRename = (newName: string) => {
     if (renameFile.file) {

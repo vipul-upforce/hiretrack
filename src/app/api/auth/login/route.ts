@@ -8,6 +8,7 @@ import { IUCandidateAccount } from "@/lib/models/candidateAccount";
 import { setSecureAuthTokens } from "@/lib/secureTokens";
 import { loginRateLimiter } from "@/lib/rateLimiter";
 import { signToken } from "@/app/actions/auth";
+import { UserWithoutCF } from "@/types/login";
 
 async function handleLogin(req: NextRequest) {
   try {
@@ -74,7 +75,7 @@ const userLogin = async (users: IUser[], orgId: string, password: string) => {
       );
     }
 
-    const orgInfo = await Organization!.findById(userInOrg.organizationId);
+    const orgInfo = await Organization!.findById(userInOrg.organizationId).lean();
     const fileStorage = await Settings!
       .findOne({ organizationId: userInOrg.organizationId }, { _id: 0 })
       .select("fileStorage")
@@ -123,7 +124,7 @@ const userLogin = async (users: IUser[], orgId: string, password: string) => {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }
 
-  const orgInfo = await Organization!.findById(user.organizationId);
+  const orgInfo = await Organization!.findById(user.organizationId).lean();
   const fileStorage = await Settings!
     .findOne({ organizationId: user.organizationId }, { _id: 0 })
     .select("fileStorage")
@@ -181,7 +182,7 @@ const candidateLogin = async (
         adminId: 0,
         lanes: 0,
       }
-    );
+    ).lean();
     const tokenObj = {
       id: candidateInOrg._id.toString(),
       name: candidateInOrg.name,
@@ -232,7 +233,7 @@ const candidateLogin = async (
   const orgInfo = await Organization!.findById(candidate.organizationId, {
     adminId: 0,
     lanes: 0,
-  });
+  }).lean();
 
   const tokenObj = {
     id: candidate._id.toString(),
@@ -357,7 +358,7 @@ const checkMultipleOrgs = async (
         );
       }
 
-      const orgInfo = await Organization!.findById(userInOrg.organizationId);
+      const orgInfo = await Organization!.findById(userInOrg.organizationId).lean();
       const fileStorage = await Settings!
         .findOne({ organizationId: userInOrg.organizationId }, { _id: 0 })
         .select("fileStorage")
@@ -401,7 +402,7 @@ const checkMultipleOrgs = async (
           adminId: 0,
           lanes: 0,
         }
-      );
+      ).lean();
 
       const tokenObj = {
         id: candidateInOrg._id.toString(),
@@ -479,21 +480,29 @@ const checkMultipleOrgs = async (
   );
 };
 
-const returnTokenBasedResponse = async (obj: unknown) => {
-  const token = await signToken(obj);
+const returnTokenBasedResponse = async (obj: any) => {
+  const userWithoutCustomFields: UserWithoutCF = {
+          ...obj
+        };
+        if (userWithoutCustomFields.organizationInfo) {
+          userWithoutCustomFields.organizationInfo = {
+            ...userWithoutCustomFields.organizationInfo,
+          };
+          delete userWithoutCustomFields.organizationInfo.customFields;
+        }
+
+  const token = await signToken(userWithoutCustomFields);
 
   const response = NextResponse.json({
     message: "Logged In Successfully",
     user: token,
   });
-
   // SECURITY FIX: Use secure token system with improved security
-  setSecureAuthTokens(response, token, {
+  const resp = setSecureAuthTokens(response, token, {
     expires: 30, // 30 days
     maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
   });
-
-  return response;
+  return resp;
 };
 
 // Export with rate limiting

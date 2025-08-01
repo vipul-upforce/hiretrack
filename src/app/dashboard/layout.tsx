@@ -27,6 +27,7 @@ import { useGetPortalConfigsQuery } from "@/lib/features/settings/settingsApi";
 import { IUser } from "@/lib/models/user";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { setAllowMultipleOrgs } from "@/lib/features/org/orgSlice";
+import { logout } from "@/lib/redux/authSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/lib/store";
 import PortalHead from "@/components/layouts/PortalHead";
@@ -95,6 +96,7 @@ export default function DashboardLayout({
   } = useGetPortalConfigsQuery(undefined);
   const { setUserLoggedIn } = useCustomFields();
   const [hasMultipleOrgs, seHasMultipleOrgs] = useState(false);
+  const { user } = useSelector((state: any) => state.auth || {});
 
   const dispatch = useDispatch();
   const allowMultipleOrgs = useSelector(
@@ -113,32 +115,42 @@ export default function DashboardLayout({
 
   useEffect(() => {
     (async () => {
-      const user = Cookies.get("token");
+      // const user = Cookies.get("token");
+
       if (user) {
         setUserLoggedIn(true);
-        const decryptedResponse = await verifyAndDecryptJWTToken(String(user));
-        if (decryptedResponse.success && decryptedResponse.user) {
-          setUserData(decryptedResponse.user);
-          setUserLoggedIn(true);
-          refetch();
+        // const decryptedResponse = await verifyAndDecryptJWTToken(String(user));
+        // if (decryptedResponse.success && decryptedResponse.user) {
+        setUserData(user);
+        setUserLoggedIn(true);
+        refetch();
 
-          try {
-            const response = await fetch(
-              "/api/checkorg?organizationId=" +
-                decryptedResponse.user.organizationId
-            );
-            const resp = await response.json();
-            if (!resp.exists) {
-              Cookies.remove("token");
-              window.location.href = "/auth/login";
-              return;
-            }
-          } catch (error) {
-            console.error("Error checking organization:", error);
-            Cookies.remove("token");
-            window.location.href = "/auth/login";
+        try {
+          if (user.organizationInfo.name === "") {
+            return;
           }
+          const response = await fetch(
+            "/api/checkorg?organizationId=" + user.organizationId
+          );
+          const resp = await response.json();
+          if (!resp.exists) {
+            Cookies.remove("token");
+            dispatch(logout());
+            await fetch("/api/auth/logout");
+
+            // debugger;
+            window.location.href = "/auth/login";
+            return;
+          }
+        } catch (error) {
+          console.error("Error checking organization:", error);
+          Cookies.remove("token");
+          dispatch(logout());
+          await fetch("/api/auth/logout");
+
+          window.location.href = "/auth/login";
         }
+        // }
       }
     })();
   }, []);
@@ -152,18 +164,18 @@ export default function DashboardLayout({
   useEffect(() => {
     const handleResize = () => {
       const isSmallScreen = window.innerWidth < 1200;
-      const userPreference = sessionStorage.getItem('sidebar-user-preference');
-      
+      const userPreference = sessionStorage.getItem("sidebar-user-preference");
+
       // On small screens, default to collapsed unless user has explicitly expanded
       if (isSmallScreen) {
-        if (userPreference === 'expanded') {
+        if (userPreference === "expanded") {
           setIsCollapsed(false);
         } else {
           setIsCollapsed(true);
         }
       } else {
         // On large screens, respect user preference or default to expanded
-        if (userPreference === 'collapsed') {
+        if (userPreference === "collapsed") {
           setIsCollapsed(true);
         } else {
           setIsCollapsed(false);
@@ -173,13 +185,15 @@ export default function DashboardLayout({
 
     // Initial check
     handleResize();
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []); // Remove isCollapsed dependency to avoid infinite loops
 
-  const handleLogout = () => {
-    Cookies.remove("token");
+  const handleLogout = async () => {
+    // Cookies.remove("token");
+    dispatch(logout());
+    await fetch("/api/auth/logout");
     setUserData(null);
     setUserLoggedIn(false);
     refetch();
@@ -192,14 +206,15 @@ export default function DashboardLayout({
 
   const generate_share_org = async (e: React.FormEvent) => {
     e.preventDefault();
-    let parsedUser;
-    const user = Cookies.get("token");
-    if (user) {
-      const decryptedResponse = await verifyAndDecryptJWTToken(String(user));
-      if (decryptedResponse.success && decryptedResponse.user) {
-        parsedUser = decryptedResponse.user;
-      }
-    }
+    let parsedUser = user;
+    // const user = Cookies.get("token");
+    // console.log(user);
+    // if (user) {
+    //   const decryptedResponse = await verifyAndDecryptJWTToken(String(user));
+    //   if (decryptedResponse.success && decryptedResponse.user) {
+    //     parsedUser = decryptedResponse.user;
+    //   }
+    // }
     if (parsedUser) {
       let url;
       if (hasMultipleOrgs) {
@@ -264,34 +279,61 @@ export default function DashboardLayout({
 
   // Inject portal colors as CSS custom properties
   useEffect(() => {
-    console.log('Portal config data:', portalConfigData);
+    console.log("Portal config data:", portalConfigData);
     if (portalConfigData?.primaryColor && portalConfigData?.secondaryColor) {
-      console.log('Injecting portal colors:', {
+      console.log("Injecting portal colors:", {
         primary: portalConfigData.primaryColor,
-        secondary: portalConfigData.secondaryColor
+        secondary: portalConfigData.secondaryColor,
       });
       const root = document.documentElement;
-      root.style.setProperty('--portal-primary', portalConfigData.primaryColor);
-      root.style.setProperty('--portal-secondary', portalConfigData.secondaryColor);
-      
+      root.style.setProperty("--portal-primary", portalConfigData.primaryColor);
+      root.style.setProperty(
+        "--portal-secondary",
+        portalConfigData.secondaryColor
+      );
+
       // Create lighter and darker variants for hover states
       const primaryRgb = hexToRgb(portalConfigData.primaryColor);
       const secondaryRgb = hexToRgb(portalConfigData.secondaryColor);
-      
+
       if (primaryRgb) {
-        root.style.setProperty('--portal-primary-rgb', `${primaryRgb.r}, ${primaryRgb.g}, ${primaryRgb.b}`);
-        root.style.setProperty('--portal-primary-hover', darkenColor(portalConfigData.primaryColor, 10));
-        root.style.setProperty('--portal-primary-light', lightenColor(portalConfigData.primaryColor, 10));
-        
+        root.style.setProperty(
+          "--portal-primary-rgb",
+          `${primaryRgb.r}, ${primaryRgb.g}, ${primaryRgb.b}`
+        );
+        root.style.setProperty(
+          "--portal-primary-hover",
+          darkenColor(portalConfigData.primaryColor, 10)
+        );
+        root.style.setProperty(
+          "--portal-primary-light",
+          lightenColor(portalConfigData.primaryColor, 10)
+        );
+
         // Update focus ring colors to use portal primary
-        root.style.setProperty('--focus-ring-color', `rgba(${primaryRgb.r}, ${primaryRgb.g}, ${primaryRgb.b}, 0.2)`);
-        root.style.setProperty('--input-border-focus', portalConfigData.primaryColor);
+        root.style.setProperty(
+          "--focus-ring-color",
+          `rgba(${primaryRgb.r}, ${primaryRgb.g}, ${primaryRgb.b}, 0.2)`
+        );
+        root.style.setProperty(
+          "--input-border-focus",
+          portalConfigData.primaryColor
+        );
       }
-      
+
       if (secondaryRgb) {
-        root.style.setProperty('--portal-secondary-rgb', `${secondaryRgb.r}, ${secondaryRgb.g}, ${secondaryRgb.b}`);
-        root.style.setProperty('--portal-secondary-hover', darkenColor(portalConfigData.secondaryColor, 10));
-        root.style.setProperty('--portal-secondary-light', lightenColor(portalConfigData.secondaryColor, 10));
+        root.style.setProperty(
+          "--portal-secondary-rgb",
+          `${secondaryRgb.r}, ${secondaryRgb.g}, ${secondaryRgb.b}`
+        );
+        root.style.setProperty(
+          "--portal-secondary-hover",
+          darkenColor(portalConfigData.secondaryColor, 10)
+        );
+        root.style.setProperty(
+          "--portal-secondary-light",
+          lightenColor(portalConfigData.secondaryColor, 10)
+        );
       }
     }
   }, [portalConfigData]);
@@ -299,38 +341,40 @@ export default function DashboardLayout({
   // Helper functions for color manipulation
   const hexToRgb = (hex: string) => {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? {
-      r: parseInt(result[1], 16),
-      g: parseInt(result[2], 16),
-      b: parseInt(result[3], 16)
-    } : null;
+    return result
+      ? {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16),
+        }
+      : null;
   };
 
   const darkenColor = (hex: string, percent: number) => {
     const rgb = hexToRgb(hex);
     if (!rgb) return hex;
-    
+
     const factor = (100 - percent) / 100;
     const r = Math.round(rgb.r * factor);
     const g = Math.round(rgb.g * factor);
     const b = Math.round(rgb.b * factor);
-    
+
     // Ensure we always return a valid 6-digit hex
-    const result = ((r << 16) + (g << 8) + b).toString(16).padStart(6, '0');
+    const result = ((r << 16) + (g << 8) + b).toString(16).padStart(6, "0");
     return `#${result}`;
   };
 
   const lightenColor = (hex: string, percent: number) => {
     const rgb = hexToRgb(hex);
     if (!rgb) return hex;
-    
+
     const factor = percent / 100;
     const r = Math.round(rgb.r + (255 - rgb.r) * factor);
     const g = Math.round(rgb.g + (255 - rgb.g) * factor);
     const b = Math.round(rgb.b + (255 - rgb.b) * factor);
-    
+
     // Ensure we always return a valid 6-digit hex
-    const result = ((r << 16) + (g << 8) + b).toString(16).padStart(6, '0');
+    const result = ((r << 16) + (g << 8) + b).toString(16).padStart(6, "0");
     return `#${result}`;
   };
   const SidebarContent = () => (
@@ -347,7 +391,7 @@ export default function DashboardLayout({
             size="sm"
             onClick={() => {
               setIsCollapsed(!isCollapsed);
-              sessionStorage.setItem('sidebar-user-preference', 'expanded');
+              sessionStorage.setItem("sidebar-user-preference", "expanded");
             }}
             className="h-8 w-8 rounded-full flex-shrink-0"
             aria-label="Expand sidebar"
@@ -383,7 +427,7 @@ export default function DashboardLayout({
               size="sm"
               onClick={() => {
                 setIsCollapsed(!isCollapsed);
-                sessionStorage.setItem('sidebar-user-preference', 'collapsed');
+                sessionStorage.setItem("sidebar-user-preference", "collapsed");
               }}
               className="h-8 w-8 rounded-full flex-shrink-0"
               aria-label="Collapse sidebar"
@@ -404,10 +448,11 @@ export default function DashboardLayout({
             ) {
               return null;
             }
-            const isActive = item.title === "Settings" 
-              ? pathname.startsWith("/dashboard/settings")
-              : pathname === item.href;
-            
+            const isActive =
+              item.title === "Settings"
+                ? pathname.startsWith("/dashboard/settings")
+                : pathname === item.href;
+
             return (
               <Link key={item.href} href={item.href}>
                 <span
@@ -416,11 +461,15 @@ export default function DashboardLayout({
                     isActive && "portal-nav-active",
                     isCollapsed ? "justify-center" : "justify-start"
                   )}
-                  style={isActive ? {
-                    backgroundColor: `rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)`,
-                    color: `var(--portal-primary, #6366f1)`,
-                    borderLeft: `3px solid var(--portal-primary, #6366f1)`
-                  } : {}}
+                  style={
+                    isActive
+                      ? {
+                          backgroundColor: `rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)`,
+                          color: `var(--portal-primary, #6366f1)`,
+                          borderLeft: `3px solid var(--portal-primary, #6366f1)`,
+                        }
+                      : {}
+                  }
                 >
                   {item.icon}
                   <span className={cn("", isCollapsed && "hidden")}>

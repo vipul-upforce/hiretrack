@@ -39,6 +39,7 @@ import { CustomFieldsContext } from "@/Custom_Fields/Context";
 import CustomFieldDialog from "@/Custom_Fields/Components/Common/CustomFieldDialog";
 import Stepper from "@/Custom_Fields/Components/Stepper";
 import { useContext, useCallback } from "react";
+import { useSelector } from "react-redux";
 
 interface FilterState {
   search: string;
@@ -63,7 +64,7 @@ export default function JobProgressPage() {
     null
   );
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
+  // const [user, setUser] = useState<User | null>(null);
   const [openRemarksFor, setOpenRemarksFor] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -79,6 +80,7 @@ export default function JobProgressPage() {
   const [filterConditions, setFilterConditions] = useState<FilterState | null>(
     null
   );
+  const { user } = useSelector((state: any) => state.auth || {});
 
   const {
     ref: scrollRef,
@@ -313,16 +315,16 @@ export default function JobProgressPage() {
     }
   }, [isLaneEditOpen]);
 
-  useEffect(() => {
-    const token = Cookies.get("token");
-    if (token) {
-      verifyAndDecryptJWTToken(token).then((decryptedResponse) => {
-        if (decryptedResponse.success && decryptedResponse.user) {
-          setUser(decryptedResponse.user);
-        }
-      });
-    }
-  }, []);
+  // useEffect(() => {
+  //   const token = Cookies.get("token");
+  //   if (token) {
+  //     verifyAndDecryptJWTToken(token).then((decryptedResponse) => {
+  //       if (decryptedResponse.success && decryptedResponse.user) {
+  //         setUser(decryptedResponse.user);
+  //       }
+  //     });
+  //   }
+  // }, []);
 
   useEffect(() => {
     if (!isDialogOpen) {
