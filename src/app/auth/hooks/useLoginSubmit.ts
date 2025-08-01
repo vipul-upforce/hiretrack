@@ -95,49 +95,51 @@ export const useHandleLoginSubmit = ({
           setOrganizationDialogOpen(true);
           return;
         }
+        let is2FAEnabled = response.twofa;
 
         const decryptedResponse = await verifyAndDecryptJWTToken(
           String(response.user)
         );
 
-        if (!decryptedResponse.success || !decryptedResponse.user) {
-          setStatus(decryptedResponse.error || "Failed to process login.");
-          toast({
-            title: "Error",
-            description: decryptedResponse.error || "Failed to process login.",
-            variant: "destructive",
-          });
-          return;
-        }
-        let is2FAEnabled = false;
-        try {
-          const check2FA = await fetch(
-            `/api/settings/twofa?orgId=${decryptedResponse.user.organizationId}`
-          );
-          const data = await check2FA.json();
-          is2FAEnabled = data.twoFA.enable2FA;
-          if (!check2FA.ok) {
-            throw new Error("Failed to fetch 2FA info");
-          }
-        } catch (error) {
-          console.error(error);
-          setStatus("Failed to fetch 2FA info");
-          toast({
-            title: "Error",
-            description: "Failed to fetch 2FA info",
-            variant: "destructive",
-          });
-        }
+        // if (!decryptedResponse.success || !decryptedResponse.user) {
+        //   setStatus(decryptedResponse.error || "Failed to process login.");
+        //   toast({
+        //     title: "Error",
+        //     description: decryptedResponse.error || "Failed to process login.",
+        //     variant: "destructive",
+        //   });
+        //   return;
+        // }
+       
+        // try {
+        //   const check2FA = await fetch(
+        //     `/api/settings/twofa?orgId=${decryptedResponse.user.organizationId}`
+        //   );
+        //   const data = await check2FA.json();
+        //   is2FAEnabled = data.twoFA.enable2FA;
+        //   if (!check2FA.ok) {
+        //     throw new Error("Failed to fetch 2FA info");
+        //   }
+        // } catch (error) {
+        //   console.error(error);
+        //   setStatus("Failed to fetch 2FA info");
+        //   toast({
+        //     title: "Error",
+        //     description: "Failed to fetch 2FA info",
+        //     variant: "destructive",
+        //   });
+        // }
         // const { is2FAEnabled } = await check2FA(String(response.user));
 
         if (is2FAEnabled) {
+          const organizationId = response.organizationId;
           try {
             const otpResponse = await fetch("/api/auth/2fa/send-otp", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 email: values.email.toLowerCase().trim(),
-                organizationId: decryptedResponse.user.organizationId,
+                organizationId
               }),
             });
             // const data = await otpResponse.json();
@@ -151,7 +153,7 @@ export const useHandleLoginSubmit = ({
               variant: "default",
             });
             router.push(
-              `/auth/2fa/verify?email=${values.email.toLowerCase().trim()}&orgId=${decryptedResponse.user.organizationId}`
+              `/auth/2fa/verify?email=${values.email.toLowerCase().trim()}&orgId=${organizationId}`
             );
           } catch (error) {
             console.error(error);
@@ -164,8 +166,6 @@ export const useHandleLoginSubmit = ({
           }
           return;
         }
-
-        dispatch(fetchUserFromToken())
 
         // const userWithoutCustomFields: UserWithoutCF = {
         //   ...decryptedResponse.user,
@@ -200,6 +200,8 @@ export const useHandleLoginSubmit = ({
           });
 
         }
+
+        dispatch(fetchUserFromToken())
       } catch (err: unknown) {
         console.log(err)
         const errorMessage =

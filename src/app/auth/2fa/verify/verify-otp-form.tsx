@@ -46,8 +46,7 @@ export default function VerifyOtpForm() {
       });
 
       if (response.ok) {
-        const { user } = await response.json();
-        dispatch(fetchUserFromToken());
+        // const { user } = await response.json();
         // Cookies.set("token", user, { expires: 30 });
         toast({ title: "Success", description: "Login successful" });
         router.push("/dashboard");
@@ -55,6 +54,8 @@ export default function VerifyOtpForm() {
         const { message } = await response.json();
         toast({ title: "Error", description: message, variant: "destructive" });
       }
+
+      dispatch(fetchUserFromToken());
     } catch (error) {
       toast({
         title: "Error",

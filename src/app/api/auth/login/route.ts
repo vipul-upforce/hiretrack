@@ -76,10 +76,24 @@ const userLogin = async (users: IUser[], orgId: string, password: string) => {
     }
 
     const orgInfo = await Organization!.findById(userInOrg.organizationId).lean();
-    const fileStorage = await Settings!
+    const orgSettings = await Settings!
       .findOne({ organizationId: userInOrg.organizationId }, { _id: 0 })
-      .select("fileStorage")
+      .select("fileStorage twoFA")
       .lean();
+
+    if(orgSettings.twoFA.enable2FA){
+      const response = NextResponse.json({
+        message:"Continuing to next step for 2fa",
+        twofa: true,
+        organizationId: orgId,
+      })
+      response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("X-XSS-Protection", "1; mode=block");
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+
+      return response;
+    }
 
     const user = {
       id: userInOrg._id.toString(),
@@ -88,7 +102,7 @@ const userLogin = async (users: IUser[], orgId: string, password: string) => {
       role: userInOrg.role,
       organizationId: userInOrg.organizationId,
       organizationInfo: orgInfo,
-      fileStorage: fileStorage?.fileStorage?.storageType,
+      fileStorage: orgSettings?.fileStorage?.storageType,
     };
 
     const response = returnTokenBasedResponse(user);
