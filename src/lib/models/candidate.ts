@@ -80,6 +80,32 @@ export interface ICandidate {
     notes: string;
     failure?: string;
   };
+  checklistData?: {
+    [laneId: string]: {
+      incoming?: {
+        checklistId: string;
+        completedAt: Date;
+        completedBy: mongoose.Schema.Types.ObjectId;
+        responses: {
+          [fieldId: string]: {
+            value: any;
+            files?: CustomFieldFile[];
+          };
+        };
+      };
+      outgoing?: {
+        checklistId: string;
+        completedAt: Date;
+        completedBy: mongoose.Schema.Types.ObjectId;
+        responses: {
+          [fieldId: string]: {
+            value: any;
+            files?: CustomFieldFile[];
+          };
+        };
+      };
+    };
+  };
   isDeleted: boolean;
 }
 
@@ -234,6 +260,54 @@ export const candidateSchema = new Schema(
       recommendation: String,
       notes: String,
       failure: String,
+    },
+    checklistData: {
+      type: Map,
+      of: {
+        incoming: {
+          checklistId: String,
+          completedAt: Date,
+          completedBy: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+          },
+          responses: {
+            type: Map,
+            of: {
+              value: Schema.Types.Mixed,
+              files: [{
+                id: String,
+                name: String,
+                url: String,
+                type: String,
+                size: Number,
+              }],
+            },
+          },
+        },
+        outgoing: {
+          checklistId: String,
+          completedAt: Date,
+          completedBy: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+          },
+          responses: {
+            type: Map,
+            of: {
+              value: Schema.Types.Mixed,
+              files: [{
+                id: String,
+                name: String,
+                url: String,
+                type: String,
+                size: Number,
+              }],
+            },
+          },
+        },
+      },
+      default: {},
     },
     isDeleted: Boolean,
   },

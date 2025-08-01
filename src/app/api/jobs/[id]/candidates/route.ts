@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { History } from "@/lib/mongodb";
+import connectToDatabase, { History, JobLaneConfig } from "@/lib/mongodb";
 import { Candidate } from "@/lib/mongodb";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
 import { ICandidate } from "@/lib/models/candidate";
 import { ProjectionType } from "mongoose";
+import { filterChecklistResponses, getUserRole } from "@/lib/utils/checklistVisibility";
 // import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
 
 export async function GET(
@@ -65,6 +66,12 @@ export async function GET(
 
     if (!History) return;
 
+    // Get user role for checklist filtering
+    const userRole = getUserRole(role);
+    
+    // Get job lane configuration for checklist field filtering
+    const laneConfig = await JobLaneConfig?.findOne({ jobId: id });
+
     const candidatesWithHistory = await Promise.all(
       candidates.map(async (candidate) => {
         const history = await History?.findOne({
@@ -77,15 +84,51 @@ export async function GET(
           .populate("history.note.userId", "_id name email")
           .lean();
 
+        // Filter history entries and checklist responses based on user role
+        const filteredHistory = history?.history
+          ? history.history.filter((entry) =>
+              role === "admin" || role === "hr"
+                ? true
+                : !entry.remark?.isPrivate
+            ).map((entry: any) => {
+              // If this entry has checklist data, filter the responses based on user role
+              if (entry.checklistForm && userRole && laneConfig) {
+                // Find the checklist configuration to get field visibility settings
+                let checklistFields: any[] = [];
+                const targetLane = laneConfig.laneConfigs.find((lc: any) => lc.laneId === entry.checklistForm.laneId);
+                if (targetLane) {
+                  const checklist = entry.checklistForm.checklistType === "incoming" 
+                    ? targetLane.incomingChecklist 
+                    : targetLane.outgoingChecklist;
+                  
+                  if (checklist && checklist.fields) {
+                    checklistFields = checklist.fields;
+                  }
+                }
+
+                // Filter the responses based on user role and field visibility
+                const filteredResponses = filterChecklistResponses(
+                  entry.checklistForm.responses,
+                  checklistFields,
+                  userRole
+                );
+
+                return {
+                  ...entry,
+                  checklistForm: {
+                    ...entry.checklistForm,
+                    responses: filteredResponses
+                  }
+                };
+              }
+              
+              return entry;
+            })
+          : [];
+
         return {
           ...candidate,
-          history: history
-            ? history.history.filter((entry) =>
-                role === "admin" || role === "hr"
-                  ? true
-                  : !entry.remark?.isPrivate
-              )
-            : [],
+          history: filteredHistory,
         };
       })
     );

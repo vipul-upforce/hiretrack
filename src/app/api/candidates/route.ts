@@ -5,6 +5,7 @@ import { handleCustomFieldFiles, handleSingleFile } from "@/lib/fileUtils";
 import { handleFileAttachments } from "@/lib/fileUtils";
 import mongoose from "mongoose";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
 // import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
 
@@ -18,6 +19,18 @@ export interface Attachment {
 
 export async function GET(request: Request) {
   try {
+    // Check authentication
+    const token = request.headers.get("cookie")?.match(/token=([^;]+)/)?.[1];
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const decryptedResponse = await verifyAndDecryptJWTToken(token);
+    if (!decryptedResponse.success || !decryptedResponse.user) {
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    }
+
+    const user = decryptedResponse.user;
     const { searchParams } = new URL(request.url);
     const jobId = searchParams?.get("jobId");
 
@@ -28,7 +41,13 @@ export async function GET(request: Request) {
         { status: 404 }
       );
     }
-    const query = jobId ? { jobId } : {};
+    
+    // Filter by organization and jobId if provided
+    const query: any = { organizationId: user.organizationId };
+    if (jobId) {
+      query.jobId = jobId;
+    }
+    
     const candidates = await Candidate.find(query).sort({
       "tracking.createdAt": -1,
     });

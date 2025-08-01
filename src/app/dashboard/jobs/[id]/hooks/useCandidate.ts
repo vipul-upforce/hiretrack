@@ -2,13 +2,16 @@ import { DropResult } from "@hello-pangea/dnd";
 import { toast } from "@/hooks/use-toast";
 import { Candidate, CandidateColumn } from "@/types/candidate";
 import { User } from "@/lib/features/users/usersApi";
+import { useState } from "react";
 import {
   useUpdateCandidateMutation,
   useDeleteCandidateMutation,
 } from "@/lib/features/candidate/candidateApi";
 import { useUpdateLanesMutation } from "@/lib/features/lane/laneApi";
 import { useSendStatusMailMutation } from "@/lib/features/org/orgApi";
+import { useValidateCandidateChecklistMutation } from "@/lib/features/checklist/checklistApi";
 import { sentStatusMailHandler } from "@/lib/utils";
+import { useClientSideChecklistValidation } from "./useClientSideChecklistValidation";
 
 interface UseCandidateProps {
   columns: CandidateColumn[];
@@ -23,6 +26,23 @@ interface UseCandidateProps {
   selectedCandidate: Candidate | null;
   refetch: () => Promise<any>;
   candidateToDelete: string | null;
+  jobLaneConfig?: any;
+}
+
+interface ChecklistValidationResult {
+  candidateId: string;
+  currentLane: string;
+  targetLane: string;
+  checklist?: any;
+  isMandatory?: boolean;
+}
+
+interface PendingMove {
+  candidateId: string;
+  sourceLaneId: string;
+  targetLaneId: string;
+  sourceIndex: number;
+  targetIndex: number;
 }
 
 export const useCandidate = ({
@@ -38,11 +58,104 @@ export const useCandidate = ({
   selectedCandidate,
   refetch,
   candidateToDelete,
+  jobLaneConfig,
 }: UseCandidateProps) => {
   const [updateCandidate] = useUpdateCandidateMutation();
   const [deleteCandidate] = useDeleteCandidateMutation();
   const [updateLanes] = useUpdateLanesMutation();
   const [sendStatusMail] = useSendStatusMailMutation();
+  const [pendingMoves, setPendingMoves] = useState<PendingMove[]>([]);
+  
+  // Initialize client-side checklist validation
+  const { validateCompleteMovement } = useClientSideChecklistValidation(
+    jobLaneConfig,
+    user?.role
+  );
+
+  // Function to complete a pending move (move card and update database)
+  const completePendingMove = async (candidateId: string) => {
+    const pendingMove = pendingMoves.find(pm => pm.candidateId === candidateId);
+    if (!pendingMove) return;
+
+    try {
+      // Update the UI - move the card to target lane
+      setColumns(prevColumns => {
+        const newColumns = [...prevColumns];
+        const sourceColumnIndex = newColumns.findIndex(col => col.id === pendingMove.sourceLaneId);
+        const targetColumnIndex = newColumns.findIndex(col => col.id === pendingMove.targetLaneId);
+        
+        if (sourceColumnIndex >= 0 && targetColumnIndex >= 0) {
+          const sourceColumn = newColumns[sourceColumnIndex];
+          const targetColumn = newColumns[targetColumnIndex];
+          
+          // Find and remove candidate from source
+          const candidateToMove = sourceColumn.candidates.find(c => c._id === candidateId);
+          if (candidateToMove) {
+            const newSourceCandidates = sourceColumn.candidates.filter(
+              candidate => candidate._id !== candidateId
+            );
+            
+            // Add candidate to target with updated status
+            const newTargetCandidates = [...targetColumn.candidates];
+            newTargetCandidates.splice(pendingMove.targetIndex, 0, {
+              ...candidateToMove,
+              status: pendingMove.targetLaneId,
+            });
+            
+            newColumns[sourceColumnIndex] = {
+              ...sourceColumn,
+              candidates: newSourceCandidates,
+            };
+            
+            newColumns[targetColumnIndex] = {
+              ...targetColumn,
+              candidates: newTargetCandidates,
+            };
+          }
+        }
+        
+        return newColumns;
+      });
+
+      // Update candidate status in database
+      const updatedCandidate = await updateCandidate({
+        _id: candidateId,
+        status: pendingMove.targetLaneId,
+      }).unwrap();
+      
+      // Send status change email
+      sentStatusMailHandler(
+        {
+          ...updatedCandidate,
+          prev_status: pendingMove.sourceLaneId,
+        },
+        sendStatusMail
+      );
+
+      // Remove from pending moves
+      setPendingMoves(prev => prev.filter(pm => pm.candidateId !== candidateId));
+      
+      // Refetch to ensure consistency
+      await refetch();
+      
+    } catch (error) {
+      // If database update fails, don't move the card
+      toast({
+        title: "Error",
+        description: "Failed to update candidate status",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Function to cancel a pending move (just remove from pending moves)
+  const cancelPendingMove = (candidateId: string) => {
+    const pendingMove = pendingMoves.find(pm => pm.candidateId === candidateId);
+    if (!pendingMove) return;
+
+    // For mandatory checklists, the card was never moved, so just remove from pending
+    setPendingMoves(prev => prev.filter(pm => pm.candidateId !== candidateId));
+  };
 
   const updateLanesOrder = async (newColumns: CandidateColumn[]) => {
     const lansArray = newColumns.map((column) => column.id);
@@ -78,9 +191,12 @@ export const useCandidate = ({
       return;
     }
 
-    if (source.droppableId !== destination.droppableId) {
-      setOpenRemarksFor(draggableId);
-    }
+    // Store drag information for potential checklist validation
+    const dragInfo = {
+      candidateId: draggableId,
+      currentLane: source.droppableId,
+      targetLane: destination.droppableId,
+    };
 
     const sourceColumn = columns.find((col) => col.id === source.droppableId);
     const destColumn = columns.find(
@@ -129,14 +245,68 @@ export const useCandidate = ({
       };
     }
 
-    setColumns(newColumns);
-
     if (source.droppableId !== destination.droppableId) {
       try {
+        // Get the candidate being moved
+        const candidate = sourceColumn.candidates[source.index];
+        if (!candidate) {
+          console.error('Candidate not found for drag operation');
+          return;
+        }
+
+        // Use client-side validation to check if checklist is needed
+        const validationResult = validateCompleteMovement(
+          candidate,
+          source.droppableId,
+          destination.droppableId
+        );
+
+        // Handle movement based on checklist requirements
+        if (validationResult.validation.requiresChecklist) {
+          const validationInfo = {
+            ...dragInfo,
+            checklist: validationResult.validation.checklist || null,
+            isMandatory: validationResult.validation.isMandatory,
+            checklistType: validationResult.type,
+          };
+
+          if (validationResult.validation.isMandatory) {
+            // For MANDATORY checklists: DON'T move the card or update database
+            // Card will only move after successful form submission
+            setColumns([...columns]); // Keep original state
+            
+            // Add to pending moves to track the intended move
+            setPendingMoves(prev => [...prev, {
+              candidateId: draggableId,
+              sourceLaneId: source.droppableId,
+              targetLaneId: destination.droppableId,
+              sourceIndex: source.index,
+              targetIndex: destination.index
+            }]);
+            
+            // Show dialog with checklist - NO database update yet
+            setOpenRemarksFor(JSON.stringify(validationInfo));
+            return; // Exit early, don't update database
+          } else {
+            // For OPTIONAL checklists: Move the card optimistically
+            setColumns(newColumns);
+            // Continue to database update below
+          }
+          
+          // Show dialog with checklist for optional checklists
+          setOpenRemarksFor(JSON.stringify(validationInfo));
+        } else {
+          // No checklist required, proceed with optimistic update and normal remarks dialog
+          setColumns(newColumns);
+          setOpenRemarksFor(draggableId);
+        }
+
+        // Update candidate status in database (only for non-mandatory or no checklist cases)
         const updatedCandidate = await updateCandidate({
           _id: draggableId,
           status: destination.droppableId,
         }).unwrap();
+        
         sentStatusMailHandler(
           {
             ...updatedCandidate,
@@ -144,15 +314,19 @@ export const useCandidate = ({
           },
           sendStatusMail
         );
-      } catch {
+      } catch (error) {
+        // Revert on error
         setColumns([...columns]);
         toast({
           title: "Error",
-          description: "Failed to update candidate status",
+          description: "Failed to validate or update candidate status",
           variant: "destructive",
         });
       }
       await refetch();
+    } else {
+      // Same lane movement, no checklist validation needed
+      setColumns(newColumns);
     }
   };
 
@@ -218,5 +392,8 @@ export const useCandidate = ({
     handleFileDrop,
     handleDeleteClick,
     handleDeleteConfirm,
+    pendingMoves,
+    completePendingMove,
+    cancelPendingMove,
   };
 };

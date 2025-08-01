@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dot, Star } from "lucide-react";
+import { Dot, Star, ClipboardCheck, ChevronDown, ChevronRight } from "lucide-react";
 import { RemarkOptionsMenu } from "../Remarks/remark-options-menu";
 import AttachmentsPopover from "../Remarks/attachments-popover";
 import { ICandidateHistory } from "@/lib/models/history";
@@ -8,7 +8,148 @@ import { User } from "@/lib/features/users/usersApi";
 import { IEditRemark } from "../../schemas/EditRemarkDialog";
 import useRoles from "@/hooks/useRoles";
 import FollowupDisplay from "../Remarks/followup-popover";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 // import { useDateFormatter } from "@/components/timezoneFormat/useGetFormattedTZ";
+
+// Component to display checklist responses
+const ChecklistResponseViewer = ({ 
+  checklistForm 
+}: { 
+  checklistForm: ICandidateHistory['checklistForm'] 
+}) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  if (!checklistForm) return null;
+
+  // Debug: Log the structure to understand the data format
+  console.log('ChecklistForm structure:', checklistForm);
+  console.log('Responses type:', typeof checklistForm.responses);
+  console.log('Responses instanceof Map:', checklistForm.responses instanceof Map);
+  console.log('Responses data:', checklistForm.responses);
+
+  // Handle both Map and plain object formats
+  const responsesArray = checklistForm.responses instanceof Map 
+    ? Array.from(checklistForm.responses.entries())
+    : Object.entries(checklistForm.responses || {});
+
+  const formatValue = (value: any, fieldType: string) => {
+    if (value === null || value === undefined) return 'N/A';
+    
+    switch (fieldType) {
+      case 'checkbox':
+        if (Array.isArray(value)) {
+          return value.join(', ');
+        }
+        return value ? 'Yes' : 'No';
+      case 'multiSelect':
+        return Array.isArray(value) ? value.join(', ') : String(value);
+      case 'date':
+        return value ? new Date(value).toLocaleDateString() : 'N/A';
+      case 'time':
+        return value || 'N/A';
+      case 'datetime':
+        return value ? new Date(value).toLocaleString() : 'N/A';
+      case 'password':
+        return value ? '••••••••' : 'N/A';
+      case 'file':
+        if (Array.isArray(value) && value.length > 0) {
+          return (
+            <div className="space-y-2">
+              {value.map((file: any, index: number) => (
+                <div key={index} className="flex items-center justify-between bg-gray-100 dark:bg-gray-700 rounded p-2">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm font-medium">{file.name}</span>
+                    <span className="text-xs text-gray-500">
+                      ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      // Create download link
+                      const link = document.createElement('a');
+                      link.href = file.base64;
+                      link.download = file.name;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }}
+                    className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
+                  >
+                    Download
+                  </button>
+                </div>
+              ))}
+            </div>
+          );
+        }
+        return 'No files uploaded';
+      default:
+        return String(value);
+    }
+  };
+
+  return (
+    <div className="mt-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+      <div 
+        className="p-3 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ClipboardCheck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
+              {checklistForm.checklistName}
+            </span>
+          </div>
+          <div className="h-6 w-6 flex items-center justify-center">
+            {isExpanded ? (
+              <ChevronDown className="h-3 w-3" />
+            ) : (
+              <ChevronRight className="h-3 w-3" />
+            )}
+          </div>
+        </div>
+        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          Completed for {checklistForm.laneName} lane
+        </div>
+      </div>
+      
+      {isExpanded && (
+        <div className="p-3 space-y-3">
+          {responsesArray.map(([fieldId, response]) => {
+            // Handle both formats: response could be the response object or nested
+            const responseData = response?.value !== undefined ? response : response;
+            const fieldLabel = responseData?.fieldLabel || fieldId;
+            const fieldType = responseData?.fieldType || 'text';
+            const value = responseData?.value;
+            
+            return (
+              <div key={fieldId} className="border-l-2 border-blue-200 dark:border-blue-800 pl-3">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <label className="text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+                      {fieldLabel}
+                    </label>
+                    <div className="text-sm text-gray-900 dark:text-gray-100 mt-1">
+                      {formatValue(value, fieldType)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          
+          {responsesArray.length === 0 && (
+            <div className="text-center text-sm text-gray-500 dark:text-gray-400 py-2">
+              No responses recorded
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const RenderHistoryEntry = ({
   interview,
@@ -297,6 +438,9 @@ const RenderHistoryEntry = ({
         attachments={interview.attachments}
         onMoreClick={() => null}
       />
+      
+      {/* Show checklist responses if present */}
+      <ChecklistResponseViewer checklistForm={interview.checklistForm} />
     </div>
   );
 };

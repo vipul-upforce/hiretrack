@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import { Candidate } from "@/types/candidate";
 import { formatDate, formatTime } from "../../hooks/dateTimeFormatting";
-import AddRemarksPopover from "../Dialogs/add-remark-dialog";
 import RemarksPopover from "../Remarks/remarks-popover";
 import { CandidateScoreBadge } from "../Utils/candidate-score-badge";
 import FollowupDisplay from "../Remarks/followup-popover";
@@ -66,6 +65,7 @@ interface CandidateCardProps {
   refetch: () => void;
   className?: string;
   onEditClick?: (candidate: Candidate) => void;
+  isPending?: boolean; // New prop to indicate if card is awaiting checklist completion
   onAssignClick?: (candidate: Candidate) => void;
   onMarkAsDoneClick?: (candidate: Candidate) => void;
   onFollowUpClick?: (candidate: Candidate) => void;
@@ -87,6 +87,7 @@ export function CandidateCard({
   onMarkAsDoneClick,
   onFollowUpClick,
   onAddRemarkClick,
+  isPending = false,
 }: CandidateCardProps) {
   const { formNameObject } = useCustomForm("Candidate");
   const [user, setUser] = useState<User | null>(null);
@@ -213,16 +214,18 @@ export function CandidateCard({
             {candidate.tags && <TagsList candidate={candidate} />}
           </div>
           <div className="flex gap-1.5 flex-shrink-0">
-            {/* Add Remarks Popover */}
-            <AddRemarksPopover
-              candidate={candidate}
-              isOpen={openRemarks}
-              refetch={refetch}
-              setOpenRemarksFor={setOpenRemarksFor}
-              onOpenChange={(open) =>
-                setOpenRemarksFor(open ? candidate._id : null)
-              }
-            />
+            {/* Add Remarks Button - handled by main page ChecklistRemarksDialog */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpenRemarksFor(candidate._id);
+              }}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
 
             {/* Remarks Popover */}
             <RemarksPopover
@@ -668,6 +671,7 @@ export function CandidateCard({
               {...provided.dragHandleProps}
               className={cn(
                 "bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg p-4 shadow-sm cursor-grab active:cursor-grabbing relative overflow-visible hover:shadow-md transition-all duration-200 hover:border-gray-300 dark:hover:border-gray-700",
+                isPending && "opacity-50",
                 className
               )}
             >

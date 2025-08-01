@@ -16,6 +16,8 @@ import candidateAccountSchema, {
   IUCandidateAccount,
 } from "./models/candidateAccount";
 import cvBatchSchema, { ICVBatch } from "./models/cvBatch";
+import { jobLaneConfigSchema, IJobLaneConfig } from "./models/JobLaneConfig";
+import { checklistTemplateSchema, IChecklistTemplate } from "./models/ChecklistTemplate";
 
 interface MongooseGlobal {
   conn: typeof mongoose | null;
@@ -35,6 +37,8 @@ export var Settings: mongoose.Model<ISettings> | null = null;
 export var History: mongoose.Model<IHistory> | null = null;
 export var CandidateAccount: mongoose.Model<IUCandidateAccount> | null = null;
 export var cvBatch: mongoose.Model<ICVBatch> | null = null;
+export var JobLaneConfig: mongoose.Model<IJobLaneConfig> | null = null;
+export var ChecklistTemplate: mongoose.Model<IChecklistTemplate> | null = null;
 
 const MONGODB_URI = process.env.MONGODB_URI!;
 
@@ -76,6 +80,8 @@ export default async function connectToDatabase() {
         candidateAccountSchema
       );
       cvBatch = mongoose.model<ICVBatch>("CVBatch", cvBatchSchema);
+      JobLaneConfig = mongoose.model<IJobLaneConfig>("JobLaneConfig", jobLaneConfigSchema);
+      ChecklistTemplate = mongoose.model<IChecklistTemplate>("ChecklistTemplate", checklistTemplateSchema);
       console.log("Models registered");
       return mongoose;
     });

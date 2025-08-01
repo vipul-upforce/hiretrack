@@ -17,6 +17,7 @@ import { useFetchCandidatesQuery } from "@/lib/features/candidate/candidateApi";
 import { Candidate, CandidateColumn, CandidateStatus } from "@/types/candidate";
 import LoaderSkeleton from "./components/Lanes/loader-skeleton";
 import { useGetLanesQuery, useGetJobLanesQuery } from "@/lib/features/lane/laneApi";
+import { useGetJobLaneConfigQuery } from "@/lib/features/checklist/checklistApi";
 import { User } from "@/lib/features/users/usersApi";
 import Cookies from "js-cookie";
 import { Breadcrumb } from "./components/Utils/breadcrumb";
@@ -40,6 +41,8 @@ import CustomFieldDialog from "@/Custom_Fields/Components/Common/CustomFieldDial
 import Stepper from "@/Custom_Fields/Components/Stepper";
 import { useContext, useCallback } from "react";
 import { JobAnalyticsModal } from "../../jobs-board/components/JobAnalyticsModal";
+import ChecklistRemarksDialog from "./components/Dialogs/checklist-remarks-dialog";
+import { LaneChecklistConfigDialog } from "./components/Dialogs/lane-checklist-config-dialog";
 // import CandidatesPage from "./CandidatesPage";
 
 export default function JobProgressPage() {
@@ -64,6 +67,19 @@ export default function JobProgressPage() {
   const [initialLaneToEdit, setInitialLaneToEdit] = useState<string | null>(
     null
   );
+  const [isChecklistConfigOpen, setIsChecklistConfigOpen] = useState(false);
+  const [checklistConfigLane, setChecklistConfigLane] = useState<{
+    laneId: string;
+    laneName: string;
+    initialTab?: "incoming" | "outgoing";
+  } | null>(null);
+
+  // Handler for configuring checklist
+  const handleConfigureChecklist = useCallback((laneId: string, laneName: string, initialTab?: "incoming" | "outgoing") => {
+    setChecklistConfigLane({ laneId, laneName, initialTab });
+    setIsChecklistConfigOpen(true);
+  }, []);
+
   const {
     ref: scrollRef,
     setIsDndDragging,
@@ -101,6 +117,13 @@ export default function JobProgressPage() {
   // Use job-specific lanes if available, fallback to user lanes
   const lanes = jobLanes || userLanes;
   const isLanesLoading = isJobLanesLoading || isUserLanesLoading;
+  
+  // Fetch job lane configuration for checklist indicators
+  const { data: jobLaneConfig } = useGetJobLaneConfigQuery(id as string, {
+    skip: !id
+  });
+  
+  
   const [droppedFileData, setDroppedFileData] = useState<File | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLaneEditOpen, setIsLaneEditOpen] = useState(false);
@@ -131,6 +154,9 @@ export default function JobProgressPage() {
     handleCandidateUpdate,
     handleDeleteClick,
     handleDeleteConfirm,
+    pendingMoves,
+    completePendingMove,
+    cancelPendingMove,
   } = useCandidate({
     columns,
     setColumns,
@@ -144,6 +170,7 @@ export default function JobProgressPage() {
     selectedCandidate,
     refetch,
     candidateToDelete,
+    jobLaneConfig,
   });
 
   // useEffect(() => {
@@ -322,7 +349,13 @@ export default function JobProgressPage() {
 
           <div className="flex-1 overflow-hidden px-4 pb-2">
             <DragDropContext
-              onDragStart={() => setIsDndDragging(true)}
+              onDragStart={(start) => {
+                setIsDndDragging(true);
+                console.log('Drag started for:', start.draggableId);
+              }}
+              onDragUpdate={(update) => {
+                // No prevalidation needed - using client-side validation
+              }}
               onDragEnd={(result: any) => {
                 // console.log(
                 //   "onDragEnd triggered, scrollRef.current:",
@@ -406,7 +439,13 @@ export default function JobProgressPage() {
       {/* <CandidatesPage /> */}
       <div className="flex-1 overflow-hidden px-4 pb-2 pt-2">
         <DragDropContext
-          onDragStart={() => setIsDndDragging(true)}
+          onDragStart={(start) => {
+            setIsDndDragging(true);
+            console.log('Drag started for:', start.draggableId);
+          }}
+          onDragUpdate={(update) => {
+            // No prevalidation needed - using client-side validation
+          }}
           onDragEnd={(result: any) => {
             // console.log(
             //   "onDragEnd triggered, scrollRef.current:",
@@ -424,6 +463,11 @@ export default function JobProgressPage() {
                 className="h-full flex gap-1 overflow-x-auto"
               >
                 {columns.map((column, index) => {
+                  // Find the lane configuration for this column
+                  const laneConfig = jobLaneConfig?.laneConfigs?.find(
+                    (config) => config.laneId === column.id
+                  );
+                  
                   return (
                     <KanbanColumn
                       key={column.id}
@@ -445,6 +489,9 @@ export default function JobProgressPage() {
                       openRemarksFor={openRemarksFor}
                       setOpenRemarksFor={setOpenRemarksFor}
                       handleDeleteClick={handleDeleteClick}
+                      onConfigureChecklist={handleConfigureChecklist}
+                      pendingMoves={pendingMoves}
+                      laneConfig={laneConfig}
                     />
                   );
                 })}
@@ -506,7 +553,60 @@ export default function JobProgressPage() {
           isOpen={isAnalyticsOpen}
           onClose={() => setIsAnalyticsOpen(false)}
           job={job}
-          organizationId={user.organizationId}
+          organizationId={user?.organizationId || ""}
+        />
+      )}
+
+      {/* Checklist and Remarks Dialog */}
+      {openRemarksFor && (() => {
+        const candidate = columns
+          .flatMap((col) => col.candidates)
+          .find((c) => {
+            if (c._id === openRemarksFor) return true;
+            if (openRemarksFor.startsWith("{")) {
+              try {
+                const parsed = JSON.parse(openRemarksFor);
+                return parsed.candidateId === c._id;
+              } catch (e) {
+                console.error("Failed to parse openRemarksFor JSON:", openRemarksFor, e);
+                return false;
+              }
+            }
+            return false;
+          });
+
+        if (!candidate) {
+          console.error("Candidate not found for openRemarksFor:", openRemarksFor);
+          return null;
+        }
+
+        const checklistInfo = openRemarksFor.startsWith("{") ? openRemarksFor : undefined;
+
+        return (
+          <ChecklistRemarksDialog
+            candidate={candidate}
+            isOpen={!!openRemarksFor}
+            onOpenChange={(open) => !open && setOpenRemarksFor(null)}
+            setOpenRemarksFor={setOpenRemarksFor}
+            refetch={refetch}
+            checklistInfo={checklistInfo}
+            onChecklistSuccess={(candidateId) => {
+              completePendingMove(candidateId);
+            }}
+            onChecklistCancel={cancelPendingMove}
+          />
+        );
+      })()}
+
+      {/* Lane Checklist Configuration Dialog */}
+      {checklistConfigLane && (
+        <LaneChecklistConfigDialog
+          isOpen={isChecklistConfigOpen}
+          onOpenChange={setIsChecklistConfigOpen}
+          jobId={id}
+          laneId={checklistConfigLane.laneId}
+          laneName={checklistConfigLane.laneName}
+          initialTab={checklistConfigLane.initialTab}
         />
       )}
     </div>
@@ -516,40 +616,23 @@ export default function JobProgressPage() {
 // Dialog component that auto-selects candidate form
 function CandidateCustomFieldsDialog({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const context = useContext(CustomFieldsContext);
-  const { setStepName, customFields, stepName, selectedFormId, selecteFormIdTarget } = context;
+  const { setStepName, customFields, selecteFormIdTarget } = context;
   const [hasAutoSelected, setHasAutoSelected] = useState(false);
 
-  console.log('CandidateCustomFieldsDialog context:', {
-    customFieldsKeys: Object.keys(customFields || {}),
-    customFieldsCount: Object.keys(customFields || {}).length,
-    stepName,
-    selectedFormId,
-    hasContext: !!context,
-    isOpen,
-    hasAutoSelected
-  });
-
-  // Auto-select candidate form when dialog opens
+  // Auto-select candidate form when dialog opens - memoized to prevent excessive re-runs
   useEffect(() => {
     if (isOpen && !hasAutoSelected && customFields && Object.keys(customFields).length > 0) {
-      console.log('Attempting to auto-select candidate form...');
-      
       // Find the "candidate" form ID
       const candidateFormEntry = Object.entries(customFields).find(
-        ([_, form]) => {
-          console.log('Checking form:', form.formName, 'normalized:', form.formName.toLowerCase());
-          return form.formName.toLowerCase() === 'candidate';
-        }
+        ([_, form]) => form.formName.toLowerCase() === 'candidate'
       );
       
       if (candidateFormEntry) {
         const [formId] = candidateFormEntry;
-        console.log('Found candidate form, selecting:', formId);
         selecteFormIdTarget(formId);
         setStepName("formCustomFieldList");
         setHasAutoSelected(true);
       } else {
-        console.log('No candidate form found, staying on FormList');
         setStepName("FormList");
         setHasAutoSelected(true);
       }
@@ -557,7 +640,6 @@ function CandidateCustomFieldsDialog({ isOpen, onClose }: { isOpen: boolean; onC
   }, [isOpen, hasAutoSelected, customFields, selecteFormIdTarget, setStepName]);
 
   const handleClose = useCallback(() => {
-    console.log('CandidateCustomFieldsDialog closing, resetting to FormList');
     setStepName("FormList");
     setHasAutoSelected(false);
     onClose();
