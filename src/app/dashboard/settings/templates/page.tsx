@@ -198,8 +198,7 @@ const defaultTemplates: EmailTemplate[] = [
     subject: "New Feedback Added - {{candidateName}}",
     content: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
-        <h2 style="color: #2c3e50; margin-top: 0;">New Feedback Added</h2>
-        <p style="margin: 0 0 15px 0;">Hello {{recipientName}},</p>
+        <h2 style="color: #2c3e50; margin-top: 0;margin-bottom: 15px;">New Feedback Added</h2>
 
         <p style="margin: 0 0 15px 0;">New feedback has been added for candidate <strong>{{candidateName}}</strong> applying for the <strong>{{jobTitle}}</strong> position.</p>
 
@@ -223,7 +222,7 @@ const defaultTemplates: EmailTemplate[] = [
     </div>
 </div>`,
     variables: [
-      "recipientName",
+      // "recipientName",
       "candidateName",
       "jobTitle",
       "reviewerName",
@@ -240,8 +239,8 @@ const defaultTemplates: EmailTemplate[] = [
     subject: "Interview Step Completed - {{candidateName}}",
     content: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
-        <h2 style="color: #2c3e50; margin-top: 0;">Interview Step Completed</h2>
-        <p style="margin: 0 0 15px 0;">Hello {{recipientName}},</p>
+        <h2 style="color: #2c3e50; margin-top: 0; margin-bottom: 15px;">Interview Step Completed</h2>
+       
 
         <p style="margin: 0 0 15px 0;">An interview step has been completed for candidate <strong>{{candidateName}}</strong> applying for the <strong>{{jobTitle}}</strong> position.</p>
 
@@ -271,7 +270,7 @@ const defaultTemplates: EmailTemplate[] = [
     </div>
 </div>`,
     variables: [
-      "recipientName",
+      // "recipientName",
       "candidateName",
       "jobTitle",
       "stepName",
@@ -322,7 +321,9 @@ export default function EmailTemplatesPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [templates, setTemplates] = useState<EmailTemplate[]>([...defaultTemplates]);
+  const [templates, setTemplates] = useState<EmailTemplate[]>([
+    ...defaultTemplates,
+  ]);
   const [selectedTemplate, setSelectedTemplate] =
     useState<string>("job-application-hr");
   const [previewMode, setPreviewMode] = useState(false);
@@ -330,18 +331,43 @@ export default function EmailTemplatesPage() {
   useEffect(() => {
     fetchTemplates();
   }, []);
-
   const fetchTemplates = async () => {
     try {
       const response = await fetch("/api/settings/templates");
       if (response.ok) {
         const data = await response.json();
-        if (data.templates && data.templates.length > 0) {
-          setTemplates(data.templates);
+        if (
+          data.templates &&
+          typeof data.templates === "object" &&
+          Object.keys(data.templates).length > 0
+        ) {
+          const arr = Object.values(data.templates).map((template: any) => {
+            const defaultTemplate = defaultTemplates.find(
+              (t) => t.id === (template.templateId || template.id)
+            );
+            return {
+              id: template.templateId || template.id,
+              name: template.templateName || template.name,
+              subject: template.subject,
+              content: template.html || template.content,
+              variables:
+                Array.isArray(template.variables) &&
+                template.variables.length > 0 &&
+                template.variables.every((v: string) => v.trim())
+                  ? template.variables
+                  : defaultTemplate?.variables || [],
+            };
+          });
+          setTemplates(arr);
+        } else {
+          setTemplates([...defaultTemplates]);
         }
+      } else {
+        toast.error(`Failed to load templates: ${response.statusText}`);
       }
     } catch (error) {
       console.error("Failed to load email templates:", error);
+      toast.error("An error occurred while loading templates");
     } finally {
       setLoading(false);
     }
@@ -350,14 +376,23 @@ export default function EmailTemplatesPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
+      for (const template of templates) {
+        if (!template.subject.trim() || !template.content.trim()) {
+          toast.error(
+            `Template "${template.name}" has empty subject or content`
+          );
+          return;
+        }
+      }
       // Transform templates to match API expected format
       const templatesPayload = {};
       templates.forEach((template, index) => {
-        templatesPayload[index] = {
+        templatesPayload[template.id] = {
           templateId: template.id,
           templateName: template.name,
           subject: template.subject,
           html: template.content,
+          variables: template.variables, // Include variables
         };
       });
 
@@ -399,9 +434,7 @@ export default function EmailTemplatesPage() {
       // Create a deep copy of the default template
       const resetTemplate = JSON.parse(JSON.stringify(defaultTemplate));
       setTemplates((prev) =>
-        prev.map((template) =>
-          template.id === id ? resetTemplate : template
-        )
+        prev.map((template) => (template.id === id ? resetTemplate : template))
       );
       toast.success("Template reset to default");
     } else {
@@ -417,7 +450,7 @@ export default function EmailTemplatesPage() {
     return current || defaultTemplates[0];
   };
 
-  const renderPreview = (content: string) => {
+  const renderPreview = (content: string, variables: string[]) => {
     // Replace variables with sample data for preview
     const sampleData = {
       organizationName: "Acme Corporation",
@@ -456,6 +489,15 @@ export default function EmailTemplatesPage() {
       otpCode: "123456",
       expirationTime: "15",
     };
+    // Check for missing variables
+    const missingVariables = variables.filter(
+      (variable) => !(variable in sampleData)
+    );
+    if (missingVariables.length > 0) {
+      toast.warning(
+        `Missing sample data for variables: ${missingVariables.join(", ")}`
+      );
+    }
 
     let previewContent = content;
     Object.entries(sampleData).forEach(([key, value]) => {
@@ -540,23 +582,25 @@ export default function EmailTemplatesPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
-                {templates.map((template) => (
-                  <button
-                    key={template.id}
-                    onClick={() => setSelectedTemplate(template.id)}
-                    className={cn(
-                      "w-full text-left p-3 rounded-lg border transition-all hover:bg-accent",
-                      selectedTemplate === template.id
-                        ? "border-primary bg-primary/5"
-                        : "border-border"
-                    )}
-                  >
-                    <div className="font-medium text-sm">{template.name}</div>
-                    <div className="text-xs text-muted-foreground truncate mt-1">
-                      {template.subject}
-                    </div>
-                  </button>
-                ))}
+                {templates.map((template) => {
+                  return (
+                    <button
+                      key={template.id}
+                      onClick={() => setSelectedTemplate(template.id)}
+                      className={cn(
+                        "w-full text-left p-3 rounded-lg border transition-all hover:bg-accent",
+                        selectedTemplate === template.id
+                          ? "border-primary bg-primary/5"
+                          : "border-border"
+                      )}
+                    >
+                      <div className="font-medium text-sm">{template.name}</div>
+                      <div className="text-xs text-muted-foreground truncate mt-1">
+                        {template.subject}
+                      </div>
+                    </button>
+                  );
+                })}
               </CardContent>
             </Card>
           </div>
@@ -619,7 +663,10 @@ export default function EmailTemplatesPage() {
                     <div className="border rounded-lg p-4 min-h-[400px] bg-white">
                       <div
                         dangerouslySetInnerHTML={{
-                          __html: renderPreview(currentTemplate.content),
+                          __html: renderPreview(
+                            currentTemplate.content,
+                            currentTemplate.variables
+                          ),
                         }}
                       />
                     </div>
@@ -668,7 +715,7 @@ export default function EmailTemplatesPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {currentTemplate.variables.map((variable) => (
+                  {currentTemplate?.variables?.map((variable) => (
                     <div
                       key={variable}
                       className="flex items-center justify-between p-2 bg-muted rounded text-sm"

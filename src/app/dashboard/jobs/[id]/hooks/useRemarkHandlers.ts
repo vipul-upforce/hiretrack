@@ -22,7 +22,7 @@ export const useRemarkHandlers = (
   const [updateCandidate] = useUpdateCandidateMutation();
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
   const [newRemark, setNewRemark] = useState("");
-  
+
   const [newFollowUp, setNewFollowUp] = useState(
     localCandidate?.followUp?.note && localCandidate?.followUp?.note.length > 1
       ? localCandidate?.followUp?.note
@@ -112,6 +112,8 @@ export const useRemarkHandlers = (
       });
       return;
     }
+    // console.log(user, "remark-user");
+
     setIsRemarkSubmitting(true);
     try {
       const newRemarkObj = {
@@ -153,8 +155,11 @@ export const useRemarkHandlers = (
       const updateData = {
         _id: localCandidate?._id,
         name: localCandidate?.name,
+        jobId: localCandidate?.jobId,
         remarks: [...(localCandidate?.remarks || []), newRemarkObj],
       };
+      console.log(localCandidate, "local-remark");
+
       localCandidate &&
         (await updateCandidateHistory({
           candidateId: localCandidate?._id,
@@ -194,7 +199,6 @@ export const useRemarkHandlers = (
         title: "Success",
         description: "Remark added successfully",
       });
-      
     } catch (error: unknown) {
       if (error instanceof Error) {
         toast({
@@ -318,10 +322,10 @@ export const useRemarkHandlers = (
       return;
     }
     // debugger;
-    if ( !user?.id) {
-      console.log("newFollowUp",newFollowUp);
-      console.log("user",user);
-      
+    if (!user?.id) {
+      console.log("newFollowUp", newFollowUp);
+      console.log("user", user);
+
       toast({
         title: "Error",
         description: "Please add the follow-up note.",
@@ -463,13 +467,12 @@ export const useRemarkHandlers = (
     setIsSubRemarkPrivate,
     handleRemarkUpdate,
     isRemarkSubmitting,
-    handleAddRemark ,
+    handleAddRemark,
     handleAddFollowUp,
     setNewFollowUp,
     setNewFollowUpDate,
     newFollowUp,
     newFollowUpDate,
     handleRemoveFollowUp,
-  
   };
 };

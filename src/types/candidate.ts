@@ -97,8 +97,11 @@ export interface Remark {
 }
 
 interface Assignment {
-  interviewerId: string | { _id: string; name: string; email: string };
+  interviewerId:
+    | string
+    | { _id: string; name: string; email: string; duration: string };
   time: string;
+  duration?: string;
   assignedAt: string;
   status?: string;
   assignment?: { status: string };

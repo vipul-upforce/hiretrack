@@ -18,7 +18,11 @@ async function handleSendOtp(req: NextRequest) {
     }
 
     // Check if user has an existing OTP and its generation time
-    const user = await User?.findOne({ email, organizationId });
+    const user = await User?.findOne({ email, organizationId }).populate({
+      path: "organizationId",
+      select: "name", // populate only organization name
+    });
+    // console.log(user, "otp........");
 
     if (user && user.otp && user.otpExpires) {
       const currentTime = new Date();
@@ -47,11 +51,17 @@ async function handleSendOtp(req: NextRequest) {
       { $set: { otp, otpExpires } },
       { upsert: true } // Create user if not found
     );
-
+    const organizationName =
+      typeof user?.organizationId === "object" ? user.organizationId.name : "";
     // Send email with the OTP
     const { emailContent, emailSubject } = await getMappedEmailTemplate(
-      "2fa-otp",
-      { otp },
+      "send-otp",
+      {
+        otpCode: otp,
+        expirationTime: otpExpires,
+        organizationName: organizationName,
+        userName: user?.name,
+      },
       organizationId
     );
 

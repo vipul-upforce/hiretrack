@@ -30,7 +30,7 @@ export async function getMappedEmailTemplate(
   const useDefaultHtml = !template || !template.html?.trim();
   const useDefaultSubject = !template || !template.subject?.trim();
 
-  const emailContent = useDefaultHtml 
+  const emailContent = useDefaultHtml
     ? loadTemplate(templateKey, variables)
     : MapTemplate(template.html, variables);
 
@@ -39,13 +39,13 @@ export async function getMappedEmailTemplate(
   //   : MapTemplate(template.subject, variables);
 
   const rawSubject = useDefaultSubject
-  ? defaultTemplates[templateKey]?.subject
-  : template.subject;
+    ? defaultTemplates[templateKey]?.subject
+    : template.subject;
 
-const emailSubject = MapTemplate(rawSubject, variables);
+  const emailSubject = MapTemplate(rawSubject, variables);
 
-// console.log("Final emailSubject:", emailSubject);
- 
+  // console.log("Final emailSubject:", emailSubject);
+
   // if (templateKey === "2fa-otp") {
   //   const emailContent = loadTemplate(templateKey, variables);
   //   const emailSubject = "Your One-Time Password";

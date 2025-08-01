@@ -267,7 +267,13 @@ const JobCard = ({
                 if (field?.jobId && field.jobId !== job._id) {
                   return false;
                 }
-                return field?.showOnCard;
+                return (
+                  field?.showOnCard &&
+                  value != null &&
+                  value !== "" &&
+                  (!Array.isArray(value) || value.length > 0)
+                );
+                // return field?.showOnCard;
               }).length > 0 && (
                 <div className="mb-5 space-y-3">
                   {Object.entries(job.customFields)
@@ -278,24 +284,51 @@ const JobCard = ({
                       if (field?.jobId && field.jobId !== job._id) {
                         return false;
                       }
-                      return field?.showOnCard;
+                      // return field?.showOnCard;
+                      return (
+                        field?.showOnCard &&
+                        value != null &&
+                        value !== "" &&
+                        (!Array.isArray(value) || value.length > 0)
+                      );
                     })
                     .map(([key, value], i) => (
-                      <div
-                        key={i}
-                        className="flex items-center gap-2.5 text-sm"
-                      >
-                        <div className="h-4 w-4 flex items-center justify-center">
-                          <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full"></div>
-                        </div>
-                        <div className="flex flex-col min-w-0 flex-1">
-                          <span className="text-xs text-gray-500 dark:text-gray-500 uppercase tracking-wide truncate">
-                            {key.split(" |||||(")[0]}
+                      <div key={i} className="text-sm">
+                        <span className="text-gray-600 dark:text-gray-400 truncate mr-1">
+                          {key.split(" |||||(")[0]}
+                        </span>
+                        {/* <span className="font-semibold text-orange-700 dark:text-orange-400">
+                          {String(value)}
+                        </span> */}
+                        {typeof value === "string" ? (
+                          <span className="font-semibold text-orange-700 dark:text-orange-400 capitalize">
+                            {value}
                           </span>
-                          <span className="text-gray-900 dark:text-gray-100 font-semibold truncate">
-                            {String(value)}
-                          </span>
-                        </div>
+                        ) : Array.isArray(value) && value.length > 0 ? (
+                          <AttachmentsPopover
+                            attachments={value.map((file, index) => {
+                              if (typeof file === "string") {
+                                return {
+                                  id: "",
+                                  name: "",
+                                  url: "",
+                                  type: "",
+                                  size: 0,
+                                };
+                              }
+                              return {
+                                id: `${key}-${index}-${file.name}`,
+                                name: file.name,
+                                url: file.base64 || "#",
+                                type: file.type || "unknown",
+                                size: file.size || 0,
+                              };
+                            })}
+                            onMoreClick={() => null}
+                          />
+                        ) : (
+                          "default"
+                        )}
                       </div>
                     ))}
                 </div>

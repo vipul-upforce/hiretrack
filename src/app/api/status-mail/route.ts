@@ -65,6 +65,7 @@ async function sendQueuedEmail(data: any) {
     rating,
     emailList,
     actionBy,
+    jobName,
     prev_status,
     eventSubTitle,
     candidateDetails,
@@ -77,18 +78,38 @@ async function sendQueuedEmail(data: any) {
   //   <strong>Rating:</strong> ${rating || "N/A"}
   // </div>`;
 
-  const {emailContent, emailSubject} = await getMappedEmailTemplate("status-update", {
-    eventTitle,
-    candidateName,
-    status,
-    remark,
-    rating,
-    actionBy,
-    prev_status,
-    eventSubTitle,
-    candidateDetails,
-    // eventDescription,
-  }, organizationId);
+  const organization = await User?.findOne({
+    organizationId,
+  }).populate({
+    path: "organizationId",
+    select: "name", // populate only organization name
+  });
+  // console.log(emailList, "eeeee-------mmmm");
+
+  const organizationName =
+    typeof organization?.organizationId === "object"
+      ? organization.organizationId.name
+      : "";
+
+  const { emailContent, emailSubject } = await getMappedEmailTemplate(
+    "status-update",
+    {
+      eventTitle,
+      jobTitle: jobName,
+      candidateName,
+      newStatus: status,
+      statusMessage: remark,
+      rating,
+      actionBy,
+      prev_status,
+      eventSubTitle,
+      candidateDetails,
+      organizationName: organizationName,
+      // eventDescription,
+      // hrContactInfo
+    },
+    organizationId
+  );
   console.log(`>>> ${email}, ${[...emailList]}`);
   return await sendMail(
     organizationId,
@@ -102,6 +123,7 @@ export async function POST(req: NextRequest) {
   try {
     await connectToDatabase();
     const {
+      jobName,
       eventTitle,
       candidateName,
       status,
@@ -110,6 +132,8 @@ export async function POST(req: NextRequest) {
       immediate = false,
       id,
       prev_status,
+      endTime,
+      startTime,
     } = await req.json();
 
     let organizationId;
@@ -180,10 +204,13 @@ export async function POST(req: NextRequest) {
       status,
       remark,
       rating,
+      jobName,
       emailList,
       actionBy,
       prev_status,
       candidateDetails,
+      startTime,
+      endTime,
     };
 
     if (immediate) {

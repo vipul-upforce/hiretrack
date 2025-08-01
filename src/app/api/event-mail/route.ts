@@ -120,21 +120,32 @@ async function sendQueuedEmail(data: any, req: NextRequest) {
     eventDescription || ""
   )}`;
 
+  const organization = await User?.findOne({
+    organizationId,
+  }).populate({
+    path: "organizationId",
+    select: "name", // populate only organization name
+  });
+  const organizationName =
+    typeof organization?.organizationId === "object"
+      ? organization.organizationId.name
+      : "";
   // Use the request's host header to determine the client's base URI
 
   const { emailContent, emailSubject } = await getMappedEmailTemplate(
-    "assignment-event",
+    "interview-assignment",
     {
       eventTitle,
-      startDate: startDateString as string,
+      interviewDate: startDateString as string,
       endDate: endDateString as string,
-      jobName,
+      jobTitle: jobName,
       interviewerName,
       candidateName,
-      status,
-      googleCalendarLink,
+      interviewType: status,
+      meetingLink: googleCalendarLink,
       outlookCalendarLink,
-      candidateDetailsPage,
+      candidateProfileLink: candidateDetailsPage,
+      organizationName,
     },
     organizationId
   );
@@ -171,15 +182,32 @@ export async function PUT(req: NextRequest) {
     if (!User) {
       throw new Error("Database not connected");
     }
+    const latestRemark = data.feedback[data.feedback.length - 1];
+    console.log(latestRemark, "feee---ddd");
+    const newDate = latestRemark.date;
+    const completionDate = (await getFormattedDate(
+      req,
+      newDate,
+      false,
+      organizationId
+    )) as string;
 
-    const candidateDetails = `${req.headers.get("Origin")}/candidate/${data.id}`;
+    const candidateDetails = `${req.headers.get("Origin")}/candidate/${data.candidateId}`;
+    console.log("Detaielsss-------sssss", candidateDetails);
 
     const { emailContent, emailSubject } = await getMappedEmailTemplate(
-      "marked-as-done",
+      "step-completed",
       {
-        candidate_name: data.name,
-        unassigner: decryptedResponse?.user.name,
-        candidateDetails,
+        // candidate_name: data.name,
+        candidateName: data.name,
+        completedBy: decryptedResponse?.user.name,
+        candidateProfileLink: candidateDetails,
+        jobTitle: data.title,
+        organizationName: decryptedResponse?.user.organizationInfo.name,
+        stepName: data?.status,
+        feedback: latestRemark?.description || "N/A",
+        rating: latestRemark?.rating || "N/A",
+        completionDate: completionDate,
       },
       organizationId
     );

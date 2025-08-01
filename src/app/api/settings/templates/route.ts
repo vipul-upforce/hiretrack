@@ -35,14 +35,15 @@ export async function GET(req: NextRequest) {
 
     if (!settings || !settings.emailTemplates) {
       return NextResponse.json({
-        templates: {}
+        templates: {},
       });
     }
 
     // Convert Map to Object if using Map in schema
-    const emailTemplates = settings.emailTemplates instanceof Map 
-      ? Object.fromEntries(settings.emailTemplates) 
-      : settings.emailTemplates;
+    const emailTemplates =
+      settings.emailTemplates instanceof Map
+        ? Object.fromEntries(settings.emailTemplates)
+        : settings.emailTemplates;
 
     return NextResponse.json({ templates: emailTemplates });
   } catch (error) {
@@ -80,11 +81,11 @@ export async function PUT(req: NextRequest) {
     }
 
     const body = await req.json();
-    console.log("Request body:", JSON.stringify(body, null, 2));
+    // console.log("Request body:", JSON.stringify(body, null, 2));
 
     const templates = body.templates || body;
 
-    if (!templates || typeof templates !== 'object') {
+    if (!templates || typeof templates !== "object") {
       return NextResponse.json(
         { error: "Invalid templates data structure" },
         { status: 400 }
@@ -93,7 +94,12 @@ export async function PUT(req: NextRequest) {
 
     for (const [templateId, template] of Object.entries(templates)) {
       const temp = template as any;
-      if (!temp.templateId || !temp.templateName || !temp.subject || !temp.html) {
+      if (
+        !temp.templateId ||
+        !temp.templateName ||
+        !temp.subject ||
+        !temp.html
+      ) {
         return NextResponse.json(
           { error: `Invalid template structure for ${templateId}` },
           { status: 400 }
@@ -101,20 +107,20 @@ export async function PUT(req: NextRequest) {
       }
     }
 
-    console.log("Templates to save:", JSON.stringify(templates, null, 2));
+    // console.log("Templates to save:", JSON.stringify(templates, null, 2));
 
     const updatedSettings = await Settings.findOneAndUpdate(
       { organizationId: userData.organizationId },
-      { 
-        $set: { 
-          emailTemplates: templates 
-        } 
+      {
+        $set: {
+          emailTemplates: templates,
+        },
       },
       {
         new: true,
         runValidators: true,
         upsert: true,
-        strict: false // Allow fields not in schema temporarily
+        strict: false, // Allow fields not in schema temporarily
       }
     );
 
@@ -125,13 +131,15 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    console.log('Updated settings email templates:', updatedSettings.emailTemplates);
-    
+    console.log(
+      "Updated settings email templates:",
+      updatedSettings.emailTemplates
+    );
+
     return NextResponse.json({
       message: "Email templates updated successfully",
-      templates: updatedSettings.emailTemplates
+      templates: updatedSettings.emailTemplates,
     });
-
   } catch (error) {
     console.error("Error updating email templates:", error);
     return NextResponse.json(

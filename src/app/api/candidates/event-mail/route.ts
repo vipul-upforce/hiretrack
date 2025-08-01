@@ -108,16 +108,16 @@ export async function POST(req: NextRequest) {
     const hrNotificationTitle = `${candidateName} applied for ${jobName}`;
     const candidateDetails = `${req.headers.get("Origin")}/candidate/${candidateId}`;
     const { emailContent, emailSubject } = await getMappedEmailTemplate(
-      "job-application-(hr)",
+      "job-application-hr",
       {
         orgName,
         hrNotificationTitle,
         status,
-        email,
+        candidateEmail: email,
         candidateName,
-        jobName,
+        jobTitle: jobName,
         applicationDate,
-        candidateDetails,
+        dashboardLink: candidateDetails,
       },
       organizationId
     );

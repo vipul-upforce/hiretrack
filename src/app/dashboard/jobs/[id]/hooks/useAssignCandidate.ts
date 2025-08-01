@@ -242,7 +242,16 @@ export const useAssignCandidate = ({
         jobId: candidate.jobId._id || candidate.jobId,
         newEntry: newHistoryEntry,
       }).unwrap();
-      sendUnassignEmail({ name: result.name });
+      // sendUnassignEmail({ name: result.name });
+      sendUnassignEmail({
+        name: result.name,
+        candidateId: updatedCandidate._id,
+        jobId: candidate.jobId.title || candidate.jobId,
+        title: candidate.jobId.title || candidate.jobId,
+        dateTime: new Date().toISOString(),
+        status: candidate?.status,
+        feedback: newHistoryEntry.note,
+      });
       toast({
         title: "Success",
         description: "Interviewer has been unassigned successfully",

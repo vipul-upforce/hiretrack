@@ -225,9 +225,14 @@ export function CreateCandidateDialog({
   };
 
   const handleSubmit = async (values: CandidateFormValues) => {
-    // Show terms confirmation dialog first
-    setPendingFormValues(values);
-    setShowTermsDialog(true);
+    if (user?.role === "candidate") {
+      // Show terms dialog for candidates
+      setPendingFormValues(values);
+      setShowTermsDialog(true);
+    } else {
+      // Directly submit for non-candidates
+      actualSubmit(values);
+    }
   };
 
   const actualSubmit = async (values: CandidateFormValues) => {
@@ -314,6 +319,7 @@ export function CreateCandidateDialog({
 
       // Step 1: Create the candidate
       setIsCreating(true);
+
       const createdCandidate = await createCandidate(candidateData).unwrap();
       const candidateId = createdCandidate._id;
       if (values.resume && values.resume.type === "application/pdf") {
@@ -527,7 +533,7 @@ export function CreateCandidateDialog({
                     handleApply();
                   }}
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isCreating || isLoading}
                 >
                   {isSubmitting
                     ? "Saving..."

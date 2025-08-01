@@ -59,6 +59,9 @@ export interface IScheduledStatusMailRequest {
   status: string;
   remark?: string;
   rating?: string;
+  jobName?: string;
+  startTime?: string;
+  endTime?: string;
 }
 
 export interface CreateOrgResponse {
