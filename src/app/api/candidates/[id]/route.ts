@@ -14,6 +14,7 @@ import { IinfoUpdateLog } from "@/lib/models/history";
 import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
 import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
 import { ITag } from "@/lib/models/organization";
+import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
 
 interface UpdateObject {
   $set: Record<string, unknown>;
@@ -373,6 +374,7 @@ export async function PUT(
           User
         ) {
           const latestRemark = data.remarks[data.remarks.length - 1];
+
           if (latestRemark?.description) {
             const users = await User.find({
               organizationId,
@@ -380,23 +382,46 @@ export async function PUT(
               $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
             }).select("email");
 
+            const organization = await User?.findOne({
+              organizationId,
+            }).populate({
+              path: "organizationId",
+              select: "name", // populate only organization name
+            });
+            // console.log(organization, "remark-organization");
+
             const emailList = [undefined, ...users.map((user) => user.email)];
             const remark_adder = userData?.name || "user";
             const remark_for = data.name || existingCandidate.name;
             const remark = latestRemark.description.trim();
             const rating = latestRemark.rating || "None";
             const candidateDetails = `${request.headers.get("origin")}/candidate/${data._id}`;
+            const remarkDate = (await getFormattedDate(
+              request,
+              latestRemark.date,
+              false,
+              organizationId
+            )) as string;
+            // console.log("⛔⛔⛔ APLPICTION DATE: ", remarkDate);
+
+            const organizationName =
+              typeof organization?.organizationId === "object"
+                ? organization.organizationId.name
+                : "";
 
             if (emailList.length > 0 && remark !== "") {
               const { emailContent, emailSubject } =
                 await getMappedEmailTemplate(
-                  "remark-add",
+                  "new-remark",
                   {
-                    remark_adder,
-                    remark_for,
+                    reviewerName: remark_adder,
+                    candidateName: remark_for,
                     rating,
-                    remark,
-                    candidateDetails,
+                    jobTitle: data.jobId.title,
+                    remarkDate: remarkDate,
+                    remarkText: remark,
+                    candidateProfileLink: candidateDetails,
+                    organizationName: organizationName,
                   },
                   organizationId
                 );

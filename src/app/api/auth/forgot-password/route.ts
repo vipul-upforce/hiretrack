@@ -171,7 +171,9 @@ async function handlePasswordReset(
       }
     } else {
       // Try regular user first, then candidate
-      user = await User.findOne({ email, organizationId });
+      user = await User.findOne({ email, organizationId }).populate(
+        "organizationId"
+      );
 
       if (!user) {
         user = await CandidateAccount.findOne({ email, organizationId });
@@ -184,6 +186,13 @@ async function handlePasswordReset(
         "No account found with this email in the selected organization"
       );
     }
+    // const organization = await CandidateAccount.findById(organizationId);
+    // if (!organization) {
+    //   throw new Error("Organization not found");
+    // }
+    // const candidateUsers = await CandidateAccount.find({ email });
+    // console.log("Organization Name:", candidateUsers);
+    // console.log(user, "reset passwordd.....");
 
     // Generate password reset token
     const resetToken = crypto.randomBytes(32).toString("hex");
@@ -210,9 +219,11 @@ async function handlePasswordReset(
     const resetUrl = `${origin}/auth/reset-password?token=${resetToken}${isCandidate ? "&type=candidate" : ""}`;
 
     const { emailContent, emailSubject } = await getMappedEmailTemplate(
-      "reset-password-request",
+      "password-reset",
       {
-        resetUrl,
+        resetLink: resetUrl,
+        organizationName: user?.organizationId.name,
+        userName: user?.name,
       },
       organizationId
     );

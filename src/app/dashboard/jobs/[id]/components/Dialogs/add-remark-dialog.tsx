@@ -95,9 +95,21 @@ const AddRemarksDialog = ({
         //   jobId: candidate.jobId,
         //   remarks: [...(candidate?.remarks || []), newRemarkObj],
         // };
+        // const updateData = {
+        //   _id: candidate?._id,
+        //   name: candidate.name,
+        //   remarks: [...(candidate?.remarks || []), newRemarkObj],
+        // };
+        // debugger;
+        // const updateData = {
+        //   candidateId: candidate?._id,
+        //   jobId: candidate.jobId,
+        //   remarks: [...(candidate?.remarks || []), newRemarkObj],
+        // };
         const updateData = {
           _id: candidate?._id,
           name: candidate.name,
+          jobId: candidate?.jobId,
           remarks: [...(candidate?.remarks || []), newRemarkObj],
         };
 

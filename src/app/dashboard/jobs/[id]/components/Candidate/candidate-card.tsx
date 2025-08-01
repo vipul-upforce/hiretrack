@@ -133,8 +133,8 @@ export function CandidateCard({
     candidate,
     user,
     async () => refetch(),
-    undefined,
-    undefined,
+    () => {},
+    () => {},
     undefined,
     undefined
   );
@@ -560,7 +560,13 @@ export function CandidateCard({
             const field = formNameObject?.fields.find((f) => f.label === key);
             if (field?.candidateId && field.candidateId !== candidate._id)
               return false;
-            return field?.showOnCard;
+            return (
+              field?.showOnCard &&
+              value != null &&
+              value !== "" &&
+              (!Array.isArray(value) || value.length > 0)
+            );
+            // return field?.showOnCard;
           }).length > 0 && (
             <div className="mb-3 space-y-2">
               {Object.entries(candidate.customFields)
@@ -570,7 +576,13 @@ export function CandidateCard({
                   );
                   if (field?.candidateId && field.candidateId !== candidate._id)
                     return false;
-                  return field?.showOnCard;
+                  return (
+                    field?.showOnCard &&
+                    value != null &&
+                    value !== "" &&
+                    (!Array.isArray(value) || value.length > 0)
+                  );
+                  // return field?.showOnCard;
                 })
                 .map(([key, value], i) => (
                   <div key={i} className="text-sm">
@@ -796,6 +808,7 @@ export function CandidateCard({
         isOpen={confirmUnassignOpen}
         setIsOpen={setConfirmUnassignOpen}
         onConfirm={(note, rating) => {
+          // debugger;
           confirmUnassign(note, rating);
         }}
         onCancel={() => setConfirmUnassignOpen(false)}

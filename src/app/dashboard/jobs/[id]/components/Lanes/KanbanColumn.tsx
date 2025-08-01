@@ -200,7 +200,7 @@ export function KanbanColumn({
         <div
           ref={provided.innerRef}
           {...provided.draggableProps}
-          className={`flex-1 min-w-[450px] ${index === 0 ? 'pl-0 pr-1' : 'px-1'}`}
+          className={`flex-1 min-w-[450px] ${index === 0 ? "pl-0 pr-1" : "px-1"}`}
           style={{
             ...provided.draggableProps.style,
             userSelect: "none",
@@ -259,7 +259,7 @@ export function KanbanColumn({
                     <div
                       {...provided.droppableProps}
                       ref={provided.innerRef}
-                      className={`space-y-2 pb-2 min-w-0`}
+                      className={`space-y-2 pb-2 min-w-0 h-full`}
                       onDragOver={(e) => {
                         if (
                           e.dataTransfer.types.includes("Files") &&

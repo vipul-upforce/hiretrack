@@ -7,14 +7,14 @@ export default function handleCandidateInfoCopy(email: string) {
     .then(() => {
       toast({
         title: "Success",
-        description: "Candidate Email is copied to your clipboard",
+        description: "Candidate Info is copied to your clipboard",
         variant: "default",
       });
     })
     .catch((err) => {
       toast({
         title: "Error",
-        description: err.message || "Failed to copy the candidate email.",
+        description: err.message || "Failed to copy the candidate Info.",
         variant: "destructive",
       });
     });

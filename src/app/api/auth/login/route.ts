@@ -190,13 +190,12 @@ const candidateLogin = async (
       );
     }
 
-    const orgInfo = await Organization!.findById(
-      candidateInOrg.organizationId,
-      {
+    const orgInfo = await Organization!
+      .findById(candidateInOrg.organizationId, {
         adminId: 0,
         lanes: 0,
-      }
-    ).lean();
+      })
+      .lean();
     const tokenObj = {
       id: candidateInOrg._id.toString(),
       name: candidateInOrg.name,
@@ -244,10 +243,12 @@ const candidateLogin = async (
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }
 
-  const orgInfo = await Organization!.findById(candidate.organizationId, {
-    adminId: 0,
-    lanes: 0,
-  }).lean();
+  const orgInfo = await Organization!
+    .findById(candidate.organizationId, {
+      adminId: 0,
+      lanes: 0,
+    })
+    .lean();
 
   const tokenObj = {
     id: candidate._id.toString(),
@@ -372,7 +373,9 @@ const checkMultipleOrgs = async (
         );
       }
 
-      const orgInfo = await Organization!.findById(userInOrg.organizationId).lean();
+      const orgInfo = await Organization!
+        .findById(userInOrg.organizationId)
+        .lean();
       const fileStorage = await Settings!
         .findOne({ organizationId: userInOrg.organizationId }, { _id: 0 })
         .select("fileStorage")
@@ -410,13 +413,12 @@ const checkMultipleOrgs = async (
         );
       }
 
-      const orgInfo = await Organization!.findById(
-        candidateInOrg.organizationId,
-        {
+      const orgInfo = await Organization!
+        .findById(candidateInOrg.organizationId, {
           adminId: 0,
           lanes: 0,
-        }
-      ).lean();
+        })
+        .lean();
 
       const tokenObj = {
         id: candidateInOrg._id.toString(),
@@ -496,14 +498,14 @@ const checkMultipleOrgs = async (
 
 const returnTokenBasedResponse = async (obj: any) => {
   const userWithoutCustomFields: UserWithoutCF = {
-          ...obj
-        };
-        if (userWithoutCustomFields.organizationInfo) {
-          userWithoutCustomFields.organizationInfo = {
-            ...userWithoutCustomFields.organizationInfo,
-          };
-          delete userWithoutCustomFields.organizationInfo.customFields;
-        }
+    ...obj,
+  };
+  if (userWithoutCustomFields.organizationInfo) {
+    userWithoutCustomFields.organizationInfo = {
+      ...userWithoutCustomFields.organizationInfo,
+    };
+    delete userWithoutCustomFields.organizationInfo.customFields;
+  }
 
   const token = await signToken(userWithoutCustomFields);
 
