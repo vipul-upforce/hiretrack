@@ -83,8 +83,32 @@ const settingsSchema = new Schema({
       default: "#8b5cf6",
     },
   },
-  gemini: {
-    gemini_key: String,
+  aiProviders: {
+    activeProvider: {
+      type: String,
+      enum: ["gemini", "openai", "anthropic", "perplexity"],
+      default: "gemini",
+    },
+    gemini: {
+      api_key: { type: String, default: "" },
+      model: { type: String, default: "gemini-1.5-flash" },
+      customModel: { type: String, default: "" },
+    },
+    openai: {
+      api_key: { type: String, default: "" },
+      model: { type: String, default: "gpt-4o-mini" },
+      customModel: { type: String, default: "" },
+    },
+    anthropic: {
+      api_key: { type: String, default: "" },
+      model: { type: String, default: "claude-3-5-sonnet-20241022" },
+      customModel: { type: String, default: "" },
+    },
+    perplexity: {
+      api_key: { type: String, default: "" },
+      model: { type: String, default: "sonar-pro" },
+      customModel: { type: String, default: "" },
+    },
   },
   timeZone: {
     name: {
@@ -112,7 +136,8 @@ export interface ISettings {
   multipleOrg: boolean;
   fileStorage: Ifs;
   mailConfig: Ismtp;
-  gemini: IGemini;
+  aiProviders?: IAIProviders;
+  gemini?: IGemini; // Keep for backward compatibility
   portalConfigs?: {
     portalLogo: any | null;
     portalLogoDark: any | null;
@@ -129,6 +154,10 @@ export interface ISettings {
   };
   emailTemplates: { [key: string]: IEmailTemplate };
   twoFA?: ITwoFA;
+}
+
+export interface IGemini {
+  gemini_key: string;
 }
 
 export interface Ismtp {
@@ -157,8 +186,28 @@ export interface Ifs {
   awsBucketName?: string;
 }
 
-export interface IGemini {
-  gemini_key: string;
+export interface IAIProviders {
+  activeProvider: "gemini" | "openai" | "anthropic" | "perplexity";
+  gemini: {
+    api_key: string;
+    model: string;
+    customModel: string;
+  };
+  openai: {
+    api_key: string;
+    model: string;
+    customModel: string;
+  };
+  anthropic: {
+    api_key: string;
+    model: string;
+    customModel: string;
+  };
+  perplexity: {
+    api_key: string;
+    model: string;
+    customModel: string;
+  };
 }
 export interface ITwoFA {
   enable2FA: boolean;

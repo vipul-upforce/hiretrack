@@ -16,6 +16,7 @@
     "watch": "tsc --noEmit --watch"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.57.0",
     "@aws-sdk/client-s3": "^3.758.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
@@ -94,6 +95,7 @@
     "mui-color-input": "^6.0.0",
     "next": "15.4.1",
     "nodemailer": "^6.10.0",
+    "openai": "^5.11.0",
     "pdfjs-dist": "^3.7.107",
     "react": "^19.0.0",
     "react-colorful": "^5.6.1",

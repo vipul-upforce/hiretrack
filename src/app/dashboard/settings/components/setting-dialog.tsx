@@ -9,6 +9,7 @@ import {
 import SMTPConfigs from "./smtp-configs-dialog";
 import FileStorageOptions from "./fileStorage-dialog";
 import GeminiConfigs from "./gemini";
+import AIProvidersConfigs from "./ai-providers";
 import MultipleOrgsConfigs from "./MultipleOrgsConfigs";
 import BackupsDialog from "./backups-dialog";
 import AssetsDialog from "./assets-dialog";
@@ -34,6 +35,7 @@ const settingComponents: Record<
   mail: SMTPConfigs,
   fs: FileStorageOptions,
   gemini: GeminiConfigs,
+  "ai-providers": AIProvidersConfigs,
   multipleorgs: MultipleOrgsConfigs,
   backups: BackupsDialog,
   assets: AssetsDialog,
@@ -77,11 +79,14 @@ const SettingDialog = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className={`flex flex-col ${
+        size={setting.key === "ai-providers" ? "2xl" : undefined}
+        className={`${
           setting.key === "portal" ||
           setting.key === "templates" ||
           setting.key === "logs"
-            ? "max-w-7xl w-[90vw] min-h-[95vh] overflow-hidden"
+            ? "max-w-7xl w-[90vw] min-h-[95vh] overflow-hidden flex flex-col"
+            : setting.key === "ai-providers"
+            ? "max-h-[90vh] p-0 overflow-hidden flex flex-col"
             : setting.key === "timezone"
               ? "max-w-2xl w-[90vw] overflow-visible"
               : "overflow-hidden"
@@ -99,6 +104,8 @@ const SettingDialog = ({
           setting.key === "multipleorgs" ||
           setting.key === "gemini" ||
           setting.key === "twoFA" ? (
+            <ComponentToRender onClose={onClose} isOpen={isOpen} />
+          ) : setting.key === "ai-providers" ? (
             <ComponentToRender onClose={onClose} isOpen={isOpen} />
           ) : (
             <div className="flex-1 overflow-y-auto px-6 py-4">
