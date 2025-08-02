@@ -1,687 +1,304 @@
 import { IEmailTemplate } from "@/app/dashboard/settings/components/types";
 
-export const jobD = `<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  </head>
-  <body style="margin: 0; padding: 20px; background-color: #f5f5f5">
-    <div
-      style="
-        max-width: 600px;
-        margin: 20px auto;
-        background-color: #ffffff;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      "
-    >
-      <div style="padding: 40px">
-        <h2
-          style="
-            color: #2c3e50;
-            margin: 0 0 20px 0;
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            font-size: 24px;
-            font-weight: 600;
-          "
-        >
-          {{hrNotificationTitle}}
-        </h2>
+export interface EmailTemplate {
+  id: string;
+  name: string;
+  subject: string;
+  content: string;
+  variables: string[];
+}
+export const jobD = `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+        <h2 style="color: #2c3e50; margin-top: 0;">New Job Application Received</h2>
+        <p style="margin: 0 0 15px 0;">A new application has been submitted for the following position:</p>
 
-        <p
-          style="
-            color: #34495e;
-            margin: 0 0 20px 0;
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            font-size: 16px;
-          "
-        >
-          {{candidateName}} has applied for a position at
-          <strong style="color: #2c3e50">{{orgName}}</strong>.
-        </p>
-
-        <div
-          style="background-color: #f8f9fa; padding: 20px; border-radius: 6px"
-        >
-          <p
-            style="
-              color: #34495e;
-              margin: 0 0 15px 0;
-              font-family: 'Helvetica Neue', Arial, sans-serif;
-              font-size: 16px;
-              font-weight: 500;
-            "
-          >
-            Application details:
-          </p>
-
-          <div style="border-top: 1px solid #e9ecef; padding-top: 15px">
-            <p
-              style="
-                color: #34495e;
-                margin: 0 0 10px 0;
-                font-family: 'Helvetica Neue', Arial, sans-serif;
-                font-size: 16px;
-              "
-            >
-              <strong style="color: #2c3e50">Job Title:</strong><br />
-              <span style="color: #7f8c8d">{{jobName}}</span>
-            </p>
-            <p
-              style="
-                color: #34495e;
-                margin: 0 0 10px 0;
-                font-family: 'Helvetica Neue', Arial, sans-serif;
-                font-size: 16px;
-              "
-            >
-              <strong style="color: #2c3e50">Candidate Name:</strong><br />
-              <a href="{{candidateDetails}}" style="color: #7f8c8d">{{candidateName}}</a>
-            </p>
-            <p
-              style="
-                color: #34495e;
-                margin: 0 0 10px 0;
-                font-family: 'Helvetica Neue', Arial, sans-serif;
-                font-size: 16px;
-              "
-            >
-              <strong style="color: #2c3e50">Candidate Email:</strong><br />
-              <span style="color: #7f8c8d">{{email}}</span>
-            </p>
-            <p
-              style="
-                color: #34495e;
-                margin: 0 0 10px 0;
-                font-family: 'Helvetica Neue', Arial, sans-serif;
-                font-size: 16px;
-              "
-            >
-              <strong style="color: #2c3e50">Status:</strong><br />
-              <span style="color: #7f8c8d">{{status}}</span>
-            </p>
-            <p
-              style="
-                color: #34495e;
-                margin: 0;
-                font-family: 'Helvetica Neue', Arial, sans-serif;
-                font-size: 16px;
-              "
-            >
-              <strong style="color: #2c3e50">Application Date:</strong><br />
-              <span style="color: #7f8c8d">{{applicationDate}}</span>
-            </p>
-          </div>
+        <div style="background-color: white; padding: 15px; border-radius: 5px; margin: 15px 0;">
+            <p style="margin: 5px 0;"><strong>Position:</strong> {{jobTitle}}</p>
+            <p style="margin: 5px 0;"><strong>Candidate:</strong> {{candidateName}}</p>
+            <p style="margin: 5px 0;"><strong>Email:</strong> {{candidateEmail}}</p>
+            <p style="margin: 5px 0;"><strong>Phone:</strong> {{candidatePhone}}</p>
+            <p style="margin: 5px 0;"><strong>Application Date:</strong> {{applicationDate}}</p>
         </div>
-      </div>
+
+        <p style="margin: 15px 0;">Please review the application in the dashboard.</p>
+        <p style="margin: 15px 0;"><a href="{{dashboardLink}}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">View Application</a></p>
     </div>
-    <div style="height: 20px"></div>
-  </body>
-</html>`;
+</div>`
 
-export const ResetP = `<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  </head>
-  <body style="margin: 0; padding: 20px; background-color: #f5f5f5">
-    <div
-      style="
-        max-width: 600px;
-        margin: 20px auto;
-        background-color: #ffffff;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      "
-    >
-      <div style="padding: 40px">
-        <h3
-          style="
-            color: #2c3e50;
-            margin: 0 0 20px 0;
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            font-size: 24px;
-            font-weight: 600;
-          "
-        >
-          Password Reset Request
-        </h3>
+export const ResetP =`<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
+        <h2 style="color: #2c3e50; margin-top: 0;">Password Reset Request</h2>
+        <p style="margin: 0 0 15px 0;">Hello {{userName}},</p>
 
-        <div
-          style="background-color: #f8f9fa; padding: 20px; border-radius: 6px"
-        >
-          <p
-            style="
-              color: #34495e;
-              margin: 0 0 15px 0;
-              font-family: 'Helvetica Neue', Arial, sans-serif;
-              font-size: 16px;
-            "
-          >
-            Hello,
-          </p>
+        <p style="margin: 0 0 15px 0;">We received a request to reset your password for your {{organizationName}} account.</p>
 
-          <p
-            style="
-              color: #34495e;
-              margin: 0 0 15px 0;
-              font-family: 'Helvetica Neue', Arial, sans-serif;
-              font-size: 16px;
-            "
-          >
-            You requested to reset your password.
-          </p>
-
-          <p
-            style="
-              color: #34495e;
-              margin: 0 0 15px 0;
-              font-family: 'Helvetica Neue', Arial, sans-serif;
-              font-size: 16px;
-            "
-          >
-            Click the button below to reset your password:
-          </p>
-
-          <div style="text-align: center; margin: 20px 0">
-            <a
-              href="{{resetUrl}}"
-              style="
-                display: inline-block;
-                background-color: #4285f4;
-                color: white;
-                padding: 12px 24px;
-                text-decoration: none;
-                border-radius: 4px;
-                font-family: 'Helvetica Neue', Arial, sans-serif;
-                font-weight: 500;
-                transition: background-color 0.3s;
-              "
-              >Reset Password</a
-            >
-          </div>
-
-          <p
-            style="
-              color: #34495e;
-              margin: 0 0 15px 0;
-              font-family: 'Helvetica Neue', Arial, sans-serif;
-              font-size: 16px;
-            "
-          >
-            This link will expire in 1 hour.
-          </p>
-
-          <p
-            style="
-              color: #34495e;
-              margin: 0;
-              font-family: 'Helvetica Neue', Arial, sans-serif;
-              font-size: 16px;
-            "
-          >
-            If you didn't request this, please ignore this email.
-          </p>
+        <div style="background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ffc107;">
+            <p style="margin: 0 0 10px 0;"><strong>If you requested this password reset:</strong></p>
+            <p style="margin: 0;">Click the button below to reset your password. This link will expire in 24 hours.</p>
         </div>
-      </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{{resetLink}}" style="background-color: #dc3545; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Reset Password</a>
+        </div>
+
+        <div style="background-color: #d1ecf1; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #17a2b8;">
+            <p style="margin: 0 0 10px 0;"><strong>If you didn't request this:</strong></p>
+            <p style="margin: 0;">Please ignore this email. Your password will remain unchanged.</p>
+        </div>
+
+        <p style="margin: 15px 0 0 0;">Best regards,<br>{{organizationName}} Team</p>
     </div>
-    <div style="height: 20px"></div>
-  </body>
-</html>`;
+</div>`;
 
-export const assE = `<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  </head>
-  <body style="margin: 0; padding: 20px; background-color: #f5f5f5">
-    <div
-      style="
-        max-width: 600px;
-        margin: 20px auto;
-        background-color: #ffffff;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      "
-    >
-      <div style="padding: 40px">
-        <h2
-          style="
-            color: #2c3e50;
-            margin: 0 0 20px 0;
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            font-size: 24px;
-            font-weight: 600;
-          "
-        >
-          {{eventTitle}}
-        </h2>
+export const assE = `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
+        <h2 style="color: #2c3e50; margin-top: 0;">Interview Assignment</h2>
+        <p style="margin: 0 0 15px 0;">Hello {{interviewerName}},</p>
 
-        <p
-          style="
-            color: #34495e;
-            margin: 0 0 20px 0;
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            font-size: 16px;
-            line-height: 1.5;
-          "
-        >
-          Hi {{interviewerName}},<br />
-          A new interview has been scheduled for you. Please find the details
-          below:
-        </p>
+        <p style="margin: 0 0 15px 0;">You have been assigned to conduct an interview for the following candidate:</p>
 
-        <div
-          style="
-            background-color: #f8f9fa;
-            padding: 20px;
-            border-radius: 6px;
-            margin-bottom: 30px;
-          "
-        >
-          <p
-            style="
-              color: #34495e;
-              margin: 0 0 15px 0;
-              font-family: 'Helvetica Neue', Arial, sans-serif;
-              font-size: 16px;
-            "
-          >
-            <strong style="color: #2c3e50">Meeting time:</strong><br />
-            <span style="color: #7f8c8d">{{startDate}}</span>
-          </p>
-
-          <div style="border-top: 1px solid #e9ecef; padding-top: 15px">
-            <p
-              style="
-                color: #34495e;
-                margin: 0 0 10px 0;
-                font-family: 'Helvetica Neue', Arial, sans-serif;
-                font-size: 16px;
-              "
-            >
-              <strong style="color: #2c3e50">Job Name:</strong><br />
-              <span style="color: #7f8c8d">{{jobName}}</span>
-            </p>
-            <p
-              style="
-                color: #34495e;
-                margin: 0 0 10px 0;
-                font-family: 'Helvetica Neue', Arial, sans-serif;
-                font-size: 16px;
-              "
-            >
-              <strong style="color: #2c3e50">Interviewer Name:</strong><br />
-              <span style="color: #7f8c8d">{{interviewerName}}</span>
-            </p>
-            <p
-              style="
-                color: #34495e;
-                margin: 0 0 10px 0;
-                font-family: 'Helvetica Neue', Arial, sans-serif;
-                font-size: 16px;
-              "
-            >
-              <strong style="color: #2c3e50">Candidate Name:</strong><br />
-              <a href="{{candidateDetailsPage}}" style="color: #7f8c8d">{{candidateName}}</a>
-            </p>
-            <p
-              style="
-                color: #34495e;
-                margin: 0;
-                font-family: 'Helvetica Neue', Arial, sans-serif;
-                font-size: 16px;
-              "
-            >
-              <strong style="color: #2c3e50">Status:</strong><br />
-              <span style="color: #7f8c8d">{{status}}</span>
-            </p>
-          </div>
+        <div style="background-color: white; padding: 20px; border-radius: 5px; margin: 20px 0; border: 1px solid #dee2e6;">
+            <h3 style="margin-top: 0; color: #495057;">Interview Details</h3>
+            <p style="margin: 5px 0;"><strong>Candidate:</strong> {{candidateName}}</p>
+            <p style="margin: 5px 0;"><strong>Position:</strong> {{jobTitle}}</p>
+            <p style="margin: 5px 0;"><strong>Date:</strong> {{interviewDate}}</p>
+            <p style="margin: 5px 0;"><strong>Time:</strong> {{interviewTime}}</p>
+            <p style="margin: 5px 0;"><strong>Duration:</strong> {{duration}}</p>
+            <p style="margin: 5px 0;"><strong>Type:</strong> {{interviewType}}</p>
+            <p style="margin: 5px 0;"><strong>Meeting Link:</strong> <a href="{{meetingLink}}" style="color: #007bff; text-decoration: underline;">{{meetingLink}}</a></p>
         </div>
 
-        <div style="text-align: center; margin-top: 30px">
-          <p
-            style="
-              color: #34495e;
-              margin: 0 0 20px 0;
-              font-family: 'Helvetica Neue', Arial, sans-serif;
-              font-size: 16px;
-            "
-          >
-            Add this event to your calendar:
-          </p>
-          <a
-            href="{{googleCalendarLink}}"
-            target="_blank"
-            style="
-              display: inline-block;
-              background-color: #4285f4;
-              color: white;
-              padding: 12px 24px;
-              margin-right: 10px;
-              text-decoration: none;
-              border-radius: 4px;
-              font-family: 'Helvetica Neue', Arial, sans-serif;
-              font-weight: 500;
-              transition: background-color 0.3s;
-            "
-            >Google Calendar</a
-          >
-          <a
-            href="{{outlookCalendarLink}}"
-            target="_blank"
-            style="
-              display: inline-block;
-              background-color: #0078d4;
-              color: white;
-              padding: 12px 24px;
-              text-decoration: none;
-              border-radius: 4px;
-              font-family: 'Helvetica Neue', Arial, sans-serif;
-              font-weight: 500;
-              transition: background-color 0.3s;
-            "
-            >Outlook Calendar</a
-          >
+        <div style="background-color: #d4edda; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #28a745;">
+            <p style="margin: 0 0 10px 0;"><strong>Next Steps:</strong></p>
+            <ul style="margin: 10px 0; padding-left: 20px;">
+                <li style="margin: 5px 0;">Review the candidate's profile and resume</li>
+                <li style="margin: 5px 0;">Prepare interview questions</li>
+                <li style="margin: 5px 0;">Join the meeting at the scheduled time</li>
+                <li style="margin: 5px 0;">Submit feedback after the interview</li>
+            </ul>
         </div>
-      </div>
+
+        <div style="text-align: center; margin: 20px 0;">
+            <a href="{{candidateProfileLink}}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-right: 10px; display: inline-block;">View Candidate</a>
+            <a href="{{dashboardLink}}" style="background-color: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Dashboard</a>
+        </div>
+
+        <p style="margin: 15px 0 0 0;">Best regards,<br>{{organizationName}} Hiring Team</p>
     </div>
-    <div style="height: 20px"></div>
-  </body>
-</html>`;
+</div>`;
 
-export const StatusU = `<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  </head>
-  <body style="margin: 0; padding: 20px; background-color: #f5f5f5">
-    <div
-      style="
-        max-width: 600px;
-        margin: 20px auto;
-        background-color: #ffffff;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      "
-    >
-      <div style="padding: 40px">
-        <h2
-          style="
-            color: #2c3e50;
-            margin: 0 0 20px 0;
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            font-size: 24px;
-            font-weight: 600;
-          "
-        >
-          {{eventTitle}}
-        </h2>
-        <a style="color: #2c3e50;
-        margin: 0 0 20px 0;
-        font-family: 'Helvetica Neue', Arial, sans-serif;
-        font-size: 16px;" href="{{candidateDetails}}">View or Edit Candidate Details</a>
+export const StatusU = `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
+        <h2 style="color: #2c3e50; margin-top: 0;">Application Status Update</h2>
+        <p style="margin: 0 0 15px 0;">Dear {{candidateName}},</p>
 
-        <p
-          style="
-            color: #34495e;
-            margin: 0 0 20px 0;
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            font-size: 16px;
-            line-height: 1.5;
-          "
-        >
-          {{eventSubTitle}}
-          <span style="font-size: 14px; color: #7f8c8d;">Last updated by <strong>{{actionBy}}</strong></span>
-        </p>
+        <p style="margin: 0 0 15px 0;">We wanted to update you on the status of your application for the <strong>{{jobTitle}}</strong> position at {{organizationName}}.</p>
 
-        <div
-          style="
-            background-color: #f8f9fa;
-            padding: 20px;
-            border-radius: 6px;
-            margin-bottom: 30px;
-          "
-        >
-            <p
-              style="
-                color: #34495e;
-                margin: 0 0 10px 0;
-                font-family: 'Helvetica Neue', Arial, sans-serif;
-                font-size: 16px;
-              "
-            >
-              <strong style="color: #2c3e50">Status:</strong><br />
-              <span style="color: #7f8c8d">{{status}}</span>
-            </p>
-            <p
-              style="
-                color: #34495e;
-                margin: 0 0 10px 0;
-                font-family: 'Helvetica Neue', Arial, sans-serif;
-                font-size: 16px;
-              "
-            >
-              <strong style="color: #2c3e50">Remarks:</strong><br />
-              <span style="color: #7f8c8d">{{remark}}</span>
-            </p>
-            <p
-              style="
-                color: #34495e;
-                margin: 0 0 10px 0;
-                font-family: 'Helvetica Neue', Arial, sans-serif;
-                font-size: 16px;
-              "
-            >
-              <strong style="color: #2c3e50">Rating:</strong><br />
-              <span style="color: #7f8c8d">{{rating}}</span>
-            </p>
-          </div>
+        <div style="background-color: white; padding: 20px; border-radius: 5px; margin: 20px 0; border: 1px solid #dee2e6;">
+            <h3 style="margin-top: 0; color: #495057;">Current Status</h3>
+            <div style="background-color: #e7f3ff; padding: 15px; border-radius: 5px; border-left: 4px solid #007bff;">
+                <p style="margin: 0; font-size: 18px; font-weight: bold; color: #0056b3;">{{newStatus}}</p>
+            </div>
+            <p style="margin: 15px 0 0 0;">{{statusMessage}}</p>
         </div>
-      </div>
+
+        <div style="background-color: #d4edda; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #28a745;">
+            <p style="margin: 0 0 10px 0;"><strong>Next Steps:</strong></p>
+            <p style="margin: 0;">{{nextSteps}}</p>
+        </div>
+
+        <p style="margin: 15px 0;">Thank you for your continued interest in joining our team. If you have any questions, please don't hesitate to reach out.</p>
+
+        <p style="margin: 15px 0 0 0;">Best regards,<br>{{organizationName}} Hiring Team<br>{{hrContactInfo}}</p>
     </div>
-    <div style="height: 20px"></div>
-  </body>
-</html>`;
+</div>`;
 
-export const RemA = `<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  </head>
-  <body style="margin: 0; padding: 20px; background-color: #f5f5f5">
-    <div
-      style="
-        max-width: 600px;
-        margin: 20px auto;
-        background-color: #ffffff;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      "
-    >
-      <div style="padding: 40px">
-        <h3
-          style="
-            color: #2c3e50;
-            margin: 0 0 20px 0;
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            font-size: 24px;
-            font-weight: 600;
-          "
-        >
-          New Remark Added for {{remark_for}} - <a href="{{candidateDetails}}">View Profile</a>
-        </h3>
+export const RemA = `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
+        <h2 style="color: #2c3e50; margin-top: 0;margin-bottom: 15px;">New Feedback Added</h2>
 
-        <div
-          style="background-color: #f8f9fa; padding: 20px; border-radius: 6px"
-        >
-          <p
-            style="
-              color: #34495e;
-              margin: 0 0 15px 0;
-              font-family: 'Helvetica Neue', Arial, sans-serif;
-              font-size: 16px;
-            "
-          >
-            A new remark has been added by
-            <span style="color: #7f8c8d">{{remark_adder}}</span>
-          </p>
+        <p style="margin: 0 0 15px 0;">New feedback has been added for candidate <strong>{{candidateName}}</strong> applying for the <strong>{{jobTitle}}</strong> position.</p>
 
-          <div style="border-top: 1px solid #e9ecef; padding-top: 15px">
-            <p
-              style="
-                color: #34495e;
-                margin: 0 0 10px 0;
-                font-family: 'Helvetica Neue', Arial, sans-serif;
-                font-size: 16px;
-              "
-            >
-              <strong style="color: #2c3e50">Remark:</strong><br />
-              <span style="color: #7f8c8d">{{remark}}</span>
-            </p>
-            <p
-              style="
-                color: #34495e;
-                margin: 0;
-                font-family: 'Helvetica Neue', Arial, sans-serif;
-                font-size: 16px;
-              "
-            >
-              <strong style="color: #2c3e50">Rating:</strong><br />
-              <span style="color: #7f8c8d">{{rating}}</span>
-            </p>
-          </div>
+        <div style="background-color: white; padding: 20px; border-radius: 5px; margin: 20px 0; border: 1px solid #dee2e6;">
+            <h3 style="margin-top: 0; color: #495057;">Feedback Details</h3>
+            <p style="margin: 5px 0;"><strong>Added by:</strong> {{reviewerName}}</p>
+            <p style="margin: 5px 0;"><strong>Date:</strong> {{remarkDate}}</p>
+            <p style="margin: 5px 0;"><strong>Rating:</strong> {{rating}}/5</p>
+
+            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                <p style="margin: 0 0 10px 0;"><strong>Comments:</strong></p>
+                <p style="margin: 0;">{{remarkText}}</p>
+            </div>
         </div>
-      </div>
+
+        <div style="text-align: center; margin: 20px 0;">
+            <a href="{{candidateProfileLink}}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">View Full Profile</a>
+        </div>
+
+        <p style="margin: 15px 0 0 0;">Best regards,<br>{{organizationName}} Team</p>
     </div>
-    <div style="height: 20px"></div>
-  </body>
-</html>`;
+</div>`;
 
-export const MAD = `<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  </head>
-  <body style="margin: 0; padding: 20px; background-color: #f5f5f5">
-    <div
-      style="
-        max-width: 600px;
-        margin: 20px auto;
-        background-color: #ffffff;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      "
-    >
-      <div style="padding: 40px">
-        <h3
-          style="
-            color: #2c3e50;
-            margin: 0 0 20px 0;
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            font-size: 24px;
-            font-weight: 600;
-          "
-        >
-          Step Completed By {{unassigner}}
-        </h3>
+export const MAD = `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
+        <h2 style="color: #2c3e50; margin-top: 0; margin-bottom: 15px;">Interview Step Completed</h2>
+       
 
-        <div
-          style="background-color: #f8f9fa; padding: 20px; border-radius: 6px"
-        >
-          <p
-            style="
-              color: #34495e;
-              margin: 0;
-              font-family: 'Helvetica Neue', Arial, sans-serif;
-              font-size: 16px;
-              line-height: 1.5;
-            "
-          >
-            The previous step for candidate
-            <a href="{{candidateDetails}}" style="color: #7f8c8d">{{candidate_name}}</a> has been
-            completed by <span style="color: #7f8c8d">{{unassigner}}</span>.
-            Proceed with the next steps.
-          </p>
+        <p style="margin: 0 0 15px 0;">An interview step has been completed for candidate <strong>{{candidateName}}</strong> applying for the <strong>{{jobTitle}}</strong> position.</p>
+
+        <div style="background-color: white; padding: 20px; border-radius: 5px; margin: 20px 0; border: 1px solid #dee2e6;">
+            <h3 style="margin-top: 0; color: #495057;">Completed Step</h3>
+            <div style="background-color: #d4edda; padding: 15px; border-radius: 5px; border-left: 4px solid #28a745;">
+                <p style="margin: 0; font-weight: bold; color: #155724;">{{stepName}}</p>
+                <p style="margin: 5px 0 0 0;">Completed by: {{completedBy}}</p>
+                <p style="margin: 5px 0 0 0;">Date: {{completionDate}}</p>
+            </div>
         </div>
-      </div>
+
+        <div style="background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ffc107;">
+            <p style="margin: 0 0 10px 0;"><strong>Feedback:</strong></p>
+            <p style="margin: 0;">{{feedback}}</p>
+        </div>
+
+        <div style="background-color: #e7f3ff; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #007bff;">
+            <p style="margin: 0;"><strong>Next Step:</strong> {{nextStep}}</p>
+        </div>
+
+        <div style="text-align: center; margin: 20px 0;">
+            <a href="{{candidateProfileLink}}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">View Candidate Progress</a>
+        </div>
+
+        <p style="margin: 15px 0 0 0;">Best regards,<br>{{organizationName}} Team</p>
     </div>
-    <div style="height: 20px"></div>
-  </body>
-</html>`;
+</div>`;
 
-export const OTP = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Two-Factor Authentication</title>
-    <style>
-        body {
-            font-family: sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            max-width: 600px;
-            margin: 20px auto;
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-        .header {
-            text-align: center;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #ddd;
-        }
-        .content {
-            padding: 20px 0;
-        }
-        .otp-code {
-            font-size: 24px;
-            font-weight: bold;
-            text-align: center;
-            letter-spacing: 5px;
-            padding: 15px;
-            background-color: #f0f0f0;
-            border-radius: 5px;
-            margin: 20px 0;
-        }
-        .footer {
-            text-align: center;
-            font-size: 12px;
-            color: #888;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h2>Two-Factor Authentication</h2>
+export const OTP = `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
+        <h2 style="color: #2c3e50; margin-top: 0;">OTP Verification</h2>
+        <p style="margin: 0 0 15px 0;">Hello {{userName}},</p>
+
+        <p style="margin: 0 0 15px 0;">You have requested a One-Time Password (OTP) for your {{organizationName}} account verification.</p>
+
+        <div style="background-color: white; padding: 30px; border-radius: 5px; margin: 30px 0; border: 2px solid #007bff; text-align: center;">
+            <p style="margin: 0; font-size: 14px; color: #666; text-transform: uppercase; letter-spacing: 1px;">Your OTP Code</p>
+            <p style="margin: 15px 0 0 0; font-size: 32px; font-weight: bold; color: #007bff; letter-spacing: 8px; font-family: 'Courier New', monospace;">{{otpCode}}</p>
         </div>
-        <div class="content">
-            <p>Hello,</p>
-            <p>Your one-time password (OTP) for logging in is:</p>
-            <div class="otp-code">{{otp}}</div>
-            <p>This code will expire in 10 minutes. If you did not request this code, please ignore this email.</p>
+
+        <div style="background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ffc107;">
+            <p style="margin: 0 0 10px 0;"><strong>Important:</strong></p>
+            <ul style="margin: 10px 0; padding-left: 20px;">
+                <li style="margin: 5px 0;">This OTP is valid for {{expirationTime}} minutes only</li>
+                <li style="margin: 5px 0;">Do not share this code with anyone</li>
+                <li style="margin: 5px 0;">If you didn't request this OTP, please ignore this email</li>
+            </ul>
         </div>
-        <div class="footer">
-            <p>&copy; 2025 HireTrack. All rights reserved.</p>
-        </div>
+
+        <p style="margin: 15px 0;">If you're having trouble accessing your account, please contact our support team.</p>
+
+        <p style="margin: 15px 0 0 0;">Best regards,<br>{{organizationName}} Security Team</p>
     </div>
-</body>
-</html>`;
+</div>`;
+
+export const defaultTemplates: EmailTemplate[] = [
+  {
+    id: "job-application-hr",
+    name: "Job Application (HR Notification)",
+    subject: "New Job Application - {{jobTitle}}",
+    content: jobD,
+    variables: [
+      "jobTitle",
+      "candidateName",
+      "candidateEmail",
+      "candidatePhone",
+      "applicationDate",
+      "dashboardLink",
+    ],
+  },
+  {
+    id: "password-reset",
+    name: "Password Reset Request",
+    subject: "Password Reset Request - {{organizationName}}",
+    content: ResetP,
+    variables: ["userName", "organizationName", "resetLink"],
+  },
+  {
+    id: "interview-assignment",
+    name: "Interview Assignment Event",
+    subject: "Interview Assigned - {{candidateName}} for {{jobTitle}}",
+    content: assE,
+    variables: [
+      "interviewerName",
+      "candidateName",
+      "jobTitle",
+      "interviewDate",
+      "interviewTime",
+      "duration",
+      "interviewType",
+      "meetingLink",
+      "candidateProfileLink",
+      "dashboardLink",
+      "organizationName",
+    ],
+  },
+  {
+    id: "status-update",
+    name: "Status Update Notification",
+    subject: "Application Status Update - {{jobTitle}}",
+    content: StatusU,
+    variables: [
+      "candidateName",
+      "jobTitle",
+      "organizationName",
+      "newStatus",
+      "statusMessage",
+      "nextSteps",
+      "hrContactInfo",
+    ],
+  },
+  {
+    id: "new-remark",
+    name: "New Remark Added",
+    subject: "New Feedback Added - {{candidateName}}",
+    content: RemA,
+    variables: [
+      // "recipientName",
+      "candidateName",
+      "jobTitle",
+      "reviewerName",
+      "remarkDate",
+      "rating",
+      "remarkText",
+      "candidateProfileLink",
+      "organizationName",
+    ],
+  },
+  {
+    id: "step-completed",
+    name: "Step Completed",
+    subject: "Interview Step Completed - {{candidateName}}",
+    content: MAD,
+    variables: [
+      // "recipientName",
+      "candidateName",
+      "jobTitle",
+      "stepName",
+      "completedBy",
+      "completionDate",
+      "feedback",
+      "nextStep",
+      "candidateProfileLink",
+      "organizationName",
+    ],
+  },
+  {
+    id: "send-otp",
+    name: "Send OTP",
+    subject: "Your OTP Code - {{organizationName}}",
+    content: OTP,
+    variables: ["userName", "organizationName", "otpCode", "expirationTime"],
+  },
+];
+
 
 export const Data = {
   orgName: "Acme Inc",
@@ -711,94 +328,6 @@ export const Data = {
   otp: "234533",
 };
 
-// Default templates based on your HTML files
-export const defaultTemplates: { [key: string]: IEmailTemplate } = {
-  "job-application-(hr)": {
-    templateId: "job-application-(hr)",
-    templateName: "Job Application (HR Notification)",
-    subject: "New Job Application - {{candidateName}} for {{jobName}}",
-    html: jobD,
-    variables: [
-      "orgName",
-      "hrNotificationTitle",
-      "status",
-      "email",
-      "candidateName",
-      "jobName",
-      "applicationDate",
-      "candidateDetails",
-    ],
-  },
-  "reset-password-request": {
-    templateId: "reset-password-request",
-    templateName: "Password Reset Request",
-    subject: "Password Reset Request",
-    html: ResetP,
-    variables: ["resetUrl"],
-  },
-  "assignment-event": {
-    templateId: "assignment-event",
-    templateName: "Interview Assignment Event",
-    subject: "Interview Scheduled - {{jobName}} with {{candidateName}}",
-    html: assE,
-    variables: [
-      "eventTitle",
-      "startDate",
-      "endDate",
-      "jobName",
-      "interviewerName",
-      "candidateName",
-      "status",
-      "googleCalendarLink",
-      "outlookCalendarLink",
-      "candidateDetailsPage",
-    ],
-  },
-  "status-update": {
-    templateId: "status-update",
-    templateName: "Status Update Notification",
-    subject: "Status Update - {{candidateName}}",
-    html: StatusU,
-    variables: [
-      "eventTitle",
-      "candidateName",
-      "status",
-      "remark",
-      "rating",
-      "actionBy",
-      "prev_status",
-      "eventSubTitle",
-      "candidateDetails",
-    ],
-  },
-  "remark-add": {
-    templateId: "remark-add",
-    templateName: "New Remark Added",
-    subject: "New Remark Added for {{remark_for}}",
-    html: RemA,
-    variables: [
-      "remark_adder",
-      "remark_for",
-      "rating",
-      "remark",
-      "candidateDetails",
-    ],
-  },
-  "marked-as-done": {
-    templateId: "marked-as-done",
-    templateName: "Step Completed",
-    subject: "Step Completed by {{unassigner}} for {{candidate_name}}",
-    html: MAD,
-    variables: ["candidate_name", "unassigner", "candidateDetails"],
-  },
-  "2fa-otp": {
-    templateId: "2fa-otp",
-    templateName: "Send OTP",
-    subject: "OTP to login",
-    html: OTP,
-    variables: ["otp"],
-  },
-};
 
 export const editorOptions = {
   minimap: { enabled: false },
@@ -812,6 +341,106 @@ export const editorOptions = {
   formatOnPaste: true,
   formatOnType: true,
 };
+
+export const defaultTemplatesFE: { [key: string]: IEmailTemplate } = {
+    "job-application-hr": {
+      templateId: "job-application-hr",
+      templateName: "Job Application (HR Notification)",
+      subject: "New Job Application - {{jobTitle}}",
+      html: jobD,
+      variables: [
+        "jobTitle",
+        "candidateName",
+        "candidateEmail",
+        "candidatePhone",
+        "applicationDate",
+        "dashboardLink",
+      ],
+    },
+    "password-reset": {
+      templateId: "password-reset",
+      templateName: "Password Reset Request",
+      subject: "Password Reset Request - {{organizationName}}",
+      html: ResetP,
+      variables: ["userName", "organizationName", "resetLink"],
+    },
+    "interview-assignment": {
+      templateId: "interview-assignment",
+      templateName: "Interview Assignment Event",
+      subject: "Interview Assigned - {{candidateName}} for {{jobTitle}}",
+      html: assE,
+      variables: [
+        "interviewerName",
+        "candidateName",
+        "jobTitle",
+        "interviewDate",
+        "interviewTime",
+        "duration",
+        "interviewType",
+        "meetingLink",
+        "candidateProfileLink",
+        "dashboardLink",
+        "organizationName",
+      ],
+    },
+    "status-update": {
+      templateId: "status-update",
+      templateName: "Status Update Notification",
+      subject: "Application Status Update - {{jobTitle}}",
+      html: StatusU,
+      variables: [
+        "candidateName",
+        "jobTitle",
+        "organizationName",
+        "newStatus",
+        "statusMessage",
+        "nextSteps",
+        "hrContactInfo",
+      ],
+    },
+    "new-remark": {
+      templateId: "new-remark",
+      templateName: "New Remark Added",
+      subject: "New Feedback Added - {{candidateName}}",
+      html: RemA,
+      variables: [
+        // "recipientName",
+        "candidateName",
+        "jobTitle",
+        "reviewerName",
+        "remarkDate",
+        "rating",
+        "remarkText",
+        "candidateProfileLink",
+        "organizationName",
+      ],
+    },
+    "step-completed": {
+      templateId: "step-completed",
+      templateName: "Step Completed",
+      subject: "Interview Step Completed - {{candidateName}}",
+      html: MAD,
+      variables: [
+        // "recipientName",
+        "candidateName",
+        "jobTitle",
+        "stepName",
+        "completedBy",
+        "completionDate",
+        "feedback",
+        "nextStep",
+        "candidateProfileLink",
+        "organizationName",
+      ],
+    },
+    "send-otp": {
+      templateId: "send-otp",
+      templateName: "Send OTP",
+      subject: "Your OTP Code - {{organizationName}}",
+      html: OTP,
+      variables: ["userName", "organizationName", "otpCode", "expirationTime"],
+    },
+  };
 
 export const wierdFileNamePattern = /[^a-zA-Z0-9(). ]/g;
 // export const wierdFileNamePattern = /^(?!.*[()]{2,})[a-zA-Z0-9()]+$/g;

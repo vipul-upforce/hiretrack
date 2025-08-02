@@ -14,8 +14,18 @@ import {
   useGetMailTemplatesQuery,
   useUpdateMailTemplatesMutation,
 } from "@/lib/features/settings/settingsApi";
-import { Data, defaultTemplates, editorOptions } from "@/lib/constants";
-import type { IEmailTemplatesConfig } from "./types";
+import {
+  assE,
+  Data,
+  editorOptions,
+  jobD,
+  MAD,
+  OTP,
+  RemA,
+  ResetP,
+  StatusU,
+} from "@/lib/constants";
+import type { IEmailTemplate, IEmailTemplatesConfig } from "./types";
 import { useTheme } from "@/components/theme-provider";
 import {
   Select,
@@ -24,6 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { defaultTemplatesFE as defaultTemplates } from "@/lib/constants";
 
 export default function EmailTemplateEditor({
   onClose,
@@ -318,311 +329,314 @@ export default function EmailTemplateEditor({
           return (
             <Form onSubmit={handleSubmit}>
               <div className="flex flex-col h-full">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1">
-                <div className="space-y-4 overflow-y-auto p-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="templateType">
-                      Select Template to Edit
-                    </Label>
-                    <Select
-                      value={selectedTemplate}
-                      onValueChange={setSelectedTemplate}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select template" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(defaultTemplates).map(
-                          ([key, template]) => (
-                            <SelectItem key={key} value={key}>
-                              {template.templateName}
-                            </SelectItem>
-                          )
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1">
+                  <div className="space-y-4 overflow-y-auto p-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="templateType">
+                        Select Template to Edit
+                      </Label>
+                      <Select
+                        value={selectedTemplate}
+                        onValueChange={setSelectedTemplate}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select template" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(defaultTemplates).map(
+                            ([key, template]) => (
+                              <SelectItem key={key} value={key}>
+                                {template.templateName}
+                              </SelectItem>
+                            )
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="subject">
+                        Email Subject
+                        {activeEditor === "subject" && (
+                          <span className="text-xs text-green-600 ml-2 font-medium">
+                            ● Active
+                          </span>
                         )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="subject">
-                      Email Subject
-                      {activeEditor === "subject" && (
-                        <span className="text-xs text-green-600 ml-2 font-medium">
-                          ● Active
-                        </span>
-                      )}
-                    </Label>
-                    <Input
-                      ref={subjectInputRef}
-                      id="subject"
-                      value={values.templates[selectedTemplate]?.subject || ""}
-                      onChange={(e) =>
-                        handleSubjectChange(e, setFieldValue, values)
-                      }
-                      onClick={handleSubjectClick}
-                      onKeyUp={handleSubjectKeyUp}
-                      onFocus={handleSubjectFocus}
-                      placeholder="Enter email subject"
-                      className={activeEditor === "subject" ? "" : ""}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>
-                      HTML Content
-                      {activeEditor === "html" && (
-                        <span className="text-xs text-green-600 ml-2 font-medium">
-                          ● Active
-                        </span>
-                      )}
-                    </Label>
-                    <div
-                      className={`border rounded-md ${activeEditor === "html" ? "" : ""}`}
-                    >
-                      <Editor
-                        height="400px"
-                        defaultLanguage="html"
-                        value={values.templates[selectedTemplate]?.html || ""}
-                        onChange={(value) => {
-                          const updatedTemplates = {
-                            ...values.templates,
-                            [selectedTemplate]: {
-                              ...values.templates[selectedTemplate],
-                              html: value || "",
-                            },
-                          };
-                          setFieldValue("templates", updatedTemplates);
-                        }}
-                        onMount={handleEditorMount}
-                        options={{
-                          ...editorOptions,
-                          selectOnLineNumbers: true,
-                          roundedSelection: false,
-                          readOnly: false,
-                          cursorStyle: "line",
-                          automaticLayout: true,
-                          theme: theme === "dark" ? "vs-dark" : "vs-light",
-                        }}
-                        theme={theme === "dark" ? "vs-dark" : "vs-light"}
+                      </Label>
+                      <Input
+                        ref={subjectInputRef}
+                        id="subject"
+                        value={
+                          values.templates[selectedTemplate]?.subject || ""
+                        }
+                        onChange={(e) =>
+                          handleSubjectChange(e, setFieldValue, values)
+                        }
+                        onClick={handleSubjectClick}
+                        onKeyUp={handleSubjectKeyUp}
+                        onFocus={handleSubjectFocus}
+                        placeholder="Enter email subject"
+                        className={activeEditor === "subject" ? "" : ""}
                       />
                     </div>
-                  </div>
 
-                  <div className="text-sm text-muted-foreground space-y-4">
-                    {/* Available Variables Section */}
-                    <div>
-                      <p className="font-medium mb-2">
-                        Available Variables:
-                        {activeEditor && (
-                          <span className="text-xs text-green-600 ml-2">
-                            (Click to insert into{" "}
-                            {activeEditor === "subject"
-                              ? "subject"
-                              : "HTML editor"}
-                            )
+                    <div className="space-y-2">
+                      <Label>
+                        HTML Content
+                        {activeEditor === "html" && (
+                          <span className="text-xs text-green-600 ml-2 font-medium">
+                            ● Active
                           </span>
                         )}
-                        {!activeEditor && (
-                          <span className="text-xs text-gray-500 ml-2">
-                            (Click in an editor field first)
-                          </span>
-                        )}
-                      </p>
-
-                      {/* Invalid Variables Section - Red and Non-clickable */}
-                      {variableAnalysis.invalid.length > 0 && (
-                        <div className="border-t pt-3">
-                          <div className="flex items-center gap-2 mb-2">
-                            <AlertTriangle className="h-4 w-4 text-red-500" />
-                            <p className="font-medium text-red-700 dark:text-red-400">
-                              Invalid Variables Found (
-                              {variableAnalysis.invalid.length})
-                            </p>
-                          </div>
-                          <div className="flex gap-2 text-xs flex-wrap">
-                            {variableAnalysis.invalid.map((variable) => (
-                              <div
-                                key={variable}
-                                className="border px-3 py-2 rounded-md font-mono cursor-not-allowed border-red-300 bg-red-50 text-red-700 dark:border-red-600 dark:bg-red-950/20 dark:text-red-400 opacity-75"
-                                title={`Invalid variable: {{${variable}}} is not available for this template`}
-                              >
-                                {`{{${variable}}}`}
-                              </div>
-                            ))}
-                          </div>
-                          <p className="text-xs text-red-600 dark:text-red-400 mt-2 mb-1">
-                            Remove these variables from your template or they
-                            will not be replaced with actual values.
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Used Variables - Green */}
-                      {variableAnalysis.used.length > 0 && (
-                        <div className="mb-3">
-                          <p className="text-xs font-medium text-green-700 dark:text-green-400 mb-1">
-                            ✓ Used Variables ({variableAnalysis.used.length})
-                          </p>
-                          <div className="flex gap-2 text-xs flex-wrap">
-                            {variableAnalysis.used.map((variable) => (
-                              <button
-                                key={variable}
-                                type="button"
-                                onClick={() =>
-                                  insertVariable(
-                                    variable,
-                                    setFieldValue,
-                                    values
-                                  )
-                                }
-                                className={`border px-3 py-2 rounded-md transition-all duration-200 font-mono ${
-                                  activeEditor
-                                    ? "border-green-400 bg-green-100 text-green-800 hover:bg-green-200 hover:border-green-600 hover:shadow-sm cursor-pointer dark:border-green-600 dark:bg-green-950/20 dark:text-green-400 dark:hover:bg-green-900/20 dark:hover:border-green-600"
-                                    : "border-green-300 bg-green-100 text-green-600 opacity-50 cursor-not-allowed dark:border-green-700 dark:bg-green-950/20 dark:text-green-500"
-                                }`}
-                                disabled={!activeEditor}
-                                title={
-                                  activeEditor
-                                    ? `Click to insert {{${variable}}} at cursor position`
-                                    : "Select an editor first"
-                                }
-                              >
-                                {`{{${variable}}}`}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Unused Variables - Gray */}
-                      {variableAnalysis.unused.length > 0 && (
-                        <div className="mb-3">
-                          <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                            ○ Unused Variables ({variableAnalysis.unused.length}
-                            )
-                          </p>
-                          <div className="flex gap-2 text-xs flex-wrap">
-                            {variableAnalysis.unused.map((variable) => (
-                              <button
-                                key={variable}
-                                type="button"
-                                onClick={() =>
-                                  insertVariable(
-                                    variable,
-                                    setFieldValue,
-                                    values
-                                  )
-                                }
-                                className={`border px-3 py-2 rounded-md transition-all duration-200 font-mono ${
-                                  activeEditor
-                                    ? "border-gray-400 bg-gray-100 text-gray-700 hover:bg-gray-200 hover:border-gray-500 hover:shadow-sm cursor-pointer dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:border-gray-600"
-                                    : "border-gray-300 bg-gray-100 text-gray-500 opacity-50 cursor-not-allowed dark:border-gray-700 dark:bg-gray-800 dark:text-gray-500"
-                                }`}
-                                disabled={!activeEditor}
-                                title={
-                                  activeEditor
-                                    ? `Click to insert {{${variable}}} at cursor position`
-                                    : "Select an editor first"
-                                }
-                              >
-                                {`{{${variable}}}`}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4 overflow-hidden">
-                  <div className="text-sm text-muted-foreground mb-2 flex justify-between items-end">
-                    <p>
-                      <strong>Template:</strong>{" "}
-                      {defaultTemplates[selectedTemplate]?.templateName}
-                    </p>
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        variant={isDemoEnabled ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setIsDemoEnabled((prev) => !prev)}
-                        className="flex items-center gap-1"
+                      </Label>
+                      <div
+                        className={`border rounded-md ${activeEditor === "html" ? "" : ""}`}
                       >
-                        {!isDemoEnabled ? <EyeClosed /> : <Eye />}
-                        {"Preview"}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          handleResetTemplate(setFieldValue, values)
-                        }
-                        className="flex items-center gap-1"
-                      >
-                        <RotateCcw className="h-3 w-3" />
-                        Reset to Default
-                      </Button>
-                    </div>
-                  </div>
-
-                  <Card className="h-[calc(100%-60px)] overflow-hidden">
-                    <CardContent className="p-0 h-full flex flex-col">
-                      <div className="bg-gray-100 p-4 border-b">
-                        <div className="flex items-center gap-2 text-sm">
-                          <Mail className="h-4 w-4" />
-                          <span className="font-medium">Subject:</span>
-                          <span>
-                            {processTemplate(
-                              values.templates[selectedTemplate]?.subject || "",
-                              previewData
-                            )}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex-1 overflow-y-auto">
-                        <iframe
-                          srcDoc={processTemplate(
-                            values.templates[selectedTemplate]?.html || "",
-                            previewData
-                          )}
-                          className="w-full h-full border-none"
-                          title="Email Preview"
+                        <Editor
+                          height="400px"
+                          defaultLanguage="html"
+                          value={values.templates[selectedTemplate]?.html || ""}
+                          onChange={(value) => {
+                            const updatedTemplates = {
+                              ...values.templates,
+                              [selectedTemplate]: {
+                                ...values.templates[selectedTemplate],
+                                html: value || "",
+                              },
+                            };
+                            setFieldValue("templates", updatedTemplates);
+                          }}
+                          onMount={handleEditorMount}
+                          options={{
+                            ...editorOptions,
+                            selectOnLineNumbers: true,
+                            roundedSelection: false,
+                            readOnly: false,
+                            cursorStyle: "line",
+                            automaticLayout: true,
+                            theme: theme === "dark" ? "vs-dark" : "vs-light",
+                          }}
+                          theme={theme === "dark" ? "vs-dark" : "vs-light"}
                         />
                       </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
+                    </div>
 
-              <div className="w-full flex justify-between items-center pt-4 border-t">
-                <div className="text-sm text-muted-foreground">
-                  {variableAnalysis.invalid.length > 0 && (
-                    <p className="text-sm text-red-500">
-                      Remove Invalid Variables
-                    </p>
-                  )}
+                    <div className="text-sm text-muted-foreground space-y-4">
+                      {/* Available Variables Section */}
+                      <div>
+                        <p className="font-medium mb-2">
+                          Available Variables:
+                          {activeEditor && (
+                            <span className="text-xs text-green-600 ml-2">
+                              (Click to insert into{" "}
+                              {activeEditor === "subject"
+                                ? "subject"
+                                : "HTML editor"}
+                              )
+                            </span>
+                          )}
+                          {!activeEditor && (
+                            <span className="text-xs text-gray-500 ml-2">
+                              (Click in an editor field first)
+                            </span>
+                          )}
+                        </p>
+
+                        {/* Invalid Variables Section - Red and Non-clickable */}
+                        {variableAnalysis.invalid.length > 0 && (
+                          <div className="border-t pt-3">
+                            <div className="flex items-center gap-2 mb-2">
+                              <AlertTriangle className="h-4 w-4 text-red-500" />
+                              <p className="font-medium text-red-700 dark:text-red-400">
+                                Invalid Variables Found (
+                                {variableAnalysis.invalid.length})
+                              </p>
+                            </div>
+                            <div className="flex gap-2 text-xs flex-wrap">
+                              {variableAnalysis.invalid.map((variable) => (
+                                <div
+                                  key={variable}
+                                  className="border px-3 py-2 rounded-md font-mono cursor-not-allowed border-red-300 bg-red-50 text-red-700 dark:border-red-600 dark:bg-red-950/20 dark:text-red-400 opacity-75"
+                                  title={`Invalid variable: {{${variable}}} is not available for this template`}
+                                >
+                                  {`{{${variable}}}`}
+                                </div>
+                              ))}
+                            </div>
+                            <p className="text-xs text-red-600 dark:text-red-400 mt-2 mb-1">
+                              Remove these variables from your template or they
+                              will not be replaced with actual values.
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Used Variables - Green */}
+                        {variableAnalysis.used.length > 0 && (
+                          <div className="mb-3">
+                            <p className="text-xs font-medium text-green-700 dark:text-green-400 mb-1">
+                              ✓ Used Variables ({variableAnalysis.used.length})
+                            </p>
+                            <div className="flex gap-2 text-xs flex-wrap">
+                              {variableAnalysis.used.map((variable) => (
+                                <button
+                                  key={variable}
+                                  type="button"
+                                  onClick={() =>
+                                    insertVariable(
+                                      variable,
+                                      setFieldValue,
+                                      values
+                                    )
+                                  }
+                                  className={`border px-3 py-2 rounded-md transition-all duration-200 font-mono ${
+                                    activeEditor
+                                      ? "border-green-400 bg-green-100 text-green-800 hover:bg-green-200 hover:border-green-600 hover:shadow-sm cursor-pointer dark:border-green-600 dark:bg-green-950/20 dark:text-green-400 dark:hover:bg-green-900/20 dark:hover:border-green-600"
+                                      : "border-green-300 bg-green-100 text-green-600 opacity-50 cursor-not-allowed dark:border-green-700 dark:bg-green-950/20 dark:text-green-500"
+                                  }`}
+                                  disabled={!activeEditor}
+                                  title={
+                                    activeEditor
+                                      ? `Click to insert {{${variable}}} at cursor position`
+                                      : "Select an editor first"
+                                  }
+                                >
+                                  {`{{${variable}}}`}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Unused Variables - Gray */}
+                        {variableAnalysis.unused.length > 0 && (
+                          <div className="mb-3">
+                            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                              ○ Unused Variables (
+                              {variableAnalysis.unused.length})
+                            </p>
+                            <div className="flex gap-2 text-xs flex-wrap">
+                              {variableAnalysis.unused.map((variable) => (
+                                <button
+                                  key={variable}
+                                  type="button"
+                                  onClick={() =>
+                                    insertVariable(
+                                      variable,
+                                      setFieldValue,
+                                      values
+                                    )
+                                  }
+                                  className={`border px-3 py-2 rounded-md transition-all duration-200 font-mono ${
+                                    activeEditor
+                                      ? "border-gray-400 bg-gray-100 text-gray-700 hover:bg-gray-200 hover:border-gray-500 hover:shadow-sm cursor-pointer dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:border-gray-600"
+                                      : "border-gray-300 bg-gray-100 text-gray-500 opacity-50 cursor-not-allowed dark:border-gray-700 dark:bg-gray-800 dark:text-gray-500"
+                                  }`}
+                                  disabled={!activeEditor}
+                                  title={
+                                    activeEditor
+                                      ? `Click to insert {{${variable}}} at cursor position`
+                                      : "Select an editor first"
+                                  }
+                                >
+                                  {`{{${variable}}}`}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 overflow-hidden">
+                    <div className="text-sm text-muted-foreground mb-2 flex justify-between items-end">
+                      <p>
+                        <strong>Template:</strong>{" "}
+                        {defaultTemplates[selectedTemplate]?.templateName}
+                      </p>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant={isDemoEnabled ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setIsDemoEnabled((prev) => !prev)}
+                          className="flex items-center gap-1"
+                        >
+                          {!isDemoEnabled ? <EyeClosed /> : <Eye />}
+                          {"Preview"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            handleResetTemplate(setFieldValue, values)
+                          }
+                          className="flex items-center gap-1"
+                        >
+                          <RotateCcw className="h-3 w-3" />
+                          Reset to Default
+                        </Button>
+                      </div>
+                    </div>
+
+                    <Card className="h-[calc(100%-60px)] overflow-hidden">
+                      <CardContent className="p-0 h-full flex flex-col">
+                        <div className="bg-gray-100 p-4 border-b">
+                          <div className="flex items-center gap-2 text-sm">
+                            <Mail className="h-4 w-4" />
+                            <span className="font-medium">Subject:</span>
+                            <span>
+                              {processTemplate(
+                                values.templates[selectedTemplate]?.subject ||
+                                  "",
+                                previewData
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex-1 overflow-y-auto">
+                          <iframe
+                            srcDoc={processTemplate(
+                              values.templates[selectedTemplate]?.html || "",
+                              previewData
+                            )}
+                            className="w-full h-full border-none"
+                            title="Email Preview"
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <Button type="button" variant="outline" onClick={onClose}>
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    disabled={
-                      isSubmitting ||
-                      isUpdating ||
-                      variableAnalysis.invalid.length > 0
-                    }
-                  >
-                    {isSubmitting || isUpdating ? "Saving..." : "Save"}
-                  </Button>
+
+                <div className="w-full flex justify-between items-center pt-4 border-t">
+                  <div className="text-sm text-muted-foreground">
+                    {variableAnalysis.invalid.length > 0 && (
+                      <p className="text-sm text-red-500">
+                        Remove Invalid Variables
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button type="button" variant="outline" onClick={onClose}>
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      disabled={
+                        isSubmitting ||
+                        isUpdating ||
+                        variableAnalysis.invalid.length > 0
+                      }
+                    >
+                      {isSubmitting || isUpdating ? "Saving..." : "Save"}
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
-          </Form>
+            </Form>
           );
         }}
       </Formik>
