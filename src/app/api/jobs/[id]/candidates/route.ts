@@ -58,6 +58,10 @@ export async function GET(
           select: "name email",
         },
         {
+          path: "followUp.userId",
+          select: "name email",
+        },
+        {
           path: "jobId",
           select: "title description ",
         },

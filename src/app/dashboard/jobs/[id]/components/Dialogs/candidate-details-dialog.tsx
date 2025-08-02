@@ -414,6 +414,11 @@ export function CandidateDetailsDialog({
                       <p className="text-amber-800 dark:text-amber-200 text-sm leading-relaxed">
                         {localCandidate.followUp.note}
                       </p>
+                      {localCandidate.followUp.userId && (
+                        <div className="text-xs text-amber-700 dark:text-amber-300 mt-2">
+                          Created by: <span className="font-bold">{localCandidate.followUp.userId.name}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   {(user?.role === "admin" || user?.role === "hr") && (

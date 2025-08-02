@@ -21,6 +21,7 @@ import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import twoFASettings from "./twofa-setting";
+import GoogleCalendarSettings from "./google-calendar";
 export interface SettingComponentProps {
   onClose: () => void;
   isOpen?: boolean;
@@ -34,6 +35,7 @@ const settingComponents: Record<
   fs: FileStorageOptions,
   gemini: GeminiConfigs,
   "ai-providers": AIProvidersConfigs,
+  "google-calendar": GoogleCalendarSettings,
   multipleorgs: MultipleOrgsConfigs,
   backups: BackupsDialog,
   assets: AssetsDialog,
@@ -73,13 +75,15 @@ const SettingDialog = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        size={setting.key === "ai-providers" ? "2xl" : undefined}
+        size={setting.key === "ai-providers" || setting.key === "google-calendar" ? "2xl" : undefined}
         className={`${
           setting.key === "portal" ||
           setting.key === "templates" ||
           setting.key === "logs"
             ? "max-w-7xl w-[90vw] min-h-[95vh] overflow-hidden flex flex-col"
             : setting.key === "ai-providers"
+            ? "max-h-[90vh] p-0 overflow-hidden flex flex-col"
+            : setting.key === "google-calendar"
             ? "max-h-[90vh] p-0 overflow-hidden flex flex-col"
             : setting.key === "timezone"
             ? "max-w-2xl w-[90vw] overflow-visible"
@@ -99,8 +103,10 @@ const SettingDialog = ({
           setting.key === "gemini" ||
           setting.key === "twoFA" ? (
             <ComponentToRender onClose={onClose} isOpen={isOpen} />
-          ) : setting.key === "ai-providers" ? (
-            <ComponentToRender onClose={onClose} isOpen={isOpen} />
+          ) : setting.key === "ai-providers" || setting.key === "google-calendar" ? (
+            <div className="flex-1 overflow-y-auto px-6 py-4">
+              <ComponentToRender onClose={onClose} isOpen={isOpen} />
+            </div>
           ) : (
             <div className="flex-1 overflow-y-auto px-6 py-4">
               <ComponentToRender onClose={onClose} isOpen={isOpen} />

@@ -494,6 +494,10 @@ export async function PUT(
             select: "name email",
           },
           {
+            path: "followUp.userId",
+            select: "name email",
+          },
+          {
             path: "jobId",
             select: "_id description title",
           },
@@ -633,6 +637,10 @@ export async function GET(
           select: "name email",
         },
         {
+          path: "followUp.userId",
+          select: "name email",
+        },
+        {
           path: "jobId",
           select: "title description ",
         },
@@ -752,6 +760,10 @@ export async function DELETE(
       },
       {
         path: "remarks.userId",
+        select: "name email",
+      },
+      {
+        path: "followUp.userId",
         select: "name email",
       },
       {

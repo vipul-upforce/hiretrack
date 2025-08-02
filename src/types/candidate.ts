@@ -68,6 +68,15 @@ export interface Candidate {
     notes: string;
     failure?: string;
   };
+  followUp?: {
+    note: string;
+    date?: Date | string;
+    userId?: {
+      _id: string;
+      name: string;
+      email: string;
+    };
+  };
 }
 
 export type CandidateStatus =

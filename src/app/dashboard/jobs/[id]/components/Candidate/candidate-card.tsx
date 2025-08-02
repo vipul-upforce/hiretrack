@@ -31,7 +31,7 @@ import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
 import CustomFieldBadge from "./CustomFieldBadge";
 import { CalendarClockIcon } from "lucide-react";
 import { Trash2Icon } from "lucide-react";
-import { MapPin, Clock, Star, Mail, Calendar, Copy, Phone } from "lucide-react";
+import { MapPin, Clock, Star, Mail, Calendar, Copy, Phone, Video } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -578,6 +578,11 @@ export function CandidateCard({
                 <p className="text-xs text-amber-800 dark:text-amber-200 leading-tight line-clamp-2 break-words">
                   {candidate.followUp.note as string}
                 </p>
+                {candidate.followUp.userId && (
+                  <div className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                    Created by: <span className="font-bold">{candidate.followUp.userId.name}</span>
+                  </div>
+                )}
               </div>
             </div>
             {user?.role !== "candidate" && user?.role !== "interviewer" && (
@@ -629,7 +634,13 @@ export function CandidateCard({
         typeof candidate.assignment.interviewerId === "object" &&
         candidate.assignment.interviewerId._id &&
         candidate.assignment.interviewerId.name && (
-          <div className="border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/70 -mx-4 -mb-4 px-4 py-1.5">
+          <div 
+            className="border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/70 -mx-4 -mb-4 px-4 py-1.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/70 transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsAssigning(true);
+            }}
+          >
             <div className="flex items-center justify-between gap-2 min-h-[20px]">
               <div className="flex items-center gap-1.5 min-w-0 flex-1">
                 <CalendarClockIcon
@@ -638,7 +649,41 @@ export function CandidateCard({
                 />
                 <span className="text-xs text-gray-600 dark:text-gray-400 truncate">
                   Assigned to <span className="font-semibold">{candidate.assignment.interviewerId.name}</span>
+                  {candidate.assignment?.googleMeet && (
+                    <Badge variant="default" className="ml-2 text-xs bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200">
+                      <Video size={10} className="mr-1" />
+                      Google Meet
+                    </Badge>
+                  )}
                 </span>
+                {candidate.assignment?.googleMeet && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div 
+                          className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-600 transition-colors flex-shrink-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const meetingInfo = `Meeting: ${candidate.assignment.googleMeet.summary}
+Description: ${candidate.assignment.googleMeet.description}
+Time: ${candidate.assignment?.time ? `${formatDate(candidate.assignment.time)} at ${formatTime(candidate.assignment.time)}` : 'Not set'}
+Google Meet Link: ${candidate.assignment.googleMeet.meetingLink}`;
+                            copyToClipboard(meetingInfo, "Meeting information");
+                          }}
+                        >
+                          <Video size={12} className="text-white" />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-sm">
+                        <div className="text-xs space-y-1">
+                          <div className="font-semibold">{candidate.assignment.googleMeet.summary}</div>
+                          <div className="text-gray-600">Click to copy meeting details</div>
+                          <div className="text-blue-500 break-all">{candidate.assignment.googleMeet.meetingLink}</div>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
               </div>
               {candidate.assignment?.time && (
                 <div className="text-xs text-gray-500 dark:text-gray-500 flex-shrink-0">
@@ -659,6 +704,23 @@ export function CandidateCard({
             "bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg p-4 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 h-full hover:border-gray-300 dark:hover:border-gray-700",
             className
           )}
+          onClick={(e) => {
+            // Check if click target is a button or inside a dropdown/interactive element
+            const target = e.target as HTMLElement;
+            if (target.closest('button') || 
+                target.closest('[role="menuitem"]') || 
+                target.closest('[data-radix-collection-item]') ||
+                target.closest('[data-radix-popper-content]') ||
+                target.closest('[data-state]') ||
+                target.closest('.cursor-pointer:not(.bg-white):not(.dark\\:bg-black)') ||
+                target.closest('a') ||
+                target.tagName === 'BUTTON') {
+              return; // Don't open details if clicking on interactive elements
+            }
+            
+            // Always open details when clicking on card content
+            onViewDetails(candidate);
+          }}
         >
           {renderCardContent()}
         </div>
@@ -674,6 +736,26 @@ export function CandidateCard({
                 isPending && "opacity-50",
                 className
               )}
+              onClick={(e) => {
+                // Only trigger on actual click, not on drag
+                if (e.detail === 0) return; // Ignore programmatic clicks
+                
+                // Check if click target is a button or inside a dropdown/interactive element
+                const target = e.target as HTMLElement;
+                if (target.closest('button') || 
+                    target.closest('[role="menuitem"]') || 
+                    target.closest('[data-radix-collection-item]') ||
+                    target.closest('[data-radix-popper-content]') ||
+                    target.closest('[data-state]') ||
+                    target.closest('.cursor-pointer:not(.bg-white):not(.dark\\:bg-black)') ||
+                    target.closest('a') ||
+                    target.tagName === 'BUTTON') {
+                  return; // Don't open details if clicking on interactive elements
+                }
+                
+                // Always open details when clicking on card content
+                onViewDetails(candidate);
+              }}
             >
               {renderCardContent()}
             </div>

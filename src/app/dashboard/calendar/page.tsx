@@ -195,12 +195,15 @@ export default function CalendarPage() {
         ? new Date(candidate?.assignment?.time)
         : undefined;
 
+      const hasGoogleMeet = candidate?.assignment?.googleMeet;
+      const baseTitle = candidate?.jobId && typeof candidate.jobId === "object"
+        ? candidate?.jobId?.title
+        : "Unknown";
+      const title = hasGoogleMeet ? `📹 ${baseTitle}` : baseTitle;
+
       return {
         id: candidate._id,
-        title:
-          candidate?.jobId && typeof candidate.jobId === "object"
-            ? candidate?.jobId?.title
-            : "Unknown",
+        title,
         start: startTime,
         end: endTime,
         allDay: false,
@@ -208,6 +211,8 @@ export default function CalendarPage() {
         endStr: endTime?.toISOString() || "",
         url: "",
         display: "auto",
+        backgroundColor: hasGoogleMeet ? "#3b82f6" : undefined,
+        borderColor: hasGoogleMeet ? "#1d4ed8" : undefined,
         extendedProps: {
           candidate: {
             ...candidate,

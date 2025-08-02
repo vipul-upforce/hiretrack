@@ -169,7 +169,7 @@ export default function DetailsDialogHeader({
             )}
           </div>
 
-          <div className="flex items-start gap-4 px-8">
+          <div className="flex items-start gap-4 pl-12">
             {/* Status and Job */}
             <div className="flex flex-col items-end">
               <CandidateStatusBadge status={candidate?.status} />

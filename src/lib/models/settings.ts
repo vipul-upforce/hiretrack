@@ -129,6 +129,36 @@ const settingsSchema = new Schema({
       default: false,
     },
   },
+  googleCalendar: {
+    isConnected: {
+      type: Boolean,
+      default: false,
+    },
+    clientId: {
+      type: String,
+      default: "",
+    },
+    clientSecret: {
+      type: String,
+      default: "",
+    },
+    accessToken: {
+      type: String,
+      default: "",
+    },
+    refreshToken: {
+      type: String,
+      default: "",
+    },
+    expiryDate: {
+      type: Number,
+      default: null,
+    },
+    connectedEmail: {
+      type: String,
+      default: "",
+    },
+  },
 });
 
 export interface ISettings {
@@ -154,6 +184,7 @@ export interface ISettings {
   };
   emailTemplates: { [key: string]: IEmailTemplate };
   twoFA?: ITwoFA;
+  googleCalendar?: IGoogleCalendar;
 }
 
 export interface IGemini {
@@ -211,6 +242,16 @@ export interface IAIProviders {
 }
 export interface ITwoFA {
   enable2FA: boolean;
+}
+
+export interface IGoogleCalendar {
+  isConnected: boolean;
+  clientId: string;
+  clientSecret: string;
+  accessToken: string;
+  refreshToken: string;
+  expiryDate: number | null;
+  connectedEmail: string;
 }
 
 export interface SettingsDocument extends Document, ISettings {}

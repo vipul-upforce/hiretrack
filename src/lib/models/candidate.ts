@@ -56,6 +56,13 @@ export interface ICandidate {
     };
     assignedAt: Date;
     time: Date;
+    googleMeet?: {
+      eventId: string;
+      meetingLink: string;
+      htmlLink: string;
+      summary: string;
+      description: string;
+    };
   };
   customFields: {
     [key: string]:
@@ -238,6 +245,13 @@ export const candidateSchema = new Schema(
       },
       assignedAt: Date,
       time: Date,
+      googleMeet: {
+        eventId: String,
+        meetingLink: String,
+        htmlLink: String,
+        summary: String,
+        description: String,
+      },
     },
     customFields: {
       type: Object,

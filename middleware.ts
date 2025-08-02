@@ -248,7 +248,9 @@ const apiExemptPaths = [
   "/api/auth/2fa/verify-otp",
   "/api/settings/twofa",
   "/api/settings/portal",
-  "/api/organization/tags"
+  "/api/organization/tags",
+  "/api/auth/google/callback",
+  "/api/auth/google/authorize"
 ];
 
 const redirectPaths = [

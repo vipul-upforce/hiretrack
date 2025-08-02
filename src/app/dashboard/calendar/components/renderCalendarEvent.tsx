@@ -2,6 +2,7 @@
 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Video, Copy, ExternalLink } from "lucide-react";
 import { CustomCalendarEvent, CandidateAssignment, Job } from "../page"; // Import types from parent
 
 interface EventDetailsProps {
@@ -76,6 +77,50 @@ export function RenderEvent({
                 {event.extendedProps.candidate.status || "Unknown"}
               </Badge>
             </div>
+            
+            {/* Google Meet Info */}
+            {event.extendedProps.candidate.assignment?.googleMeet && (
+              <div className="space-y-2 border-t pt-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground flex items-center gap-1">
+                    <Video size={12} className="text-blue-500" />
+                    Google Meet:
+                  </span>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigator.clipboard.writeText(event.extendedProps.candidate.assignment?.googleMeet?.meetingLink || '');
+                      }}
+                      className="p-1 text-blue-500 hover:text-blue-600 transition-colors"
+                      title="Copy meeting link"
+                    >
+                      <Copy size={12} />
+                    </button>
+                    <a
+                      href={event.extendedProps.candidate.assignment.googleMeet.meetingLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="p-1 text-blue-500 hover:text-blue-600 transition-colors"
+                      title="Open meeting link"
+                    >
+                      <ExternalLink size={12} />
+                    </a>
+                  </div>
+                </div>
+                <div className="text-xs text-muted-foreground bg-blue-50 dark:bg-blue-900/20 p-2 rounded">
+                  <p className="font-medium text-blue-900 dark:text-blue-100">
+                    {event.extendedProps.candidate.assignment.googleMeet.summary}
+                  </p>
+                  {event.extendedProps.candidate.assignment.googleMeet.description && (
+                    <p className="mt-1 text-blue-700 dark:text-blue-200 line-clamp-2">
+                      {event.extendedProps.candidate.assignment.googleMeet.description.split('\n')[0]}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {typeof event.extendedProps.candidate.jobId !== "string" &&
