@@ -99,6 +99,11 @@ export async function PUT(req: NextRequest) {
           { status: 400 }
         );
       }
+      
+      // Ensure variables field exists, use simplified variables for custom templates
+      if (!temp.variables) {
+        temp.variables = ["SenderName", "ReceiverName", "PortalName"];
+      }
     }
 
     console.log("Templates to save:", JSON.stringify(templates, null, 2));

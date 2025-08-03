@@ -14,10 +14,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ChipInput } from "@/components/ui/chip-input";
-import { Upload, X, Loader2, Mail, Paperclip, CheckCircle, AlertCircle } from "lucide-react";
+import { Upload, X, Loader2, Mail, Paperclip, CheckCircle, AlertCircle, FileText, Eye, Code, Edit } from "lucide-react";
 import { toast } from "sonner";
 import Cookies from "js-cookie";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Editor } from "@monaco-editor/react";
+import { useTheme } from "@/components/theme-provider";
+import RichTextEditor from "@/components/ui/rte/RichTextEditor";
 
 interface EmailCandidateDialogProps {
   isOpen: boolean;
@@ -36,6 +42,16 @@ interface FileAttachment {
   mimeType: string;
 }
 
+interface EmailTemplate {
+  id: string;
+  name: string;
+  subject: string;
+  content: string;
+  variables: string[];
+  isDefault?: boolean;
+  isCustom?: boolean;
+}
+
 const MAX_ATTACHMENTS = 3;
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -44,6 +60,7 @@ export function EmailCandidateDialog({
   onClose,
   candidate,
 }: EmailCandidateDialogProps) {
+  const { theme } = useTheme();
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [cc, setCc] = useState<string[]>([]);
@@ -55,9 +72,16 @@ export function EmailCandidateDialog({
   const [userName, setUserName] = useState("");
   const [emailSent, setEmailSent] = useState(false);
   const [emailError, setEmailError] = useState("");
+  
+  // Template management
+  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("none");
+  const [templateLoading, setTemplateLoading] = useState(true);
+  const [contentMode, setContentMode] = useState<"rich" | "html">("rich");
+  const [organizationName, setOrganizationName] = useState("");
 
   useEffect(() => {
-    // Get current user's email for reply-to field
+    // Get current user's email for reply-to field and fetch templates
     (async () => {
       const token = Cookies.get("token");
       if (token) {
@@ -67,10 +91,72 @@ export function EmailCandidateDialog({
           setUserEmail(user.email);
           setUserName(user.name || user.email);
           setReplyTo(user.email);
+          setOrganizationName(user.organizationName || "HireTrack");
         }
+      }
+      
+      // Fetch templates
+      try {
+        const response = await fetch("/api/settings/templates");
+        if (response.ok) {
+          const data = await response.json();
+          if (data.templates && Object.keys(data.templates).length > 0) {
+            const loadedTemplates = Object.values(data.templates).map((template: any) => ({
+              id: template.templateId,
+              name: template.templateName,
+              subject: template.subject,
+              content: template.html,
+              variables: template.variables || ["SenderName", "ReceiverName", "PortalName"],
+              isCustom: !template.templateId.includes("job-application") && !template.templateId.includes("password-reset") && 
+                       !template.templateId.includes("interview-assignment") && !template.templateId.includes("status-update") &&
+                       !template.templateId.includes("new-remark") && !template.templateId.includes("step-completed") &&
+                       !template.templateId.includes("send-otp"),
+              isDefault: template.templateId.includes("job-application") || template.templateId.includes("password-reset") || 
+                        template.templateId.includes("interview-assignment") || template.templateId.includes("status-update") ||
+                        template.templateId.includes("new-remark") || template.templateId.includes("step-completed") ||
+                        template.templateId.includes("send-otp"),
+            }));
+            
+            // Filter to show only custom templates (suitable for manual emails to candidates)
+            const emailTemplates = loadedTemplates.filter((template: EmailTemplate) => template.isCustom);
+            setTemplates(emailTemplates);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load templates:", error);
+      } finally {
+        setTemplateLoading(false);
       }
     })();
   }, []);
+
+  // Replace template variables with actual values
+  const replaceVariables = (content: string): string => {
+    return content
+      .replace(/{{SenderName}}/g, userName || userEmail)
+      .replace(/{{ReceiverName}}/g, candidate.name)
+      .replace(/{{PortalName}}/g, organizationName);
+  };
+
+
+  // Handle template selection
+  const handleTemplateSelect = (templateId: string) => {
+    setSelectedTemplate(templateId);
+    
+    if (templateId === "none") {
+      setSubject("");
+      setBody("");
+      return;
+    }
+
+    const template = templates.find(t => t.id === templateId);
+    if (template) {
+      setSubject(replaceVariables(template.subject));
+      setBody(replaceVariables(template.content));
+      // Reset to rich text mode when selecting a template for better UX
+      setContentMode("rich");
+    }
+  };
 
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -205,6 +291,8 @@ export function EmailCandidateDialog({
         setAttachments([]);
         setEmailSent(false);
         setEmailError("");
+        setSelectedTemplate("none");
+        setContentMode("rich");
       }, 2000);
     } catch (error: any) {
       const errorMsg = error.message || "Failed to send email";
@@ -236,6 +324,61 @@ export function EmailCandidateDialog({
 
         <div className="flex-1 overflow-y-auto px-6 py-4">
           <div className="space-y-4">
+            {/* Template Selection */}
+            {!templateLoading && templates.length > 0 && (
+              <div className="space-y-2">
+                <Label>Email Template</Label>
+                <div className="flex items-center gap-2">
+                  <Select value={selectedTemplate} onValueChange={handleTemplateSelect}>
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Choose a template or start from scratch" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-4 w-4" />
+                          Start from scratch
+                        </div>
+                      </SelectItem>
+                      {templates.map((template) => (
+                        <SelectItem key={template.id} value={template.id}>
+                          <div className="flex items-center justify-between w-full">
+                            <div className="flex items-center gap-2">
+                              <FileText className="h-4 w-4" />
+                              {template.name}
+                            </div>
+                            {template.isCustom && (
+                              <Badge variant="secondary" className="ml-2">Custom</Badge>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {selectedTemplate !== "none" && (
+                  <div className="text-xs text-muted-foreground">
+                    Variables will be automatically replaced: SenderName → {userName}, ReceiverName → {candidate.name}, PortalName → {organizationName}
+                  </div>
+                )}
+                {selectedTemplate === "none" && contentMode === "html" && (
+                  <div className="text-xs text-muted-foreground">
+                    💡 Tip: Use "Preview & Edit" mode to see how your email will look while writing, or stay in "Advanced HTML" mode for full control
+                  </div>
+                )}
+                {contentMode === "rich" && selectedTemplate === "none" && (
+                  <div className="text-xs text-muted-foreground">
+                    💡 Use the formatting toolbar to style your text - bold, italic, lists, and more. No HTML knowledge needed!
+                  </div>
+                )}
+                {contentMode === "rich" && selectedTemplate !== "none" && (
+                  <div className="text-xs text-muted-foreground">
+                    💡 You're using a pre-designed template. To customize the content, switch to "Advanced HTML" mode.
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="subject">Subject *</Label>
               <Input
@@ -247,15 +390,105 @@ export function EmailCandidateDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="body">Message *</Label>
-              <Textarea
-                id="body"
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                placeholder="Type your message here..."
-                rows={8}
-                className="resize-none"
-              />
+              <div className="flex items-center justify-between">
+                <Label htmlFor="body">Message *</Label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setContentMode(contentMode === "rich" ? "html" : "rich")}
+                  >
+                    {contentMode === "rich" ? (
+                      <>
+                        <Code className="h-4 w-4 mr-2" />
+                        Advanced HTML
+                      </>
+                    ) : (
+                      <>
+                        <Edit className="h-4 w-4 mr-2" />
+                        Simple Editor
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+              
+              {contentMode === "rich" ? (
+                <div className="space-y-3">
+                  {/* Check if using a template */}
+                  {selectedTemplate !== "none" ? (
+                    <>
+                      {/* Template Preview */}
+                      <div className="border rounded-lg">
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-3 border-b border-blue-200 dark:border-blue-800">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-sm text-blue-800 dark:text-blue-200">
+                              <FileText className="h-4 w-4" />
+                              Using template: {templates.find(t => t.id === selectedTemplate)?.name}
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedTemplate("none");
+                                setBody("");
+                              }}
+                              className="text-xs"
+                            >
+                              Remove Template
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="p-4 bg-white max-h-[300px] overflow-y-auto">
+                          <div dangerouslySetInnerHTML={{ __html: body }} />
+                        </div>
+                        <div className="p-3 bg-gray-50 dark:bg-gray-900 border-t text-xs text-muted-foreground">
+                          💡 This template has professional formatting applied. Switch to "Advanced HTML" mode to modify the template structure.
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Rich Text Editor for non-template emails */}
+                      <div className="border rounded-lg">
+                        <div className="bg-gray-50 dark:bg-gray-900 p-3 border-b border-gray-200 dark:border-gray-700">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Edit className="h-4 w-4" />
+                            Compose Your Email
+                          </div>
+                        </div>
+                        <RichTextEditor
+                          value={body}
+                          onChange={(value) => setBody(value)}
+                          placeholder="Type your email message here... Use the formatting toolbar above to style your text."
+                          className="min-h-[300px]"
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div className="border rounded-lg overflow-hidden">
+                  <Editor
+                    height="300px"
+                    language="html"
+                    theme={theme === "dark" ? "vs-dark" : "vs"}
+                    value={body}
+                    onChange={(value) => setBody(value || "")}
+                    options={{
+                      fontSize: 14,
+                      minimap: { enabled: false },
+                      scrollBeyondLastLine: false,
+                      wordWrap: "on",
+                      lineNumbers: "on",
+                      folding: true,
+                      automaticLayout: true,
+                    }}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
