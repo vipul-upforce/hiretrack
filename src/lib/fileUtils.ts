@@ -450,3 +450,90 @@ export async function handleSingleFile(
   }
   return file;
 }
+
+// Helper function for file sharing module
+export async function uploadFileToProvider(
+  base64: string,
+  fileStorage: any,
+  organizationId: string,
+  filePath: string
+): Promise<{ success: boolean; url?: string; fileName?: string; error?: string }> {
+  try {
+    const fileName = path.basename(filePath);
+    const folder = path.dirname(filePath);
+    
+    let url = "";
+    switch (fileStorage.storageType) {
+      case "cloudinary":
+        url = await uploadFile(base64, folder, organizationId, fileName);
+        break;
+      case "s3":
+        url = await uploadFileToS3(base64, folder, organizationId, fileName);
+        break;
+      default: // local storage
+        // For local storage, save the file and return the relative path (not URL)
+        await saveFileLocally(base64, folder, fileName);
+        // Return the relative path that getFileFromProvider expects
+        url = path.join(folder, fileName);
+        break;
+    }
+    
+    if (!url) {
+      return { success: false, error: "Failed to upload file" };
+    }
+    
+    return { success: true, url, fileName };
+  } catch (error: any) {
+    console.error("Error uploading file to provider:", error);
+    return { success: false, error: error.message || "Upload failed" };
+  }
+}
+
+// Helper function to get file from provider
+export async function getFileFromProvider(
+  filePath: string,
+  fileStorage: any,
+  organizationId: string
+): Promise<{ success: boolean; buffer?: Buffer; error?: string }> {
+  try {
+    switch (fileStorage.storageType) {
+      case "local":
+        // For local files, read from the file system
+        const publicPath = path.join(process.cwd(), "..", "assets");
+        const fullPath = path.join(publicPath, filePath);
+        
+        if (!fs.existsSync(fullPath)) {
+          return { success: false, error: "File not found" };
+        }
+        
+        const buffer = await fs.promises.readFile(fullPath);
+        return { success: true, buffer };
+        
+      case "cloudinary":
+        // For Cloudinary, fetch the file from URL
+        const response = await fetch(filePath);
+        if (!response.ok) {
+          return { success: false, error: "Failed to fetch file from Cloudinary" };
+        }
+        const arrayBuffer = await response.arrayBuffer();
+        return { success: true, buffer: Buffer.from(arrayBuffer) };
+        
+      case "s3":
+        // For S3, use AWS SDK to get the file
+        // This would need to be implemented based on your S3 setup
+        // For now, we'll fetch from the URL
+        const s3Response = await fetch(filePath);
+        if (!s3Response.ok) {
+          return { success: false, error: "Failed to fetch file from S3" };
+        }
+        const s3ArrayBuffer = await s3Response.arrayBuffer();
+        return { success: true, buffer: Buffer.from(s3ArrayBuffer) };
+        
+      default:
+        return { success: false, error: "Unknown storage provider" };
+    }
+  } catch (error: any) {
+    console.error("Error getting file from provider:", error);
+    return { success: false, error: error.message || "Failed to get file" };
+  }
+}

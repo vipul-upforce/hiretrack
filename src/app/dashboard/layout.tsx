@@ -16,6 +16,7 @@ import {
   Link2Icon,
   UploadIcon,
   BarChart3Icon,
+  Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -85,6 +86,12 @@ const sidebarItems: SidebarItem[] = [
     title: "Settings",
     href: "/dashboard/settings",
     icon: <Settings className="h-5 w-5" />,
+    role: "admin",
+  },
+  {
+    title: "Email History",
+    href: "/dashboard/email-history",
+    icon: <Mail className="h-5 w-5" />,
     role: "admin",
   },
 ];
@@ -414,6 +421,7 @@ export default function DashboardLayout({
             }
             const isActive = (item.title === "Settings" && pathname.startsWith("/dashboard/settings")) ||
                            (item.title === "Analytics" && pathname.startsWith("/dashboard/analytics")) ||
+                           (item.title === "Email History" && pathname.startsWith("/dashboard/email-history")) ||
                            pathname === item.href;
             
             return (

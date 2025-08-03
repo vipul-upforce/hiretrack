@@ -25,6 +25,7 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "@/components/theme-provider";
 import Link from "next/link";
 import withAuthGuard from "@/components/withAuthGuard";
+import { EmailHistory } from "../components/email-history";
 
 interface LogEntry {
   candidateId: string;
@@ -61,7 +62,7 @@ function SystemLogsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [offset, setOffset] = useState(0);
   const [totalLines, setTotalLines] = useState(0);
-  const [activeTab, setActiveTab] = useState<"nginx" | "server">("nginx");
+  const [activeTab, setActiveTab] = useState<"nginx" | "server" | "emails">("nginx");
   const [isNginxAvailable, setIsNginxAvailable] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showLn, setShowLn] = useState(false);
@@ -384,6 +385,23 @@ function SystemLogsPage() {
                 aria-selected={activeTab === "server"}
               >
                 History Logs
+              </button>
+              <button
+                className={`py-2 px-4 text-sm font-medium rounded-t-md transition-colors ${
+                  activeTab === "emails"
+                    ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                }`}
+                onClick={() => {
+                  setActiveTab("emails");
+                  setSearchQuery("");
+                  setOffset(0);
+                  setTotalLines(0);
+                  setShowDetails(null);
+                }}
+                aria-selected={activeTab === "emails"}
+              >
+                Email History
               </button>
             </div>
             {error && (
@@ -775,6 +793,12 @@ function SystemLogsPage() {
                     </div>
                   )}
                 </div>
+              </div>
+            )}
+            {/* Email History Tab */}
+            {activeTab === "emails" && (
+              <div className="flex-1 flex flex-col min-h-0 -mx-6 -mb-6">
+                <EmailHistory />
               </div>
             )}
           </div>

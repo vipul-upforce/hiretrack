@@ -53,6 +53,7 @@ import ConfirmAndRemarkDialog from "../Dialogs/mark-as-done-dialog";
 import { useUnassignHandlers } from "../../hooks/useUnassignHandlers";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { EmailCandidateDialog } from "../Dialogs/email-candidate-dialog";
 
 interface CandidateCardProps {
   candidate: Candidate;
@@ -100,6 +101,7 @@ export function CandidateCard({
   const [isAssigning, setIsAssigning] = useState(false);
   const [isAddingFollowUp, setIsAddingFollowUp] = useState(false);
   const [confirmUnassignOpen, setConfirmUnassignOpen] = useState(false);
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
 
   // Handlers for menu actions
   const {
@@ -280,6 +282,19 @@ export function CandidateCard({
                   >
                     <Edit className="h-4 w-4 mr-2" />
                     Edit
+                  </DropdownMenuItem>
+                )}
+
+                {/* Email - Only for non-candidate roles */}
+                {user?.role !== "candidate" && (
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsEmailDialogOpen(true);
+                    }}
+                  >
+                    <Mail className="h-4 w-4 mr-2" />
+                    Send Email
                   </DropdownMenuItem>
                 )}
 
@@ -828,6 +843,19 @@ Google Meet Link: ${candidate.assignment.googleMeet.meetingLink}`;
         isLoading={isLoading}
         loadingText="Marking as done..."
       />
+
+      {/* Email Candidate Dialog */}
+      {isEmailDialogOpen && (
+        <EmailCandidateDialog
+          isOpen={isEmailDialogOpen}
+          onClose={() => setIsEmailDialogOpen(false)}
+          candidate={{
+            _id: candidate._id,
+            name: candidate.name,
+            email: candidate.email,
+          }}
+        />
+      )}
     </>
   );
 }

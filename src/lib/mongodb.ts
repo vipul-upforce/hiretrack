@@ -18,6 +18,8 @@ import candidateAccountSchema, {
 import cvBatchSchema, { ICVBatch } from "./models/cvBatch";
 import { jobLaneConfigSchema, IJobLaneConfig } from "./models/JobLaneConfig";
 import { checklistTemplateSchema, IChecklistTemplate } from "./models/ChecklistTemplate";
+import fileShareSchema, { IFileShare } from "./models/fileshare";
+import emailHistorySchema, { IEmailHistory } from "./models/emailhistory";
 
 interface MongooseGlobal {
   conn: typeof mongoose | null;
@@ -39,6 +41,8 @@ export var CandidateAccount: mongoose.Model<IUCandidateAccount> | null = null;
 export var cvBatch: mongoose.Model<ICVBatch> | null = null;
 export var JobLaneConfig: mongoose.Model<IJobLaneConfig> | null = null;
 export var ChecklistTemplate: mongoose.Model<IChecklistTemplate> | null = null;
+export var FileShare: mongoose.Model<IFileShare> | null = null;
+export var EmailHistory: mongoose.Model<IEmailHistory> | null = null;
 
 const MONGODB_URI = process.env.MONGODB_URI!;
 
@@ -82,6 +86,8 @@ export default async function connectToDatabase() {
       cvBatch = mongoose.model<ICVBatch>("CVBatch", cvBatchSchema);
       JobLaneConfig = mongoose.model<IJobLaneConfig>("JobLaneConfig", jobLaneConfigSchema);
       ChecklistTemplate = mongoose.model<IChecklistTemplate>("ChecklistTemplate", checklistTemplateSchema);
+      FileShare = mongoose.model<IFileShare>("FileShare", fileShareSchema);
+      EmailHistory = mongoose.model<IEmailHistory>("EmailHistory", emailHistorySchema);
       console.log("Models registered");
       return mongoose;
     });
