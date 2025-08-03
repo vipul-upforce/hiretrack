@@ -1,6 +1,8 @@
 import { createTransport, TransportOptions } from "nodemailer";
 import { Resend } from "resend";
 import { Ismtp } from "@/lib/models/settings";
+import dbConnect, { EmailHistory } from "@/lib/mongodb";
+import mongoose from "mongoose";
 
 interface EmailOptions {
   to: string;
@@ -13,6 +15,28 @@ interface EmailOptions {
   from?: string;
 }
 
+interface EmailContext {
+  organizationId: string;
+  sentBy: string;
+  sentByEmail: string;
+  sentByName: string;
+  recipientType?: string;
+  recipientId?: string;
+  recipientName?: string;
+  metadata?: {
+    jobId?: string;
+    candidateId?: string;
+    templateUsed?: string;
+    eventType?: string; // e.g., 'status_update', 'remark_added', 'interview_scheduled'
+  };
+  attachments?: Array<{
+    fileName: string;
+    fileSize: number;
+    shareId: string;
+    shareUrl: string;
+  }>;
+}
+
 export async function sendMail(
   mailConfig: Ismtp,
   to: string,
@@ -22,7 +46,8 @@ export async function sendMail(
   cc?: string[],
   bcc?: string[],
   replyTo?: string,
-  from?: string
+  from?: string,
+  context?: EmailContext
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
     // Validate mail configuration
@@ -80,16 +105,63 @@ export async function sendMail(
     };
 
 
+    let result: { success: boolean; messageId?: string; error?: string };
+    
     switch (mailConfig.mailProvider) {
       case "smtp":
-        return await sendSMTPMail(mailConfig, emailOptions);
+        result = await sendSMTPMail(mailConfig, emailOptions);
+        break;
       case "resend":
-        return await sendResendMail(mailConfig, emailOptions);
+        result = await sendResendMail(mailConfig, emailOptions);
+        break;
       case "brevo":
-        return await sendBrevoMail(mailConfig, emailOptions);
+        result = await sendBrevoMail(mailConfig, emailOptions);
+        break;
       default:
         return { success: false, error: "Unsupported mail provider" };
     }
+
+    // Save email to history if context is provided
+    if (context) {
+      try {
+        await dbConnect();
+        
+        const emailHistoryData = {
+          organizationId: new mongoose.Types.ObjectId(context.organizationId),
+          sentBy: new mongoose.Types.ObjectId(context.sentBy),
+          sentByEmail: context.sentByEmail,
+          sentByName: context.sentByName,
+          recipientType: context.recipientType || "candidate",
+          recipientId: context.recipientId ? new mongoose.Types.ObjectId(context.recipientId) : null,
+          recipientEmail: to,
+          recipientName: context.recipientName || to,
+          subject,
+          body: html || text || "",
+          cc: validCc,
+          bcc: validBcc,
+          replyTo,
+          attachments: context.attachments || [],
+          status: result.success ? "sent" : "failed",
+          provider: mailConfig.mailProvider,
+          providerMessageId: result.messageId,
+          error: result.error,
+          metadata: context.metadata ? {
+            jobId: context.metadata.jobId ? new mongoose.Types.ObjectId(context.metadata.jobId) : undefined,
+            candidateId: context.metadata.candidateId ? new mongoose.Types.ObjectId(context.metadata.candidateId) : undefined,
+            templateUsed: context.metadata.templateUsed,
+            eventType: context.metadata.eventType,
+          } : undefined,
+          sentAt: new Date(),
+        };
+
+        await EmailHistory.create(emailHistoryData);
+      } catch (historyError) {
+        console.error("Failed to save email history:", historyError);
+        // Don't fail the email send if history fails
+      }
+    }
+
+    return result;
   } catch (error: any) {
     console.error("Error sending email:", error);
     return { success: false, error: error.message || "Failed to send email" };

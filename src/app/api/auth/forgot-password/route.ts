@@ -2,7 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 import crypto from "crypto";
 import dbConnect, { CandidateAccount, Settings } from "@/lib/mongodb";
 import { User } from "@/lib/mongodb";
-import { sendMail } from "../../event-mail";
+import { sendEventEmailWithHistory } from "@/lib/unifiedEmailService";
 import { ObjectId } from "mongoose";
 import { Organization } from "@/lib/models/user";
 import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
@@ -217,11 +217,20 @@ async function handlePasswordReset(
       organizationId
     );
 
-    const emailStatus = await sendMail(
+    const emailStatus = await sendEventEmailWithHistory(
       organizationId,
       [email],
       emailSubject,
-      emailContent
+      emailContent,
+      {
+        sentBy: "system",
+        sentByEmail: "system@hiretrack.com",
+        sentByName: "HireTrack System",
+        metadata: {
+          templateUsed: "reset-password-request",
+          eventType: "password_reset",
+        },
+      }
     );
 
     if (emailStatus.status === 200) {

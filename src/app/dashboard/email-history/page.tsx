@@ -379,9 +379,23 @@ export default function EmailHistoryPage() {
                 {/* Email Body */}
                 <div className="px-6 py-6">
                   <div className="prose prose-sm max-w-none text-gray-900 dark:text-gray-100">
-                    <div className="whitespace-pre-wrap leading-relaxed">
-                      {selectedEmail.body || "No message content"}
-                    </div>
+                    {/* Render HTML content or plain text */}
+                    {selectedEmail.body ? (
+                      // Check if content is HTML by looking for HTML tags
+                      selectedEmail.body.includes('<') && selectedEmail.body.includes('>') ? (
+                        <div 
+                          className="leading-relaxed"
+                          dangerouslySetInnerHTML={{ __html: selectedEmail.body }}
+                        />
+                      ) : (
+                        // Plain text - preserve line breaks
+                        <div className="whitespace-pre-wrap leading-relaxed">
+                          {selectedEmail.body}
+                        </div>
+                      )
+                    ) : (
+                      <div className="text-gray-500 italic">No message content</div>
+                    )}
                   </div>
                   
                   {/* Attachments in email style */}

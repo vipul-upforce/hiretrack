@@ -134,36 +134,7 @@ export async function POST(request: NextRequest) {
       from: fromEmail, // Use just the email address instead of formatted string
     };
 
-    // Create email history record
-    const emailHistory = await EmailHistory!.create({
-      organizationId: user.organizationId,
-      sentBy: user.id,
-      sentByEmail: user.email,
-      sentByName: user.name || user.email,
-      recipientType: "Candidate",
-      recipientId: candidate._id,
-      recipientEmail: candidate.email,
-      recipientName: candidate.name,
-      subject,
-      body: finalBody,
-      cc,
-      bcc,
-      replyTo: replyTo || user.email,
-      attachments: attachments.map((att: any) => ({
-        fileName: att.fileName,
-        fileSize: att.fileSize,
-        shareId: att.shareId,
-        shareUrl: att.shareUrl,
-      })),
-      status: "pending",
-      provider: settings.mailConfig.mailProvider,
-      metadata: {
-        jobId: candidate.jobId,
-        candidateId: candidate._id,
-      },
-    });
-
-    // Send email
+    // Send email with context for automatic history tracking
     try {
       const emailResult = await sendMail(
         settings.mailConfig,
@@ -174,23 +145,33 @@ export async function POST(request: NextRequest) {
         emailData.cc,
         emailData.bcc,
         emailData.replyTo,
-        emailData.from
+        emailData.from,
+        {
+          organizationId: user.organizationId,
+          sentBy: user.id,
+          sentByEmail: user.email,
+          sentByName: user.name || user.email,
+          recipientType: "Candidate",
+          recipientId: candidate._id.toString(),
+          recipientName: candidate.name,
+          metadata: {
+            jobId: candidate.jobId?.toString(),
+            candidateId: candidate._id.toString(),
+            eventType: "direct_email",
+          },
+          attachments: attachments.map((att: any) => ({
+            fileName: att.fileName,
+            fileSize: att.fileSize,
+            shareId: att.shareId,
+            shareUrl: att.shareUrl,
+          })),
+        }
       );
 
       // Check if email was sent successfully
       if (!emailResult.success) {
         throw new Error(emailResult.error || "Failed to send email");
       }
-
-      // Update email history with success
-      await EmailHistory!.updateOne(
-        { _id: emailHistory._id },
-        {
-          status: "sent",
-          sentAt: new Date(),
-          providerMessageId: emailResult.messageId,
-        }
-      );
 
       // Add to candidate history
       await History!.create({

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendMail } from ".";
+import { sendEventEmailWithHistory } from "@/lib/unifiedEmailService";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
 import { User } from "@/lib/mongodb";
 import mongoose from "mongoose";
@@ -69,6 +70,11 @@ async function sendQueuedEmail(data: any, req: NextRequest) {
     status,
     emailList,
     candidateDetailsPage,
+    sentBy,
+    sentByEmail,
+    sentByName,
+    candidateId,
+    jobId,
   } = data;
 
   const startDateString = startTime
@@ -139,11 +145,22 @@ async function sendQueuedEmail(data: any, req: NextRequest) {
     organizationId
   );
 
-  return await sendMail(
+  return await sendEventEmailWithHistory(
     organizationId,
     [email, ...emailList],
     emailSubject,
-    emailContent
+    emailContent,
+    {
+      sentBy: sentBy || "system",
+      sentByEmail: sentByEmail || "system@hiretrack.com",
+      sentByName: sentByName || "HireTrack System",
+      metadata: {
+        candidateId,
+        jobId,
+        templateUsed: "assignment-event",
+        eventType: "interview_assignment",
+      },
+    }
   );
 }
 
@@ -194,11 +211,21 @@ export async function PUT(req: NextRequest) {
     console.log("%%EMAILS: ", users);
 
     const emailList = users.map((user) => user.email);
-    const emailStatus = await sendMail(
+    const emailStatus = await sendEventEmailWithHistory(
       organizationId,
-      [undefined, ...emailList] as string[],
+      emailList,
       emailSubject,
-      emailContent
+      emailContent,
+      {
+        sentBy: decryptedResponse?.user._id || "system",
+        sentByEmail: decryptedResponse?.user.email || "system@hiretrack.com",
+        sentByName: decryptedResponse?.user.name || "HireTrack System",
+        metadata: {
+          candidateId: data.id,
+          templateUsed: "marked-as-done",
+          eventType: "task_completion",
+        },
+      }
     );
     if (emailStatus.status === 200) {
       return NextResponse.json({ message: "Email sent successfully." });
@@ -315,7 +342,11 @@ export async function POST(req: NextRequest) {
       status,
       emailList,
       candidateDetailsPage,
-      // changer: decryptedResponse?.user.name,
+      sentBy: decryptedResponse?.user._id || "system",
+      sentByEmail: decryptedResponse?.user.email || "system@hiretrack.com",
+      sentByName: decryptedResponse?.user.name || "HireTrack System",
+      candidateId: id,
+      jobId: undefined, // Would need to be passed in request if available
     };
 
     if (immediate) {
