@@ -210,7 +210,7 @@ export function OPTIONS() {
 //!!! THIS IMPLIES RESTRICT ACCESS TO REGISTER/ORG PAGE
 export async function GET(req: NextRequest) {
   // let organizationId;
-  // const token = req.cookies.get("token");
+  
   // if (token?.value) {
   //   const decryptedResponse = await verifyAndDecryptToken(String(token?.value));
   //   const userData = decryptedResponse.user;

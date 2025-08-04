@@ -34,11 +34,12 @@ import { mergeRefs } from "react-merge-refs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { QuickSelectAndFilter } from "./components/QuickSelectAndFilter";
 import { Button } from "@/components/ui/button";
-import { Settings2 } from "lucide-react";
+import { Settings2, BarChart3 } from "lucide-react";
 import { CustomFieldsContext } from "@/Custom_Fields/Context";
 import CustomFieldDialog from "@/Custom_Fields/Components/Common/CustomFieldDialog";
 import Stepper from "@/Custom_Fields/Components/Stepper";
 import { useContext, useCallback } from "react";
+import { JobAnalyticsModal } from "../../jobs-board/components/JobAnalyticsModal";
 import { useSelector } from "react-redux";
 
 interface FilterState {
@@ -114,6 +115,7 @@ export default function JobProgressPage() {
   const [isLaneEditOpen, setIsLaneEditOpen] = useState(false);
   const [isFileOver, setIsFileOver] = useState(false);
   const [isCustomFieldsOpen, setIsCustomFieldsOpen] = useState(false);
+  const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
 
   const {
     handleAddLane,
@@ -428,6 +430,14 @@ export default function JobProgressPage() {
               <Settings2 className="h-4 w-4" />
               Personalized form fields
             </Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsAnalyticsOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <BarChart3 className="h-4 w-4" />
+              Analytics
+            </Button>
             <CreateLaneDialog onAddLane={handleAddLane} />
             <CreateCandidateDialog
               jobId={id as string}
@@ -537,6 +547,16 @@ export default function JobProgressPage() {
         isOpen={isCustomFieldsOpen}
         onClose={() => setIsCustomFieldsOpen(false)}
       />
+
+      {/* Job Analytics Modal */}
+      {job && user && (
+        <JobAnalyticsModal
+          isOpen={isAnalyticsOpen}
+          onClose={() => setIsAnalyticsOpen(false)}
+          job={job}
+          organizationId={user.organizationId}
+        />
+      )}
     </div>
   );
 }

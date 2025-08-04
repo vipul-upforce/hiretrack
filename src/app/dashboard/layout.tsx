@@ -15,6 +15,7 @@ import {
   SearchCheckIcon,
   Link2Icon,
   UploadIcon,
+  BarChart3Icon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -62,6 +63,12 @@ const sidebarItems: SidebarItem[] = [
     title: "Calendar",
     href: "/dashboard/calendar",
     icon: <Calendar className="h-5 w-5" />,
+  },
+  {
+    title: "Analytics",
+    href: "/dashboard/analytics",
+    icon: <BarChart3Icon className="h-5 w-5" />,
+    role: "hr", // HR and Admin users can access analytics
   },
   {
     title: "Users",
@@ -115,8 +122,6 @@ export default function DashboardLayout({
 
   useEffect(() => {
     (async () => {
-      // const user = Cookies.get("token");
-
       if (user) {
         setUserLoggedIn(true);
         // const decryptedResponse = await verifyAndDecryptJWTToken(String(user));
@@ -207,7 +212,7 @@ export default function DashboardLayout({
   const generate_share_org = async (e: React.FormEvent) => {
     e.preventDefault();
     let parsedUser = user;
-    // const user = Cookies.get("token");
+
     // console.log(user);
     // if (user) {
     //   const decryptedResponse = await verifyAndDecryptJWTToken(String(user));
@@ -442,6 +447,9 @@ export default function DashboardLayout({
           {sidebarItems.map((item) => {
             if (
               (item.role === "admin" && userData?.role !== "admin") ||
+              (item.role === "hr" &&
+                userData?.role !== "admin" &&
+                userData?.role !== "hr") ||
               (userData?.role === "interviewer" && item.title === "Jobs") ||
               (userData?.role === "interviewer" && item.title === "Search") ||
               (userData?.role === "interviewer" && item.title === "CV Upload")
@@ -449,9 +457,11 @@ export default function DashboardLayout({
               return null;
             }
             const isActive =
-              item.title === "Settings"
-                ? pathname.startsWith("/dashboard/settings")
-                : pathname === item.href;
+              (item.title === "Settings" &&
+                pathname.startsWith("/dashboard/settings")) ||
+              (item.title === "Analytics" &&
+                pathname.startsWith("/dashboard/analytics")) ||
+              pathname === item.href;
 
             return (
               <Link key={item.href} href={item.href}>

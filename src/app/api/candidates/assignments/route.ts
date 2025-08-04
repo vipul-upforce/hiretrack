@@ -13,7 +13,6 @@ import {getFilterPrivateCF} from "@/lib/filterPrivateCF";
 //   try {
 //     await connectToDatabase();
 
-//     const token = req.cookies.get("token");
 //     if (token?.value) {
 //       const decryptedResponse = await verifyAndDecryptToken(
 //         String(token?.value)
