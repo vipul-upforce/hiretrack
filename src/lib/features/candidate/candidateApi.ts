@@ -39,6 +39,10 @@ export const candidateApi = createApi({
       },
       providesTags: ["Candidate"],
     }),
+    fetchCandidateById: builder.query<Candidate, string>({
+      query: (candidateId) => `/candidates/${candidateId}`,
+      providesTags: ["Candidate"],
+    }),
     createCandidate: builder.mutation<Candidate, Partial<Candidate>>({
       query: (newCandidate) => ({
         url: "/candidates",
@@ -172,6 +176,8 @@ export const candidateApi = createApi({
 
 export const {
   useFetchCandidatesQuery,
+  useFetchCandidateByIdQuery,
+  useLazyFetchCandidateByIdQuery,
   useCreateCandidateMutation,
   useCreateGuestCandidateMutation,
   useUpdateCandidateMutation,

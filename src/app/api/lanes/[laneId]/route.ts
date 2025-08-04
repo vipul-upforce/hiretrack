@@ -30,17 +30,29 @@ export async function DELETE(
       );
     }
     const { laneId } = await params;
-    if (org.lanes.length == 1) {
+    // Use defaultLanes if available, fallback to lanes for backward compatibility
+    const currentLanes = org.defaultLanes || org.lanes || [];
+    
+    if (currentLanes.length == 1) {
       return NextResponse.json(
         { error: "Can't delete all lanes" },
         { status: 400 }
       );
     }
-    org.lanes = org.lanes.filter((l: string) => {
+    
+    const updatedLanes = currentLanes.filter((l: string) => {
       return l !== laneId;
     });
+    
+    // Update the appropriate field
+    if (org.defaultLanes) {
+      org.defaultLanes = updatedLanes;
+    } else {
+      org.lanes = updatedLanes;
+    }
+    
     await org.save();
-    const newLaneId = org.lanes[0];
+    const newLaneId = updatedLanes[0];
 
     const updated = await Candidate?.updateMany(
       { organizationId, status: laneId },
@@ -144,7 +156,10 @@ export async function PATCH(
       );
     }
 
-    if (!org.lanes.includes(laneId)) {
+    // Use defaultLanes if available, fallback to lanes for backward compatibility
+    const currentLanes = org.defaultLanes || org.lanes || [];
+    
+    if (!currentLanes.includes(laneId)) {
       return NextResponse.json(
         { error: `Lane ${laneId} not found in organization` },
         { status: 404 }
@@ -159,7 +174,7 @@ export async function PATCH(
     }
 
     if (
-      org.lanes
+      currentLanes
         .map((lane) => lane.toLowerCase())
         .includes(newLaneId.toLowerCase())
     ) {
@@ -169,21 +184,31 @@ export async function PATCH(
       );
     }
 
-    if (org.lanes.length === 1) {
+    if (currentLanes.length === 1) {
       return NextResponse.json(
         { error: "Cannot update the only lane in the organization" },
         { status: 400 }
       );
     }
 
-    const laneIndex = org.lanes.findIndex((lane: string) => lane === laneId);
+    const laneIndex = currentLanes.findIndex((lane: string) => lane === laneId);
     if (laneIndex === -1) {
       return NextResponse.json(
         { error: `Lane ${laneId} not found` },
         { status: 404 }
       );
     }
-    org.lanes[laneIndex] = newLaneId;
+    
+    // Update the lanes in the appropriate field
+    const updatedLanes = [...currentLanes];
+    updatedLanes[laneIndex] = newLaneId;
+    
+    if (org.defaultLanes) {
+      org.defaultLanes = updatedLanes;
+    } else {
+      org.lanes = updatedLanes;
+    }
+    
     await org.save();
 
     await Candidate.updateMany(

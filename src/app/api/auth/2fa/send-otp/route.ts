@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sendMail } from "@/app/api/event-mail";
+import { sendEventEmailWithHistory } from "@/lib/unifiedEmailService";
 import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
 import { User } from "@/lib/mongodb";
 import dbConnect from "@/lib/mongodb";
@@ -65,11 +65,20 @@ async function handleSendOtp(req: NextRequest) {
       organizationId
     );
 
-    const mailResult = await sendMail(
+    const mailResult = await sendEventEmailWithHistory(
       organizationId,
       [email],
       emailSubject,
-      emailContent
+      emailContent,
+      {
+        sentBy: "system",
+        sentByEmail: "system@hiretrack.com",
+        sentByName: "HireTrack System",
+        metadata: {
+          templateUsed: "2fa-otp",
+          eventType: "2fa_authentication",
+        },
+      }
     );
 
     if (mailResult.status === 200) {

@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import { Candidate } from "@/types/candidate";
 import { formatDate, formatTime } from "../../hooks/dateTimeFormatting";
-import AddRemarksPopover from "../Dialogs/add-remark-dialog";
 import RemarksPopover from "../Remarks/remarks-popover";
 import { CandidateScoreBadge } from "../Utils/candidate-score-badge";
 import FollowupDisplay from "../Remarks/followup-popover";
@@ -32,7 +31,16 @@ import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
 import CustomFieldBadge from "./CustomFieldBadge";
 import { CalendarClockIcon } from "lucide-react";
 import { Trash2Icon } from "lucide-react";
-import { MapPin, Clock, Star, Mail, Calendar, Copy, Phone } from "lucide-react";
+import {
+  MapPin,
+  Clock,
+  Star,
+  Mail,
+  Calendar,
+  Copy,
+  Phone,
+  Video,
+} from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -55,6 +63,7 @@ import { useUnassignHandlers } from "../../hooks/useUnassignHandlers";
 import { cn } from "@/lib/utils";
 import AttachmentsPopover from "../Remarks/attachments-popover";
 import { useToast } from "@/hooks/use-toast";
+import { EmailCandidateDialog } from "../Dialogs/email-candidate-dialog";
 import { useSelector } from "react-redux";
 
 interface CandidateCardProps {
@@ -68,6 +77,7 @@ interface CandidateCardProps {
   refetch: () => void;
   className?: string;
   onEditClick?: (candidate: Candidate) => void;
+  isPending?: boolean; // New prop to indicate if card is awaiting checklist completion
   onAssignClick?: (candidate: Candidate) => void;
   onMarkAsDoneClick?: (candidate: Candidate) => void;
   onFollowUpClick?: (candidate: Candidate) => void;
@@ -89,6 +99,7 @@ export function CandidateCard({
   onMarkAsDoneClick,
   onFollowUpClick,
   onAddRemarkClick,
+  isPending = false,
 }: CandidateCardProps) {
   const { formNameObject } = useCustomForm("Candidate");
   // const [user, setUser] = useState<User | null>(null);
@@ -102,6 +113,7 @@ export function CandidateCard({
   const [isAssigning, setIsAssigning] = useState(false);
   const [isAddingFollowUp, setIsAddingFollowUp] = useState(false);
   const [confirmUnassignOpen, setConfirmUnassignOpen] = useState(false);
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
 
   // Handlers for menu actions
   const {
@@ -216,16 +228,18 @@ export function CandidateCard({
             {candidate.tags && <TagsList candidate={candidate} />}
           </div>
           <div className="flex gap-1.5 flex-shrink-0">
-            {/* Add Remarks Popover */}
-            <AddRemarksPopover
-              candidate={candidate}
-              isOpen={openRemarks}
-              refetch={refetch}
-              setOpenRemarksFor={setOpenRemarksFor}
-              onOpenChange={(open) =>
-                setOpenRemarksFor(open ? candidate._id : null)
-              }
-            />
+            {/* Add Remarks Button - handled by main page ChecklistRemarksDialog */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpenRemarksFor(candidate._id);
+              }}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
 
             {/* Remarks Popover */}
             <RemarksPopover
@@ -280,6 +294,19 @@ export function CandidateCard({
                   >
                     <Edit className="h-4 w-4 mr-2" />
                     Edit
+                  </DropdownMenuItem>
+                )}
+
+                {/* Email - Only for non-candidate roles */}
+                {user?.role !== "candidate" && (
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsEmailDialogOpen(true);
+                    }}
+                  >
+                    <Mail className="h-4 w-4 mr-2" />
+                    Send Email
                   </DropdownMenuItem>
                 )}
 
@@ -643,6 +670,14 @@ export function CandidateCard({
                 <p className="text-xs text-amber-800 dark:text-amber-200 leading-tight line-clamp-2 break-words">
                   {candidate.followUp.note as string}
                 </p>
+                {candidate.followUp.userId && (
+                  <div className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                    Created by:{" "}
+                    <span className="font-bold">
+                      {candidate.followUp.userId.name}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
             {user?.role !== "candidate" && user?.role !== "interviewer" && (
@@ -694,7 +729,13 @@ export function CandidateCard({
         typeof candidate.assignment.interviewerId === "object" &&
         candidate.assignment.interviewerId._id &&
         candidate.assignment.interviewerId.name && (
-          <div className="border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/70 -mx-4 -mb-4 px-4 py-1.5">
+          <div
+            className="border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/70 -mx-4 -mb-4 px-4 py-1.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/70 transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsAssigning(true);
+            }}
+          >
             <div className="flex items-center justify-between gap-2 min-h-[20px]">
               <div className="flex items-center gap-1.5 min-w-0 flex-1">
                 <CalendarClockIcon
@@ -706,7 +747,50 @@ export function CandidateCard({
                   <span className="font-semibold">
                     {candidate.assignment.interviewerId.name}
                   </span>
+                  {candidate.assignment?.googleMeet && (
+                    <Badge
+                      variant="default"
+                      className="ml-2 text-xs bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200"
+                    >
+                      <Video size={10} className="mr-1" />
+                      Google Meet
+                    </Badge>
+                  )}
                 </span>
+                {candidate.assignment?.googleMeet && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div
+                          className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-600 transition-colors flex-shrink-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const meetingInfo = `Meeting: ${candidate.assignment.googleMeet.summary}
+Description: ${candidate.assignment.googleMeet.description}
+Time: ${candidate.assignment?.time ? `${formatDate(candidate.assignment.time)} at ${formatTime(candidate.assignment.time)}` : "Not set"}
+Google Meet Link: ${candidate.assignment.googleMeet.meetingLink}`;
+                            copyToClipboard(meetingInfo, "Meeting information");
+                          }}
+                        >
+                          <Video size={12} className="text-white" />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-sm">
+                        <div className="text-xs space-y-1">
+                          <div className="font-semibold">
+                            {candidate.assignment.googleMeet.summary}
+                          </div>
+                          <div className="text-gray-600">
+                            Click to copy meeting details
+                          </div>
+                          <div className="text-blue-500 break-all">
+                            {candidate.assignment.googleMeet.meetingLink}
+                          </div>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
               </div>
               {candidate.assignment?.time && (
                 <div className="text-xs text-gray-500 dark:text-gray-500 flex-shrink-0">
@@ -728,6 +812,27 @@ export function CandidateCard({
             "bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg p-4 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 h-full hover:border-gray-300 dark:hover:border-gray-700",
             className
           )}
+          onClick={(e) => {
+            // Check if click target is a button or inside a dropdown/interactive element
+            const target = e.target as HTMLElement;
+            if (
+              target.closest("button") ||
+              target.closest('[role="menuitem"]') ||
+              target.closest("[data-radix-collection-item]") ||
+              target.closest("[data-radix-popper-content]") ||
+              target.closest("[data-state]") ||
+              target.closest(
+                ".cursor-pointer:not(.bg-white):not(.dark\\:bg-black)"
+              ) ||
+              target.closest("a") ||
+              target.tagName === "BUTTON"
+            ) {
+              return; // Don't open details if clicking on interactive elements
+            }
+
+            // Always open details when clicking on card content
+            onViewDetails(candidate);
+          }}
         >
           {renderCardContent()}
         </div>
@@ -740,8 +845,33 @@ export function CandidateCard({
               {...provided.dragHandleProps}
               className={cn(
                 "bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg p-4 shadow-sm cursor-grab active:cursor-grabbing relative overflow-visible hover:shadow-md transition-all duration-200 hover:border-gray-300 dark:hover:border-gray-700",
+                isPending && "opacity-50",
                 className
               )}
+              onClick={(e) => {
+                // Only trigger on actual click, not on drag
+                if (e.detail === 0) return; // Ignore programmatic clicks
+
+                // Check if click target is a button or inside a dropdown/interactive element
+                const target = e.target as HTMLElement;
+                if (
+                  target.closest("button") ||
+                  target.closest('[role="menuitem"]') ||
+                  target.closest("[data-radix-collection-item]") ||
+                  target.closest("[data-radix-popper-content]") ||
+                  target.closest("[data-state]") ||
+                  target.closest(
+                    ".cursor-pointer:not(.bg-white):not(.dark\\:bg-black)"
+                  ) ||
+                  target.closest("a") ||
+                  target.tagName === "BUTTON"
+                ) {
+                  return; // Don't open details if clicking on interactive elements
+                }
+
+                // Always open details when clicking on card content
+                onViewDetails(candidate);
+              }}
             >
               {renderCardContent()}
             </div>
@@ -815,6 +945,19 @@ export function CandidateCard({
         isLoading={isLoading}
         loadingText="Marking as done..."
       />
+
+      {/* Email Candidate Dialog */}
+      {isEmailDialogOpen && (
+        <EmailCandidateDialog
+          isOpen={isEmailDialogOpen}
+          onClose={() => setIsEmailDialogOpen(false)}
+          candidate={{
+            _id: candidate._id,
+            name: candidate.name,
+            email: candidate.email,
+          }}
+        />
+      )}
     </>
   );
 }

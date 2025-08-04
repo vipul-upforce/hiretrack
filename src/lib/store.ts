@@ -11,6 +11,8 @@ import { apiSlice } from "./features/api/apiSlice";
 import { orgApi } from "./features/org/orgApi";
 import { settingsApi } from "./features/settings/settingsApi";
 import { organizationSlice } from "./features/org/orgSlice";
+import { checklistApi } from "./features/checklist/checklistApi";
+import { notificationsApi } from "./features/notifications/notificationsApi";
 import authReducer from "@/lib/redux/authSlice";
 
 // Persist config for auth slice
@@ -37,6 +39,8 @@ const rootReducer = combineReducers({
   [userApi.reducerPath]: userApi.reducer,
   [laneApi.reducerPath]: laneApi.reducer,
   [apiSlice.reducerPath]: apiSlice.reducer,
+    [checklistApi.reducerPath]: checklistApi.reducer,
+    [notificationsApi.reducerPath]: notificationsApi.reducer,
 });
 
 export const store = configureStore({
@@ -54,7 +58,9 @@ export const store = configureStore({
       candidateApi.middleware,
       userApi.middleware,
       laneApi.middleware,
-      apiSlice.middleware
+      apiSlice.middleware,
+      checklistApi.middleware,
+      notificationsApi.middleware
     ),
 });
 

@@ -98,6 +98,19 @@ const JobCard = ({
             {...provided.draggableProps}
             {...provided.dragHandleProps}
             className="bg-white dark:bg-black border border-gray-200 dark:border-gray-700 p-5 rounded-xl shadow-sm cursor-pointer hover:shadow-lg transition-shadow duration-200 relative w-full max-w-full min-w-0"
+            onClick={(e) => {
+              // Only trigger on actual click, not on drag
+              if (e.detail === 0) return; // Ignore programmatic clicks
+              
+              // Check if click target is a button or inside a dropdown
+              const target = e.target as HTMLElement;
+              if (target.closest('button') || target.closest('[role="menuitem"]') || target.closest('[data-radix-collection-item]')) {
+                return; // Don't navigate if clicking on buttons or menu items
+              }
+              
+              // Navigate to job kanban
+              router.push(`/dashboard/jobs/${job._id}`);
+            }}
           >
             {/* Header Section - Job Title and Actions */}
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100 dark:border-gray-800">

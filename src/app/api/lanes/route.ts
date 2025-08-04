@@ -1,15 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Lane } from "@/lib/mongodb";
+import { Lane, Job } from "@/lib/mongodb";
 import connectToDatabase from "@/lib/mongodb";
 import { auth } from "@/lib/auth";
 import { Organization } from "@/lib/mongodb";
 import { broadcastLaneUpdate } from "@/lib/broadcast/broadCastCandidate";
+
+const DEFAULT_LANES = [
+  "applied",
+  "screening", 
+  "shortlisted",
+  "processing",
+  "accepted",
+  "rejected"
+];
 
 export async function GET(request: NextRequest) {
   try {
     await connectToDatabase();
     const { searchParams } = new URL(request.url);
     const userId = searchParams?.get("userId");
+    const jobId = searchParams?.get("jobId"); // NEW: Support job-specific lanes
     const session = await auth(request);
     const organizationId = session?.user.organizationId;
 
@@ -25,19 +35,50 @@ export async function GET(request: NextRequest) {
         { status: 404 }
       );
     }
-    const organization = (await Organization.findOne({
-      _id: organizationId,
-    }).lean()) as unknown as {
-      _id: string;
-      lanes?: string[];
-    };
-    if (!organization) {
-      return NextResponse.json(
-        { error: "Organization not found" },
-        { status: 404 }
-      );
+
+    let organizationLaneOrder;
+
+    // NEW: If jobId is provided, get job-specific lanes
+    if (jobId && Job) {
+      const job = await Job.findOne({
+        _id: jobId,
+        organizationId: organizationId
+      }).lean();
+
+      if (job) {
+        if (job.useCustomLanes && job.lanes) {
+          organizationLaneOrder = job.lanes;
+        } else {
+          // Fall back to organization default lanes
+          const organization = await Organization.findOne({ _id: organizationId }).lean();
+          organizationLaneOrder = organization?.defaultLanes || organization?.lanes || DEFAULT_LANES;
+        }
+      } else {
+        return NextResponse.json(
+          { error: "Job not found" },
+          { status: 404 }
+        );
+      }
+    } else {
+      // LEGACY: Use organization lanes (backward compatibility)
+      const organization = (await Organization.findOne({
+        _id: organizationId,
+      }).lean()) as unknown as {
+        _id: string;
+        lanes?: string[];
+        defaultLanes?: string[];
+      };
+      
+      if (!organization) {
+        return NextResponse.json(
+          { error: "Organization not found" },
+          { status: 404 }
+        );
+      }
+      
+      // Use defaultLanes if available, fallback to old lanes field, then DEFAULT_LANES
+      organizationLaneOrder = organization.defaultLanes || organization.lanes || DEFAULT_LANES;
     }
-    const organizationLaneOrder = organization.lanes || [];
 
     const lane = await Lane.findOne({ userId }).lean();
 
@@ -69,9 +110,11 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     await connectToDatabase();
-    const { lanes: newLanes } = await request.json();
+    const body = await request.json();
+    const { lanes: newLanes, jobId } = body;
     const session = await auth(request);
     const organizationId = session?.user.organizationId;
+    
     if (!organizationId) {
       return NextResponse.json(
         { error: "Organization ID is required" },
@@ -79,31 +122,74 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // await Lane.findOneAndUpdate(
-    //   { userId },
-    //   { $set: { lanes: newLanes } },
-    //   { new: true, upsert: true }
-    // ).lean();
-    if (!Lane || !Organization) {
-      return NextResponse.json({ error: "Lane not found" }, { status: 404 });
-    }
-
-    const organization = await Organization.findOne({ _id: organizationId });
-
-    if (!organization) {
+    // Check permissions
+    if (!["admin", "hr"].includes(session?.user?.role || "")) {
       return NextResponse.json(
-        { error: "Organization not found" },
-        { status: 404 }
+        { error: "Insufficient permissions" },
+        { status: 403 }
       );
     }
 
-    const updatedOrganization = await Organization.findOneAndUpdate(
-      { _id: organizationId },
-      { $set: { lanes: newLanes } },
-      { new: true }
-    );
-    broadcastLaneUpdate(organizationId, updatedOrganization?.lanes || []);
-    return NextResponse.json(updatedOrganization);
+    if (!Lane || !Organization) {
+      return NextResponse.json({ error: "Database not connected" }, { status: 400 });
+    }
+
+    // NEW: If jobId is provided, update job-specific lanes
+    if (jobId && Job) {
+      const job = await Job.findOne({
+        _id: jobId,
+        organizationId: organizationId
+      });
+
+      if (!job) {
+        return NextResponse.json(
+          { error: "Job not found" },
+          { status: 404 }
+        );
+      }
+
+      // Update job lanes
+      const updatedJob = await Job.findByIdAndUpdate(
+        jobId,
+        { 
+          $set: { 
+            lanes: newLanes,
+            useCustomLanes: true
+          } 
+        },
+        { new: true }
+      );
+
+      // Broadcast update for job-specific lanes
+      broadcastLaneUpdate(organizationId, newLanes, jobId);
+      
+      return NextResponse.json({
+        message: "Job lanes updated successfully",
+        jobId: updatedJob._id,
+        lanes: updatedJob.lanes,
+        useCustomLanes: updatedJob.useCustomLanes
+      });
+    } else {
+      // LEGACY: Update organization default lanes (backward compatibility)
+      const organization = await Organization.findOne({ _id: organizationId });
+
+      if (!organization) {
+        return NextResponse.json(
+          { error: "Organization not found" },
+          { status: 404 }
+        );
+      }
+
+      // Update organization default lanes (use new field name)
+      const updatedOrganization = await Organization.findOneAndUpdate(
+        { _id: organizationId },
+        { $set: { defaultLanes: newLanes } },
+        { new: true }
+      );
+      
+      broadcastLaneUpdate(organizationId, updatedOrganization?.defaultLanes || []);
+      return NextResponse.json(updatedOrganization);
+    }
   } catch (err: unknown) {
     const error = err as Error;
     const errorMessage =

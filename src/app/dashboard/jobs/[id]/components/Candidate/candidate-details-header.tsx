@@ -86,9 +86,12 @@ export default function DetailsDialogHeader({
                     {candidate.experience} years exp.
                   </span>
                 )}
-                <span className="whitespace-nowrap text-sm font-normal text-gray-600 dark:text-gray-400  flex items-center gap-1">
-                  ₹{candidate.expectedCTC.toLocaleString()} LPA
-                </span>
+                {candidate.expectedCTC !== undefined &&
+                  candidate.expectedCTC !== null && (
+                    <span className="whitespace-nowrap text-sm font-normal text-gray-600 dark:text-gray-400  flex items-center gap-1">
+                      ₹{candidate.expectedCTC.toLocaleString()} LPA
+                    </span>
+                  )}
               </span>
             </div>
             {candidate.email && (
@@ -114,7 +117,9 @@ export default function DetailsDialogHeader({
                       variant="ghost"
                       size="icon"
                       className="ml-2 h-6 w-6"
-                      onClick={() => handleCandidateInfoCopy(candidate.contact || "")}
+                      onClick={() =>
+                        handleCandidateInfoCopy(candidate.contact || "")
+                      }
                       title="Copy Contact Number"
                     >
                       <Copy size={14} />
@@ -169,7 +174,7 @@ export default function DetailsDialogHeader({
             )}
           </div>
 
-          <div className="flex items-start gap-4 px-8">
+          <div className="flex items-start gap-4 pl-12">
             {/* Status and Job */}
             <div className="flex flex-col items-end">
               <CandidateStatusBadge status={candidate?.status} />

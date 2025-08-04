@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sendMail } from "@/app/api/event-mail";
+import { sendEventEmailWithHistory } from "@/lib/unifiedEmailService";
 import { Candidate, Organization, User } from "@/lib/mongodb"; // Add User import
 import { ICandidate } from "@/lib/models/candidate";
 import mongoose from "mongoose";
@@ -124,11 +124,21 @@ export async function POST(req: NextRequest) {
 
     const candidateAndHr = [email, ...hrEmails];
 
-    const candidateEmailStatus = await sendMail(
+    const candidateEmailStatus = await sendEventEmailWithHistory(
       organizationId,
       candidateAndHr,
       emailSubject,
-      emailContent
+      emailContent,
+      {
+        sentBy: "system",
+        sentByEmail: "system@hiretrack.com",
+        sentByName: "HireTrack System",
+        metadata: {
+          candidateId,
+          templateUsed: "job-application-(hr)",
+          eventType: "job_application",
+        },
+      }
     );
     console.log("candidateEmailStatus", candidateEmailStatus);
 

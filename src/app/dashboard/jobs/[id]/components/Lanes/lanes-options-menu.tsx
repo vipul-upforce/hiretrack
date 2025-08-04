@@ -8,6 +8,7 @@ import {
   SortAsc,
   SortDesc,
   X,
+  ClipboardCheck,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -21,11 +22,13 @@ import { ReactNode } from "react";
 
 interface LaneOptionsMenuProps {
   laneId: string;
+  laneName: string;
   onEdit: (id: string) => void;
   onSort: (field: string, direction: "asc" | "desc") => void;
   handleDeleteLane: () => void;
   setLaneToDelete: (laneId: string) => void;
   setLaneToEdit: (laneId: string) => void;
+  onConfigureChecklist?: (laneId: string, laneName: string) => void;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
 }
@@ -69,11 +72,13 @@ const SORT_FIELDS: SortField[] = [
 
 export function LaneOptionsMenu({
   laneId,
+  laneName,
   handleDeleteLane,
   setLaneToDelete,
   setLaneToEdit,
   onEdit,
   onSort,
+  onConfigureChecklist,
   isOpen,
   setIsOpen,
 }: LaneOptionsMenuProps) {
@@ -106,6 +111,14 @@ export function LaneOptionsMenu({
         setIsOpen(false);
       },
     },
+    ...(onConfigureChecklist ? [{
+      icon: <ClipboardCheck className="mr-2 h-4 w-4" />,
+      label: "Checklists",
+      onClick: () => {
+        onConfigureChecklist(laneId, laneName);
+        setIsOpen(false);
+      },
+    }] : []),
     {
       icon: <ArrowUpDown className="mr-2 h-4 w-4" />,
       label: "Sort",

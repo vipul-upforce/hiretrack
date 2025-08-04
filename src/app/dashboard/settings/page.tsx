@@ -34,6 +34,7 @@ import {
   Cog,
   Sparkles,
   ExternalLink,
+  Calendar,
 } from "lucide-react";
 
 function Settings() {
@@ -118,6 +119,12 @@ function Settings() {
           key: "ai-providers",
           description: "Configure AI providers for resume processing",
           icon: Bot,
+        },
+        {
+          title: "Google Calendar",
+          key: "google-calendar",
+          description: "Connect Google Calendar for interview scheduling",
+          icon: Calendar,
         },
       ],
     },

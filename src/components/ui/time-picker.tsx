@@ -24,48 +24,73 @@ export default function TimePicker({
   onChange,
   onBlur,
 }: {
-  name: string;
+  name?: string;
   value: string;
   onChange: (timeString: string) => void;
-  onBlur: () => void;
+  onBlur?: () => void;
 }) {
-  const [selectedTime, setSelectedTime] = React.useState<string>();
+  const [selectedTime, setSelectedTime] = React.useState<string>(value || "");
   const [hours, setHours] = React.useState<number>();
   const [minutes, setMinutes] = React.useState<number>();
   const [meridiem, setMeridiem] = React.useState<"AM" | "PM">();
 
-  const handleTimeChange = React.useCallback(() => {
-    if (!hours || !minutes || !meridiem) return;
-    const formattedHours =
-      hours === 12
-        ? meridiem === "AM"
-          ? "0"
-          : "12"
-        : meridiem === "PM"
-        ? hours + 12
-        : hours;
-    const formattedMinutes = minutes.toString().padStart(2, "0");
-    const timeString = `${formattedHours}:${formattedMinutes}`;
-    setSelectedTime(timeString);
-    onChange(timeString);
-    onBlur();
-  }, [hours, minutes, meridiem]);
-
-    React.useEffect(() => {
-      handleTimeChange();
-    }, [handleTimeChange]);
-
+  // Sync with external value changes
   React.useEffect(() => {
-    if (value) {
+    if (value && value !== selectedTime) {
       const [hour, minute] = value.split(":");
       const isPM = parseInt(hour) >= 12;
-      const formattedHour = isPM ? hour === "12" ? "12" : `${parseInt(hour) - 12}` : hour;
+      const formattedHour = isPM ? (hour === "12" ? "12" : `${parseInt(hour) - 12}`) : (hour === "0" ? "12" : hour);
       setHours(parseInt(formattedHour));
       setMinutes(parseInt(minute));
       setMeridiem(isPM ? "PM" : "AM");
       setSelectedTime(value);
     }
-  }, [value]);
+  }, [value, selectedTime]);
+
+  // Handle user selections (only call onChange for user interactions)
+  const handleHoursChange = (newHours: string) => {
+    const hoursNum = Number.parseInt(newHours);
+    setHours(hoursNum);
+    
+    if (hoursNum && minutes !== undefined && meridiem) {
+      const formattedHours = hoursNum === 12
+        ? meridiem === "AM" ? "0" : "12"
+        : meridiem === "PM" ? hoursNum + 12 : hoursNum;
+      const timeString = `${formattedHours}:${minutes.toString().padStart(2, "0")}`;
+      setSelectedTime(timeString);
+      onChange(timeString);
+      onBlur?.();
+    }
+  };
+
+  const handleMinutesChange = (newMinutes: string) => {
+    const minutesNum = Number.parseInt(newMinutes);
+    setMinutes(minutesNum);
+    
+    if (hours !== undefined && minutesNum !== undefined && meridiem) {
+      const formattedHours = hours === 12
+        ? meridiem === "AM" ? "0" : "12"
+        : meridiem === "PM" ? hours + 12 : hours;
+      const timeString = `${formattedHours}:${minutesNum.toString().padStart(2, "0")}`;
+      setSelectedTime(timeString);
+      onChange(timeString);
+      onBlur?.();
+    }
+  };
+
+  const handleMeridiemChange = (newMeridiem: "AM" | "PM") => {
+    setMeridiem(newMeridiem);
+    
+    if (hours !== undefined && minutes !== undefined && newMeridiem) {
+      const formattedHours = hours === 12
+        ? newMeridiem === "AM" ? "0" : "12"
+        : newMeridiem === "PM" ? hours + 12 : hours;
+      const timeString = `${formattedHours}:${minutes.toString().padStart(2, "0")}`;
+      setSelectedTime(timeString);
+      onChange(timeString);
+      onBlur?.();
+    }
+  };
 
   return (
     <Popover modal={true}>
@@ -93,7 +118,7 @@ export default function TimePicker({
             <Label htmlFor="hours">Hours</Label>
             <Select
               value={hours?.toString()}
-              onValueChange={(value) => setHours(Number.parseInt(value))}
+              onValueChange={handleHoursChange}
             >
               <SelectTrigger id="hours" className="w-[70px]">
                 <SelectValue placeholder="Hours" />
@@ -111,7 +136,7 @@ export default function TimePicker({
             <Label htmlFor="minutes">Minutes</Label>
             <Select
               value={minutes?.toString()}
-              onValueChange={(value) => setMinutes(Number.parseInt(value))}
+              onValueChange={handleMinutesChange}
             >
               <SelectTrigger id="minutes" className="w-[70px]">
                 <SelectValue placeholder="Minutes" />
@@ -129,7 +154,7 @@ export default function TimePicker({
             <Label htmlFor="meridiem">AM/PM</Label>
             <Select
               value={meridiem}
-              onValueChange={(value) => setMeridiem(value as "AM" | "PM")}
+              onValueChange={handleMeridiemChange}
             >
               <SelectTrigger id="meridiem" className="w-[70px]">
                 <SelectValue placeholder="AM/PM" />
