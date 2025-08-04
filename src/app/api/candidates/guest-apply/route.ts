@@ -7,6 +7,7 @@ import mongoose from "mongoose";
 import { Job } from "@/lib/mongodb"; // Add import for Job model
 import { Attachment } from "../route";
 import { validateInput, VALIDATION_PATTERNS, MAX_LENGTHS, sanitizeString } from "@/lib/inputValidation";
+import { NotificationService } from "@/lib/notifications/notificationService";
 
 export async function POST(request: NextRequest) {
   try {
@@ -219,6 +220,31 @@ export async function POST(request: NextRequest) {
         },
       ],
     });
+
+    // Trigger notification for candidate application (guest apply)
+    try {
+      console.log("🔔 Triggering guest candidate applied notification:", {
+        organizationId: organizationId.toString(),
+        candidateId: candidate._id.toString(),
+        candidateName: candidateData.name,
+        jobTitle: job.title,
+      });
+      
+      await NotificationService.notifyCandidateApplied({
+        organizationId: organizationId.toString(),
+        candidateId: candidate._id.toString(),
+        candidateName: candidateData.name,
+        candidateEmail: candidateData.email,
+        jobId: jobId._id,
+        jobTitle: job.title || "Unknown Job",
+        // No trigger user for guest applications
+      });
+      
+      console.log("✅ Guest notification sent successfully");
+    } catch (notificationError) {
+      console.error("❌ Failed to send guest notification:", notificationError);
+      // Don't fail the API call if notification fails
+    }
 
     return NextResponse.json(candidate, { status: 201 });
   } catch (error: unknown) {

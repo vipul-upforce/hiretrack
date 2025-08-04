@@ -124,7 +124,6 @@ export const jobLaneConfigSchema = new Schema<IJobLaneConfig>({
 });
 
 // Add indexes for performance
-jobLaneConfigSchema.index({ jobId: 1 });
 jobLaneConfigSchema.index({ organizationId: 1 });
 
 // Update timestamp on save

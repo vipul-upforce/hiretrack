@@ -11,7 +11,7 @@ import { CreateCandidateDialog } from "./components/Dialogs/create-candidate-dia
 import { CreateLaneDialog } from "./components/Dialogs/create-lane-dialog";
 import { CandidateDetailsDialog } from "./components/Dialogs/candidate-details-dialog";
 import { initialCandidateColumns } from "./data/initial-data";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { useFetchJobByIdQuery } from "@/lib/features/job/jobApi";
 import { useFetchCandidatesQuery } from "@/lib/features/candidate/candidateApi";
 import { Candidate, CandidateColumn, CandidateStatus } from "@/types/candidate";
@@ -47,6 +47,10 @@ import { LaneChecklistConfigDialog } from "./components/Dialogs/lane-checklist-c
 
 export default function JobProgressPage() {
   const id = useParams()?.id as string;
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const candidateIdParam = searchParams.get('candidateId');
+  
   const [columns, setColumns] = useState<CandidateColumn[]>(
     initialCandidateColumns
   );
@@ -210,6 +214,29 @@ export default function JobProgressPage() {
       setDroppedFileData(null);
     }
   }, [isDialogOpen]);
+
+  // Handle candidateId URL parameter to auto-open candidate dialog
+  useEffect(() => {
+    if (candidateIdParam && candidatesFromQuery && !selectedCandidate) {
+      const candidate = candidatesFromQuery.find(c => c._id === candidateIdParam);
+      if (candidate) {
+        setSelectedCandidate(candidate);
+        setIsDetailsOpen(true);
+      }
+    }
+  }, [candidateIdParam, candidatesFromQuery, selectedCandidate]);
+
+  // Handle candidate details dialog close - clean up URL parameter
+  const handleCandidateDialogClose = (open: boolean) => {
+    setIsDetailsOpen(open);
+    if (!open && candidateIdParam) {
+      // Remove candidateId parameter from URL when dialog is closed
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('candidateId');
+      const newUrl = params.toString() ? `?${params.toString()}` : '';
+      router.replace(`/dashboard/jobs/${id}${newUrl}`, { scroll: false });
+    }
+  };
 
   // Combine candidates from useFetchCandidatesQuery and useSSE
   useEffect(() => {
@@ -505,7 +532,7 @@ export default function JobProgressPage() {
       <CandidateDetailsDialog
         candidate={selectedCandidate}
         isOpen={isDetailsOpen}
-        onOpenChange={setIsDetailsOpen}
+        onOpenChange={handleCandidateDialogClose}
         onUpdate={handleCandidateUpdate}
       />
 

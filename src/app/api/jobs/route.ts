@@ -5,6 +5,7 @@ import { Candidate } from "@/lib/mongodb";
 import { auth } from "@/lib/auth";
 import { handleCustomFieldFiles, handleFileAttachments } from "@/lib/fileUtils";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { NotificationService } from "@/lib/notifications/notificationService";
 
 export async function GET(request: NextRequest) {
   try {
@@ -76,6 +77,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   let fileStorage = "local";
   let organizationId;
+  let userData: any;
   try {
     await connectToDatabase();
     const data = await request.json();
@@ -90,7 +92,7 @@ export async function POST(request: NextRequest) {
         const decryptedResponse = await verifyAndDecryptToken(
           String(token?.value)
         );
-        const userData = decryptedResponse.user;
+        userData = decryptedResponse.user;
         if (decryptedResponse.success) {
           fileStorage = userData.fileStorage || "local";
           organizationId = userData.organizationId || "";
@@ -124,6 +126,22 @@ export async function POST(request: NextRequest) {
     delete data._id;
     const newJob = new Job(data);
     await newJob.save();
+
+    // Send job creation notification
+    if (userData && organizationId) {
+      try {
+        await NotificationService.notifyJobCreated({
+          organizationId: organizationId,
+          jobId: newJob._id.toString(),
+          jobTitle: newJob.title,
+          triggerUserId: userData._id,
+          triggerUserName: userData.name,
+        });
+      } catch (notificationError) {
+        console.error("Failed to send job creation notification:", notificationError);
+        // Don't fail the API call if notification fails
+      }
+    }
 
     return NextResponse.json(newJob, { status: 201 });
   } catch (error: unknown) {

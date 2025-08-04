@@ -7,6 +7,7 @@ import mongoose from "mongoose";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
+import { NotificationService } from "@/lib/notifications/notificationService";
 // import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
 
 export interface Attachment {
@@ -239,6 +240,42 @@ export async function POST(request: NextRequest) {
             "_id name email"
           );
         }
+
+        // Get job information for notification
+        const job = await Job?.findById(data.jobId);
+        
+        // Trigger notification for candidate application
+        if (job) {
+          try {
+            console.log("🔔 Triggering candidate applied notification:", {
+              organizationId: organizationId,
+              candidateId: candidate._id.toString(),
+              candidateName: candidateData.name,
+              jobTitle: job.title,
+              triggerUserId: userData.id,
+              triggerUserName: userData.name,
+            });
+            
+            await NotificationService.notifyCandidateApplied({
+              organizationId: organizationId,
+              candidateId: candidate._id.toString(),
+              candidateName: candidateData.name,
+              candidateEmail: candidateData.email,
+              jobId: data.jobId,
+              jobTitle: job.title || "Unknown Job",
+              triggerUserId: userData.id,
+              triggerUserName: userData.name,
+            });
+            
+            console.log("✅ Notification sent successfully");
+          } catch (notificationError) {
+            console.error("❌ Failed to send notification:", notificationError);
+            // Don't fail the API call if notification fails
+          }
+        } else {
+          console.log("⚠️ No job found for notification, jobId:", data.jobId);
+        }
+
         // console.log("⛔⛔ CANDIDATE CERATED", sanitizedCandidate);
         broadcastCandidateUpdate({
           ...sanitizedCandidate,

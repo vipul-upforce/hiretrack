@@ -82,7 +82,6 @@ const FileShareSchema = new Schema<IFileShare>(
     },
     expiresAt: {
       type: Date,
-      index: true,
     },
     maxDownloads: {
       type: Number,

@@ -134,6 +134,35 @@ export async function POST(request: NextRequest) {
       from: fromEmail, // Use just the email address instead of formatted string
     };
 
+    // Create email history record first
+    const emailHistory = await EmailHistory!.create({
+      organizationId: user.organizationId,
+      from: emailData.from,
+      to: [emailData.to],
+      cc: emailData.cc,
+      bcc: emailData.bcc,
+      subject: emailData.subject,
+      body: emailData.html,
+      sentBy: user.id,
+      sentByEmail: user.email,
+      sentByName: user.name || user.email,
+      recipientType: "Candidate",
+      recipientId: candidate._id.toString(),
+      recipientName: candidate.name,
+      status: "sending",
+      metadata: {
+        jobId: candidate.jobId?.toString(),
+        candidateId: candidate._id.toString(),
+        eventType: "direct_email",
+      },
+      attachments: attachments.map((att: any) => ({
+        fileName: att.fileName,
+        fileSize: att.fileSize,
+        shareId: att.shareId,
+        shareUrl: att.shareUrl,
+      })),
+    });
+
     // Send email with context for automatic history tracking
     try {
       const emailResult = await sendMail(
@@ -173,19 +202,41 @@ export async function POST(request: NextRequest) {
         throw new Error(emailResult.error || "Failed to send email");
       }
 
+      // Update email history with success status
+      await EmailHistory!.updateOne(
+        { _id: emailHistory._id },
+        {
+          status: "sent",
+          sentAt: new Date(),
+        }
+      );
+
       // Add to candidate history
-      await History!.create({
-        candidateId: candidate._id,
-        jobId: candidate.jobId,
-        userId: user.id,
-        organizationId: user.organizationId,
-        type: "email_sent",
-        description: `Email sent to candidate by ${user.name || user.email}`,
-        metadata: {
-          subject,
-          emailHistoryId: emailHistory._id,
+      await History!.findOneAndUpdate(
+        {
+          candidateId: candidate._id.toString(),
+          jobId: candidate.jobId,
         },
-      });
+        {
+          $push: {
+            history: {
+              dateTime: new Date().toISOString(),
+              title: `Email sent: ${subject}`,
+              previousInterviewer: null,
+              currentInterviewer: null,
+              assignmentBy: user.id,
+              note: {
+                description: `Email sent to candidate by ${user.name || user.email}`,
+                date: new Date().toISOString(),
+                rating: 0,
+                userId: user.id,
+              },
+              attachments: [],
+            },
+          },
+        },
+        { upsert: true }
+      );
 
       return NextResponse.json({
         success: true,

@@ -9,6 +9,7 @@ import { orgApi } from "./features/org/orgApi";
 import { settingsApi } from "./features/settings/settingsApi";
 import { organizationSlice } from "./features/org/orgSlice";
 import { checklistApi } from "./features/checklist/checklistApi";
+import { notificationsApi } from "./features/notifications/notificationsApi";
 
 export const store = configureStore({
   reducer: {
@@ -22,6 +23,7 @@ export const store = configureStore({
     [laneApi.reducerPath]: laneApi.reducer,
     [apiSlice.reducerPath]: apiSlice.reducer,
     [checklistApi.reducerPath]: checklistApi.reducer,
+    [notificationsApi.reducerPath]: notificationsApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -33,7 +35,8 @@ export const store = configureStore({
       userApi.middleware,
       laneApi.middleware,
       apiSlice.middleware,
-      checklistApi.middleware
+      checklistApi.middleware,
+      notificationsApi.middleware
     ),
 });
 

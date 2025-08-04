@@ -86,9 +86,11 @@ export default function DetailsDialogHeader({
                     {candidate.experience} years exp.
                   </span>
                 )}
-                <span className="whitespace-nowrap text-sm font-normal text-gray-600 dark:text-gray-400  flex items-center gap-1">
-                  ₹{candidate.expectedCTC.toLocaleString()}
-                </span>
+                {candidate.expectedCTC !== undefined && candidate.expectedCTC !== null && (
+                  <span className="whitespace-nowrap text-sm font-normal text-gray-600 dark:text-gray-400  flex items-center gap-1">
+                    ₹{candidate.expectedCTC.toLocaleString()}
+                  </span>
+                )}
               </span>
             </div>
             {candidate.email && (
