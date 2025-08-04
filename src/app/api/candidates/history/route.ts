@@ -290,6 +290,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const candidateId = new Types.ObjectId(data.candidateId);
+    console.log(candidateId, "candiateId");
     const candidateData = await Candidate.findById(candidateId)
       .populate([
         {
@@ -307,11 +308,14 @@ export async function PUT(request: NextRequest) {
       ])
       .lean();
     // const candidateDataJSON = candidateData?.toObject();
-    const historyEntry = await History.findOneAndUpdate(
+    console.log(candidateData, "candidateData");
+
+    const historyEntry = await History?.findOneAndUpdate(
       { jobId: data.jobId, candidateId: data.candidateId },
       { $push: { history: data.newEntry } },
       { upsert: true, new: true, runValidators: true }
     );
+    console.log(historyEntry, "histryyy--y");
 
     // console.log("🎊🎊🎊 DATA>JOBID: ", data.jobId);
     const jobId = new Types.ObjectId(

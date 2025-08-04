@@ -50,7 +50,7 @@ export default function EmailTemplatesPage() {
     try {
       const response = await fetch("/api/settings/templates");
       if (response.ok) {
-        debugger;
+        // debugger;
         const data = await response.json();
         if (
           data.templates &&
@@ -159,7 +159,7 @@ export default function EmailTemplatesPage() {
   };
 
   const getCurrentTemplate = () => {
-    debugger;
+    // debugger;
     const current = templates.find((t) => t.id === selectedTemplate);
     if (!current && templates.length > 0) {
       return templates[0];

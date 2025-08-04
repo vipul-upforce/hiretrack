@@ -14,6 +14,7 @@ interface ProcessedResumeData
   name: string;
   email?: string;
   location: string;
+  contact: string;
   experience: number;
   skills: string[];
   currentCTC: number;
@@ -45,6 +46,7 @@ async function processResume(
       "email": "candidate's email if present",
       "location": "candidate's location/city",
       "experience": number of years of experience (as a number),
+      "contact": candidate's contact number,
       "skills": ["array", "of", "technical", "and", "soft", "skills"],
       "currentCTC": current CTC as a number (in lakhs, 0 if not found),
       "expectedCTC": expected CTC as a number (in lakhs, 0 if not found),
@@ -101,6 +103,7 @@ async function processResume(
       return {
         name: "",
         location: "",
+        contact: "",
         experience: 0,
         skills: [],
         currentCTC: 0,

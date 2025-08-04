@@ -97,7 +97,8 @@ export const useAssignCandidate = ({
           ? candidate.assignment.interviewerId.name
           : "";
       const previousInterviewerId =
-        typeof candidate.assignment?.interviewerId === "object"
+        typeof candidate.assignment?.interviewerId === "object" &&
+        Object.keys(candidate.assignment?.interviewerId).length > 0
           ? Object(candidate.assignment.interviewerId._id)
           : null;
 
@@ -109,7 +110,7 @@ export const useAssignCandidate = ({
         );
         if (foundNextInterviewer) {
           nextInterviewer = foundNextInterviewer.name;
-          nextInterviewerId = Object(foundNextInterviewer._id);
+          nextInterviewerId = foundNextInterviewer._id;
         }
       }
 
