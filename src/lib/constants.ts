@@ -23,9 +23,9 @@ export const jobD = `<div style="font-family: Arial, sans-serif; line-height: 1.
         <p style="margin: 15px 0;">Please review the application in the dashboard.</p>
         <p style="margin: 15px 0;"><a href="{{dashboardLink}}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">View Application</a></p>
     </div>
-</div>`
+</div>`;
 
-export const ResetP =`<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+export const ResetP = `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
         <h2 style="color: #2c3e50; margin-top: 0;">Password Reset Request</h2>
         <p style="margin: 0 0 15px 0;">Hello {{userName}},</p>
@@ -235,6 +235,7 @@ export const defaultTemplates: EmailTemplate[] = [
       "duration",
       "interviewType",
       "meetingLink",
+      "outlookCalendarLink",
       "candidateProfileLink",
       "dashboardLink",
       "organizationName",
@@ -299,7 +300,6 @@ export const defaultTemplates: EmailTemplate[] = [
   },
 ];
 
-
 export const Data = {
   orgName: "Acme Inc",
   candidateName: "John Doe",
@@ -328,7 +328,6 @@ export const Data = {
   otp: "234533",
 };
 
-
 export const editorOptions = {
   minimap: { enabled: false },
   fontSize: 14,
@@ -343,104 +342,104 @@ export const editorOptions = {
 };
 
 export const defaultTemplatesFE: { [key: string]: IEmailTemplate } = {
-    "job-application-hr": {
-      templateId: "job-application-hr",
-      templateName: "Job Application (HR Notification)",
-      subject: "New Job Application - {{jobTitle}}",
-      html: jobD,
-      variables: [
-        "jobTitle",
-        "candidateName",
-        "candidateEmail",
-        "candidatePhone",
-        "applicationDate",
-        "dashboardLink",
-      ],
-    },
-    "password-reset": {
-      templateId: "password-reset",
-      templateName: "Password Reset Request",
-      subject: "Password Reset Request - {{organizationName}}",
-      html: ResetP,
-      variables: ["userName", "organizationName", "resetLink"],
-    },
-    "interview-assignment": {
-      templateId: "interview-assignment",
-      templateName: "Interview Assignment Event",
-      subject: "Interview Assigned - {{candidateName}} for {{jobTitle}}",
-      html: assE,
-      variables: [
-        "interviewerName",
-        "candidateName",
-        "jobTitle",
-        "interviewDate",
-        "interviewTime",
-        "duration",
-        "interviewType",
-        "meetingLink",
-        "candidateProfileLink",
-        "dashboardLink",
-        "organizationName",
-      ],
-    },
-    "status-update": {
-      templateId: "status-update",
-      templateName: "Status Update Notification",
-      subject: "Application Status Update - {{jobTitle}}",
-      html: StatusU,
-      variables: [
-        "candidateName",
-        "jobTitle",
-        "organizationName",
-        "newStatus",
-        "statusMessage",
-        "nextSteps",
-        "hrContactInfo",
-      ],
-    },
-    "new-remark": {
-      templateId: "new-remark",
-      templateName: "New Remark Added",
-      subject: "New Feedback Added - {{candidateName}}",
-      html: RemA,
-      variables: [
-        // "recipientName",
-        "candidateName",
-        "jobTitle",
-        "reviewerName",
-        "remarkDate",
-        "rating",
-        "remarkText",
-        "candidateProfileLink",
-        "organizationName",
-      ],
-    },
-    "step-completed": {
-      templateId: "step-completed",
-      templateName: "Step Completed",
-      subject: "Interview Step Completed - {{candidateName}}",
-      html: MAD,
-      variables: [
-        // "recipientName",
-        "candidateName",
-        "jobTitle",
-        "stepName",
-        "completedBy",
-        "completionDate",
-        "feedback",
-        "nextStep",
-        "candidateProfileLink",
-        "organizationName",
-      ],
-    },
-    "send-otp": {
-      templateId: "send-otp",
-      templateName: "Send OTP",
-      subject: "Your OTP Code - {{organizationName}}",
-      html: OTP,
-      variables: ["userName", "organizationName", "otpCode", "expirationTime"],
-    },
-  };
+  "job-application-hr": {
+    templateId: "job-application-hr",
+    templateName: "Job Application (HR Notification)",
+    subject: "New Job Application - {{jobTitle}}",
+    html: jobD,
+    variables: [
+      "jobTitle",
+      "candidateName",
+      "candidateEmail",
+      "candidatePhone",
+      "applicationDate",
+      "dashboardLink",
+    ],
+  },
+  "password-reset": {
+    templateId: "password-reset",
+    templateName: "Password Reset Request",
+    subject: "Password Reset Request - {{organizationName}}",
+    html: ResetP,
+    variables: ["userName", "organizationName", "resetLink"],
+  },
+  "interview-assignment": {
+    templateId: "interview-assignment",
+    templateName: "Interview Assignment Event",
+    subject: "Interview Assigned - {{candidateName}} for {{jobTitle}}",
+    html: assE,
+    variables: [
+      "interviewerName",
+      "candidateName",
+      "jobTitle",
+      "interviewDate",
+      "interviewTime",
+      "duration",
+      "interviewType",
+      "meetingLink",
+      "candidateProfileLink",
+      "dashboardLink",
+      "organizationName",
+    ],
+  },
+  "status-update": {
+    templateId: "status-update",
+    templateName: "Status Update Notification",
+    subject: "Application Status Update - {{jobTitle}}",
+    html: StatusU,
+    variables: [
+      "candidateName",
+      "jobTitle",
+      "organizationName",
+      "newStatus",
+      "statusMessage",
+      "nextSteps",
+      "hrContactInfo",
+    ],
+  },
+  "new-remark": {
+    templateId: "new-remark",
+    templateName: "New Remark Added",
+    subject: "New Feedback Added - {{candidateName}}",
+    html: RemA,
+    variables: [
+      // "recipientName",
+      "candidateName",
+      "jobTitle",
+      "reviewerName",
+      "remarkDate",
+      "rating",
+      "remarkText",
+      "candidateProfileLink",
+      "organizationName",
+    ],
+  },
+  "step-completed": {
+    templateId: "step-completed",
+    templateName: "Step Completed",
+    subject: "Interview Step Completed - {{candidateName}}",
+    html: MAD,
+    variables: [
+      // "recipientName",
+      "candidateName",
+      "jobTitle",
+      "stepName",
+      "completedBy",
+      "completionDate",
+      "feedback",
+      "nextStep",
+      "candidateProfileLink",
+      "organizationName",
+    ],
+  },
+  "send-otp": {
+    templateId: "send-otp",
+    templateName: "Send OTP",
+    subject: "Your OTP Code - {{organizationName}}",
+    html: OTP,
+    variables: ["userName", "organizationName", "otpCode", "expirationTime"],
+  },
+};
 
 export const wierdFileNamePattern = /[^a-zA-Z0-9(). ]/g;
 // export const wierdFileNamePattern = /^(?!.*[()]{2,})[a-zA-Z0-9()]+$/g;

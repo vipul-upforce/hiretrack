@@ -8,7 +8,6 @@ import Cookies from "js-cookie";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import * as jose from "jose";
 
-
 import { LoginFormValues, UserWithoutCF } from "@/types/login";
 import { useCallback } from "react";
 import { OneOfMulOrganization } from "@/components/auth/OrganizationDialog";
@@ -37,11 +36,10 @@ export const useHandleLoginSubmit = ({
   const { toast } = useToast();
   const [login, { isLoading }] = useLoginMutation();
   const { setUserLoggedIn } = useCustomFields();
-    const dispatch = useDispatch<AppDispatch>();
-  
-  const  {user, isAuthenticated}  = useSelector((state: any) => state.auth);
-// debugger
-  
+  const dispatch = useDispatch<AppDispatch>();
+
+  const { user, isAuthenticated } = useSelector((state: any) => state.auth);
+  // debugger
 
   const getRedirectUrl = () => {
     const redirectTo =
@@ -59,13 +57,14 @@ export const useHandleLoginSubmit = ({
     }
 
     if (user?.role === "candidate") {
-      return isMultiple ? `/apply-jobs?o=${user.organizationInfo?.name}` : "/apply-jobs";
+      return isMultiple
+        ? `/apply-jobs?o=${user.organizationInfo?.name}`
+        : "/apply-jobs";
     } else if (
       user?.role === "admin" ||
       user?.role === "interviewer" ||
       user?.role === "hr"
     ) {
-    
       return "/dashboard";
     }
 
@@ -77,7 +76,7 @@ export const useHandleLoginSubmit = ({
       values: LoginFormValues,
       { setStatus }: { setStatus: (message: string) => void }
     ) => {
-      debugger
+      // debugger
       setLoginFormValues(values);
       try {
         const response = await login({
@@ -110,7 +109,7 @@ export const useHandleLoginSubmit = ({
         //   });
         //   return;
         // }
-       
+
         // try {
         //   const check2FA = await fetch(
         //     `/api/settings/twofa?orgId=${decryptedResponse.user.organizationId}`
@@ -139,7 +138,7 @@ export const useHandleLoginSubmit = ({
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 email: values.email.toLowerCase().trim(),
-                organizationId
+                organizationId,
               }),
             });
             // const data = await otpResponse.json();
@@ -178,32 +177,30 @@ export const useHandleLoginSubmit = ({
         // }
         // const token = await signToken(userWithoutCustomFields);
         // Cookies.set("token", String(token), { expires: 30 });
-        
 
         const redirectUrl = getRedirectUrl();
-        console.log("REIRECTURL: ",redirectUrl)
+        console.log("REIRECTURL: ", redirectUrl);
         // new Promise(()=>{})
         // setTimeout(()=>{
         // },4000)
-        console.log("user status: ",user, isAuthenticated)
-        if(isAuthenticated){
+        console.log("user status: ", user, isAuthenticated);
+        if (isAuthenticated) {
           router.refresh();
           router.push(redirectUrl);
           window.location.href = redirectUrl;
-  
+
           setUserLoggedIn(true);
-  
+
           toast({
             title: "Success",
             description: "Login successful",
             variant: "default",
           });
-
         }
 
-        dispatch(fetchUserFromToken())
+        dispatch(fetchUserFromToken());
       } catch (err: unknown) {
-        console.log(err)
+        console.log(err);
         const errorMessage =
           err &&
           typeof err === "object" &&

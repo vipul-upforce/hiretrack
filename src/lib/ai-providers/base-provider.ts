@@ -18,6 +18,7 @@ export abstract class BaseAIProvider implements AIProvider {
       "name": "candidate's full name",
       "email": "candidate's email if present",
       "location": "candidate's location/city",
+      "contact": "candidate's contact number if present",
       "experience": number of years of experience (as a number),
       "skills": ["array", "of", "technical", "and", "soft", "skills"],
       "currentCTC": current CTC as a number (in lakhs, 0 if not found),
@@ -60,6 +61,7 @@ export abstract class BaseAIProvider implements AIProvider {
         return {
           name: "",
           location: "",
+          contact: "",
           experience: 0,
           skills: [],
           currentCTC: 0,

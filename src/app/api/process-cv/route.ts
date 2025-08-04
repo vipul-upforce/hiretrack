@@ -11,6 +11,15 @@ import { AIProviderFactory, ProcessedResumeData } from "@/lib/ai-providers";
 import { decryptAIProviderKeys } from "@/lib/encryption";
 
 interface ExtendedProcessedResumeData extends ProcessedResumeData {
+  name: string;
+  email?: string;
+  location: string;
+  contact: string;
+  experience: number;
+  skills: string[];
+  currentCTC: number;
+  expectedCTC: number;
+  noticePeriod: number;
   organizationId: string;
   status: string;
   isDeleted: boolean;

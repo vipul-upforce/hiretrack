@@ -7,6 +7,7 @@ export interface ProcessedResumeData {
   currentCTC: number;
   expectedCTC: number;
   noticePeriod: number;
+  contact : string;
   scores?: {
     overall: number;
     experience: number;
