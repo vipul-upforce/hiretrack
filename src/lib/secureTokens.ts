@@ -18,12 +18,12 @@ export function setSecureAuthTokens(
   token: string,
   options: SecureTokenOptions = {}
 ) {
-  console.log("UIUIUIUIUIU: ",response)
+  console.log("UIUIUIUIUIU: ", response);
   const {
     maxAge = 30 * 24 * 60 * 60, // 30 days in seconds
     expires = 30, // 30 days (legacy format)
     domain,
-    path = "/"
+    path = "/",
   } = options;
 
   // Calculate expiration date
@@ -31,7 +31,7 @@ export function setSecureAuthTokens(
   expirationDate.setDate(expirationDate.getDate() + expires);
 
   // Common security flags
-  const isProduction = process.env.NODE_ENV === 'production';
+  const isProduction = process.env.NODE_ENV === "production";
   const secureFlag = isProduction; // Only use secure in production (requires HTTPS)
 
   // Set readable token for client-side (maintaining existing functionality)
@@ -49,7 +49,7 @@ export function setSecureAuthTokens(
   response.cookies.set("auth_token", token, {
     httpOnly: true, // Not accessible by JavaScript
     secure: secureFlag,
-    sameSite: "strict", 
+    sameSite: "strict",
     maxAge: maxAge,
     path: path,
     domain: domain,
@@ -57,11 +57,12 @@ export function setSecureAuthTokens(
 
   // Set additional security headers
   response.headers.set("X-Content-Type-Options", "nosniff");
-  response.headers.set("X-Frame-Options", "DENY");
+  // response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("X-Frame-Options", "SAMEORIGIN");
   response.headers.set("X-XSS-Protection", "1; mode=block");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
 
-  console.log("RESPONSE IN SESECUTEAUTHTOKEN: ",response)
+  console.log("RESPONSE IN SESECUTEAUTHTOKEN: ", response);
   return response;
 }
 
@@ -71,18 +72,18 @@ export function setSecureAuthTokens(
 export function clearAuthTokens(response: NextResponse) {
   const cookieOptions = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.NODE_ENV === "production",
     sameSite: "strict" as const,
     maxAge: 0,
     expires: new Date(0),
-    path: "/"
+    path: "/",
   };
 
   // Clear both tokens
   // response.cookies.set("token", "", cookieOptions);
   response.cookies.set("auth_token", "", cookieOptions);
-  console.log("GONNA REMOVE THE TOKEN...")
-  response.cookies.delete("auth_token")
+  console.log("GONNA REMOVE THE TOKEN...");
+  response.cookies.delete("auth_token");
   return response;
 }
 
@@ -91,18 +92,18 @@ export function clearAuthTokens(response: NextResponse) {
  * Prioritizes httpOnly token for security, falls back to readable token
  */
 export function getAuthToken(request: Request): string | undefined {
-  const cookies = request.headers.get('cookie');
+  const cookies = request.headers.get("cookie");
   if (!cookies) return undefined;
 
   // Parse cookies manually to handle both token types
   const cookieMap = new Map<string, string>();
-  cookies.split(';').forEach(cookie => {
-    const [name, value] = cookie.trim().split('=');
+  cookies.split(";").forEach((cookie) => {
+    const [name, value] = cookie.trim().split("=");
     if (name && value) {
       cookieMap.set(name, value);
     }
   });
 
   // Prioritize httpOnly token for security
-  return cookieMap.get('auth_token') || cookieMap.get('token');
+  return cookieMap.get("auth_token") || cookieMap.get("token");
 }

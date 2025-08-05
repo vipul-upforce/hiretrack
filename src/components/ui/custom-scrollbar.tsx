@@ -15,7 +15,8 @@ export function CustomScrollbar({
   className,
   style,
   isDragging,
-}: CustomScrollbarProps) {
+  ref,
+}: CustomScrollbarProps & { ref?: React.Ref<HTMLDivElement> }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [showScrollbar, setShowScrollbar] = useState(false);
   const [scrollTop, setScrollTop] = useState(0);
@@ -71,11 +72,18 @@ export function CustomScrollbar({
   return (
     <div className={cn("relative", className)} style={style}>
       <div
-        ref={containerRef}
-        className={`h-full scrollbar-hide ${isDragging ? "overflow-hidden" : "overflow-y-scroll"}`}
+        // ref={containerRef}
+        ref={(el) => {
+          containerRef.current = el;
+          if (typeof ref === "function") ref(el);
+          else if (ref) ref.current = el;
+        }}
+        // className={`h-full scrollbar-hide ${isDragging ? "overflow-hidden" : "overflow-y-scroll"}`}
+        className={cn("h-full scrollbar-hide overflow-y-auto")} //
         style={{
           scrollbarWidth: "none",
           msOverflowStyle: "none",
+          maxHeight: "100%",
         }}
       >
         {children}

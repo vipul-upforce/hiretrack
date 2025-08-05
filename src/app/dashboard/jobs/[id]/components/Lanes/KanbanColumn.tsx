@@ -326,7 +326,12 @@ export function KanbanColumn({
             <div className="flex-1 overflow-hidden space-y-2 pr-2 min-w-0">
               <Droppable droppableId={column.id} type="candidate">
                 {(provided: DroppableProvided) => (
-                  <CustomScrollbar isDragging={isDragging} className="h-full">
+                  <CustomScrollbar
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    isDragging={isDragging}
+                    className="h-full"
+                  >
                     <div
                       {...provided.droppableProps}
                       ref={provided.innerRef}
