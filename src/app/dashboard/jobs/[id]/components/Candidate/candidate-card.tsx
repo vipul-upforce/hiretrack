@@ -739,7 +739,7 @@ export function CandidateCard({
               {...provided.draggableProps}
               {...provided.dragHandleProps}
               className={cn(
-                "bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg p-4 shadow-sm cursor-grab active:cursor-grabbing relative overflow-visible hover:shadow-md transition-all duration-200 hover:border-gray-300 dark:hover:border-gray-700",
+                "bg-white dark:bg-black  border border-gray-200 dark:border-gray-800 rounded-lg p-4 shadow-sm cursor-grab active:cursor-grabbing relative overflow-visible hover:shadow-md transition-all duration-200 hover:border-gray-300 dark:hover:border-gray-700",
                 className
               )}
             >

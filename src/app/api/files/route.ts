@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
 import mime from "mime-types";
-import { validateQueryParams, VALIDATION_PATTERNS, MAX_LENGTHS } from "@/lib/inputValidation";
+import {
+  validateQueryParams,
+  VALIDATION_PATTERNS,
+  MAX_LENGTHS,
+} from "@/lib/inputValidation";
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,15 +14,15 @@ export async function GET(request: NextRequest) {
     const validation = validateQueryParams(request.nextUrl.searchParams, {
       pathName: {
         required: true,
-        type: 'string',
+        type: "string",
         maxLength: MAX_LENGTHS.filename * 5, // Allow for directory paths
-        pattern: /^[a-zA-Z0-9\-_.\/\\\s%]+$/ // Allow safe path characters including spaces and URL encoding
-      }
+        pattern: /^[a-zA-Z0-9\-_.\/\\\s%]+$/, // Allow safe path characters including spaces and URL encoding
+      },
     });
-    
+
     if (!validation.isValid) {
       return NextResponse.json(
-        { error: 'Invalid file path parameters', details: validation.errors },
+        { error: "Invalid file path parameters", details: validation.errors },
         { status: 400 }
       );
     }
@@ -37,9 +41,9 @@ export async function GET(request: NextRequest) {
     // SECURITY FIX: Define allowed directories based on actual implementation
     const projectRoot = process.cwd();
     const allowedDirectories = [
-      "../assets/images/", 
+      "../assets/images/",
       "../assets/documents/",
-      "../assets/organizations/"
+      "../assets/organizations/",
     ];
 
     // Normalize and validate the path
@@ -102,7 +106,8 @@ export async function GET(request: NextRequest) {
         "Content-Disposition": `inline; filename="${fileName}"`,
         // Security headers
         "X-Content-Type-Options": "nosniff",
-        "X-Frame-Options": "DENY",
+        // "X-Frame-Options": "DENY",
+        "X-Frame-Options": "SAMEORIGIN",
         "Cache-Control": "private, max-age=3600", // Cache for 1 hour
       },
     });
