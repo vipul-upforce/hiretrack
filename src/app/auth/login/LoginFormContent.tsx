@@ -439,6 +439,7 @@ export default function LoginFormContent({
             const favicon = document.querySelector(
               "link[rel*='icon']"
             ) as HTMLLinkElement;
+            debugger;
             if (favicon) {
               favicon.href = data.portalFavicon.url;
             } else {

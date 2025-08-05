@@ -219,6 +219,7 @@ export function CreateCandidateDialog({
   const handleTermsConfirm = () => {
     if (pendingFormValues) {
       setShowTermsDialog(false);
+      // debugger;
       actualSubmit(pendingFormValues);
       setPendingFormValues(null);
     }
@@ -533,7 +534,7 @@ export function CreateCandidateDialog({
                     // scrollToErrorMassage(errors);
                     handleApply();
                   }}
-                  type="submit"
+                  type="button"
                   disabled={isSubmitting || isCreating || isLoading}
                 >
                   {isSubmitting

@@ -48,6 +48,7 @@ import { DateTimePicker } from "@/components/ui/DateTimePicker";
 import { DatePicker } from "@/components/ui/date-picker";
 import TimePicker from "@/components/ui/time-picker";
 import dayjs from "dayjs";
+import { useSelector } from "react-redux";
 
 interface ChecklistInfo {
   candidateId: string;
@@ -431,6 +432,7 @@ const ChecklistRemarksDialog = ({
   const [sendStatusMail] = useSendStatusMailMutation();
   const [submitChecklist] = useSubmitCandidateChecklistMutation();
 
+  const { user } = useSelector((state: any) => state.auth || {});
   // const customFieldsContext = useContext(CustomFieldsContext);
   const { data: jobLaneConfig } = useGetJobLaneConfigQuery(
     typeof candidate.jobId === "string" ? candidate.jobId : candidate.jobId._id,
@@ -691,18 +693,18 @@ const ChecklistRemarksDialog = ({
       return;
     }
 
-    const token = Cookies.get("auth_token");
-    if (!token) {
-      toast({
-        title: "Error",
-        description: "Authentication required",
-        variant: "destructive",
-      });
-      return;
-    }
+    // const token = Cookies.get("auth_token");
+    // if (!token) {
+    //   toast({
+    //     title: "Error",
+    //     description: "Authentication required",
+    //     variant: "destructive",
+    //   });
+    //   return;
+    // }
 
-    const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-    if (!decryptedResponse.success || !decryptedResponse.user) {
+    // const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+    if (!user) {
       toast({
         title: "Error",
         description: "Invalid authentication",
@@ -711,7 +713,7 @@ const ChecklistRemarksDialog = ({
       return;
     }
 
-    const user = decryptedResponse.user;
+    // const user = decryptedResponse.user;
     setIsSubmitting(true);
 
     try {

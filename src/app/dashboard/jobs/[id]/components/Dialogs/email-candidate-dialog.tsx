@@ -42,6 +42,7 @@ import { Badge } from "@/components/ui/badge";
 import { Editor } from "@monaco-editor/react";
 import { useTheme } from "@/components/theme-provider";
 import RichTextEditor from "@/components/ui/rte/RichTextEditor";
+import { useSelector } from "react-redux";
 
 interface EmailCandidateDialogProps {
   isOpen: boolean;
@@ -90,6 +91,7 @@ export function EmailCandidateDialog({
   const [userName, setUserName] = useState("");
   const [emailSent, setEmailSent] = useState(false);
   const [emailError, setEmailError] = useState("");
+  const { user } = useSelector((state: any) => state.auth || {});
 
   // Template management
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
@@ -101,17 +103,17 @@ export function EmailCandidateDialog({
   useEffect(() => {
     // Get current user's email for reply-to field and fetch templates
     (async () => {
-      const token = Cookies.get("auth_token");
-      if (token) {
-        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-        if (decryptedResponse.success && decryptedResponse.user) {
-          const user = decryptedResponse.user;
-          setUserEmail(user.email);
-          setUserName(user.name || user.email);
-          setReplyTo(user.email);
-          setOrganizationName(user.organizationName || "HireTrack");
-        }
+      // const token = Cookies.get("auth_token");
+      // if (token) {
+      // const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+      if (user) {
+        // const user = decryptedResponse.user;
+        setUserEmail(user.email);
+        setUserName(user.name || user.email);
+        setReplyTo(user.email);
+        setOrganizationName(user.organizationInfo.name || "HireTrack");
       }
+      // }
 
       // Fetch templates
       try {

@@ -418,7 +418,7 @@ export async function PUT(
                     reviewerName: remark_adder,
                     candidateName: remark_for,
                     rating,
-                    jobTitle: data?.jobId.title,
+                    jobTitle: data?.jobId?.title,
                     remarkDate: remarkDate,
                     remarkText: remark,
                     candidateProfileLink: candidateDetails,

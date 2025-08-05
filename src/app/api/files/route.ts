@@ -15,8 +15,8 @@ export async function GET(request: NextRequest) {
       pathName: {
         required: true,
         type: "string",
-        maxLength: MAX_LENGTHS.filename * 5, // Allow for directory paths
-        pattern: /^[a-zA-Z0-9\-_.\/\\\s%]+$/, // Allow safe path characters including spaces and URL encoding
+        // maxLength: MAX_LENGTHS.filename * 5, // Allow for directory paths
+        // pattern: /^[a-zA-Z0-9\-_.\/\\\s%]+$/, // Allow safe path characters including spaces and URL encoding
       },
     });
 
