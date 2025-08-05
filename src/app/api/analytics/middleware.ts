@@ -37,8 +37,8 @@ export async function authenticateAnalyticsRequest(
     const cookieStore = await cookies();
     // Check both httpOnly and regular tokens for backward compatibility
     const httpOnlyToken = cookieStore.get("auth_token");
-    const regularToken = cookieStore.get("token");
-    const token = httpOnlyToken?.value || regularToken?.value;
+    // const regularToken = cookieStore.get("token");
+    const token = httpOnlyToken?.value;
 
     if (!token) {
       return null;

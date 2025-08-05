@@ -14,11 +14,29 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ChipInput } from "@/components/ui/chip-input";
-import { Upload, X, Loader2, Mail, Paperclip, CheckCircle, AlertCircle, FileText, Eye, Code, Edit } from "lucide-react";
+import {
+  Upload,
+  X,
+  Loader2,
+  Mail,
+  Paperclip,
+  CheckCircle,
+  AlertCircle,
+  FileText,
+  Eye,
+  Code,
+  Edit,
+} from "lucide-react";
 import { toast } from "sonner";
 import Cookies from "js-cookie";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Editor } from "@monaco-editor/react";
@@ -72,7 +90,7 @@ export function EmailCandidateDialog({
   const [userName, setUserName] = useState("");
   const [emailSent, setEmailSent] = useState(false);
   const [emailError, setEmailError] = useState("");
-  
+
   // Template management
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<string>("none");
@@ -83,7 +101,7 @@ export function EmailCandidateDialog({
   useEffect(() => {
     // Get current user's email for reply-to field and fetch templates
     (async () => {
-      const token = Cookies.get("token");
+      const token = Cookies.get("auth_token");
       if (token) {
         const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
         if (decryptedResponse.success && decryptedResponse.user) {
@@ -94,31 +112,47 @@ export function EmailCandidateDialog({
           setOrganizationName(user.organizationName || "HireTrack");
         }
       }
-      
+
       // Fetch templates
       try {
         const response = await fetch("/api/settings/templates");
         if (response.ok) {
           const data = await response.json();
           if (data.templates && Object.keys(data.templates).length > 0) {
-            const loadedTemplates = Object.values(data.templates).map((template: any) => ({
-              id: template.templateId,
-              name: template.templateName,
-              subject: template.subject,
-              content: template.html,
-              variables: template.variables || ["SenderName", "ReceiverName", "PortalName"],
-              isCustom: !template.templateId.includes("job-application") && !template.templateId.includes("password-reset") && 
-                       !template.templateId.includes("interview-assignment") && !template.templateId.includes("status-update") &&
-                       !template.templateId.includes("new-remark") && !template.templateId.includes("step-completed") &&
-                       !template.templateId.includes("send-otp"),
-              isDefault: template.templateId.includes("job-application") || template.templateId.includes("password-reset") || 
-                        template.templateId.includes("interview-assignment") || template.templateId.includes("status-update") ||
-                        template.templateId.includes("new-remark") || template.templateId.includes("step-completed") ||
-                        template.templateId.includes("send-otp"),
-            }));
-            
+            const loadedTemplates = Object.values(data.templates).map(
+              (template: any) => ({
+                id: template.templateId,
+                name: template.templateName,
+                subject: template.subject,
+                content: template.html,
+                variables: template.variables || [
+                  "SenderName",
+                  "ReceiverName",
+                  "PortalName",
+                ],
+                isCustom:
+                  !template.templateId.includes("job-application") &&
+                  !template.templateId.includes("password-reset") &&
+                  !template.templateId.includes("interview-assignment") &&
+                  !template.templateId.includes("status-update") &&
+                  !template.templateId.includes("new-remark") &&
+                  !template.templateId.includes("step-completed") &&
+                  !template.templateId.includes("send-otp"),
+                isDefault:
+                  template.templateId.includes("job-application") ||
+                  template.templateId.includes("password-reset") ||
+                  template.templateId.includes("interview-assignment") ||
+                  template.templateId.includes("status-update") ||
+                  template.templateId.includes("new-remark") ||
+                  template.templateId.includes("step-completed") ||
+                  template.templateId.includes("send-otp"),
+              })
+            );
+
             // Filter to show only custom templates (suitable for manual emails to candidates)
-            const emailTemplates = loadedTemplates.filter((template: EmailTemplate) => template.isCustom);
+            const emailTemplates = loadedTemplates.filter(
+              (template: EmailTemplate) => template.isCustom
+            );
             setTemplates(emailTemplates);
           }
         }
@@ -138,18 +172,17 @@ export function EmailCandidateDialog({
       .replace(/{{PortalName}}/g, organizationName);
   };
 
-
   // Handle template selection
   const handleTemplateSelect = (templateId: string) => {
     setSelectedTemplate(templateId);
-    
+
     if (templateId === "none") {
       setSubject("");
       setBody("");
       return;
     }
 
-    const template = templates.find(t => t.id === templateId);
+    const template = templates.find((t) => t.id === templateId);
     if (template) {
       setSubject(replaceVariables(template.subject));
       setBody(replaceVariables(template.content));
@@ -158,10 +191,9 @@ export function EmailCandidateDialog({
     }
   };
 
-
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    
+
     if (attachments.length + files.length > MAX_ATTACHMENTS) {
       toast.error(`Maximum ${MAX_ATTACHMENTS} attachments allowed`);
       return;
@@ -174,7 +206,7 @@ export function EmailCandidateDialog({
         toast.error(`${file.name} exceeds 5MB limit`);
         continue;
       }
-      
+
       newAttachments.push({
         file,
         fileName: file.name,
@@ -188,7 +220,7 @@ export function EmailCandidateDialog({
     }
 
     // Clear the input so the same file can be selected again
-    e.target.value = '';
+    e.target.value = "";
   };
 
   const removeAttachment = (index: number) => {
@@ -279,7 +311,7 @@ export function EmailCandidateDialog({
 
       setEmailSent(true);
       toast.success("Email sent successfully");
-      
+
       // Auto-close after a short delay to show success state
       setTimeout(() => {
         onClose();
@@ -318,7 +350,9 @@ export function EmailCandidateDialog({
             Compose and send an email
           </DialogTitle>
           <DialogDescription className="text-gray-600 dark:text-gray-400">
-            <span className="font-bold">To:</span> {candidate.name} ({candidate.email}) | <span className="font-bold">From:</span> {userName} ({userEmail})
+            <span className="font-bold">To:</span> {candidate.name} (
+            {candidate.email}) | <span className="font-bold">From:</span>{" "}
+            {userName} ({userEmail})
           </DialogDescription>
         </DialogHeader>
 
@@ -329,7 +363,10 @@ export function EmailCandidateDialog({
               <div className="space-y-2">
                 <Label>Email Template</Label>
                 <div className="flex items-center gap-2">
-                  <Select value={selectedTemplate} onValueChange={handleTemplateSelect}>
+                  <Select
+                    value={selectedTemplate}
+                    onValueChange={handleTemplateSelect}
+                  >
                     <SelectTrigger className="flex-1">
                       <SelectValue placeholder="Choose a template or start from scratch" />
                     </SelectTrigger>
@@ -348,7 +385,9 @@ export function EmailCandidateDialog({
                               {template.name}
                             </div>
                             {template.isCustom && (
-                              <Badge variant="secondary" className="ml-2">Custom</Badge>
+                              <Badge variant="secondary" className="ml-2">
+                                Custom
+                              </Badge>
                             )}
                           </div>
                         </SelectItem>
@@ -358,22 +397,28 @@ export function EmailCandidateDialog({
                 </div>
                 {selectedTemplate !== "none" && (
                   <div className="text-xs text-muted-foreground">
-                    Variables will be automatically replaced: SenderName → {userName}, ReceiverName → {candidate.name}, PortalName → {organizationName}
+                    Variables will be automatically replaced: SenderName →{" "}
+                    {userName}, ReceiverName → {candidate.name}, PortalName →{" "}
+                    {organizationName}
                   </div>
                 )}
                 {selectedTemplate === "none" && contentMode === "html" && (
                   <div className="text-xs text-muted-foreground">
-                    💡 Tip: Use "Preview & Edit" mode to see how your email will look while writing, or stay in "Advanced HTML" mode for full control
+                    💡 Tip: Use "Preview & Edit" mode to see how your email will
+                    look while writing, or stay in "Advanced HTML" mode for full
+                    control
                   </div>
                 )}
                 {contentMode === "rich" && selectedTemplate === "none" && (
                   <div className="text-xs text-muted-foreground">
-                    💡 Use the formatting toolbar to style your text - bold, italic, lists, and more. No HTML knowledge needed!
+                    💡 Use the formatting toolbar to style your text - bold,
+                    italic, lists, and more. No HTML knowledge needed!
                   </div>
                 )}
                 {contentMode === "rich" && selectedTemplate !== "none" && (
                   <div className="text-xs text-muted-foreground">
-                    💡 You're using a pre-designed template. To customize the content, switch to "Advanced HTML" mode.
+                    💡 You're using a pre-designed template. To customize the
+                    content, switch to "Advanced HTML" mode.
                   </div>
                 )}
               </div>
@@ -397,7 +442,9 @@ export function EmailCandidateDialog({
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => setContentMode(contentMode === "rich" ? "html" : "rich")}
+                    onClick={() =>
+                      setContentMode(contentMode === "rich" ? "html" : "rich")
+                    }
                   >
                     {contentMode === "rich" ? (
                       <>
@@ -413,7 +460,7 @@ export function EmailCandidateDialog({
                   </Button>
                 </div>
               </div>
-              
+
               {contentMode === "rich" ? (
                 <div className="space-y-3">
                   {/* Check if using a template */}
@@ -425,7 +472,11 @@ export function EmailCandidateDialog({
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-sm text-blue-800 dark:text-blue-200">
                               <FileText className="h-4 w-4" />
-                              Using template: {templates.find(t => t.id === selectedTemplate)?.name}
+                              Using template:{" "}
+                              {
+                                templates.find((t) => t.id === selectedTemplate)
+                                  ?.name
+                              }
                             </div>
                             <Button
                               type="button"
@@ -445,7 +496,9 @@ export function EmailCandidateDialog({
                           <div dangerouslySetInnerHTML={{ __html: body }} />
                         </div>
                         <div className="p-3 bg-gray-50 dark:bg-gray-900 border-t text-xs text-muted-foreground">
-                          💡 This template has professional formatting applied. Switch to "Advanced HTML" mode to modify the template structure.
+                          💡 This template has professional formatting applied.
+                          Switch to "Advanced HTML" mode to modify the template
+                          structure.
                         </div>
                       </div>
                     </>
@@ -523,8 +576,10 @@ export function EmailCandidateDialog({
             </div>
 
             <div className="space-y-2">
-              <Label>Attachments ({attachments.length}/{MAX_ATTACHMENTS})</Label>
-              
+              <Label>
+                Attachments ({attachments.length}/{MAX_ATTACHMENTS})
+              </Label>
+
               {attachments.length > 0 && (
                 <div className="space-y-2 mb-2">
                   {attachments.map((att, index) => (
@@ -567,7 +622,8 @@ export function EmailCandidateDialog({
                   className={cn(
                     "inline-flex items-center gap-2 px-4 py-2 border rounded-md cursor-pointer",
                     "hover:bg-accent hover:text-accent-foreground",
-                    attachments.length >= MAX_ATTACHMENTS && "opacity-50 cursor-not-allowed"
+                    attachments.length >= MAX_ATTACHMENTS &&
+                      "opacity-50 cursor-not-allowed"
                   )}
                 >
                   <Upload className="h-4 w-4" />
@@ -587,15 +643,21 @@ export function EmailCandidateDialog({
             {emailSent && (
               <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium">Email sent successfully!</span>
+                <span className="text-sm font-medium">
+                  Email sent successfully!
+                </span>
               </div>
             )}
             {emailError && (
               <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
                 <div className="w-2 h-2 bg-red-500 rounded-full"></div>
                 <div className="flex-1">
-                  <div className="text-sm font-medium">Failed to send email</div>
-                  <div className="text-xs text-muted-foreground mt-1">{emailError}</div>
+                  <div className="text-sm font-medium">
+                    Failed to send email
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {emailError}
+                  </div>
                 </div>
               </div>
             )}
@@ -606,8 +668,8 @@ export function EmailCandidateDialog({
           <Button variant="outline" onClick={onClose} disabled={sending}>
             Cancel
           </Button>
-          <Button 
-            onClick={handleSend} 
+          <Button
+            onClick={handleSend}
             disabled={sending || emailSent}
             className={cn(
               "min-w-[120px]",

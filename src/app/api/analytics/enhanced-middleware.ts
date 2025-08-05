@@ -78,10 +78,10 @@ export class EnhancedAnalyticsMiddleware {
     try {
       const cookieStore = await cookies();
       const httpOnlyToken = cookieStore.get("auth_token");
-      const regularToken = cookieStore.get("token");
+      // const regularToken = cookieStore.get("token");
       
       // Prefer httpOnly token for security
-      const token = httpOnlyToken?.value || regularToken?.value;
+      const token = httpOnlyToken?.value;
       
       if (!token) {
         return { user: null, error: "Authentication token not found" };

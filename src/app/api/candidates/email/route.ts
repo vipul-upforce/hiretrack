@@ -6,7 +6,7 @@ import { sendMail } from "@/lib/emailUtils";
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user
-    const token = request.cookies.get("token");
+    const token = request.cookies.get("auth_token");
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

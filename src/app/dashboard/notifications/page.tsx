@@ -11,14 +11,14 @@ import { CandidateDetailsDialog } from "../jobs/[id]/components/Dialogs/candidat
 import { useLazyFetchCandidateByIdQuery } from "@/lib/features/candidate/candidateApi";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import Cookies from "js-cookie";
-import { 
-  Bell, 
-  BellOff, 
-  Check, 
+import {
+  Bell,
+  BellOff,
+  Check,
   Filter,
   ChevronLeft,
   ChevronRight,
-  RefreshCw
+  RefreshCw,
 } from "lucide-react";
 import {
   Select,
@@ -38,17 +38,23 @@ import { useToast } from "@/hooks/use-toast";
 import { NotificationType } from "@/lib/models/notification";
 import { User } from "@/lib/features/users/usersApi";
 import { Candidate } from "@/types/candidate";
+import { useSelector } from "react-redux";
 
 export default function NotificationsPage() {
   const router = useRouter();
   const { toast } = useToast();
-  
+
   const [currentPage, setCurrentPage] = useState(1);
   const [filterType, setFilterType] = useState<string>("all");
   const [filterRead, setFilterRead] = useState<string>("all");
   const [filterPriority, setFilterPriority] = useState<string>("all");
-  const [user, setUser] = useState<User | null>(null);
-  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
+  // const [user, setUser] = useState<User | null>(null);
+  const { user }: { user: User } = useSelector(
+    (state: any) => state.auth || {}
+  );
+  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(
+    null
+  );
   const [isCandidateDialogOpen, setIsCandidateDialogOpen] = useState(false);
 
   const limit = 20;
@@ -62,40 +68,48 @@ export default function NotificationsPage() {
     ...(filterPriority !== "all" && { priority: filterPriority }),
   };
 
-  const { 
-    data: notificationsData, 
+  const {
+    data: notificationsData,
     isLoading: notificationsLoading,
-    refetch: refetchNotifications 
+    refetch: refetchNotifications,
   } = useGetNotificationsQuery(queryParams);
-  
-  const { data: notificationCountData } = useGetNotificationCountQuery(undefined, {
-    pollingInterval: 30000
-  });
+
+  const { data: notificationCountData } = useGetNotificationCountQuery(
+    undefined,
+    {
+      pollingInterval: 30000,
+    }
+  );
 
   const [markAsRead] = useMarkNotificationAsReadMutation();
   const [markAllAsRead] = useMarkAllNotificationsAsReadMutation();
   const [fetchCandidateById] = useLazyFetchCandidateByIdQuery();
 
   // Get user info
-  useEffect(() => {
-    const token = Cookies.get("token");
-    if (token) {
-      verifyAndDecryptJWTToken(token).then((decryptedResponse) => {
-        if (decryptedResponse.success && decryptedResponse.user) {
-          setUser(decryptedResponse.user);
-        }
-      });
-    }
-  }, []);
+  // useEffect(() => {
+  //   const token = Cookies.get("token");
+  //   if (token) {
+  //     verifyAndDecryptJWTToken(token).then((decryptedResponse) => {
+  //       if (decryptedResponse.success && decryptedResponse.user) {
+  //         setUser(decryptedResponse.user);
+  //       }
+  //     });
+  //   }
+  // }, []);
 
   const handleNotificationClick = async (notification: any) => {
     // Mark as read if not already read
     if (!notification.isRead) {
       markAsRead(notification._id);
     }
-    
+
     // For interviewers, handle candidate-related and meeting notifications by opening dialog
-    if (user?.role === 'interviewer' && (notification.relatedEntity === 'candidate' || notification.relatedEntity === 'meeting') && notification.relatedId) {
+    if (
+      user?.role === "interviewer" &&
+      (notification.relatedEntity === "candidate" ||
+        notification.relatedEntity === "meeting") &&
+      notification.relatedId
+    ) {
       try {
         const result = await fetchCandidateById(notification.relatedId);
         if (result.data) {
@@ -112,7 +126,7 @@ export default function NotificationsPage() {
         });
       }
     }
-    
+
     // For admin/hr or non-candidate notifications, navigate to the page
     if (notification.actionUrl) {
       router.push(notification.actionUrl);
@@ -154,57 +168,61 @@ export default function NotificationsPage() {
   const totalCount = notificationCountData?.totalCount || 0;
 
   // Get available notification types for filter based on user role
-  const getNotificationTypesForRole = (userRole?: string): NotificationType[] => {
+  const getNotificationTypesForRole = (
+    userRole?: string
+  ): NotificationType[] => {
     const allTypes = Object.values(NotificationType);
-    
-    if (!userRole || userRole === 'admin') {
+
+    if (!userRole || userRole === "admin") {
       return allTypes; // Admin sees all types
     }
-    
-    if (userRole === 'hr') {
+
+    if (userRole === "hr") {
       // HR sees candidate, job, user, and system related notifications
-      return allTypes.filter(type => 
-        type === NotificationType.CANDIDATE_APPLIED ||
-        type === NotificationType.CANDIDATE_STATUS_UPDATED ||
-        type === NotificationType.CANDIDATE_DETAILS_UPDATED ||
-        type === NotificationType.CANDIDATE_ASSIGNED ||
-        type === NotificationType.CANDIDATE_UNASSIGNED ||
-        type === NotificationType.CANDIDATE_REJECTED ||
-        type === NotificationType.REMARK_ADDED ||
-        type === NotificationType.MEETING_SCHEDULED ||
-        type === NotificationType.MEETING_UPDATED ||
-        type === NotificationType.MEETING_CANCELLED ||
-        type === NotificationType.FOLLOWUP_ADDED ||
-        type === NotificationType.FOLLOWUP_UPDATED ||
-        type === NotificationType.FOLLOWUP_REMOVED ||
-        type === NotificationType.CHECKLIST_COMPLETED ||
-        type === NotificationType.JOB_CREATED ||
-        type === NotificationType.JOB_UPDATED ||
-        type === NotificationType.USER_ADDED ||
-        type === NotificationType.BULK_IMPORT_COMPLETED ||
-        type === NotificationType.INTERVIEW_COMPLETED ||
-        type === NotificationType.EMAIL_FAILED
+      return allTypes.filter(
+        (type) =>
+          type === NotificationType.CANDIDATE_APPLIED ||
+          type === NotificationType.CANDIDATE_STATUS_UPDATED ||
+          type === NotificationType.CANDIDATE_DETAILS_UPDATED ||
+          type === NotificationType.CANDIDATE_ASSIGNED ||
+          type === NotificationType.CANDIDATE_UNASSIGNED ||
+          type === NotificationType.CANDIDATE_REJECTED ||
+          type === NotificationType.REMARK_ADDED ||
+          type === NotificationType.MEETING_SCHEDULED ||
+          type === NotificationType.MEETING_UPDATED ||
+          type === NotificationType.MEETING_CANCELLED ||
+          type === NotificationType.FOLLOWUP_ADDED ||
+          type === NotificationType.FOLLOWUP_UPDATED ||
+          type === NotificationType.FOLLOWUP_REMOVED ||
+          type === NotificationType.CHECKLIST_COMPLETED ||
+          type === NotificationType.JOB_CREATED ||
+          type === NotificationType.JOB_UPDATED ||
+          type === NotificationType.USER_ADDED ||
+          type === NotificationType.BULK_IMPORT_COMPLETED ||
+          type === NotificationType.INTERVIEW_COMPLETED ||
+          type === NotificationType.EMAIL_FAILED
       );
     }
-    
-    if (userRole === 'interviewer') {
+
+    if (userRole === "interviewer") {
       // Interviewers see only candidate and meeting related notifications
-      return allTypes.filter(type => 
-        type === NotificationType.CANDIDATE_ASSIGNED ||
-        type === NotificationType.CANDIDATE_UNASSIGNED ||
-        type === NotificationType.MEETING_SCHEDULED ||
-        type === NotificationType.MEETING_UPDATED ||
-        type === NotificationType.MEETING_CANCELLED ||
-        type === NotificationType.REMARK_ADDED ||
-        type === NotificationType.FOLLOWUP_ADDED ||
-        type === NotificationType.FOLLOWUP_UPDATED ||
-        type === NotificationType.FOLLOWUP_REMOVED ||
-        type === NotificationType.CHECKLIST_COMPLETED ||
-        type === NotificationType.CANDIDATE_STATUS_UPDATED ||
-        type === NotificationType.CANDIDATE_DETAILS_UPDATED
+      return allTypes.filter(
+        (type) =>
+          type === NotificationType.CANDIDATE_ASSIGNED ||
+          type === NotificationType.CANDIDATE_UNASSIGNED ||
+          type === NotificationType.MEETING_SCHEDULED ||
+          type === NotificationType.MEETING_UPDATED ||
+          type === NotificationType.MEETING_CANCELLED ||
+          type === NotificationType.REMARK_ADDED ||
+          type === NotificationType.FOLLOWUP_ADDED ||
+          type === NotificationType.FOLLOWUP_UPDATED ||
+          type === NotificationType.FOLLOWUP_REMOVED ||
+          type === NotificationType.CHECKLIST_COMPLETED ||
+          type === NotificationType.CANDIDATE_STATUS_UPDATED ||
+          type === NotificationType.CANDIDATE_DETAILS_UPDATED
       );
     }
-    
+
     return allTypes; // Fallback to all types
   };
 
@@ -229,19 +247,12 @@ export default function NotificationsPage() {
                     {unreadCount} unread
                   </Badge>
                 )}
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleRefresh}
-                >
+                <Button variant="outline" size="sm" onClick={handleRefresh}>
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Refresh
                 </Button>
                 {unreadCount > 0 && (
-                  <Button 
-                    size="sm" 
-                    onClick={handleMarkAllAsRead}
-                  >
+                  <Button size="sm" onClick={handleMarkAllAsRead}>
                     <Check className="h-4 w-4 mr-2" />
                     Mark all read
                   </Button>
@@ -266,7 +277,9 @@ export default function NotificationsPage() {
                   <SelectItem value="all">All types</SelectItem>
                   {notificationTypes.map((type) => (
                     <SelectItem key={type} value={type}>
-                      {type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      {type
+                        .replace(/_/g, " ")
+                        .replace(/\b\w/g, (l) => l.toUpperCase())}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -303,10 +316,12 @@ export default function NotificationsPage() {
             </div>
           </div>
 
-          {(filterType !== "all" || filterRead !== "all" || filterPriority !== "all") && (
-            <Button 
-              variant="outline" 
-              size="sm" 
+          {(filterType !== "all" ||
+            filterRead !== "all" ||
+            filterPriority !== "all") && (
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => {
                 setFilterType("all");
                 setFilterRead("all");
@@ -328,11 +343,18 @@ export default function NotificationsPage() {
           {/* Notifications header */}
           <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-lg font-semibold">
-              {pagination ? `${pagination.totalCount} Notifications` : "Notifications"}
+              {pagination
+                ? `${pagination.totalCount} Notifications`
+                : "Notifications"}
             </h2>
             {pagination && pagination.totalCount > 0 && (
               <div className="text-sm text-muted-foreground">
-                Showing {((pagination.currentPage - 1) * limit) + 1}-{Math.min(pagination.currentPage * limit, pagination.totalCount)} of {pagination.totalCount}
+                Showing {(pagination.currentPage - 1) * limit + 1}-
+                {Math.min(
+                  pagination.currentPage * limit,
+                  pagination.totalCount
+                )}{" "}
+                of {pagination.totalCount}
               </div>
             )}
           </div>
@@ -349,9 +371,13 @@ export default function NotificationsPage() {
             ) : notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center">
                 <BellOff className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No notifications found</h3>
+                <h3 className="text-lg font-semibold mb-2">
+                  No notifications found
+                </h3>
                 <p className="text-muted-foreground max-w-md">
-                  {filterType !== "all" || filterRead !== "all" || filterPriority !== "all"
+                  {filterType !== "all" ||
+                  filterRead !== "all" ||
+                  filterPriority !== "all"
                     ? "No notifications match your current filters. Try adjusting your filters to see more notifications."
                     : "You're all caught up! New notifications will appear here when there's activity."}
                 </p>
@@ -379,7 +405,7 @@ export default function NotificationsPage() {
               <div className="text-sm text-muted-foreground">
                 Page {pagination.currentPage} of {pagination.totalPages}
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
@@ -390,7 +416,7 @@ export default function NotificationsPage() {
                   <ChevronLeft className="h-4 w-4 mr-1" />
                   Previous
                 </Button>
-                
+
                 <Button
                   variant="outline"
                   size="sm"
@@ -417,7 +443,7 @@ export default function NotificationsPage() {
             fetchCandidateById(selectedCandidate._id);
           }
         }}
-        hideEditButton={user?.role === 'interviewer'}
+        hideEditButton={user?.role === "interviewer"}
         hideCloseButtons={false}
       />
     </div>

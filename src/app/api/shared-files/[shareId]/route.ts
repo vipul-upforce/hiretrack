@@ -39,7 +39,7 @@ export async function GET(
     
     
     if (!allowPublicAccess && !fileShare.isPublic) {
-      const token = request.cookies.get("token");
+      const token = request.cookies.get("auth_token");
       if (!token) {
         return NextResponse.json({ error: "Authentication required" }, { status: 401 });
       }
@@ -52,7 +52,7 @@ export async function GET(
       userId = decryptedResponse.user.id;
     } else {
       // Try to get user ID from token if available for tracking (optional)
-      const token = request.cookies.get("token");
+      const token = request.cookies.get("auth_token");
       if (token) {
         try {
           const decryptedResponse = await verifyAndDecryptJWTToken(token.value);

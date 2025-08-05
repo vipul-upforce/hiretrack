@@ -39,7 +39,7 @@ function ResetPasswordContent() {
   const [resetPasswordbyUser] = useResetPasswordbyUserMutation();
 
   useEffect(() => {
-    const tokenParam = searchParams?.get("token");
+    const tokenParam = searchParams?.get("auth_token");
     if (!tokenParam) {
       router.push("/auth/login");
     } else {

@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
     
     // Verify user is admin
     let organizationId = "";
-    const token = req.cookies.get("token");
+    const token = req.cookies.get("auth_token");
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
         String(token?.value)

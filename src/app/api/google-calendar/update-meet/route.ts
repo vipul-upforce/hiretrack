@@ -19,7 +19,7 @@ export async function PUT(req: NextRequest) {
     
     // Verify user
     let organizationId = "";
-    const token = req.cookies.get("token");
+    const token = req.cookies.get("auth_token");
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
         String(token?.value)
@@ -184,7 +184,7 @@ export async function DELETE(req: NextRequest) {
     
     // Verify user
     let organizationId = "";
-    const token = req.cookies.get("token");
+    const token = req.cookies.get("auth_token");
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
         String(token?.value)

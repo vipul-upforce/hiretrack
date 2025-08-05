@@ -5,7 +5,7 @@ import { verifyAndDecryptJWTToken } from "@/lib/auth";
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user
-    const token = request.cookies.get("token");
+    const token = request.cookies.get("auth_token");
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

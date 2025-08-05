@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
   //Getting the history data
   try {
     // Get and verify user authentication
-    const token = request.cookies.get("token")?.value;
+    const token = request.cookies.get("auth_token")?.value;
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
