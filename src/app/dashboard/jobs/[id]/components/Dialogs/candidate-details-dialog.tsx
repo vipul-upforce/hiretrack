@@ -172,6 +172,24 @@ export function CandidateDetailsDialog({
     setIsEditing(true);
   };
 
+  const handleReEvaluationClick = () => {
+    // Check if candidate already has AI scores (indicating previous evaluation)
+    const hasExistingScores =
+      localCandidate?.scores &&
+      (localCandidate.scores.overall !== undefined ||
+        localCandidate.scores.experience !== undefined ||
+        localCandidate.scores.skills !== undefined ||
+        localCandidate.scores.affordability !== undefined);
+
+    if (hasExistingScores) {
+      // Show confirmation dialog for re-evaluation
+      setConfirmReEvaluateOpen(true);
+    } else {
+      // First time evaluation - proceed directly
+      handleReEvaluation();
+    }
+  };
+
   const handleReEvaluation = async () => {
     setConfirmReEvaluateOpen(false);
     try {
@@ -445,6 +463,14 @@ export function CandidateDetailsDialog({
                         <p className="text-amber-800 dark:text-amber-200 text-sm leading-relaxed">
                           {localCandidate.followUp.note}
                         </p>
+                        {localCandidate.followUp.userId && (
+                          <div className="text-xs text-amber-700 dark:text-amber-300 mt-2">
+                            Created by:{" "}
+                            <span className="font-bold">
+                              {localCandidate.followUp.userId.name}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                     {(user?.role === "admin" || user?.role === "hr") && (
@@ -1030,16 +1056,15 @@ export function CandidateDetailsDialog({
         className="sm:max-w-[300px]"
       /> */}
       <ConfirmationDialog
-        title="Are You Sure?"
-        message="This will overwrite existing candidate score data with new
-              results."
+        title="Re-evaluate Candidate with AI?"
+        message="This will use your active AI provider to re-analyze the candidate's resume and may incur additional costs based on your AI provider's pricing. The existing evaluation scores will be overwritten with new results."
         isOpen={confirmReEvaluateOpen}
         setIsOpen={setConfirmReEvaluateOpen}
-        onConfirm={() => handleReEvaluation()}
+        onConfirm={handleReEvaluationClick}
         onCancel={() => setConfirmReEvaluateOpen(false)}
         isLoading={isLoading}
-        loadingText="Re-Evaluating"
-        className="sm:max-w-[400px]"
+        loadingText="Re-Evaluating with AI..."
+        className="sm:max-w-[500px]"
       />
       <EditRemarkDialog
         isEditRemarkDialogOpen={isEditRemarkDialogOpen}

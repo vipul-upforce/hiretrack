@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sendMail } from "../event-mail";
+import { sendEventEmailWithHistory } from "@/lib/unifiedEmailService";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
 import connectToDatabase, { User } from "@/lib/mongodb";
 import mongoose from "mongoose";
@@ -57,7 +57,6 @@ function scheduleEmail(
 async function sendQueuedEmail(data: any) {
   const {
     organizationId,
-    email,
     eventTitle,
     candidateName,
     status,
@@ -69,14 +68,12 @@ async function sendQueuedEmail(data: any) {
     prev_status,
     eventSubTitle,
     candidateDetails,
+    candidateId,
+    jobId,
+    sentBy,
+    sentByEmail,
+    sentByName,
   } = data;
-
-  //   const eventDescription: string = `<div>
-  //   <strong>Candidate Name:</strong> ${candidateName || "N/A"}<br>
-  //   <strong>Status:</strong> ${status || "N/A"}<br>
-  //   <strong>Remark:</strong> ${remark || "N/A"}<br>
-  //   <strong>Rating:</strong> ${rating || "N/A"}
-  // </div>`;
 
   const organization = await User?.findOne({
     organizationId,
@@ -105,17 +102,27 @@ async function sendQueuedEmail(data: any) {
       eventSubTitle,
       candidateDetails,
       organizationName: organizationName,
-      // eventDescription,
-      // hrContactInfo
+        // hrContactInfo
     },
     organizationId
   );
-  console.log(`>>> ${email}, ${[...emailList]}`);
-  return await sendMail(
+  
+  return await sendEventEmailWithHistory(
     organizationId,
-    [email, ...emailList],
+    emailList,
     emailSubject,
-    emailContent
+    emailContent,
+    {
+      sentBy,
+      sentByEmail,
+      sentByName,
+      metadata: {
+        candidateId,
+        jobId,
+        templateUsed: "status-update",
+        eventType: "status_change",
+      },
+    }
   );
 }
 
@@ -209,6 +216,11 @@ export async function POST(req: NextRequest) {
       actionBy,
       prev_status,
       candidateDetails,
+      candidateId: id, // The candidate ID from the request
+      jobId: undefined, // Would need to be passed in the request if available
+      sentBy: decryptedResponse?.user._id,
+      sentByEmail: decryptedResponse?.user.email,
+      sentByName: decryptedResponse?.user.name,
       startTime,
       endTime,
     };

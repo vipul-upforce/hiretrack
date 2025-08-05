@@ -37,6 +37,7 @@ import { Settings2 } from "lucide-react";
 import { CustomFieldsContext } from "@/Custom_Fields/Context";
 import CustomFieldDialog from "@/Custom_Fields/Components/Common/CustomFieldDialog";
 import Stepper from "@/Custom_Fields/Components/Stepper";
+import DefaultLanesButton from "./components/DefaultLanesButton";
 import { useSelector } from "react-redux";
 interface User {
   role: string;
@@ -394,6 +395,7 @@ function KanbanPage() {
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-2">
+                <DefaultLanesButton userRole={user?.role} />
                 <Button
                   variant="outline"
                   onClick={() => setIsCustomFieldsOpen(true)}

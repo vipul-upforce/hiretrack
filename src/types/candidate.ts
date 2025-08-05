@@ -68,6 +68,15 @@ export interface Candidate {
     notes: string;
     failure?: string;
   };
+  followUp?: {
+    note: string;
+    date?: Date | string;
+    userId?: {
+      _id: string;
+      name: string;
+      email: string;
+    };
+  };
 }
 
 export type CandidateStatus =
@@ -103,6 +112,13 @@ interface Assignment {
   time: string;
   duration?: string;
   assignedAt: string;
+  googleMeet?: {
+        eventId: string,
+        meetingLink: string,
+        htmlLink: string,
+        summary: string,
+        description: string,
+      },
   status?: string;
   assignment?: { status: string };
   jobId?: Job;

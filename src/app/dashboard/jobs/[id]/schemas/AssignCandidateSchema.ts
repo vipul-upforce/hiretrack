@@ -16,6 +16,10 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  organizationInfo?: {
+    name: string;
+    _id: string;
+  };
 }
 
 // Interface for form values
@@ -25,6 +29,18 @@ export interface FormValues {
   remark: string;
   rating: number | null;
   attachments: Attachment[];
+  scheduleGoogleMeet?: boolean;
+  meetDuration?: number;
+  meetingNotes?: string;
+  meetingAttachments?: Attachment[];
+  additionalGuests?: string[];
+  googleMeetData?: {
+    eventId: string;
+    meetingLink: string;
+    htmlLink: string;
+    summary: string;
+    description: string;
+  };
 }
 
 // Interface for AssignCandidateDialog props
@@ -46,4 +62,13 @@ export const validationSchema = Yup.object({
   remark: Yup.string(),
   rating: Yup.number().nullable(),
   attachments: Yup.array(),
+  scheduleGoogleMeet: Yup.boolean(),
+  meetDuration: Yup.number().when('scheduleGoogleMeet', {
+    is: true,
+    then: (schema) => schema.required("Please select meeting duration"),
+    otherwise: (schema) => schema.nullable(),
+  }),
+  meetingNotes: Yup.string(),
+  meetingAttachments: Yup.array(),
+  additionalGuests: Yup.array().of(Yup.string().email("Please enter valid email addresses")),
 });

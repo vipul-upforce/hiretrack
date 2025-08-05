@@ -11,12 +11,16 @@ import { CreateCandidateDialog } from "./components/Dialogs/create-candidate-dia
 import { CreateLaneDialog } from "./components/Dialogs/create-lane-dialog";
 import { CandidateDetailsDialog } from "./components/Dialogs/candidate-details-dialog";
 import { initialCandidateColumns } from "./data/initial-data";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { useFetchJobByIdQuery } from "@/lib/features/job/jobApi";
 import { useFetchCandidatesQuery } from "@/lib/features/candidate/candidateApi";
 import { Candidate, CandidateColumn, CandidateStatus } from "@/types/candidate";
 import LoaderSkeleton from "./components/Lanes/loader-skeleton";
-import { useGetLanesQuery } from "@/lib/features/lane/laneApi";
+import {
+  useGetLanesQuery,
+  useGetJobLanesQuery,
+} from "@/lib/features/lane/laneApi";
+import { useGetJobLaneConfigQuery } from "@/lib/features/checklist/checklistApi";
 import { User } from "@/lib/features/users/usersApi";
 import Cookies from "js-cookie";
 import { Breadcrumb } from "./components/Utils/breadcrumb";
@@ -34,11 +38,14 @@ import { mergeRefs } from "react-merge-refs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { QuickSelectAndFilter } from "./components/QuickSelectAndFilter";
 import { Button } from "@/components/ui/button";
-import { Settings2 } from "lucide-react";
+import { Settings2, BarChart3 } from "lucide-react";
 import { CustomFieldsContext } from "@/Custom_Fields/Context";
 import CustomFieldDialog from "@/Custom_Fields/Components/Common/CustomFieldDialog";
 import Stepper from "@/Custom_Fields/Components/Stepper";
 import { useContext, useCallback } from "react";
+import { JobAnalyticsModal } from "../../jobs-board/components/JobAnalyticsModal";
+import ChecklistRemarksDialog from "./components/Dialogs/checklist-remarks-dialog";
+import { LaneChecklistConfigDialog } from "./components/Dialogs/lane-checklist-config-dialog";
 import { useSelector } from "react-redux";
 
 interface FilterState {
@@ -57,6 +64,10 @@ interface FilterState {
 
 export default function JobProgressPage() {
   const id = useParams()?.id as string;
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const candidateIdParam = searchParams.get("candidateId");
+
   const [columns, setColumns] = useState<CandidateColumn[]>(
     initialCandidateColumns
   );
@@ -77,6 +88,26 @@ export default function JobProgressPage() {
   const [initialLaneToEdit, setInitialLaneToEdit] = useState<string | null>(
     null
   );
+  const [isChecklistConfigOpen, setIsChecklistConfigOpen] = useState(false);
+  const [checklistConfigLane, setChecklistConfigLane] = useState<{
+    laneId: string;
+    laneName: string;
+    initialTab?: "incoming" | "outgoing";
+  } | null>(null);
+
+  // Handler for configuring checklist
+  const handleConfigureChecklist = useCallback(
+    (
+      laneId: string,
+      laneName: string,
+      initialTab?: "incoming" | "outgoing"
+    ) => {
+      setChecklistConfigLane({ laneId, laneName, initialTab });
+      setIsChecklistConfigOpen(true);
+    },
+    []
+  );
+
   const [filterConditions, setFilterConditions] = useState<FilterState | null>(
     null
   );
@@ -105,15 +136,32 @@ export default function JobProgressPage() {
     isLoading: isCandidatesLoading,
     refetch,
   } = useFetchCandidatesQuery(id as string);
-  const { data: lanes, isLoading: isLanesLoading } = useGetLanesQuery(
-    user?.id || undefined,
-    { skip: !user?.id }
+  // NEW: Use job-specific lanes with fallback to user lanes
+  const {
+    data: jobLanes,
+    isLoading: isJobLanesLoading,
+    error: jobLanesError,
+  } = useGetJobLanesQuery(id as string, { skip: !id });
+  const { data: userLanes, isLoading: isUserLanesLoading } = useGetLanesQuery(
+    { userId: user?.id, jobId: id as string },
+    { skip: !user?.id || !id }
   );
+
+  // Use job-specific lanes if available, fallback to user lanes
+  const lanes = jobLanes || userLanes;
+  const isLanesLoading = isJobLanesLoading || isUserLanesLoading;
+
+  // Fetch job lane configuration for checklist indicators
+  const { data: jobLaneConfig } = useGetJobLaneConfigQuery(id as string, {
+    skip: !id,
+  });
+
   const [droppedFileData, setDroppedFileData] = useState<File | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLaneEditOpen, setIsLaneEditOpen] = useState(false);
   const [isFileOver, setIsFileOver] = useState(false);
   const [isCustomFieldsOpen, setIsCustomFieldsOpen] = useState(false);
+  const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
 
   const {
     handleAddLane,
@@ -125,6 +173,7 @@ export default function JobProgressPage() {
     columns,
     setColumns,
     user,
+    jobId: id, // NEW: Pass jobId for job-specific operations
     setIsConfirmLaneDeleteOpen,
     setIsLaneEditOpen,
     refetch,
@@ -136,6 +185,9 @@ export default function JobProgressPage() {
     handleCandidateUpdate,
     handleDeleteClick,
     handleDeleteConfirm,
+    pendingMoves,
+    completePendingMove,
+    cancelPendingMove,
   } = useCandidate({
     columns,
     setColumns,
@@ -149,6 +201,7 @@ export default function JobProgressPage() {
     selectedCandidate,
     refetch,
     candidateToDelete,
+    jobLaneConfig,
   });
 
   // Merge candidatesFromQuery and sseCandidates
@@ -165,6 +218,70 @@ export default function JobProgressPage() {
     return Array.from(candidateMap.values());
   }, [candidatesFromQuery, sseCandidates]);
 
+  // useEffect(() => {
+  //   console.log("Loading states:", {
+  //     isJobLoading,
+  //     isCandidatesLoading,
+  //     isLanesLoading,
+  //     jobError,
+  //   });
+  //   console.log("Data:", { job, candidatesFromQuery, lanes });
+  //   console.log("scrollRef.current:", scrollRef.current);
+  // }, [
+  //   isJobLoading,
+  //   isCandidatesLoading,
+  //   isLanesLoading,
+  //   jobError,
+  //   job,
+  //   candidatesFromQuery,
+  //   lanes,
+  //   scrollRef,
+  // ]);
+
+  // useEffect(() => {
+  //   // const token = Cookies.get("token");
+  //   if (user) {
+  //     verifyAndDecryptJWTToken(token).then((decryptedResponse) => {
+  //       console.log("User fetch result:", decryptedResponse);
+  //       if (decryptedResponse.success && decryptedResponse.user) {
+  //         setUser(decryptedResponse.user);
+  //       }
+  //     });
+  //   }
+  // }, []);
+
+  useEffect(() => {
+    if (!isDialogOpen) {
+      setDroppedFileData(null);
+    }
+  }, [isDialogOpen]);
+
+  // Handle candidateId URL parameter to auto-open candidate dialog
+  useEffect(() => {
+    if (candidateIdParam && candidatesFromQuery && !selectedCandidate) {
+      const candidate = candidatesFromQuery.find(
+        (c) => c._id === candidateIdParam
+      );
+      if (candidate) {
+        setSelectedCandidate(candidate);
+        setIsDetailsOpen(true);
+      }
+    }
+  }, [candidateIdParam, candidatesFromQuery, selectedCandidate]);
+
+  // Handle candidate details dialog close - clean up URL parameter
+  const handleCandidateDialogClose = (open: boolean) => {
+    setIsDetailsOpen(open);
+    if (!open && candidateIdParam) {
+      // Remove candidateId parameter from URL when dialog is closed
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("candidateId");
+      const newUrl = params.toString() ? `?${params.toString()}` : "";
+      router.replace(`/dashboard/jobs/${id}${newUrl}`, { scroll: false });
+    }
+  };
+
+  // Combine candidates from useFetchCandidatesQuery and useSSE
   useEffect(() => {
     if (candidatesFromQuery && lanes) {
       let currentCandidates = [...mergedCandidates];
@@ -271,8 +388,25 @@ export default function JobProgressPage() {
         (candidate) => showArchived || !candidate.isDeleted
       );
 
-      // Update columns
-      const lanesArray = updatedLanes || [...lanes.lanes];
+      // Handle different lane data structures
+      let lanesArray;
+      if (updatedLanes) {
+        lanesArray = updatedLanes;
+      } else if (jobLanes?.lanes) {
+        lanesArray = [...jobLanes.lanes];
+      } else if (userLanes?.lanes) {
+        lanesArray = [...userLanes.lanes];
+      } else {
+        lanesArray = [
+          "applied",
+          "screening",
+          "shortlisted",
+          "processing",
+          "accepted",
+          "rejected",
+        ];
+      }
+
       lanesArray.forEach((lane) => {
         if (!initialCandidateColumns.find((item) => item.id === lane)) {
           initialCandidateColumns.push({
@@ -379,7 +513,13 @@ export default function JobProgressPage() {
 
           <div className="flex-1 overflow-hidden px-4 pb-2">
             <DragDropContext
-              onDragStart={() => setIsDndDragging(true)}
+              onDragStart={(start) => {
+                setIsDndDragging(true);
+                console.log("Drag started for:", start.draggableId);
+              }}
+              onDragUpdate={(update) => {
+                // No prevalidation needed - using client-side validation
+              }}
               onDragEnd={(result: any) => {
                 setIsDndDragging(false);
                 onDragEnd(result);
@@ -428,6 +568,14 @@ export default function JobProgressPage() {
               <Settings2 className="h-4 w-4" />
               Personalized form fields
             </Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsAnalyticsOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <BarChart3 className="h-4 w-4" />
+              Analytics
+            </Button>
             <CreateLaneDialog onAddLane={handleAddLane} />
             <CreateCandidateDialog
               jobId={id as string}
@@ -450,7 +598,13 @@ export default function JobProgressPage() {
       {/* <CandidatesPage /> */}
       <div className="flex-1 overflow-hidden px-4 pb-2 pt-2">
         <DragDropContext
-          onDragStart={() => setIsDndDragging(true)}
+          onDragStart={(start) => {
+            setIsDndDragging(true);
+            console.log("Drag started for:", start.draggableId);
+          }}
+          onDragUpdate={(update) => {
+            // No prevalidation needed - using client-side validation
+          }}
           onDragEnd={(result: any) => {
             setIsDndDragging(false);
             onDragEnd(result);
@@ -463,29 +617,39 @@ export default function JobProgressPage() {
                 ref={mergeRefs([provided.innerRef, scrollRef])}
                 className="h-full flex gap-1 overflow-x-auto"
               >
-                {columns.map((column, index) => (
-                  <KanbanColumn
-                    key={column.id}
-                    column={column}
-                    index={index}
-                    isDragging={isDragging}
-                    isFileOver={isFileOver}
-                    setIsFileOver={setIsFileOver}
-                    handleFileDrop={handleFileDrop}
-                    handleDeleteLane={handleDeleteLane}
-                    handleEditLane={handleEditLaneClick}
-                    setLaneToDelete={setLaneToDelete}
-                    setLaneToEdit={setLaneToEdit}
-                    refetch={refetch}
-                    selectedCandidate={selectedCandidate}
-                    setSelectedCandidate={setSelectedCandidate}
-                    isDetailsOpen={isDetailsOpen}
-                    setIsDetailsOpen={setIsDetailsOpen}
-                    openRemarksFor={openRemarksFor}
-                    setOpenRemarksFor={setOpenRemarksFor}
-                    handleDeleteClick={handleDeleteClick}
-                  />
-                ))}
+                {columns.map((column, index) => {
+                  // Find the lane configuration for this column
+                  const laneConfig = jobLaneConfig?.laneConfigs?.find(
+                    (config) => config.laneId === column.id
+                  );
+
+                  return (
+                    <KanbanColumn
+                      key={column.id}
+                      column={column}
+                      index={index}
+                      isDragging={isDragging}
+                      isFileOver={isFileOver}
+                      setIsFileOver={setIsFileOver}
+                      handleFileDrop={handleFileDrop}
+                      handleDeleteLane={handleDeleteLane}
+                      handleEditLane={handleEditLaneClick}
+                      setLaneToDelete={setLaneToDelete}
+                      setLaneToEdit={setLaneToEdit}
+                      refetch={refetch}
+                      selectedCandidate={selectedCandidate}
+                      setSelectedCandidate={setSelectedCandidate}
+                      isDetailsOpen={isDetailsOpen}
+                      setIsDetailsOpen={setIsDetailsOpen}
+                      openRemarksFor={openRemarksFor}
+                      setOpenRemarksFor={setOpenRemarksFor}
+                      handleDeleteClick={handleDeleteClick}
+                      onConfigureChecklist={handleConfigureChecklist}
+                      pendingMoves={pendingMoves}
+                      laneConfig={laneConfig}
+                    />
+                  );
+                })}
                 {provided.placeholder}
               </div>
             )}
@@ -496,7 +660,7 @@ export default function JobProgressPage() {
       <CandidateDetailsDialog
         candidate={selectedCandidate}
         isOpen={isDetailsOpen}
-        onOpenChange={setIsDetailsOpen}
+        onOpenChange={handleCandidateDialogClose}
         onUpdate={handleCandidateUpdate}
       />
 
@@ -527,7 +691,7 @@ export default function JobProgressPage() {
         isOpen={isConfirmLaneDeleteOpen}
         setIsOpen={setIsConfirmLaneDeleteOpen}
         title="Are you sure?"
-        message="This will remove the lane from all the jobs in this organization"
+        message="This will remove the lane from this job only. Other jobs will not be affected."
         onConfirm={() => laneToDelete && handleConfirmDeleteLane(laneToDelete)}
         onCancel={() => setIsConfirmLaneDeleteOpen(false)}
       />
@@ -537,6 +701,79 @@ export default function JobProgressPage() {
         isOpen={isCustomFieldsOpen}
         onClose={() => setIsCustomFieldsOpen(false)}
       />
+
+      {/* Job Analytics Modal */}
+      {job && user && (
+        <JobAnalyticsModal
+          isOpen={isAnalyticsOpen}
+          onClose={() => setIsAnalyticsOpen(false)}
+          job={job}
+          organizationId={user?.organizationId || ""}
+        />
+      )}
+
+      {/* Checklist and Remarks Dialog */}
+      {openRemarksFor &&
+        (() => {
+          const candidate = columns
+            .flatMap((col) => col.candidates)
+            .find((c) => {
+              if (c._id === openRemarksFor) return true;
+              if (openRemarksFor.startsWith("{")) {
+                try {
+                  const parsed = JSON.parse(openRemarksFor);
+                  return parsed.candidateId === c._id;
+                } catch (e) {
+                  console.error(
+                    "Failed to parse openRemarksFor JSON:",
+                    openRemarksFor,
+                    e
+                  );
+                  return false;
+                }
+              }
+              return false;
+            });
+
+          if (!candidate) {
+            console.error(
+              "Candidate not found for openRemarksFor:",
+              openRemarksFor
+            );
+            return null;
+          }
+
+          const checklistInfo = openRemarksFor.startsWith("{")
+            ? openRemarksFor
+            : undefined;
+
+          return (
+            <ChecklistRemarksDialog
+              candidate={candidate}
+              isOpen={!!openRemarksFor}
+              onOpenChange={(open) => !open && setOpenRemarksFor(null)}
+              setOpenRemarksFor={setOpenRemarksFor}
+              refetch={refetch}
+              checklistInfo={checklistInfo}
+              onChecklistSuccess={(candidateId) => {
+                completePendingMove(candidateId);
+              }}
+              onChecklistCancel={cancelPendingMove}
+            />
+          );
+        })()}
+
+      {/* Lane Checklist Configuration Dialog */}
+      {checklistConfigLane && (
+        <LaneChecklistConfigDialog
+          isOpen={isChecklistConfigOpen}
+          onOpenChange={setIsChecklistConfigOpen}
+          jobId={id}
+          laneId={checklistConfigLane.laneId}
+          laneName={checklistConfigLane.laneName}
+          initialTab={checklistConfigLane.initialTab}
+        />
+      )}
     </div>
   );
 }
@@ -581,25 +818,15 @@ function CandidateCustomFieldsDialog({
 
       // Find the "candidate" form ID
       const candidateFormEntry = Object.entries(customFields).find(
-        ([_, form]) => {
-          console.log(
-            "Checking form:",
-            form.formName,
-            "normalized:",
-            form.formName.toLowerCase()
-          );
-          return form.formName.toLowerCase() === "candidate";
-        }
+        ([_, form]) => form.formName.toLowerCase() === "candidate"
       );
 
       if (candidateFormEntry) {
         const [formId] = candidateFormEntry;
-        console.log("Found candidate form, selecting:", formId);
         selecteFormIdTarget(formId);
         setStepName("formCustomFieldList");
         setHasAutoSelected(true);
       } else {
-        console.log("No candidate form found, staying on FormList");
         setStepName("FormList");
         setHasAutoSelected(true);
       }
@@ -607,7 +834,6 @@ function CandidateCustomFieldsDialog({
   }, [isOpen, hasAutoSelected, customFields, selecteFormIdTarget, setStepName]);
 
   const handleClose = useCallback(() => {
-    console.log("CandidateCustomFieldsDialog closing, resetting to FormList");
     setStepName("FormList");
     setHasAutoSelected(false);
     onClose();

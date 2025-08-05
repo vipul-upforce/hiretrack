@@ -33,6 +33,13 @@ export async function verifyAndDecryptJWTToken(token: string) {
 
     const bytes = CryptoJS.AES.decrypt(decoded.user, JWT_SECRET);
     const decryptedData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+    
+    // IMPORTANT FIX: Ensure _id field exists for backward compatibility
+    // Some parts of the codebase expect _id while others use id
+    if (decryptedData && decryptedData.id && !decryptedData._id) {
+      decryptedData._id = decryptedData.id;
+    }
+    
     return { success: true, user: decryptedData };
   } catch (err) {
     return {

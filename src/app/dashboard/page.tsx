@@ -335,7 +335,7 @@ export default function DashboardPage() {
   );
 
   // const checkUser = async () => {
-  //   // const user = Cookies.get("token");
+
   //   if (user) {
   //     const decryptedResponse = await verifyAndDecryptJWTToken(String(user));
   //     if (decryptedResponse.success && decryptedResponse.user) {

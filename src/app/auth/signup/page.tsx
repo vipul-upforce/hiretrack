@@ -56,8 +56,6 @@ export default function Signup() {
     { setStatus }: { setStatus: (message: string) => void }
   ) => {
     try {
-      // const userData = Cookies.get("token");
-
       if (userData) {
         // const decryptedResponse = userData
         // if (decryptedResponse.success && decryptedResponse.user) {

@@ -13,7 +13,6 @@ import {getFilterPrivateCF} from "@/lib/filterPrivateCF";
 //   try {
 //     await connectToDatabase();
 
-//     const token = req.cookies.get("token");
 //     if (token?.value) {
 //       const decryptedResponse = await verifyAndDecryptToken(
 //         String(token?.value)
@@ -508,6 +507,21 @@ export async function GET(req: NextRequest) {
           },
           { $unwind: { path: "$users" } },
           {
+            $lookup: {
+              from: "users",
+              let: { followUpUserId: "$candidates.followUp.userId" },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: { $eq: ["$_id", "$$followUpUserId"] },
+                  },
+                },
+                { $project: { _id: 1, name: 1, email: 1 } },
+              ],
+              as: "followUpUser",
+            },
+          },
+          {
             $project: {
               resume: "$candidates.resume",
               tracking: "$candidates.tracking",
@@ -518,6 +532,7 @@ export async function GET(req: NextRequest) {
               "assignment.interviewerId.email": "$users.email",
               "assignment.time": "$candidates.assignment.time",
               "assignment.assignedAt": "$candidates.assignment.assignedAt",
+              "assignment.googleMeet": "$candidates.assignment.googleMeet",
               scores: "$candidates.scores",
               "jobId._id": "$_id",
               "jobId.title": "$title",
@@ -553,7 +568,11 @@ export async function GET(req: NextRequest) {
               updatedAt: "$candidates.updatedAt",
               history: "$histories.history",
               customFields: "$candidates.customFields",
-              followUp: "$candidates.followUp",
+              followUp: {
+                note: "$candidates.followUp.note",
+                date: "$candidates.followUp.date",
+                userId: { $first: "$followUpUser" },
+              },
             },
           },
           {

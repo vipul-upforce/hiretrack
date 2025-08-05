@@ -4,6 +4,7 @@ import dbConnect, { CandidateAccount } from "@/lib/mongodb";
 import { User, Lane } from "@/lib/mongodb";
 import mongoose from "mongoose";
 import { signupRateLimiter } from "@/lib/rateLimiter";
+import { NotificationService } from "@/lib/notifications/notificationService";
 
 const DEFAULT_LANES = [
   "applied",
@@ -17,7 +18,7 @@ const DEFAULT_LANES = [
 async function handleSignup(req: NextRequest) {
   try {
     await dbConnect();
-    var { email, password, name, role, organizationId } = await req.json();
+    var { email, password, name, role, organizationId, triggerUserId, triggerUserName } = await req.json();
 
     if (!(organizationId instanceof mongoose.Types.ObjectId)) {
       organizationId = new mongoose.Types.ObjectId(organizationId);
@@ -66,6 +67,24 @@ async function handleSignup(req: NextRequest) {
       userId: user._id,
       lanes: DEFAULT_LANES,
     });
+
+    // Send user creation notification (only if triggerUser is provided, indicating this is an admin action)
+    if (triggerUserId && triggerUserName && role !== 'candidate') {
+      try {
+        await NotificationService.notifyUserAdded({
+          organizationId: organizationId.toString(),
+          newUserId: user._id.toString(),
+          newUserName: user.name,
+          newUserEmail: user.email,
+          newUserRole: user.role,
+          triggerUserId: triggerUserId,
+          triggerUserName: triggerUserName,
+        });
+      } catch (notificationError) {
+        console.error("Failed to send user creation notification:", notificationError);
+        // Don't fail the API call if notification fails
+      }
+    }
 
     // // Generate token
     // const token = signToken({

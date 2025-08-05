@@ -15,6 +15,8 @@ import {
   SearchCheckIcon,
   Link2Icon,
   UploadIcon,
+  BarChart3Icon,
+  Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -33,6 +35,16 @@ import { RootState } from "@/lib/store";
 import PortalHead from "@/components/layouts/PortalHead";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useTheme } from "@/components/theme-provider";
+import { NotificationButton } from "@/components/ui/notifications";
+import {
+  useGetNotificationsQuery,
+  useGetNotificationCountQuery,
+  useMarkNotificationAsReadMutation,
+  useMarkAllNotificationsAsReadMutation,
+} from "@/lib/features/notifications/notificationsApi";
+import { CandidateDetailsDialog } from "./jobs/[id]/components/Dialogs/candidate-details-dialog";
+import { useLazyFetchCandidateByIdQuery } from "@/lib/features/candidate/candidateApi";
+import { Candidate } from "@/types/candidate";
 
 interface SidebarItem {
   title: string;
@@ -64,6 +76,12 @@ const sidebarItems: SidebarItem[] = [
     icon: <Calendar className="h-5 w-5" />,
   },
   {
+    title: "Analytics",
+    href: "/dashboard/analytics",
+    icon: <BarChart3Icon className="h-5 w-5" />,
+    role: "hr", // HR and Admin users can access analytics
+  },
+  {
     title: "Users",
     href: "/dashboard/users",
     icon: <Users className="h-5 w-5" />,
@@ -81,6 +99,12 @@ const sidebarItems: SidebarItem[] = [
     icon: <Settings className="h-5 w-5" />,
     role: "admin",
   },
+  {
+    title: "Email History",
+    href: "/dashboard/email-history",
+    icon: <Mail className="h-5 w-5" />,
+    role: "admin",
+  },
 ];
 
 export default function DashboardLayout({
@@ -96,6 +120,83 @@ export default function DashboardLayout({
   } = useGetPortalConfigsQuery(undefined);
   const { setUserLoggedIn } = useCustomFields();
   const [hasMultipleOrgs, seHasMultipleOrgs] = useState(false);
+
+  // Notification hooks
+  const [notificationPage, setNotificationPage] = useState(1);
+  const { data: notificationsData, isLoading: notificationsLoading } =
+    useGetNotificationsQuery(
+      { page: notificationPage, limit: 10 },
+      { skip: !userData } // Skip query if no user data
+    );
+  const { data: notificationCountData } = useGetNotificationCountQuery(
+    undefined,
+    { skip: !userData, pollingInterval: 30000 } // Poll every 30 seconds for real-time updates
+  );
+  const [markAsRead] = useMarkNotificationAsReadMutation();
+  const [markAllAsRead] = useMarkAllNotificationsAsReadMutation();
+  const [fetchCandidateById] = useLazyFetchCandidateByIdQuery();
+
+  // Notification handlers
+  const handleNotificationClick = async (notification: any) => {
+    // Mark as read if not already read
+    if (!notification.isRead) {
+      markAsRead(notification._id);
+    }
+
+    // For interviewers, handle candidate-related and meeting notifications by opening dialog
+    if (
+      userData?.role === "interviewer" &&
+      (notification.relatedEntity === "candidate" ||
+        notification.relatedEntity === "meeting") &&
+      notification.relatedId
+    ) {
+      try {
+        const result = await fetchCandidateById(notification.relatedId);
+        if (result.data) {
+          setSelectedCandidate(result.data);
+          setIsCandidateDialogOpen(true);
+          return;
+        }
+      } catch (error) {
+        console.error("Failed to fetch candidate:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load candidate details",
+          variant: "destructive",
+        });
+      }
+    }
+
+    // For admin/hr or non-candidate notifications, navigate to the page
+    if (notification.actionUrl) {
+      router.push(notification.actionUrl);
+    }
+  };
+
+  const handleMarkAsRead = async (id: string) => {
+    try {
+      await markAsRead(id).unwrap();
+    } catch (error) {
+      console.error("Failed to mark notification as read:", error);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllAsRead().unwrap();
+      toast({
+        title: "Success",
+        description: "All notifications marked as read",
+      });
+    } catch (error) {
+      console.error("Failed to mark all notifications as read:", error);
+      toast({
+        title: "Error",
+        description: "Failed to mark all notifications as read",
+        variant: "destructive",
+      });
+    }
+  };
   const { user } = useSelector((state: any) => state.auth || {});
 
   const dispatch = useDispatch();
@@ -115,8 +216,6 @@ export default function DashboardLayout({
 
   useEffect(() => {
     (async () => {
-      // const user = Cookies.get("token");
-
       if (user) {
         setUserLoggedIn(true);
         // const decryptedResponse = await verifyAndDecryptJWTToken(String(user));
@@ -156,6 +255,10 @@ export default function DashboardLayout({
   }, []);
 
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(
+    null
+  );
+  const [isCandidateDialogOpen, setIsCandidateDialogOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const { toast } = useToast();
@@ -207,7 +310,7 @@ export default function DashboardLayout({
   const generate_share_org = async (e: React.FormEvent) => {
     e.preventDefault();
     let parsedUser = user;
-    // const user = Cookies.get("token");
+
     // console.log(user);
     // if (user) {
     //   const decryptedResponse = await verifyAndDecryptJWTToken(String(user));
@@ -442,6 +545,9 @@ export default function DashboardLayout({
           {sidebarItems.map((item) => {
             if (
               (item.role === "admin" && userData?.role !== "admin") ||
+              (item.role === "hr" &&
+                userData?.role !== "admin" &&
+                userData?.role !== "hr") ||
               (userData?.role === "interviewer" && item.title === "Jobs") ||
               (userData?.role === "interviewer" && item.title === "Search") ||
               (userData?.role === "interviewer" && item.title === "CV Upload")
@@ -449,9 +555,13 @@ export default function DashboardLayout({
               return null;
             }
             const isActive =
-              item.title === "Settings"
-                ? pathname.startsWith("/dashboard/settings")
-                : pathname === item.href;
+              (item.title === "Settings" &&
+                pathname.startsWith("/dashboard/settings")) ||
+              (item.title === "Analytics" &&
+                pathname.startsWith("/dashboard/analytics")) ||
+              (item.title === "Email History" &&
+                pathname.startsWith("/dashboard/email-history")) ||
+              pathname === item.href;
 
             return (
               <Link key={item.href} href={item.href}>
@@ -482,8 +592,23 @@ export default function DashboardLayout({
         </div>
       </div>
       <div className="px-3 pb-4 mt-auto space-y-2">
-        {/* Theme Toggle */}
-        <div className="flex justify-start mb-2">
+        {/* Notifications and Theme Toggle */}
+        <div className="flex justify-start items-center gap-2 mb-2">
+          {userData && (
+            <NotificationButton
+              notifications={notificationsData?.notifications || []}
+              unreadCount={notificationCountData?.unreadCount || 0}
+              totalCount={notificationCountData?.totalCount || 0}
+              currentPage={notificationsData?.pagination?.currentPage || 1}
+              totalPages={notificationsData?.pagination?.totalPages || 1}
+              isLoading={notificationsLoading}
+              onMarkAsRead={handleMarkAsRead}
+              onMarkAllAsRead={handleMarkAllAsRead}
+              onNotificationClick={handleNotificationClick}
+              onPageChange={setNotificationPage}
+              className="mr-1"
+            />
+          )}
           <ThemeToggle
             variant="ghost"
             size="icon"
@@ -571,6 +696,21 @@ export default function DashboardLayout({
           {children}
         </div>
       </main>
+
+      {/* Candidate Details Dialog for Interviewers */}
+      <CandidateDetailsDialog
+        candidate={selectedCandidate}
+        isOpen={isCandidateDialogOpen}
+        onOpenChange={setIsCandidateDialogOpen}
+        onUpdate={() => {
+          // Optionally refresh candidate data
+          if (selectedCandidate) {
+            fetchCandidateById(selectedCandidate._id);
+          }
+        }}
+        hideEditButton={userData?.role === "interviewer"}
+        hideCloseButtons={false}
+      />
     </div>
   );
 }

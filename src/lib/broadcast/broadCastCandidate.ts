@@ -55,7 +55,7 @@ export function broadcastMultipleCandidateUpdate(
     client.controller.enqueue(encoder.encode(data));
   });
 }
-export function broadcastLaneUpdate(orgId: string, lanes: string[]) {
+export function broadcastLaneUpdate(orgId: string, lanes: string[], jobId?: string) {
   // console.log("ORGID: ", orgId);
   const orgClients = global.sseClients?.get(orgId);
   // console.log("ORGID: ", orgId, orgClients);

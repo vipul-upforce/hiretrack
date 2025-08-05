@@ -29,7 +29,7 @@ export const useRemarkHandlers = (
       : ""
   );
   const [newFollowUpDate, setNewFollowUpDate] = useState<Dayjs | null>(
-    localCandidate?.followUp?.date && localCandidate?.followUp?.date.length > 1
+    localCandidate?.followUp?.date && (localCandidate?.followUp?.date as string).length > 1
       ? dayjs(localCandidate?.followUp?.date)
       : null
   );

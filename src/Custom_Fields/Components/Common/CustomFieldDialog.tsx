@@ -16,8 +16,6 @@ function CustomFieldDialog({
   regular = false,
   modal = true,
 }: CustomFieldDialogProps) {
-  console.log('CustomFieldDialog props:', { isOpen, title, regular, modal, hasChildren: !!children });
-  
   return (
     <Dialog open={isOpen} onOpenChange={onClose} modal={modal}>
       <DialogContent

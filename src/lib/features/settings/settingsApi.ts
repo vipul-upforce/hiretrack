@@ -46,6 +46,12 @@ export const settingsApi = createApi({
         method: "GET",
       }),
     }),
+    getAIProvidersConfigs: builder.query({
+      query: () => ({
+        url: `/settings/ai-providers`,
+        method: "GET",
+      }),
+    }),
     get2FAConfigs: builder.query({
       query: () => ({
         url: `/settings/twofa`,
@@ -70,6 +76,13 @@ export const settingsApi = createApi({
         method: "GET",
       }),
     }),
+    getGoogleCalendarConfig: builder.query({
+      query: () => ({
+        url: `/settings/google-calendar`,
+        method: "GET",
+      }),
+      providesTags: ["Settings"],
+    }),
     updateSMTPConfigs: builder.mutation({
       query: (mailConfig) => ({
         url: "/settings/smtp",
@@ -91,6 +104,14 @@ export const settingsApi = createApi({
         url: "/settings/gemini",
         method: "PUT",
         body: genimiConfig,
+      }),
+      invalidatesTags: ["Settings"],
+    }),
+    updateAIProviders: builder.mutation({
+      query: (aiProvidersConfig) => ({
+        url: "/settings/ai-providers",
+        method: "PUT",
+        body: aiProvidersConfig,
       }),
       invalidatesTags: ["Settings"],
     }),
@@ -155,6 +176,21 @@ export const settingsApi = createApi({
       },
       invalidatesTags: ["Settings"],
     }),
+    updateGoogleCalendar: builder.mutation({
+      query: (googleCalendarConfig) => ({
+        url: "/settings/google-calendar",
+        method: "PUT",
+        body: googleCalendarConfig,
+      }),
+      invalidatesTags: ["Settings"],
+    }),
+    disconnectGoogleCalendar: builder.mutation({
+      query: () => ({
+        url: "/settings/google-calendar",
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Settings"],
+    }),
     createResetToken: builder.mutation({
       query: ({ email, selectedOrgId }) => ({
         url: "/auth/forgot-password",
@@ -175,8 +211,10 @@ export const {
   useUpdatePortalConfigsMutation,
   useTestConnectionMutation,
   useGetGeminiConfigsQuery,
+  useGetAIProvidersConfigsQuery,
   useGet2FAConfigsQuery,
   useUpdateGeminiMutation,
+  useUpdateAIProvidersMutation,
   useGetTimeZoneQuery,
   useUpdate2FAMutation,
   useUpdateTimeZoneMutation,
@@ -184,6 +222,9 @@ export const {
   useGetMultipleOrgConfigsQuery,
   useGetMailTemplatesQuery,
   useUpdateMailTemplatesMutation,
+  useGetGoogleCalendarConfigQuery,
+  useUpdateGoogleCalendarMutation,
+  useDisconnectGoogleCalendarMutation,
 } = settingsApi;
 
 // Export types for use in components

@@ -88,9 +88,17 @@ export const useAssignCandidate = ({
           interviewerId: values.interviewerId,
           time: values?.time?.toISOString(),
           assignedAt: new Date().toISOString(),
+          // Include Google Meet data if available
+          ...(values.googleMeetData && { googleMeet: values.googleMeetData }),
         },
         attachments: [...candidate.attachments, ...values.attachments],
       };
+
+      console.log("📝 Assignment Update:", {
+        hasGoogleMeetData: !!values.googleMeetData,
+        googleMeetData: values.googleMeetData,
+        assignment: updatedCandidate.assignment
+      });
 
       const previousInterviewer =
         typeof candidate.assignment?.interviewerId === "object"

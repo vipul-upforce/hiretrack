@@ -1,5 +1,6 @@
 import { Attachment } from "@/app/dashboard/jobs/[id]/schemas/AssignCandidateSchema";
 import { Schema } from "mongoose";
+import { CustomFieldFile } from "../fileUtils";
 export interface IinfoUpdateLog {
   title: string;
   previousValue?: unknown;
@@ -83,6 +84,37 @@ const candidateHistory = {
       size: Number,
     },
   ],
+  checklistForm: {
+    checklistId: String,
+    checklistName: String,
+    checklistType: {
+      type: String,
+      enum: ['incoming', 'outgoing'],
+    },
+    laneId: String,
+    laneName: String,
+    responses: {
+      type: Map,
+      of: {
+        fieldId: String,
+        fieldLabel: String,
+        fieldType: String,
+        value: Schema.Types.Mixed,
+        files: [{
+          id: String,
+          name: String,
+          url: String,
+          type: String,
+          size: Number,
+        }],
+      },
+    },
+    completedAt: Date,
+    completedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
+  },
 };
 
 export const historySchema = new Schema({
@@ -157,6 +189,26 @@ export interface ICandidateHistory {
     type: string;
     size: number;
   }[];
+  checklistForm?: {
+    checklistId: string;
+    checklistName: string;
+    checklistType: 'incoming' | 'outgoing';
+    laneId: string;
+    laneName: string;
+    responses: Map<string, {
+      fieldId: string;
+      fieldLabel: string;
+      fieldType: string;
+      value: any;
+      files?: CustomFieldFile[];
+    }>;
+    completedAt: Date;
+    completedBy: {
+      _id: string;
+      name: string;
+      email: string;
+    };
+  };
 }
 export interface IHistory {
   jobId: string;
