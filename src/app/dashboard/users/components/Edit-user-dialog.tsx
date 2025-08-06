@@ -21,6 +21,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useUpdateUserMutation } from "@/lib/features/users/usersApi";
 import { userFormVaidationSchema } from "../schemas/userFormValidation.schema";
+import { useDispatch, useSelector } from "react-redux";
+import { updateUser as updateUserInState } from "@/lib/redux/authSlice";
 
 interface SelectedUser {
   id?: string;
@@ -44,6 +46,8 @@ export function EditUserDialog({
   onSuccess,
 }: EditUserDialogProps) {
   const { toast } = useToast();
+  const dispatch = useDispatch();
+  const { user } = useSelector((state: any) => state.auth || {});
   const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
 
   const handleUpdate = async (values: SelectedUser) => {
@@ -54,6 +58,19 @@ export function EditUserDialog({
         email: values.email.toLowerCase().trim(),
         name: values.name.trim(),
       }).unwrap();
+
+      // Check if the updated user's email matches the current user's email in state
+      if (user && user.email === values.email.toLowerCase().trim()) {
+        // Update the Redux state with the new user data
+        dispatch(
+          updateUserInState({
+            ...values,
+            email: values.email.toLowerCase().trim(),
+            name: values.name.trim(),
+          })
+        );
+      }
+
       toast({ title: "Success", description: "User updated successfully" });
       onOpenChange(false);
       onSuccess();
