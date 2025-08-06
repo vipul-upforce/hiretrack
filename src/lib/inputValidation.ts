@@ -13,7 +13,7 @@ export const VALIDATION_PATTERNS = {
   slug: /^[a-zA-Z0-9-_]+$/,
   safeString: /^[a-zA-Z0-9\s\-_.@]*$/,
   url: /^https?:\/\/.+/,
-  phone: /^\+?[\d\s\-\(\)]+$/,
+  contact: /^\+?[\d\s\-\(\)]+$/,
   filename: /^[a-zA-Z0-9\-_.]+$/
 };
 

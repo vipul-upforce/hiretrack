@@ -84,7 +84,7 @@ const calculateTotalExperience = (
 type FormValues = {
   name: string;
   email: string;
-  phone: string;
+  contact: string;
   location: string;
   skills: string[];
   experience: number;
@@ -108,6 +108,10 @@ const FormUpdater = ({
       if (!values.email && profile.email) {
         setFieldValue("email", profile.email);
         setTouched({ email: true });
+      }
+      if (!values.contact && profile.contact) {
+        setFieldValue("contact", profile.contact);
+        setTouched({ contact: true });
       }
 
       if (!values.location && profile.location) {
