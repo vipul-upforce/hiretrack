@@ -28,6 +28,7 @@ import dayjs from "dayjs";
 import { MobileFileUpload } from "@/components/ui/file-upload-mobile";
 import { useSanitizeFiles } from "@/hooks/useSanitizeFiles";
 import { useSelector } from "react-redux";
+import { FileDropZone } from "@/components/ui/file-drop-zone";
 
 interface CandidateFormProps {
   onFileUpload?: (file: File) => Promise<string | void>; // Prop to handle file upload to a persistent storage
@@ -164,7 +165,7 @@ export function CandidateForm({
             <Label>
               Resume <span className="text-red-500">*</span>
             </Label>
-            <div className="space-y-3">
+            {/* <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <Button
                   type="button"
@@ -275,7 +276,76 @@ export function CandidateForm({
                   </Button>
                 </div>
               )}
-            </div>
+            </div> */}
+            <MobileFileUpload
+              accept={{}}
+              maxFiles={user && user.role === "candidate" ? 2 : 30}
+              onFileSelect={async (files) => {
+                if (!user && files[0].size > 3 * 1024 * 1024) {
+                  toast({
+                    title: `File "${files[0].name}" exceeds 3MB. Please upload a smaller file.`,
+                    variant: "destructive",
+                  });
+                  return false;
+                }
+                if (
+                  user &&
+                  user.role === "candidate" &&
+                  files[0].size > 3 * 1024 * 1024
+                ) {
+                  toast({
+                    title:
+                      "File size exceeds 3MB. Please upload a smaller file.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                if (
+                  user &&
+                  ["hr", "admin", "interviewer"].includes(user.role) &&
+                  files[0].size > 50 * 1024 * 1024
+                ) {
+                  toast({
+                    title:
+                      "File size exceeds 3MB. Please upload a smaller file.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                const sanitizedFiles = sanitizeFiles(files);
+                setFieldValue("resume", sanitizedFiles[0]); // Set the File object for form submission
+
+                // Create a temporary blob URL for immediate client-side preview
+                setTempResumeUrl(URL.createObjectURL(sanitizedFiles[0]));
+
+                // Call onFileUpload to handle the actual upload to a persistent storage (e.g., Vercel Blob)
+                // The parent component should update `values.resume` with the public URL returned from the upload
+                // For example: const publicUrl = await onFileUpload(files[0]);
+                // if (publicUrl) { setFieldValue("resume", { url: publicUrl }); }
+                if (onFileUpload) {
+                  await onFileUpload(sanitizedFiles[0]);
+                }
+                setTimeout(() => {
+                  setTouched({
+                    name: true,
+                    location: true,
+                    experience: true,
+                    skills: true,
+                    expectedCTC: true,
+                    currentCTC: true,
+                    noticePeriod: true,
+                    // resume: true,
+                    email: true,
+                  });
+                }, 100);
+              }}
+              files={resumeField.value ? [resumeField.value] : []}
+              setter={(files) => {
+                const sanitizedFiles = sanitizeFiles(files);
+                setFieldValue("resume", sanitizedFiles[0]);
+              }}
+              buttonText="Add Resume"
+            />
 
             {resumeMeta.touched && resumeMeta.error && (
               <div className="text-sm text-destructive">{resumeMeta.error}</div>
@@ -496,7 +566,7 @@ export function CandidateForm({
                     <p className="text-sm text-red-500">
                       {String(
                         errors.assignment[
-                          "interviewerId" as keyof typeof errors.assignment
+                        "interviewerId" as keyof typeof errors.assignment
                         ] || ""
                       )}
                     </p>
@@ -547,7 +617,7 @@ export function CandidateForm({
           {/* Additional Attachments - Mobile */}
           <div className="space-y-3">
             <Label>Additional Attachments</Label>
-            <div className="space-y-3">
+            {/* <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <Button
                   type="button"
@@ -675,7 +745,85 @@ export function CandidateForm({
                   ))}
                 </div>
               )}
-            </div>
+            </div> */}
+            <MobileFileUpload
+              accept={{}}
+              maxFiles={user && user.role === "candidate" ? 2 : 30}
+              onFileSelect={(files) => {
+                const sanitizedFiles = sanitizeFiles(files);
+                const currentFiles = attachmentsField.value || [];
+
+                const newFiles = sanitizedFiles
+                  .filter((file) => {
+                    if (!user && file.size > 3 * 1024 * 1024) {
+                      toast({
+                        title: `File "${file.name}" exceeds 3MB. Please upload a smaller file.`,
+                        variant: "destructive",
+                      });
+                      return false;
+                    }
+                    if (
+                      user &&
+                      user.role === "candidate" &&
+                      file.size > 3 * 1024 * 1024
+                    ) {
+                      toast({
+                        title: `File "${file.name}" exceeds 3MB. Please upload a smaller file.`,
+                        variant: "destructive",
+                      });
+                      return false;
+                    }
+                    if (
+                      user &&
+                      ["hr", "admin", "interviewer"].includes(user.role) &&
+                      file.size > 50 * 1024 * 1024
+                    ) {
+                      toast({
+                        title: `File "${file.name}" exceeds 50MB. Please upload a smaller file.`,
+                        variant: "destructive",
+                      });
+                      return false;
+                    }
+                    return true;
+                  })
+                  .map((file) => {
+                    let newFileName = file.name;
+
+                    const fileExists = currentFiles.some(
+                      (att: File) => att.name === file.name
+                    );
+
+                    if (fileExists) {
+                      const fileExtension = file.name.split(".").pop();
+                      const baseName = file.name.replace(/\.[^/.]+$/, "");
+                      newFileName = `${baseName}_${uuidv4()}.${fileExtension}`;
+                    }
+
+                    return new File([file], newFileName, { type: file.type });
+                  });
+
+                const updatedFileSelection = [...currentFiles, ...newFiles];
+                if (
+                  user &&
+                  updatedFileSelection.length > 2 &&
+                  user.role === "candidate"
+                ) {
+                  toast({
+                    title: "Maximum 2 files are allowed",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                setFieldValue("attachments", updatedFileSelection);
+              }}
+              files={attachmentsField.value}
+              setter={(files) => {
+                const sanitizedFiles = sanitizeFiles(files);
+                setFieldValue("attachments", sanitizedFiles);
+              }}
+              buttonText="Add Attachments"
+            />
+
           </div>
 
           {/* Resume Preview - Mobile */}
@@ -706,7 +854,7 @@ export function CandidateForm({
             <Label>
               Resume <span className="text-red-500">*</span>
             </Label>
-            <div className="space-y-3">
+            {/* <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <Button
                   type="button"
@@ -817,7 +965,79 @@ export function CandidateForm({
                   </Button>
                 </div>
               )}
-            </div>
+            </div> */}
+            <FileUpload
+              id="resume"
+              isResume={true}
+              colorScheme="green" // Use green for resume uploads
+              accept={{ "application/pdf": [".pdf"] }}
+              maxFiles={1}
+              onFileSelect={async (files) => {
+                const sanitizedFiles = sanitizeFiles(files);
+                if (!user && files[0].size > 3 * 1024 * 1024) {
+                  toast({
+                    title: `File "${files[0].name}" exceeds 3MB. Please upload a smaller file.`,
+                    variant: "destructive",
+                  });
+                  return false;
+                }
+                if (
+                  user &&
+                  user.role === "candidate" &&
+                  files[0].size > 3 * 1024 * 1024
+                ) {
+                  toast({
+                    title:
+                      "File size exceeds 3MB. Please upload a smaller file.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                if (
+                  user &&
+                  ["hr", "admin", "interviewer"].includes(user.role) &&
+                  files[0].size > 50 * 1024 * 1024
+                ) {
+                  toast({
+                    title:
+                      "File size exceeds 3MB. Please upload a smaller file.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                setFieldValue("resume", sanitizedFiles[0]); // Set the File object for form submission
+
+                // Create a temporary blob URL for immediate client-side preview
+                setTempResumeUrl(URL.createObjectURL(sanitizedFiles[0]));
+
+                // Call onFileUpload to handle the actual upload to a persistent storage (e.g., Vercel Blob)
+                // The parent component should update `values.resume` with the public URL returned from the upload
+                // For example: const publicUrl = await onFileUpload(files[0]);
+                // if (publicUrl) { setFieldValue("resume", { url: publicUrl }); }
+                if (onFileUpload) {
+                  await onFileUpload(sanitizedFiles[0]);
+                }
+                setTimeout(() => {
+                  setTouched({
+                    name: true,
+                    location: true,
+                    experience: true,
+                    skills: true,
+                    expectedCTC: true,
+                    currentCTC: true,
+                    noticePeriod: true,
+                    // resume: true,
+                    email: true,
+                  });
+                }, 100);
+              }}
+              files={resumeField.value ? [resumeField.value] : []}
+              setter={(files) => {
+                const sanitizedFiles = sanitizeFiles(files);
+                setFieldValue("resume", sanitizedFiles[0]);
+              }}
+            />
+
             {resumeMeta.touched && resumeMeta.error && (
               <div className="text-sm text-destructive">{resumeMeta.error}</div>
             )}
@@ -843,11 +1063,10 @@ export function CandidateForm({
                   id="name"
                   placeholder="Enter full name"
                   {...nameField}
-                  className={`h-9 px-3 transition-all duration-200 ${
-                    nameMeta.error && nameMeta.touched
-                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                      : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
-                  }`}
+                  className={`h-9 px-3 transition-all duration-200 ${nameMeta.error && nameMeta.touched
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                    : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
+                    }`}
                 />
                 {nameMeta.touched && nameMeta.error && (
                   <p className="text-sm text-red-500 flex items-center gap-1">
@@ -869,11 +1088,10 @@ export function CandidateForm({
                   type="email"
                   placeholder="Enter email address"
                   {...emailField}
-                  className={`h-9 px-3 transition-all duration-200 ${
-                    emailMeta.error && emailMeta.touched
-                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                      : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
-                  }`}
+                  className={`h-9 px-3 transition-all duration-200 ${emailMeta.error && emailMeta.touched
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                    : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
+                    }`}
                 />
                 {emailMeta.touched && emailMeta.error && (
                   <p className="text-sm text-red-500 flex items-center gap-1">
@@ -895,11 +1113,10 @@ export function CandidateForm({
                   type="tel"
                   placeholder="Enter contact number"
                   {...contactField}
-                  className={`h-9 px-3 transition-all duration-200 ${
-                    contactMeta.error && contactMeta.touched
-                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                      : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
-                  }`}
+                  className={`h-9 px-3 transition-all duration-200 ${contactMeta.error && contactMeta.touched
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                    : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
+                    }`}
                 />
                 {contactMeta.touched && contactMeta.error && (
                   <p className="text-sm text-red-500 flex items-center gap-1">
@@ -920,11 +1137,10 @@ export function CandidateForm({
                   id="location"
                   placeholder="Enter location"
                   {...locationField}
-                  className={`h-9 px-3 transition-all duration-200 ${
-                    locationMeta.error && locationMeta.touched
-                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                      : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
-                  }`}
+                  className={`h-9 px-3 transition-all duration-200 ${locationMeta.error && locationMeta.touched
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                    : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
+                    }`}
                 />
                 {locationMeta.touched && locationMeta.error && (
                   <p className="text-sm text-red-500 flex items-center gap-1">
@@ -950,11 +1166,10 @@ export function CandidateForm({
                   type="number"
                   step="0.1"
                   {...experienceField}
-                  className={`h-9 px-3 transition-all duration-200 w-full max-w-xs ${
-                    experienceMeta.error && experienceMeta.touched
-                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                      : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
-                  }`}
+                  className={`h-9 px-3 transition-all duration-200 w-full max-w-xs ${experienceMeta.error && experienceMeta.touched
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                    : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
+                    }`}
                 />
                 {experienceMeta.touched && experienceMeta.error && (
                   <p className="text-sm text-red-500 flex items-center gap-1">
@@ -1017,11 +1232,10 @@ export function CandidateForm({
                   placeholder="Enter expected CTC in LPA"
                   type="number"
                   {...expectedCTCField}
-                  className={`h-9 px-3 transition-all duration-200 ${
-                    expectedCTCMeta.error && expectedCTCMeta.touched
-                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                      : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
-                  }`}
+                  className={`h-9 px-3 transition-all duration-200 ${expectedCTCMeta.error && expectedCTCMeta.touched
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                    : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
+                    }`}
                 />
                 {expectedCTCMeta.touched && expectedCTCMeta.error && (
                   <p className="text-sm text-red-500 flex items-center gap-1">
@@ -1043,11 +1257,10 @@ export function CandidateForm({
                   placeholder="Enter current CTC in LPA"
                   type="number"
                   {...currentCTCField}
-                  className={`h-9 px-3 transition-all duration-200 ${
-                    currentCTCMeta.error && currentCTCMeta.touched
-                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                      : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
-                  }`}
+                  className={`h-9 px-3 transition-all duration-200 ${currentCTCMeta.error && currentCTCMeta.touched
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                    : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
+                    }`}
                 />
                 {currentCTCMeta.touched && currentCTCMeta.error && (
                   <p className="text-sm text-red-500 flex items-center gap-1">
@@ -1072,11 +1285,10 @@ export function CandidateForm({
                   placeholder="Enter notice period in days"
                   type="number"
                   {...noticePeriodField}
-                  className={`h-9 px-3 transition-all duration-200 w-full max-w-xs ${
-                    noticePeriodMeta.error && noticePeriodMeta.touched
-                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                      : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
-                  }`}
+                  className={`h-9 px-3 transition-all duration-200 w-full max-w-xs ${noticePeriodMeta.error && noticePeriodMeta.touched
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                    : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
+                    }`}
                 />
                 {noticePeriodMeta.touched && noticePeriodMeta.error && (
                   <p className="text-sm text-red-500 flex items-center gap-1">
@@ -1131,7 +1343,7 @@ export function CandidateForm({
                       <span className="w-1 h-1 bg-red-500 rounded-full"></span>
                       {String(
                         errors.assignment[
-                          "interviewerId" as keyof typeof errors.assignment
+                        "interviewerId" as keyof typeof errors.assignment
                         ] || ""
                       )}
                     </p>
@@ -1175,7 +1387,7 @@ export function CandidateForm({
                 Additional Documents
               </h3>
             </div>
-            <div className="space-y-4">
+            {/* <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <Button
                   type="button"
@@ -1215,10 +1427,10 @@ export function CandidateForm({
                               ["hr", "admin", "interviewer"].includes(
                                 user.role
                               ) &&
-                              file.size > 5 * 1024 * 1024
+                              file.size > 100 * 1024 * 1024
                             ) {
                               toast({
-                                title: `File "${file.name}" exceeds 5MB. Please upload a smaller file.`,
+                                title: `File "${file.name}" exceeds 100MB. Please upload a smaller file.`,
                                 variant: "destructive",
                               });
                               return false;
@@ -1247,7 +1459,7 @@ export function CandidateForm({
                           ...currentFiles,
                           ...newFiles,
                         ];
-                        if (updatedFileSelection.length > 2) {
+                        if (user?.role === "candidate" && updatedFileSelection.length > 2) {
                           toast({
                             title: "Maximum 2 files are allowed",
                             variant: "destructive",
@@ -1264,8 +1476,12 @@ export function CandidateForm({
                   Add Documents
                 </Button>
                 <span className="text-sm text-muted-foreground">
-                  Max 2 files,{" "}
-                  {user?.role === "candidate" ? "3MB each" : "5MB each"}
+
+                  {user?.role === "candidate"
+                    ? "Max 2 files, 3MB each"
+                    : user && ["hr", "admin", "interviewer"].includes(user.role)
+                      ? "100MB per file"
+                      : "5MB per file"}
                 </span>
               </div>
 
@@ -1305,12 +1521,103 @@ export function CandidateForm({
                   ))}
                 </div>
               )}
-            </div>
+            </div> */}
+
+            <FileUpload
+              accept={{}}
+              maxFiles={user && user.role === "candidate" ? 2 : 30}
+              isEdit={true}
+              onFileSelect={(files) => {
+                const currentFiles = attachmentsField.value || [];
+                const sanitizedFiles = sanitizeFiles(files);
+                const newFiles = sanitizedFiles
+                  .filter((file) => {
+                    if (!user && file.size > 3 * 1024 * 1024) {
+                      toast({
+                        title: `File "${file.name}" exceeds 3MB. Please upload a smaller file.`,
+                        variant: "destructive",
+                      });
+                      return false;
+                    }
+                    if (
+                      user &&
+                      user.role === "candidate" &&
+                      file.size > 3 * 1024 * 1024
+                    ) {
+                      toast({
+                        title: `File "${file.name}" exceeds 3MB. Please upload a smaller file.`,
+                        variant: "destructive",
+                      });
+                      return false;
+                    }
+                    if (
+                      user &&
+                      ["hr", "admin", "interviewer"].includes(user.role) &&
+                      file.size > 50 * 1024 * 1024
+                    ) {
+                      toast({
+                        title: `File "${file.name}" exceeds 50MB. Please upload a smaller file.`,
+                        variant: "destructive",
+                      });
+                      return false;
+                    }
+                    // const specialCharPattern = /^[^a-zA-Z0-9(]|[^a-zA-Z0-9)]$/;
+                    // const problematicFiles = files.filter((file) =>
+                    //   specialCharPattern.test(file.name)
+                    // );
+                    // if (specialCharPattern.test(file.name)) {
+                    //   toast({
+                    //     title: "Alert",
+                    //     description:
+                    //       "The file name is not suitable, it can cuase errors.",
+                    //   });
+                    //   return false;
+                    // }
+
+                    return true;
+                  })
+                  .map((file) => {
+                    let newFileName = file.name;
+
+                    const fileExists = currentFiles.some(
+                      (att: File) => att.name === file.name
+                    );
+
+                    if (fileExists) {
+                      const fileExtension = file.name.split(".").pop();
+                      const baseName = file.name.replace(/\.[^/.]+$/, "");
+                      newFileName = `${baseName}_${uuidv4()}.${fileExtension}`;
+                    }
+
+                    return new File([file], newFileName, { type: file.type });
+                  });
+
+                const updatedFileSelection = [...currentFiles, ...newFiles];
+                if (
+                  user &&
+                  updatedFileSelection.length > 2 &&
+                  user.role === "candidate"
+                ) {
+                  toast({
+                    title: "Maximum 2 files are allowed",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                setFieldValue("attachments", updatedFileSelection);
+              }}
+              files={attachmentsField.value}
+              setter={(files) => {
+                const sanitizedFiles = sanitizeFiles(files);
+                setFieldValue("attachments", sanitizedFiles);
+              }}
+            />
+
           </div>
         </div>
 
         {/* Resume Preview Section */}
-        <div className="w-full lg:w-1/2 h-64 sm:h-80 lg:h-full">
+        {/* <div className="w-full lg:w-1/2 h-64 sm:h-80 lg:h-full">
           <div className="w-full h-full rounded-lg border overflow-hidden">
             {tempResumeUrl ? (
               <iframe
@@ -1328,7 +1635,31 @@ export function CandidateForm({
               </div>
             )}
           </div>
+        </div> */}
+        <div className="w-full lg:w-1/2 h-64 sm:h-80 lg:h-full">
+          <div className="w-full h-full rounded-lg border overflow-hidden">
+            {tempResumeUrl ? (
+              <iframe
+                src={tempResumeUrl}
+                className="w-full h-full"
+                title="Resume Preview"
+              />
+            ) : (
+              <div className="w-full h-full bg-gray-50 flex items-center justify-center">
+                <div className="text-center p-4 sm:p-6">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-700 mb-2">
+                    No Resume Preview Available
+                  </h3>
+                  <p className="text-sm sm:text-base text-gray-500">
+                    Please upload resume to see a preview here!
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
+
+
       </div>
     </div>
   );

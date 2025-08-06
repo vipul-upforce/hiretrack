@@ -38,13 +38,13 @@ interface RenderFieldProps {
   label: string;
   type: string;
   value:
-    | string
-    | string[]
-    | boolean
-    | FileData[]
-    | Dayjs
-    | [Dayjs, Dayjs]
-    | undefined;
+  | string
+  | string[]
+  | boolean
+  | FileData[]
+  | Dayjs
+  | [Dayjs, Dayjs]
+  | undefined;
   onChange?: (
     value: string | string[] | boolean | FileData[] | Dayjs | [Dayjs, Dayjs]
   ) => void;
@@ -291,7 +291,7 @@ export const RenderFieldInFilter = ({
               ] as [string, string];
               onChange?.(newRange);
             }}
-            onBlur={() => {}}
+            onBlur={() => { }}
             name={name as string}
           />
           <TimePicker
@@ -303,7 +303,7 @@ export const RenderFieldInFilter = ({
               ] as [string, string];
               onChange?.(newRange);
             }}
-            onBlur={() => {}}
+            onBlur={() => { }}
             name={name as string}
           />
         </div>
@@ -321,9 +321,9 @@ export const RenderFieldInFilter = ({
               ];
               onChange?.(newRange);
             }}
-            onBlur={() => {}}
-            // min={min ? dayjs(min) : undefined}
-            // max={max ? dayjs(max) : undefined}
+            onBlur={() => { }}
+          // min={min ? dayjs(min) : undefined}
+          // max={max ? dayjs(max) : undefined}
           />
           <DateTimePicker
             value={value ? (value as [Dayjs, Dayjs])[1] : undefined}
@@ -334,9 +334,9 @@ export const RenderFieldInFilter = ({
               ];
               onChange?.(newRange);
             }}
-            onBlur={() => {}}
-            // min={min ? dayjs(min) : undefined}
-            // max={max ? dayjs(max) : undefined}
+            onBlur={() => { }}
+          // min={min ? dayjs(min) : undefined}
+          // max={max ? dayjs(max) : undefined}
           />
         </div>
       );
@@ -399,11 +399,11 @@ export const RenderFieldInFilter = ({
           existingFiles={
             Array.isArray(value)
               ? (value as FileData[]).map((file) => ({
-                  name: file.name,
-                  type: file.type,
-                  size: file.size,
-                  preview: file.base64,
-                }))
+                name: file.name,
+                type: file.type,
+                size: file.size,
+                preview: file.base64,
+              }))
               : []
           }
         />

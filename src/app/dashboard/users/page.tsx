@@ -62,11 +62,11 @@ function UsersPage() {
         description:
           "Error: " +
           (typeof error === "object" &&
-          error !== null &&
-          "data" in error &&
-          typeof error.data === "object" &&
-          error.data &&
-          "error" in error.data
+            error !== null &&
+            "data" in error &&
+            typeof error.data === "object" &&
+            error.data &&
+            "error" in error.data
             ? (error.data as { error: string }).error
             : "Unknown error"),
         title: "Failed to delete user",
@@ -166,80 +166,80 @@ function UsersPage() {
         </Card>
       </div>
 
-      <div className="flex-1 min-h-0 px-4 pb-4 mt-4">
+      <div className="flex-1 min-h-0 px-4 pb-4 mt-4 overflow-y-auto">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>All Users</CardTitle>
           </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Created At</TableHead>
-                <TableHead className="w-[140px]">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users?.map((user: User) => (
-                <UserTableRow
-                  key={user._id}
-                  user={user}
-                  isDeleting={isDeleting}
-                  isUpdating={isDeleting}
-                  onDeleteClick={() => {
-                    setUserIdToDelete(user._id);
-                    setShowDeleteDialog(true);
-                  }}
-                  onEditClick={handleEditClick}
-                  onPasswordClick={handlePasswordClick}
-                />
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Created At</TableHead>
+                  <TableHead className="w-[140px]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users?.map((user: User) => (
+                  <UserTableRow
+                    key={user._id}
+                    user={user}
+                    isDeleting={isDeleting}
+                    isUpdating={isDeleting}
+                    onDeleteClick={() => {
+                      setUserIdToDelete(user._id);
+                      setShowDeleteDialog(true);
+                    }}
+                    onEditClick={handleEditClick}
+                    onPasswordClick={handlePasswordClick}
+                  />
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
 
-      <ConfirmationDialog
-        isOpen={showDeleteDialog}
-        setIsOpen={setShowDeleteDialog}
-        title="Delete User"
-        message="Are you sure you want to delete the user? You can always
+        <ConfirmationDialog
+          isOpen={showDeleteDialog}
+          setIsOpen={setShowDeleteDialog}
+          title="Delete User"
+          message="Are you sure you want to delete the user? You can always
               reactivate the user from edit form."
-        onConfirm={() => {
-          if (userIdToDelete) {
-            handleDelete(userIdToDelete);
-            setUserIdToDelete(null);
-          }
-          setShowDeleteDialog(false);
-        }}
-        onCancel={() => setShowDeleteDialog(false)}
-      />
+          onConfirm={() => {
+            if (userIdToDelete) {
+              handleDelete(userIdToDelete);
+              setUserIdToDelete(null);
+            }
+            setShowDeleteDialog(false);
+          }}
+          onCancel={() => setShowDeleteDialog(false)}
+        />
 
-      {selectedUser && (
-        <EditUserDialog
-          isOpen={isOpen}
-          onOpenChange={(open) => {
-            setIsOpen(open);
-            if (!open) setSelectedUser(null);
-          }}
-          selectedUser={selectedUser}
-          onSuccess={refetch}
-        />
-      )}
-      {selectedPasswordUser && (
-        <ResetPasswordDialog
-          isOpen={isPasswordOpen}
-          onOpenChange={(open) => {
-            setIsPasswordOpen(open);
-            if (!open) setSelectedPasswordUser(null);
-          }}
-          candidateId={selectedPasswordUser.candidateId}
-          name={selectedPasswordUser.name}
-        />
-      )}
+        {selectedUser && (
+          <EditUserDialog
+            isOpen={isOpen}
+            onOpenChange={(open) => {
+              setIsOpen(open);
+              if (!open) setSelectedUser(null);
+            }}
+            selectedUser={selectedUser}
+            onSuccess={refetch}
+          />
+        )}
+        {selectedPasswordUser && (
+          <ResetPasswordDialog
+            isOpen={isPasswordOpen}
+            onOpenChange={(open) => {
+              setIsPasswordOpen(open);
+              if (!open) setSelectedPasswordUser(null);
+            }}
+            candidateId={selectedPasswordUser.candidateId}
+            name={selectedPasswordUser.name}
+          />
+        )}
       </div>
     </div>
   );

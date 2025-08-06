@@ -16,7 +16,7 @@ export default function Home() {
         </Card>
       </div>
 
-      <div className="flex-1 min-h-0 px-4 pb-4 mt-4">
+      <div className="flex-1 min-h-0 px-4 pb-4 mt-4 overflow-y-auto">
         <CVBatchProcessor />
       </div>
     </div>

@@ -65,7 +65,12 @@ export const assE = `<div style="font-family: Arial, sans-serif; line-height: 1.
             <p style="margin: 5px 0;"><strong>Time:</strong> {{interviewTime}}</p>
             <p style="margin: 5px 0;"><strong>Duration:</strong> {{duration}}</p>
             <p style="margin: 5px 0;"><strong>Type:</strong> {{interviewType}}</p>
-            <p style="margin: 5px 0;"><strong>Meeting Link:</strong> <a href="{{meetingLink}}" style="color: #007bff; text-decoration: underline;">{{meetingLink}}</a></p>
+            <p style="margin: 5px 0;"><strong>Meeting Link:</strong> 
+             <div style="text-align: center; margin: 20px 0;">
+            <a href="{{meetingLink}}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-right: 10px; display: inline-block;">Google Calendar</a>
+            <a href="{{outlookCalendarLink}}" style="background-color: #007bdf; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Outlook Calendar</a>
+        </div>
+            </p>
         </div>
 
         <div style="background-color: #d4edda; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #28a745;">
@@ -377,6 +382,7 @@ export const defaultTemplatesFE: { [key: string]: IEmailTemplate } = {
       "duration",
       "interviewType",
       "meetingLink",
+      "outlookCalendarLink",
       "candidateProfileLink",
       "dashboardLink",
       "organizationName",

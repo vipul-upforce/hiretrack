@@ -89,7 +89,7 @@ export const FileDropZone = ({
       try {
         const base64 = await fileToBase64(file);
         newPreviews[file.name] = base64;
-      } catch (error) {}
+      } catch (error) { console.log(error); }
     }
 
     setPreviews((prev) => ({

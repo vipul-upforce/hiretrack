@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+
 import {
   Card,
   CardContent,
@@ -326,7 +327,12 @@ const defaultTemplates: EmailTemplate[] = [
             <p style="margin: 5px 0;"><strong>Time:</strong> {{interviewTime}}</p>
             <p style="margin: 5px 0;"><strong>Duration:</strong> {{duration}}</p>
             <p style="margin: 5px 0;"><strong>Type:</strong> {{interviewType}}</p>
-            <p style="margin: 5px 0;"><strong>Meeting Link:</strong> <a href="{{meetingLink}}" style="color: #007bff; text-decoration: underline;">{{meetingLink}}</a></p>
+            <p style="margin: 5px 0;"><strong>Meeting Link:</strong>
+             <div style="text-align: center; margin: 20px 0;">
+            <a href="{{meetingLink}}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-right: 10px; display: inline-block;">Google Calendar</a>
+            <a href="{{outlookCalendarLink}}" style="background-color: #007bdf; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Outlook Calendar</a>
+        </div>
+            </p>
         </div>
 
         <div style="background-color: #d4edda; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #28a745;">
@@ -574,7 +580,9 @@ export default function EmailTemplatesPage() {
               name: template.templateName,
               subject: template.subject,
               content: template.html,
-              variables: template.variables || templateVariables,
+              variables: template.variables || defaultTemplates.find(
+                (t) => t.id === template.templateId
+              )?.variables || templateVariables,
               isCustom: !defaultTemplates.find(
                 (t) => t.id === template.templateId
               ),
@@ -732,7 +740,18 @@ export default function EmailTemplatesPage() {
       toast.error("Please fill in template name and subject");
       return;
     }
-
+    // Validate variables in content
+    // const usedVariables =
+    //   newTemplate.content.match(/{{(\w+)}}/g)?.map((v) => v.slice(2, -2)) || [];
+    // const invalidVariables = usedVariables.filter(
+    //   (v) => !templateVariables.includes(v)
+    // );
+    // if (invalidVariables.length > 0) {
+    //   toast.error(
+    //     `Invalid variables used: ${invalidVariables.join(", ")}. Only ${templateVariables.join(", ")} are allowed.`
+    //   );
+    //   return;
+    // }
     const templateId = `custom-${Date.now()}`;
     const customTemplate: EmailTemplate = {
       id: templateId,
@@ -741,7 +760,7 @@ export default function EmailTemplatesPage() {
       content: newTemplate.content,
       variables: templateVariables,
       isCustom: true,
-      isDefault: false,
+      isDefault: true,
     };
 
     setTemplates((prev) => [...prev, customTemplate]);

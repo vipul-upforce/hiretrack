@@ -428,7 +428,7 @@ export default function ApplyJobsContent({
             )}
           </div>
 
-          {jobs && jobs.length > 5 && (
+          {jobs && jobs.length > 0 && (
             <div className="flex gap-3 mb-8 w-full flex-row">
               <div className="relative w-full flex flex-row items-center max-w-md">
                 <Input
@@ -562,7 +562,7 @@ export default function ApplyJobsContent({
                           </span>
                         </div>
 
-                        {job.salary && (
+                        {job.salary && job.salary.inText && (
                           <div className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
                             <span className="w-4 h-4 flex items-center justify-center text-sm font-semibold">
                               ₹
