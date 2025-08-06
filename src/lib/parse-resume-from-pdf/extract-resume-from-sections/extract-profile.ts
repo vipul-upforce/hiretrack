@@ -168,7 +168,7 @@ export const extractProfile = (sections: ResumeSectionToLines) => {
     profile: {
       name,
       email,
-      phone,
+      contact: phone,
       location,
       url,
       // Dedicated section takes higher precedence over profile summary
@@ -178,7 +178,7 @@ export const extractProfile = (sections: ResumeSectionToLines) => {
     profileScores: {
       name: nameScores,
       email: emailScores,
-      phone: phoneScores,
+      contact: phoneScores,
       location: locationScores,
       url: urlScores,
       summary: summaryScores,

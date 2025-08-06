@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
         required: true,
         type: 'string',
         maxLength: 20,
-        pattern: VALIDATION_PATTERNS.phone
+        pattern: VALIDATION_PATTERNS.contact
       },
       dateTime: {
         type: 'string',

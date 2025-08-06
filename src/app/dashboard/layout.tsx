@@ -252,7 +252,7 @@ export default function DashboardLayout({
         // }
       }
     })();
-  }, []);
+  }, [user]);
 
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(

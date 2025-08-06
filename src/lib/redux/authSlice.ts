@@ -57,6 +57,16 @@ const authSlice = createSlice({
       state.user = null;
       state.isAuthenticated = false;
     },
+    updateUser: (state, action: PayloadAction<any>) => {
+      if (state.user && (state.user.id || state.user.email)) {
+        state.user = { ...state.user, ...action.payload };
+      } else {
+        // If no user exists, set the payload as the new user
+        state.user = action.payload;
+        state.isAuthenticated = true;
+      }
+      console.log(state.user.name)
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -84,5 +94,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout } = authSlice.actions;
+export const { logout, updateUser } = authSlice.actions;
 export default authSlice.reducer;
