@@ -175,15 +175,33 @@ export function FileUpload({
           )}
         </div>
       ) : (
-        <Button
-          type="button"
-          onClick={open}
-          variant="outline"
-          className="flex items-center gap-2 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200 dark:border-purple-800 hover:from-purple-100 hover:to-pink-100 dark:hover:from-purple-900/30 dark:hover:to-pink-900/30 text-purple-700 dark:text-purple-300"
-        >
-          <Paperclip className="w-4 h-4" />
-          {isResume ? "Resume" : "Add Documents"}
-        </Button>
+        <div className="flex items-center gap-3 ">
+          <Button
+            type="button"
+            onClick={open}
+            variant="outline"
+            className="flex items-center gap-2 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200 dark:border-purple-800 hover:from-purple-100 hover:to-pink-100 dark:hover:from-purple-900/30 dark:hover:to-pink-900/30 text-purple-700 dark:text-purple-300"
+          >
+            <Paperclip className="w-4 h-4" />
+            {isResume ? "Resume" : "Add Documents"}
+          </Button>
+          {user?.role === "candidate" && (
+            <div className="space-y-1 flex items-center gap-2">
+              {!accept["application/pdf"] && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Max 2 files
+                </p>
+              )}
+              <p className="text-sm text-muted-foreground m-0">
+                3MB per file
+              </p>
+            </div>
+          )}
+          {/* {user && ["hr", "admin", "interviewer"].includes(user.role) && (
+            <p className="text-sm text-muted-foreground">
+              100MB per file            </p>
+          )} */}
+        </div>
       )}
 
       {/* File Previews */}

@@ -187,7 +187,7 @@ function SystemLogsPage() {
               }
               setOffset(
                 (data.offset || 0) +
-                  (data.logs?.length || data.content?.length || 0)
+                (data.logs?.length || data.content?.length || 0)
               );
               setTotalLines(data.totalLines || 0);
               scrollToBottom();
@@ -353,11 +353,10 @@ function SystemLogsPage() {
           <div className="flex border-b mb-6 flex-shrink-0 justify-between">
             <div className="flex space-x-2">
               <button
-                className={`py-2 px-4 text-sm font-medium rounded-t-md transition-colors ${
-                  activeTab === "nginx"
-                    ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"
-                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
-                }`}
+                className={`py-2 px-4 text-sm font-medium rounded-t-md transition-colors ${activeTab === "nginx"
+                  ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"
+                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  }`}
                 onClick={() => {
                   setActiveTab("nginx");
                   setSearchQuery("");
@@ -370,11 +369,10 @@ function SystemLogsPage() {
                 Nginx Logs
               </button>
               <button
-                className={`py-2 px-4 text-sm font-medium rounded-t-md transition-colors ${
-                  activeTab === "server"
-                    ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"
-                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
-                }`}
+                className={`py-2 px-4 text-sm font-medium rounded-t-md transition-colors ${activeTab === "server"
+                  ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"
+                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  }`}
                 onClick={() => {
                   setActiveTab("server");
                   setSearchQuery("");
@@ -387,11 +385,10 @@ function SystemLogsPage() {
                 History Logs
               </button>
               <button
-                className={`py-2 px-4 text-sm font-medium rounded-t-md transition-colors ${
-                  activeTab === "emails"
-                    ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"
-                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
-                }`}
+                className={`py-2 px-4 text-sm font-medium rounded-t-md transition-colors ${activeTab === "emails"
+                  ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"
+                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  }`}
                 onClick={() => {
                   setActiveTab("emails");
                   setSearchQuery("");
@@ -428,11 +425,10 @@ function SystemLogsPage() {
                           {nginxFiles.map((file) => (
                             <li
                               key={file}
-                              className={`cursor-pointer p-2 text-sm rounded ${
-                                selectedFile === file
-                                  ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
-                                  : "hover:bg-gray-100 dark:hover:bg-gray-800"
-                              }`}
+                              className={`cursor-pointer p-2 text-sm rounded ${selectedFile === file
+                                ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
+                                : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                                }`}
                               onClick={() => {
                                 setSelectedFile(file);
                                 setSearchQuery("");
@@ -486,10 +482,13 @@ function SystemLogsPage() {
                               </div>
                             )}
                           </div>
-                          <div className="flex flex-row items-center">
+                          <div className="flex flex-row items-center gap-3">
+
                             <Checkbox
                               checked={showLn}
-                              onChange={() => setShowLn(!showLn)}
+                              onCheckedChange={(checked) => {
+                                setShowLn(checked as boolean);
+                              }}
                             />
                             <p className="text-sm">Show Line Numbers</p>
                           </div>
@@ -517,7 +516,7 @@ function SystemLogsPage() {
                                     <p className="flex-1">
                                       {parts.map((part, i) =>
                                         part.toLowerCase() ===
-                                        searchQuery.toLowerCase() ? (
+                                          searchQuery.toLowerCase() ? (
                                           <mark
                                             key={i}
                                             className="bg-blue-200 rounded-[3px]"
@@ -622,9 +621,9 @@ function SystemLogsPage() {
                                   {log.remark && log.remark.description}
                                 </p>
                                 {log?.note &&
-                                Object.keys(log.note).length > 0 &&
-                                log?.note?.rating !== 0 &&
-                                log?.note?.rating ? (
+                                  Object.keys(log.note).length > 0 &&
+                                  log?.note?.rating !== 0 &&
+                                  log?.note?.rating ? (
                                   <div className="flex flex-row items-center">
                                     {log?.note?.rating}/5
                                     <Star
@@ -698,11 +697,10 @@ function SystemLogsPage() {
                                 <p>
                                   <span className="font-medium">Status:</span>{" "}
                                   <span
-                                    className={`capitalize ${
-                                      log.candidateData?.status === "rejected"
-                                        ? "text-red-500"
-                                        : "text-green-500"
-                                    }`}
+                                    className={`capitalize ${log.candidateData?.status === "rejected"
+                                      ? "text-red-500"
+                                      : "text-green-500"
+                                      }`}
                                   >
                                     {log.candidateData?.status || "N/A"}
                                   </span>
@@ -734,11 +732,10 @@ function SystemLogsPage() {
                                 <p>
                                   <span className="font-medium">Status:</span>{" "}
                                   <span
-                                    className={`capitalize ${
-                                      log.jobData?.status === "open"
-                                        ? "text-green-500"
-                                        : "text-gray-500"
-                                    }`}
+                                    className={`capitalize ${log.jobData?.status === "open"
+                                      ? "text-green-500"
+                                      : "text-gray-500"
+                                      }`}
                                   >
                                     {log.jobData?.status || "N/A"}
                                   </span>
@@ -754,8 +751,8 @@ function SystemLogsPage() {
                                   </span>{" "}
                                   {log.currentInterviewer.length > 0
                                     ? log.currentInterviewer
-                                        .map((i) => i.name)
-                                        .join(", ")
+                                      .map((i) => i.name)
+                                      .join(", ")
                                     : "None"}
                                 </p>
                                 <p>
@@ -764,8 +761,8 @@ function SystemLogsPage() {
                                   </span>{" "}
                                   {log.previousInterviewer.length > 0
                                     ? log.previousInterviewer
-                                        .map((i) => i.name)
-                                        .join(", ")
+                                      .map((i) => i.name)
+                                      .join(", ")
                                     : "None"}
                                 </p>
                               </div>
