@@ -237,6 +237,7 @@ export async function PUT(request: NextRequest) {
     );
 
     candidate.scores = scores;
+    candidate.contact = candidate.contact;
     await candidate.save();
 
     const fullCandidate = (await Candidate.findById(candidate._id)
@@ -255,7 +256,6 @@ export async function PUT(request: NextRequest) {
         },
       ])
       .lean()) as ICandidate;
-
     const candidateHistory = await History?.findOne({
       candidateId: candidate._id,
       jobId:

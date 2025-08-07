@@ -10,12 +10,13 @@ interface JobForEvaluate {
   salary?: string;
 }
 
-interface EvaluationResult {
+export interface EvaluationResult {
   overall: number;
   experience: number;
   skills: number;
   education: number;
   projects: number;
+  contact: string;
   certifications: number;
   affordability?: number;
   strengths: string[];
@@ -365,6 +366,7 @@ export class AIEvaluationService {
         overall: parsedObject.overall || 0,
         experience: parsedObject.experience || 0,
         skills: parsedObject.skills || 0,
+        contact: parsedObject.contact || "",
         education: parsedObject.education || 0,
         projects: parsedObject.projects || 0,
         certifications: parsedObject.certifications || 0,
@@ -436,6 +438,7 @@ export class AIEvaluationService {
       "overall": // Overall suitability score (1-10) with brief justification
       "skills": // Technical skills match score (1-10) with specific skill gaps/matches noted
       "experience": // Work experience relevance score (1-10) with years and domain relevance noted
+      "contact": // Contact number in string format
       "affordability": // Salary alignment score (1-10) with calculation shown (include normalization logic)
       "strengths": // Maximum 4 bullet points of genuine strengths from CV
       "areas_for_improvement": // Maximum 4 bullet points of specific gaps or weaknesses

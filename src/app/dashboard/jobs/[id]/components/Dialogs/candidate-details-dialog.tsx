@@ -51,6 +51,7 @@ import ResumeEvaluationDetails from "../Candidate/ResumeEvaluationDetails";
 import { scoreColors } from "@/lib/constants";
 import CandidateScoreCard from "../Utils/candidate-score-card";
 import { useSelector } from "react-redux";
+import { EvaluationResult } from "@/lib/ai-providers/evaluation-provider";
 
 const labelClass = "font-semibold text-base";
 
@@ -173,6 +174,7 @@ export function CandidateDetailsDialog({
   };
 
   const handleReEvaluationClick = () => {
+    // debugger;
     // Check if candidate already has AI scores (indicating previous evaluation)
     const hasExistingScores =
       localCandidate?.scores &&
@@ -181,7 +183,7 @@ export function CandidateDetailsDialog({
         localCandidate.scores.skills !== undefined ||
         localCandidate.scores.affordability !== undefined);
 
-    if (hasExistingScores) {
+    if (hasExistingScores && !confirmReEvaluateOpen) {
       // Show confirmation dialog for re-evaluation
       setConfirmReEvaluateOpen(true);
     } else {
@@ -191,18 +193,22 @@ export function CandidateDetailsDialog({
   };
 
   const handleReEvaluation = async () => {
+    debugger;
     setConfirmReEvaluateOpen(false);
     try {
       setIsReEvaluating(true);
       setIsEvaluatingFor(localCandidate?._id as string);
-      const result = await evaluateCandidate(
+      const result: {
+        candidate?: EvaluationResult;
+        // error?: string;
+      } = await evaluateCandidate(
         localCandidate?._id as string,
         evaluateCandidateMutation
       );
-      if (!result) {
+      if (!result.candidate) {
         return toast({
           title: "Error",
-          description: "Failed to Re-evaluate the resume",
+          description: (result as string) || "Failed to Re-evaluate the resume",
           variant: "destructive",
         });
       }
@@ -215,7 +221,7 @@ export function CandidateDetailsDialog({
       console.error("Re-evaluation error:", error);
       toast({
         title: "Error",
-        description: "Failed to re-evaluate candidate",
+        description: (error as string) || "Failed to re-evaluate candidate",
         variant: "destructive",
       });
     } finally {
