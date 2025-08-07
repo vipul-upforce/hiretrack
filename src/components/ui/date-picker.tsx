@@ -84,6 +84,7 @@ interface DatePickerProps {
   open?: boolean;
   onOpen?: () => void;
   onClose?: () => void;
+  portalContainer?: HTMLElement | null;
 }
 
 export const DatePicker: React.FC<DatePickerProps> = ({
@@ -101,6 +102,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   open,
   onOpen,
   onClose,
+  portalContainer,
 }) => {
   const pickerRef = useRef<any>(null);
   const [internalOpen, setInternalOpen] = useState(false);
@@ -175,6 +177,8 @@ export const DatePicker: React.FC<DatePickerProps> = ({
         plugins={plugins}
         calendarPosition="bottom"
         range={range}
+        portal={!!portalContainer}
+        portalTarget={portalContainer}
         onOpen={() => {
           setInternalOpen(true);
           doneClicked.current = false;

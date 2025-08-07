@@ -31,12 +31,12 @@ const DialogOverlay = React.forwardRef<
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
 const dialogVariants = cva(
-  "fixed left-[50%] top-[50%] z-50 grid w-full translate-x-[-50%] translate-y-[-50%] border bg-background shadow-[var(--dialog-shadow)] duration-[var(--transition-normal)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-[var(--dialog-radius)] overflow-hidden p-0",
+  "fixed left-[50%] top-[50%] z-50 grid w-full translate-x-[-50%] translate-y-[-50%] border bg-background shadow-[var(--dialog-shadow)] duration-[var(--transition-normal)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-[var(--dialog-radius)] p-0",
   {
     variants: {
       size: {
         xs: "dialog-xs",
-        sm: "dialog-sm", 
+        sm: "dialog-sm",
         md: "dialog-md",
         lg: "dialog-lg",
         xl: "dialog-xl",
@@ -51,7 +51,7 @@ const dialogVariants = cva(
 
 export interface DialogContentProps
   extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>,
-    VariantProps<typeof dialogVariants> {}
+  VariantProps<typeof dialogVariants> { }
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
@@ -80,7 +80,7 @@ const DialogHeader = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "flex flex-col space-y-2 text-center sm:text-left px-6 py-4 pr-12 border-b border-border/10 flex-shrink-0 sticky top-0 bg-background z-10",
+      "flex flex-col space-y-2 text-center sm:text-left px-6 py-4 pr-10 border-b border-border/10 rounded-lg flex-shrink-0 sticky top-0 bg-background z-10 overflow-hidden  text-ellipsis",
       className
     )}
     {...props}
@@ -94,7 +94,7 @@ const DialogFooter = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "flex flex-col gap-2 sm:flex-row sm:justify-end px-6 py-4 border-t border-border/10 sticky bottom-0 bg-background flex-shrink-0 z-10",
+      "flex flex-col gap-2 sm:flex-row sm:justify-end px-6 py-4 border-t border-border/10 rounded-lg sticky bottom-0 bg-background flex-shrink-0 z-10",
       className
     )}
     {...props}
@@ -109,7 +109,7 @@ const DialogTitle = React.forwardRef<
   <DialogPrimitive.Title
     ref={ref}
     className={cn(
-      "text-xl font-semibold leading-none tracking-tight text-foreground",
+      "text-xl font-semibold leading-none tracking-tight text-foreground whitespace-nowrap text-ellipsis overflow-hidden",
       className
     )}
     {...props}

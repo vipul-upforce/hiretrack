@@ -50,37 +50,29 @@ const AddFollowUpDialog = ({
       <DialogTrigger asChild>
         <div></div>
       </DialogTrigger>
-      <DialogContent className="w-[700px] p-0 overflow-hidden flex flex-col">
+      <DialogContent className="w-[700px] p-0  flex flex-col ">
         <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle>Create A Followup for {candidate.name}</DialogTitle>
           <DialogDescription>
             Schedule a follow-up reminder for this candidate.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+        <div className="flex-1 px-6 py-4 space-y-4">
           <Textarea
             placeholder="Add the note..."
             className="max-h-80 overflow-y-auto"
             value={newFollowUp}
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-              setNewFollowUp(e.target.value)
-            }
+            onChange={(e) => setNewFollowUp(e.target.value)}
           />
-          {/* <DateTimePicker
-            value={newFollowUpDate || dayjs(candidate?.followUp?.date) || null}
-            onChange={(date: Dayjs | null) => {
-              setNewFollowUpDate(date || null);
-            }}
-          /> */}
-          <DateTimePicker
-            value={
-              newFollowUpDate ||
-              (candidate?.followUp?.date
-                ? dayjs(candidate.followUp.date)
-                : null)
-            }
-            onChange={(date: Dayjs | null) => setNewFollowUpDate(date)}
-          />
+          <div className="relative" style={{ zIndex: 100 }}>
+            <DateTimePicker
+              value={
+                newFollowUpDate ||
+                (candidate?.followUp?.date ? dayjs(candidate.followUp.date) : null)
+              }
+              onChange={(date) => setNewFollowUpDate(date)}
+            />
+          </div>
         </div>
         <DialogFooter className="flex justify-between items-center border-t bg-background px-6 py-4 sticky bottom-0 z-10">
           <div className="flex-1">

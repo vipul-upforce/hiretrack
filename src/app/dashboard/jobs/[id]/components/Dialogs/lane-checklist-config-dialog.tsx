@@ -18,28 +18,28 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import React, { useState, useEffect, useContext } from "react";
-import { 
-  Plus, 
-  Trash2, 
-  ClipboardCheck, 
-  ArrowRight, 
+import {
+  Plus,
+  Trash2,
+  ClipboardCheck,
+  ArrowRight,
   ArrowLeft,
   Copy,
   Save,
   X,
   Download,
   BookOpen,
-  Type, 
-  FileText, 
-  Hash, 
-  ChevronDown, 
-  List, 
-  Circle, 
-  CheckSquare, 
-  Calendar, 
-  Clock, 
-  CalendarClock, 
-  Lock, 
+  Type,
+  FileText,
+  Hash,
+  ChevronDown,
+  List,
+  Circle,
+  CheckSquare,
+  Calendar,
+  Clock,
+  CalendarClock,
+  Lock,
   Upload,
   Check,
   Edit,
@@ -48,7 +48,7 @@ import {
   History,
   Timer
 } from "lucide-react";
-import { 
+import {
   useGetJobLaneConfigQuery,
   useUpdateLaneConfigMutation,
   useGetChecklistTemplatesQuery,
@@ -120,7 +120,7 @@ export const LaneChecklistConfigDialog = ({
   const { data: templates } = useGetChecklistTemplatesQuery({ active: true });
   const [updateLaneConfig] = useUpdateLaneConfigMutation();
   const [createTemplate] = useCreateChecklistTemplateMutation();
-  
+
   // Template-related state
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
   const [templateName, setTemplateName] = useState("");
@@ -216,7 +216,7 @@ export const LaneChecklistConfigDialog = ({
         fields: [...currentChecklist.fields, newField],
       });
     }
-    
+
     setIsFieldDialogOpen(false);
     setEditingField(null);
     setIsEditMode(false);
@@ -258,7 +258,7 @@ export const LaneChecklistConfigDialog = ({
     if (targetIndex < 0 || targetIndex >= newFields.length) return;
 
     [newFields[fieldIndex], newFields[targetIndex]] = [newFields[targetIndex], newFields[fieldIndex]];
-    
+
     // Update order
     newFields.forEach((field, index) => {
       field.order = index;
@@ -337,7 +337,7 @@ export const LaneChecklistConfigDialog = ({
       });
       return;
     }
-    
+
     setTemplateName(currentChecklist.name);
     setTemplateDescription(currentChecklist.description || "");
     setIsTemplateDialogOpen(true);
@@ -407,11 +407,10 @@ export const LaneChecklistConfigDialog = ({
             <div className="flex space-x-1 bg-muted p-1 rounded-lg">
               <button
                 onClick={() => setActiveTab("incoming")}
-                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  activeTab === "incoming"
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === "incoming"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+                  }`}
               >
                 <ArrowRight className="h-4 w-4" />
                 Incoming Checklist
@@ -419,11 +418,10 @@ export const LaneChecklistConfigDialog = ({
               </button>
               <button
                 onClick={() => setActiveTab("outgoing")}
-                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  activeTab === "outgoing"
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === "outgoing"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+                  }`}
               >
                 <ArrowLeft className="h-4 w-4" />
                 Outgoing Checklist
@@ -470,7 +468,7 @@ export const LaneChecklistConfigDialog = ({
                     <p className="text-muted-foreground mb-4">
                       Create a checklist that will be shown when candidates are moved {activeTab === "incoming" ? "into" : "out of"} this lane.
                     </p>
-                    
+
                     <div className="space-y-4">
                       {/* Template Selection - Only show when templates exist */}
                       {filteredTemplates.length > 0 && (
@@ -505,7 +503,7 @@ export const LaneChecklistConfigDialog = ({
                           </div>
                         </>
                       )}
-                      
+
                       <Button onClick={createNewChecklist}>
                         <Plus className="h-4 w-4 mr-2" />
                         {filteredTemplates.length > 0 ? "Create New Checklist" : "Create Checklist"}
@@ -684,7 +682,7 @@ export const LaneChecklistConfigDialog = ({
           </Button>
         </DialogFooter>
       </DialogContent>
-      
+
       {/* Field Configuration Dialog */}
       <FieldConfigDialog
         isOpen={isFieldDialogOpen}
@@ -738,7 +736,7 @@ export const LaneChecklistConfigDialog = ({
             >
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={saveAsTemplate}
               disabled={!templateName.trim()}
             >
@@ -803,8 +801,8 @@ const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent 
-        size="2xl" 
+      <DialogContent
+        size="2xl"
         className="p-0 flex flex-col overflow-hidden"
         aria-describedby="field-config-dialog-description"
       >
@@ -814,7 +812,7 @@ const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 px-6 py-4">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 px-6 py-4 pb-0">
           <div className="space-y-8 pb-6">
             {/* Field Label */}
             <div>
@@ -833,51 +831,48 @@ const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
             {/* Field Type */}
             <div>
               <Label htmlFor="fieldType" className="text-lg font-medium">Field Type</Label>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mt-3">
-                  {FIELD_TYPES.map((type) => {
-                    const IconComponent = fieldTypeIcons[type.value];
-                    const isSelected = fieldData.type === type.value;
-                    return (
-                      <div
-                        key={type.value}
-                        className={`relative p-4 rounded-lg cursor-pointer transition-all duration-200 ${
-                          isSelected
-                            ? 'bg-gray-100 dark:bg-gray-700 shadow-sm'
-                            : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mt-3">
+                {FIELD_TYPES.map((type) => {
+                  const IconComponent = fieldTypeIcons[type.value];
+                  const isSelected = fieldData.type === type.value;
+                  return (
+                    <div
+                      key={type.value}
+                      className={`relative p-4 rounded-lg cursor-pointer transition-all duration-200 ${isSelected
+                        ? 'bg-gray-100 dark:bg-gray-700 shadow-sm'
+                        : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'
                         }`}
-                        onClick={() => setFieldData({ ...fieldData, type: type.value as any })}
-                      >
-                        {isSelected && (
-                          <div 
-                            className="absolute -top-2 -right-2 text-white rounded-full p-1"
-                            style={{ backgroundColor: 'var(--portal-primary, #6366f1)' }}
-                          >
-                            <Check className="h-3 w-3" />
-                          </div>
-                        )}
-                        <div className="flex flex-col items-center text-center gap-2">
-                          <IconComponent 
-                            className={`h-6 w-6 ${
-                              isSelected 
-                                ? 'text-gray-700 dark:text-gray-300' 
-                                : 'text-gray-500 dark:text-gray-400'
-                            }`}
-                          />
-                          <span 
-                            className={`text-sm font-medium ${
-                              isSelected 
-                                ? 'text-gray-700 dark:text-gray-300' 
-                                : 'text-gray-700 dark:text-gray-300'
-                            }`}
-                          >
-                            {type.label}
-                          </span>
+                      onClick={() => setFieldData({ ...fieldData, type: type.value as any })}
+                    >
+                      {isSelected && (
+                        <div
+                          className="absolute -top-2 -right-2 text-white rounded-full p-1"
+                          style={{ backgroundColor: 'var(--portal-primary, #6366f1)' }}
+                        >
+                          <Check className="h-3 w-3" />
                         </div>
+                      )}
+                      <div className="flex flex-col items-center text-center gap-2">
+                        <IconComponent
+                          className={`h-6 w-6 ${isSelected
+                            ? 'text-gray-700 dark:text-gray-300'
+                            : 'text-gray-500 dark:text-gray-400'
+                            }`}
+                        />
+                        <span
+                          className={`text-sm font-medium ${isSelected
+                            ? 'text-gray-700 dark:text-gray-300'
+                            : 'text-gray-700 dark:text-gray-300'
+                            }`}
+                        >
+                          {type.label}
+                        </span>
                       </div>
-                    );
-                  })}
-                </div>
+                    </div>
+                  );
+                })}
               </div>
+            </div>
 
             {/* Field Options */}
             {(fieldData.type === "select" || fieldData.type === "multiSelect" || fieldData.type === "radio" || fieldData.type === "checkbox") && (
@@ -888,7 +883,7 @@ const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
                 <ChipInput
                   value={fieldData.options || []}
                   onChange={(newOptions) =>
-                    setFieldData({ 
+                    setFieldData({
                       ...fieldData,
                       options: newOptions
                         .map((option) => option.trim())
@@ -920,21 +915,19 @@ const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
               <Label className="text-lg font-medium mb-4 block">Field Options</Label>
               <div className="grid grid-cols-1 gap-4">
                 <div
-                  className={`p-4 rounded-lg cursor-pointer transition-all duration-200 ${
-                    fieldData.required
-                      ? 'bg-gray-50 dark:bg-gray-800'
-                      : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'
-                  }`}
+                  className={`p-4 rounded-lg cursor-pointer transition-all duration-200 ${fieldData.required
+                    ? 'bg-gray-50 dark:bg-gray-800'
+                    : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
                   onClick={() => setFieldData({ ...fieldData, required: !fieldData.required })}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div 
-                        className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                          fieldData.required 
-                            ? '' 
-                            : 'border-gray-300 dark:border-gray-600'
-                        }`}
+                      <div
+                        className={`w-5 h-5 rounded border-2 flex items-center justify-center ${fieldData.required
+                          ? ''
+                          : 'border-gray-300 dark:border-gray-600'
+                          }`}
                         style={fieldData.required ? {
                           backgroundColor: 'var(--portal-primary, #6366f1)',
                           borderColor: 'var(--portal-primary, #6366f1)'
@@ -943,7 +936,7 @@ const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
                         {fieldData.required && <Check className="h-3 w-3 text-white" />}
                       </div>
                       <div>
-                        <div 
+                        <div
                           className="font-medium text-gray-700 dark:text-gray-300"
                         >
                           Required Field
@@ -962,7 +955,7 @@ const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
             <div>
               <Label className="text-lg font-medium mb-4 block">Field Visibility</Label>
               <div className="grid grid-cols-1 gap-6">
-                
+
                 {/* Visible on Form */}
                 <div>
                   <div className="flex items-center gap-2 mb-3">
@@ -973,11 +966,10 @@ const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
                     {(['admin', 'hr', 'interviewer'] as UserRole[]).map((role) => (
                       <div
                         key={role}
-                        className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${
-                          fieldData.visibleOnForm.includes(role)
-                            ? 'bg-gray-50 dark:bg-gray-800'
-                            : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'
-                        }`}
+                        className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${fieldData.visibleOnForm.includes(role)
+                          ? 'bg-gray-50 dark:bg-gray-800'
+                          : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'
+                          }`}
                         onClick={() => {
                           const isSelected = fieldData.visibleOnForm.includes(role);
                           const newVisibleOnForm = isSelected
@@ -988,12 +980,11 @@ const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <div 
-                              className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
-                                fieldData.visibleOnForm.includes(role) 
-                                  ? '' 
-                                  : 'border-gray-300 dark:border-gray-600'
-                              }`}
+                            <div
+                              className={`w-4 h-4 rounded border-2 flex items-center justify-center ${fieldData.visibleOnForm.includes(role)
+                                ? ''
+                                : 'border-gray-300 dark:border-gray-600'
+                                }`}
                               style={fieldData.visibleOnForm.includes(role) ? {
                                 backgroundColor: 'var(--portal-primary, #3b82f6)',
                                 borderColor: 'var(--portal-primary, #3b82f6)'
@@ -1002,7 +993,7 @@ const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
                               {fieldData.visibleOnForm.includes(role) && <Check className="h-2.5 w-2.5 text-white" />}
                             </div>
                             <div>
-                              <div 
+                              <div
                                 className="font-medium text-sm capitalize text-gray-700 dark:text-gray-300"
                               >
                                 {role}
@@ -1026,11 +1017,10 @@ const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
                     {(['admin', 'hr', 'interviewer'] as UserRole[]).map((role) => (
                       <div
                         key={role}
-                        className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${
-                          fieldData.visibleInHistory.includes(role)
-                            ? 'bg-gray-50 dark:bg-gray-800'
-                            : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'
-                        }`}
+                        className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${fieldData.visibleInHistory.includes(role)
+                          ? 'bg-gray-50 dark:bg-gray-800'
+                          : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'
+                          }`}
                         onClick={() => {
                           const isSelected = fieldData.visibleInHistory.includes(role);
                           const newVisibleInHistory = isSelected
@@ -1041,12 +1031,11 @@ const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <div 
-                              className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
-                                fieldData.visibleInHistory.includes(role) 
-                                  ? '' 
-                                  : 'border-gray-300 dark:border-gray-600'
-                              }`}
+                            <div
+                              className={`w-4 h-4 rounded border-2 flex items-center justify-center ${fieldData.visibleInHistory.includes(role)
+                                ? ''
+                                : 'border-gray-300 dark:border-gray-600'
+                                }`}
                               style={fieldData.visibleInHistory.includes(role) ? {
                                 backgroundColor: 'var(--portal-primary, #8b5cf6)',
                                 borderColor: 'var(--portal-primary, #8b5cf6)'
@@ -1055,7 +1044,7 @@ const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
                               {fieldData.visibleInHistory.includes(role) && <Check className="h-2.5 w-2.5 text-white" />}
                             </div>
                             <div>
-                              <div 
+                              <div
                                 className="font-medium text-sm capitalize text-gray-700 dark:text-gray-300"
                               >
                                 {role}
@@ -1078,8 +1067,8 @@ const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
             <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button 
-              onClick={handleSave} 
+            <Button
+              onClick={handleSave}
               disabled={!fieldData.label.trim()}
               variant="success"
               size="lg"

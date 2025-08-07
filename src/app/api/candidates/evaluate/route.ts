@@ -83,22 +83,22 @@ export async function PUT(request: NextRequest) {
     const organizationId = candidate.jobId &&
       typeof candidate.jobId === "object" &&
       "organizationId" in candidate.jobId
-        ? String(candidate.jobId.organizationId)
-        : "";
-    
+      ? String(candidate.jobId.organizationId)
+      : "";
+
     console.log("Looking for settings with organizationId:", organizationId);
-    
+
     const settingsData = await Settings.findOne({
       organizationId: organizationId
     });
-    
+
     console.log("Raw settings data:", JSON.stringify({
       found: !!settingsData,
       hasAiProviders: !!settingsData?.aiProviders,
       aiProvidersKeys: settingsData?.aiProviders ? Object.keys(settingsData.aiProviders) : [],
       activeProvider: settingsData?.aiProviders?.activeProvider
     }, null, 2));
-    
+
     if (!settingsData) {
       return NextResponse.json(
         { error: "Settings not found" },
@@ -108,12 +108,12 @@ export async function PUT(request: NextRequest) {
 
     // Check if AI providers are configured with backward compatibility
     let aiProviders = settingsData.aiProviders;
-    
+
     // Handle backward compatibility for legacy Gemini-only installations
     if (!aiProviders) {
       // Check if there's a legacy gemini configuration
       const legacyGeminiKey = settingsData.gemini?.gemini_key || "";
-      
+
       aiProviders = {
         activeProvider: "gemini",
         gemini: {
@@ -121,23 +121,23 @@ export async function PUT(request: NextRequest) {
           model: "gemini-1.5-flash",
           customModel: "",
         },
-        openai: { 
+        openai: {
           api_key: "",
           model: "gpt-4o-mini",
           customModel: "",
         },
-        anthropic: { 
+        anthropic: {
           api_key: "",
           model: "claude-3-5-sonnet-20241022",
           customModel: "",
         },
-        perplexity: { 
+        perplexity: {
           api_key: "",
           model: "sonar-pro",
           customModel: "",
         },
       };
-      
+
       console.log("Using backward compatibility for legacy Gemini settings");
     }
 
@@ -199,8 +199,8 @@ export async function PUT(request: NextRequest) {
 
     const jobDescription =
       candidate.jobId &&
-      typeof candidate.jobId === "object" &&
-      "description" in candidate.jobId
+        typeof candidate.jobId === "object" &&
+        "description" in candidate.jobId
         ? String(candidate.jobId.description)
         : "";
     const jobData = {
@@ -221,13 +221,13 @@ export async function PUT(request: NextRequest) {
       activeProvider: aiProviders.activeProvider,
       geminiKeyLength: aiProviders.gemini?.api_key?.length
     }, null, 2));
-    
+
     // Create settings object with decrypted aiProviders
     const settingsForEvaluation = {
       ...settingsData.toObject(),
       aiProviders: aiProviders // Override with decrypted version
     };
-    
+
     // Pass the settings with decrypted aiProviders
     const scores = await AIEvaluationService.evaluateResume(
       base64Resume,

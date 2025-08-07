@@ -11,12 +11,14 @@ export function DateTimePicker({
   onBlur,
   placeholder = "MM/DD/YYYY hh:mm aa",
   allowClear = true,
+  portalContainer,
 }: {
   value?: Dayjs | null;
   onChange: (date: Dayjs | null) => void;
   onBlur?: () => void;
   placeholder?: string;
   allowClear?: boolean;
+  portalContainer?: HTMLElement | null;
 }) {
   // Convert Dayjs to Date for the new DatePicker
   const dateValue = value ? value.toDate() : null;

@@ -19,7 +19,7 @@ export interface BaseDialogProps extends Omit<DialogContentProps, "children"> {
   title: string;
   description?: string;
   children: React.ReactNode;
-  
+
   // Footer configuration
   showFooter?: boolean;
   primaryAction?: {
@@ -34,14 +34,14 @@ export interface BaseDialogProps extends Omit<DialogContentProps, "children"> {
     onClick: () => void;
     variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | "success" | "warning" | "info";
   };
-  
+
   // Additional footer content
   footerContent?: React.ReactNode;
-  
+
   // Custom styling
   headerClassName?: string;
   footerClassName?: string;
-  
+
   // Accessibility
   "aria-describedby"?: string;
 }
@@ -85,11 +85,13 @@ export const BaseDialog = React.forwardRef<
             <DialogDescription>{description}</DialogDescription>
           )}
         </DialogHeader>
-        
-        <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 px-6 py-4">
-          {children}
+
+        <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 px-6 py-4 pb-0">
+          <div className="">
+            {children}
+          </div>
         </div>
-        
+
         {showFooter && (primaryAction || secondaryAction || footerContent) && (
           <DialogFooter className={cn("flex-shrink-0", footerClassName)}>
             {footerContent}

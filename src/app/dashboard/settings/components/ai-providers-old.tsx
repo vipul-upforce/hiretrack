@@ -32,7 +32,7 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
   const { data, isLoading, refetch } = useGetAIProvidersConfigsQuery(undefined);
   const { data: portalData } = useGetPortalConfigsQuery(undefined);
   const [updateAIProviders, { isLoading: isUpdating }] = useUpdateAIProvidersMutation();
-  
+
   // State for API key verification
   const [verificationStatus, setVerificationStatus] = useState<Record<string, 'idle' | 'loading' | 'success' | 'error'>>({});
   const [verificationMessages, setVerificationMessages] = useState<Record<string, string>>({});
@@ -75,7 +75,7 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
 
     setVerificationStatus(prev => ({ ...prev, [provider]: 'loading' }));
     setVerificationMessages(prev => ({ ...prev, [provider]: 'Verifying API key...' }));
-    
+
     try {
       const response = await fetch('/api/settings/ai-providers/validate', {
         method: 'POST',
@@ -89,27 +89,27 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
       });
 
       const result = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(result.error || 'Validation failed');
       }
 
       const isValid = result.isValid;
       setVerificationStatus(prev => ({ ...prev, [provider]: isValid ? 'success' : 'error' }));
-      
+
       // Use the message from the server if available, otherwise use default messages
-      const message = isValid 
+      const message = isValid
         ? (result.message || `✅ API key is valid and working`)
         : (result.error || `❌ API key is invalid or expired`);
-      
-      setVerificationMessages(prev => ({ 
-        ...prev, 
+
+      setVerificationMessages(prev => ({
+        ...prev,
         [provider]: message
       }));
     } catch (error) {
       setVerificationStatus(prev => ({ ...prev, [provider]: 'error' }));
-      setVerificationMessages(prev => ({ 
-        ...prev, 
+      setVerificationMessages(prev => ({
+        ...prev,
         [provider]: `❌ Verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`
       }));
     }
@@ -187,35 +187,35 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
     provider: AIProviderType;
     description: string;
   }> = [
-    {
-      label: "Google Gemini",
-      name: "gemini_api_key",
-      placeholder: "Enter your Gemini API key",
-      provider: "gemini",
-      description: "Google's multimodal AI model with excellent vision capabilities",
-    },
-    {
-      label: "OpenAI GPT",
-      name: "openai_api_key",
-      placeholder: "Enter your OpenAI API key",
-      provider: "openai",
-      description: "Advanced language model with strong reasoning capabilities",
-    },
-    {
-      label: "Anthropic Claude",
-      name: "anthropic_api_key",
-      placeholder: "Enter your Anthropic API key",
-      provider: "anthropic",
-      description: "Constitutional AI with focus on safety and helpfulness",
-    },
-    {
-      label: "Perplexity AI",
-      name: "perplexity_api_key",
-      placeholder: "Enter your Perplexity API key",
-      provider: "perplexity",
-      description: "AI-powered search and answer engine with real-time data",
-    },
-  ];
+      {
+        label: "Google Gemini",
+        name: "gemini_api_key",
+        placeholder: "Enter your Gemini API key",
+        provider: "gemini",
+        description: "Google's multimodal AI model with excellent vision capabilities",
+      },
+      {
+        label: "OpenAI GPT",
+        name: "openai_api_key",
+        placeholder: "Enter your OpenAI API key",
+        provider: "openai",
+        description: "Advanced language model with strong reasoning capabilities",
+      },
+      {
+        label: "Anthropic Claude",
+        name: "anthropic_api_key",
+        placeholder: "Enter your Anthropic API key",
+        provider: "anthropic",
+        description: "Constitutional AI with focus on safety and helpfulness",
+      },
+      {
+        label: "Perplexity AI",
+        name: "perplexity_api_key",
+        placeholder: "Enter your Perplexity API key",
+        provider: "perplexity",
+        description: "AI-powered search and answer engine with real-time data",
+      },
+    ];
 
   return (
     <Formik<AIProvidersValues>
@@ -242,15 +242,14 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
                 const isActive = values.activeProvider === provider;
                 const fieldValue = values[name] || "";
                 const isVisible = showApiKeys[provider];
-                
+
                 return (
-                  <Card 
-                    key={name} 
-                    className={`transition-all duration-300 hover:shadow-lg ${
-                      isActive 
-                        ? 'border-2 shadow-md ring-1' 
+                  <Card
+                    key={name}
+                    className={`transition-all duration-300 hover:shadow-lg ${isActive
+                        ? 'border-2 shadow-md ring-1'
                         : 'border border-border hover:border-border/80 dark:hover:border-border/60'
-                    }`}
+                      }`}
                     style={isActive ? {
                       borderColor: `${primaryColor}80`,
                       backgroundColor: `${primaryColor}0D`,
@@ -260,12 +259,11 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
                     <CardHeader className="pb-4">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
-                          <div 
-                            className={`p-2 rounded-lg ${
-                              isActive 
-                                ? '' 
+                          <div
+                            className={`p-2 rounded-lg ${isActive
+                                ? ''
                                 : 'bg-muted text-muted-foreground'
-                            }`}
+                              }`}
                             style={isActive ? {
                               backgroundColor: `${primaryColor}33`,
                               color: primaryColor
@@ -310,11 +308,10 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
                             onChange={handleChange}
                             onBlur={handleBlur}
                             placeholder={placeholder}
-                            className={`pr-20 ${
-                              errors[name] && touched[name] 
-                                ? "border-destructive focus-visible:ring-destructive" 
+                            className={`pr-20 ${errors[name] && touched[name]
+                                ? "border-destructive focus-visible:ring-destructive"
                                 : ""
-                            }`}
+                              }`}
                             style={isActive && !errors[name] ? {
                               borderColor: `${primaryColor}80`,
                               '--tw-ring-color': `${primaryColor}80`
@@ -340,7 +337,7 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
                           className="text-destructive text-sm font-medium"
                         />
                       </div>
-                      
+
                       {fieldValue && (
                         <div className="space-y-3">
                           <Button
@@ -363,16 +360,15 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
                               </>
                             )}
                           </Button>
-                          
+
                           {verificationMessages[provider] && (
-                            <div 
-                              className={`p-3 rounded-lg text-sm border transition-all duration-200 ${
-                                verificationStatus[provider] === 'success' 
+                            <div
+                              className={`p-3 rounded-lg text-sm border transition-all duration-200 ${verificationStatus[provider] === 'success'
                                   ? 'bg-green-50 border-green-200 text-green-800 dark:bg-green-950/50 dark:border-green-800 dark:text-green-200'
                                   : verificationStatus[provider] === 'error'
                                     ? 'bg-red-50 border-red-200 text-red-800 dark:bg-red-950/50 dark:border-red-800 dark:text-red-200'
                                     : 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950/50 dark:border-blue-800 dark:text-blue-200'
-                              }`}
+                                }`}
                             >
                               {verificationMessages[provider]}
                             </div>
@@ -386,7 +382,7 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
             </div>
 
             {/* Information Card */}
-            <Card 
+            <Card
               className="border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/50"
               style={{
                 borderColor: `${primaryColor}50`
@@ -412,7 +408,7 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
               </CardContent>
             </Card>
           </div>
-          
+
           <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10 mt-auto">
             <Button
               type="button"

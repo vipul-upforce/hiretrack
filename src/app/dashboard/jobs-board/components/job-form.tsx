@@ -287,7 +287,7 @@ export function JobForm(props: JobFormProps) {
           <DialogHeader>
             <DialogTitle>Add Link</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 p-4">
             <div className="space-y-2">
               <Label htmlFor="link">URL</Label>
               <Input
@@ -341,7 +341,7 @@ export function JobForm(props: JobFormProps) {
             const sanitizedFiles = sanitizeFiles(files);
             setFieldValue("files", sanitizedFiles);
           }}
-          // existingFiles={job?.attachments.files} // Remove from UI
+        // existingFiles={job?.attachments.files} // Remove from UI
         />
       </div>
 

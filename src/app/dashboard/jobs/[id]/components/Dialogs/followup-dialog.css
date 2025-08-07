@@ -1,0 +1,34 @@
+.followup-dialog-datepicker .rmdp-container {
+  position: absolute !important;
+  z-index: 9999 !important;
+}
+
+.followup-dialog-datepicker .rmdp-calendar {
+  z-index: 9999 !important;
+}
+
+.followup-dialog-datepicker .rmdp-wrapper {
+  z-index: 9999 !important;
+  position: absolute !important;
+}
+
+.followup-dialog-content {
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.followup-dialog-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+  position: relative;
+}
+
+.followup-dialog-footer {
+  position: sticky;
+  bottom: 0;
+  background: var(--background);
+  border-top: 1px solid var(--border);
+  z-index: 10;
+}

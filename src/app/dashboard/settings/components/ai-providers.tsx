@@ -41,7 +41,7 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
   const { data, isLoading, refetch } = useGetAIProvidersConfigsQuery(undefined);
   const { data: portalData } = useGetPortalConfigsQuery(undefined);
   const [updateAIProviders, { isLoading: isUpdating }] = useUpdateAIProvidersMutation();
-  
+
   // State for API key verification
   const [verificationStatus, setVerificationStatus] = useState<Record<string, 'idle' | 'loading' | 'success' | 'error'>>({});
   const [verificationMessages, setVerificationMessages] = useState<Record<string, string>>({});
@@ -63,12 +63,12 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
   const getModelDisplayValue = (provider: string, modelValue: string, customValue: string) => {
     const providerModels = getProviderModels(provider);
     const isKnownModel = providerModels.some(m => m.id === modelValue);
-    
+
     // If it's not a known model and there's a custom value, it means this is a custom model
     if (!isKnownModel && customValue) {
       return "custom";
     }
-    
+
     return modelValue || getDefaultModel(provider);
   };
 
@@ -129,7 +129,7 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
 
     setVerificationStatus(prev => ({ ...prev, [provider]: 'loading' }));
     setVerificationMessages(prev => ({ ...prev, [provider]: 'Verifying API key and model...' }));
-    
+
     try {
       const response = await fetch('/api/settings/ai-providers/validate', {
         method: 'POST',
@@ -144,26 +144,26 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
       });
 
       const result = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(result.error || 'Validation failed');
       }
 
       const isValid = result.isValid;
       setVerificationStatus(prev => ({ ...prev, [provider]: isValid ? 'success' : 'error' }));
-      
-      const message = isValid 
+
+      const message = isValid
         ? (result.message || `✅ API key and model are valid`)
         : (result.error || `❌ API key or model is invalid`);
-      
-      setVerificationMessages(prev => ({ 
-        ...prev, 
+
+      setVerificationMessages(prev => ({
+        ...prev,
         [provider]: message
       }));
     } catch (error) {
       setVerificationStatus(prev => ({ ...prev, [provider]: 'error' }));
-      setVerificationMessages(prev => ({ 
-        ...prev, 
+      setVerificationMessages(prev => ({
+        ...prev,
         [provider]: `❌ Verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`
       }));
     }
@@ -251,43 +251,43 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
     provider: AIProviderType;
     description: string;
   }> = [
-    {
-      label: "Google Gemini",
-      apiKeyField: "gemini_api_key",
-      modelField: "gemini_model",
-      customModelField: "gemini_custom_model",
-      placeholder: "Enter your Gemini API key",
-      provider: "gemini",
-      description: "Google's multimodal AI model with excellent vision capabilities",
-    },
-    {
-      label: "OpenAI GPT",
-      apiKeyField: "openai_api_key",
-      modelField: "openai_model",
-      customModelField: "openai_custom_model",
-      placeholder: "Enter your OpenAI API key", 
-      provider: "openai",
-      description: "OpenAI's powerful language models for text processing",
-    },
-    {
-      label: "Anthropic Claude",
-      apiKeyField: "anthropic_api_key",
-      modelField: "anthropic_model",
-      customModelField: "anthropic_custom_model",
-      placeholder: "Enter your Anthropic API key",
-      provider: "anthropic", 
-      description: "Anthropic's Claude AI for detailed analysis and reasoning",
-    },
-    {
-      label: "Perplexity AI",
-      apiKeyField: "perplexity_api_key",
-      modelField: "perplexity_model",
-      customModelField: "perplexity_custom_model",
-      placeholder: "Enter your Perplexity API key",
-      provider: "perplexity",
-      description: "Perplexity's search-augmented language models",
-    },
-  ];
+      {
+        label: "Google Gemini",
+        apiKeyField: "gemini_api_key",
+        modelField: "gemini_model",
+        customModelField: "gemini_custom_model",
+        placeholder: "Enter your Gemini API key",
+        provider: "gemini",
+        description: "Google's multimodal AI model with excellent vision capabilities",
+      },
+      {
+        label: "OpenAI GPT",
+        apiKeyField: "openai_api_key",
+        modelField: "openai_model",
+        customModelField: "openai_custom_model",
+        placeholder: "Enter your OpenAI API key",
+        provider: "openai",
+        description: "OpenAI's powerful language models for text processing",
+      },
+      {
+        label: "Anthropic Claude",
+        apiKeyField: "anthropic_api_key",
+        modelField: "anthropic_model",
+        customModelField: "anthropic_custom_model",
+        placeholder: "Enter your Anthropic API key",
+        provider: "anthropic",
+        description: "Anthropic's Claude AI for detailed analysis and reasoning",
+      },
+      {
+        label: "Perplexity AI",
+        apiKeyField: "perplexity_api_key",
+        modelField: "perplexity_model",
+        customModelField: "perplexity_custom_model",
+        placeholder: "Enter your Perplexity API key",
+        provider: "perplexity",
+        description: "Perplexity's search-augmented language models",
+      },
+    ];
 
   return (
     <Formik<AIProvidersValues>
@@ -317,15 +317,14 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
                 const customModelValue = values[customModelField] || "";
                 const isVisible = showApiKeys[provider];
                 const providerModels = getProviderModels(provider);
-                
+
                 return (
-                  <Card 
-                    key={apiKeyField} 
-                    className={`transition-all duration-300 hover:shadow-lg ${
-                      isActive 
-                        ? 'border-2 shadow-md ring-1' 
+                  <Card
+                    key={apiKeyField}
+                    className={`transition-all duration-300 hover:shadow-lg ${isActive
+                        ? 'border-2 shadow-md ring-1'
                         : 'border border-border hover:border-border/80 dark:hover:border-border/60'
-                    }`}
+                      }`}
                     style={isActive ? {
                       borderColor: `${primaryColor}80`,
                       backgroundColor: `${primaryColor}0D`,
@@ -335,12 +334,11 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
                     <CardHeader className="pb-4">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
-                          <div 
-                            className={`p-2 rounded-lg ${
-                              isActive 
-                                ? '' 
+                          <div
+                            className={`p-2 rounded-lg ${isActive
+                                ? ''
                                 : 'bg-muted text-muted-foreground'
-                            }`}
+                              }`}
                             style={isActive ? {
                               backgroundColor: `${primaryColor}33`,
                               color: primaryColor
@@ -386,11 +384,10 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
                             onChange={handleChange}
                             onBlur={handleBlur}
                             placeholder={placeholder}
-                            className={`pr-20 ${
-                              errors[apiKeyField] && touched[apiKeyField] 
-                                ? "border-destructive focus-visible:ring-destructive" 
+                            className={`pr-20 ${errors[apiKeyField] && touched[apiKeyField]
+                                ? "border-destructive focus-visible:ring-destructive"
                                 : ""
-                            }`}
+                              }`}
                             style={isActive && !errors[apiKeyField] ? {
                               borderColor: `${primaryColor}80`,
                               '--tw-ring-color': `${primaryColor}33`
@@ -416,7 +413,7 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
                                 verifyApiKey(provider, apiKeyValue, finalModel);
                               }}
                               disabled={
-                                verificationStatus[provider] === 'loading' || 
+                                verificationStatus[provider] === 'loading' ||
                                 !apiKeyValue.trim() ||
                                 (modelValue === "custom" && !customModelValue.trim())
                               }
@@ -426,16 +423,15 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
                           </div>
                         </div>
                         <ErrorMessage name={apiKeyField} component="div" className="text-sm text-red-500" />
-                        
+
                         {/* Verification Message */}
                         {verificationMessages[provider] && (
-                          <p className={`text-xs ${
-                            verificationStatus[provider] === 'success' 
-                              ? 'text-green-600' 
-                              : verificationStatus[provider] === 'error' 
-                              ? 'text-red-600' 
-                              : 'text-gray-600'
-                          }`}>
+                          <p className={`text-xs ${verificationStatus[provider] === 'success'
+                              ? 'text-green-600'
+                              : verificationStatus[provider] === 'error'
+                                ? 'text-red-600'
+                                : 'text-gray-600'
+                            }`}>
                             {verificationMessages[provider]}
                           </p>
                         )}
@@ -506,8 +502,8 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
                             onChange={handleChange}
                             onBlur={handleBlur}
                             className={
-                              errors[customModelField] && touched[customModelField] 
-                                ? "border-destructive focus-visible:ring-destructive" 
+                              errors[customModelField] && touched[customModelField]
+                                ? "border-destructive focus-visible:ring-destructive"
                                 : ""
                             }
                           />
@@ -547,7 +543,7 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
                         <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
                           <h4 className="text-sm font-medium mb-2 text-amber-800 dark:text-amber-200">Custom Model</h4>
                           <p className="text-xs text-amber-700 dark:text-amber-300">
-                            You're using a custom model. Please ensure the model name is correct and supported by the provider's API. 
+                            You're using a custom model. Please ensure the model name is correct and supported by the provider's API.
                             Capabilities and features may vary depending on the specific model you specify.
                           </p>
                         </div>
@@ -576,7 +572,7 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
               </CardContent>
             </Card>
           </div>
-          
+
           <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10 mt-auto">
             <Button
               type="button"
