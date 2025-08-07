@@ -123,6 +123,18 @@ const FormUpdater = ({
         values.skills.length === 0 &&
         parsedResumeData.skills?.descriptions.length > 0
       ) {
+        // Simple validation function - the heavy lifting is now done in the extraction
+        const isValidSkill = (skill: string) => {
+          const trimmed = skill.trim();
+          return (
+            trimmed.length >= 2 &&
+            trimmed.length <= 30 &&
+            trimmed.split(/\s+/).length <= 3 &&
+            /[a-zA-Z]/.test(trimmed) &&
+            !/^[\d\W_]+$/.test(trimmed)
+          );
+        };
+
         const splitSkills = [
           ...new Set([
             ...parsedResumeData.skills.featuredSkills
@@ -131,7 +143,7 @@ const FormUpdater = ({
                   .replace(/^[^:]+:/, "")
                   ?.split(/[,|;\/]+/)
                   .map((skill) => skill.trim())
-                  .filter((skill) => !/^[\d\W_]+$/.test(skill))
+                  .filter(isValidSkill)
               )
               .filter(Boolean),
             ...parsedResumeData.skills.descriptions
@@ -140,17 +152,11 @@ const FormUpdater = ({
                   .replace(/^[^:]+:/, "")
                   ?.split(/[,|;\/]+/)
                   .map((skill) => skill.trim())
-                  .filter((skill) => !/^[\d\W_]+$/.test(skill))
+                  .filter(isValidSkill)
               )
               .filter(Boolean),
           ]),
-        ]
-          .filter(
-            (lineText) =>
-              lineText.trim().split(/\s+/).length <= 3 &&
-              lineText.trim().length <= 25
-          )
-          .slice(0, 20);
+        ].slice(0, 20);
 
         setFieldValue("skills", splitSkills);
         setTouched({ skills: true });

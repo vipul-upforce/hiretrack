@@ -82,8 +82,14 @@ export async function evaluateCandidate(
   try {
     const result = await evaluateCandidateMutation({ candidateId }).unwrap();
     return result;
-  } catch {
-    return null;
+  } catch (e) {
+    console.log("_______", e);
+    return typeof e === "object" &&
+      "data" in e &&
+      typeof e.data === "object" &&
+      "error" in e.data
+      ? e.data.error
+      : "failed to re-evaluate candidate";
   }
 }
 
@@ -345,7 +351,10 @@ export function ApplyAsGuestDialog({
             evaluateCandidate(candidateId, evaluateCandidateMutation);
           }
         } catch (pdfError) {
-          console.warn("PDF page count check failed, skipping AI evaluation:", pdfError);
+          console.warn(
+            "PDF page count check failed, skipping AI evaluation:",
+            pdfError
+          );
           // Continue with submission even if PDF check fails
         }
       }
@@ -363,9 +372,10 @@ export function ApplyAsGuestDialog({
       closeParent();
     } catch (error) {
       console.error("Guest application error:", error);
-      
-      let errorMessage = "Failed to create candidate due to an unexpected error.";
-      
+
+      let errorMessage =
+        "Failed to create candidate due to an unexpected error.";
+
       // Handle RTK Query error format
       if (typeof error === "object" && error !== null) {
         if ("data" in error) {
@@ -377,11 +387,14 @@ export function ApplyAsGuestDialog({
           } else if (typeof errorData === "string") {
             errorMessage = errorData;
           }
-        } else if ("message" in error && typeof (error as any).message === "string") {
+        } else if (
+          "message" in error &&
+          typeof (error as any).message === "string"
+        ) {
           errorMessage = (error as any).message;
         }
       }
-      
+
       toast({
         title: "Error",
         description: errorMessage,
@@ -423,7 +436,7 @@ export function ApplyAsGuestDialog({
             if (!hasAlreadyApplied && !isSendingEmail) {
               const target = e.target as HTMLElement;
               target.style.backgroundColor = primaryColor;
-              target.style.color = 'white';
+              target.style.color = "white";
             }
           }}
           onMouseLeave={(e) => {
@@ -436,13 +449,24 @@ export function ApplyAsGuestDialog({
         >
           {isSendingEmail ? (
             <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 mr-2" style={{ borderColor: primaryColor }}></div>
+              <div
+                className="animate-spin rounded-full h-4 w-4 border-b-2 mr-2"
+                style={{ borderColor: primaryColor }}
+              ></div>
               Processing...
             </>
           ) : hasAlreadyApplied ? (
             <>
-              <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              <svg
+                className="w-4 h-4 mr-2"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                  clipRule="evenodd"
+                />
               </svg>
               Applied
             </>
@@ -458,7 +482,9 @@ export function ApplyAsGuestDialog({
         <DialogHeader
           className={`px-6 py-4 flex-shrink-0 text-left ${hasAlreadyApplied && "hidden"}`}
         >
-          <DialogTitle className="text-left text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Apply</DialogTitle>
+          <DialogTitle className="text-left text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+            Apply
+          </DialogTitle>
           {jobTitle && (
             <p className="text-left text-sm text-gray-600 dark:text-gray-400 mt-1">
               Applying for: {jobTitle}
@@ -528,18 +554,18 @@ export function ApplyAsGuestDialog({
                     onClick={() => setIsOpen(false)}
                     className="flex-1 sm:flex-none transition-all duration-200 hover:shadow-md"
                     style={{
-                      borderColor: '#d1d5db',
-                      color: '#6b7280',
+                      borderColor: "#d1d5db",
+                      color: "#6b7280",
                     }}
                     onMouseEnter={(e) => {
                       const target = e.target as HTMLElement;
-                      target.style.borderColor = '#9ca3af';
-                      target.style.backgroundColor = '#f9fafb';
+                      target.style.borderColor = "#9ca3af";
+                      target.style.backgroundColor = "#f9fafb";
                     }}
                     onMouseLeave={(e) => {
                       const target = e.target as HTMLElement;
-                      target.style.borderColor = '#d1d5db';
-                      target.style.backgroundColor = 'transparent';
+                      target.style.borderColor = "#d1d5db";
+                      target.style.backgroundColor = "transparent";
                     }}
                   >
                     Cancel
@@ -578,7 +604,7 @@ export function ApplyAsGuestDialog({
           </Formik>
         )}
       </DialogContent>
-      
+
       <TermsConfirmationDialog
         isOpen={showTermsDialog}
         onClose={() => {
