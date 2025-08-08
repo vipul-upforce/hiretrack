@@ -28,6 +28,7 @@ import handleCandidateInfoCopy from "../../hooks/handleCandidateInfoCopy";
 import DetailsDialogHeader from "../Candidate/candidate-details-header";
 import RemarkInputSection from "../Remarks/RemarkInputSection";
 import { useRemarkHandlers } from "../../hooks/useRemarkHandlers";
+import dayjs from "dayjs";
 import { useUnassignHandlers } from "../../hooks/useUnassignHandlers";
 import { DetailsDialog } from "./DetailsDialog";
 import { candidateDetailsFields } from "../Candidate/candidate-details-fields";
@@ -270,6 +271,11 @@ export function CandidateDetailsDialog({
   useEffect(() => {
     if (isAddingFollowUp) {
       setNewFollowUp(localCandidate?.followUp?.note || "");
+      if (localCandidate?.followUp?.date) {
+        setNewFollowUpDate(dayjs(localCandidate.followUp.date));
+      } else {
+        setNewFollowUpDate(null);
+      }
     }
   }, [isAddingFollowUp, localCandidate]);
 
@@ -970,7 +976,7 @@ export function CandidateDetailsDialog({
           refetch={refetch}
           isOpen={isAssigning}
           onOpenChange={setIsAssigning}
-          onUpdate={onUpdate || (() => {})}
+          onUpdate={onUpdate || (() => { })}
           setLocalCandidate={setLocalCandidate}
           refetchAssignment={refetchAssignment}
           onSuccess={() => {
@@ -1026,7 +1032,7 @@ export function CandidateDetailsDialog({
           candidate={localCandidate}
           isOpen={isEditing}
           onOpenChange={setIsEditing}
-          onUpdate={onUpdate || (() => {})}
+          onUpdate={onUpdate || (() => { })}
           refetchAssignment={refetchAssignment}
           onSuccess={async () => {
             await refetch();
@@ -1048,7 +1054,7 @@ export function CandidateDetailsDialog({
         onCancel={() => setConfirmUnassignOpen(false)}
         isLoading={isLoading}
         loadingText="Marking as done..."
-        // className="sm:max-w-[300px]"
+      // className="sm:max-w-[300px]"
       />
       {/* <ConfirmationDialog
         title="Mark as Done"

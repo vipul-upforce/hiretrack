@@ -864,7 +864,7 @@ export function SearchResults({
             console.log("Candidate assigned:", updatedCandidate);
             refetch();
           }}
-          setLocalCandidate={() => {}}
+          setLocalCandidate={() => { }}
           onSuccess={() => {
             setIsAssignInterviewerOpen(false);
             setCandidateToAssignInterviewer(null);
@@ -891,7 +891,7 @@ export function SearchResults({
           candidate={candidateToAddRemark}
           isOpen={isAddRemarkOpen}
           onOpenChange={setIsAddRemarkOpen}
-          setOpenRemarksFor={() => {}}
+          setOpenRemarksFor={() => { }}
           refetch={refetch}
         />
       )}

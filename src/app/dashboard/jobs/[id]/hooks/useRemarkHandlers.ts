@@ -46,6 +46,21 @@ export const useRemarkHandlers = (
     }
   }, [user]);
 
+  // Update follow-up state when candidate data changes
+  useEffect(() => {
+    if (localCandidate?.followUp?.note && localCandidate?.followUp?.note.length > 1) {
+      setNewFollowUp(localCandidate.followUp.note);
+    } else {
+      setNewFollowUp("");
+    }
+
+    if (localCandidate?.followUp?.date && (localCandidate?.followUp?.date as string).length > 1) {
+      setNewFollowUpDate(dayjs(localCandidate.followUp.date));
+    } else {
+      setNewFollowUpDate(null);
+    }
+  }, [localCandidate?.followUp?.note, localCandidate?.followUp?.date]);
+
   // alert(`${user?.role!} + ${isSubRemarkPrivate}`);
   const handleRemarkUpdate = async (
     id: string,

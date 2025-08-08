@@ -250,7 +250,7 @@ const ChecklistFieldRenderer: React.FC<{
             name={fieldId}
             value={value || ""}
             onChange={(time) => onChange(time)}
-            onBlur={() => {}}
+            onBlur={() => { }}
           />
         );
 
@@ -388,21 +388,21 @@ const ChecklistForm: React.FC<{
   errors = {},
   touched = {},
 }) => {
-  return (
-    <div className="space-y-4">
-      {checklist.fields.map((field) => (
-        <ChecklistFieldRenderer
-          key={field.id}
-          field={field}
-          value={responses[field.id]?.value}
-          onChange={(value) => onResponseChange(field.id, value)}
-          error={errors[field.id]}
-          touched={touched[field.id]}
-        />
-      ))}
-    </div>
-  );
-};
+    return (
+      <div className="space-y-4">
+        {checklist.fields.map((field) => (
+          <ChecklistFieldRenderer
+            key={field.id}
+            field={field}
+            value={responses[field.id]?.value}
+            onChange={(value) => onResponseChange(field.id, value)}
+            error={errors[field.id]}
+            touched={touched[field.id]}
+          />
+        ))}
+      </div>
+    );
+  };
 
 const ChecklistRemarksDialog = ({
   candidate,
@@ -712,7 +712,14 @@ const ChecklistRemarksDialog = ({
       });
       return;
     }
-
+    if (!newRemark.trim() || !user?.id) {
+      toast({
+        title: "Error",
+        description: "Please add remarks",
+        variant: "destructive",
+      });
+      return;
+    }
     // const user = decryptedResponse.user;
     setIsSubmitting(true);
 
@@ -742,13 +749,14 @@ const ChecklistRemarksDialog = ({
             responses: checklistResponses,
             remark: newRemark.trim()
               ? {
-                  description: newRemark.trim(),
-                  isPrivate: isSubRemarkPrivate,
-                  rating: remarkRating || undefined,
-                }
+                description: newRemark.trim(),
+                isPrivate: isSubRemarkPrivate,
+                rating: remarkRating || undefined,
+              }
               : undefined,
           },
         }).unwrap();
+
 
         // Update candidate status to target lane after successful checklist submission
         const updatedCandidate = await updateCandidate({
@@ -880,7 +888,7 @@ const ChecklistRemarksDialog = ({
           <DialogDescription>
             {hasChecklist
               ? parsedChecklistInfo?.checklist?.description ||
-                "Please complete the checklist before proceeding."
+              "Please complete the checklist before proceeding."
               : "Add your observations and feedback for this candidate."}
           </DialogDescription>
         </DialogHeader>
@@ -987,7 +995,7 @@ const ChecklistRemarksDialog = ({
           >
             {isChecklistMandatory ? "Cancel" : "Skip"}
           </Button>
-          <Button onClick={handleSubmit} variant="info" disabled={isSubmitting}>
+          <Button onClick={handleSubmit} variant="info" disabled={isSubmitting || !newRemark.trim() || !user?.id}>
             {isSubmitting ? "Submitting..." : "Submit"}
           </Button>
         </DialogFooter>

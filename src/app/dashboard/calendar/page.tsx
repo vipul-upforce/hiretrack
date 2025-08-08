@@ -178,7 +178,7 @@ export default function CalendarPage() {
         searchRegex.test(
           (typeof assignment?.assignment?.interviewerId === "object" &&
             assignment?.assignment?.interviewerId?.name) ||
-            ""
+          ""
         ) ||
         (allSkills.length > 0 &&
           allSkills.some((skill) => searchRegex.test(skill || "")))
@@ -224,22 +224,22 @@ export default function CalendarPage() {
               typeof candidate?.jobId === "string"
                 ? undefined
                 : {
-                    title: (candidate?.jobId as Job)?.title,
-                    description: (candidate?.jobId as Job)?.description,
-                  },
+                  title: (candidate?.jobId as Job)?.title,
+                  description: (candidate?.jobId as Job)?.description,
+                },
           },
           interviewer:
             typeof candidate?.assignment?.interviewerId === "string"
               ? {
-                  _id: candidate?.assignment?.interviewerId,
-                  name: "Unknown",
-                  email: "Unknown",
-                }
+                _id: candidate?.assignment?.interviewerId,
+                name: "Unknown",
+                email: "Unknown",
+              }
               : candidate?.assignment?.interviewerId || {
-                  _id: "",
-                  name: "Unknown",
-                  email: "Unknown",
-                },
+                _id: "",
+                name: "Unknown",
+                email: "Unknown",
+              },
         },
       };
     }) || [];
@@ -307,7 +307,6 @@ export default function CalendarPage() {
     ) {
       return candidate.assignment.interviewerId.name;
     }
-    return "Unknown";
   };
 
   if (isLoading) {

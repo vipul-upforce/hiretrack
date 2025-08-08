@@ -72,7 +72,7 @@ export default function JobModal({
         console.error("Failed to fetch portal colors:", error);
       }
     };
-    
+
     if (isOpen) {
       fetchPortalColors();
     }
@@ -102,6 +102,8 @@ export default function JobModal({
     setIsPendingOptionsOpen(true);
     onClose();
   };
+  // console.log(/"JobModal job:", job);
+
 
   return (
     <>
@@ -187,6 +189,30 @@ export default function JobModal({
                   </div>
                 </div>
 
+                {/* {job?.links?.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Job Links
+                    </h4>
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                      {job.links.map((link, index) => (
+                        <a
+                          key={index}
+                          href={link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 dark:text-blue-400 hover:underline break-all block"
+                          style={{
+                            wordBreak: "break-word",
+                            overflowWrap: "break-word",
+                          }}
+                        >
+                          {link}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )} */}
                 {/* Experience & Salary Section */}
                 <div className="space-y-3">
                   <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -196,13 +222,13 @@ export default function JobModal({
                     {/* Experience */}
                     <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
                       <div className="flex items-center gap-3">
-                        <div 
+                        <div
                           className="p-2 rounded-lg"
                           style={{
                             backgroundColor: `${primaryColor}15`,
                           }}
                         >
-                          <Briefcase 
+                          <Briefcase
                             className="w-5 h-5"
                             style={{ color: primaryColor }}
                           />
@@ -215,18 +241,18 @@ export default function JobModal({
                         </div>
                       </div>
                     </div>
-                    
+
                     {/* Salary */}
                     {(job as JobWithSalary)?.salary && (
                       <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
                         <div className="flex items-center gap-3">
-                          <div 
+                          <div
                             className="p-2 rounded-lg flex items-center justify-center"
                             style={{
                               backgroundColor: `${secondaryColor}15`,
                             }}
                           >
-                            <span 
+                            <span
                               className="text-lg font-bold"
                               style={{ color: secondaryColor }}
                             >₹</span>
@@ -234,8 +260,8 @@ export default function JobModal({
                           <div>
                             <p className="text-sm text-gray-600 dark:text-gray-400">Salary</p>
                             <p className="font-semibold text-gray-900 dark:text-white">
-                              {(job as JobWithSalary).salary?.inText || 
-                               `${(job as JobWithSalary).salary?.min || 0} - ${(job as JobWithSalary).salary?.max || 0} LPA`}
+                              {(job as JobWithSalary).salary?.inText ||
+                                `${(job as JobWithSalary).salary?.min || 0} - ${(job as JobWithSalary).salary?.max || 0} LPA`}
                             </p>
                           </div>
                         </div>
@@ -282,17 +308,16 @@ export default function JobModal({
                     <button
                       onClick={handleContinue}
                       disabled={alreadyApplied || readOnly}
-                      className={`flex items-center justify-center w-full sm:w-auto px-8 py-3 text-sm font-semibold rounded-lg focus:outline-none focus:ring-2 transition-colors ${
-                        alreadyApplied || readOnly
-                          ? "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 cursor-not-allowed"
-                          : "text-white"
-                      }`}
+                      className={`flex items-center justify-center w-full sm:w-auto px-8 py-3 text-sm font-semibold rounded-lg focus:outline-none focus:ring-2 transition-colors ${alreadyApplied || readOnly
+                        ? "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 cursor-not-allowed"
+                        : "text-white"
+                        }`}
                       style={
                         alreadyApplied || readOnly
                           ? {}
                           : ({
-                              backgroundColor: primaryColor,
-                            } as React.CSSProperties)
+                            backgroundColor: primaryColor,
+                          } as React.CSSProperties)
                       }
                       onMouseEnter={(e) => {
                         if (!alreadyApplied && !readOnly) {
