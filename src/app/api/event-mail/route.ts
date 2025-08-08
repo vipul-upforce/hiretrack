@@ -77,12 +77,18 @@ async function sendQueuedEmail(data: any, req: NextRequest) {
     jobId,
   } = data;
 
-  const settings = await Settings.findOne({ organizationId: new mongoose.Types.ObjectId(organizationId) }).lean();
+  const settings = await Settings.findOne({
+    organizationId: new mongoose.Types.ObjectId(organizationId),
+  }).lean();
   if (!settings || !settings.mailConfig) {
     throw new Error("Mail configuration not found");
   }
 
-  const fromEmail = settings.mailConfig.resend_from || settings.mailConfig.brevo_from || settings.mailConfig.smtp_from || "system@hiretrack.com";
+  const fromEmail =
+    settings.mailConfig.resend_from ||
+    settings.mailConfig.brevo_from ||
+    settings.mailConfig.smtp_from ||
+    "system@hiretrack.com";
 
   const startDateString = startTime
     ? await getFormattedDate(req, new Date(startTime))
@@ -177,9 +183,14 @@ async function sendQueuedEmail(data: any, req: NextRequest) {
   );
 
   // Ensure sentBy is a valid ObjectId, falling back to the system user if needed
-  const sentById = sentBy && sentBy !== "system" ? sentBy : systemUser._id.toString();
-  const sentByEmailValue = sentByEmail && sentByEmail !== fromEmail ? sentByEmail : systemUser.email;
-  const sentByNameValue = sentByName && sentByName !== "HireTrack System" ? sentByName : systemUser.name;
+  const sentById =
+    sentBy && sentBy !== "system" ? sentBy : systemUser._id.toString();
+  const sentByEmailValue =
+    sentByEmail && sentByEmail !== fromEmail ? sentByEmail : systemUser.email;
+  const sentByNameValue =
+    sentByName && sentByName !== "HireTrack System"
+      ? sentByName
+      : systemUser.name;
 
   return await sendEventEmailWithHistory(
     organizationId,
@@ -225,8 +236,8 @@ export async function PUT(req: NextRequest) {
       throw new Error("Database not connected");
     }
     const latestRemark = data.feedback[data.feedback.length - 1];
-    console.log(latestRemark, "feee---ddd");
-    const newDate = latestRemark.date;
+    // console.log(latestRemark, "feee---ddd");
+    const newDate = data.dateTime;
     const completionDate = (await getFormattedDate(
       req,
       newDate,
@@ -254,12 +265,21 @@ export async function PUT(req: NextRequest) {
       organizationId
     );
 
-    const settings = await Settings.findOne({ organizationId: new mongoose.Types.ObjectId(organizationId) }).lean();
+    const settings = await Settings.findOne({
+      organizationId: new mongoose.Types.ObjectId(organizationId),
+    }).lean();
     if (!settings || !settings.mailConfig) {
-      return NextResponse.json({ error: "Mail configuration not found" }, { status: 500 });
+      return NextResponse.json(
+        { error: "Mail configuration not found" },
+        { status: 500 }
+      );
     }
 
-    const fromEmail = settings.mailConfig.resend_from || settings.mailConfig.brevo_from || settings.mailConfig.smtp_from || "system@hiretrack.com";
+    const fromEmail =
+      settings.mailConfig.resend_from ||
+      settings.mailConfig.brevo_from ||
+      settings.mailConfig.smtp_from ||
+      "system@hiretrack.com";
 
     const users = await User.find({
       organizationId: new mongoose.Types.ObjectId(organizationId),
@@ -397,13 +417,21 @@ export async function POST(req: NextRequest) {
       .select("email")
       .lean();
 
-      const settings = await Settings.findOne({ organizationId: new mongoose.Types.ObjectId(organizationId) }).lean();
+    const settings = await Settings.findOne({
+      organizationId: new mongoose.Types.ObjectId(organizationId),
+    }).lean();
     if (!settings || !settings.mailConfig) {
-      return NextResponse.json({ error: "Mail configuration not found" }, { status: 500 });
+      return NextResponse.json(
+        { error: "Mail configuration not found" },
+        { status: 500 }
+      );
     }
 
-    const fromEmail = settings.mailConfig.resend_from || settings.mailConfig.brevo_from || settings.mailConfig.smtp_from || "system@hiretrack.com";
-
+    const fromEmail =
+      settings.mailConfig.resend_from ||
+      settings.mailConfig.brevo_from ||
+      settings.mailConfig.smtp_from ||
+      "system@hiretrack.com";
 
     console.log("%%EMAILS: ", users);
 

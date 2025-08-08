@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { JobLaneConfig, Job } from "@/lib/mongodb";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
-import { IJobLaneConfig, ILaneConfig, IChecklist } from "@/lib/models/JobLaneConfig";
+import {
+  IJobLaneConfig,
+  ILaneConfig,
+  IChecklist,
+} from "@/lib/models/JobLaneConfig";
 
 // GET - Get job lane configuration with checklists
 export async function GET(
@@ -19,12 +23,15 @@ export async function GET(
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
     const decoded = decryptedResponse.user;
-    
+
     // Get the user ID from the decoded token (could be _id, id, or userId)
     const userId = decoded._id || decoded.id || decoded.userId;
     if (!userId) {
       console.error("No user ID found in decoded token:", decoded);
-      return NextResponse.json({ error: "Invalid user ID in token" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Invalid user ID in token" },
+        { status: 401 }
+      );
     }
 
     // Check if user is admin or HR
@@ -36,7 +43,7 @@ export async function GET(
     }
 
     await connectToDatabase();
-
+    const { id } = await params;
     // Verify job exists and user has access
     const job = await Job!.findById(params.id);
     if (!job) {
@@ -48,11 +55,11 @@ export async function GET(
     }
 
     // Get job lane configuration
-    const config = await JobLaneConfig!.findOne({ jobId: params.id });
+    const config = await JobLaneConfig!.findOne({ jobId: id });
 
     return NextResponse.json({
       success: true,
-      data: config || { jobId: params.id, laneConfigs: [] }
+      data: config || { jobId: id, laneConfigs: [] },
     });
   } catch (error) {
     console.error("Error fetching job lane config:", error);
@@ -79,12 +86,15 @@ export async function POST(
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
     const decoded = decryptedResponse.user;
-    
+
     // Get the user ID from the decoded token (could be _id, id, or userId)
     const userId = decoded._id || decoded.id || decoded.userId;
     if (!userId) {
       console.error("No user ID found in decoded token:", decoded);
-      return NextResponse.json({ error: "Invalid user ID in token" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Invalid user ID in token" },
+        { status: 401 }
+      );
     }
 
     // Check if user is admin or HR
@@ -119,17 +129,17 @@ export async function POST(
     }
 
     // Process lane configs to set createdBy for checklists
-    const processedLaneConfigs = laneConfigs.map(laneConfig => {
+    const processedLaneConfigs = laneConfigs.map((laneConfig) => {
       const processed = { ...laneConfig };
-      
+
       if (processed.incomingChecklist) {
         processed.incomingChecklist.createdBy = userId;
       }
-      
+
       if (processed.outgoingChecklist) {
         processed.outgoingChecklist.createdBy = userId;
       }
-      
+
       return processed;
     });
 
@@ -140,14 +150,14 @@ export async function POST(
         jobId: params.id,
         organizationId: job.organizationId,
         laneConfigs: processedLaneConfigs,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       },
       { upsert: true, new: true }
     );
 
     return NextResponse.json({
       success: true,
-      data: config
+      data: config,
     });
   } catch (error) {
     console.error("Error updating job lane config:", error);
@@ -174,12 +184,15 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
     const decoded = decryptedResponse.user;
-    
+
     // Get the user ID from the decoded token (could be _id, id, or userId)
     const userId = decoded._id || decoded.id || decoded.userId;
     if (!userId) {
       console.error("No user ID found in decoded token:", decoded);
-      return NextResponse.json({ error: "Invalid user ID in token" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Invalid user ID in token" },
+        { status: 401 }
+      );
     }
 
     // Check if user is admin or HR
@@ -214,30 +227,32 @@ export async function PATCH(
 
     // Get existing config or create new one
     let config = await JobLaneConfig!.findOne({ jobId: params.id });
-    
+
     if (!config) {
       config = new JobLaneConfig!({
         jobId: params.id,
         organizationId: job.organizationId,
-        laneConfigs: []
+        laneConfigs: [],
       });
     }
 
     // Process the lane config to set createdBy for checklists
     const processedLaneConfig = { ...laneConfig, laneId };
-    
+
     // Set createdBy for incoming checklist if it exists
     if (processedLaneConfig.incomingChecklist) {
       processedLaneConfig.incomingChecklist.createdBy = userId;
     }
-    
+
     // Set createdBy for outgoing checklist if it exists
     if (processedLaneConfig.outgoingChecklist) {
       processedLaneConfig.outgoingChecklist.createdBy = userId;
     }
 
     // Update specific lane config
-    const laneIndex = config.laneConfigs.findIndex(lc => lc.laneId === laneId);
+    const laneIndex = config.laneConfigs.findIndex(
+      (lc) => lc.laneId === laneId
+    );
     if (laneIndex >= 0) {
       config.laneConfigs[laneIndex] = processedLaneConfig;
     } else {
@@ -249,19 +264,19 @@ export async function PATCH(
 
     return NextResponse.json({
       success: true,
-      data: config
+      data: config,
     });
   } catch (error) {
     console.error("Error updating lane config:", error);
     console.error("Error details:", {
-      message: error instanceof Error ? error.message : 'Unknown error',
+      message: error instanceof Error ? error.message : "Unknown error",
       stack: error instanceof Error ? error.stack : undefined,
-      error: error
+      error: error,
     });
     return NextResponse.json(
-      { 
+      {
         error: "Failed to update lane configuration",
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     );
@@ -284,12 +299,15 @@ export async function DELETE(
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
     const decoded = decryptedResponse.user;
-    
+
     // Get the user ID from the decoded token (could be _id, id, or userId)
     const userId = decoded._id || decoded.id || decoded.userId;
     if (!userId) {
       console.error("No user ID found in decoded token:", decoded);
-      return NextResponse.json({ error: "Invalid user ID in token" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Invalid user ID in token" },
+        { status: 401 }
+      );
     }
 
     // Check if user is admin or HR
@@ -333,7 +351,7 @@ export async function DELETE(
     }
 
     // Find and update lane config
-    const laneConfig = config.laneConfigs.find(lc => lc.laneId === laneId);
+    const laneConfig = config.laneConfigs.find((lc) => lc.laneId === laneId);
     if (!laneConfig) {
       return NextResponse.json(
         { error: "Lane configuration not found" },
@@ -353,7 +371,7 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: `${checklistType} checklist removed successfully`
+      message: `${checklistType} checklist removed successfully`,
     });
   } catch (error) {
     console.error("Error deleting checklist:", error);
