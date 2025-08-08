@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { User } from "@/lib/mongodb";
+import connectToDatabase, { Settings, User } from "@/lib/mongodb";
 import { Candidate } from "@/lib/mongodb";
 import { handleCustomFieldFiles, handleFileAttachments } from "@/lib/fileUtils";
 import { handleSingleFile } from "@/lib/fileUtils";
@@ -16,6 +16,8 @@ import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
 import { ITag } from "@/lib/models/organization";
 import { NotificationService } from "@/lib/notifications/notificationService";
 import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
+import { sendEventEmailWithHistory } from "@/lib/unifiedEmailService";
+import { Types } from "mongoose";
 
 interface UpdateObject {
   $set: Record<string, unknown>;
@@ -428,11 +430,20 @@ export async function PUT(
                   organizationId
                 );
 
-              sendMail(
+              sendEventEmailWithHistory(
                 organizationId,
                 emailList as string[],
                 emailSubject,
-                emailContent
+                emailContent,
+                {
+                  sentBy: userData.id.toString(),
+                  sentByEmail: userData.email,
+                  sentByName: userData.name,
+                  metadata: {
+                    templateUsed: "new-remark",
+                    eventType: "new-remark",
+                  },
+                }
               );
             }
           }
@@ -604,6 +615,7 @@ export async function PUT(
       try {
         const jobInfo = updatedCandidate.jobId as any;
 
+
         // Assignment notifications
         if ("assignment" in data) {
           const oldAssignment = existingCandidate.assignment;
@@ -611,7 +623,10 @@ export async function PUT(
 
           if (newAssignment && newAssignment.interviewerId) {
             // If assignment is new or interviewer changed
-            if (!oldAssignment || oldAssignment.interviewerId !== newAssignment.interviewerId) {
+            if (
+              !oldAssignment ||
+              oldAssignment.interviewerId !== newAssignment.interviewerId
+            ) {
               // Get interviewer information
               const interviewer = await User?.findById(newAssignment.interviewerId).select('name email');
 
@@ -620,7 +635,10 @@ export async function PUT(
                   organizationId: organizationId,
                   candidateId: updatedCandidate._id.toString(),
                   candidateName: updatedCandidate.name,
-                  jobId: jobInfo?._id?.toString() || updatedCandidate.jobId?.toString() || "",
+                  jobId:
+                    jobInfo?._id?.toString() ||
+                    updatedCandidate.jobId?.toString() ||
+                    "",
                   jobTitle: jobInfo?.title || "Unknown Job",
                   interviewerId: newAssignment.interviewerId,
                   interviewerName: interviewer.name,
@@ -635,7 +653,10 @@ export async function PUT(
                   organizationId: organizationId,
                   candidateId: updatedCandidate._id.toString(),
                   candidateName: updatedCandidate.name,
-                  jobId: jobInfo?._id?.toString() || updatedCandidate.jobId?.toString() || "",
+                  jobId:
+                    jobInfo?._id?.toString() ||
+                    updatedCandidate.jobId?.toString() ||
+                    "",
                   jobTitle: jobInfo?.title || "Unknown Job",
                   interviewerId: newAssignment.interviewerId,
                   interviewerName: interviewer?.name || "Unknown Interviewer",
@@ -649,7 +670,11 @@ export async function PUT(
         }
 
         // Remarks notification
-        if ("remarks" in data && Array.isArray(data.remarks) && data.remarks.length > 0) {
+        if (
+          "remarks" in data &&
+          Array.isArray(data.remarks) &&
+          data.remarks.length > 0
+        ) {
           const existingRemarks = existingCandidate.remarks || [];
           if (data.remarks.length > existingRemarks.length) {
             const latestRemark = data.remarks[data.remarks.length - 1];
@@ -658,7 +683,10 @@ export async function PUT(
                 organizationId: organizationId,
                 candidateId: updatedCandidate._id.toString(),
                 candidateName: updatedCandidate.name,
-                jobId: jobInfo?._id?.toString() || updatedCandidate.jobId?.toString() || "",
+                jobId:
+                  jobInfo?._id?.toString() ||
+                  updatedCandidate.jobId?.toString() ||
+                  "",
                 jobTitle: jobInfo?.title || "Unknown Job",
                 remarkText: latestRemark.description,
                 triggerUserId: userData._id,
@@ -671,15 +699,23 @@ export async function PUT(
         // Follow-up notification
         if ("followUp" in data && data.followUp) {
           const oldFollowUp = existingCandidate.followUp;
-          if (!oldFollowUp || JSON.stringify(oldFollowUp) !== JSON.stringify(data.followUp)) {
+          if (
+            !oldFollowUp ||
+            JSON.stringify(oldFollowUp) !== JSON.stringify(data.followUp)
+          ) {
             await NotificationService.notifyFollowUpAdded({
               organizationId: organizationId,
               candidateId: updatedCandidate._id.toString(),
               candidateName: updatedCandidate.name,
-              jobId: jobInfo?._id?.toString() || updatedCandidate.jobId?.toString() || "",
+              jobId:
+                jobInfo?._id?.toString() ||
+                updatedCandidate.jobId?.toString() ||
+                "",
               jobTitle: jobInfo?.title || "Unknown Job",
               followupNote: data.followUp.note || "",
-              followupDate: data.followUp.date ? new Date(data.followUp.date) : undefined,
+              followupDate: data.followUp.date
+                ? new Date(data.followUp.date)
+                : undefined,
               triggerUserId: userData._id,
               triggerUserName: userData.name,
             });
@@ -700,7 +736,10 @@ export async function PUT(
           }
         }
       } catch (notificationError) {
-        console.error("Failed to send candidate update notifications:", notificationError);
+        console.error(
+          "Failed to send candidate update notifications:",
+          notificationError
+        );
         // Don't fail the API call if notification fails
       }
 

@@ -69,7 +69,6 @@ const AddRemarksDialog = ({
       }
       setIsSubmitting(true);
       try {
-
         const newRemarkObj = {
           description: String(newRemark).trim(),
           date: new Date().toISOString(),
@@ -143,7 +142,7 @@ const AddRemarksDialog = ({
         }).unwrap();
 
         const updatedCandidate = await updateCandidate(updateData).unwrap();
-        await sentStatusMailHandler(updatedCandidate, sendStatusMail);
+        // await sentStatusMailHandler(updatedCandidate, sendStatusMail);
         // sentRemarkMail(result, sendEmail);
 
         onOpenChange(false);
@@ -168,9 +167,7 @@ const AddRemarksDialog = ({
             variant: "destructive",
           });
         }
-
-      }
-      finally {
+      } finally {
         setIsSubmitting(false);
       }
 
@@ -249,7 +246,11 @@ const AddRemarksDialog = ({
           <Button variant="secondary" onClick={() => onOpenChange(false)}>
             No Remarks
           </Button>
-          <Button onClick={handleAddRemark} disabled={isSubmitting || !newRemark.trim() || !user?.id} variant="info">
+          <Button
+            onClick={handleAddRemark}
+            disabled={isSubmitting || !newRemark.trim() || !user?.id}
+            variant="info"
+          >
             {isSubmitting ? "Submitting..." : "Add Remark"}
           </Button>
         </DialogFooter>
