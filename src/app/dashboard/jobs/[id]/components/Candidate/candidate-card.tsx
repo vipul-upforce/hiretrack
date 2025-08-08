@@ -23,6 +23,7 @@ import { CandidateScoreBadge } from "../Utils/candidate-score-badge";
 import FollowupDisplay from "../Remarks/followup-popover";
 import { useRemarkHandlers } from "../../hooks/useRemarkHandlers";
 import { useEffect, useState } from "react";
+import dayjs from "dayjs";
 import Cookies from "js-cookie";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { User } from "@/lib/features/users/usersApi";
@@ -65,6 +66,7 @@ import AttachmentsPopover from "../Remarks/attachments-popover";
 import { useToast } from "@/hooks/use-toast";
 import { EmailCandidateDialog } from "../Dialogs/email-candidate-dialog";
 import { useSelector } from "react-redux";
+import AddRemarksDialog from "../Dialogs/add-remark-dialog";
 
 interface CandidateCardProps {
   candidate: Candidate;
@@ -107,7 +109,7 @@ export function CandidateCard({
   const [removeFUOpen, setRemoveFUOpenLocal] = useState(false);
   const { handleRemoveFollowUp } = useRemarkHandlers(candidate, user, refetch);
   const { toast } = useToast();
-
+  const [isAddRemarkOpen, setIsAddRemarkOpen] = useState(false);
   // State for menu actions
   const [isEditing, setIsEditing] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
@@ -143,10 +145,11 @@ export function CandidateCard({
 
   const { isLoading, handleUnassign, confirmUnassign } = useUnassignHandlers(
     candidate,
+
     user,
     async () => refetch(),
-    () => {},
-    () => {},
+    () => { },
+    () => { },
     undefined,
     undefined
   );
@@ -188,6 +191,18 @@ export function CandidateCard({
       });
     }
   };
+
+  // Update follow-up state when dialog opens for editing
+  useEffect(() => {
+    if (isAddingFollowUp) {
+      setNewFollowUp(candidate?.followUp?.note || "");
+      if (candidate?.followUp?.date) {
+        setNewFollowUpDate(dayjs(candidate.followUp.date));
+      } else {
+        setNewFollowUpDate(null);
+      }
+    }
+  }, [isAddingFollowUp, candidate]);
 
   // useEffect(() => {
   //   (async () => {
@@ -236,6 +251,8 @@ export function CandidateCard({
               onClick={(e) => {
                 e.stopPropagation();
                 setOpenRemarksFor(candidate._id);
+                // onAddRemarkClick(candidate);
+                setIsAddRemarkOpen(true);
               }}
             >
               <Plus className="h-4 w-4" />
@@ -355,6 +372,7 @@ export function CandidateCard({
                     onClick={(e) => {
                       e.stopPropagation();
                       setOpenRemarksFor(candidate._id);
+                      onAddRemarkClick(candidate);
                     }}
                   >
                     <Plus className="h-4 w-4 mr-2" />
@@ -674,6 +692,7 @@ export function CandidateCard({
                   <div className="text-xs text-amber-700 dark:text-amber-300 mt-1">
                     Created by:{" "}
                     <span className="font-bold">
+                      {/* {candidate.followUp.userId.name ? candidate.followUp.userId.name : (candidate.followUp.userId as string)} */}
                       {candidate.followUp.userId.name}
                     </span>
                   </div>
@@ -832,6 +851,7 @@ Google Meet Link: ${candidate.assignment.googleMeet.meetingLink}`;
 
             // Always open details when clicking on card content
             onViewDetails(candidate);
+
           }}
         >
           {renderCardContent()}
@@ -901,7 +921,7 @@ Google Meet Link: ${candidate.assignment.googleMeet.meetingLink}`;
           isOpen={isAssigning}
           onOpenChange={setIsAssigning}
           onUpdate={() => refetch()}
-          setLocalCandidate={() => {}}
+          setLocalCandidate={() => { }}
           onSuccess={() => {
             setIsAssigning(false);
             refetch();
@@ -946,6 +966,18 @@ Google Meet Link: ${candidate.assignment.googleMeet.meetingLink}`;
         loadingText="Marking as done..."
       />
 
+      {onDashboard &&
+        <AddRemarksDialog
+          candidate={candidate}
+          isOpen={openRemarks}
+          onOpenChange={() => { setOpenRemarksFor(null); setIsAddRemarkOpen(false); }}
+          // onOpenChange={setIsAddRemarkOpen}
+          setOpenRemarksFor={() => { }}
+          refetch={async () => refetch()}
+        />
+      }
+
+
       {/* Email Candidate Dialog */}
       {isEmailDialogOpen && (
         <EmailCandidateDialog
@@ -958,6 +990,9 @@ Google Meet Link: ${candidate.assignment.googleMeet.meetingLink}`;
           }}
         />
       )}
+
+
+
     </>
   );
 }

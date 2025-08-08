@@ -41,6 +41,7 @@ const AddRemarksDialog = ({
   refetch: () => void;
 }) => {
   const [newRemark, setNewRemark] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [remarkRating, setRemarkRating] = useState<number | null>(null);
   const [remarkRatingHistory, setRemarkRatingHistory] = useState<number | null>(
     null
@@ -52,6 +53,7 @@ const AddRemarksDialog = ({
   const { user } = useSelector((state: any) => state.auth || {});
 
   const handleAddRemark = async () => {
+    if (isSubmitting) return;
     // const token = Cookies.get("token");
     if (user) {
       // const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
@@ -65,8 +67,9 @@ const AddRemarksDialog = ({
         });
         return;
       }
-
+      setIsSubmitting(true);
       try {
+
         const newRemarkObj = {
           description: String(newRemark).trim(),
           date: new Date().toISOString(),
@@ -138,6 +141,7 @@ const AddRemarksDialog = ({
           jobId: candidate.jobId,
           newEntry: newHistoryEntry,
         }).unwrap();
+
         const updatedCandidate = await updateCandidate(updateData).unwrap();
         await sentStatusMailHandler(updatedCandidate, sendStatusMail);
         // sentRemarkMail(result, sendEmail);
@@ -164,7 +168,12 @@ const AddRemarksDialog = ({
             variant: "destructive",
           });
         }
+
       }
+      finally {
+        setIsSubmitting(false);
+      }
+
       // }
     }
   };
@@ -240,8 +249,8 @@ const AddRemarksDialog = ({
           <Button variant="secondary" onClick={() => onOpenChange(false)}>
             No Remarks
           </Button>
-          <Button onClick={handleAddRemark} variant="info">
-            Add Remark
+          <Button onClick={handleAddRemark} disabled={isSubmitting || !newRemark.trim() || !user?.id} variant="info">
+            {isSubmitting ? "Submitting..." : "Add Remark"}
           </Button>
         </DialogFooter>
       </DialogContent>
