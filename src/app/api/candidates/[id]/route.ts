@@ -425,6 +425,7 @@ export async function PUT(
                     remarkText: remark,
                     candidateProfileLink: candidateDetails,
                     organizationName: organizationName,
+                    recipientName: emailList[0] || ""
                   },
                   organizationId
                 );
@@ -614,6 +615,7 @@ export async function PUT(
       try {
         const jobInfo = updatedCandidate.jobId as any;
 
+
         // Assignment notifications
         if ("assignment" in data) {
           const oldAssignment = existingCandidate.assignment;
@@ -626,9 +628,7 @@ export async function PUT(
               oldAssignment.interviewerId !== newAssignment.interviewerId
             ) {
               // Get interviewer information
-              const interviewer = await User?.findById(
-                newAssignment.interviewerId
-              ).select("name email");
+              const interviewer = await User?.findById(newAssignment.interviewerId).select('name email');
 
               if (interviewer) {
                 await NotificationService.notifyCandidateAssigned({
@@ -725,10 +725,9 @@ export async function PUT(
         // General candidate details update notification
         if (updates.length > 0) {
           // Only send if there are significant updates (not just tracking fields)
-          const significantUpdates = updates.filter(
-            (update) =>
-              !update.title.includes("Updated tracking") &&
-              !update.title.includes("Updated _id")
+          const significantUpdates = updates.filter(update =>
+            !update.title.includes('Updated tracking') &&
+            !update.title.includes('Updated _id')
           );
 
           if (significantUpdates.length > 0) {
@@ -792,10 +791,10 @@ export async function GET(
     const projection: ProjectionType<ICandidate> =
       role === "interviewer"
         ? {
-            currentCTC: 0,
-            expectedCTC: 0,
-            customFields: 0,
-          }
+          currentCTC: 0,
+          expectedCTC: 0,
+          customFields: 0,
+        }
         : {};
     const candidate = await Candidate.findById(id, projection)
       .populate([
