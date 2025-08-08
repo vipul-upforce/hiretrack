@@ -3,7 +3,7 @@ import crypto from "crypto";
 import dbConnect, { CandidateAccount, Settings } from "@/lib/mongodb";
 import { User } from "@/lib/mongodb";
 import { sendEventEmailWithHistory } from "@/lib/unifiedEmailService";
-import { ObjectId } from "mongoose";
+import { ObjectId, Types } from "mongoose";
 import { Organization } from "@/lib/models/user";
 import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
 import { passwordResetRateLimiter } from "@/lib/rateLimiter";
@@ -151,7 +151,7 @@ async function handlePasswordReset(
   isCandidate?: boolean
 ) {
   try {
-    const settings = await Settings.findOne({ organizationId: new mongoose.Types.ObjectId(organizationId) }).lean();
+    const settings = await Settings.findOne({ organizationId: new Types.ObjectId(organizationId) }).lean();
     if (!settings || !settings.mailConfig) {
       throw new Error("Mail configuration not found");
     }
