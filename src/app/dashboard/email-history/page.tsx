@@ -44,7 +44,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import mongoose from "mongoose";
 
-interface EmailHistoryRecord {
+export interface EmailHistoryRecord {
   _id: string;
   sentBy: mongoose.Types.ObjectId;
   sentByEmail: string;

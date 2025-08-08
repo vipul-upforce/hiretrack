@@ -39,47 +39,25 @@ import {
   ChevronRight,
   Loader2,
   RefreshCw,
+  AlertCircle,
+  Eye,
+  Download,
+  FileText,
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
-
-interface EmailHistoryItem {
-  _id: string;
-  sentBy: {
-    _id: string;
-    name: string;
-    email: string;
-  };
-  recipientId: {
-    _id: string;
-    name: string;
-    email: string;
-  };
-  subject: string;
-  body: string;
-  cc: string[];
-  bcc: string[];
-  replyTo: string;
-  attachments: Array<{
-    fileName: string;
-    fileSize: number;
-    shareUrl: string;
-  }>;
-  status: "sent" | "failed" | "pending";
-  provider: string;
-  error?: string;
-  sentAt?: string;
-  createdAt: string;
-}
+import { EmailHistoryRecord } from "../../email-history/page";
+// import  EmailHistoryRecord  from "../../email-history/page";
 
 export function EmailHistory() {
-  const [emails, setEmails] = useState<EmailHistoryItem[]>([]);
+  const [emails, setEmails] = useState<EmailHistoryRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [selectedEmail, setSelectedEmail] = useState<EmailHistoryItem | null>(
+  const [pageSize, setPageSize] = useState(20);
+  const [selectedEmail, setSelectedEmail] = useState<EmailHistoryRecord | null>(
     null
   );
   const [refreshing, setRefreshing] = useState(false);
@@ -94,7 +72,7 @@ export function EmailHistory() {
 
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: "20",
+        limit: pageSize.toString(),
         ...(search && { search }),
         ...(statusFilter !== "all" && statusFilter && { status: statusFilter }),
       });
@@ -106,7 +84,8 @@ export function EmailHistory() {
 
       const data = await response.json();
       setEmails(data.emails);
-      setTotalPages(data.pagination.totalPages);
+      setTotalPages(data.pagination.total);
+      setPageSize(20);
     } catch (error) {
       toast.error("Failed to load email history");
     } finally {
@@ -118,7 +97,18 @@ export function EmailHistory() {
   useEffect(() => {
     fetchEmailHistory();
   }, [page, search, statusFilter]);
-
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "sent":
+        return <CheckCircle className="h-4 w-4 text-green-600" />;
+      case "failed":
+        return <AlertCircle className="h-4 w-4 text-red-600" />;
+      case "pending":
+        return <Clock className="h-4 w-4 text-yellow-600" />;
+      default:
+        return <Mail className="h-4 w-4 text-gray-600" />;
+    }
+  };
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "sent":
@@ -216,211 +206,302 @@ export function EmailHistory() {
           <p>No emails found</p>
         </div>
       ) : (
-        <div>
-          <div className="border rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>To</TableHead>
-                  <TableHead>Subject</TableHead>
-                  <TableHead>Sent By</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Provider</TableHead>
-                  <TableHead></TableHead>
+        <div className="overflow-x-auto pb-6">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Status</TableHead>
+                <TableHead>Recipient</TableHead>
+                <TableHead>Subject</TableHead>
+                <TableHead>Sent By</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Attachments</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {emails.map((email) => (
+                <TableRow key={email._id} className="hover:bg-muted/50">
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {getStatusIcon(email.status)}
+                      {getStatusBadge(email.status)}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="font-medium">
+                        {email.recipientName ||
+                          email.recipientEmail ||
+                          "Unknown"}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {email.recipientEmail || "No email"}
+                      </span>
+                      {((email.cc && email.cc.length > 0) ||
+                        (email.bcc && email.bcc.length > 0)) && (
+                        <span className="text-xs text-muted-foreground">
+                          {email.cc &&
+                            email.cc.length > 0 &&
+                            `CC: ${email.cc.length}`}
+                          {email.cc &&
+                            email.cc.length > 0 &&
+                            email.bcc &&
+                            email.bcc.length > 0 &&
+                            ", "}
+                          {email.bcc &&
+                            email.bcc.length > 0 &&
+                            `BCC: ${email.bcc.length}`}
+                        </span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="max-w-[200px] truncate font-medium">
+                      {email.subject || "No subject"}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="font-medium">
+                        {email.sentByName || email.sentByEmail || "Unknown"}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {email.sentByEmail || "No email"}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">
+                        {format(new Date(email.createdAt), "MMM dd, yyyy")}
+                      </span>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {format(new Date(email.createdAt), "HH:mm")}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {email.attachments && email.attachments.length > 0 ? (
+                      <div className="flex items-center gap-2">
+                        <Paperclip className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">
+                          {email.attachments.length}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        None
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedEmail(email)}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {emails?.map((email) => (
-                  <TableRow
-                    key={email._id}
-                    className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900"
-                    onClick={() => setSelectedEmail(email)}
-                  >
-                    <TableCell className="whitespace-nowrap">
-                      {format(
-                        new Date(email.sentAt || email.createdAt),
-                        "MMM d, yyyy HH:mm"
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-medium">
-                          {email.recipientId.name}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {email.recipientId.email}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="max-w-xs truncate">
-                      {email.subject}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="text-sm">{email.sentBy.name}</span>
-                        <span className="text-xs text-gray-500">
-                          {email.sentBy.email}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>{getStatusBadge(email.status)}</TableCell>
-                    <TableCell className="capitalize">
-                      {email.provider}
-                    </TableCell>
-                    <TableCell>
-                      {email.attachments.length > 0 && (
-                        <Paperclip className="h-4 w-4 text-gray-400" />
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+              ))}
+            </TableBody>
+          </Table>
+          <div className="flex items-center justify-between mt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(page - 1)}
+              disabled={page === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <p className="text-sm text-muted-foreground">
+              Page {page} of {totalPages}
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(page + 1)}
+              disabled={page === totalPages}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
           </div>
-
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-500">
-                Page {page} of {totalPages}
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(page - 1)}
-                  disabled={page === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(page + 1)}
-                  disabled={page === totalPages}
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          )}
         </div>
       )}
 
-      {/* Email Details Dialog */}
+      {/* Email Detail Dialog */}
       <Dialog
         open={!!selectedEmail}
         onOpenChange={() => setSelectedEmail(null)}
       >
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          {selectedEmail && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="text-xl">
-                  {selectedEmail.subject}
-                </DialogTitle>
-                <DialogDescription>
-                  Sent on{" "}
-                  {format(
-                    new Date(selectedEmail.sentAt || selectedEmail.createdAt),
-                    "MMMM d, yyyy 'at' HH:mm"
-                  )}
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="font-semibold text-gray-600 mb-1">From:</p>
-                    <p>
-                      {selectedEmail.sentBy.name} ({selectedEmail.sentBy.email})
-                    </p>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-600 mb-1">To:</p>
-                    <p>
-                      {selectedEmail.recipientId.name} (
-                      {selectedEmail.recipientId.email})
-                    </p>
-                  </div>
-                  {selectedEmail.cc.length > 0 && (
-                    <div>
-                      <p className="font-semibold text-gray-600 mb-1">CC:</p>
-                      <p>{selectedEmail.cc.join(", ")}</p>
-                    </div>
-                  )}
-                  {selectedEmail.bcc.length > 0 && (
-                    <div>
-                      <p className="font-semibold text-gray-600 mb-1">BCC:</p>
-                      <p>{selectedEmail.bcc.join(", ")}</p>
-                    </div>
-                  )}
-                  {selectedEmail.replyTo && (
-                    <div>
-                      <p className="font-semibold text-gray-600 mb-1">
-                        Reply To:
-                      </p>
-                      <p>{selectedEmail.replyTo}</p>
-                    </div>
-                  )}
-                  <div>
-                    <p className="font-semibold text-gray-600 mb-1">Status:</p>
-                    <div className="mt-1">
-                      {getStatusBadge(selectedEmail.status)}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-600 mb-1">
-                      Provider:
-                    </p>
-                    <p className="capitalize">{selectedEmail.provider}</p>
-                  </div>
+        <DialogContent className="!max-w-none !w-full !h-full !left-0 !top-0 !translate-x-0 !translate-y-0 min-w-0 lg:!max-w-[70vw] lg:!min-w-[800px] lg:!h-[85vh] lg:!left-[50%] lg:!top-[50%] lg:!translate-x-[-50%] lg:!translate-y-[-50%] xl:!max-w-[60vw] overflow-hidden flex flex-col">
+          <DialogHeader className="px-6 pt-6 pr-12 border-b border-gray-200 dark:border-gray-700 pb-4">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
+                <Mail className="h-6 w-6" />
+                Email Details
+              </DialogTitle>
+              {selectedEmail && (
+                <div className="flex items-center gap-2">
+                  {getStatusIcon(selectedEmail.status)}
+                  {getStatusBadge(selectedEmail.status)}
                 </div>
+              )}
+            </div>
+            <DialogDescription className="text-gray-600 dark:text-gray-400">
+              Complete email information and audit trail
+            </DialogDescription>
+          </DialogHeader>
 
-                {selectedEmail.error && (
-                  <div className="bg-red-50 border border-red-200 rounded p-3">
-                    <p className="text-sm text-red-800">
-                      <strong>Error:</strong> {selectedEmail.error}
-                    </p>
+          <div className="flex-1 overflow-y-auto">
+            {selectedEmail && (
+              <div className="bg-white dark:bg-gray-900">
+                {/* Email Header - Like Gmail */}
+                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <h1 className="text-xl font-medium text-gray-900 dark:text-gray-100 mb-2">
+                        {selectedEmail.subject || "No subject"}
+                      </h1>
+                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        {selectedEmail.attachments &&
+                          selectedEmail.attachments.length > 0 && (
+                            <Paperclip className="h-4 w-4" />
+                          )}
+                        <span>
+                          {format(
+                            new Date(selectedEmail.createdAt),
+                            "MMM dd, yyyy, h:mm a"
+                          )}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                )}
 
-                <div>
-                  <p className="font-semibold text-gray-600 mb-2">Message:</p>
-                  <div className="bg-gray-50 dark:bg-gray-900 rounded p-4 whitespace-pre-wrap text-sm">
-                    {selectedEmail.body}
-                  </div>
-                </div>
-
-                {selectedEmail.attachments.length > 0 && (
-                  <div>
-                    <p className="font-semibold text-gray-600 mb-2">
-                      Attachments:
-                    </p>
-                    <div className="space-y-2">
-                      {selectedEmail.attachments.map((attachment, index) => (
-                        <a
-                          key={index}
-                          href={attachment.shareUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-2 p-2 border rounded hover:bg-gray-50 dark:hover:bg-gray-900"
-                        >
-                          <Paperclip className="h-4 w-4 text-gray-400" />
-                          <span className="text-sm">{attachment.fileName}</span>
-                          <span className="text-xs text-gray-500">
-                            ({formatFileSize(attachment.fileSize)})
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium">
+                      {(
+                        selectedEmail.sentByName ||
+                        selectedEmail.sentByEmail ||
+                        "U"
+                      )
+                        .charAt(0)
+                        .toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-medium text-gray-900 dark:text-gray-100">
+                          {selectedEmail.sentByName || "Unknown"}
+                        </span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                          &lt;{selectedEmail.sentByEmail}&gt;
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        <span>
+                          to{" "}
+                          {selectedEmail.recipientName ||
+                            selectedEmail.recipientEmail}
+                        </span>
+                        {((selectedEmail.cc && selectedEmail.cc.length > 0) ||
+                          (selectedEmail.bcc &&
+                            selectedEmail.bcc.length > 0)) && (
+                          <span className="ml-2">
+                            {selectedEmail.cc &&
+                              selectedEmail.cc.length > 0 && (
+                                <span>cc: {selectedEmail.cc.join(", ")}</span>
+                              )}
+                            {selectedEmail.bcc &&
+                              selectedEmail.bcc.length > 0 && (
+                                <span className="ml-2">
+                                  bcc: {selectedEmail.bcc.join(", ")}
+                                </span>
+                              )}
                           </span>
-                        </a>
-                      ))}
+                        )}
+                      </div>
                     </div>
                   </div>
-                )}
+                </div>
+
+                {/* Email Body */}
+                <div className="px-6 py-6">
+                  <div className="prose prose-sm max-w-none text-gray-900 dark:text-gray-100">
+                    {/* Render HTML content or plain text */}
+                    {selectedEmail.body ? (
+                      // Check if content is HTML by looking for HTML tags
+                      selectedEmail.body.includes("<") &&
+                      selectedEmail.body.includes(">") ? (
+                        <div
+                          className="leading-relaxed"
+                          dangerouslySetInnerHTML={{
+                            __html: selectedEmail.body,
+                          }}
+                        />
+                      ) : (
+                        // Plain text - preserve line breaks
+                        <div className="whitespace-pre-wrap leading-relaxed">
+                          {selectedEmail.body}
+                        </div>
+                      )
+                    ) : (
+                      <div className="text-gray-500 italic">
+                        No message content
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Attachments in email style */}
+                  {selectedEmail.attachments &&
+                    selectedEmail.attachments.length > 0 && (
+                      <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                          {selectedEmail.attachments.length} attachment
+                          {selectedEmail.attachments.length > 1 ? "s" : ""}
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {selectedEmail.attachments.map(
+                            (attachment, index) => (
+                              <div
+                                key={index}
+                                className="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+                                onClick={() =>
+                                  window.open(attachment.shareUrl, "_blank")
+                                }
+                              >
+                                <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded flex items-center justify-center">
+                                  <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                                    {attachment.fileName}
+                                  </div>
+                                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                                    {formatFileSize(attachment.fileSize)}
+                                  </div>
+                                </div>
+                                <Download className="h-4 w-4 text-gray-400" />
+                              </div>
+                            )
+                          )}
+                        </div>
+                      </div>
+                    )}
+                </div>
               </div>
-            </>
-          )}
+            )}
+          </div>
+
+          {/* Dialog Footer */}
+          <div className="flex justify-end gap-3 bg-background px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+            <Button variant="outline" onClick={() => setSelectedEmail(null)}>
+              Close
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

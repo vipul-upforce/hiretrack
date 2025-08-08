@@ -99,12 +99,12 @@ const sidebarItems: SidebarItem[] = [
     icon: <Settings className="h-5 w-5" />,
     role: "admin",
   },
-  {
-    title: "Email History",
-    href: "/dashboard/email-history",
-    icon: <Mail className="h-5 w-5" />,
-    role: "admin",
-  },
+  // {
+  //   title: "Email History",
+  //   href: "/dashboard/email-history",
+  //   icon: <Mail className="h-5 w-5" />,
+  //   role: "admin",
+  // },
 ];
 
 export default function DashboardLayout({
