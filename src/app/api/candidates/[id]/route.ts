@@ -423,6 +423,7 @@ export async function PUT(
                     remarkText: remark,
                     candidateProfileLink: candidateDetails,
                     organizationName: organizationName,
+                    recipientName: emailList[0] || ""
                   },
                   organizationId
                 );
@@ -602,18 +603,18 @@ export async function PUT(
       // Send notifications for various updates
       try {
         const jobInfo = updatedCandidate.jobId as any;
-        
+
         // Assignment notifications
         if ("assignment" in data) {
           const oldAssignment = existingCandidate.assignment;
           const newAssignment = data.assignment;
-          
+
           if (newAssignment && newAssignment.interviewerId) {
             // If assignment is new or interviewer changed
             if (!oldAssignment || oldAssignment.interviewerId !== newAssignment.interviewerId) {
               // Get interviewer information
               const interviewer = await User?.findById(newAssignment.interviewerId).select('name email');
-              
+
               if (interviewer) {
                 await NotificationService.notifyCandidateAssigned({
                   organizationId: organizationId,
@@ -627,7 +628,7 @@ export async function PUT(
                   triggerUserName: userData.name,
                 });
               }
-              
+
               // Meeting scheduled notification if time is provided
               if (newAssignment.time) {
                 await NotificationService.notifyMeetingScheduled({
@@ -688,11 +689,11 @@ export async function PUT(
         // General candidate details update notification
         if (updates.length > 0) {
           // Only send if there are significant updates (not just tracking fields)
-          const significantUpdates = updates.filter(update => 
-            !update.title.includes('Updated tracking') && 
+          const significantUpdates = updates.filter(update =>
+            !update.title.includes('Updated tracking') &&
             !update.title.includes('Updated _id')
           );
-          
+
           if (significantUpdates.length > 0) {
             // This could be enhanced to send a general "candidate details updated" notification
             // For now, we'll rely on the specific update types above
@@ -751,10 +752,10 @@ export async function GET(
     const projection: ProjectionType<ICandidate> =
       role === "interviewer"
         ? {
-            currentCTC: 0,
-            expectedCTC: 0,
-            customFields: 0,
-          }
+          currentCTC: 0,
+          expectedCTC: 0,
+          customFields: 0,
+        }
         : {};
     const candidate = await Candidate.findById(id, projection)
       .populate([

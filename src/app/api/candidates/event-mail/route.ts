@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { name, email } = candidateData as ICandidate;
+    const { name, email, contact } = candidateData as ICandidate;
     const organizationId = candidateData.organizationId;
 
     if (!organizationId) {
@@ -117,6 +117,7 @@ export async function POST(req: NextRequest) {
         candidateName,
         jobTitle: jobName,
         applicationDate,
+        candidatePhone: contact,
         dashboardLink: candidateDetails,
       },
       organizationId

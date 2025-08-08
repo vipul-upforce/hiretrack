@@ -61,9 +61,7 @@ export const assE = `<div style="font-family: Arial, sans-serif; line-height: 1.
             <h3 style="margin-top: 0; color: #495057;">Interview Details</h3>
             <p style="margin: 5px 0;"><strong>Candidate:</strong> {{candidateName}}</p>
             <p style="margin: 5px 0;"><strong>Position:</strong> {{jobTitle}}</p>
-            <p style="margin: 5px 0;"><strong>Date:</strong> {{interviewDate}}</p>
-            <p style="margin: 5px 0;"><strong>Time:</strong> {{interviewTime}}</p>
-            <p style="margin: 5px 0;"><strong>Duration:</strong> {{duration}}</p>
+            <p style="margin: 5px 0;"><strong>Date:</strong> {{interviewDate}}</p>           
             <p style="margin: 5px 0;"><strong>Type:</strong> {{interviewType}}</p>
             <p style="margin: 5px 0;"><strong>Meeting Link:</strong> 
              <div style="text-align: center; margin: 20px 0;">
@@ -236,8 +234,8 @@ export const defaultTemplates: EmailTemplate[] = [
       "candidateName",
       "jobTitle",
       "interviewDate",
-      "interviewTime",
-      "duration",
+      // "interviewTime",
+      // "duration",
       "interviewType",
       "meetingLink",
       "outlookCalendarLink",
@@ -378,14 +376,15 @@ export const defaultTemplatesFE: { [key: string]: IEmailTemplate } = {
       "candidateName",
       "jobTitle",
       "interviewDate",
-      "interviewTime",
-      "duration",
+      // "interviewTime",
+      // "duration",
       "interviewType",
       "meetingLink",
       "outlookCalendarLink",
       "candidateProfileLink",
       "dashboardLink",
       "organizationName",
+
     ],
   },
   "status-update": {

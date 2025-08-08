@@ -4,6 +4,8 @@ import { verifyAndDecryptToken } from "@/app/actions/auth";
 import connectToDatabase, { Settings, User } from "@/lib/mongodb";
 import mongoose from "mongoose";
 import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
+import { Organization } from "@/lib/models/user";
+import { log } from "console";
 
 // Email queue to track pending emails
 const emailQueue = new Map<
@@ -73,6 +75,7 @@ async function sendQueuedEmail(data: any) {
     sentBy,
     sentByEmail,
     sentByName,
+    hrContactInfo
   } = data;
 
   const settings = await Settings.findOne({ organizationId: new mongoose.Types.ObjectId(organizationId) }).lean();
@@ -86,10 +89,19 @@ async function sendQueuedEmail(data: any) {
     organizationId,
   }).populate({
     path: "organizationId",
-    select: "name", // populate only organization name
-  });
-  // console.log(emailList, "eeeee-------mmmm");
+    select: "name defaultLanes",  // populate only organization name
+  }).lean();
+  console.log(organization, "eeeee-------mmmm");
 
+  const isOrganization = (obj: any): obj is Organization => {
+    return obj && typeof obj === 'object' && 'defaultLanes' in obj && Array.isArray(obj.defaultLanes);
+  };
+  // console.log(isOrganization(organization.organizationId), "isOrganization");
+  // console.log(organization.organizationId.lanes.indexOf(status) + 1, "lanes");
+  const nextSteps = organization && organization.organizationId && isOrganization(organization.organizationId)
+    ? organization.organizationId.defaultLanes[organization.organizationId.defaultLanes.indexOf(status) + 1] || "N/A"
+    : "N/A";
+  console.log(nextSteps, "nextSteps");
   const organizationName =
     typeof organization?.organizationId === "object"
       ? organization.organizationId.name
@@ -105,15 +117,16 @@ async function sendQueuedEmail(data: any) {
       statusMessage: remark,
       rating,
       actionBy,
+      nextSteps,
       prev_status,
       eventSubTitle,
       candidateDetails,
       organizationName: organizationName,
-        // hrContactInfo
+      hrContactInfo
     },
     organizationId
   );
-  
+
   const systemUser = await User.findOneAndUpdate(
     { email: fromEmail, organizationId },
     {
@@ -198,7 +211,7 @@ export async function POST(req: NextRequest) {
       role: { $in: ["hr", "admin"] },
       $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
     })
-      .select("email")
+      .select("email name role")
       .lean();
 
     // console.log("FETCHED USERS: ", users);
@@ -210,6 +223,17 @@ export async function POST(req: NextRequest) {
         { status: 404 }
       );
     }
+    console.log("Users: ", users);
+    console.log("decryptedResponse: ", decryptedResponse);
+    let hrContactInfo = "";
+    if (decryptedResponse?.user?.role === "hr") {
+      hrContactInfo = `${decryptedResponse?.user?.email} ${decryptedResponse?.user?.name}`;
+    } else {
+      const hrUser = users.find((user) => user.role === "hr");
+      console.log("HR USER: ", hrUser);
+      hrContactInfo = hrUser ? `${hrUser.email} ${hrUser.name}` : "";
+    }
+    console.log("HR CONTACT INFO: ", hrContactInfo);
 
     const actionBy = decryptedResponse?.user.name;
     const emailList = users.map((user) => user.email);
@@ -243,6 +267,7 @@ export async function POST(req: NextRequest) {
       sentByName: decryptedResponse?.user.name,
       startTime,
       endTime,
+      hrContactInfo
     };
 
     if (immediate) {
