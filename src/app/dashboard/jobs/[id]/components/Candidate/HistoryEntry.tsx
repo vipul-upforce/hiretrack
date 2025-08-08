@@ -217,7 +217,8 @@ const RenderHistoryEntry = ({
     if (
       (interview.title !== "" || !interview.title) &&
       interview.title !== "Assigned to Job" &&
-      !interview.title?.includes("Followup")
+      !interview.title?.includes("Followup") &&
+      !interview.title?.startsWith("Email sent: ")
     ) {
       return (
         <div className="flex flex-row items-start justify-between w-full">

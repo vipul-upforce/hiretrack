@@ -89,9 +89,11 @@ export async function sendUnifiedMail(options: UnifiedEmailOptions): Promise<{ s
     );
 
     // For additional recipients beyond the first, send separately
-    if (toEmails.length > 1) {
-      const additionalRecipients = toEmails.slice(1);
-      for (const email of additionalRecipients) {
+   if (toEmails.length > 1) {
+  const additionalRecipients = toEmails.slice(1);
+  const additionalResults = await Promise.all(
+    additionalRecipients.map(async (email) => {
+      try {
         await sendMailWithContext(
           settings.mailConfig,
           email,
@@ -114,8 +116,21 @@ export async function sendUnifiedMail(options: UnifiedEmailOptions): Promise<{ s
             attachments: options.attachments,
           }
         );
+        return { success: true };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "Failed to send email",
+        };
       }
-    }
+    })
+  );
+  const failedAdditional = additionalResults.filter((r) => !r.success);
+  if (failedAdditional.length > 0) {
+    result.success = false;
+    result.error = `Failed to send ${failedAdditional.length} out of ${additionalRecipients.length} additional emails. Errors: ${failedAdditional.map((f) => f.error).join(", ")}`;
+  }
+}
 
     return result;
   } catch (error) {
@@ -148,63 +163,118 @@ export async function sendEventEmailWithHistory(
   }
 ): Promise<{ status: number; message: string }> {
   try {
-    // Use the existing event mail function
-    const result = await sendEventMail(
-      organizationId,
-      emails,
-      subject,
-      html
-    );
+    await dbConnect();
 
-    // If successful, save to history
-    if (result.status === 200) {
-      try {
-        await dbConnect();
-        
-        // Create email history entries for each recipient
-        const historyPromises = emails.map(async (email) => {
-          const emailHistoryData = {
-            organizationId: new mongoose.Types.ObjectId(organizationId),
-            sentBy: new mongoose.Types.ObjectId(context.sentBy),
-            sentByEmail: context.sentByEmail,
-            sentByName: context.sentByName,
-            recipientType: "user",
-            recipientId: null,
-            recipientEmail: email,
-            recipientName: email,
-            subject,
-            body: html,
-            cc: [],
-            bcc: emails.filter(e => e !== email), // Others are BCC
-            replyTo: context.sentByEmail,
-            attachments: [],
-            status: "sent" as const,
-            provider: "event_mail",
-            metadata: context.metadata ? {
-              jobId: context.metadata.jobId ? new mongoose.Types.ObjectId(context.metadata.jobId) : undefined,
-              candidateId: context.metadata.candidateId ? new mongoose.Types.ObjectId(context.metadata.candidateId) : undefined,
-              templateUsed: context.metadata.templateUsed,
-              eventType: context.metadata.eventType,
-            } : undefined,
-            sentAt: new Date(),
-          };
+    // 1. Get organization's mail configuration
+    const settings = await Settings.findOne({
+      organizationId: new mongoose.Types.ObjectId(organizationId),
+    }).lean();
 
-          return EmailHistory.create(emailHistoryData);
-        });
+    if (!settings || !settings.mailConfig) {
+      return { status: 500, message: "Mail configuration not found for the organization." };
+    }
+    const mailConfig = settings.mailConfig;
 
-        await Promise.all(historyPromises);
-      } catch (historyError) {
-        console.error("Failed to save event email history:", historyError);
-        // Don't fail the email send if history fails
-      }
+    // 2. Find recipient users to get their IDs and correct names
+    const recipients = await User.find({
+      email: { $in: emails },
+      organizationId: new mongoose.Types.ObjectId(organizationId),
+    })
+      .select("_id name email")
+      .lean();
+
+    if (recipients.length === 0) {
+      return { status: 404, message: "No valid recipients found." };
     }
 
-    return result;
+    // 3. Determine email provider for history logging
+    let provider = "unknown";
+    if (mailConfig.mailProvider) {
+      provider = mailConfig.mailProvider;
+    } else if (mailConfig.resend_from) {
+      provider = "resend";
+    } else if (mailConfig.brevo_from) {
+      provider = "brevo";
+    } else if (mailConfig.smtp_from) {
+      provider = "smtp";
+    }
+
+    // 4. Process each recipient
+    const emailPromises = recipients.map(async (recipient) => {
+      try {
+        // Create a pending email history record
+        const emailHistory = await EmailHistory.create({
+          organizationId: new mongoose.Types.ObjectId(organizationId),
+          sentBy: context.sentBy,
+          sentByEmail: context.sentByEmail,
+          sentByName: context.sentByName,
+          recipientType: "user",
+          recipientId: recipient._id, // Correctly link to User document
+          recipientEmail: recipient.email,
+          recipientName: recipient.name || recipient.email,
+          subject,
+          body: html,
+          cc: [],
+          bcc: [],
+          replyTo: context.sentByEmail,
+          attachments: [],
+          status: "pending",
+          provider,
+          metadata: context.metadata
+            ? {
+                jobId: context.metadata.jobId
+                  ? new mongoose.Types.ObjectId(context.metadata.jobId)
+                  : undefined,
+                candidateId: context.metadata.candidateId
+                  ? new mongoose.Types.ObjectId(context.metadata.candidateId)
+                  : undefined,
+                templateUsed: context.metadata.templateUsed,
+                eventType: context.metadata.eventType,
+              }
+            : undefined,
+        });
+
+        // 5. Send the email using the utility that updates the history
+        return await sendMailWithContext(
+          mailConfig,
+          recipient.email,
+          subject,
+          undefined, // text body
+          html,
+          [], // cc
+          [], // bcc
+          context.sentByEmail,
+          undefined, // from email (will be determined by sendMailWithContext)
+          {
+            emailHistoryId: emailHistory._id.toString(),
+          }
+        );
+      } catch (error) {
+        console.error(`Failed to process email for ${recipient.email}:`, error);
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "Unknown error",
+        };
+      }
+    });
+
+    const results = await Promise.all(emailPromises);
+    const failedSends = results.filter((r) => !r.success);
+
+    if (failedSends.length > 0) {
+      const errors = failedSends.map((f) => f.error).join(", ");
+      return {
+        status: 500,
+        message: `Failed to send ${failedSends.length} out of ${recipients.length} emails. Errors: ${errors}`,
+      };
+    }
+
+    return { status: 200, message: "All event emails sent successfully." };
   } catch (error) {
     console.error("Event email send error:", error);
     return {
       status: 500,
-      message: error instanceof Error ? error.message : "Failed to send email"
+      message: error instanceof Error ? error.message : "Failed to send event emails",
     };
   }
 }

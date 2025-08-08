@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendEventEmailWithHistory } from "@/lib/unifiedEmailService";
-import { Candidate, Organization, User } from "@/lib/mongodb"; // Add User import
+import { Candidate, Organization, Settings, User } from "@/lib/mongodb"; // Add User import
 import { ICandidate } from "@/lib/models/candidate";
 import mongoose from "mongoose";
 import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
@@ -124,15 +124,35 @@ export async function POST(req: NextRequest) {
 
     const candidateAndHr = [email, ...hrEmails];
 
+    const settings = await Settings.findOne({ organizationId: new mongoose.Types.ObjectId(organizationId) }).lean();
+    if (!settings || !settings.mailConfig) {
+      return NextResponse.json({ error: "Mail configuration not found" }, { status: 500 });
+    }
+
+    const fromEmail = settings.mailConfig.resend_from || settings.mailConfig.brevo_from || settings.mailConfig.smtp_from || "system@hiretrack.com";
+
+    const systemUser = await User.findOneAndUpdate(
+      { email: fromEmail, organizationId },
+      {
+        $setOnInsert: {
+          name: "HireTrack System",
+          email: fromEmail,
+          role: "system",
+          organizationId,
+        },
+      },
+      { upsert: true, new: true }
+    );
+
     const candidateEmailStatus = await sendEventEmailWithHistory(
       organizationId,
       candidateAndHr,
       emailSubject,
       emailContent,
       {
-        sentBy: "system",
-        sentByEmail: "system@hiretrack.com",
-        sentByName: "HireTrack System",
+        sentBy: systemUser._id.toString(),
+        sentByEmail: systemUser.email,
+        sentByName: systemUser.name,
         metadata: {
           candidateId,
           templateUsed: "job-application-(hr)",

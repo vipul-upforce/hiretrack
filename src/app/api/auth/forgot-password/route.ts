@@ -151,6 +151,13 @@ async function handlePasswordReset(
   isCandidate?: boolean
 ) {
   try {
+    const settings = await Settings.findOne({ organizationId: new mongoose.Types.ObjectId(organizationId) }).lean();
+    if (!settings || !settings.mailConfig) {
+      throw new Error("Mail configuration not found");
+    }
+
+    const fromEmail = settings.mailConfig.resend_from || settings.mailConfig.brevo_from || settings.mailConfig.smtp_from || "system@hiretrack.com";
+
     // Find the correct user with both email and organizationId
     let user;
     if (!CandidateAccount || !User) {
@@ -228,15 +235,28 @@ async function handlePasswordReset(
       organizationId
     );
 
+    const systemUser = await User.findOneAndUpdate(
+      { email: fromEmail, organizationId },
+      {
+        $setOnInsert: {
+          name: "HireTrack System",
+          email: fromEmail,
+          role: "system",
+          organizationId,
+        },
+      },
+      { upsert: true, new: true }
+    );
+
     const emailStatus = await sendEventEmailWithHistory(
       organizationId,
       [email],
       emailSubject,
       emailContent,
       {
-        sentBy: "system",
-        sentByEmail: "system@hiretrack.com",
-        sentByName: "HireTrack System",
+        sentBy: systemUser._id.toString(),
+        sentByEmail: systemUser.email,
+        sentByName: systemUser.name,
         metadata: {
           templateUsed: "reset-password-request",
           eventType: "password_reset",

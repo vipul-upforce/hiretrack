@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendEventEmailWithHistory } from "@/lib/unifiedEmailService";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
-import connectToDatabase, { User } from "@/lib/mongodb";
+import connectToDatabase, { Settings, User } from "@/lib/mongodb";
 import mongoose from "mongoose";
 import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
 
@@ -75,6 +75,13 @@ async function sendQueuedEmail(data: any) {
     sentByName,
   } = data;
 
+  const settings = await Settings.findOne({ organizationId: new mongoose.Types.ObjectId(organizationId) }).lean();
+  if (!settings || !settings.mailConfig) {
+    throw new Error("Mail configuration not found");
+  }
+
+  const fromEmail = settings.mailConfig.resend_from || settings.mailConfig.brevo_from || settings.mailConfig.smtp_from || "system@hiretrack.com";
+
   const organization = await User?.findOne({
     organizationId,
   }).populate({
@@ -107,15 +114,28 @@ async function sendQueuedEmail(data: any) {
     organizationId
   );
   
+  const systemUser = await User.findOneAndUpdate(
+    { email: fromEmail, organizationId },
+    {
+      $setOnInsert: {
+        name: "HireTrack System",
+        email: fromEmail,
+        role: "system",
+        organizationId,
+      },
+    },
+    { upsert: true, new: true }
+  );
+
   return await sendEventEmailWithHistory(
     organizationId,
     emailList,
     emailSubject,
     emailContent,
     {
-      sentBy,
-      sentByEmail,
-      sentByName,
+      sentBy: sentBy || systemUser._id.toString(),
+      sentByEmail: sentByEmail || systemUser.email,
+      sentByName: sentByName || systemUser.name,
       metadata: {
         candidateId,
         jobId,

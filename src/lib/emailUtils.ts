@@ -15,27 +15,37 @@ interface EmailOptions {
   from?: string;
 }
 
-interface EmailContext {
+interface EmailContextBase {
+  // any shared fields between the two can go here (optional)
+}
+
+interface EmailHistoryContext extends EmailContextBase {
+  emailHistoryId: string;
+}
+
+interface EmailMetadataContext extends EmailContextBase {
   organizationId: string;
   sentBy: string;
   sentByEmail: string;
   sentByName: string;
-  recipientType?: string;
-  recipientId?: string;
-  recipientName?: string;
-  metadata?: {
+  recipientType: string;
+  recipientId: string;
+  recipientName: string;
+  metadata: {
     jobId?: string;
     candidateId?: string;
     templateUsed?: string;
-    eventType?: string; // e.g., 'status_update', 'remark_added', 'interview_scheduled'
+    eventType?: string;
   };
-  attachments?: Array<{
+  attachments: {
     fileName: string;
     fileSize: number;
     shareId: string;
     shareUrl: string;
-  }>;
+  }[];
 }
+
+type EmailContext = EmailHistoryContext | EmailMetadataContext;
 
 export async function sendMail(
   mailConfig: Ismtp,
@@ -121,43 +131,24 @@ export async function sendMail(
         return { success: false, error: "Unsupported mail provider" };
     }
 
-    // Save email to history if context is provided
-    if (context) {
+    // If context with emailHistoryId is provided, update the history record
+    if (context && "emailHistoryId" in context) {
       try {
         await dbConnect();
-        
-        const emailHistoryData = {
-          organizationId: new mongoose.Types.ObjectId(context.organizationId),
-          sentBy: new mongoose.Types.ObjectId(context.sentBy),
-          sentByEmail: context.sentByEmail,
-          sentByName: context.sentByName,
-          recipientType: context.recipientType || "candidate",
-          recipientId: context.recipientId ? new mongoose.Types.ObjectId(context.recipientId) : null,
-          recipientEmail: to,
-          recipientName: context.recipientName || to,
-          subject,
-          body: html || text || "",
-          cc: validCc,
-          bcc: validBcc,
-          replyTo,
-          attachments: context.attachments || [],
-          status: result.success ? "sent" : "failed",
-          provider: mailConfig.mailProvider,
-          providerMessageId: result.messageId,
-          error: result.error,
-          metadata: context.metadata ? {
-            jobId: context.metadata.jobId ? new mongoose.Types.ObjectId(context.metadata.jobId) : undefined,
-            candidateId: context.metadata.candidateId ? new mongoose.Types.ObjectId(context.metadata.candidateId) : undefined,
-            templateUsed: context.metadata.templateUsed,
-            eventType: context.metadata.eventType,
-          } : undefined,
-          sentAt: new Date(),
-        };
+        const history = await EmailHistory.findById(context.emailHistoryId);
 
-        await EmailHistory.create(emailHistoryData);
+        if (history) {
+          history.status = result.success ? "sent" : "failed";
+          history.providerMessageId = result.messageId;
+          history.error = result.error;
+          history.sentAt = new Date();
+          await history.save();
+        } else {
+          console.warn(`Email history not found for ID: ${context.emailHistoryId}`);
+        }
       } catch (historyError) {
-        console.error("Failed to save email history:", historyError);
-        // Don't fail the email send if history fails
+        console.error("Failed to update email history:", historyError);
+        // Do not fail the email send if history update fails
       }
     }
 

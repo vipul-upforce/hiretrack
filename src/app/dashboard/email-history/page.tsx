@@ -1,17 +1,23 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import {
   Dialog,
@@ -20,19 +26,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { 
-  Mail, 
-  Search, 
-  Calendar, 
-  User, 
-  FileText, 
+import {
+  Mail,
+  Search,
+  Calendar,
+  User,
+  FileText,
   Paperclip,
   CheckCircle,
   AlertCircle,
   Clock,
   Eye,
   Filter,
-  Download
+  Download,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -73,8 +79,12 @@ export default function EmailHistoryPage() {
   const [emails, setEmails] = useState<EmailHistoryRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedEmail, setSelectedEmail] = useState<EmailHistoryRecord | null>(null);
-  const [statusFilter, setStatusFilter] = useState<"all" | "sent" | "failed" | "pending">("all");
+  const [selectedEmail, setSelectedEmail] = useState<EmailHistoryRecord | null>(
+    null
+  );
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "sent" | "failed" | "pending"
+  >("all");
 
   useEffect(() => {
     fetchEmailHistory();
@@ -98,15 +108,24 @@ export default function EmailHistoryPage() {
   };
 
   const filteredEmails = emails.filter((email) => {
-    const matchesSearch = 
-      (email.recipientEmail || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch =
+      (email.recipientEmail || "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
       (email.subject || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (email.sentByName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (email.sentByEmail || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (email.recipientName || "").toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === "all" || email.status === statusFilter;
-    
+      (email.sentByName || "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      (email.sentByEmail || "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      (email.recipientName || "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
+
+    const matchesStatus =
+      statusFilter === "all" || email.status === statusFilter;
+
     return matchesSearch && matchesStatus;
   });
 
@@ -129,10 +148,10 @@ export default function EmailHistoryPage() {
       failed: "bg-red-100 text-red-800 border-red-200",
       pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
     };
-    
+
     return (
-      <Badge 
-        variant="outline" 
+      <Badge
+        variant="outline"
         className={cn("capitalize", variants[status as keyof typeof variants])}
       >
         {status}
@@ -191,123 +210,153 @@ export default function EmailHistoryPage() {
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 overflow-hidden px-4 pb-4 mt-4">
+      <div className="flex-1 overflow-auto px-4 pb-4 mt-4">
         {/* Email List */}
         <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Mail className="h-5 w-5" />
-            Email History ({filteredEmails.length})
-          </CardTitle>
-          <CardDescription>
-            Complete audit trail of all emails sent through the system
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
-            </div>
-          ) : filteredEmails.length === 0 ? (
-            <div className="text-center py-8">
-              <Mail className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold">No emails found</h3>
-              <p className="text-muted-foreground">
-                {searchTerm || statusFilter !== "all" 
-                  ? "Try adjusting your filters" 
-                  : "No emails have been sent yet"}
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Recipient</TableHead>
-                    <TableHead>Subject</TableHead>
-                    <TableHead>Sent By</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Attachments</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredEmails.map((email) => (
-                    <TableRow key={email._id} className="hover:bg-muted/50">
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {getStatusIcon(email.status)}
-                          {getStatusBadge(email.status)}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span className="font-medium">{email.recipientName || email.recipientEmail || "Unknown"}</span>
-                          <span className="text-xs text-muted-foreground">{email.recipientEmail || "No email"}</span>
-                          {((email.cc && email.cc.length > 0) || (email.bcc && email.bcc.length > 0)) && (
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Email History ({filteredEmails.length})
+            </CardTitle>
+            <CardDescription>
+              Complete audit trail of all emails sent through the system
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+              </div>
+            ) : filteredEmails.length === 0 ? (
+              <div className="text-center py-8">
+                <Mail className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold">No emails found</h3>
+                <p className="text-muted-foreground">
+                  {searchTerm || statusFilter !== "all"
+                    ? "Try adjusting your filters"
+                    : "No emails have been sent yet"}
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Recipient</TableHead>
+                      <TableHead>Subject</TableHead>
+                      <TableHead>Sent By</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Attachments</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredEmails.map((email) => (
+                      <TableRow key={email._id} className="hover:bg-muted/50">
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {getStatusIcon(email.status)}
+                            {getStatusBadge(email.status)}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-medium">
+                              {email.recipientName ||
+                                email.recipientEmail ||
+                                "Unknown"}
+                            </span>
                             <span className="text-xs text-muted-foreground">
-                              {email.cc && email.cc.length > 0 && `CC: ${email.cc.length}`}
-                              {email.cc && email.cc.length > 0 && email.bcc && email.bcc.length > 0 && ", "}
-                              {email.bcc && email.bcc.length > 0 && `BCC: ${email.bcc.length}`}
+                              {email.recipientEmail || "No email"}
+                            </span>
+                            {((email.cc && email.cc.length > 0) ||
+                              (email.bcc && email.bcc.length > 0)) && (
+                              <span className="text-xs text-muted-foreground">
+                                {email.cc &&
+                                  email.cc.length > 0 &&
+                                  `CC: ${email.cc.length}`}
+                                {email.cc &&
+                                  email.cc.length > 0 &&
+                                  email.bcc &&
+                                  email.bcc.length > 0 &&
+                                  ", "}
+                                {email.bcc &&
+                                  email.bcc.length > 0 &&
+                                  `BCC: ${email.bcc.length}`}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="max-w-[200px] truncate font-medium">
+                            {email.subject || "No subject"}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-medium">
+                              {email.sentByName ||
+                                email.sentByEmail ||
+                                "Unknown"}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {email.sentByEmail || "No email"}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm">
+                              {format(
+                                new Date(email.createdAt),
+                                "MMM dd, yyyy"
+                              )}
+                            </span>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {format(new Date(email.createdAt), "HH:mm")}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {email.attachments && email.attachments.length > 0 ? (
+                            <div className="flex items-center gap-2">
+                              <Paperclip className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm">
+                                {email.attachments.length}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">
+                              None
                             </span>
                           )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="max-w-[200px] truncate font-medium">
-                          {email.subject || "No subject"}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span className="font-medium">{email.sentByName || email.sentByEmail || "Unknown"}</span>
-                          <span className="text-xs text-muted-foreground">{email.sentByEmail || "No email"}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm">
-                            {format(new Date(email.createdAt), "MMM dd, yyyy")}
-                          </span>
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {format(new Date(email.createdAt), "HH:mm")}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {email.attachments && email.attachments.length > 0 ? (
-                          <div className="flex items-center gap-2">
-                            <Paperclip className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm">{email.attachments.length}</span>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">None</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setSelectedEmail(email)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedEmail(email)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Email Detail Dialog */}
-      <Dialog open={!!selectedEmail} onOpenChange={() => setSelectedEmail(null)}>
+      <Dialog
+        open={!!selectedEmail}
+        onOpenChange={() => setSelectedEmail(null)}
+      >
         <DialogContent className="!max-w-none !w-full !h-full !left-0 !top-0 !translate-x-0 !translate-y-0 min-w-0 lg:!max-w-[70vw] lg:!min-w-[800px] lg:!h-[85vh] lg:!left-[50%] lg:!top-[50%] lg:!translate-x-[-50%] lg:!translate-y-[-50%] xl:!max-w-[60vw] overflow-hidden flex flex-col">
           <DialogHeader className="px-6 pt-6 pr-12 border-b border-gray-200 dark:border-gray-700 pb-4">
             <div className="flex items-center justify-between">
@@ -326,7 +375,7 @@ export default function EmailHistoryPage() {
               Complete email information and audit trail
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="flex-1 overflow-y-auto">
             {selectedEmail && (
               <div className="bg-white dark:bg-gray-900">
@@ -338,17 +387,29 @@ export default function EmailHistoryPage() {
                         {selectedEmail.subject || "No subject"}
                       </h1>
                       <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                        {selectedEmail.attachments && selectedEmail.attachments.length > 0 && (
-                          <Paperclip className="h-4 w-4" />
-                        )}
-                        <span>{format(new Date(selectedEmail.createdAt), "MMM dd, yyyy, h:mm a")}</span>
+                        {selectedEmail.attachments &&
+                          selectedEmail.attachments.length > 0 && (
+                            <Paperclip className="h-4 w-4" />
+                          )}
+                        <span>
+                          {format(
+                            new Date(selectedEmail.createdAt),
+                            "MMM dd, yyyy, h:mm a"
+                          )}
+                        </span>
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium">
-                      {(selectedEmail.sentByName || selectedEmail.sentByEmail || "U").charAt(0).toUpperCase()}
+                      {(
+                        selectedEmail.sentByName ||
+                        selectedEmail.sentByEmail ||
+                        "U"
+                      )
+                        .charAt(0)
+                        .toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
@@ -360,15 +421,25 @@ export default function EmailHistoryPage() {
                         </span>
                       </div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
-                        <span>to {selectedEmail.recipientName || selectedEmail.recipientEmail}</span>
-                        {((selectedEmail.cc && selectedEmail.cc.length > 0) || (selectedEmail.bcc && selectedEmail.bcc.length > 0)) && (
+                        <span>
+                          to{" "}
+                          {selectedEmail.recipientName ||
+                            selectedEmail.recipientEmail}
+                        </span>
+                        {((selectedEmail.cc && selectedEmail.cc.length > 0) ||
+                          (selectedEmail.bcc &&
+                            selectedEmail.bcc.length > 0)) && (
                           <span className="ml-2">
-                            {selectedEmail.cc && selectedEmail.cc.length > 0 && (
-                              <span>cc: {selectedEmail.cc.join(', ')}</span>
-                            )}
-                            {selectedEmail.bcc && selectedEmail.bcc.length > 0 && (
-                              <span className="ml-2">bcc: {selectedEmail.bcc.join(', ')}</span>
-                            )}
+                            {selectedEmail.cc &&
+                              selectedEmail.cc.length > 0 && (
+                                <span>cc: {selectedEmail.cc.join(", ")}</span>
+                              )}
+                            {selectedEmail.bcc &&
+                              selectedEmail.bcc.length > 0 && (
+                                <span className="ml-2">
+                                  bcc: {selectedEmail.bcc.join(", ")}
+                                </span>
+                              )}
                           </span>
                         )}
                       </div>
@@ -382,10 +453,13 @@ export default function EmailHistoryPage() {
                     {/* Render HTML content or plain text */}
                     {selectedEmail.body ? (
                       // Check if content is HTML by looking for HTML tags
-                      selectedEmail.body.includes('<') && selectedEmail.body.includes('>') ? (
-                        <div 
+                      selectedEmail.body.includes("<") &&
+                      selectedEmail.body.includes(">") ? (
+                        <div
                           className="leading-relaxed"
-                          dangerouslySetInnerHTML={{ __html: selectedEmail.body }}
+                          dangerouslySetInnerHTML={{
+                            __html: selectedEmail.body,
+                          }}
                         />
                       ) : (
                         // Plain text - preserve line breaks
@@ -394,51 +468,56 @@ export default function EmailHistoryPage() {
                         </div>
                       )
                     ) : (
-                      <div className="text-gray-500 italic">No message content</div>
+                      <div className="text-gray-500 italic">
+                        No message content
+                      </div>
                     )}
                   </div>
-                  
+
                   {/* Attachments in email style */}
-                  {selectedEmail.attachments && selectedEmail.attachments.length > 0 && (
-                    <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-                      <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                        {selectedEmail.attachments.length} attachment{selectedEmail.attachments.length > 1 ? 's' : ''}
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {selectedEmail.attachments.map((attachment, index) => (
-                          <div 
-                            key={index} 
-                            className="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
-                            onClick={() => window.open(attachment.shareUrl, '_blank')}
-                          >
-                            <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded flex items-center justify-center">
-                              <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                                {attachment.fileName}
+                  {selectedEmail.attachments &&
+                    selectedEmail.attachments.length > 0 && (
+                      <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                          {selectedEmail.attachments.length} attachment
+                          {selectedEmail.attachments.length > 1 ? "s" : ""}
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {selectedEmail.attachments.map(
+                            (attachment, index) => (
+                              <div
+                                key={index}
+                                className="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+                                onClick={() =>
+                                  window.open(attachment.shareUrl, "_blank")
+                                }
+                              >
+                                <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded flex items-center justify-center">
+                                  <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                                    {attachment.fileName}
+                                  </div>
+                                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                                    {formatFileSize(attachment.fileSize)}
+                                  </div>
+                                </div>
+                                <Download className="h-4 w-4 text-gray-400" />
                               </div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400">
-                                {formatFileSize(attachment.fileSize)}
-                              </div>
-                            </div>
-                            <Download className="h-4 w-4 text-gray-400" />
-                          </div>
-                        ))}
+                            )
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
                 </div>
               </div>
             )}
           </div>
-          
+
           {/* Dialog Footer */}
           <div className="flex justify-end gap-3 bg-background px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-            <Button 
-              variant="outline" 
-              onClick={() => setSelectedEmail(null)}
-            >
+            <Button variant="outline" onClick={() => setSelectedEmail(null)}>
               Close
             </Button>
           </div>

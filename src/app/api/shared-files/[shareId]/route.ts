@@ -10,7 +10,7 @@ export async function GET(
   { params }: { params: { shareId: string } }
 ) {
   try {
-    const { shareId } = params;
+    const { shareId } = await params;
     
     if (!shareId) {
       return NextResponse.json({ error: "Share ID not provided" }, { status: 400 });

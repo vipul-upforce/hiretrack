@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { sendMail } from ".";
 import { sendEventEmailWithHistory } from "@/lib/unifiedEmailService";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
-import { User } from "@/lib/mongodb";
+import { Settings, User } from "@/lib/mongodb";
 import mongoose from "mongoose";
 import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
 import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
@@ -76,6 +76,13 @@ async function sendQueuedEmail(data: any, req: NextRequest) {
     candidateId,
     jobId,
   } = data;
+
+  const settings = await Settings.findOne({ organizationId: new mongoose.Types.ObjectId(organizationId) }).lean();
+  if (!settings || !settings.mailConfig) {
+    throw new Error("Mail configuration not found");
+  }
+
+  const fromEmail = settings.mailConfig.resend_from || settings.mailConfig.brevo_from || settings.mailConfig.smtp_from || "system@hiretrack.com";
 
   const startDateString = startTime
     ? await getFormattedDate(req, new Date(startTime))
@@ -156,15 +163,33 @@ async function sendQueuedEmail(data: any, req: NextRequest) {
     organizationId
   );
 
+  const systemUser = await User.findOneAndUpdate(
+    { email: fromEmail, organizationId },
+    {
+      $setOnInsert: {
+        name: "HireTrack System",
+        email: fromEmail,
+        role: "system",
+        organizationId,
+      },
+    },
+    { upsert: true, new: true }
+  );
+
+  // Ensure sentBy is a valid ObjectId, falling back to the system user if needed
+  const sentById = sentBy && sentBy !== "system" ? sentBy : systemUser._id.toString();
+  const sentByEmailValue = sentByEmail && sentByEmail !== fromEmail ? sentByEmail : systemUser.email;
+  const sentByNameValue = sentByName && sentByName !== "HireTrack System" ? sentByName : systemUser.name;
+
   return await sendEventEmailWithHistory(
     organizationId,
     [email, ...emailList],
     emailSubject,
     emailContent,
     {
-      sentBy: sentBy || "system",
-      sentByEmail: sentByEmail || "system@hiretrack.com",
-      sentByName: sentByName || "HireTrack System",
+      sentBy: sentById,
+      sentByEmail: sentByEmailValue,
+      sentByName: sentByNameValue,
       metadata: {
         candidateId,
         jobId,
@@ -228,6 +253,14 @@ export async function PUT(req: NextRequest) {
       },
       organizationId
     );
+
+    const settings = await Settings.findOne({ organizationId: new mongoose.Types.ObjectId(organizationId) }).lean();
+    if (!settings || !settings.mailConfig) {
+      return NextResponse.json({ error: "Mail configuration not found" }, { status: 500 });
+    }
+
+    const fromEmail = settings.mailConfig.resend_from || settings.mailConfig.brevo_from || settings.mailConfig.smtp_from || "system@hiretrack.com";
+
     const users = await User.find({
       organizationId: new mongoose.Types.ObjectId(organizationId),
       role: { $in: ["hr", "admin"] },
@@ -238,6 +271,19 @@ export async function PUT(req: NextRequest) {
 
     console.log("%%EMAILS: ", users);
 
+    const systemUser = await User.findOneAndUpdate(
+      { email: fromEmail, organizationId },
+      {
+        $setOnInsert: {
+          name: "HireTrack System",
+          email: fromEmail,
+          role: "system",
+          organizationId,
+        },
+      },
+      { upsert: true, new: true }
+    );
+
     const emailList = users.map((user) => user.email);
     const emailStatus = await sendEventEmailWithHistory(
       organizationId,
@@ -245,9 +291,9 @@ export async function PUT(req: NextRequest) {
       emailSubject,
       emailContent,
       {
-        sentBy: decryptedResponse?.user._id || "system",
-        sentByEmail: decryptedResponse?.user.email || "system@hiretrack.com",
-        sentByName: decryptedResponse?.user.name || "HireTrack System",
+        sentBy: decryptedResponse?.user._id || systemUser._id.toString(),
+        sentByEmail: decryptedResponse?.user.email || systemUser.email,
+        sentByName: decryptedResponse?.user.name || systemUser.name,
         metadata: {
           candidateId: data.id,
           templateUsed: "marked-as-done",
@@ -339,7 +385,7 @@ export async function POST(req: NextRequest) {
     //   );
     // }
 
-    if (!User) {
+    if (!User || !Settings) {
       throw new Error("Database not connected");
     }
 
@@ -350,6 +396,14 @@ export async function POST(req: NextRequest) {
     })
       .select("email")
       .lean();
+
+      const settings = await Settings.findOne({ organizationId: new mongoose.Types.ObjectId(organizationId) }).lean();
+    if (!settings || !settings.mailConfig) {
+      return NextResponse.json({ error: "Mail configuration not found" }, { status: 500 });
+    }
+
+    const fromEmail = settings.mailConfig.resend_from || settings.mailConfig.brevo_from || settings.mailConfig.smtp_from || "system@hiretrack.com";
+
 
     console.log("%%EMAILS: ", users);
 
@@ -371,7 +425,7 @@ export async function POST(req: NextRequest) {
       emailList,
       candidateDetailsPage,
       sentBy: decryptedResponse?.user._id || "system",
-      sentByEmail: decryptedResponse?.user.email || "system@hiretrack.com",
+      sentByEmail: decryptedResponse?.user.email || fromEmail,
       sentByName: decryptedResponse?.user.name || "HireTrack System",
       candidateId: id,
       jobId: undefined, // Would need to be passed in request if available

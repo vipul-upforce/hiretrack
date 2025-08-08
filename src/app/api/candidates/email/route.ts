@@ -133,36 +133,49 @@ export async function POST(request: NextRequest) {
       replyTo: replyTo || user.email,
       from: fromEmail, // Use just the email address instead of formatted string
     };
+    console.log("CREATING HISTORY ENTRY...");
+
+    // Determine email provider for history logging
+    let provider = "unknown";
+    if (settings.mailConfig.mailProvider) {
+      provider = settings.mailConfig.mailProvider;
+    } else if (settings.mailConfig.resend_from) {
+      provider = "resend";
+    } else if (settings.mailConfig.brevo_from) {
+      provider = "brevo";
+    } else if (settings.mailConfig.smtp_from) {
+      provider = "smtp";
+    }
 
     // Create email history record first
-    const emailHistory = await EmailHistory!.create({
+    const emailHistory = await EmailHistory?.create({
       organizationId: user.organizationId,
-      from: emailData.from,
-      to: [emailData.to],
-      cc: emailData.cc,
-      bcc: emailData.bcc,
-      subject: emailData.subject,
-      body: emailData.html,
       sentBy: user.id,
       sentByEmail: user.email,
       sentByName: user.name || user.email,
       recipientType: "Candidate",
-      recipientId: candidate._id.toString(),
+      recipientId: candidate._id,
+      recipientEmail: candidateEmail,
       recipientName: candidate.name,
-      status: "sending",
-      metadata: {
-        jobId: candidate.jobId?.toString(),
-        candidateId: candidate._id.toString(),
-        eventType: "direct_email",
-      },
+      subject: emailData.subject,
+      body: emailData.html,
+      cc: emailData.cc,
+      bcc: emailData.bcc,
+      replyTo: emailData.replyTo,
       attachments: attachments.map((att: any) => ({
         fileName: att.fileName,
         fileSize: att.fileSize,
         shareId: att.shareId,
         shareUrl: att.shareUrl,
       })),
+      status: "pending",
+      provider,
+      metadata: {
+        jobId: candidate.jobId,
+        candidateId: candidate._id,
+      },
     });
-
+    console.log("CREATED HSITRY ENTRY: ", emailHistory);
     // Send email with context for automatic history tracking
     try {
       const emailResult = await sendMail(
@@ -176,24 +189,7 @@ export async function POST(request: NextRequest) {
         emailData.replyTo,
         emailData.from,
         {
-          organizationId: user.organizationId,
-          sentBy: user.id,
-          sentByEmail: user.email,
-          sentByName: user.name || user.email,
-          recipientType: "Candidate",
-          recipientId: candidate._id.toString(),
-          recipientName: candidate.name,
-          metadata: {
-            jobId: candidate.jobId?.toString(),
-            candidateId: candidate._id.toString(),
-            eventType: "direct_email",
-          },
-          attachments: attachments.map((att: any) => ({
-            fileName: att.fileName,
-            fileSize: att.fileSize,
-            shareId: att.shareId,
-            shareUrl: att.shareUrl,
-          })),
+          emailHistoryId: String(emailHistory._id),
         }
       );
 

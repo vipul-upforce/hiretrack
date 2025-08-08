@@ -32,7 +32,7 @@ export async function GET(
       );
     }
 
-    const { id: jobId } = params;
+    const { id: jobId } = await params;
 
     // Find the job
     const job = await Job.findOne({
@@ -107,7 +107,7 @@ export async function PUT(
       );
     }
 
-    const { id: jobId } = params;
+    const { id: jobId } = await params;
     const body = await request.json();
     const { lanes, useCustomLanes } = body;
 
@@ -257,7 +257,7 @@ export async function POST(
       );
     }
 
-    const { id: jobId } = params;
+    const { id: jobId } = await params;
     const body = await request.json();
     const { laneName, position } = body;
 

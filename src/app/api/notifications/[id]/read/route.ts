@@ -20,7 +20,7 @@ export async function PUT(
     }
 
     const user = decryptedResponse.user;
-    const notificationId = params.id;
+    const notificationId = await params.id;
 
     // Validate notification ID
     if (!mongoose.Types.ObjectId.isValid(notificationId)) {

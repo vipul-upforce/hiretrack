@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendEventEmailWithHistory } from "@/lib/unifiedEmailService";
 import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
-import { User } from "@/lib/mongodb";
+import { Settings, User } from "@/lib/mongodb";
 import dbConnect from "@/lib/mongodb";
+import mongoose from "mongoose";
 import { otpRateLimiter } from "@/lib/rateLimiter";
 
 async function handleSendOtp(req: NextRequest) {
@@ -16,6 +17,13 @@ async function handleSendOtp(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    const settings = await Settings.findOne({ organizationId: new mongoose.Types.ObjectId(organizationId) }).lean();
+    if (!settings || !settings.mailConfig) {
+      return NextResponse.json({ message: "Mail configuration not found" }, { status: 500 });
+    }
+
+    const fromEmail = settings.mailConfig.resend_from || settings.mailConfig.brevo_from || settings.mailConfig.smtp_from || "system@hiretrack.com";
 
     // Check if user has an existing OTP and its generation time
     const user = await User?.findOne({ email, organizationId }).populate({
@@ -65,15 +73,28 @@ async function handleSendOtp(req: NextRequest) {
       organizationId
     );
 
+    const systemUser = await User.findOneAndUpdate(
+      { email: fromEmail, organizationId },
+      {
+        $setOnInsert: {
+          name: "HireTrack System",
+          email: fromEmail,
+          role: "system",
+          organizationId,
+        },
+      },
+      { upsert: true, new: true }
+    );
+
     const mailResult = await sendEventEmailWithHistory(
       organizationId,
       [email],
       emailSubject,
       emailContent,
       {
-        sentBy: "system",
-        sentByEmail: "system@hiretrack.com",
-        sentByName: "HireTrack System",
+        sentBy: systemUser._id.toString(),
+        sentByEmail: systemUser.email,
+        sentByName: systemUser.name,
         metadata: {
           templateUsed: "2fa-otp",
           eventType: "2fa_authentication",

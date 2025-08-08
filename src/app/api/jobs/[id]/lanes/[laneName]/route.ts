@@ -41,7 +41,7 @@ export async function DELETE(
       );
     }
 
-    const { id: jobId, laneName } = params;
+    const { id: jobId, laneName } = await params;
 
     // Check if lane is restricted
     if (RESTRICTED_LANES.includes(laneName)) {
@@ -161,7 +161,7 @@ export async function PATCH(
       );
     }
 
-    const { id: jobId, laneName } = params;
+    const { id: jobId, laneName } = await params;
     const body = await request.json();
     const { newLaneName } = body;
 

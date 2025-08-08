@@ -26,11 +26,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { 
-  Search, 
-  Mail, 
-  Calendar, 
-  User, 
+import {
+  Search,
+  Mail,
+  Calendar,
+  User,
   Paperclip,
   CheckCircle,
   XCircle,
@@ -38,7 +38,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
-  RefreshCw
+  RefreshCw,
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -79,7 +79,9 @@ export function EmailHistory() {
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [selectedEmail, setSelectedEmail] = useState<EmailHistoryItem | null>(null);
+  const [selectedEmail, setSelectedEmail] = useState<EmailHistoryItem | null>(
+    null
+  );
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchEmailHistory = async (isRefresh = false) => {
@@ -94,7 +96,7 @@ export function EmailHistory() {
         page: page.toString(),
         limit: "20",
         ...(search && { search }),
-        ...(statusFilter && { status: statusFilter }),
+        ...(statusFilter !== "all" && statusFilter && { status: statusFilter }),
       });
 
       const response = await fetch(`/api/email-history?${params}`);
@@ -103,7 +105,7 @@ export function EmailHistory() {
       }
 
       const data = await response.json();
-      setEmails(data.data);
+      setEmails(data.emails);
       setTotalPages(data.pagination.totalPages);
     } catch (error) {
       toast.error("Failed to load email history");
@@ -196,7 +198,7 @@ export function EmailHistory() {
             <SelectValue placeholder="All statuses" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All statuses</SelectItem>
+            <SelectItem value="all">All statuses</SelectItem>
             <SelectItem value="sent">Sent</SelectItem>
             <SelectItem value="failed">Failed</SelectItem>
             <SelectItem value="pending">Pending</SelectItem>
@@ -208,13 +210,13 @@ export function EmailHistory() {
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
         </div>
-      ) : emails.length === 0 ? (
+      ) : emails?.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
           <Mail className="h-12 w-12 mx-auto mb-4 text-gray-300" />
           <p>No emails found</p>
         </div>
       ) : (
-        <>
+        <div>
           <div className="border rounded-lg overflow-hidden">
             <Table>
               <TableHeader>
@@ -229,19 +231,26 @@ export function EmailHistory() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {emails.map((email) => (
-                  <TableRow 
+                {emails?.map((email) => (
+                  <TableRow
                     key={email._id}
                     className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900"
                     onClick={() => setSelectedEmail(email)}
                   >
                     <TableCell className="whitespace-nowrap">
-                      {format(new Date(email.sentAt || email.createdAt), "MMM d, yyyy HH:mm")}
+                      {format(
+                        new Date(email.sentAt || email.createdAt),
+                        "MMM d, yyyy HH:mm"
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
-                        <span className="font-medium">{email.recipientId.name}</span>
-                        <span className="text-xs text-gray-500">{email.recipientId.email}</span>
+                        <span className="font-medium">
+                          {email.recipientId.name}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {email.recipientId.email}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell className="max-w-xs truncate">
@@ -250,11 +259,15 @@ export function EmailHistory() {
                     <TableCell>
                       <div className="flex flex-col">
                         <span className="text-sm">{email.sentBy.name}</span>
-                        <span className="text-xs text-gray-500">{email.sentBy.email}</span>
+                        <span className="text-xs text-gray-500">
+                          {email.sentBy.email}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell>{getStatusBadge(email.status)}</TableCell>
-                    <TableCell className="capitalize">{email.provider}</TableCell>
+                    <TableCell className="capitalize">
+                      {email.provider}
+                    </TableCell>
                     <TableCell>
                       {email.attachments.length > 0 && (
                         <Paperclip className="h-4 w-4 text-gray-400" />
@@ -293,18 +306,27 @@ export function EmailHistory() {
               </div>
             </div>
           )}
-        </>
+        </div>
       )}
 
       {/* Email Details Dialog */}
-      <Dialog open={!!selectedEmail} onOpenChange={() => setSelectedEmail(null)}>
+      <Dialog
+        open={!!selectedEmail}
+        onOpenChange={() => setSelectedEmail(null)}
+      >
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           {selectedEmail && (
             <>
               <DialogHeader>
-                <DialogTitle className="text-xl">{selectedEmail.subject}</DialogTitle>
+                <DialogTitle className="text-xl">
+                  {selectedEmail.subject}
+                </DialogTitle>
                 <DialogDescription>
-                  Sent on {format(new Date(selectedEmail.sentAt || selectedEmail.createdAt), "MMMM d, yyyy 'at' HH:mm")}
+                  Sent on{" "}
+                  {format(
+                    new Date(selectedEmail.sentAt || selectedEmail.createdAt),
+                    "MMMM d, yyyy 'at' HH:mm"
+                  )}
                 </DialogDescription>
               </DialogHeader>
 
@@ -312,11 +334,16 @@ export function EmailHistory() {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="font-semibold text-gray-600 mb-1">From:</p>
-                    <p>{selectedEmail.sentBy.name} ({selectedEmail.sentBy.email})</p>
+                    <p>
+                      {selectedEmail.sentBy.name} ({selectedEmail.sentBy.email})
+                    </p>
                   </div>
                   <div>
                     <p className="font-semibold text-gray-600 mb-1">To:</p>
-                    <p>{selectedEmail.recipientId.name} ({selectedEmail.recipientId.email})</p>
+                    <p>
+                      {selectedEmail.recipientId.name} (
+                      {selectedEmail.recipientId.email})
+                    </p>
                   </div>
                   {selectedEmail.cc.length > 0 && (
                     <div>
@@ -332,16 +359,22 @@ export function EmailHistory() {
                   )}
                   {selectedEmail.replyTo && (
                     <div>
-                      <p className="font-semibold text-gray-600 mb-1">Reply To:</p>
+                      <p className="font-semibold text-gray-600 mb-1">
+                        Reply To:
+                      </p>
                       <p>{selectedEmail.replyTo}</p>
                     </div>
                   )}
                   <div>
                     <p className="font-semibold text-gray-600 mb-1">Status:</p>
-                    <div className="mt-1">{getStatusBadge(selectedEmail.status)}</div>
+                    <div className="mt-1">
+                      {getStatusBadge(selectedEmail.status)}
+                    </div>
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-600 mb-1">Provider:</p>
+                    <p className="font-semibold text-gray-600 mb-1">
+                      Provider:
+                    </p>
                     <p className="capitalize">{selectedEmail.provider}</p>
                   </div>
                 </div>
@@ -363,7 +396,9 @@ export function EmailHistory() {
 
                 {selectedEmail.attachments.length > 0 && (
                   <div>
-                    <p className="font-semibold text-gray-600 mb-2">Attachments:</p>
+                    <p className="font-semibold text-gray-600 mb-2">
+                      Attachments:
+                    </p>
                     <div className="space-y-2">
                       {selectedEmail.attachments.map((attachment, index) => (
                         <a
