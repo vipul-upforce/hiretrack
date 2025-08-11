@@ -45,7 +45,7 @@ export async function GET(
     await connectToDatabase();
     const { id } = await params;
     // Verify job exists and user has access
-    const job = await Job!.findById(params.id);
+    const job = await Job!.findById(id);
     if (!job) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }

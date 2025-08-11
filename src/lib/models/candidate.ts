@@ -126,7 +126,7 @@ export const candidateSchema = new Schema(
     organizationId: String,
     name: { type: String, required: true },
     email: { type: String, required: true },
-    contact: { type: String, required: true },
+    contact: { type: String, required: false },
     location: { type: String, required: false },
     experience: { type: Number, required: false },
     skills: [{ type: String }],
@@ -198,40 +198,47 @@ export const candidateSchema = new Schema(
     status: {
       type: String,
       validate: {
-        validator: async function(status: string) {
+        validator: async function (status: string) {
           // Skip validation if no status is provided
           if (!status) return true;
-          
+
           // Get the job for this candidate
           if (!this.jobId) return true; // Allow if no job assigned
-          
-          const Job = mongoose.model('Job');
-          const Organization = mongoose.model('Organization');
-          
+
+          const Job = mongoose.model("Job");
+          const Organization = mongoose.model("Organization");
+
           try {
             const job = await Job.findById(this.jobId);
             if (!job) return true; // Allow if job not found (will be handled elsewhere)
-            
+
             // Check if job uses custom lanes
             if (job.useCustomLanes && job.lanes) {
               return job.lanes.includes(status);
             } else {
               // Use organization default lanes
-              const organization = await Organization.findById(job.organizationId);
+              const organization = await Organization.findById(
+                job.organizationId
+              );
               if (!organization) return true;
-              
+
               const defaultLanes = organization.defaultLanes || [
-                "applied", "screening", "shortlisted", "processing", "accepted", "rejected"
+                "applied",
+                "screening",
+                "shortlisted",
+                "processing",
+                "accepted",
+                "rejected",
               ];
               return defaultLanes.includes(status);
             }
           } catch (error) {
-            console.warn('Lane validation error:', error);
+            console.warn("Lane validation error:", error);
             return true; // Allow if validation fails to prevent blocking operations
           }
         },
-        message: 'Status must be a valid lane for this job'
-      }
+        message: "Status must be a valid lane for this job",
+      },
     },
     tracking: {
       createdAt: { type: Date, default: Date.now },
@@ -289,13 +296,15 @@ export const candidateSchema = new Schema(
             type: Map,
             of: {
               value: Schema.Types.Mixed,
-              files: [{
-                id: String,
-                name: String,
-                url: String,
-                type: String,
-                size: Number,
-              }],
+              files: [
+                {
+                  id: String,
+                  name: String,
+                  url: String,
+                  type: String,
+                  size: Number,
+                },
+              ],
             },
           },
         },
@@ -310,13 +319,15 @@ export const candidateSchema = new Schema(
             type: Map,
             of: {
               value: Schema.Types.Mixed,
-              files: [{
-                id: String,
-                name: String,
-                url: String,
-                type: String,
-                size: Number,
-              }],
+              files: [
+                {
+                  id: String,
+                  name: String,
+                  url: String,
+                  type: String,
+                  size: Number,
+                },
+              ],
             },
           },
         },

@@ -148,8 +148,8 @@ export function CandidateCard({
 
     user,
     async () => refetch(),
-    () => { },
-    () => { },
+    () => {},
+    () => {},
     undefined,
     undefined
   );
@@ -369,10 +369,16 @@ export function CandidateCard({
                 {/* Add Remark - Only for non-candidate roles */}
                 {user?.role !== "candidate" && (
                   <DropdownMenuItem
+                    // onClick={(e) => {
+                    //   e.stopPropagation();
+                    //   setOpenRemarksFor(candidate._id);
+                    //   onAddRemarkClick(candidate);
+                    // }}
                     onClick={(e) => {
                       e.stopPropagation();
                       setOpenRemarksFor(candidate._id);
-                      onAddRemarkClick(candidate);
+                      // onAddRemarkClick(candidate);
+                      setIsAddRemarkOpen(true);
                     }}
                   >
                     <Plus className="h-4 w-4 mr-2" />
@@ -851,7 +857,6 @@ Google Meet Link: ${candidate.assignment.googleMeet.meetingLink}`;
 
             // Always open details when clicking on card content
             onViewDetails(candidate);
-
           }}
         >
           {renderCardContent()}
@@ -921,7 +926,7 @@ Google Meet Link: ${candidate.assignment.googleMeet.meetingLink}`;
           isOpen={isAssigning}
           onOpenChange={setIsAssigning}
           onUpdate={() => refetch()}
-          setLocalCandidate={() => { }}
+          setLocalCandidate={() => {}}
           onSuccess={() => {
             setIsAssigning(false);
             refetch();
@@ -966,17 +971,19 @@ Google Meet Link: ${candidate.assignment.googleMeet.meetingLink}`;
         loadingText="Marking as done..."
       />
 
-      {onDashboard &&
+      {
         <AddRemarksDialog
           candidate={candidate}
           isOpen={openRemarks}
-          onOpenChange={() => { setOpenRemarksFor(null); setIsAddRemarkOpen(false); }}
+          onOpenChange={() => {
+            setOpenRemarksFor(null);
+            setIsAddRemarkOpen(false);
+          }}
           // onOpenChange={setIsAddRemarkOpen}
-          setOpenRemarksFor={() => { }}
+          setOpenRemarksFor={() => {}}
           refetch={async () => refetch()}
         />
       }
-
 
       {/* Email Candidate Dialog */}
       {isEmailDialogOpen && (
@@ -990,9 +997,6 @@ Google Meet Link: ${candidate.assignment.googleMeet.meetingLink}`;
           }}
         />
       )}
-
-
-
     </>
   );
 }

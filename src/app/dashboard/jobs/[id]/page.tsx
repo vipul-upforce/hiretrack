@@ -747,6 +747,10 @@ export default function JobProgressPage() {
             ? openRemarksFor
             : undefined;
 
+          if (!checklistInfo) {
+            return null;
+          }
+
           return (
             <ChecklistRemarksDialog
               candidate={candidate}

@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Candidate, History, User, JobLaneConfig } from "@/lib/mongodb";
+import connectToDatabase, {
+  Candidate,
+  History,
+  User,
+  JobLaneConfig,
+} from "@/lib/mongodb";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { CustomFieldFile } from "@/lib/fileUtils";
-import { validateUserCanSubmitFields, getUserRole, filterChecklistResponses } from "@/lib/utils/checklistVisibility";
+import {
+  validateUserCanSubmitFields,
+  getUserRole,
+  filterChecklistResponses,
+} from "@/lib/utils/checklistVisibility";
 
 // POST - Submit checklist responses for a candidate
 export async function POST(
@@ -26,7 +35,11 @@ export async function POST(
 
     // Check if models are initialized
     if (!Candidate || !History || !User) {
-      console.error("Models not initialized:", { Candidate: !!Candidate, History: !!History, User: !!User });
+      console.error("Models not initialized:", {
+        Candidate: !!Candidate,
+        History: !!History,
+        User: !!User,
+      });
       return NextResponse.json(
         { error: "Database models not initialized" },
         { status: 500 }
@@ -41,7 +54,7 @@ export async function POST(
       laneId,
       laneName,
       responses,
-      remark
+      remark,
     } = body;
 
     // Validate required fields
@@ -64,10 +77,7 @@ export async function POST(
     // Get user role for permission validation
     const userRole = getUserRole(decoded.role);
     if (!userRole) {
-      return NextResponse.json(
-        { error: "Invalid user role" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Invalid user role" }, { status: 403 });
     }
 
     // Get the job lane configuration to validate field permissions
@@ -80,7 +90,9 @@ export async function POST(
     }
 
     // Find the specific checklist for validation
-    const targetLane = laneConfig.laneConfigs.find(lc => lc.laneId === laneId);
+    const targetLane = laneConfig.laneConfigs.find(
+      (lc) => lc.laneId === laneId
+    );
     if (!targetLane) {
       return NextResponse.json(
         { error: "Lane not found in configuration" },
@@ -88,9 +100,10 @@ export async function POST(
       );
     }
 
-    const checklist = checklistType === "incoming" 
-      ? targetLane.incomingChecklist 
-      : targetLane.outgoingChecklist;
+    const checklist =
+      checklistType === "incoming"
+        ? targetLane.incomingChecklist
+        : targetLane.outgoingChecklist;
 
     if (!checklist || checklist.id !== checklistId) {
       return NextResponse.json(
@@ -109,7 +122,10 @@ export async function POST(
 
     if (!canSubmitFields) {
       return NextResponse.json(
-        { error: "User does not have permission to submit responses for some of these fields" },
+        {
+          error:
+            "User does not have permission to submit responses for some of these fields",
+        },
         { status: 403 }
       );
     }
@@ -121,34 +137,36 @@ export async function POST(
 
     // Get or create lane checklist data
     // let laneChecklistData = candidate.checklistData?.get(laneId) || {};
-    let laneChecklistData = (candidate.checklistData && candidate.checklistData[laneId]) || {};
+    let laneChecklistData =
+      (candidate.checklistData && candidate.checklistData[laneId]) || {};
 
-// Store checklist responses
-const checklistData = {
-  checklistId,
-  completedAt: new Date(),
-  completedBy: decoded._id || decoded.id || decoded.userId,
-  responses: responses // Keep as plain object
-};
+    // Store checklist responses
+    const checklistData = {
+      checklistId,
+      completedAt: new Date(),
+      completedBy: decoded._id || decoded.id || decoded.userId,
+      responses: responses, // Keep as plain object
+    };
 
-// Update based on checklist type
-if (checklistType === "incoming") {
-  laneChecklistData.incoming = checklistData;
-} else {
-  laneChecklistData.outgoing = checklistData;
-}
+    // Update based on checklist type
+    if (checklistType === "incoming") {
+      laneChecklistData.incoming = checklistData;
+    } else {
+      laneChecklistData.outgoing = checklistData;
+    }
     // Update the candidate's checklist data using MongoDB's Map update syntax
-    const updateQuery = checklistType === "incoming" 
-      ? { [`checklistData.${laneId}.incoming`]: checklistData }
-      : { [`checklistData.${laneId}.outgoing`]: checklistData };
+    const updateQuery =
+      checklistType === "incoming"
+        ? { [`checklistData.${laneId}.incoming`]: checklistData }
+        : { [`checklistData.${laneId}.outgoing`]: checklistData };
 
     await Candidate!.findByIdAndUpdate(
       params.id,
       { $set: updateQuery },
-      { 
+      {
         new: true,
         runValidators: false, // Skip validation for other fields
-        upsert: false
+        upsert: false,
       }
     );
 
@@ -167,20 +185,22 @@ if (checklistType === "incoming") {
         laneId,
         laneName,
         responses: Object.fromEntries(
-          Object.entries(responses).map(([fieldId, response]: [string, any]) => [
-            fieldId,
-            {
+          Object.entries(responses).map(
+            ([fieldId, response]: [string, any]) => [
               fieldId,
-              fieldLabel: response.fieldLabel || fieldId,
-              fieldType: response.fieldType || "text",
-              value: response.value,
-              files: response.files || []
-            }
-          ])
+              {
+                fieldId,
+                fieldLabel: response.fieldLabel || fieldId,
+                fieldType: response.fieldType || "text",
+                value: response.value,
+                files: response.files || [],
+              },
+            ]
+          )
         ),
         completedAt: new Date(),
-        completedBy: userId
-      }
+        completedBy: userId,
+      },
     };
 
     // Add remark if provided
@@ -194,19 +214,22 @@ if (checklistType === "incoming") {
         userId: {
           _id: userId,
           name: user?.name || "",
-          email: user?.email || ""
-        }
+          email: user?.email || "",
+        },
       };
+
+      candidate.remarks = [...(candidate.remarks || []), historyEntry.remark];
+      await candidate.save();
     }
 
     // Update history
     await History!.findOneAndUpdate(
-      { 
-        jobId: candidate.jobId?.toString(), 
-        candidateId: params.id 
+      {
+        jobId: candidate.jobId?.toString(),
+        candidateId: params.id,
       },
-      { 
-        $push: { history: historyEntry } 
+      {
+        $push: { history: historyEntry },
       },
       { upsert: true }
     );
@@ -218,22 +241,21 @@ if (checklistType === "incoming") {
         candidateId: params.id,
         checklistType,
         laneId,
-        completedAt: checklistData.completedAt
-      }
+        completedAt: checklistData.completedAt,
+      },
     });
-
   } catch (error) {
     console.error("Error submitting checklist:", error);
     console.error("Error details:", {
-      message: error instanceof Error ? error.message : 'Unknown error',
+      message: error instanceof Error ? error.message : "Unknown error",
       stack: error instanceof Error ? error.stack : undefined,
       candidateId: params.id,
-      error: error
+      error: error,
     });
     return NextResponse.json(
-      { 
+      {
         error: "Failed to submit checklist",
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     );

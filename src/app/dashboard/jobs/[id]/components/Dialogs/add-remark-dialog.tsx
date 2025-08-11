@@ -140,9 +140,15 @@ const AddRemarksDialog = ({
           jobId: candidate.jobId,
           newEntry: newHistoryEntry,
         }).unwrap();
+        // debugger;
+        const wasUpdatedRecently =
+          candidate.updatedAt &&
+          Date.now() - new Date(candidate.updatedAt).getTime() <= 20 * 1000; // 20 seconds
 
         const updatedCandidate = await updateCandidate(updateData).unwrap();
-        // await sentStatusMailHandler(updatedCandidate, sendStatusMail);
+        if (wasUpdatedRecently) {
+          await sentStatusMailHandler(updatedCandidate, sendStatusMail);
+        }
         // sentRemarkMail(result, sendEmail);
 
         onOpenChange(false);
