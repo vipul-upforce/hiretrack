@@ -64,7 +64,7 @@ export const useDragToScroll = <T extends HTMLElement>() => {
       element.removeEventListener("mouseup", onMouseUp);
       element.removeEventListener("mousemove", onMouseMove);
       if (element) {
-          // element.style.cursor = "default";
+        // element.style.cursor = "default";
       }
     };
   }, [element, isDragging, startX, scrollLeft, isDndDragging]);

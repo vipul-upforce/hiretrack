@@ -78,8 +78,8 @@ export function CustomScrollbar({
           if (typeof ref === "function") ref(el);
           else if (ref) ref.current = el;
         }}
-        // className={`h-full scrollbar-hide ${isDragging ? "overflow-hidden" : "overflow-y-scroll"}`}
-        className={cn("h-full scrollbar-hide overflow-y-auto")} //
+        className={`h-full scrollbar-hide ${isDragging ? "overflow-hidden" : "overflow-y-scroll"}`}
+        // className={cn("h-full scrollbar-hide overflow-y-auto")} //
         style={{
           scrollbarWidth: "none",
           msOverflowStyle: "none",

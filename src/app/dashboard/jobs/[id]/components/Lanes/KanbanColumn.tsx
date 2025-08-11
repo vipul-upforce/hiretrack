@@ -6,7 +6,11 @@ import {
   DroppableProvided,
   DraggableProvided,
 } from "@hello-pangea/dnd";
-import { GripVertical, ArrowRightToLine, ArrowLeftFromLine } from "lucide-react";
+import {
+  GripVertical,
+  ArrowRightToLine,
+  ArrowLeftFromLine,
+} from "lucide-react";
 import { CandidateCard } from "../Candidate/candidate-card";
 import { Candidate } from "@/types/candidate";
 import { LaneOptionsMenu } from "./lanes-options-menu";
@@ -14,7 +18,12 @@ import { useState, useMemo, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { CustomScrollbar } from "@/components/ui/custom-scrollbar";
 import { useDragToScroll } from "../../hooks/useDragToScroll";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { ILaneConfig } from "@/lib/models/JobLaneConfig";
 
 interface PendingMove {
@@ -47,7 +56,11 @@ interface KanbanColumnProps {
   openRemarksFor: string | null;
   setOpenRemarksFor: (candidateId: string | null) => void;
   handleDeleteClick: (candidateId: string) => void;
-  onConfigureChecklist?: (laneId: string, laneName: string, initialTab?: "incoming" | "outgoing") => void;
+  onConfigureChecklist?: (
+    laneId: string,
+    laneName: string,
+    initialTab?: "incoming" | "outgoing"
+  ) => void;
   isDragging?: boolean;
   pendingMoves?: PendingMove[];
   laneConfig?: ILaneConfig;
@@ -249,11 +262,15 @@ export function KanbanColumn({
                       <TooltipProvider delayDuration={0}>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <div 
+                            <div
                               className="flex items-center text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer transition-colors"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                onConfigureChecklist?.(column.id, column.title, "incoming");
+                                onConfigureChecklist?.(
+                                  column.id,
+                                  column.title,
+                                  "incoming"
+                                );
                               }}
                             >
                               <ArrowRightToLine className="h-3.5 w-3.5" />
@@ -261,10 +278,14 @@ export function KanbanColumn({
                           </TooltipTrigger>
                           <TooltipContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
                             <p className="text-xs">
-                              Incoming checklist: {laneConfig.incomingChecklist.name}
-                              {laneConfig.incomingChecklist.isMandatory && ' (Mandatory)'}
+                              Incoming checklist:{" "}
+                              {laneConfig.incomingChecklist.name}
+                              {laneConfig.incomingChecklist.isMandatory &&
+                                " (Mandatory)"}
                               <br />
-                              <span className="text-blue-600 dark:text-blue-400">Click to configure</span>
+                              <span className="text-blue-600 dark:text-blue-400">
+                                Click to configure
+                              </span>
                             </p>
                           </TooltipContent>
                         </Tooltip>
@@ -274,11 +295,15 @@ export function KanbanColumn({
                       <TooltipProvider delayDuration={0}>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <div 
+                            <div
                               className="flex items-center text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer transition-colors"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                onConfigureChecklist?.(column.id, column.title, "outgoing");
+                                onConfigureChecklist?.(
+                                  column.id,
+                                  column.title,
+                                  "outgoing"
+                                );
                               }}
                             >
                               <ArrowLeftFromLine className="h-3.5 w-3.5 scale-x-[-1]" />
@@ -286,10 +311,14 @@ export function KanbanColumn({
                           </TooltipTrigger>
                           <TooltipContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
                             <p className="text-xs">
-                              Outgoing checklist: {laneConfig.outgoingChecklist.name}
-                              {laneConfig.outgoingChecklist.isMandatory && ' (Mandatory)'}
+                              Outgoing checklist:{" "}
+                              {laneConfig.outgoingChecklist.name}
+                              {laneConfig.outgoingChecklist.isMandatory &&
+                                " (Mandatory)"}
                               <br />
-                              <span className="text-blue-600 dark:text-blue-400">Click to configure</span>
+                              <span className="text-blue-600 dark:text-blue-400">
+                                Click to configure
+                              </span>
                             </p>
                           </TooltipContent>
                         </Tooltip>
@@ -333,8 +362,6 @@ export function KanbanColumn({
                     className="h-full"
                   >
                     <div
-                      {...provided.droppableProps}
-                      ref={provided.innerRef}
                       className={`space-y-2 pb-2 min-w-0 h-full`}
                       onDragOver={(e) => {
                         if (
@@ -383,7 +410,9 @@ export function KanbanColumn({
                         }
                         // Check if this candidate is in a pending move for this lane
                         const isPending = pendingMoves.some(
-                          pm => pm.candidateId === candidate._id && pm.targetLaneId === column.id
+                          (pm) =>
+                            pm.candidateId === candidate._id &&
+                            pm.targetLaneId === column.id
                         );
 
                         return (
