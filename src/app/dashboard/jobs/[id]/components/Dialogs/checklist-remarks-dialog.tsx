@@ -997,7 +997,7 @@ const ChecklistRemarksDialog = ({
           <Button
             onClick={handleSubmit}
             variant="info"
-            disabled={isSubmitting || !newRemark.trim() || !user?.id}
+            disabled={isSubmitting || !user?.id}
           >
             {isSubmitting ? "Submitting..." : "Submit"}
           </Button>

@@ -55,6 +55,7 @@ export async function POST(
       laneName,
       responses,
       remark,
+      currentTime,
     } = body;
 
     // Validate required fields
@@ -143,7 +144,7 @@ export async function POST(
     // Store checklist responses
     const checklistData = {
       checklistId,
-      completedAt: new Date(),
+      completedAt: currentTime,
       completedBy: decoded._id || decoded.id || decoded.userId,
       responses: responses, // Keep as plain object
     };
@@ -176,7 +177,7 @@ export async function POST(
 
     // Create history entry
     const historyEntry: any = {
-      dateTime: new Date().toISOString(),
+      dateTime: currentTime,
       title: `Completed ${checklistType} checklist for ${laneName} lane`,
       checklistForm: {
         checklistId,
@@ -198,18 +199,21 @@ export async function POST(
             ]
           )
         ),
-        completedAt: new Date(),
+        completedAt: currentTime,
         completedBy: userId,
       },
+      currentInterviewer: null,
+      previousInterviewer: null,
+      assignmentBy: userId,
     };
 
     // Add remark if provided
     if (remark && remark.description) {
       historyEntry.remark = {
-        id: new Date().getTime().toString(),
+        id: currentTime,
         isPrivate: remark.isPrivate || false,
         description: remark.description,
-        date: new Date().toISOString(),
+        date: currentTime,
         rating: remark.rating,
         userId: {
           _id: userId,
