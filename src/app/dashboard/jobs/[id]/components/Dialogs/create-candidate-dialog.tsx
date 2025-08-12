@@ -534,7 +534,7 @@ export function CreateCandidateDialog({
                     // scrollToErrorMassage(errors);
                     handleApply();
                   }}
-                  type="button"
+                  type={Object.keys(errors).length == 0 ? "button" : "submit"}
                   disabled={isSubmitting || isCreating || isLoading}
                 >
                   {isSubmitting
