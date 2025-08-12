@@ -79,106 +79,105 @@ export const useSSE = (
                 ...prev.slice(index + 1),
               ];
             }
-          //   console.log("AFTER SETTING THE UPDATED CANIDATE: ", {
-          //   updatedCandidateId: updatedCandidate?._id,
-          //   status: updatedCandidate.status,
-          //   updatedCandidate,
-          // })
+            //   console.log("AFTER SETTING THE UPDATED CANIDATE: ", {
+            //   updatedCandidateId: updatedCandidate?._id,
+            //   status: updatedCandidate.status,
+            //   updatedCandidate,
+            // })
             return [...prev, updatedCandidate];
           });
 
           // setTimeout(() => {
-            // debugger;
-            const currentSelected = selectedCandidateRef.current;
-            let currentSelectedId: string | undefined;
-            if (currentSelected) {
-              if (pathname?.includes("/calendar")) {
-                currentSelectedId =
-                  (currentSelected as CustomCalendarEvent)?.extendedProps
-                    ?.candidate?._id ||
-                  (currentSelected as any)?._def?.publicId;
-              } else {
-                currentSelectedId = (currentSelected as Candidate)?._id;
-              }
+          // debugger;
+          const currentSelected = selectedCandidateRef.current;
+          let currentSelectedId: string | undefined;
+          if (currentSelected) {
+            if (pathname?.includes("/calendar")) {
+              currentSelectedId =
+                (currentSelected as CustomCalendarEvent)?.extendedProps
+                  ?.candidate?._id || (currentSelected as any)?._def?.publicId;
+            } else {
+              currentSelectedId = (currentSelected as Candidate)?._id;
             }
+          }
 
-            // console.log("Comparing IDs:", {
+          // console.log("Comparing IDs:", {
+          //   currentSelectedId,
+          //   updatedCandidateId: updatedCandidate._id,
+          // });
+
+          if (currentSelected && currentSelectedId === updatedCandidate._id) {
+            // console.log("Matched selected candidate, updating...");
+            if (!pathname?.includes("/calendar")) {
+              // console.log(
+              //   "Updating non-calendar selected candidate:",
+              //   updatedCandidate
+              // );
+              setSelectedCandidateRef.current(updatedCandidate);
+            } else {
+              // Construct calendar event for calendar views
+              const currentEvent = currentSelected as CustomCalendarEvent;
+              const startTime = updatedCandidate?.assignment?.time
+                ? new Date(updatedCandidate?.assignment?.time)
+                : currentEvent?.start || new Date();
+              const endTime = updatedCandidate?.assignment?.time
+                ? new Date(
+                    new Date(startTime).setHours(startTime.getHours() + 1)
+                  ) // Default to 1-hour duration
+                : currentEvent?.end || new Date();
+
+              const updatedEvent: CustomCalendarEvent = {
+                ...currentEvent,
+                id: updatedCandidate._id,
+                title:
+                  typeof updatedCandidate.jobId === "object"
+                    ? updatedCandidate.jobId?.title || "Unknown"
+                    : "Unknown",
+                start: startTime,
+                end: endTime,
+                startStr: startTime.toISOString(),
+                endStr: endTime.toISOString(),
+                extendedProps: {
+                  ...currentEvent?.extendedProps,
+                  candidate: {
+                    ...updatedCandidate,
+                    jobId:
+                      typeof updatedCandidate.jobId === "string"
+                        ? updatedCandidate.jobId
+                        : updatedCandidate.jobId?._id,
+                    jobDetails:
+                      typeof updatedCandidate.jobId === "object"
+                        ? {
+                            title: updatedCandidate.jobId?.title || "",
+                            description:
+                              updatedCandidate.jobId?.description || "",
+                          }
+                        : undefined,
+                  },
+                  interviewer:
+                    typeof updatedCandidate?.assignment?.interviewerId ===
+                    "string"
+                      ? {
+                          _id: updatedCandidate?.assignment?.interviewerId,
+                          name: "Unknown",
+                          email: "Unknown",
+                        }
+                      : updatedCandidate?.assignment?.interviewerId || {
+                          _id: "",
+                          name: "Unknown",
+                          email: "Unknown",
+                        },
+                },
+              };
+              // console.log("Updating calendar event:", updatedEvent);
+              setSelectedCandidateRef.current(updatedEvent);
+            }
+          } else {
+            // console.log("No match for selected candidate:", {
             //   currentSelectedId,
             //   updatedCandidateId: updatedCandidate._id,
             // });
-
-            if (currentSelected && currentSelectedId === updatedCandidate._id) {
-              // console.log("Matched selected candidate, updating...");
-              if (!pathname?.includes("/calendar")) {
-                // console.log(
-                //   "Updating non-calendar selected candidate:",
-                //   updatedCandidate
-                // );
-                setSelectedCandidateRef.current(updatedCandidate);
-              } else {
-                // Construct calendar event for calendar views
-                const currentEvent = currentSelected as CustomCalendarEvent;
-                const startTime = updatedCandidate?.assignment?.time
-                  ? new Date(updatedCandidate?.assignment?.time)
-                  : currentEvent?.start || new Date();
-                const endTime = updatedCandidate?.assignment?.time
-                  ? new Date(
-                      new Date(startTime).setHours(startTime.getHours() + 1)
-                    ) // Default to 1-hour duration
-                  : currentEvent?.end || new Date();
-
-                const updatedEvent: CustomCalendarEvent = {
-                  ...currentEvent,
-                  id: updatedCandidate._id,
-                  title:
-                    typeof updatedCandidate.jobId === "object"
-                      ? updatedCandidate.jobId?.title || "Unknown"
-                      : "Unknown",
-                  start: startTime,
-                  end: endTime,
-                  startStr: startTime.toISOString(),
-                  endStr: endTime.toISOString(),
-                  extendedProps: {
-                    ...currentEvent?.extendedProps,
-                    candidate: {
-                      ...updatedCandidate,
-                      jobId:
-                        typeof updatedCandidate.jobId === "string"
-                          ? updatedCandidate.jobId
-                          : updatedCandidate.jobId?._id,
-                      jobDetails:
-                        typeof updatedCandidate.jobId === "object"
-                          ? {
-                              title: updatedCandidate.jobId?.title || "",
-                              description:
-                                updatedCandidate.jobId?.description || "",
-                            }
-                          : undefined,
-                    },
-                    interviewer:
-                      typeof updatedCandidate?.assignment?.interviewerId ===
-                      "string"
-                        ? {
-                            _id: updatedCandidate?.assignment?.interviewerId,
-                            name: "Unknown",
-                            email: "Unknown",
-                          }
-                        : updatedCandidate?.assignment?.interviewerId || {
-                            _id: "",
-                            name: "Unknown",
-                            email: "Unknown",
-                          },
-                  },
-                };
-                // console.log("Updating calendar event:", updatedEvent);
-                setSelectedCandidateRef.current(updatedEvent);
-              }
-            } else {
-              // console.log("No match for selected candidate:", {
-              //   currentSelectedId,
-              //   updatedCandidateId: updatedCandidate._id,
-              // });
-            }
+          }
           // }, 500);
         } else if (data.type === "clients") {
           setClients(data.clients);

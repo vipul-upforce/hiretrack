@@ -107,8 +107,9 @@ export async function POST(
 
     await connectToDatabase();
 
+    const { id } = await params;
     // Verify job exists and user has access
-    const job = await Job!.findById(params.id);
+    const job = await Job!.findById(id);
     if (!job) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
@@ -145,9 +146,9 @@ export async function POST(
 
     // Update or create configuration
     const config = await JobLaneConfig!.findOneAndUpdate(
-      { jobId: params.id },
+      { jobId: id },
       {
-        jobId: params.id,
+        jobId: id,
         organizationId: job.organizationId,
         laneConfigs: processedLaneConfigs,
         updatedAt: new Date(),
@@ -215,8 +216,10 @@ export async function PATCH(
       );
     }
 
+    const { id } = await params;
+
     // Verify job exists and user has access
-    const job = await Job!.findById(params.id);
+    const job = await Job!.findById(id);
     if (!job) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
@@ -226,11 +229,11 @@ export async function PATCH(
     }
 
     // Get existing config or create new one
-    let config = await JobLaneConfig!.findOne({ jobId: params.id });
+    let config = await JobLaneConfig!.findOne({ jobId: id });
 
     if (!config) {
       config = new JobLaneConfig!({
-        jobId: params.id,
+        jobId: id,
         organizationId: job.organizationId,
         laneConfigs: [],
       });
@@ -331,8 +334,9 @@ export async function DELETE(
       );
     }
 
+    const { id } = await params;
     // Verify job exists and user has access
-    const job = await Job!.findById(params.id);
+    const job = await Job!.findById(id);
     if (!job) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
@@ -342,7 +346,7 @@ export async function DELETE(
     }
 
     // Get existing config
-    const config = await JobLaneConfig!.findOne({ jobId: params.id });
+    const config = await JobLaneConfig!.findOne({ jobId: id });
     if (!config) {
       return NextResponse.json(
         { error: "No configuration found" },

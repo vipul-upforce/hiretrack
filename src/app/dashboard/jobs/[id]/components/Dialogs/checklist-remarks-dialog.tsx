@@ -712,14 +712,14 @@ const ChecklistRemarksDialog = ({
       });
       return;
     }
-    if (!newRemark.trim() || !user?.id) {
-      toast({
-        title: "Error",
-        description: "Please add remarks",
-        variant: "destructive",
-      });
-      return;
-    }
+    // if (!newRemark.trim() || !user?.id) {
+    //   toast({
+    //     title: "Error",
+    //     description: "Please add remarks",
+    //     variant: "destructive",
+    //   });
+    //   return;
+    // }
     // const user = decryptedResponse.user;
     setIsSubmitting(true);
 

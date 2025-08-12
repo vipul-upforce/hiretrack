@@ -29,13 +29,13 @@ const ChecklistResponseViewer = ({
   if (!checklistForm) return null;
 
   // Debug: Log the structure to understand the data format
-  console.log("ChecklistForm structure:", checklistForm);
-  console.log("Responses type:", typeof checklistForm.responses);
-  console.log(
-    "Responses instanceof Map:",
-    checklistForm.responses instanceof Map
-  );
-  console.log("Responses data:", checklistForm.responses);
+  // console.log("ChecklistForm structure:", checklistForm);
+  // console.log("Responses type:", typeof checklistForm.responses);
+  // console.log(
+  //   "Responses instanceof Map:",
+  //   checklistForm.responses instanceof Map
+  // );
+  // console.log("Responses data:", checklistForm.responses);
 
   // Handle both Map and plain object formats
   const responsesArray =
@@ -218,7 +218,8 @@ const RenderHistoryEntry = ({
       (interview.title !== "" || !interview.title) &&
       interview.title !== "Assigned to Job" &&
       !interview.title?.includes("Followup") &&
-      !interview.title?.startsWith("Email sent: ")
+      !interview.title?.startsWith("Email sent: ") &&
+      !interview.checklistForm
     ) {
       return (
         <div className="flex flex-row items-start justify-between w-full">

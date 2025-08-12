@@ -800,15 +800,15 @@ function CandidateCustomFieldsDialog({
   } = context;
   const [hasAutoSelected, setHasAutoSelected] = useState(false);
 
-  console.log("CandidateCustomFieldsDialog context:", {
-    customFieldsKeys: Object.keys(customFields || {}),
-    customFieldsCount: Object.keys(customFields || {}).length,
-    stepName,
-    selectedFormId,
-    hasContext: !!context,
-    isOpen,
-    hasAutoSelected,
-  });
+  // console.log("CandidateCustomFieldsDialog context:", {
+  //   customFieldsKeys: Object.keys(customFields || {}),
+  //   customFieldsCount: Object.keys(customFields || {}).length,
+  //   stepName,
+  //   selectedFormId,
+  //   hasContext: !!context,
+  //   isOpen,
+  //   hasAutoSelected,
+  // });
 
   // Auto-select candidate form when dialog opens
   useEffect(() => {

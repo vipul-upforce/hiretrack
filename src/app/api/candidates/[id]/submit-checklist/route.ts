@@ -12,6 +12,8 @@ import {
   getUserRole,
   filterChecklistResponses,
 } from "@/lib/utils/checklistVisibility";
+import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
+import { Console } from "console";
 
 // POST - Submit checklist responses for a candidate
 export async function POST(
@@ -66,8 +68,26 @@ export async function POST(
       );
     }
 
+    const { id } = await params;
     // Get candidate
-    const candidate = await Candidate!.findById(params.id);
+    const candidate = await Candidate!.findById(id).populate([
+      {
+        path: "assignment.interviewerId",
+        select: "_id name email",
+      },
+      {
+        path: "remarks.userId",
+        select: "name email",
+      },
+      {
+        path: "followUp.userId",
+        select: "name email",
+      },
+      {
+        path: "jobId",
+        select: "_id description title",
+      },
+    ]);
     if (!candidate) {
       return NextResponse.json(
         { error: "Candidate not found" },
@@ -162,7 +182,7 @@ export async function POST(
         : { [`checklistData.${laneId}.outgoing`]: checklistData };
 
     await Candidate!.findByIdAndUpdate(
-      params.id,
+      id,
       { $set: updateQuery },
       {
         new: true,
@@ -229,8 +249,11 @@ export async function POST(
     // Update history
     await History!.findOneAndUpdate(
       {
-        jobId: candidate.jobId?.toString(),
-        candidateId: params.id,
+        jobId:
+          typeof candidate?.jobId === "object" && "_id" in candidate?.jobId
+            ? candidate?.jobId?._id
+            : candidate.jobId,
+        candidateId: candidate?._id.toString(),
       },
       {
         $push: { history: historyEntry },
@@ -238,11 +261,34 @@ export async function POST(
       { upsert: true }
     );
 
+    const candidateHistoryPopulated = await History?.findOne({
+      jobId:
+        typeof candidate?.jobId === "object" && "_id" in candidate?.jobId
+          ? candidate?.jobId?._id
+          : candidate.jobId,
+      candidateId: candidate?._id.toString(),
+    })
+      .populate([
+        { path: "history.assignmentBy", select: "_id name email" },
+        { path: "history.currentInterviewer", select: "_id name email" },
+        { path: "history.previousInterviewer", select: "_id name email" },
+        { path: "history.note.userId", select: "_id name email" },
+      ])
+      .lean();
+    console.log(
+      "🚒🚒🚒🚒🚒GOING IN FOR THE BROADCAST.......",
+      candidateHistoryPopulated
+    );
+    const candidateObj = candidate.toObject();
+    broadcastCandidateUpdate({
+      ...candidateObj,
+      history: candidateHistoryPopulated?.history || [],
+    });
     return NextResponse.json({
       success: true,
       message: "Checklist submitted successfully",
       data: {
-        candidateId: params.id,
+        candidateId: id,
         checklistType,
         laneId,
         completedAt: checklistData.completedAt,
@@ -253,7 +299,7 @@ export async function POST(
     console.error("Error details:", {
       message: error instanceof Error ? error.message : "Unknown error",
       stack: error instanceof Error ? error.stack : undefined,
-      candidateId: params.id,
+      // candidateId: params.id,
       error: error,
     });
     return NextResponse.json(

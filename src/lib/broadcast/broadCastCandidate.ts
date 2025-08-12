@@ -9,6 +9,8 @@ export function broadcastCandidateUpdate(
 ) {
   const orgId = candidate.organizationId;
   const orgClients = global.sseClients?.get(orgId);
+  console.log("ORGCLIENTS:> ", orgClients, orgId);
+  console.log("CANDIDATE: ", candidate);
   if (!orgClients) return;
   // let role = null;
   // if (req) {
@@ -31,7 +33,8 @@ export function broadcastCandidateUpdate(
     // console.log("CANDIDATE HISTORY: ", candidateToBeSent.history);
     const encodedSSE = signToken(candidate);
     const data = `data: ${JSON.stringify({ type: "candidateUpdate", candidate: encodedSSE })}\n\n`;
-
+    console.log("🥶🥶🥶🥶 caniddte in: ", candidate);
+    // console.log(data);
     const clientsCount = Array.from(global.sseClients.entries()).length;
     // console.log("⛔⛔⛔⛔ ", candidate?.followUp);
     client.controller.enqueue(encoder.encode(data));
@@ -55,7 +58,11 @@ export function broadcastMultipleCandidateUpdate(
     client.controller.enqueue(encoder.encode(data));
   });
 }
-export function broadcastLaneUpdate(orgId: string, lanes: string[], jobId?: string) {
+export function broadcastLaneUpdate(
+  orgId: string,
+  lanes: string[],
+  jobId?: string
+) {
   // console.log("ORGID: ", orgId);
   const orgClients = global.sseClients?.get(orgId);
   // console.log("ORGID: ", orgId, orgClients);

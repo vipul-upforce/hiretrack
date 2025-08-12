@@ -75,32 +75,50 @@ async function sendQueuedEmail(data: any) {
     sentBy,
     sentByEmail,
     sentByName,
-    hrContactInfo
+    hrContactInfo,
   } = data;
 
-  const settings = await Settings.findOne({ organizationId: new mongoose.Types.ObjectId(organizationId) }).lean();
+  const settings = await Settings.findOne({
+    organizationId: new mongoose.Types.ObjectId(organizationId),
+  }).lean();
   if (!settings || !settings.mailConfig) {
     throw new Error("Mail configuration not found");
   }
 
-  const fromEmail = settings.mailConfig.resend_from || settings.mailConfig.brevo_from || settings.mailConfig.smtp_from || "system@hiretrack.com";
+  const fromEmail =
+    settings.mailConfig.resend_from ||
+    settings.mailConfig.brevo_from ||
+    settings.mailConfig.smtp_from ||
+    "system@hiretrack.com";
 
   const organization = await User?.findOne({
     organizationId,
-  }).populate({
-    path: "organizationId",
-    select: "name defaultLanes",  // populate only organization name
-  }).lean();
-  console.log(organization, "eeeee-------mmmm");
+  })
+    .populate({
+      path: "organizationId",
+      select: "name defaultLanes", // populate only organization name
+    })
+    .lean();
+  // console.log(organization, "eeeee-------mmmm");
 
   const isOrganization = (obj: any): obj is Organization => {
-    return obj && typeof obj === 'object' && 'defaultLanes' in obj && Array.isArray(obj.defaultLanes);
+    return (
+      obj &&
+      typeof obj === "object" &&
+      "defaultLanes" in obj &&
+      Array.isArray(obj.defaultLanes)
+    );
   };
   // console.log(isOrganization(organization.organizationId), "isOrganization");
   // console.log(organization.organizationId.lanes.indexOf(status) + 1, "lanes");
-  const nextSteps = organization && organization.organizationId && isOrganization(organization.organizationId)
-    ? organization.organizationId.defaultLanes[organization.organizationId.defaultLanes.indexOf(status) + 1] || "N/A"
-    : "N/A";
+  const nextSteps =
+    organization &&
+    organization.organizationId &&
+    isOrganization(organization.organizationId)
+      ? organization.organizationId.defaultLanes[
+          organization.organizationId.defaultLanes.indexOf(status) + 1
+        ] || "N/A"
+      : "N/A";
   console.log(nextSteps, "nextSteps");
   const organizationName =
     typeof organization?.organizationId === "object"
@@ -122,7 +140,7 @@ async function sendQueuedEmail(data: any) {
       eventSubTitle,
       candidateDetails,
       organizationName: organizationName,
-      hrContactInfo
+      hrContactInfo,
     },
     organizationId
   );
@@ -267,7 +285,7 @@ export async function POST(req: NextRequest) {
       sentByName: decryptedResponse?.user.name,
       startTime,
       endTime,
-      hrContactInfo
+      hrContactInfo,
     };
 
     if (immediate) {

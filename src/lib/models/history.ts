@@ -89,7 +89,7 @@ const candidateHistory = {
     checklistName: String,
     checklistType: {
       type: String,
-      enum: ['incoming', 'outgoing'],
+      enum: ["incoming", "outgoing"],
     },
     laneId: String,
     laneName: String,
@@ -100,13 +100,15 @@ const candidateHistory = {
         fieldLabel: String,
         fieldType: String,
         value: Schema.Types.Mixed,
-        files: [{
-          id: String,
-          name: String,
-          url: String,
-          type: String,
-          size: Number,
-        }],
+        files: [
+          {
+            id: String,
+            name: String,
+            url: String,
+            type: String,
+            size: Number,
+          },
+        ],
       },
     },
     completedAt: Date,
@@ -192,16 +194,19 @@ export interface ICandidateHistory {
   checklistForm?: {
     checklistId: string;
     checklistName: string;
-    checklistType: 'incoming' | 'outgoing';
+    checklistType: "incoming" | "outgoing";
     laneId: string;
     laneName: string;
-    responses: Map<string, {
-      fieldId: string;
-      fieldLabel: string;
-      fieldType: string;
-      value: any;
-      files?: CustomFieldFile[];
-    }>;
+    responses: Record<
+      string,
+      {
+        fieldId: string;
+        fieldLabel: string;
+        fieldType: string;
+        value: any;
+        files?: CustomFieldFile[];
+      }
+    >;
     completedAt: Date;
     completedBy: {
       _id: string;
