@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: templates
+      data: templates,
     });
   } catch (error) {
     console.error("Error fetching checklist templates:", error);
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { name, description, type, fields } = body;
+    let { name, description, type, fields } = body;
 
     // Validate required fields
     if (!name || !type || !Array.isArray(fields)) {
@@ -106,6 +106,31 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Check for existing templates with the same name or name with suffix
+    const baseName = name.trim();
+    const regex = new RegExp(
+      `^${baseName.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&")}(\\s\\(\\d+\\))?$`
+    );
+    const existingTemplates = await ChecklistTemplate.find({
+      organizationId: decoded.organizationId,
+      name: { $regex: regex },
+      isActive: true,
+    });
+
+    // If there are existing templates, find the next available suffix
+    if (existingTemplates.length > 0) {
+      const suffixes = existingTemplates
+        .map((t) => {
+          const match = t.name.match(/\((\d+)\)$/);
+          return match ? parseInt(match[1]) : 0;
+        })
+        .filter((num) => !isNaN(num));
+
+      const maxSuffix = suffixes.length > 0 ? Math.max(...suffixes) : 0;
+      const nextSuffix = maxSuffix + 1;
+      name = `${baseName} (${nextSuffix})`;
+    }
+
     // Create template
     const template = new ChecklistTemplate({
       organizationId: decoded.organizationId,
@@ -114,7 +139,7 @@ export async function POST(req: NextRequest) {
       type,
       fields,
       createdBy: decoded.id,
-      isActive: true
+      isActive: true,
     });
 
     await template.save();
@@ -122,7 +147,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: template
+      data: template,
     });
   } catch (error) {
     console.error("Error creating checklist template:", error);

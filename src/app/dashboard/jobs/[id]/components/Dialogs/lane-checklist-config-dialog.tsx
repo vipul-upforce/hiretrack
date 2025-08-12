@@ -25,6 +25,12 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import React, { useState, useEffect, useContext } from "react";
 import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DropResult,
+} from "@hello-pangea/dnd";
+import {
   Plus,
   Trash2,
   ClipboardCheck,
@@ -53,6 +59,7 @@ import {
   Eye,
   History,
   Timer,
+  GripVertical,
 } from "lucide-react";
 import {
   useGetJobLaneConfigQuery,
@@ -68,6 +75,7 @@ import {
 import { IChecklistTemplate } from "@/lib/models/ChecklistTemplate";
 import { file } from "jszip";
 import { useSelector } from "react-redux";
+import { createPortal } from "react-dom";
 // import { CustomFieldsContext } from "@/Custom_Fields/Context";
 // import { RenderField } from "@/Custom_Fields/RenderField";
 
@@ -135,6 +143,9 @@ export const LaneChecklistConfigDialog = ({
     null
   );
   const [isEditMode, setIsEditMode] = useState(false);
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(
+    null
+  );
 
   const { data: laneConfig, refetch } = useGetJobLaneConfigQuery(jobId);
   const { data: templates } = useGetChecklistTemplatesQuery({ active: true });
@@ -145,6 +156,7 @@ export const LaneChecklistConfigDialog = ({
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
   const [templateName, setTemplateName] = useState("");
   const [templateDescription, setTemplateDescription] = useState("");
+  // const [currentChecklist, setCurrentChecklistArr] = useState<IChecklist>();
 
   const { user } = useSelector((state: any) => state.auth || {});
 
@@ -177,6 +189,12 @@ export const LaneChecklistConfigDialog = ({
       setActiveTab(initialTab);
     }
   }, [initialTab]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setPortalContainer(document.body);
+    }
+  }, []);
 
   const getCurrentChecklist = () => {
     return activeTab === "incoming" ? incomingChecklist : outgoingChecklist;
@@ -270,36 +288,23 @@ export const LaneChecklistConfigDialog = ({
     });
   };
 
-  const moveField = (fieldId: string, direction: "up" | "down") => {
+  const handleDragEnd = (result: DropResult) => {
     const currentChecklist = getCurrentChecklist();
-    if (!currentChecklist) return;
-
-    const fieldIndex = currentChecklist.fields.findIndex(
-      (f) => f.id === fieldId
-    );
-    if (fieldIndex === -1) return;
+    if (!currentChecklist || !result.destination) return;
 
     const newFields = [...currentChecklist.fields];
-    const targetIndex = direction === "up" ? fieldIndex - 1 : fieldIndex + 1;
-
-    if (targetIndex < 0 || targetIndex >= newFields.length) return;
-
-    [newFields[fieldIndex], newFields[targetIndex]] = [
-      newFields[targetIndex],
-      newFields[fieldIndex],
-    ];
-
-    // Update order
-    newFields.forEach((field, index) => {
-      field.order = index;
-    });
+    const [reorderedItem] = newFields.splice(result.source.index, 1);
+    newFields.splice(result.destination.index, 0, reorderedItem);
 
     setCurrentChecklist({
       ...currentChecklist,
       fields: newFields,
     });
+    console.log(
+      "After drag, new fields order:",
+      newFields.map((f) => f.label)
+    );
   };
-
   const loadFromTemplate = (templateId: string) => {
     const template = templates?.find((t) => t._id === templateId);
     if (!template) return;
@@ -349,7 +354,7 @@ export const LaneChecklistConfigDialog = ({
 
       toast({
         title: "Template Saved",
-        description: `Template "${templateName}" saved successfully`,
+        description: `Template \"${templateName}\" saved successfully`,
       });
 
       setIsTemplateDialogOpen(false);
@@ -358,7 +363,14 @@ export const LaneChecklistConfigDialog = ({
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to save template",
+        description:
+          typeof error === "object" &&
+          "data" in error &&
+          error.data &&
+          typeof error.data == "object" &&
+          "error" in error.data
+            ? (error.data.error as string)
+            : "Failed to save template",
         variant: "destructive",
       });
     }
@@ -426,9 +438,11 @@ export const LaneChecklistConfigDialog = ({
     setOutgoingChecklist(undefined);
     onOpenChange(false);
   };
-
-  const currentChecklist = getCurrentChecklist();
-
+  let currentChecklist = getCurrentChecklist();
+  useEffect(() => {
+    currentChecklist = getCurrentChecklist();
+    // console.log("CURRENTCHECKIST: ", currentChecklist?.fields);
+  }, [incomingChecklist, outgoingChecklist]);
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="p-0 overflow-hidden flex flex-col !max-w-none !w-full !h-full !left-0 !top-0 !translate-x-0 !translate-y-0 min-w-0 lg:!max-w-[80vw] lg:!min-w-[950px] lg:!h-[90vh] lg:!left-[50%] lg:!top-[50%] lg:!translate-x-[-50%] lg:!translate-y-[-50%] xl:!max-w-[70vw]">
@@ -660,112 +674,176 @@ export const LaneChecklistConfigDialog = ({
                         Add Field
                       </Button>
                     </div>
-
-                    <div className="space-y-3">
-                      {[...currentChecklist.fields]
-                        .sort((a, b) => a.order - b.order)
-                        .filter((field) => {
-                          if (user.role !== "admin") {
-                            return field.visibleOnForm.includes(user.role);
-                          } else {
-                            return true;
-                          }
-                        })
-                        .map((field, index) => {
-                          const IconComponent =
-                            fieldTypeIcons[field.type] || Type;
-                          return (
-                            <Card
-                              key={field.id}
-                              className="p-4 hover:shadow-md transition-shadow"
-                            >
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                  <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                                    <IconComponent className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                                  </div>
-                                  <div>
-                                    <div className="font-medium text-sm">
-                                      {field.label}
-                                    </div>
-                                    <div className="text-xs text-gray-500 flex items-center gap-2">
-                                      <span>
-                                        {
-                                          FIELD_TYPES.find(
-                                            (t) => t.value === field.type
-                                          )?.label
-                                        }
-                                      </span>
-                                      {field.required && (
-                                        <Badge
-                                          variant="secondary"
-                                          className="text-xs px-1.5 py-0.5"
+                    <DragDropContext onDragEnd={handleDragEnd}>
+                      <Droppable droppableId="checklist-fields">
+                        {(provided, snapshot) => (
+                          <div
+                            {...provided.droppableProps}
+                            ref={provided.innerRef}
+                            className={`space-y-3`}
+                            // className={`space-y-3 p-2 rounded-lg ${snapshot.isDraggingOver ? "bg-muted/50" : ""}`} //FANCY INTERACTIVE BG - TOTALLY UNNECESSARY
+                          >
+                            {[...currentChecklist.fields]
+                              // .sort((a, b) => a.order - b.order) WTH! INSANE!!!!!!!!!!! Lookout for anything like this, NEVER USE A SEPARATE VARIABLE FOR MAINTAINING THE ORDER OF AN ARRAY!
+                              .filter((field) => {
+                                if (user.role !== "admin") {
+                                  return field.visibleOnForm.includes(
+                                    user.role
+                                  );
+                                } else {
+                                  return true;
+                                }
+                              })
+                              .map((field, index) => {
+                                const IconComponent =
+                                  fieldTypeIcons[field.type] || Type;
+                                return (
+                                  <Draggable
+                                    key={field.id}
+                                    draggableId={field.id}
+                                    index={index}
+                                  >
+                                    {(provided, snapshot) => {
+                                      const draggingComponent = (
+                                        <div
+                                          ref={provided.innerRef}
+                                          {...provided.draggableProps}
+                                          style={{
+                                            ...provided.draggableProps.style,
+                                          }}
                                         >
-                                          Required
-                                        </Badge>
-                                      )}
-                                      {field.options &&
-                                        field.options.length > 0 && (
-                                          <Badge
-                                            variant="outline"
-                                            className="text-xs px-1.5 py-0.5"
+                                          <Card
+                                            className={`p-4 hover:shadow-md transition-shadow ${
+                                              snapshot.isDragging
+                                                ? "shadow-2xl bg-white dark:bg-gray-800 border-2 border-primary opacity-95 scale-105"
+                                                : "shadow-sm hover:shadow-md"
+                                            }`}
                                           >
-                                            {field.options.length} options
-                                          </Badge>
-                                        )}
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => editField(field)}
-                                    className="h-8 w-8 p-0"
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => moveField(field.id, "up")}
-                                    disabled={index === 0}
-                                    className="h-8 w-8 p-0"
-                                  >
-                                    ↑
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => moveField(field.id, "down")}
-                                    disabled={
-                                      index ===
-                                      currentChecklist.fields.length - 1
-                                    }
-                                    className="h-8 w-8 p-0"
-                                  >
-                                    ↓
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    onClick={() => removeField(field.id)}
-                                    className="h-8 w-8 p-0"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            </Card>
-                          );
-                        })}
-
-                      {currentChecklist.fields.length === 0 && (
-                        <div className="text-center py-8 text-muted-foreground">
-                          No fields added yet. Click "Add Field" to get started.
-                        </div>
-                      )}
-                    </div>
+                                            <div className="flex items-center justify-between">
+                                              <div className="flex items-center gap-3">
+                                                <div
+                                                  {...provided.dragHandleProps}
+                                                  className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted/50"
+                                                >
+                                                  <GripVertical className="h-4 w-4" />
+                                                </div>
+                                                <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                                                  <IconComponent className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                                </div>
+                                                <div>
+                                                  <div className="font-medium text-sm">
+                                                    {field.label}
+                                                  </div>
+                                                  <div className="text-xs text-gray-500 flex items-center gap-2">
+                                                    <span>
+                                                      {
+                                                        FIELD_TYPES.find(
+                                                          (t) =>
+                                                            t.value ===
+                                                            field.type
+                                                        )?.label
+                                                      }
+                                                    </span>
+                                                    {field.required && (
+                                                      <Badge
+                                                        variant="secondary"
+                                                        className="text-xs px-1.5 py-0.5"
+                                                      >
+                                                        Required
+                                                      </Badge>
+                                                    )}
+                                                    {field.options &&
+                                                      field.options.length >
+                                                        0 && (
+                                                        <Badge
+                                                          variant="outline"
+                                                          className="text-xs px-1.5 py-0.5"
+                                                        >
+                                                          {field.options.length}{" "}
+                                                          options
+                                                        </Badge>
+                                                      )}
+                                                  </div>
+                                                </div>
+                                              </div>
+                                              <div className="flex items-center gap-1">
+                                                <Button
+                                                  size="sm"
+                                                  variant="ghost"
+                                                  onClick={() =>
+                                                    editField(field)
+                                                  }
+                                                  className="h-8 w-8 p-0"
+                                                >
+                                                  <Edit className="h-4 w-4" />
+                                                </Button>
+                                                {/*
+                                                <Button
+                                                  size="sm"
+                                                  variant="outline"
+                                                  onClick={() =>
+                                                    moveField(field.id, "up")
+                                                  }
+                                                  disabled={index === 0}
+                                                  className="h-8 w-8 p-0"
+                                                >
+                                                  ↑
+                                                </Button>
+                                                <Button
+                                                  size="sm"
+                                                  variant="outline"
+                                                  onClick={() =>
+                                                    moveField(field.id, "down")
+                                                  }
+                                                  disabled={
+                                                    index ===
+                                                    currentChecklist.fields
+                                                      .length -
+                                                      1
+                                                  }
+                                                  className="h-8 w-8 p-0"
+                                                >
+                                                  ↓
+                                                </Button> */}
+                                                <Button
+                                                  size="sm"
+                                                  variant="destructive"
+                                                  onClick={() =>
+                                                    removeField(field.id)
+                                                  }
+                                                  className="h-8 w-8 p-0"
+                                                >
+                                                  <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                              </div>
+                                            </div>
+                                          </Card>
+                                        </div>
+                                      );
+                                      if (
+                                        snapshot.isDragging &&
+                                        portalContainer
+                                      ) {
+                                        return createPortal(
+                                          draggingComponent,
+                                          portalContainer
+                                        );
+                                      }
+                                      return draggingComponent;
+                                    }}
+                                  </Draggable>
+                                );
+                              })}
+                            {provided.placeholder}
+                          </div>
+                        )}
+                      </Droppable>
+                    </DragDropContext>
+                    {currentChecklist.fields.length === 0 && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        No fields added yet. Click "Add Field" to get started.
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
