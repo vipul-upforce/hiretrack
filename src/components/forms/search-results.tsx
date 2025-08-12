@@ -655,7 +655,7 @@ export function SearchResults({
                     )}
                     {visibleColumns.overallScore && (
                       <TableCell>
-                        {candidate.scores ? (
+                        {candidate.scores && candidate.scores ? (
                           <div className="flex flex-col gap-1">
                             <div className="flex items-center gap-1">
                               <Badge
@@ -663,6 +663,7 @@ export function SearchResults({
                                 className="text-xs font-medium bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800"
                               >
                                 Overall: {candidate.scores.overall}
+                                {!candidate.scores.overall && "N/A"}
                               </Badge>
                             </div>
                             <div className="flex flex-wrap gap-1">
@@ -864,7 +865,7 @@ export function SearchResults({
             console.log("Candidate assigned:", updatedCandidate);
             refetch();
           }}
-          setLocalCandidate={() => { }}
+          setLocalCandidate={() => {}}
           onSuccess={() => {
             setIsAssignInterviewerOpen(false);
             setCandidateToAssignInterviewer(null);
@@ -891,7 +892,7 @@ export function SearchResults({
           candidate={candidateToAddRemark}
           isOpen={isAddRemarkOpen}
           onOpenChange={setIsAddRemarkOpen}
-          setOpenRemarksFor={() => { }}
+          setOpenRemarksFor={() => {}}
           refetch={refetch}
         />
       )}
