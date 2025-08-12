@@ -130,36 +130,55 @@ const ChecklistResponseViewer = ({
 
       {isExpanded && (
         <div className="p-3 space-y-3">
-          {responsesArray.map(([fieldId, response]) => {
-            // Handle both formats: response could be the response object or nested
-            const responseData =
-              (response as { value: string })?.value !== undefined
-                ? response
-                : response;
-            const fieldLabel =
-              (responseData as { fieldLabel: string })?.fieldLabel || fieldId;
-            const fieldType =
-              (responseData as { fieldType: string })?.fieldType || "text";
-            const value = (responseData as { value: string })?.value;
+          {responsesArray
+            .filter(([_, response]) => {
+              const responseData =
+                (response as { value: string })?.value !== undefined
+                  ? response
+                  : response;
+              const value = (responseData as { value: string })?.value;
+              if (
+                (typeof value === "string" && value.trim() === "") ||
+                (Array.isArray(value) && value.length === 0) ||
+                !value
+              ) {
+                return false;
+              }
+              return true;
+            })
+            .map(([fieldId, response]) => {
+              // Handle both formats: response could be the response object or nested
+              const responseData =
+                (response as { value: string })?.value !== undefined
+                  ? response
+                  : response;
+              const fieldLabel =
+                (responseData as { fieldLabel: string })?.fieldLabel || fieldId;
+              const fieldType =
+                (responseData as { fieldType: string })?.fieldType || "text";
+              const value = (responseData as { value: string })?.value;
 
-            return (
-              <div
-                key={fieldId}
-                className="border-l-2 border-blue-200 dark:border-blue-800 pl-3"
-              >
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <label className="text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">
-                      {fieldLabel}
-                    </label>
-                    <div className="text-sm text-gray-900 dark:text-gray-100 mt-1">
-                      {formatValue(value, fieldType)}
+              // if (value.trim() === "" || !value){
+              //   return;
+              // }
+              return (
+                <div
+                  key={fieldId}
+                  className="border-l-2 border-blue-200 dark:border-blue-800 pl-3"
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <label className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+                        {fieldLabel}
+                      </label>
+                      <div className="text-sm text-gray-900 dark:text-gray-100 mt-1">
+                        {formatValue(value, fieldType)}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
 
           {responsesArray.length === 0 && (
             <div className="text-center text-sm text-gray-500 dark:text-gray-400 py-2">

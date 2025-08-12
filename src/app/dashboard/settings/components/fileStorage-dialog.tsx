@@ -183,10 +183,10 @@ export default function FileStorageOptions({
       });
       const updatedUser = { ...user, fileStorage: values.storageType };
       const token = await signToken(updatedUser);
-      Cookies.set("token", String(token), {
-        expires: 30,
-        // maxAge: 30 * 24 * 60 * 60,
-      });
+      // Cookies.set("token", String(token), {
+      //   expires: 30,
+      //   // maxAge: 30 * 24 * 60 * 60,
+      // });
       refetch();
       onClose();
     } catch {

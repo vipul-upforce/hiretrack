@@ -897,16 +897,6 @@ const ChecklistRemarksDialog = ({
             {/* Checklist Section */}
             {hasChecklist && parsedChecklistInfo?.checklist && (
               <>
-                {isChecklistMandatory && (
-                  <Alert>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      This checklist is mandatory and must be completed before
-                      moving the candidate.
-                    </AlertDescription>
-                  </Alert>
-                )}
-
                 <div className="space-y-4">
                   <h3 className="text-sm font-semibold">
                     {parsedChecklistInfo.checklistType === "incoming"
@@ -987,6 +977,16 @@ const ChecklistRemarksDialog = ({
         </div>
 
         <DialogFooter className="border-t bg-background px-6 py-4 sticky bottom-0 z-10">
+          {isChecklistMandatory && (
+            // <Alert className="text-orange-400 flex flex-row  items-center">
+            //   <AlertCircle className="h-4 w-4 p-0" color="orange" />
+            //   <AlertDescription className="pt-0">
+            <div className="text-orange-400  flex flex-row  items-center">
+              <AlertCircle className="h-4 w-4 p-0 mr-2" color="orange" />
+              This checklist is mandatory and must be completed before moving
+              the candidate.
+            </div>
+          )}
           <Button
             variant="secondary"
             onClick={handleCancel}
@@ -997,7 +997,10 @@ const ChecklistRemarksDialog = ({
           <Button
             onClick={handleSubmit}
             variant="info"
-            disabled={isSubmitting || !user?.id}
+            disabled={
+              isSubmitting || !user?.id
+              // (parsedChecklistInfo.isMandatory)
+            }
           >
             {isSubmitting ? "Submitting..." : "Submit"}
           </Button>
