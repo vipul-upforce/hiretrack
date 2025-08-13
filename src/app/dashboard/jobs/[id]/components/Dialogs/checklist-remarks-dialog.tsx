@@ -25,7 +25,13 @@ import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { sentStatusMailHandler } from "@/lib/utils";
 import { useSendStatusMailMutation } from "@/lib/features/org/orgApi";
 import { Switch } from "@/components/ui/switch";
-import { Eye, EyeOff, ClipboardCheck, AlertCircle } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  ClipboardCheck,
+  AlertCircle,
+  BookOpenCheck,
+} from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Formik, Form } from "formik";
@@ -197,12 +203,34 @@ const ChecklistFieldRenderer: React.FC<{
 
       case "multiSelect":
         const selectedValues = Array.isArray(value) ? value : [];
+        // return (
+        //   <ChipInput
+        //     value={selectedValues}
+        //     onChange={(value) => {
+        //       debugger;
+        //       onChange(value);
+        //     }}
+        //     placeholder="Type an option and press Enter..."
+        //     suggestions={[]}
+        //   />
+        // );
         return (
           <ChipInput
             value={selectedValues}
-            onChange={onChange}
+            onChange={(value) => {
+              onChange(value);
+            }}
             placeholder={field.placeholder || "Select options"}
             suggestions={field.options || []}
+            onSuggestionClick={(suggestion) => {
+              const updatedValues = [
+                ...(selectedValues || []),
+                suggestion,
+              ].filter(
+                (v, index, self) => v && self.indexOf(v) === index // Remove duplicates
+              );
+              onChange(updatedValues);
+            }}
           />
         );
 
