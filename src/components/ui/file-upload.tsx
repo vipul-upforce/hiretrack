@@ -103,7 +103,9 @@ export function FileUpload({
   };
 
   const colors = getColorClasses(colorScheme);
-  const { user }: { user: User } = useSelector((state: any) => state.auth || {});
+  const { user }: { user: User } = useSelector(
+    (state: any) => state.auth || {}
+  );
 
   const handleRename = (newName: string) => {
     if (renameFile.file) {
@@ -125,7 +127,9 @@ export function FileUpload({
   };
 
   const handleRemoveFile = (fileNameToRemove: string) => {
-    const updatedFiles = files.filter((file) => file?.name !== fileNameToRemove);
+    const updatedFiles = files.filter(
+      (file) => file?.name !== fileNameToRemove
+    );
     setter(updatedFiles);
   };
 
@@ -161,7 +165,7 @@ export function FileUpload({
               ? "Drop the files here..."
               : "Drag 'n' drop files here, or click to select files"}
           </p>
-          {user?.role === "candidate" && (
+          {(user?.role === "candidate" || user?.role === "") && (
             <>
               {!accept["application/pdf"] && (
                 <p className="mt-2 text-sm text-muted-foreground">
@@ -185,16 +189,14 @@ export function FileUpload({
             <Paperclip className="w-4 h-4" />
             {isResume ? "Resume" : "Add Documents"}
           </Button>
-          {user?.role === "candidate" && (
+          {(user?.role === "candidate" || user?.role === "") && (
             <div className="space-y-1 flex items-center gap-2">
               {!accept["application/pdf"] && (
                 <p className="text-sm text-muted-foreground mt-1">
                   Max 2 files
                 </p>
               )}
-              <p className="text-sm text-muted-foreground m-0">
-                3MB per file
-              </p>
+              <p className="text-sm text-muted-foreground m-0">3MB per file</p>
             </div>
           )}
           {/* {user && ["hr", "admin", "interviewer"].includes(user.role) && (
@@ -213,7 +215,9 @@ export function FileUpload({
           >
             <div className="flex items-center space-x-2">
               <FileIcon className="h-4 w-4" />
-              <span className="text-sm break-words max-w-[350px]">{file.name}</span>
+              <span className="text-sm break-words max-w-[350px]">
+                {file.name}
+              </span>
               <span className="text-xs text-gray-500">
                 ({formatFileSize(file.size)})
               </span>

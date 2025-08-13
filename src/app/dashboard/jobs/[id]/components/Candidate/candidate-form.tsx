@@ -279,7 +279,9 @@ export function CandidateForm({
             </div> */}
             <MobileFileUpload
               accept={{}}
-              maxFiles={user && user.role === "candidate" ? 2 : 30}
+              maxFiles={
+                user && (user.role === "candidate" || user.role === "") ? 2 : 30
+              }
               onFileSelect={async (files) => {
                 if (!user && files[0].size > 3 * 1024 * 1024) {
                   toast({
@@ -290,7 +292,7 @@ export function CandidateForm({
                 }
                 if (
                   user &&
-                  user.role === "candidate" &&
+                  (user.role === "candidate" || user.role === "") &&
                   files[0].size > 3 * 1024 * 1024
                 ) {
                   toast({
@@ -566,7 +568,7 @@ export function CandidateForm({
                     <p className="text-sm text-red-500">
                       {String(
                         errors.assignment[
-                        "interviewerId" as keyof typeof errors.assignment
+                          "interviewerId" as keyof typeof errors.assignment
                         ] || ""
                       )}
                     </p>
@@ -806,7 +808,7 @@ export function CandidateForm({
                 if (
                   user &&
                   updatedFileSelection.length > 2 &&
-                  user.role === "candidate"
+                  (user.role === "candidate" || user.role === "")
                 ) {
                   toast({
                     title: "Maximum 2 files are allowed",
@@ -823,7 +825,6 @@ export function CandidateForm({
               }}
               buttonText="Add Attachments"
             />
-
           </div>
 
           {/* Resume Preview - Mobile */}
@@ -983,7 +984,7 @@ export function CandidateForm({
                 }
                 if (
                   user &&
-                  user.role === "candidate" &&
+                  (user.role === "candidate" || user.role === "") &&
                   files[0].size > 3 * 1024 * 1024
                 ) {
                   toast({
@@ -1063,10 +1064,11 @@ export function CandidateForm({
                   id="name"
                   placeholder="Enter full name"
                   {...nameField}
-                  className={`h-9 px-3 transition-all duration-200 ${nameMeta.error && nameMeta.touched
-                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                    : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
-                    }`}
+                  className={`h-9 px-3 transition-all duration-200 ${
+                    nameMeta.error && nameMeta.touched
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                      : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
+                  }`}
                 />
                 {nameMeta.touched && nameMeta.error && (
                   <p className="text-sm text-red-500 flex items-center gap-1">
@@ -1088,10 +1090,11 @@ export function CandidateForm({
                   type="email"
                   placeholder="Enter email address"
                   {...emailField}
-                  className={`h-9 px-3 transition-all duration-200 ${emailMeta.error && emailMeta.touched
-                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                    : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
-                    }`}
+                  className={`h-9 px-3 transition-all duration-200 ${
+                    emailMeta.error && emailMeta.touched
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                      : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
+                  }`}
                 />
                 {emailMeta.touched && emailMeta.error && (
                   <p className="text-sm text-red-500 flex items-center gap-1">
@@ -1113,10 +1116,11 @@ export function CandidateForm({
                   type="tel"
                   placeholder="Enter contact number"
                   {...contactField}
-                  className={`h-9 px-3 transition-all duration-200 ${contactMeta.error && contactMeta.touched
-                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                    : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
-                    }`}
+                  className={`h-9 px-3 transition-all duration-200 ${
+                    contactMeta.error && contactMeta.touched
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                      : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
+                  }`}
                 />
                 {contactMeta.touched && contactMeta.error && (
                   <p className="text-sm text-red-500 flex items-center gap-1">
@@ -1137,10 +1141,11 @@ export function CandidateForm({
                   id="location"
                   placeholder="Enter location"
                   {...locationField}
-                  className={`h-9 px-3 transition-all duration-200 ${locationMeta.error && locationMeta.touched
-                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                    : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
-                    }`}
+                  className={`h-9 px-3 transition-all duration-200 ${
+                    locationMeta.error && locationMeta.touched
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                      : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
+                  }`}
                 />
                 {locationMeta.touched && locationMeta.error && (
                   <p className="text-sm text-red-500 flex items-center gap-1">
@@ -1166,10 +1171,11 @@ export function CandidateForm({
                   type="number"
                   step="0.1"
                   {...experienceField}
-                  className={`h-9 px-3 transition-all duration-200 w-full max-w-xs ${experienceMeta.error && experienceMeta.touched
-                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                    : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
-                    }`}
+                  className={`h-9 px-3 transition-all duration-200 w-full max-w-xs ${
+                    experienceMeta.error && experienceMeta.touched
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                      : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
+                  }`}
                 />
                 {experienceMeta.touched && experienceMeta.error && (
                   <p className="text-sm text-red-500 flex items-center gap-1">
@@ -1232,10 +1238,11 @@ export function CandidateForm({
                   placeholder="Enter expected CTC in LPA"
                   type="number"
                   {...expectedCTCField}
-                  className={`h-9 px-3 transition-all duration-200 ${expectedCTCMeta.error && expectedCTCMeta.touched
-                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                    : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
-                    }`}
+                  className={`h-9 px-3 transition-all duration-200 ${
+                    expectedCTCMeta.error && expectedCTCMeta.touched
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                      : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
+                  }`}
                 />
                 {expectedCTCMeta.touched && expectedCTCMeta.error && (
                   <p className="text-sm text-red-500 flex items-center gap-1">
@@ -1257,10 +1264,11 @@ export function CandidateForm({
                   placeholder="Enter current CTC in LPA"
                   type="number"
                   {...currentCTCField}
-                  className={`h-9 px-3 transition-all duration-200 ${currentCTCMeta.error && currentCTCMeta.touched
-                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                    : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
-                    }`}
+                  className={`h-9 px-3 transition-all duration-200 ${
+                    currentCTCMeta.error && currentCTCMeta.touched
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                      : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
+                  }`}
                 />
                 {currentCTCMeta.touched && currentCTCMeta.error && (
                   <p className="text-sm text-red-500 flex items-center gap-1">
@@ -1285,10 +1293,11 @@ export function CandidateForm({
                   placeholder="Enter notice period in days"
                   type="number"
                   {...noticePeriodField}
-                  className={`h-9 px-3 transition-all duration-200 w-full max-w-xs ${noticePeriodMeta.error && noticePeriodMeta.touched
-                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                    : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
-                    }`}
+                  className={`h-9 px-3 transition-all duration-200 w-full max-w-xs ${
+                    noticePeriodMeta.error && noticePeriodMeta.touched
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                      : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
+                  }`}
                 />
                 {noticePeriodMeta.touched && noticePeriodMeta.error && (
                   <p className="text-sm text-red-500 flex items-center gap-1">
@@ -1343,7 +1352,7 @@ export function CandidateForm({
                       <span className="w-1 h-1 bg-red-500 rounded-full"></span>
                       {String(
                         errors.assignment[
-                        "interviewerId" as keyof typeof errors.assignment
+                          "interviewerId" as keyof typeof errors.assignment
                         ] || ""
                       )}
                     </p>
@@ -1525,7 +1534,11 @@ export function CandidateForm({
 
             <FileUpload
               accept={{}}
-              maxFiles={user && user.role === "candidate" ? 2 : 30}
+              maxFiles={
+                (user && user.role === "candidate") || user.role === "" || !user
+                  ? 2
+                  : 30
+              }
               isEdit={true}
               onFileSelect={(files) => {
                 const currentFiles = attachmentsField.value || [];
@@ -1541,7 +1554,7 @@ export function CandidateForm({
                     }
                     if (
                       user &&
-                      user.role === "candidate" &&
+                      (user.role === "candidate" || user.role === "") &&
                       file.size > 3 * 1024 * 1024
                     ) {
                       toast({
@@ -1596,7 +1609,7 @@ export function CandidateForm({
                 if (
                   user &&
                   updatedFileSelection.length > 2 &&
-                  user.role === "candidate"
+                  (user.role === "candidate" || user.role === "")
                 ) {
                   toast({
                     title: "Maximum 2 files are allowed",
@@ -1612,7 +1625,6 @@ export function CandidateForm({
                 setFieldValue("attachments", sanitizedFiles);
               }}
             />
-
           </div>
         </div>
 
@@ -1658,8 +1670,6 @@ export function CandidateForm({
             )}
           </div>
         </div>
-
-
       </div>
     </div>
   );

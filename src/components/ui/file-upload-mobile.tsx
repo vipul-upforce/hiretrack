@@ -189,12 +189,14 @@ export function MobileFileUpload({
         {/* File limit and size information */}
         {showFileLimit && (
           <div className="text-xs text-muted-foreground text-center space-y-1">
-            {user && user.role === "candidate" && maxFiles > 1 && (
-              <p>
-                Maximum {maxFiles} files allowed ({totalFiles}/{maxFiles})
-              </p>
-            )}
-            {user && user.role === "candidate" && (
+            {user &&
+              (user.role === "candidate" || user.role === "") &&
+              maxFiles > 1 && (
+                <p>
+                  Maximum {maxFiles} files allowed ({totalFiles}/{maxFiles})
+                </p>
+              )}
+            {user && (user.role === "candidate" || user.role === "") && (
               <p>File size limit: 3MB per file</p>
             )}
             {user &&
