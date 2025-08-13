@@ -53,12 +53,12 @@ export async function middleware(request: NextRequest) {
   if (!allowedOrigins.includes(origin))
     return NextResponse.json({ error: "Origin Not Allowed" }, { status: 401 });
   let userData: { role: string } | undefined;
-  
+
   // SECURITY FIX: Check both httpOnly and regular tokens for backward compatibility
   const httpOnlyToken = request.cookies.get("auth_token");
   // const regularToken = request.cookies.get("token");
   const token = httpOnlyToken?.value;
-  
+
   if (token) {
     const decryptedResponse = await verifyAndDecryptToken(String(token));
     if (decryptedResponse.success) {
@@ -215,7 +215,7 @@ const unauthorizedInterviewerPages = [
   "/dashboard/settings",
   "/dashboard/search",
   "/dashboard/cv-upload",
-  "/api/organization/tags"
+  "/api/organization/tags",
 ];
 
 const unauthorizedInterviewerAPIRoutes = ["/api/candidates/filter"];
@@ -230,6 +230,7 @@ const unauthorizedCandidateAPIRoutes = [
 const apiExemptPaths = [
   "/api/jobs/open-jobs",
   "/api/auth/login",
+  "/api/auth/me",
   "/api/auth/signup",
   "/api/organization",
   "/api/orgs",
@@ -251,7 +252,7 @@ const apiExemptPaths = [
   "/api/shared-files",
   "/api/organization/tags",
   "/api/auth/google/callback",
-  "/api/auth/google/authorize"
+  "/api/auth/google/authorize",
 ];
 
 const redirectPaths = [

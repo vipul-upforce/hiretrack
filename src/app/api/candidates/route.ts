@@ -42,13 +42,13 @@ export async function GET(request: Request) {
         { status: 404 }
       );
     }
-    
+
     // Filter by organization and jobId if provided
     const query: any = { organizationId: user.organizationId };
     if (jobId) {
       query.jobId = jobId;
     }
-    
+
     const candidates = await Candidate.find(query).sort({
       "tracking.createdAt": -1,
     });
@@ -81,7 +81,9 @@ export async function POST(request: NextRequest) {
             { status: 404 }
           );
         }
-        const candidateStatus = (organizationInfo.defaultLanes|| ["applied"]).includes("applied")
+        const candidateStatus = (
+          organizationInfo.defaultLanes || ["applied"]
+        ).includes("applied")
           ? "applied"
           : (organizationInfo.defaultLanes || ["applied"])[0];
         // resume
@@ -197,7 +199,7 @@ export async function POST(request: NextRequest) {
         // const dateTime = await getFormattedDate(request, new Date());
         // const historyExisting =
         let candidateHistory = null;
-        if (userData.role === "candidate") {
+        if (userData.role === "candidate" || userData.role === "") {
           candidateHistory = await History?.create({
             candidateId: candidate._id,
             jobId: data.jobId,
@@ -243,7 +245,7 @@ export async function POST(request: NextRequest) {
 
         // Get job information for notification
         const job = await Job?.findById(data.jobId);
-        
+
         // Trigger notification for candidate application
         if (job) {
           try {
@@ -255,7 +257,7 @@ export async function POST(request: NextRequest) {
               triggerUserId: userData.id,
               triggerUserName: userData.name,
             });
-            
+
             await NotificationService.notifyCandidateApplied({
               organizationId: organizationId,
               candidateId: candidate._id.toString(),
@@ -266,7 +268,7 @@ export async function POST(request: NextRequest) {
               triggerUserId: userData.id,
               triggerUserName: userData.name,
             });
-            
+
             console.log("✅ Notification sent successfully");
           } catch (notificationError) {
             console.error("❌ Failed to send notification:", notificationError);

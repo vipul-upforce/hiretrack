@@ -6,7 +6,14 @@ import { useState, useEffect } from "react";
 import ApplyOptions from "./ApplyOptions";
 import { hasAppliedAsGuest } from "./ApplyAsGuest";
 import "../../components/ui/rte/rteStyles.css";
-import { Briefcase, Clock, X, ArrowRight, CheckCircle, Plus } from "lucide-react";
+import {
+  Briefcase,
+  Clock,
+  X,
+  ArrowRight,
+  CheckCircle,
+  Plus,
+} from "lucide-react";
 
 // Define a type for the job object
 interface Job {
@@ -103,7 +110,6 @@ export default function JobModal({
     onClose();
   };
   // console.log(/"JobModal job:", job);
-
 
   return (
     <>
@@ -234,9 +240,12 @@ export default function JobModal({
                           />
                         </div>
                         <div>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">Experience</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Experience
+                          </p>
                           <p className="font-semibold text-gray-900 dark:text-white">
-                            {job.experience} {job.experience === 1 ? "year" : "years"}
+                            {job.experience}{" "}
+                            {job.experience === 1 ? "year" : "years"}
                           </p>
                         </div>
                       </div>
@@ -255,10 +264,14 @@ export default function JobModal({
                             <span
                               className="text-lg font-bold"
                               style={{ color: secondaryColor }}
-                            >₹</span>
+                            >
+                              ₹
+                            </span>
                           </div>
                           <div>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">Salary</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              Salary
+                            </p>
                             <p className="font-semibold text-gray-900 dark:text-white">
                               {(job as JobWithSalary).salary?.inText ||
                                 `${(job as JobWithSalary).salary?.min || 0} - ${(job as JobWithSalary).salary?.max || 0} LPA`}
@@ -271,16 +284,19 @@ export default function JobModal({
                 </div>
 
                 {/* Custom Fields Section */}
-                {job?.customFields && Object.keys(job.customFields).length > 0 && (
-                  <div className="space-y-3">
-                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Additional Information
-                    </h4>
-                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                      <CustomFieldsData customFields={job?.customFields || {}} />
+                {job?.customFields &&
+                  Object.keys(job.customFields).length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                        Additional Information
+                      </h4>
+                      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                        <CustomFieldsData
+                          customFields={job?.customFields || {}}
+                        />
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
             </div>
 
@@ -296,7 +312,7 @@ export default function JobModal({
                       e.target.style.boxShadow = `0 0 0 2px ${primaryColor}20`;
                     }}
                     onBlur={(e) => {
-                      e.target.style.boxShadow = 'none';
+                      e.target.style.boxShadow = "none";
                     }}
                     onClick={onClose}
                   >
@@ -308,16 +324,17 @@ export default function JobModal({
                     <button
                       onClick={handleContinue}
                       disabled={alreadyApplied || readOnly}
-                      className={`flex items-center justify-center w-full sm:w-auto px-8 py-3 text-sm font-semibold rounded-lg focus:outline-none focus:ring-2 transition-colors ${alreadyApplied || readOnly
-                        ? "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 cursor-not-allowed"
-                        : "text-white"
-                        }`}
+                      className={`flex items-center justify-center w-full sm:w-auto px-8 py-3 text-sm font-semibold rounded-lg focus:outline-none focus:ring-2 transition-colors ${
+                        alreadyApplied || readOnly
+                          ? "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 cursor-not-allowed"
+                          : "text-white"
+                      }`}
                       style={
                         alreadyApplied || readOnly
                           ? {}
                           : ({
-                            backgroundColor: primaryColor,
-                          } as React.CSSProperties)
+                              backgroundColor: primaryColor,
+                            } as React.CSSProperties)
                       }
                       onMouseEnter={(e) => {
                         if (!alreadyApplied && !readOnly) {

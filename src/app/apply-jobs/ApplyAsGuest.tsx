@@ -234,6 +234,7 @@ export function ApplyAsGuestDialog({
 
   const handleSubmit = async (values: CandidateFormValues) => {
     // Show terms confirmation dialog first
+    debugger;
     setPendingFormValues(values);
     setShowTermsDialog(true);
   };

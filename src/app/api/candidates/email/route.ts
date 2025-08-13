@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Candidate, EmailHistory, Settings, History } from "@/lib/mongodb";
+import connectToDatabase, {
+  Candidate,
+  EmailHistory,
+  Settings,
+  History,
+} from "@/lib/mongodb";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { sendMail } from "@/lib/emailUtils";
 
@@ -19,7 +24,7 @@ export async function POST(request: NextRequest) {
     const user = decryptedResponse.user;
 
     // Check role - candidates cannot send emails
-    if (user.role === "candidate") {
+    if (user.role === "candidate" || user.role === "") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -45,18 +50,28 @@ export async function POST(request: NextRequest) {
 
     // Validate email addresses
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const validateEmails = (emails: string[]) => emails.every(email => emailRegex.test(email));
+    const validateEmails = (emails: string[]) =>
+      emails.every((email) => emailRegex.test(email));
 
     if (cc.length > 0 && !validateEmails(cc)) {
-      return NextResponse.json({ error: "Invalid CC email addresses" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid CC email addresses" },
+        { status: 400 }
+      );
     }
 
     if (bcc.length > 0 && !validateEmails(bcc)) {
-      return NextResponse.json({ error: "Invalid BCC email addresses" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid BCC email addresses" },
+        { status: 400 }
+      );
     }
 
     if (replyTo && !emailRegex.test(replyTo)) {
-      return NextResponse.json({ error: "Invalid reply-to email address" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid reply-to email address" },
+        { status: 400 }
+      );
     }
 
     // Connect to database
@@ -69,33 +84,40 @@ export async function POST(request: NextRequest) {
     });
 
     if (!candidate) {
-      return NextResponse.json({ error: "Candidate not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Candidate not found" },
+        { status: 404 }
+      );
     }
 
-
     // Get organization settings
-    const settings = await Settings!.findOne({ organizationId: user.organizationId });
+    const settings = await Settings!.findOne({
+      organizationId: user.organizationId,
+    });
     if (!settings) {
-      return NextResponse.json({ error: "Organization settings not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Organization settings not found" },
+        { status: 404 }
+      );
     }
 
     // Prepare email body with attachments
     let finalBody = body;
     let htmlBody = body.replace(/\n/g, "<br>");
-    
+
     if (attachments.length > 0) {
       // Plain text version
       finalBody += "\n\nAttachments (click links to download):\n";
       attachments.forEach((attachment: any) => {
         finalBody += `- ${attachment.fileName}: ${attachment.shareUrl}\n`;
       });
-      
+
       // HTML version with clickable links
       htmlBody += `
         <br><br>
         <p style="margin: 0 0 8px 0; font-weight: bold; color: #374151;">Attachments:</p>
         <ul style="margin: 0; padding-left: 20px; list-style-type: disc;">`;
-      
+
       attachments.forEach((attachment: any) => {
         htmlBody += `
           <li style="margin: 4px 0;">
@@ -108,21 +130,22 @@ export async function POST(request: NextRequest) {
             </a>
           </li>`;
       });
-      
+
       htmlBody += "</ul>";
     }
 
     // Prepare email data
-    const candidateEmail = typeof candidate.email === 'string' 
-      ? candidate.email 
-      : (candidate.email as any)?.email || 'unknown@email.com';
-      
-    const fromEmail = settings.mailConfig.smtp_from || 
-                     settings.mailConfig.resend_from || 
-                     settings.mailConfig.brevo_from || 
-                     "noreply@hiretrack.com";
-    
-      
+    const candidateEmail =
+      typeof candidate.email === "string"
+        ? candidate.email
+        : (candidate.email as any)?.email || "unknown@email.com";
+
+    const fromEmail =
+      settings.mailConfig.smtp_from ||
+      settings.mailConfig.resend_from ||
+      settings.mailConfig.brevo_from ||
+      "noreply@hiretrack.com";
+
     const emailData = {
       to: candidateEmail,
       subject,

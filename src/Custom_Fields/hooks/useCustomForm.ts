@@ -28,8 +28,9 @@ const useCustomForm = (
   candidateId?: string,
   fetchGlobal?: boolean
 ) => {
+  // debugger;
   const { customFields } = useCustomFields();
-  const role = useRoles()
+  const role = useRoles();
 
   let formNameObject: FormObject | undefined;
   let formId: string | undefined;
@@ -45,16 +46,23 @@ const useCustomForm = (
   let filteredFields = fields;
 
   if (jobId) {
-    filteredFields = fields.filter((field) => field.jobId === jobId || !field.jobId);
+    filteredFields = fields.filter(
+      (field) => field.jobId === jobId || !field.jobId
+    );
   } else if (candidateId) {
     filteredFields = fields.filter(
       (field) => field.candidateId === candidateId || !field.candidateId
     );
   } else if (fetchGlobal) {
-    filteredFields = fields.filter((field) => !field.jobId && !field.candidateId);
+    filteredFields = fields.filter(
+      (field) => !field.jobId && !field.candidateId
+    );
   }
 
-  const validationSchema = getYupSchema(filteredFields, role === "" ? "candidate" : (role || undefined));
+  const validationSchema = getYupSchema(
+    filteredFields,
+    role === "" ? "candidate" : role || undefined
+  );
 
   const initialValues = formNameObject?.fields.reduce(
     (acc, field) => {

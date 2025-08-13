@@ -58,7 +58,7 @@ export default function ApplyOptions({
         console.error("Failed to fetch portal colors:", error);
       }
     };
-    
+
     if (isOptionsOpen) {
       fetchPortalColors();
     }
@@ -106,20 +106,25 @@ export default function ApplyOptions({
           </button>
 
           <div className="flex items-center gap-3 mb-4">
-            <div 
+            <div
               className="w-10 h-10 rounded-full flex items-center justify-center"
               style={{
                 backgroundColor: `${primaryColor}15`,
               }}
             >
-              <svg 
-                className="w-5 h-5" 
-                fill="none" 
-                stroke="currentColor" 
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
                 viewBox="0 0 24 24"
                 style={{ color: primaryColor }}
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
             </div>
             <Dialog.Title
@@ -131,15 +136,16 @@ export default function ApplyOptions({
           </div>
 
           <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed mb-6">
-            You're not currently logged in. Please choose how you'd like to continue with your application.
+            You're not currently logged in. Please choose how you'd like to
+            continue with your application.
           </p>
 
           <div className="space-y-3">
             {roles === "" ? (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Button 
-                    onClick={handleSignupRedirect} 
+                  <Button
+                    onClick={handleSignupRedirect}
                     variant="outline"
                     className="w-full py-3 text-sm font-medium transition-all duration-200 border-2 hover:shadow-md"
                     style={{
@@ -149,19 +155,19 @@ export default function ApplyOptions({
                     onMouseEnter={(e) => {
                       const target = e.target as HTMLElement;
                       target.style.backgroundColor = primaryColor;
-                      target.style.color = 'white';
+                      target.style.color = "white";
                     }}
                     onMouseLeave={(e) => {
                       const target = e.target as HTMLElement;
-                      target.style.backgroundColor = 'transparent';
+                      target.style.backgroundColor = "transparent";
                       target.style.color = primaryColor;
                     }}
                   >
                     <UserPlus className="w-4 h-4 mr-2" />
                     Sign Up
                   </Button>
-                  <Button 
-                    onClick={handleLoginRedirect} 
+                  <Button
+                    onClick={handleLoginRedirect}
                     variant="outline"
                     className="w-full py-3 text-sm font-medium transition-all duration-200 border-2 hover:shadow-md"
                     style={{
@@ -171,11 +177,11 @@ export default function ApplyOptions({
                     onMouseEnter={(e) => {
                       const target = e.target as HTMLElement;
                       target.style.backgroundColor = secondaryColor;
-                      target.style.color = 'white';
+                      target.style.color = "white";
                     }}
                     onMouseLeave={(e) => {
                       const target = e.target as HTMLElement;
-                      target.style.backgroundColor = 'transparent';
+                      target.style.backgroundColor = "transparent";
                       target.style.color = secondaryColor;
                     }}
                   >
@@ -188,7 +194,7 @@ export default function ApplyOptions({
                     <span className="w-full border-t border-gray-200 dark:border-gray-700" />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span 
+                    <span
                       className="bg-white dark:bg-gray-900 px-3 py-1 rounded-full text-xs font-medium"
                       style={{
                         color: `${primaryColor}80`,
@@ -215,7 +221,7 @@ export default function ApplyOptions({
             ) : (
               <>
                 {readOnly ? (
-                  <Button 
+                  <Button
                     disabled
                     className="w-full py-2.5 text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                   >

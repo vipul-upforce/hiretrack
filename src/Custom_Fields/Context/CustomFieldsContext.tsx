@@ -70,7 +70,7 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
 
     const getCustomFields = useCallback(async () => {
       // const token = Cookies.get("token");
-      if (user) {
+      if (user && user.role !== "" && user.role !== "candidate") {
         // const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
         // if (decryptedResponse.success && decryptedResponse.user) {
         const userObject = user;

@@ -210,7 +210,7 @@ export function OPTIONS() {
 //!!! THIS IMPLIES RESTRICT ACCESS TO REGISTER/ORG PAGE
 export async function GET(req: NextRequest) {
   // let organizationId;
-  
+
   // if (token?.value) {
   //   const decryptedResponse = await verifyAndDecryptToken(String(token?.value));
   //   const userData = decryptedResponse.user;
@@ -218,7 +218,7 @@ export async function GET(req: NextRequest) {
   //     organizationId = userData.organizationId || "";
   //   }
   // }
-  
+
   try {
     await connectToDatabase();
     if (!Settings) {
@@ -227,28 +227,32 @@ export async function GET(req: NextRequest) {
         { status: 500 }
       );
     }
-  // if (organizationId != "") {
-  //   const settings = await Settings.find({
-  //     organizationId: String(organizationId),
-  //   });
-  //   console.log("✅✅✅ ", settings);
-  //   if (settings[0].multipleOrg !== false) {
-  //     return {
-  //       allow: true,
-  //     };
-  //   }
-  //   return {
-  //     allow: false,
-  //   };
-  // } else {
-  const settings = await Settings.find(
-    {},
-    {
-      fileStorage: 0,
-      mailConfig: 0,
-      gemini: 0,
-    }
-  );
+    // if (organizationId != "") {
+    //   const settings = await Settings.find({
+    //     organizationId: String(organizationId),
+    //   });
+    //   console.log("✅✅✅ ", settings);
+    //   if (settings[0].multipleOrg !== false) {
+    //     return {
+    //       allow: true,
+    //     };
+    //   }
+    //   return {
+    //     allow: false,
+    //   };
+    // } else {
+    const settings = await Settings.find(
+      {},
+      {
+        fileStorage: 0,
+        mailConfig: 0,
+        gemini: 0,
+        aiProviders: 0,
+        emailTemplates: 0,
+        googleCalendar: 0,
+        twoFA: 0,
+      }
+    );
     // console.log("⛔⛔⛔ ", settings);
     if (settings.length > 1 || settings.length === 0) {
       return NextResponse.json({
