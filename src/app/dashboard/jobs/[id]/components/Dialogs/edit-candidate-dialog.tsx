@@ -183,6 +183,7 @@ export function EditCandidateDialog({
   }, [customFields, setSelectedFormId, setStepName]);
 
   const handleSubmit = async (values: Candidate) => {
+    // debugger;
     const fileNames = values.attachments.map((file) => file.name);
     const hasDuplicates = new Set(fileNames).size !== fileNames.length;
 
@@ -308,7 +309,7 @@ export function EditCandidateDialog({
       const previousInterviewer =
         typeof candidate.assignment?.interviewerId === "object"
           ? candidate.assignment.interviewerId.name
-          : "";
+          : null;
       const previousInterviewerId =
         typeof candidate.assignment?.interviewerId === "object"
           ? Object(candidate.assignment.interviewerId._id)
@@ -317,7 +318,7 @@ export function EditCandidateDialog({
       const nextInterviewer =
         result && typeof result.assignment?.interviewerId === "object"
           ? result.assignment.interviewerId.name
-          : "";
+          : null;
       const nextInterviewerId =
         result && typeof result.assignment?.interviewerId === "object"
           ? Object(result.assignment.interviewerId._id)
@@ -341,7 +342,7 @@ export function EditCandidateDialog({
         title: title,
         currentInterviewer: nextInterviewerId,
         previousInterviewer: previousInterviewerId,
-        assignmentBy: user ? user.id : "",
+        assignmentBy: user ? user.id : null,
         note: {
           description: "",
           date: "",
@@ -353,8 +354,8 @@ export function EditCandidateDialog({
 
       if (nextInterviewer && nextInterviewer !== "") {
         await updateCandidateHistory({
-          candidateId: updatedCandidate._id || "",
-          jobId: updatedCandidate?.jobId || "",
+          candidateId: updatedCandidate._id || null,
+          jobId: updatedCandidate?.jobId || null,
           newEntry: newHistoryEntry,
         }).unwrap();
       }
@@ -410,12 +411,13 @@ export function EditCandidateDialog({
       reader.onerror = (error) => reject(error);
     });
   };
-  let interviewerId = "";
+  let interviewerId = null;
   if (candidate?.assignment?.interviewerId) {
+    // debugger;
     if (typeof candidate.assignment.interviewerId === "string") {
       interviewerId =
         candidate.assignment.interviewerId === "-1"
-          ? ""
+          ? null
           : candidate.assignment.interviewerId;
     } else if (candidate.assignment.interviewerId._id) {
       interviewerId = candidate.assignment.interviewerId._id.replace(/"/g, "");
@@ -427,14 +429,15 @@ export function EditCandidateDialog({
     resume: candidate.resume,
     attachments: candidate.attachments,
     email: candidate.email, // Added email to initial values
-    assignment: candidate.assignment
-      ? {
-          assignment: candidate.assignment.assignment,
-          interviewerId,
-          time: candidate.assignment.time,
-          assignedAt: candidate.assignment.assignedAt,
-        }
-      : null,
+    assignment:
+      candidate.assignment && Object.keys(candidate.assignment).length > 1
+        ? {
+            assignment: candidate.assignment.assignment,
+            interviewerId,
+            time: candidate.assignment.time,
+            assignedAt: candidate.assignment.assignedAt,
+          }
+        : null,
     customFields: getDefaultValues(candidate.customFields || {}),
   };
 
@@ -482,7 +485,7 @@ export function EditCandidateDialog({
                   onSave={(newField) => {
                     handleAddCustomField(
                       newField,
-                      selectedFormId?.formId || ""
+                      selectedFormId?.formId || null
                     );
                   }}
                 />

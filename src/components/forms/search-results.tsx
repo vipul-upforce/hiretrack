@@ -46,10 +46,17 @@ import { EditCandidateDialog } from "@/app/dashboard/jobs/[id]/components/Dialog
 import { AssignCandidateDialog } from "@/app/dashboard/jobs/[id]/components/Dialogs/assign-candidate-dialog";
 import { AssignJobDialog } from "@/app/dashboard/jobs/[id]/components/Dialogs/assign-job-dialog";
 import AddRemarksDialog from "@/app/dashboard/jobs/[id]/components/Dialogs/add-remark-dialog";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Candidate } from "@/types/candidate";
 import { itemsPerPage } from "./candidate-search";
 import { useEffect } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 
 interface SearchResultsProps {
   results: Candidate[];
@@ -57,11 +64,14 @@ interface SearchResultsProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  onLimitChange: (page: number) => void;
   sortField: string | null;
   sortDirection: "asc" | "desc";
   onSort: (field: string) => void;
   refetch: () => Promise<void>;
   totalResultsCount?: number;
+  // Add this new prop
+  onCandidateUpdate?: (updatedCandidate: Candidate) => void;
 }
 
 export function SearchResults({
@@ -70,11 +80,13 @@ export function SearchResults({
   currentPage,
   totalPages,
   onPageChange,
+  onLimitChange,
   sortField,
   sortDirection,
   onSort,
   refetch,
   totalResultsCount,
+  onCandidateUpdate,
 }: SearchResultsProps) {
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(
     null
@@ -156,7 +168,17 @@ export function SearchResults({
   const clearAllFilters = () => {
     setActiveFilters([]);
   };
-
+  const handleCandidateUpdateWithOptimism = useCallback(
+    (updatedCandidate: Candidate) => {
+      // Immediately update local state if handler is provided
+      debugger;
+      if (onCandidateUpdate) {
+        onCandidateUpdate(updatedCandidate);
+      }
+      // refetch();
+    },
+    [onCandidateUpdate]
+  );
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
     {
       name: true,
@@ -783,47 +805,98 @@ export function SearchResults({
         </div>
 
         {/* Results Count Display */}
-        <div className="p-4 border-t bg-muted/30">
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-muted-foreground">
-              {activeFilters.length > 0 ? (
-                <>
-                  Showing{" "}
-                  <span className="font-medium text-foreground">
-                    {filteredResults.length}
-                  </span>{" "}
-                  of{" "}
-                  <span className="font-medium text-foreground">
-                    {results.length}
-                  </span>{" "}
-                  results
-                  {activeFilters.length > 0 && (
-                    <span className="ml-2">
-                      (filtered by:{" "}
-                      {activeFilters
-                        .map((f) =>
-                          f
-                            .replace("-", " ")
-                            .replace(/([A-Z])/g, " $1")
-                            .trim()
+        {totalPages > 0 && (
+          <div className="p-4 border-t bg-muted/30">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+              {/* Result Count */}
+              <div className="text-sm text-muted-foreground">
+                {activeFilters.length > 0 ? (
+                  <>
+                    Showing{" "}
+                    <span className="font-medium text-foreground">
+                      {results.length}
+                    </span>{" "}
+                    of{" "}
+                    <span className="font-medium text-foreground">
+                      {totalResultsCount}
+                    </span>{" "}
+                    results
+                    {activeFilters.length > 0 && (
+                      <span className="ml-2">
+                        (filtered by:{" "}
+                        {activeFilters
+                          .map((f) =>
+                            f
+                              .replace("-", " ")
+                              .replace(/([A-Z])/g, " $1")
+                              .trim()
+                          )
+                          .join(", ")}
                         )
-                        .join(", ")}
-                      )
-                    </span>
-                  )}
-                </>
-              ) : (
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    Showing{" "}
+                    <span className="font-medium text-foreground">
+                      {results.length}
+                    </span>{" "}
+                    of{" "}
+                    <span className="font-medium text-foreground">
+                      {totalResultsCount}
+                    </span>{" "}
+                    results
+                  </>
+                )}
+              </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
                 <>
-                  Showing{" "}
-                  <span className="font-medium text-foreground">
-                    {results.length}
-                  </span>{" "}
-                  results
+                  <div className="flex items-center gap-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={currentPage === 1 || isLoading}
+                      onClick={() => onPageChange(currentPage - 1)}
+                    >
+                      Previous
+                    </Button>
+                    <span className="text-sm text-muted-foreground">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={currentPage === totalPages || isLoading}
+                      onClick={() => onPageChange(currentPage + 1)}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                  <Select
+                    name="limit"
+                    value={String(results.length)}
+                    onValueChange={(value) => onLimitChange(Number(value))}
+                    disabled={isLoading}
+                  >
+                    <SelectTrigger className="w-[100px] text-sm">
+                      <SelectValue placeholder="Items per page" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[10, 20, 50, 100].map((limit) => (
+                        <SelectItem key={limit} value={String(limit)}>
+                          {limit}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </>
               )}
             </div>
           </div>
-        </div>
+        )}
       </Card>
 
       {selectedCandidate && (
@@ -841,16 +914,17 @@ export function SearchResults({
           candidate={candidateToEdit}
           isOpen={isEditDialogOpen}
           onOpenChange={setIsEditDialogOpen}
-          onUpdate={(updatedCandidate) => {
-            // Handle candidate update
-            console.log("Candidate updated:", updatedCandidate);
-            refetch();
-          }}
+          // onUpdate={(updatedCandidate) => {
+          //   // Handle candidate update
+          //   console.log("Candidate updated:", updatedCandidate);
+          //   refetch();
+          // }}
+          onUpdate={handleCandidateUpdateWithOptimism}
           refetchAssignment={refetch}
           onSuccess={() => {
             setIsEditDialogOpen(false);
             setCandidateToEdit(null);
-            refetch();
+            // refetch();
           }}
         />
       )}
@@ -861,15 +935,16 @@ export function SearchResults({
           isOpen={isAssignInterviewerOpen}
           onOpenChange={setIsAssignInterviewerOpen}
           refetch={refetch}
-          onUpdate={(updatedCandidate) => {
-            console.log("Candidate assigned:", updatedCandidate);
-            refetch();
-          }}
+          // onUpdate={(updatedCandidate) => {
+          //   console.log("Candidate assigned:", updatedCandidate);
+          //   refetch();
+          // }}
+          onUpdate={handleCandidateUpdateWithOptimism}
           setLocalCandidate={() => {}}
           onSuccess={() => {
             setIsAssignInterviewerOpen(false);
             setCandidateToAssignInterviewer(null);
-            refetch();
+            // refetch();
           }}
         />
       )}
@@ -879,10 +954,19 @@ export function SearchResults({
           candidate={candidateToAssignJob}
           isOpen={isAssignJobOpen}
           onOpenChange={setIsAssignJobOpen}
-          onJobAssignment={() => {
+          // onJobAssignment={() => {
+          //   setIsAssignJobOpen(false);
+          //   setCandidateToAssignJob(null);
+          //   refetch();
+          // }}
+          onJobAssignment={(updatedCandidate) => {
+            // If this returns updated candidate
+            if (updatedCandidate && onCandidateUpdate) {
+              onCandidateUpdate(updatedCandidate);
+            }
+            handleCandidateUpdateWithOptimism;
             setIsAssignJobOpen(false);
             setCandidateToAssignJob(null);
-            refetch();
           }}
         />
       )}
@@ -894,6 +978,7 @@ export function SearchResults({
           onOpenChange={setIsAddRemarkOpen}
           setOpenRemarksFor={() => {}}
           refetch={refetch}
+          onRemarkAdded={handleCandidateUpdateWithOptimism}
         />
       )}
 

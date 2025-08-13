@@ -33,12 +33,14 @@ const AddRemarksDialog = ({
   onOpenChange,
   setOpenRemarksFor,
   refetch,
+  onRemarkAdded,
 }: {
   candidate: Candidate;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   setOpenRemarksFor: (id: string | null) => void;
   refetch: () => void;
+  onRemarkAdded?: (updatedCandidate: Candidate) => void;
 }) => {
   const [newRemark, setNewRemark] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -160,7 +162,8 @@ const AddRemarksDialog = ({
 
         await new Promise((resolve) => setTimeout(resolve, 100));
         await refetch();
-
+        debugger;
+        onRemarkAdded?.(updatedCandidate);
         toast({
           title: "Success",
           description: "Remark added successfully",

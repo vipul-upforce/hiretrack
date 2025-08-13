@@ -754,7 +754,10 @@ export async function PUT(
         ...updatedCandidate,
         history: candidateHistoryPopulated?.history,
       });
-      return NextResponse.json(updatedCandidate);
+      return NextResponse.json({
+        ...updatedCandidate,
+        history: candidateHistoryPopulated?.history,
+      });
     }
 
     return NextResponse.json(existingCandidate);

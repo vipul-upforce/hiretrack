@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Candidate, History, JobLaneConfig } from "@/lib/mongodb";
+import connectToDatabase, {
+  Candidate,
+  History,
+  JobLaneConfig,
+} from "@/lib/mongodb";
 import {
   Attachments,
   FileAttachment,
@@ -12,7 +16,10 @@ import mongoose, { Types } from "mongoose";
 import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
 import { ICandidate } from "@/lib/models/candidate";
 import { ICandidateHistory } from "@/lib/models/history";
-import { filterChecklistResponses, getUserRole } from "@/lib/utils/checklistVisibility";
+import {
+  filterChecklistResponses,
+  getUserRole,
+} from "@/lib/utils/checklistVisibility";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
@@ -32,10 +39,7 @@ export async function POST(request: NextRequest) {
     const decoded = decryptedResponse.user;
     const userRole = getUserRole(decoded.role);
     if (!userRole) {
-      return NextResponse.json(
-        { error: "Invalid user role" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Invalid user role" }, { status: 403 });
     }
 
     await connectToDatabase();
@@ -74,7 +78,7 @@ export async function POST(request: NextRequest) {
 
     // Get job lane configuration to filter checklist responses based on user role
     const laneConfig = await JobLaneConfig.findOne({ jobId: data.jobId });
-    
+
     // Filter checklist responses in history based on user role visibility
     const filteredHistory = historyEntry.history.map((entry: any) => {
       if (!entry.checklistForm) {
@@ -84,12 +88,15 @@ export async function POST(request: NextRequest) {
       // Find the checklist configuration to get field visibility settings
       let checklistFields: any[] = [];
       if (laneConfig) {
-        const targetLane = laneConfig.laneConfigs.find((lc: any) => lc.laneId === entry.checklistForm.laneId);
+        const targetLane = laneConfig.laneConfigs.find(
+          (lc: any) => lc.laneId === entry.checklistForm.laneId
+        );
         if (targetLane) {
-          const checklist = entry.checklistForm.checklistType === "incoming" 
-            ? targetLane.incomingChecklist 
-            : targetLane.outgoingChecklist;
-          
+          const checklist =
+            entry.checklistForm.checklistType === "incoming"
+              ? targetLane.incomingChecklist
+              : targetLane.outgoingChecklist;
+
           if (checklist && checklist.fields) {
             checklistFields = checklist.fields;
           }
@@ -107,8 +114,8 @@ export async function POST(request: NextRequest) {
         ...entry,
         checklistForm: {
           ...entry.checklistForm,
-          responses: filteredResponses
-        }
+          responses: filteredResponses,
+        },
       };
     });
 
@@ -378,7 +385,6 @@ export async function PUT(request: NextRequest) {
       { $push: { history: data.newEntry } },
       { upsert: true, new: true, runValidators: true }
     );
-    console.log(historyEntry, "histryyy--y");
 
     // console.log("🎊🎊🎊 DATA>JOBID: ", data.jobId);
     const jobId = new Types.ObjectId(
@@ -410,25 +416,29 @@ export async function PUT(request: NextRequest) {
       );
     }
     // console.log("🚒🚒🚒🚒 In HistoryUpdate: ", candidateData.remarks.length);
-    const transformedHistory = (historyData.history || []).map((historyItem: any) => {
-    if (historyItem.checklistForm?.responses) {
-      return {
-        ...historyItem,
-        checklistForm: {
-          ...historyItem.checklistForm,
-          responses: new Map(Object.entries(historyItem.checklistForm.responses)),
-        },
-      };
-    }
-    return historyItem;
-  });
+    const transformedHistory = (historyData.history || []).map(
+      (historyItem: any) => {
+        if (historyItem.checklistForm?.responses) {
+          return {
+            ...historyItem,
+            checklistForm: {
+              ...historyItem.checklistForm,
+              responses: new Map(
+                Object.entries(historyItem.checklistForm.responses)
+              ),
+            },
+          };
+        }
+        return historyItem;
+      }
+    );
 
-  broadcastCandidateUpdate({
-    ...candidateData,
-    history: transformedHistory,
-  } as ICandidate & { history?: ICandidateHistory[] });
+    broadcastCandidateUpdate({
+      ...candidateData,
+      history: transformedHistory,
+    } as ICandidate & { history?: ICandidateHistory[] });
 
-  return NextResponse.json(historyEntry.history);
+    return NextResponse.json(transformedHistory);
     // return NextResponse.json({});
   } catch (error) {
     console.error(error);

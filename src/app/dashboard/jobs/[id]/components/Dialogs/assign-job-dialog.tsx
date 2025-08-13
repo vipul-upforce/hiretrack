@@ -27,7 +27,7 @@ interface AssignCandidateDialogProps {
   candidate: Candidate;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onJobAssignment?: () => void;
+  onJobAssignment?: (x?: any) => void;
 }
 
 interface FormValues {
@@ -66,11 +66,11 @@ export function AssignJobDialog({
         (typeof candidate.jobId === "object" &&
           candidate.jobId._id !== values.jobId)
       ) {
-        await assignJob({
+        const resp = await assignJob({
           jobId: values.jobId,
           candidateId: candidate._id,
         }).unwrap();
-        onJobAssignment?.();
+        onJobAssignment?.(resp.updatedCandidate);
         toast({
           title: "Success",
           description: "Candidate assigned successfully",

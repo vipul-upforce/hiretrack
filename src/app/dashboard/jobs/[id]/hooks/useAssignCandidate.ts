@@ -97,7 +97,7 @@ export const useAssignCandidate = ({
       console.log("📝 Assignment Update:", {
         hasGoogleMeetData: !!values.googleMeetData,
         googleMeetData: values.googleMeetData,
-        assignment: updatedCandidate.assignment
+        assignment: updatedCandidate.assignment,
       });
 
       const previousInterviewer =
@@ -143,14 +143,14 @@ export const useAssignCandidate = ({
       if (!error) {
         sentAssignmentMail(result, sendEmail);
       }
-      await updateCandidateHistory({
+      const updatedHistory = await updateCandidateHistory({
         candidateId: updatedCandidate._id,
         jobId: candidate.jobId._id || candidate.jobId,
         newEntry: newHistoryEntry,
       }).unwrap();
 
       if (result) {
-        onUpdate(result);
+        onUpdate({ ...result, history: updatedHistory });
         onOpenChange(false);
         setLocalCandidate(result);
       }

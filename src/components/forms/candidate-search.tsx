@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Formik, Form } from "formik";
 import { SearchFilters } from "@/components/forms/search-filters";
 import { SearchResults } from "@/components/forms/search-results";
@@ -36,14 +36,17 @@ export interface SearchFilter {
   organizationId?: string;
   logicOperator?: "$and" | "$or";
   page: number;
+  limit: number;
   customFields?: CandidateField | null;
 }
 
 export const itemsPerPage = 100;
+
 function CandidateSearch() {
   const [searchResults, setSearchResults] = useState<Candidate[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [currentPageLimit, setCurrentPageLimit] = useState(100);
   const [totalRecordsCount, setTotalRecordsCount] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [sortField, setSortField] = useState<string | null>(null);
@@ -68,6 +71,7 @@ function CandidateSearch() {
     createdBefore: "",
     logicOperator: "$and",
     page: 1,
+    limit: 100,
     customFields: null,
   };
 
@@ -76,11 +80,27 @@ function CandidateSearch() {
 
   const [filterCandidates] = useFilterCandidatesMutation();
 
-  const refetchResults = async () => {
+  // Optimistic update handler
+  const handleCandidateUpdate = useCallback((updatedCandidate: Candidate) => {
+    setSearchResults((prevResults) =>
+      prevResults.map((candidate) =>
+        candidate._id === updatedCandidate._id ? updatedCandidate : candidate
+      )
+    );
+  }, []);
+
+  const refetchResults = useCallback(async () => {
     setIsSearching(true);
     try {
       const response = await filterCandidates(currentFilters).unwrap();
       setSearchResults(response.candidates || []);
+      // Update pagination info if available
+      if (response.pagination) {
+        setCurrentPage(response.pagination.page || 1);
+        setCurrentPageLimit(response.pagination.limit || 100);
+        setTotalPages(response.pagination.totalPages || 0);
+        setTotalRecordsCount(response.pagination.total || 0);
+      }
     } catch (error) {
       toast({
         title: "Error",
@@ -90,7 +110,7 @@ function CandidateSearch() {
     } finally {
       setIsSearching(false);
     }
-  };
+  }, [currentFilters, filterCandidates, toast]);
 
   const handleSearch = async (values: SearchFilter) => {
     setIsSearching(true);
@@ -98,10 +118,10 @@ function CandidateSearch() {
 
     try {
       values.organizationId = OrgID ? OrgID : values.organizationId;
-
       const response = await filterCandidates(values).unwrap();
       setSearchResults(response.candidates || []);
       setCurrentPage(response?.pagination?.page || 1);
+      setCurrentPageLimit(response?.pagination?.limit || 100);
       setTotalPages(response?.pagination?.totalPages || 0);
       setTotalRecordsCount(response?.pagination?.total);
     } catch (error) {
@@ -117,10 +137,7 @@ function CandidateSearch() {
 
   useEffect(() => {
     (async () => {
-      // const token = Cookies.get("token");
       if (user) {
-        // const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-        // if (decryptedResponse.success && decryptedResponse.user) {
         setOrgID(user.organizationId);
         handleSearch({
           name: "",
@@ -131,8 +148,8 @@ function CandidateSearch() {
           logicOperator: "$and",
           organizationId: user.organizationId,
           page: currentPage,
+          limit: currentPageLimit,
         });
-        // }
       }
     })();
   }, []);
@@ -147,24 +164,32 @@ function CandidateSearch() {
   };
 
   const onPageChange = async (pageNumber: number) => {
-    // const token = Cookies.get("token");
-    if (user) {
-      // const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-      // if (decryptedResponse.success && decryptedResponse.user) {
-      setOrgID(user.organizationId);
-      handleSearch({
-        name: "",
-        skills: [],
-        location: "",
-        createdAfter: "",
-        createdBefore: "",
-        logicOperator: "$and",
-        organizationId: user.organizationId,
-        page: pageNumber,
-      });
-      // }
-    }
+    if (!user || pageNumber < 1 || pageNumber > totalPages) return;
+
+    setCurrentPage(pageNumber); // Update current page immediately
+    const updatedFilters = {
+      ...currentFilters,
+      organizationId: user.organizationId,
+      page: pageNumber,
+    };
+
+    setCurrentFilters(updatedFilters);
+    await handleSearch(updatedFilters);
   };
+  const onLimitChange = async (pageLimit: number) => {
+    if (!user || pageLimit < 1) return;
+
+    setCurrentPageLimit(pageLimit); // Update current page immediately
+    const updatedFilters = {
+      ...currentFilters,
+      organizationId: user.organizationId,
+      limit: pageLimit,
+    };
+
+    setCurrentFilters(updatedFilters);
+    await handleSearch(updatedFilters);
+  };
+
   const sortedResults = sortField
     ? [...searchResults].sort((a, b) => {
         let aValue: any;
@@ -255,13 +280,15 @@ function CandidateSearch() {
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={onPageChange}
+        onLimitChange={onLimitChange}
         sortField={sortField}
         sortDirection={sortDirection}
         onSort={handleSort}
         refetch={async () => {
           await new Promise((resolve) => setTimeout(resolve, 1000));
           refetchResults;
-        }}
+        }} // Use the memoized version
+        onCandidateUpdate={handleCandidateUpdate} // Add the optimistic update handler
       />
     </div>
   );
