@@ -17,6 +17,7 @@ stages:
   - scan
   - build
   - deploy
+  
 
 sonarcloud-check:
   stage: scan
