@@ -12,7 +12,7 @@ variables:
 cache:
   paths:
     - node_modules/
-
+ 
 stages:
   - scan
   - build
