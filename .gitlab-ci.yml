@@ -18,7 +18,6 @@ stages:
   - build
   - deploy
   
-
 sonarcloud-check:
   stage: scan
   image:
