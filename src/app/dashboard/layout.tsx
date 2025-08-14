@@ -304,7 +304,7 @@ export default function DashboardLayout({
       title: "Logged out",
       description: "You have been successfully logged out",
     });
-    router.push("/auth/login");
+    window.location.href = "/auth/login";
   };
 
   const generate_share_org = async (e: React.FormEvent) => {

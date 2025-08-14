@@ -295,8 +295,7 @@ export default function ApplyJobsContent({
         dispatch(logout());
         await fetch("/api/auth/logout");
 
-        fetch("/api/auth/logout");
-        router.push("/auth/login");
+        window.location.href = "/auth/login";
       }
     } else {
       setOrgName(urlOrgName || "");
@@ -366,7 +365,7 @@ export default function ApplyJobsContent({
       description: "You have been successfully logged out",
     });
 
-    router.push("/auth/login");
+    window.location.href = "/auth/login";
   };
   console.log(jobs);
   return (
