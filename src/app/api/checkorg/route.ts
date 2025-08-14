@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 async function checkOrgInDatabase(organizationId: string) {
   const organization = await Organization?.findOne({ _id: organizationId });
-    console.log("🙂🙂🙂 org: ", organization);
+  // console.log("🙂🙂🙂 org: ", organization);
   if (organization?.name) {
     return true;
   } else {

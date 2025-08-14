@@ -1,6 +1,11 @@
 import { sendMail as sendMailWithContext } from "./emailUtils";
 import { sendMail as sendEventMail } from "@/app/api/event-mail";
-import dbConnect, { Settings, User, Candidate, EmailHistory } from "@/lib/mongodb";
+import dbConnect, {
+  Settings,
+  User,
+  Candidate,
+  EmailHistory,
+} from "@/lib/mongodb";
 import mongoose from "mongoose";
 import { ISettings } from "@/lib/models/settings";
 
@@ -37,12 +42,16 @@ interface UnifiedEmailOptions {
 /**
  * Unified email sending function that tracks all emails in history
  */
-export async function sendUnifiedMail(options: UnifiedEmailOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
+export async function sendUnifiedMail(
+  options: UnifiedEmailOptions
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
     await dbConnect();
-    
+
     // Get organization settings for mail configuration
-    const settings = await Settings.findOne({ organizationId: options.organizationId }) as ISettings;
+    const settings = (await Settings.findOne({
+      organizationId: options.organizationId,
+    })) as ISettings;
     if (!settings || !settings.mailConfig) {
       return { success: false, error: "Mail configuration not found" };
     }
@@ -50,12 +59,14 @@ export async function sendUnifiedMail(options: UnifiedEmailOptions): Promise<{ s
     // Convert to array if single email
     const toEmails = Array.isArray(options.to) ? options.to : [options.to];
     const primaryRecipient = toEmails[0];
-    
+
     // If we have a candidateId but no recipient name, try to fetch it
     let recipientName = options.recipientName;
     if (!recipientName && options.metadata?.candidateId) {
       try {
-        const candidate = await Candidate.findById(options.metadata.candidateId).select('name').lean();
+        const candidate = await Candidate.findById(options.metadata.candidateId)
+          .select("name")
+          .lean();
         if (candidate) {
           recipientName = candidate.name;
         }
@@ -89,55 +100,56 @@ export async function sendUnifiedMail(options: UnifiedEmailOptions): Promise<{ s
     );
 
     // For additional recipients beyond the first, send separately
-   if (toEmails.length > 1) {
-  const additionalRecipients = toEmails.slice(1);
-  const additionalResults = await Promise.all(
-    additionalRecipients.map(async (email) => {
-      try {
-        await sendMailWithContext(
-          settings.mailConfig,
-          email,
-          options.subject,
-          options.text,
-          options.html,
-          options.cc,
-          options.bcc,
-          options.replyTo,
-          options.from,
-          {
-            organizationId: options.organizationId,
-            sentBy: options.sentBy,
-            sentByEmail: options.sentByEmail,
-            sentByName: options.sentByName,
-            recipientType: "user",
-            recipientId: undefined,
-            recipientName: email,
-            metadata: options.metadata,
-            attachments: options.attachments,
+    if (toEmails.length > 1) {
+      const additionalRecipients = toEmails.slice(1);
+      const additionalResults = await Promise.all(
+        additionalRecipients.map(async (email) => {
+          try {
+            await sendMailWithContext(
+              settings.mailConfig,
+              email,
+              options.subject,
+              options.text,
+              options.html,
+              options.cc,
+              options.bcc,
+              options.replyTo,
+              options.from,
+              {
+                organizationId: options.organizationId,
+                sentBy: options.sentBy,
+                sentByEmail: options.sentByEmail,
+                sentByName: options.sentByName,
+                recipientType: "user",
+                recipientId: undefined,
+                recipientName: email,
+                metadata: options.metadata,
+                attachments: options.attachments,
+              }
+            );
+            return { success: true };
+          } catch (error) {
+            return {
+              success: false,
+              error:
+                error instanceof Error ? error.message : "Failed to send email",
+            };
           }
-        );
-        return { success: true };
-      } catch (error) {
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Failed to send email",
-        };
+        })
+      );
+      const failedAdditional = additionalResults.filter((r) => !r.success);
+      if (failedAdditional.length > 0) {
+        result.success = false;
+        result.error = `Failed to send ${failedAdditional.length} out of ${additionalRecipients.length} additional emails. Errors: ${failedAdditional.map((f) => f.error).join(", ")}`;
       }
-    })
-  );
-  const failedAdditional = additionalResults.filter((r) => !r.success);
-  if (failedAdditional.length > 0) {
-    result.success = false;
-    result.error = `Failed to send ${failedAdditional.length} out of ${additionalRecipients.length} additional emails. Errors: ${failedAdditional.map((f) => f.error).join(", ")}`;
-  }
-}
+    }
 
     return result;
   } catch (error) {
     console.error("Unified email send error:", error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : "Failed to send email" 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to send email",
     };
   }
 }
@@ -171,11 +183,23 @@ export async function sendEventEmailWithHistory(
     }).lean();
 
     if (!settings || !settings.mailConfig) {
-      return { status: 500, message: "Mail configuration not found for the organization." };
+      return {
+        status: 500,
+        message: "Mail configuration not found for the organization.",
+      };
     }
     const mailConfig = settings.mailConfig;
 
     // 2. Find recipient users to get their IDs and correct names
+    const candidateRecipient =
+      emails[0] && context.metadata.eventType === "job_application"
+        ? await Candidate.findOne({
+            email: emails[0],
+            organizationId: new mongoose.Types.ObjectId(organizationId),
+          })
+            .select("_id name email")
+            .lean()
+        : null;
     const recipients = await User.find({
       email: { $in: emails },
       organizationId: new mongoose.Types.ObjectId(organizationId),
@@ -183,10 +207,14 @@ export async function sendEventEmailWithHistory(
       .select("_id name email")
       .lean();
 
-    if (recipients.length === 0) {
+    if (
+      candidateRecipient
+        ? [candidateRecipient, ...recipients].length === 0
+        : [...recipients].length === 0
+    ) {
       return { status: 404, message: "No valid recipients found." };
     }
-
+    console.log("🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥 recipients: ", recipients);
     // 3. Determine email provider for history logging
     let provider = "unknown";
     if (mailConfig.mailProvider) {
@@ -200,7 +228,10 @@ export async function sendEventEmailWithHistory(
     }
 
     // 4. Process each recipient
-    const emailPromises = recipients.map(async (recipient) => {
+    const recips = candidateRecipient
+      ? [candidateRecipient, ...recipients]
+      : [...recipients];
+    const emailPromises = recips.map(async (recipient) => {
       try {
         // Create a pending email history record
         const emailHistory = await EmailHistory.create({
@@ -274,7 +305,8 @@ export async function sendEventEmailWithHistory(
     console.error("Event email send error:", error);
     return {
       status: 500,
-      message: error instanceof Error ? error.message : "Failed to send event emails",
+      message:
+        error instanceof Error ? error.message : "Failed to send event emails",
     };
   }
 }

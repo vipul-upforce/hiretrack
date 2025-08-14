@@ -343,7 +343,7 @@ export class AIEvaluationService {
 
   private static parseEvaluationResponse(response: string): EvaluationResult {
     try {
-      console.log("Raw evaluation response:", response);
+      // console.log("Raw evaluation response:", response);
 
       // Clean the response - handle multiple formats
       let jsonString = response

@@ -9,8 +9,6 @@ export function broadcastCandidateUpdate(
 ) {
   const orgId = candidate.organizationId;
   const orgClients = global.sseClients?.get(orgId);
-  console.log("ORGCLIENTS:> ", orgClients, orgId);
-  console.log("CANDIDATE: ", candidate);
   if (!orgClients) return;
   // let role = null;
   // if (req) {

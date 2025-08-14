@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { sendMail } from ".";
 import { sendEventEmailWithHistory } from "@/lib/unifiedEmailService";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
-import { Settings, User } from "@/lib/mongodb";
+import { Settings, User, EmailHistory } from "@/lib/mongodb";
 import mongoose from "mongoose";
 import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
 import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
@@ -192,23 +192,97 @@ async function sendQueuedEmail(data: any, req: NextRequest) {
       ? sentByName
       : systemUser.name;
 
-  return await sendEventEmailWithHistory(
+  // Use the legacy sendMail function which properly handles BCC
+  // First email in array becomes TO, rest become BCC
+  const emailStatus = await sendMail(
     organizationId,
-    [email, ...emailList],
+    [email, ...emailList], // First email is TO (interviewer), rest are BCC (HR/Admins)
     emailSubject,
-    emailContent,
-    {
-      sentBy: sentById,
+    emailContent
+  );
+
+  // Create history records for all recipients
+  const historyPromises = [];
+
+  // Get provider from existing settings
+  const provider = settings?.mailConfig?.mailProvider || "unknown";
+
+  // Create history record for interviewer (primary recipient)
+  historyPromises.push(
+    EmailHistory.create({
+      organizationId: new mongoose.Types.ObjectId(organizationId),
+      sentBy: new mongoose.Types.ObjectId(sentById),
       sentByEmail: sentByEmailValue,
       sentByName: sentByNameValue,
+      recipientType: "user",
+      recipientId: new mongoose.Types.ObjectId(), // Would need interviewer ID if available
+      recipientEmail: email,
+      recipientName: interviewerName,
+      subject: emailSubject,
+      body: emailContent,
+      cc: [],
+      bcc: emailList,
+      replyTo: sentByEmailValue,
+      attachments: [],
+      status: emailStatus.status === 200 ? "sent" : "failed",
+      sentAt: emailStatus.status === 200 ? new Date() : undefined,
+      error: emailStatus.status !== 200 ? emailStatus.message : undefined,
+      provider,
       metadata: {
-        candidateId,
-        jobId,
-        templateUsed: "assignment-event",
+        candidateId: new mongoose.Types.ObjectId(candidateId),
+        jobId: jobId ? new mongoose.Types.ObjectId(jobId) : undefined,
+        templateUsed: "interview-assignment",
         eventType: "interview_assignment",
       },
-    }
+    })
   );
+
+  // Create history records for BCC recipients (HR/Admins)
+  const hrHistoryPromises = emailList.map(async (hrEmail) => {
+    try {
+      const hrUser = await User.findOne({
+        email: hrEmail,
+        organizationId: new mongoose.Types.ObjectId(organizationId),
+      })
+        .select("_id name")
+        .lean();
+
+      return await EmailHistory.create({
+        organizationId: new mongoose.Types.ObjectId(organizationId),
+        sentBy: new mongoose.Types.ObjectId(sentById),
+        sentByEmail: sentByEmailValue,
+        sentByName: sentByNameValue,
+        recipientType: "user",
+        recipientId: hrUser?._id || new mongoose.Types.ObjectId(),
+        recipientEmail: hrEmail,
+        recipientName: hrUser?.name || hrEmail,
+        subject: emailSubject,
+        body: emailContent,
+        cc: [],
+        bcc: [],
+        replyTo: sentByEmailValue,
+        attachments: [],
+        status: emailStatus.status === 200 ? "sent" : "failed",
+        sentAt: emailStatus.status === 200 ? new Date() : undefined,
+        error: emailStatus.status !== 200 ? emailStatus.message : undefined,
+        provider,
+        metadata: {
+          candidateId: new mongoose.Types.ObjectId(candidateId),
+          jobId: jobId ? new mongoose.Types.ObjectId(jobId) : undefined,
+          templateUsed: "interview-assignment",
+          eventType: "interview_assignment",
+        },
+      });
+    } catch (error) {
+      console.error(`Failed to create history for ${hrEmail}:`, error);
+      return null;
+    }
+  });
+
+  historyPromises.push(...hrHistoryPromises);
+  await Promise.all(historyPromises);
+
+  return emailStatus;
 }
 
 export async function PUT(req: NextRequest) {
