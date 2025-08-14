@@ -31,7 +31,7 @@ export function broadcastCandidateUpdate(
     // console.log("CANDIDATE HISTORY: ", candidateToBeSent.history);
     const encodedSSE = signToken(candidate);
     const data = `data: ${JSON.stringify({ type: "candidateUpdate", candidate: encodedSSE })}\n\n`;
-    console.log("🥶🥶🥶🥶 caniddte in: ", candidate);
+    // console.log("🥶🥶🥶🥶 caniddte in: ", candidate);
     // console.log(data);
     const clientsCount = Array.from(global.sseClients.entries()).length;
     // console.log("⛔⛔⛔⛔ ", candidate?.followUp);

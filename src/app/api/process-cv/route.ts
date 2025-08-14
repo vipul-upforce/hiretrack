@@ -27,61 +27,39 @@ interface ExtendedProcessedResumeData extends ProcessedResumeData {
 
 async function processResume(
   base64Resume: string,
-  settings: any,
+  decryptedAiProviders: any, // Changed: Accept already decrypted AI providers
   organizationId: string
 ): Promise<ExtendedProcessedResumeData> {
   try {
-    // Get AI providers configuration with backward compatibility
-    let aiProviders = settings.aiProviders;
-    
-    // Handle backward compatibility for legacy Gemini-only installations
-    if (!aiProviders) {
-      // Check if there's a legacy gemini configuration
-      const legacyGeminiKey = settings.gemini?.gemini_key || "";
-      
-      aiProviders = {
-        activeProvider: "gemini",
-        gemini: {
-          api_key: legacyGeminiKey,
-          model: "gemini-1.5-flash",
-          customModel: "",
-        },
-        openai: { 
-          api_key: "",
-          model: "gpt-4o-mini",  
-          customModel: "",
-        },
-        anthropic: { 
-          api_key: "",
-          model: "claude-3-5-sonnet-20241022",
-          customModel: "",
-        },
-        perplexity: { 
-          api_key: "",
-          model: "sonar-pro",
-          customModel: "",
-        },
-      };
-    }
-
-    // Decrypt API keys from database
-    aiProviders = decryptAIProviderKeys(aiProviders);
+    // Use the already decrypted AI providers directly
+    const aiProviders = decryptedAiProviders;
 
     const activeProvider = aiProviders.activeProvider;
     const apiKey = aiProviders[activeProvider]?.api_key;
 
+    console.log("processResume - Active Provider:", activeProvider);
+    console.log("processResume - Has API Key:", !!apiKey);
+
     if (!apiKey) {
-      throw new Error(`API key not found for active provider: ${activeProvider}`);
+      throw new Error(
+        `API key not found for active provider: ${activeProvider}`
+      );
     }
 
     // Get the appropriate AI provider
     const provider = AIProviderFactory.getProvider(activeProvider);
-    
+
     // Get the selected model for this provider
-    const selectedModel = aiProviders[activeProvider]?.customModel || aiProviders[activeProvider]?.model;
-    
+    const selectedModel =
+      aiProviders[activeProvider]?.customModel ||
+      aiProviders[activeProvider]?.model;
+
     // Process the resume using the selected provider and model
-    const parsedData = await provider.processResume(base64Resume, apiKey, selectedModel);
+    const parsedData = await provider.processResume(
+      base64Resume,
+      apiKey,
+      selectedModel
+    );
 
     // Check if the response indicates an invalid CV
     if (parsedData.error) {
@@ -200,12 +178,12 @@ export async function POST(request: NextRequest) {
 
     // Check if AI providers are configured with backward compatibility
     let aiProviders = settings.aiProviders;
-    
+
     // Handle backward compatibility for legacy Gemini-only installations
     if (!aiProviders) {
       // Check if there's a legacy gemini configuration
       const legacyGeminiKey = settings.gemini?.gemini_key || "";
-      
+
       aiProviders = {
         activeProvider: "gemini",
         gemini: {
@@ -213,35 +191,53 @@ export async function POST(request: NextRequest) {
           model: "gemini-1.5-flash",
           customModel: "",
         },
-        openai: { 
+        openai: {
           api_key: "",
-          model: "gpt-4o-mini",  
+          model: "gpt-4o-mini",
           customModel: "",
         },
-        anthropic: { 
+        anthropic: {
           api_key: "",
           model: "claude-3-5-sonnet-20241022",
           customModel: "",
         },
-        perplexity: { 
+        perplexity: {
           api_key: "",
           model: "sonar-pro",
           customModel: "",
         },
       };
-      
+
       console.log("Using backward compatibility for legacy Gemini settings");
     }
 
-    // Decrypt API keys from database
+    // Decrypt API keys from database - MOVED UP
     aiProviders = decryptAIProviderKeys(aiProviders);
 
     const activeProvider = aiProviders.activeProvider;
     const apiKey = aiProviders[activeProvider]?.api_key;
 
+    // Add debug logging similar to evaluate API
+    console.log(
+      "AI Providers from settings:",
+      JSON.stringify(
+        {
+          activeProvider: aiProviders.activeProvider,
+          hasGeminiKey: !!aiProviders.gemini?.api_key,
+          hasOpenAIKey: !!aiProviders.openai?.api_key,
+          hasAnthropicKey: !!aiProviders.anthropic?.api_key,
+          hasPerplexityKey: !!aiProviders.perplexity?.api_key,
+        },
+        null,
+        2
+      )
+    );
+
     if (!apiKey) {
       return NextResponse.json(
-        { error: `${activeProvider.charAt(0).toUpperCase() + activeProvider.slice(1)} API key not found` },
+        {
+          error: `${activeProvider.charAt(0).toUpperCase() + activeProvider.slice(1)} API key not found`,
+        },
         { status: 404 }
       );
     }
@@ -287,9 +283,15 @@ export async function POST(request: NextRequest) {
         const arrayBuffer = await file.arrayBuffer();
         const base64Data = Buffer.from(arrayBuffer).toString("base64");
 
+        // Log the base64 data length for debugging
+        console.log(
+          `Processing file: ${file.name}, Base64 length: ${base64Data.length}`
+        );
+
+        // FIXED: Pass decrypted AI providers instead of raw settings
         const candidateData = await processResume(
           base64Data,
-          settings,
+          aiProviders, // Pass the already decrypted aiProviders
           organizationId as string
         );
 

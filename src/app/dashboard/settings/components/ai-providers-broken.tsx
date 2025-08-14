@@ -2,8 +2,20 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { ErrorMessage, Form, Formik } from "formik";
@@ -15,8 +27,22 @@ import {
 } from "@/lib/features/settings/settingsApi";
 import React, { useState, useEffect } from "react";
 import { AIProviderType } from "@/lib/ai-providers";
-import { CheckCircle, XCircle, Loader2, Eye, EyeOff, Bot, Key, Shield, Settings } from "lucide-react";
-import { AI_PROVIDER_MODELS, getDefaultModel, getProviderModels } from "@/lib/ai-providers/models-config";
+import {
+  CheckCircle,
+  XCircle,
+  Loader2,
+  Eye,
+  EyeOff,
+  Bot,
+  Key,
+  Shield,
+  Settings,
+} from "lucide-react";
+import {
+  AI_PROVIDER_MODELS,
+  getDefaultModel,
+  getProviderModels,
+} from "@/lib/ai-providers/models-config";
 
 export interface AIProvidersValues {
   activeProvider: AIProviderType;
@@ -34,19 +60,28 @@ export interface AIProvidersValues {
   perplexity_custom_model: string;
 }
 
-type FormFieldName = keyof Omit<AIProvidersValues, 'activeProvider'>;
+type FormFieldName = keyof Omit<AIProvidersValues, "activeProvider">;
 
-export default function AIProvidersConfigs({ onClose }: { onClose: () => void }) {
+export default function AIProvidersConfigs({
+  onClose,
+}: {
+  onClose: () => void;
+}) {
   const { toast } = useToast();
   const { data, isLoading, refetch } = useGetAIProvidersConfigsQuery(undefined);
   const { data: portalData } = useGetPortalConfigsQuery(undefined);
-  const [updateAIProviders, { isLoading: isUpdating }] = useUpdateAIProvidersMutation();
-  
+  const [updateAIProviders, { isLoading: isUpdating }] =
+    useUpdateAIProvidersMutation();
+
   // State for API key verification
-  const [verificationStatus, setVerificationStatus] = useState<Record<string, 'idle' | 'loading' | 'success' | 'error'>>({});
-  const [verificationMessages, setVerificationMessages] = useState<Record<string, string>>({});
+  const [verificationStatus, setVerificationStatus] = useState<
+    Record<string, "idle" | "loading" | "success" | "error">
+  >({});
+  const [verificationMessages, setVerificationMessages] = useState<
+    Record<string, string>
+  >({});
   const [showApiKeys, setShowApiKeys] = useState<Record<string, boolean>>({});
-  const [primaryColor, setPrimaryColor] = useState<string>('#6366f1');
+  const [primaryColor, setPrimaryColor] = useState<string>("#6366f1");
 
   React.useEffect(() => {
     refetch();
@@ -68,10 +103,12 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
     openai_model: data?.aiProviders?.openai?.model ?? getDefaultModel("openai"),
     openai_custom_model: data?.aiProviders?.openai?.customModel ?? "",
     anthropic_api_key: data?.aiProviders?.anthropic?.api_key ?? "",
-    anthropic_model: data?.aiProviders?.anthropic?.model ?? getDefaultModel("anthropic"),
+    anthropic_model:
+      data?.aiProviders?.anthropic?.model ?? getDefaultModel("anthropic"),
     anthropic_custom_model: data?.aiProviders?.anthropic?.customModel ?? "",
     perplexity_api_key: data?.aiProviders?.perplexity?.api_key ?? "",
-    perplexity_model: data?.aiProviders?.perplexity?.model ?? getDefaultModel("perplexity"),
+    perplexity_model:
+      data?.aiProviders?.perplexity?.model ?? getDefaultModel("perplexity"),
     perplexity_custom_model: data?.aiProviders?.perplexity?.customModel ?? "",
   };
 
@@ -87,21 +124,31 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
     perplexity_model: Yup.string().required("Model is required"),
   });
 
-  const verifyApiKey = async (provider: AIProviderType, apiKey: string, model: string) => {
+  const verifyApiKey = async (
+    provider: AIProviderType,
+    apiKey: string,
+    model: string
+  ) => {
     if (!apiKey.trim()) {
-      setVerificationStatus(prev => ({ ...prev, [provider]: 'error' }));
-      setVerificationMessages(prev => ({ ...prev, [provider]: 'Please enter an API key before verifying' }));
+      setVerificationStatus((prev) => ({ ...prev, [provider]: "error" }));
+      setVerificationMessages((prev) => ({
+        ...prev,
+        [provider]: "Please enter an API key before verifying",
+      }));
       return;
     }
 
-    setVerificationStatus(prev => ({ ...prev, [provider]: 'loading' }));
-    setVerificationMessages(prev => ({ ...prev, [provider]: 'Verifying API key and model...' }));
-    
+    setVerificationStatus((prev) => ({ ...prev, [provider]: "loading" }));
+    setVerificationMessages((prev) => ({
+      ...prev,
+      [provider]: "Verifying API key and model...",
+    }));
+
     try {
-      const response = await fetch('/api/settings/ai-providers/validate', {
-        method: 'POST',
+      const response = await fetch("/api/settings/ai-providers/validate", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           provider,
@@ -111,34 +158,37 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
       });
 
       const result = await response.json();
-      
+
       if (!response.ok) {
-        throw new Error(result.error || 'Validation failed');
+        throw new Error(result.error || "Validation failed");
       }
 
       const isValid = result.isValid;
-      setVerificationStatus(prev => ({ ...prev, [provider]: isValid ? 'success' : 'error' }));
-      
+      setVerificationStatus((prev) => ({
+        ...prev,
+        [provider]: isValid ? "success" : "error",
+      }));
+
       // Use the message from the server if available, otherwise use default messages
-      const message = isValid 
-        ? (result.message || `✅ API key and model are valid`)
-        : (result.error || `❌ API key or model is invalid`);
-      
-      setVerificationMessages(prev => ({ 
-        ...prev, 
-        [provider]: message
+      const message = isValid
+        ? result.message || `✅ API key and model are valid`
+        : result.error || `❌ API key or model is invalid`;
+
+      setVerificationMessages((prev) => ({
+        ...prev,
+        [provider]: message,
       }));
     } catch (error) {
-      setVerificationStatus(prev => ({ ...prev, [provider]: 'error' }));
-      setVerificationMessages(prev => ({ 
-        ...prev, 
-        [provider]: `❌ Verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      setVerificationStatus((prev) => ({ ...prev, [provider]: "error" }));
+      setVerificationMessages((prev) => ({
+        ...prev,
+        [provider]: `❌ Verification failed: ${error instanceof Error ? error.message : "Unknown error"}`,
       }));
     }
   };
 
   const toggleApiKeyVisibility = (provider: string) => {
-    setShowApiKeys(prev => ({ ...prev, [provider]: !prev[provider] }));
+    setShowApiKeys((prev) => ({ ...prev, [provider]: !prev[provider] }));
   };
 
   const handleSubmit = async (values: typeof initialValues) => {
@@ -158,12 +208,14 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
           },
           anthropic: {
             api_key: values.anthropic_api_key.trim(),
-            model: values.anthropic_custom_model.trim() || values.anthropic_model,
+            model:
+              values.anthropic_custom_model.trim() || values.anthropic_model,
             customModel: values.anthropic_custom_model.trim(),
           },
           perplexity: {
             api_key: values.perplexity_api_key.trim(),
-            model: values.perplexity_custom_model.trim() || values.perplexity_model,
+            model:
+              values.perplexity_custom_model.trim() || values.perplexity_model,
             customModel: values.perplexity_custom_model.trim(),
           },
         };
@@ -199,7 +251,7 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
       id: "gemini",
       name: "Google Gemini",
       description: "Google's Gemini AI with PDF and vision support",
-      icon: Bot,
+      icon: Key,
       apiKeyField: "gemini_api_key",
       modelField: "gemini_model",
       customModelField: "gemini_custom_model",
@@ -251,7 +303,8 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
                   Active AI Provider
                 </CardTitle>
                 <CardDescription>
-                  Select which AI provider to use for resume processing and candidate evaluation
+                  Select which AI provider to use for resume processing and
+                  candidate evaluation
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -259,7 +312,9 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
                   <Label>Active Provider</Label>
                   <Select
                     value={values.activeProvider}
-                    onValueChange={(value: AIProviderType) => setFieldValue('activeProvider', value)}
+                    onValueChange={(value: AIProviderType) =>
+                      setFieldValue("activeProvider", value)
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select active provider" />
@@ -275,7 +330,11 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
                       ))}
                     </SelectContent>
                   </Select>
-                  <ErrorMessage name="activeProvider" component="div" className="text-red-500 text-sm" />
+                  <ErrorMessage
+                    name="activeProvider"
+                    component="div"
+                    className="text-red-500 text-sm"
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -284,25 +343,35 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
             <div className="grid gap-6">
               {providers.map((provider) => {
                 const isActive = values.activeProvider === provider.id;
-                const apiKey = values[provider.apiKeyField as keyof AIProvidersValues] as string;
-                const model = values[provider.modelField as keyof AIProvidersValues] as string;
-                const customModel = values[provider.customModelField as keyof AIProvidersValues] as string;
+                const apiKey = values[
+                  provider.apiKeyField as keyof AIProvidersValues
+                ] as string;
+                const model = values[
+                  provider.modelField as keyof AIProvidersValues
+                ] as string;
+                const customModel = values[
+                  provider.customModelField as keyof AIProvidersValues
+                ] as string;
                 const providerModels = getProviderModels(provider.id);
-                const status = verificationStatus[provider.id] || 'idle';
-                const message = verificationMessages[provider.id] || '';
+                const status = verificationStatus[provider.id] || "idle";
+                const message = verificationMessages[provider.id] || "";
                 const showKey = showApiKeys[provider.id] || false;
 
                 return (
-                  <Card 
-                    key={provider.id} 
+                  <Card
+                    key={provider.id}
                     className={`transition-all duration-200 ${
-                      isActive 
-                        ? `ring-2 ring-offset-2 bg-gradient-to-r from-white to-gray-50 dark:from-black dark:to-gray-950` 
-                        : 'hover:shadow-md'
+                      isActive
+                        ? `ring-2 ring-offset-2 bg-gradient-to-r from-white to-gray-50 dark:from-black dark:to-gray-950`
+                        : "hover:shadow-md"
                     }`}
-                    style={isActive ? {
-                      "--tw-ring-color": primaryColor
-                    } as React.CSSProperties : undefined}
+                    style={
+                      isActive
+                        ? ({
+                            "--tw-ring-color": primaryColor,
+                          } as React.CSSProperties)
+                        : undefined
+                    }
                   >
                     <CardHeader>
                       <div className="flex items-center justify-between">
@@ -314,7 +383,7 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
                             <CardTitle className="flex items-center gap-2">
                               {provider.name}
                               {isActive && (
-                                <Badge 
+                                <Badge
                                   className="text-white font-medium"
                                   style={{ backgroundColor: primaryColor }}
                                 >
@@ -322,7 +391,9 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
                                 </Badge>
                               )}
                             </CardTitle>
-                            <CardDescription>{provider.description}</CardDescription>
+                            <CardDescription>
+                              {provider.description}
+                            </CardDescription>
                           </div>
                         </div>
                       </div>
@@ -339,7 +410,12 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
                               type={showKey ? "text" : "password"}
                               placeholder={`Enter ${provider.name} API key`}
                               value={apiKey}
-                              onChange={(e) => setFieldValue(provider.apiKeyField, e.target.value)}
+                              onChange={(e) =>
+                                setFieldValue(
+                                  provider.apiKeyField,
+                                  e.target.value
+                                )
+                              }
                               className="pr-10"
                             />
                             <Button
@@ -347,7 +423,9 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
                               variant="ghost"
                               size="sm"
                               className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                              onClick={() => toggleApiKeyVisibility(provider.id)}
+                              onClick={() =>
+                                toggleApiKeyVisibility(provider.id)
+                              }
                             >
                               {showKey ? (
                                 <EyeOff className="h-4 w-4" />
@@ -359,23 +437,35 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
                           <Button
                             type="button"
                             variant="outline"
-                            onClick={() => verifyApiKey(provider.id as AIProviderType, apiKey, customModel || model)}
-                            disabled={status === 'loading' || !apiKey.trim()}
+                            onClick={() =>
+                              verifyApiKey(
+                                provider.id as AIProviderType,
+                                apiKey,
+                                customModel || model
+                              )
+                            }
+                            disabled={status === "loading" || !apiKey.trim()}
                             className="flex items-center gap-2"
                           >
-                            {status === 'loading' ? (
+                            {status === "loading" ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : status === 'success' ? (
+                            ) : status === "success" ? (
                               <CheckCircle className="h-4 w-4 text-green-600" />
-                            ) : status === 'error' ? (
+                            ) : status === "error" ? (
                               <XCircle className="h-4 w-4 text-red-600" />
                             ) : null}
                             Verify
                           </Button>
                         </div>
-                        <ErrorMessage name={provider.apiKeyField} component="div" className="text-red-500 text-sm" />
+                        <ErrorMessage
+                          name={provider.apiKeyField}
+                          component="div"
+                          className="text-red-500 text-sm"
+                        />
                         {message && (
-                          <p className={`text-sm ${status === 'success' ? 'text-green-600' : status === 'error' ? 'text-red-600' : 'text-gray-600'}`}>
+                          <p
+                            className={`text-sm ${status === "success" ? "text-green-600" : status === "error" ? "text-red-600" : "text-gray-600"}`}
+                          >
                             {message}
                           </p>
                         )}
@@ -386,28 +476,42 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
                         <Label htmlFor={provider.modelField}>Model</Label>
                         <Select
                           value={model}
-                          onValueChange={(value) => setFieldValue(provider.modelField, value)}
+                          onValueChange={(value) =>
+                            setFieldValue(provider.modelField, value)
+                          }
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select model" />
                           </SelectTrigger>
                           <SelectContent>
                             {providerModels.map((modelInfo) => (
-                              <SelectItem key={modelInfo.id} value={modelInfo.id}>
+                              <SelectItem
+                                key={modelInfo.id}
+                                value={modelInfo.id}
+                              >
                                 <div className="flex flex-col">
                                   <div className="flex items-center gap-2">
                                     {modelInfo.name}
                                     {modelInfo.isDefault && (
-                                      <Badge variant="secondary" className="text-xs">
+                                      <Badge
+                                        variant="secondary"
+                                        className="text-xs"
+                                      >
                                         Default
                                       </Badge>
                                     )}
                                     {modelInfo.isDeprecated && (
-                                      <Badge variant="destructive" className="text-xs">
+                                      <Badge
+                                        variant="destructive"
+                                        className="text-xs"
+                                      >
                                         Deprecated
                                       </Badge>
                                     )}
-                                    <Badge variant="outline" className="text-xs">
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs"
+                                    >
                                       {modelInfo.capabilities.costTier}
                                     </Badge>
                                   </div>
@@ -419,38 +523,75 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
                             ))}
                           </SelectContent>
                         </Select>
-                        <ErrorMessage name={provider.modelField} component="div" className="text-red-500 text-sm" />
+                        <ErrorMessage
+                          name={provider.modelField}
+                          component="div"
+                          className="text-red-500 text-sm"
+                        />
                       </div>
 
                       {/* Custom Model Field */}
                       <div className="space-y-2">
-                        <Label htmlFor={provider.customModelField}>Custom Model (Optional)</Label>
+                        <Label htmlFor={provider.customModelField}>
+                          Custom Model (Optional)
+                        </Label>
                         <Input
                           id={provider.customModelField}
                           name={provider.customModelField}
                           placeholder="Enter custom model name to override selection above"
                           value={customModel}
-                          onChange={(e) => setFieldValue(provider.customModelField, e.target.value)}
+                          onChange={(e) =>
+                            setFieldValue(
+                              provider.customModelField,
+                              e.target.value
+                            )
+                          }
                         />
                         <p className="text-xs text-gray-500">
-                          Leave empty to use the selected model above. Enter a custom model name to use a newer or unlisted model.
+                          Leave empty to use the selected model above. Enter a
+                          custom model name to use a newer or unlisted model.
                         </p>
                       </div>
 
                       {/* Model Capabilities */}
                       {model && (
                         <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                          <h4 className="text-sm font-medium mb-2">Model Capabilities</h4>
+                          <h4 className="text-sm font-medium mb-2">
+                            Model Capabilities
+                          </h4>
                           <div className="flex flex-wrap gap-2">
                             {(() => {
-                              const modelInfo = providerModels.find(m => m.id === model);
+                              const modelInfo = providerModels.find(
+                                (m) => m.id === model
+                              );
                               if (!modelInfo) return null;
                               const caps = modelInfo.capabilities;
                               return (
                                 <>
-                                  {caps.supportsPDF && <Badge variant="outline" className="text-xs">PDF Support</Badge>}
-                                  {caps.supportsVision && <Badge variant="outline" className="text-xs">Vision</Badge>}
-                                  {caps.supportsJSON && <Badge variant="outline" className="text-xs">JSON Mode</Badge>}
+                                  {caps.supportsPDF && (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs"
+                                    >
+                                      PDF Support
+                                    </Badge>
+                                  )}
+                                  {caps.supportsVision && (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs"
+                                    >
+                                      Vision
+                                    </Badge>
+                                  )}
+                                  {caps.supportsJSON && (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs"
+                                    >
+                                      JSON Mode
+                                    </Badge>
+                                  )}
                                   <Badge variant="outline" className="text-xs">
                                     {caps.maxTokens.toLocaleString()} tokens
                                   </Badge>
@@ -471,8 +612,8 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={isUpdating}
                 style={{ backgroundColor: primaryColor }}
                 className="text-white hover:opacity-90"
@@ -483,7 +624,7 @@ export default function AIProvidersConfigs({ onClose }: { onClose: () => void })
                     Saving...
                   </>
                 ) : (
-                  'Save Settings'
+                  "Save Settings"
                 )}
               </Button>
             </div>
