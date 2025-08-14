@@ -91,7 +91,11 @@ async function sendQueuedEmail(data: any, req: NextRequest) {
     "system@hiretrack.com";
 
   const startDateString = startTime
-    ? await getFormattedDate(req, new Date(startTime))
+    ? ((await getFormattedDate(req, new Date(startTime))) as string) +
+      " " +
+      settings.timeZone.offset +
+      " " +
+      settings.timeZone.name
     : "N/A";
   const startDate = startTime
     ? ((await getFormattedDate(req, new Date(startTime), true)) as Date)
