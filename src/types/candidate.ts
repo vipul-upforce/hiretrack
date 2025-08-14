@@ -113,12 +113,12 @@ interface Assignment {
   duration?: string;
   assignedAt: string;
   googleMeet?: {
-        eventId: string,
-        meetingLink: string,
-        htmlLink: string,
-        summary: string,
-        description: string,
-      },
+    eventId: string;
+    meetingLink: string;
+    htmlLink: string;
+    summary: string;
+    description: string;
+  };
   status?: string;
   assignment?: { status: string };
   jobId?: Job;

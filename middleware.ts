@@ -130,7 +130,8 @@ export async function middleware(request: NextRequest) {
     if (userRole === "hr") {
       if (
         pathname?.includes("/auth/signup") ||
-        pathname?.includes("/dashboard/settings")
+        pathname?.includes("/dashboard/settings") ||
+        pathname?.includes("/dashboard/analytics")
       ) {
         return NextResponse.redirect(new URL("/dashboard", request.url));
       }
@@ -215,6 +216,7 @@ const unauthorizedInterviewerPages = [
   "/dashboard/settings",
   "/dashboard/search",
   "/dashboard/cv-upload",
+  "/dashboard/analytics",
   "/api/organization/tags",
 ];
 

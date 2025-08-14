@@ -976,7 +976,7 @@ export function CandidateDetailsDialog({
           refetch={refetch}
           isOpen={isAssigning}
           onOpenChange={setIsAssigning}
-          onUpdate={onUpdate || (() => { })}
+          onUpdate={onUpdate || (() => {})}
           setLocalCandidate={setLocalCandidate}
           refetchAssignment={refetchAssignment}
           onSuccess={() => {
@@ -1032,7 +1032,7 @@ export function CandidateDetailsDialog({
           candidate={localCandidate}
           isOpen={isEditing}
           onOpenChange={setIsEditing}
-          onUpdate={onUpdate || (() => { })}
+          onUpdate={onUpdate || (() => {})}
           refetchAssignment={refetchAssignment}
           onSuccess={async () => {
             await refetch();
@@ -1054,7 +1054,7 @@ export function CandidateDetailsDialog({
         onCancel={() => setConfirmUnassignOpen(false)}
         isLoading={isLoading}
         loadingText="Marking as done..."
-      // className="sm:max-w-[300px]"
+        // className="sm:max-w-[300px]"
       />
       {/* <ConfirmationDialog
         title="Mark as Done"

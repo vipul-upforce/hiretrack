@@ -18,6 +18,7 @@ import LoaderSkeletonCalender from "./components/loader-skeleton-calender";
 import { RenderEvent } from "./components/renderCalendarEvent";
 import { useSSE } from "@/hooks/useSSE";
 import useRoles from "@/hooks/useRoles";
+import { useSelector } from "react-redux";
 
 interface Interviewer {
   _id: string;
@@ -108,6 +109,7 @@ export default function CalendarPage() {
   const [searchText, setSearchText] = useState("");
   const [filterText, setFilterText] = useState("");
 
+  const { user } = useSelector((state: any) => state.auth || {});
   const role = useRoles();
   const { candidates: sseCandidates } = useSSE(
     role || "",
@@ -133,8 +135,10 @@ export default function CalendarPage() {
   const mergedAssignments = (
     assignments && assignments[0]?.data ? [...assignments[0].data] : []
   ).map((assignment: CandidateAssignment) => {
-    const sseCandidate = sseCandidates.find(
-      (c: CandidateAssignment) => c._id === assignment._id
+    const sseCandidate = sseCandidates.find((c: CandidateAssignment) =>
+      role === "interviewer"
+        ? c._id === assignment?._id && c.assignment?.interviewerId === user._id
+        : c._id === assignment._id
     );
     return sseCandidate || assignment;
   });
@@ -178,7 +182,7 @@ export default function CalendarPage() {
         searchRegex.test(
           (typeof assignment?.assignment?.interviewerId === "object" &&
             assignment?.assignment?.interviewerId?.name) ||
-          ""
+            ""
         ) ||
         (allSkills.length > 0 &&
           allSkills.some((skill) => searchRegex.test(skill || "")))
@@ -196,9 +200,10 @@ export default function CalendarPage() {
         : undefined;
 
       const hasGoogleMeet = candidate?.assignment?.googleMeet;
-      const baseTitle = candidate?.jobId && typeof candidate.jobId === "object"
-        ? candidate?.jobId?.title
-        : "Unknown";
+      const baseTitle =
+        candidate?.jobId && typeof candidate.jobId === "object"
+          ? candidate?.jobId?.title
+          : "Unknown";
       const title = hasGoogleMeet ? `📹 ${baseTitle}` : baseTitle;
 
       return {
@@ -224,22 +229,22 @@ export default function CalendarPage() {
               typeof candidate?.jobId === "string"
                 ? undefined
                 : {
-                  title: (candidate?.jobId as Job)?.title,
-                  description: (candidate?.jobId as Job)?.description,
-                },
+                    title: (candidate?.jobId as Job)?.title,
+                    description: (candidate?.jobId as Job)?.description,
+                  },
           },
           interviewer:
             typeof candidate?.assignment?.interviewerId === "string"
               ? {
-                _id: candidate?.assignment?.interviewerId,
-                name: "Unknown",
-                email: "Unknown",
-              }
+                  _id: candidate?.assignment?.interviewerId,
+                  name: "Unknown",
+                  email: "Unknown",
+                }
               : candidate?.assignment?.interviewerId || {
-                _id: "",
-                name: "Unknown",
-                email: "Unknown",
-              },
+                  _id: "",
+                  name: "Unknown",
+                  email: "Unknown",
+                },
         },
       };
     }) || [];

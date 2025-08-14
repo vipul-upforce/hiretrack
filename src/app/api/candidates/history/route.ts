@@ -314,13 +314,14 @@ export async function PUT(request: NextRequest) {
     }
     let fileStorage = "local";
     let organizationId;
+    let userData;
 
     const token = request.cookies.get("auth_token");
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
         String(token?.value)
       );
-      const userData = decryptedResponse.user;
+      userData = decryptedResponse.user;
       if (decryptedResponse.success) {
         fileStorage = userData.fileStorage || "local";
         organizationId = userData.organizationId || "";
@@ -354,6 +355,9 @@ export async function PUT(request: NextRequest) {
         ...updatedFiles.images,
       ];
     }
+    if (data.newEntry.note && !data.newEntry.note.userId) {
+      data.newEntry.note.userId = userData.id;
+    }
 
     if (!Candidate) {
       throw new Error("Database not connceted");
@@ -374,6 +378,10 @@ export async function PUT(request: NextRequest) {
         {
           path: "jobId",
           select: "title description ",
+        },
+        {
+          path: "followUp.userId",
+          select: "name _id email",
         },
       ])
       .lean();
