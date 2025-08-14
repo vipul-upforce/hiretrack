@@ -21,6 +21,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useUpdateUserMutation } from "@/lib/features/users/usersApi";
 import { userFormVaidationSchema } from "../schemas/userFormValidation.schema";
+import { useDispatch, useSelector } from "react-redux";
+import { updateUser as updateUserInState } from "@/lib/redux/authSlice";
 
 interface SelectedUser {
   id?: string;
@@ -44,6 +46,8 @@ export function EditUserDialog({
   onSuccess,
 }: EditUserDialogProps) {
   const { toast } = useToast();
+  const dispatch = useDispatch();
+  const { user } = useSelector((state: any) => state.auth || {});
   const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
 
   const handleUpdate = async (values: SelectedUser) => {
@@ -54,6 +58,19 @@ export function EditUserDialog({
         email: values.email.toLowerCase().trim(),
         name: values.name.trim(),
       }).unwrap();
+
+      // Check if the updated user's email matches the current user's email in state
+      if (user && user.email === values.email.toLowerCase().trim()) {
+        // Update the Redux state with the new user data
+        dispatch(
+          updateUserInState({
+            ...values,
+            email: values.email.toLowerCase().trim(),
+            name: values.name.trim(),
+          })
+        );
+      }
+
       toast({ title: "Success", description: "User updated successfully" });
       onOpenChange(false);
       onSuccess();
@@ -79,8 +96,8 @@ export function EditUserDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
+      <DialogContent className="p-0 overflow-hidden flex flex-col">
+        <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle>Edit User</DialogTitle>
         </DialogHeader>
         <Formik
@@ -100,7 +117,7 @@ export function EditUserDialog({
             values,
             setFieldValue,
           }) => (
-            <Form className="space-y-4">
+            <Form className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
               <div>
                 <Label>Name</Label>
                 <Field
@@ -166,7 +183,7 @@ export function EditUserDialog({
                 </Label>
               </div>
 
-              <div className="flex justify-end">
+              <div className="flex justify-end border-t bg-background px-6 py-4 sticky bottom-0 z-10">
                 <Button
                   type="submit"
                   disabled={isUpdating}

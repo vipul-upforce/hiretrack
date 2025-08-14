@@ -51,9 +51,9 @@ export const RenderInterviewerAssignments = ({
                 <div>
                   <p className="text-sm text-muted-foreground mb-1.5">Skills</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {assignment.skills.slice(0, 3).map((skill) => (
+                    {assignment.skills.slice(0, 3).map((skill, skillIndex) => (
                       <Badge
-                        key={skill}
+                        key={`${assignment.id}-skill-${skillIndex}-${skill}`}
                         variant="secondary"
                         className="text-xs"
                       >

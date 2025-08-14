@@ -8,7 +8,7 @@ export const signToken = (payload: any) => {
     JSON.stringify(payload),
     JWT_SECRET
   ).toString();
-  return jwt.sign({ user: encryptedPayload }, JWT_SECRET, { expiresIn: "1m" });
+  return jwt.sign({ user: encryptedPayload }, JWT_SECRET, { expiresIn: "30d" });
 };
 
 export const verifyToken = (token: string) => {

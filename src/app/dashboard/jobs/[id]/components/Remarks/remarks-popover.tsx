@@ -52,8 +52,7 @@ const RemarksPopover = ({
                           {remark?.rating}/5
                           <Star
                             size={"15px"}
-                            className="mt-[1px]"
-                            style={{ color: "orange" }}
+                            className="mt-[1px] text-amber-500 dark:text-amber-400"
                           />
                         </div>
                       )}

@@ -15,8 +15,16 @@ export async function GET(req: NextRequest) {
     }
 
     await dbConnect();
+    
+    // Give models a moment to initialize if they haven't already
+    let retries = 0;
+    while (!User && retries < 5) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      retries++;
+    }
+    
     if (!User) {
-      return NextResponse.json({ error: "User not found" }, { status: 400 });
+      return NextResponse.json({ error: "Database models not initialized" }, { status: 500 });
     }
 
     const users = await User.find(
@@ -43,6 +51,13 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: Request) {
   await dbConnect();
+  
+  // Give models a moment to initialize if they haven't already
+  let retries = 0;
+  while ((!User || !Organization) && retries < 5) {
+    await new Promise(resolve => setTimeout(resolve, 100));
+    retries++;
+  }
 
   try {
     var { adminId, organizationId } = await req.json();
@@ -55,8 +70,8 @@ export async function PUT(req: Request) {
     }
     if (!Organization) {
       return NextResponse.json(
-        { error: "Organization not found" },
-        { status: 400 }
+        { error: "Database models not initialized" },
+        { status: 500 }
       );
     }
     const organization = await Organization.findById(organizationId);
@@ -81,8 +96,8 @@ export async function PUT(req: Request) {
 
     if (!User) {
       return NextResponse.json(
-        { error: "User Model Not Found" },
-        { status: 400 }
+        { error: "Database models not initialized" },
+        { status: 500 }
       );
     }
     const updatedAdmin = await User.updateOne(

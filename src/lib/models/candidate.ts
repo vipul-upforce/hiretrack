@@ -12,6 +12,8 @@ export interface ICandidate {
     | mongoose.Schema.Types.ObjectId
     | { _id: string; title: string; description: string };
   name: string;
+  email: string;
+  contact: string; // Contact number - required
   location: string;
   organizationId: string;
   experience: number;
@@ -54,6 +56,13 @@ export interface ICandidate {
     };
     assignedAt: Date;
     time: Date;
+    googleMeet?: {
+      eventId: string;
+      meetingLink: string;
+      htmlLink: string;
+      summary: string;
+      description: string;
+    };
   };
   customFields: {
     [key: string]:
@@ -68,7 +77,6 @@ export interface ICandidate {
       | object; // Add object type to allow MongoDB documents
   };
   followUp?: FollowUp;
-  email?: string;
   scores?: {
     overall: number;
     experience: number;
@@ -78,6 +86,32 @@ export interface ICandidate {
     recommendation: string;
     notes: string;
     failure?: string;
+  };
+  checklistData?: {
+    [laneId: string]: {
+      incoming?: {
+        checklistId: string;
+        completedAt: Date;
+        completedBy: mongoose.Schema.Types.ObjectId;
+        responses: {
+          [fieldId: string]: {
+            value: any;
+            files?: CustomFieldFile[];
+          };
+        };
+      };
+      outgoing?: {
+        checklistId: string;
+        completedAt: Date;
+        completedBy: mongoose.Schema.Types.ObjectId;
+        responses: {
+          [fieldId: string]: {
+            value: any;
+            files?: CustomFieldFile[];
+          };
+        };
+      };
+    };
   };
   isDeleted: boolean;
 }
@@ -91,6 +125,8 @@ export const candidateSchema = new Schema(
     },
     organizationId: String,
     name: { type: String, required: true },
+    email: { type: String, required: true },
+    contact: { type: String, required: false },
     location: { type: String, required: false },
     experience: { type: Number, required: false },
     skills: [{ type: String }],
@@ -161,6 +197,48 @@ export const candidateSchema = new Schema(
     ],
     status: {
       type: String,
+      validate: {
+        validator: async function (status: string) {
+          // Skip validation if no status is provided
+          if (!status) return true;
+
+          // Get the job for this candidate
+          if (!this.jobId) return true; // Allow if no job assigned
+
+          const Job = mongoose.model("Job");
+          const Organization = mongoose.model("Organization");
+
+          try {
+            const job = await Job.findById(this.jobId);
+            if (!job) return true; // Allow if job not found (will be handled elsewhere)
+
+            // Check if job uses custom lanes
+            if (job.useCustomLanes && job.lanes) {
+              return job.lanes.includes(status);
+            } else {
+              // Use organization default lanes
+              const organization = await Organization.findById(
+                job.organizationId
+              );
+              if (!organization) return true;
+
+              const defaultLanes = organization.defaultLanes || [
+                "applied",
+                "screening",
+                "shortlisted",
+                "processing",
+                "accepted",
+                "rejected",
+              ];
+              return defaultLanes.includes(status);
+            }
+          } catch (error) {
+            console.warn("Lane validation error:", error);
+            return true; // Allow if validation fails to prevent blocking operations
+          }
+        },
+        message: "Status must be a valid lane for this job",
+      },
     },
     tracking: {
       createdAt: { type: Date, default: Date.now },
@@ -174,12 +252,18 @@ export const candidateSchema = new Schema(
       },
       assignedAt: Date,
       time: Date,
+      googleMeet: {
+        eventId: String,
+        meetingLink: String,
+        htmlLink: String,
+        summary: String,
+        description: String,
+      },
     },
     customFields: {
       type: Object,
       default: {},
     },
-    email: { type: String, required: false },
     scores: {
       overall: {
         type: Number,
@@ -197,6 +281,58 @@ export const candidateSchema = new Schema(
       recommendation: String,
       notes: String,
       failure: String,
+    },
+    checklistData: {
+      type: Map,
+      of: {
+        incoming: {
+          checklistId: String,
+          completedAt: Date,
+          completedBy: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+          },
+          responses: {
+            type: Map,
+            of: {
+              value: Schema.Types.Mixed,
+              files: [
+                {
+                  id: String,
+                  name: String,
+                  url: String,
+                  type: String,
+                  size: Number,
+                },
+              ],
+            },
+          },
+        },
+        outgoing: {
+          checklistId: String,
+          completedAt: Date,
+          completedBy: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+          },
+          responses: {
+            type: Map,
+            of: {
+              value: Schema.Types.Mixed,
+              files: [
+                {
+                  id: String,
+                  name: String,
+                  url: String,
+                  type: String,
+                  size: Number,
+                },
+              ],
+            },
+          },
+        },
+      },
+      default: {},
     },
     isDeleted: Boolean,
   },

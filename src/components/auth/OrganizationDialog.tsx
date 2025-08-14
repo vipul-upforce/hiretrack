@@ -44,15 +44,15 @@ const OrganizationDialog: React.FC<OrganizationDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+      <DialogContent size="md" className="p-0 overflow-hidden flex flex-col">
+        <DialogHeader className="px-6 py-4">
           <DialogTitle>Select an Organization</DialogTitle>
           <DialogDescription>
             You have accounts in multiple organizations, please continue with
             any one.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           <Label>Select your organization</Label>
           <hr></hr>
           <div className="space-y-2 max-h-[40vh] overflow-y-auto">
@@ -84,7 +84,7 @@ const OrganizationDialog: React.FC<OrganizationDialogProps> = ({
             </RadioGroup>
           </div>
           <hr />
-          <div className="flex justify-end space-x-2">
+          <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10">
             <Button
               type="button"
               variant="outline"

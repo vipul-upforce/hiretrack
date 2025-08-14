@@ -32,6 +32,7 @@ import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import { useApplyHandler } from "@/app/apply-jobs/useApplyHandler";
 import { AddSpecificCustomFieldButton } from "@/Custom_Fields/Components/AddSpecificCustomFieldButton";
 import { CustomFieldsContext } from "@/Custom_Fields/Context";
+import { useSelector } from "react-redux";
 
 interface EditCandidateDialogProps {
   candidate: Candidate;
@@ -138,7 +139,10 @@ export function EditCandidateDialog({
   );
   const pathname = usePathname();
   const [parsedResumeData, setParsedResume] = useState<Resume | null>(null);
-  const [user, setuser] = useState<User | null>(null);
+  // const [user, setuser] = useState<User | null>(null);
+  const { user }: { user: User } = useSelector(
+    (state: any) => state.auth || {}
+  );
   const { formikRef, handleApply } = useApplyHandler<any>();
   const {
     handleAddCustomField,
@@ -148,15 +152,15 @@ export function EditCandidateDialog({
     setSelectedFormId,
   } = useContext(CustomFieldsContext);
   useEffect(() => {
-    (async () => {
-      const token = Cookies.get("token");
-      if (token) {
-        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-        if (decryptedResponse.success && decryptedResponse.user) {
-          setuser(decryptedResponse.user);
-        }
-      }
-    })();
+    // (async () => {
+    //   const token = Cookies.get("token");
+    //   if (token) {
+    //     const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+    //     if (decryptedResponse.success && decryptedResponse.user) {
+    //       setuser(decryptedResponse.user);
+    //     }
+    //   }
+    // })();
     setStepName("Candidate");
     if (customFields) {
       const candidateForm = Object.entries(customFields).find(
@@ -179,6 +183,7 @@ export function EditCandidateDialog({
   }, [customFields, setSelectedFormId, setStepName]);
 
   const handleSubmit = async (values: Candidate) => {
+    // debugger;
     const fileNames = values.attachments.map((file) => file.name);
     const hasDuplicates = new Set(fileNames).size !== fileNames.length;
 
@@ -304,7 +309,7 @@ export function EditCandidateDialog({
       const previousInterviewer =
         typeof candidate.assignment?.interviewerId === "object"
           ? candidate.assignment.interviewerId.name
-          : "";
+          : null;
       const previousInterviewerId =
         typeof candidate.assignment?.interviewerId === "object"
           ? Object(candidate.assignment.interviewerId._id)
@@ -313,7 +318,7 @@ export function EditCandidateDialog({
       const nextInterviewer =
         result && typeof result.assignment?.interviewerId === "object"
           ? result.assignment.interviewerId.name
-          : "";
+          : null;
       const nextInterviewerId =
         result && typeof result.assignment?.interviewerId === "object"
           ? Object(result.assignment.interviewerId._id)
@@ -337,7 +342,7 @@ export function EditCandidateDialog({
         title: title,
         currentInterviewer: nextInterviewerId,
         previousInterviewer: previousInterviewerId,
-        assignmentBy: user ? user.id : "",
+        assignmentBy: user ? user.id : null,
         note: {
           description: "",
           date: "",
@@ -349,8 +354,8 @@ export function EditCandidateDialog({
 
       if (nextInterviewer && nextInterviewer !== "") {
         await updateCandidateHistory({
-          candidateId: updatedCandidate._id || "",
-          jobId: updatedCandidate?.jobId || "",
+          candidateId: updatedCandidate._id || null,
+          jobId: updatedCandidate?.jobId || null,
           newEntry: newHistoryEntry,
         }).unwrap();
       }
@@ -406,14 +411,15 @@ export function EditCandidateDialog({
       reader.onerror = (error) => reject(error);
     });
   };
-  let interviewerId = "";
+  let interviewerId = null;
   if (candidate?.assignment?.interviewerId) {
+    // debugger;
     if (typeof candidate.assignment.interviewerId === "string") {
       interviewerId =
         candidate.assignment.interviewerId === "-1"
-          ? ""
+          ? null
           : candidate.assignment.interviewerId;
-    } else {
+    } else if (candidate.assignment.interviewerId._id) {
       interviewerId = candidate.assignment.interviewerId._id.replace(/"/g, "");
     }
   }
@@ -423,14 +429,15 @@ export function EditCandidateDialog({
     resume: candidate.resume,
     attachments: candidate.attachments,
     email: candidate.email, // Added email to initial values
-    assignment: candidate.assignment
-      ? {
-          assignment: candidate.assignment.assignment,
-          interviewerId,
-          time: candidate.assignment.time,
-          assignedAt: candidate.assignment.assignedAt,
-        }
-      : null,
+    assignment:
+      candidate.assignment && Object.keys(candidate.assignment).length > 1
+        ? {
+            assignment: candidate.assignment.assignment,
+            interviewerId,
+            time: candidate.assignment.time,
+            assignedAt: candidate.assignment.assignedAt,
+          }
+        : null,
     customFields: getDefaultValues(candidate.customFields || {}),
   };
 
@@ -447,10 +454,9 @@ export function EditCandidateDialog({
       <DialogContent
         className={`sm:max-w-[80vw] ${
           candidate.resume ? "xl:max-w-[65vw]" : "xl:max-w-[50vw]"
-        } h-[90vh] p-0 flex flex-col justify-between overflow-hidden`}
+        } h-[90vh] flex flex-col justify-between overflow-hidden`}
       >
-        <DialogHeader className="px-6 py-8 border-b">
-          {/* <DialogHeader className='flex-shrink-0 px-6 py-4 border-b'> */}
+        <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle>Edit Candidate</DialogTitle>
         </DialogHeader>
         <Formik
@@ -461,9 +467,9 @@ export function EditCandidateDialog({
         >
           {({ isSubmitting, errors, setFieldValue, dirty }) => (
             // <Form className='flex flex-col h-[calc(90vh-80px)] overflow-hidden border-t '>
-            <Form className="flex flex-col flex-1 min-h-0">
+            <Form className="flex flex-col flex-1 min-h-0 overflow-hidden">
               <FormUpdater parsedResumeData={parsedResumeData} />
-              <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 pt-0 h-full">
+              <div className="flex-1 overflow-y-auto px-6 py-4">
                 <CandidateForm
                   onFileUpload={async (file: File) => {
                     setFieldValue("resume", file);
@@ -472,13 +478,14 @@ export function EditCandidateDialog({
                   isEditMode={true}
                 />
               </div>
-              <div className="flex justify-between space-x-2 border-t bg-background px-6 py-4">
+              <div className="flex justify-between space-x-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10">
                 <AddSpecificCustomFieldButton
                   candidateId={candidate._id}
+                  candidateName={candidate.name}
                   onSave={(newField) => {
                     handleAddCustomField(
                       newField,
-                      selectedFormId?.formId || ""
+                      selectedFormId?.formId || null
                     );
                   }}
                 />
@@ -503,6 +510,7 @@ export function EditCandidateDialog({
                       // scrollToErrorMassage(errors);
                     }}
                     type={Object.keys(errors).length == 0 ? "button" : "submit"}
+                    variant="success"
                   >
                     {isSubmitting ? "Saving..." : "Save Changes"}
                   </Button>

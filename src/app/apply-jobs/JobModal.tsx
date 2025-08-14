@@ -6,6 +6,14 @@ import { useState, useEffect } from "react";
 import ApplyOptions from "./ApplyOptions";
 import { hasAppliedAsGuest } from "./ApplyAsGuest";
 import "../../components/ui/rte/rteStyles.css";
+import {
+  Briefcase,
+  Clock,
+  X,
+  ArrowRight,
+  CheckCircle,
+  Plus,
+} from "lucide-react";
 
 // Define a type for the job object
 interface Job {
@@ -27,6 +35,16 @@ interface JobModalProps {
   readOnly: boolean;
 }
 
+// Add salary interface to job
+interface JobWithSalary extends Job {
+  salary?: {
+    min: number;
+    max: number;
+    inText: string;
+    isPrivate: boolean;
+  };
+}
+
 export default function JobModal({
   job,
   isOpen,
@@ -38,8 +56,34 @@ export default function JobModal({
   const [isPendingOptionsOpen, setIsPendingOptionsOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [alreadyApplied, setAlreadyApplied] = useState(false);
+  const [primaryColor, setPrimaryColor] = useState<string>("#6366f1");
+  const [secondaryColor, setSecondaryColor] = useState<string>("#8b5cf6");
 
   const roles = useRoles();
+
+  // Fetch portal colors
+  useEffect(() => {
+    const fetchPortalColors = async () => {
+      try {
+        const response = await fetch("/api/settings/portal");
+        if (response.ok) {
+          const data = await response.json();
+          if (data.primaryColor) {
+            setPrimaryColor(data.primaryColor);
+          }
+          if (data.secondaryColor) {
+            setSecondaryColor(data.secondaryColor);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch portal colors:", error);
+      }
+    };
+
+    if (isOpen) {
+      fetchPortalColors();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (isPendingOptionsOpen && !isOpen) {
@@ -65,38 +109,26 @@ export default function JobModal({
     setIsPendingOptionsOpen(true);
     onClose();
   };
+  // console.log(/"JobModal job:", job);
 
   return (
     <>
       <Dialog open={isOpen} onClose={onClose}>
         {/* Backdrop */}
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
           aria-hidden="true"
         />
 
         {/* Modal Container */}
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <Dialog.Panel
-            className="
-            w-full h-full
-            sm:w-[calc(100%-2rem)] sm:h-[calc(100%-2rem)] sm:max-w-2xl
-            md:w-[calc(100%-3rem)] md:h-[calc(100%-3rem)] md:max-w-3xl
-            lg:w-[calc(100%-4rem)] lg:h-[calc(100%-4rem)] lg:max-w-4xl
-            xl:max-w-5xl
-            bg-white 
-            flex flex-col
-            rounded-none sm:rounded-lg md:rounded-xl lg:rounded-2xl 
-            shadow-xl
-            overflow-hidden
-          "
-          >
+        <div className="fixed inset-0 z-50 flex items-center justify-center sm:p-4">
+          <Dialog.Panel className="w-full h-full sm:w-full sm:max-w-4xl sm:max-h-[90vh] sm:h-auto bg-white dark:bg-gray-900 border-0 sm:border border-gray-200 dark:border-gray-700 rounded-none sm:rounded-lg shadow-xl overflow-hidden flex flex-col">
             {/* Header - Fixed */}
-            <div className="flex-shrink-0 bg-white border-b border-gray-100">
-              <div className="flex items-center justify-between p-4 sm:p-5 lg:p-6">
+            <div className="flex-shrink-0 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between p-4 sm:p-6">
                 <Dialog.Title
                   as="h3"
-                  className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 flex-1 pr-4 line-clamp-2"
+                  className="text-2xl font-bold text-gray-900 dark:text-white flex-1 pr-4 line-clamp-2"
                   style={{
                     wordBreak: "break-word",
                     overflowWrap: "break-word",
@@ -105,66 +137,54 @@ export default function JobModal({
                   {job.title}
                 </Dialog.Title>
 
-                {/* Close button - visible on mobile */}
+                {/* Close button */}
                 <button
                   onClick={onClose}
-                  className="flex-shrink-0 p-2 rounded-full hover:bg-gray-100 transition-colors sm:hidden"
+                  className="flex-shrink-0 p-2 sm:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                   aria-label="Close modal"
                 >
-                  <svg
-                    className="w-5 h-5 text-gray-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
+                  <X className="w-6 h-6 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-400" />
                 </button>
               </div>
             </div>
 
             {/* Content - Scrollable */}
             <div className="flex-1 overflow-y-auto min-h-0">
-              <div className="p-4 sm:p-5 lg:p-6 space-y-5 sm:space-y-6">
-                {/* Description */}
-                <div className="space-y-2">
-                  <h4 className="font-semibold text-sm sm:text-base text-gray-900">
+              <div className="p-4 sm:p-6 space-y-6">
+                {/* Description Section */}
+                <div className="space-y-3">
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
                     Job Description
                   </h4>
-                  <div
-                    id="description-marker"
-                    className="text-sm sm:text-base text-gray-700  leading-relaxed prose prose-sm sm:prose max-w-none"
-                    style={{
-                      wordBreak: "break-word",
-                      overflowWrap: "break-word",
-                    }}
-                    dangerouslySetInnerHTML={{
-                      __html: job?.description || "No description available",
-                    }}
-                  />
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                    <div
+                      id="description-marker"
+                      className="text-gray-700 dark:text-gray-300 leading-relaxed prose prose-gray dark:prose-invert max-w-none"
+                      style={{
+                        wordBreak: "break-word",
+                        overflowWrap: "break-word",
+                      }}
+                      dangerouslySetInnerHTML={{
+                        __html: job?.description || "No description available",
+                      }}
+                    />
+                  </div>
                 </div>
 
-                {/* Skills */}
+                {/* Skills Section */}
                 <div className="space-y-3">
-                  <h4 className="font-semibold text-sm sm:text-base text-gray-900">
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
                     Required Skills
                   </h4>
                   <div className="flex flex-wrap gap-2">
                     {job.skills.map((skill: string, i: number) => (
                       <span
                         key={i}
-                        className="
-                          inline-flex items-center px-2.5 py-1 sm:px-3 sm:py-1.5
-                          bg-blue-50 text-blue-700 border border-blue-200
-                          text-xs sm:text-sm font-medium rounded-full
-                          break-all
-                        "
+                        className="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full border"
                         style={{
+                          backgroundColor: `${primaryColor}10`,
+                          color: primaryColor,
+                          borderColor: `${primaryColor}30`,
                           wordBreak: "break-word",
                           overflowWrap: "break-word",
                         }}
@@ -175,42 +195,102 @@ export default function JobModal({
                   </div>
                 </div>
 
-                {/* Experience */}
-                <div className="space-y-2">
-                  <h4 className="font-semibold text-sm sm:text-base text-gray-900">
-                    Experience Required
-                  </h4>
-                  <div className="flex items-center space-x-2">
-                    <div className="flex items-center px-3 py-2 bg-gray-50 rounded-lg border">
-                      <svg
-                        className="w-4 h-4 text-gray-500 mr-2"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                      <span className="text-sm sm:text-base text-gray-700 font-medium">
-                        {job.experience}{" "}
-                        {job.experience === 1 ? "year" : "years"}
-                      </span>
+                {/* {job?.links?.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Job Links
+                    </h4>
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                      {job.links.map((link, index) => (
+                        <a
+                          key={index}
+                          href={link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 dark:text-blue-400 hover:underline break-all block"
+                          style={{
+                            wordBreak: "break-word",
+                            overflowWrap: "break-word",
+                          }}
+                        >
+                          {link}
+                        </a>
+                      ))}
                     </div>
+                  </div>
+                )} */}
+                {/* Experience & Salary Section */}
+                <div className="space-y-3">
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Job Requirements
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Experience */}
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="p-2 rounded-lg"
+                          style={{
+                            backgroundColor: `${primaryColor}15`,
+                          }}
+                        >
+                          <Briefcase
+                            className="w-5 h-5"
+                            style={{ color: primaryColor }}
+                          />
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Experience
+                          </p>
+                          <p className="font-semibold text-gray-900 dark:text-white">
+                            {job.experience}{" "}
+                            {job.experience === 1 ? "year" : "years"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Salary */}
+                    {(job as JobWithSalary)?.salary && (
+                      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="p-2 rounded-lg flex items-center justify-center"
+                            style={{
+                              backgroundColor: `${secondaryColor}15`,
+                            }}
+                          >
+                            <span
+                              className="text-lg font-bold"
+                              style={{ color: secondaryColor }}
+                            >
+                              ₹
+                            </span>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              Salary
+                            </p>
+                            <p className="font-semibold text-gray-900 dark:text-white">
+                              {(job as JobWithSalary).salary?.inText ||
+                                `${(job as JobWithSalary).salary?.min || 0} - ${(job as JobWithSalary).salary?.max || 0} LPA`}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Custom Fields */}
+                {/* Custom Fields Section */}
                 {job?.customFields &&
                   Object.keys(job.customFields).length > 0 && (
                     <div className="space-y-3">
-                      <h4 className="font-semibold text-sm sm:text-base text-gray-900">
+                      <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
                         Additional Information
                       </h4>
-                      <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
                         <CustomFieldsData
                           customFields={job?.customFields || {}}
                         />
@@ -221,19 +301,19 @@ export default function JobModal({
             </div>
 
             {/* Footer - Fixed */}
-            <div className="flex-shrink-0 bg-white border-t border-gray-100">
-              <div className="p-4 sm:p-5 lg:p-6">
-                <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-3 sm:justify-end">
+            <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700">
+              <div className="p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row gap-4 sm:justify-end">
                   {/* Close button - hidden on mobile, visible on desktop */}
                   <button
                     type="button"
-                    className="
-                      hidden sm:inline-flex items-center justify-center
-                      px-4 py-2.5 text-sm font-medium text-gray-700 
-                      bg-white border border-gray-300 rounded-lg
-                      hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2
-                      transition-colors duration-200
-                    "
+                    className="hidden sm:inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 transition-colors"
+                    onFocus={(e) => {
+                      e.target.style.boxShadow = `0 0 0 2px ${primaryColor}20`;
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.boxShadow = "none";
+                    }}
                     onClick={onClose}
                   >
                     Close
@@ -244,50 +324,39 @@ export default function JobModal({
                     <button
                       onClick={handleContinue}
                       disabled={alreadyApplied || readOnly}
-                      className={`
-                        flex items-center justify-center w-full sm:w-auto
-                        px-6 py-3 sm:py-2.5 text-sm font-medium rounded-lg
-                        focus:outline-none focus:ring-2 focus:ring-offset-2
-                        transition-all duration-200
-                        ${
-                          alreadyApplied || readOnly
-                            ? "bg-gray-100 text-gray-500 border border-gray-300 cursor-not-allowed"
-                            : "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 shadow-sm hover:shadow-md"
+                      className={`flex items-center justify-center w-full sm:w-auto px-8 py-3 text-sm font-semibold rounded-lg focus:outline-none focus:ring-2 transition-colors ${
+                        alreadyApplied || readOnly
+                          ? "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 cursor-not-allowed"
+                          : "text-white"
+                      }`}
+                      style={
+                        alreadyApplied || readOnly
+                          ? {}
+                          : ({
+                              backgroundColor: primaryColor,
+                            } as React.CSSProperties)
+                      }
+                      onMouseEnter={(e) => {
+                        if (!alreadyApplied && !readOnly) {
+                          const target = e.target as HTMLElement;
+                          target.style.backgroundColor = secondaryColor;
                         }
-                      `}
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!alreadyApplied && !readOnly) {
+                          const target = e.target as HTMLElement;
+                          target.style.backgroundColor = primaryColor;
+                        }
+                      }}
                     >
                       {alreadyApplied ? (
                         <>
-                          <svg
-                            className="w-4 h-4 mr-2"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
+                          <CheckCircle className="w-5 h-5 mr-2" />
                           Already Applied
                         </>
                       ) : (
                         <>
-                          <svg
-                            className="w-4 h-4 mr-2"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 4v16m8-8H4"
-                            />
-                          </svg>
+                          <ArrowRight className="w-5 h-5 mr-2" />
                           Apply Now
                         </>
                       )}
@@ -297,25 +366,9 @@ export default function JobModal({
                       {alreadyApplied || readOnly ? (
                         <button
                           disabled
-                          className="
-                            flex items-center justify-center w-full
-                            px-6 py-3 sm:py-2.5 text-sm font-medium rounded-lg
-                            bg-gray-100 text-gray-500 border border-gray-300 cursor-not-allowed
-                          "
+                          className="flex items-center justify-center w-full px-8 py-3 text-sm font-semibold rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 cursor-not-allowed"
                         >
-                          <svg
-                            className="w-4 h-4 mr-2"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
+                          <CheckCircle className="w-5 h-5 mr-2" />
                           Already Applied
                         </button>
                       ) : (
@@ -324,6 +377,7 @@ export default function JobModal({
                             jobId={job._id as string}
                             isOpen={isFormDialogOpen}
                             setIsOpen={setIsFormDialogOpen}
+                            jobTitle={job.title}
                           />
                         </div>
                       )}

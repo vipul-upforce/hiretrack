@@ -20,7 +20,7 @@ function FormSpecificCustomFieldList() {
 
   const breadcrumbs = [
     <div key="custom-fields" onClick={() => setStepName("FormList")}>
-      Meta Fields
+      Personalized Form Fields
     </div>,
     <div key={selectedFormId?.formName}>{selectedFormId?.formName}</div>,
   ];

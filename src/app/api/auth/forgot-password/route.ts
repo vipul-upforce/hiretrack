@@ -1,11 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import crypto from "crypto";
 import dbConnect, { CandidateAccount, Settings } from "@/lib/mongodb";
 import { User } from "@/lib/mongodb";
-import { sendMail } from "../../event-mail";
-import { ObjectId } from "mongoose";
+import { sendEventEmailWithHistory } from "@/lib/unifiedEmailService";
+import { ObjectId, Types } from "mongoose";
 import { Organization } from "@/lib/models/user";
 import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
+import { passwordResetRateLimiter } from "@/lib/rateLimiter";
 
 type NodemailerError = {
   errno?: number;
@@ -45,7 +46,7 @@ const getNodemailerErrorMessage = (error: NodemailerError) => {
 };
 
 // Initial lookup to find all accounts with the given email
-export async function POST(req: Request) {
+async function handleForgotPassword(req: NextRequest) {
   try {
     await dbConnect();
     const { email, selectedOrgId } = await req.json();
@@ -150,6 +151,13 @@ async function handlePasswordReset(
   isCandidate?: boolean
 ) {
   try {
+    const settings = await Settings.findOne({ organizationId: new Types.ObjectId(organizationId) }).lean();
+    if (!settings || !settings.mailConfig) {
+      throw new Error("Mail configuration not found");
+    }
+
+    const fromEmail = settings.mailConfig.resend_from || settings.mailConfig.brevo_from || settings.mailConfig.smtp_from || "system@hiretrack.com";
+
     // Find the correct user with both email and organizationId
     let user;
     if (!CandidateAccount || !User) {
@@ -170,7 +178,9 @@ async function handlePasswordReset(
       }
     } else {
       // Try regular user first, then candidate
-      user = await User.findOne({ email, organizationId });
+      user = await User.findOne({ email, organizationId }).populate(
+        "organizationId"
+      );
 
       if (!user) {
         user = await CandidateAccount.findOne({ email, organizationId });
@@ -183,6 +193,13 @@ async function handlePasswordReset(
         "No account found with this email in the selected organization"
       );
     }
+    // const organization = await CandidateAccount.findById(organizationId);
+    // if (!organization) {
+    //   throw new Error("Organization not found");
+    // }
+    // const candidateUsers = await CandidateAccount.find({ email });
+    // console.log("Organization Name:", candidateUsers);
+    // console.log(user, "reset passwordd.....");
 
     // Generate password reset token
     const resetToken = crypto.randomBytes(32).toString("hex");
@@ -209,18 +226,42 @@ async function handlePasswordReset(
     const resetUrl = `${origin}/auth/reset-password?token=${resetToken}${isCandidate ? "&type=candidate" : ""}`;
 
     const { emailContent, emailSubject } = await getMappedEmailTemplate(
-      "reset-password-request",
+      "password-reset",
       {
-        resetUrl,
+        resetLink: resetUrl,
+        organizationName: user?.organizationId.name,
+        userName: user?.name,
       },
       organizationId
     );
 
-    const emailStatus = await sendMail(
+    const systemUser = await User.findOneAndUpdate(
+      { email: fromEmail, organizationId },
+      {
+        $setOnInsert: {
+          name: "HireTrack System",
+          email: fromEmail,
+          role: "system",
+          organizationId,
+        },
+      },
+      { upsert: true, new: true }
+    );
+
+    const emailStatus = await sendEventEmailWithHistory(
       organizationId,
       [email],
       emailSubject,
-      emailContent
+      emailContent,
+      {
+        sentBy: systemUser._id.toString(),
+        sentByEmail: systemUser.email,
+        sentByName: systemUser.name,
+        metadata: {
+          templateUsed: "reset-password-request",
+          eventType: "password_reset",
+        },
+      }
     );
 
     if (emailStatus.status === 200) {
@@ -238,4 +279,10 @@ async function handlePasswordReset(
     }
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
+}
+
+// Export with rate limiting
+export async function POST(req: Request) {
+  // SECURITY FIX: Apply rate limiting to prevent abuse
+  return passwordResetRateLimiter(req as NextRequest, handleForgotPassword);
 }

@@ -38,11 +38,11 @@ const EditLaneDialog = ({
   // //   }, []);
   return (
     <Dialog open={isEditLaneDialogOpen} onOpenChange={setIsEditLaneDialogOpen}>
-      <DialogContent className="sm:max-w-[400px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[400px] p-0 overflow-hidden flex flex-col">
+        <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle>Edit Lane</DialogTitle>
         </DialogHeader>
-        <div className="flex flex-col gap-4">
+        <div className="flex-1 overflow-y-auto px-6 py-4 flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <Label htmlFor="lane-name">Lane Name</Label>
             <Input
@@ -60,7 +60,7 @@ const EditLaneDialog = ({
             />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="border-t bg-background px-6 py-4 sticky bottom-0 z-10">
           <Button
             variant="outline"
             onClick={() => setIsEditLaneDialogOpen(false)}

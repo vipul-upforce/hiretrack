@@ -5,7 +5,9 @@ import { handleCustomFieldFiles, handleSingleFile } from "@/lib/fileUtils";
 import { handleFileAttachments } from "@/lib/fileUtils";
 import mongoose from "mongoose";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
+import { NotificationService } from "@/lib/notifications/notificationService";
 // import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
 
 export interface Attachment {
@@ -18,6 +20,18 @@ export interface Attachment {
 
 export async function GET(request: Request) {
   try {
+    // Check authentication
+    const token = request.headers.get("cookie")?.match(/token=([^;]+)/)?.[1];
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const decryptedResponse = await verifyAndDecryptJWTToken(token);
+    if (!decryptedResponse.success || !decryptedResponse.user) {
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    }
+
+    const user = decryptedResponse.user;
     const { searchParams } = new URL(request.url);
     const jobId = searchParams?.get("jobId");
 
@@ -28,7 +42,13 @@ export async function GET(request: Request) {
         { status: 404 }
       );
     }
-    const query = jobId ? { jobId } : {};
+
+    // Filter by organization and jobId if provided
+    const query: any = { organizationId: user.organizationId };
+    if (jobId) {
+      query.jobId = jobId;
+    }
+
     const candidates = await Candidate.find(query).sort({
       "tracking.createdAt": -1,
     });
@@ -44,7 +64,7 @@ export async function POST(request: NextRequest) {
   try {
     await connectToDatabase();
     const data = await request.json();
-    const token = request.cookies.get("token");
+    const token = request.cookies.get("auth_token");
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
         String(token?.value)
@@ -61,9 +81,11 @@ export async function POST(request: NextRequest) {
             { status: 404 }
           );
         }
-        const candidateStatus = organizationInfo.lanes.includes("applied")
+        const candidateStatus = (
+          organizationInfo.defaultLanes || ["applied"]
+        ).includes("applied")
           ? "applied"
-          : organizationInfo.lanes[0];
+          : (organizationInfo.defaultLanes || ["applied"])[0];
         // resume
         if (data.attachments) {
           const images = data.attachments.filter((attachment: Attachment) =>
@@ -108,6 +130,8 @@ export async function POST(request: NextRequest) {
           jobId: data.jobId,
           organizationId: organizationId,
           name: data.name,
+          email: data.email || "",
+          contact: data.contact || "",
           location: data.location,
           experience: data.experience,
           skills: data.skills,
@@ -154,7 +178,6 @@ export async function POST(request: NextRequest) {
             size: attachment.size,
           })),
           customFields: data.customFields,
-          email: data.email || "",
         };
 
         if (!Candidate) {
@@ -176,7 +199,7 @@ export async function POST(request: NextRequest) {
         // const dateTime = await getFormattedDate(request, new Date());
         // const historyExisting =
         let candidateHistory = null;
-        if (userData.role === "candidate") {
+        if (userData.role === "candidate" || userData.role === "") {
           candidateHistory = await History?.create({
             candidateId: candidate._id,
             jobId: data.jobId,
@@ -219,6 +242,42 @@ export async function POST(request: NextRequest) {
             "_id name email"
           );
         }
+
+        // Get job information for notification
+        const job = await Job?.findById(data.jobId);
+
+        // Trigger notification for candidate application
+        if (job) {
+          try {
+            console.log("🔔 Triggering candidate applied notification:", {
+              organizationId: organizationId,
+              candidateId: candidate._id.toString(),
+              candidateName: candidateData.name,
+              jobTitle: job.title,
+              triggerUserId: userData.id,
+              triggerUserName: userData.name,
+            });
+
+            await NotificationService.notifyCandidateApplied({
+              organizationId: organizationId,
+              candidateId: candidate._id.toString(),
+              candidateName: candidateData.name,
+              candidateEmail: candidateData.email,
+              jobId: data.jobId,
+              jobTitle: job.title || "Unknown Job",
+              triggerUserId: userData.id,
+              triggerUserName: userData.name,
+            });
+
+            console.log("✅ Notification sent successfully");
+          } catch (notificationError) {
+            console.error("❌ Failed to send notification:", notificationError);
+            // Don't fail the API call if notification fails
+          }
+        } else {
+          console.log("⚠️ No job found for notification, jobId:", data.jobId);
+        }
+
         // console.log("⛔⛔ CANDIDATE CERATED", sanitizedCandidate);
         broadcastCandidateUpdate({
           ...sanitizedCandidate,

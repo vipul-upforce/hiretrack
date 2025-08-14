@@ -53,9 +53,14 @@ export async function middleware(request: NextRequest) {
   if (!allowedOrigins.includes(origin))
     return NextResponse.json({ error: "Origin Not Allowed" }, { status: 401 });
   let userData: { role: string } | undefined;
-  const token = request.cookies.get("token");
-  if (token?.value) {
-    const decryptedResponse = await verifyAndDecryptToken(String(token?.value));
+
+  // SECURITY FIX: Check both httpOnly and regular tokens for backward compatibility
+  const httpOnlyToken = request.cookies.get("auth_token");
+  // const regularToken = request.cookies.get("token");
+  const token = httpOnlyToken?.value;
+
+  if (token) {
+    const decryptedResponse = await verifyAndDecryptToken(String(token));
     if (decryptedResponse.success) {
       userData = decryptedResponse.user as unknown as {
         role: string;
@@ -125,7 +130,8 @@ export async function middleware(request: NextRequest) {
     if (userRole === "hr") {
       if (
         pathname?.includes("/auth/signup") ||
-        pathname?.includes("/dashboard/settings")
+        pathname?.includes("/dashboard/settings") ||
+        pathname?.includes("/dashboard/analytics")
       ) {
         return NextResponse.redirect(new URL("/dashboard", request.url));
       }
@@ -210,7 +216,8 @@ const unauthorizedInterviewerPages = [
   "/dashboard/settings",
   "/dashboard/search",
   "/dashboard/cv-upload",
-  "/api/organization/tags"
+  "/dashboard/analytics",
+  "/api/organization/tags",
 ];
 
 const unauthorizedInterviewerAPIRoutes = ["/api/candidates/filter"];
@@ -225,8 +232,10 @@ const unauthorizedCandidateAPIRoutes = [
 const apiExemptPaths = [
   "/api/jobs/open-jobs",
   "/api/auth/login",
+  "/api/auth/me",
   "/api/auth/signup",
   "/api/organization",
+  "/api/orgs",
   "/api/auth/forgot-password",
   "/api/auth/reset-password",
   "/api/event-mail",
@@ -241,7 +250,11 @@ const apiExemptPaths = [
   "/api/auth/2fa/send-otp",
   "/api/auth/2fa/verify-otp",
   "/api/settings/twofa",
-  "/api/organization/tags"
+  "/api/settings/portal",
+  "/api/shared-files",
+  "/api/organization/tags",
+  "/api/auth/google/callback",
+  "/api/auth/google/authorize",
 ];
 
 const redirectPaths = [

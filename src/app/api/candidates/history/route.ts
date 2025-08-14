@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Candidate, History } from "@/lib/mongodb";
+import connectToDatabase, {
+  Candidate,
+  History,
+  JobLaneConfig,
+} from "@/lib/mongodb";
 import {
   Attachments,
   FileAttachment,
@@ -12,9 +16,32 @@ import mongoose, { Types } from "mongoose";
 import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
 import { ICandidate } from "@/lib/models/candidate";
 import { ICandidateHistory } from "@/lib/models/history";
+import {
+  filterChecklistResponses,
+  getUserRole,
+} from "@/lib/utils/checklistVisibility";
+import { verifyAndDecryptJWTToken } from "@/lib/auth";
+
 export async function POST(request: NextRequest) {
   //Getting the history data
   try {
+    // Get and verify user authentication
+    const token = request.cookies.get("auth_token")?.value;
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const decryptedResponse = await verifyAndDecryptJWTToken(token);
+    if (!decryptedResponse.success || !decryptedResponse.user) {
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    }
+
+    const decoded = decryptedResponse.user;
+    const userRole = getUserRole(decoded.role);
+    if (!userRole) {
+      return NextResponse.json({ error: "Invalid user role" }, { status: 403 });
+    }
+
     await connectToDatabase();
     const data = await request.json();
 
@@ -49,7 +76,50 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json(historyEntry.history);
+    // Get job lane configuration to filter checklist responses based on user role
+    const laneConfig = await JobLaneConfig.findOne({ jobId: data.jobId });
+
+    // Filter checklist responses in history based on user role visibility
+    const filteredHistory = historyEntry.history.map((entry: any) => {
+      if (!entry.checklistForm) {
+        return entry;
+      }
+
+      // Find the checklist configuration to get field visibility settings
+      let checklistFields: any[] = [];
+      if (laneConfig) {
+        const targetLane = laneConfig.laneConfigs.find(
+          (lc: any) => lc.laneId === entry.checklistForm.laneId
+        );
+        if (targetLane) {
+          const checklist =
+            entry.checklistForm.checklistType === "incoming"
+              ? targetLane.incomingChecklist
+              : targetLane.outgoingChecklist;
+
+          if (checklist && checklist.fields) {
+            checklistFields = checklist.fields;
+          }
+        }
+      }
+
+      // Filter the responses based on user role and field visibility
+      const filteredResponses = filterChecklistResponses(
+        entry.checklistForm.responses,
+        checklistFields,
+        userRole
+      );
+
+      return {
+        ...entry,
+        checklistForm: {
+          ...entry.checklistForm,
+          responses: filteredResponses,
+        },
+      };
+    });
+
+    return NextResponse.json(filteredHistory);
   } catch (error) {
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -244,13 +314,14 @@ export async function PUT(request: NextRequest) {
     }
     let fileStorage = "local";
     let organizationId;
+    let userData;
 
-    const token = request.cookies.get("token");
+    const token = request.cookies.get("auth_token");
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
         String(token?.value)
       );
-      const userData = decryptedResponse.user;
+      userData = decryptedResponse.user;
       if (decryptedResponse.success) {
         fileStorage = userData.fileStorage || "local";
         organizationId = userData.organizationId || "";
@@ -284,12 +355,16 @@ export async function PUT(request: NextRequest) {
         ...updatedFiles.images,
       ];
     }
+    if (data.newEntry.note && !data.newEntry.note.userId) {
+      data.newEntry.note.userId = userData.id;
+    }
 
     if (!Candidate) {
       throw new Error("Database not connceted");
     }
 
     const candidateId = new Types.ObjectId(data.candidateId);
+    console.log(candidateId, "candiateId");
     const candidateData = await Candidate.findById(candidateId)
       .populate([
         {
@@ -304,10 +379,16 @@ export async function PUT(request: NextRequest) {
           path: "jobId",
           select: "title description ",
         },
+        {
+          path: "followUp.userId",
+          select: "name _id email",
+        },
       ])
       .lean();
     // const candidateDataJSON = candidateData?.toObject();
-    const historyEntry = await History.findOneAndUpdate(
+    console.log(candidateData, "candidateData");
+
+    const historyEntry = await History?.findOneAndUpdate(
       { jobId: data.jobId, candidateId: data.candidateId },
       { $push: { history: data.newEntry } },
       { upsert: true, new: true, runValidators: true }
@@ -343,11 +424,29 @@ export async function PUT(request: NextRequest) {
       );
     }
     // console.log("🚒🚒🚒🚒 In HistoryUpdate: ", candidateData.remarks.length);
+    const transformedHistory = (historyData.history || []).map(
+      (historyItem: any) => {
+        if (historyItem.checklistForm?.responses) {
+          return {
+            ...historyItem,
+            checklistForm: {
+              ...historyItem.checklistForm,
+              responses: new Map(
+                Object.entries(historyItem.checklistForm.responses)
+              ),
+            },
+          };
+        }
+        return historyItem;
+      }
+    );
+
     broadcastCandidateUpdate({
       ...candidateData,
-      history: historyData.history || [],
+      history: transformedHistory,
     } as ICandidate & { history?: ICandidateHistory[] });
-    return NextResponse.json(historyEntry.history);
+
+    return NextResponse.json(transformedHistory);
     // return NextResponse.json({});
   } catch (error) {
     console.error(error);

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { RenameFileDialog } from "./rename-file-dialog";
 import Cookies from "js-cookie";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import { useSelector } from "react-redux";
 
 interface MobileFileUploadProps {
   onFileSelect: (files: File[]) => void;
@@ -80,21 +81,24 @@ export function MobileFileUpload({
     file: null,
     isExisting: false,
   });
-  const [user, setUser] = useState<User | null>(null);
+  // const [user, setUser] = useState<User | null>(null);
+  const { user }: { user: User } = useSelector(
+    (state: any) => state.auth || {}
+  );
   const [droppedFiles, setDroppedFiles] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    (async () => {
-      const token = Cookies.get("token");
-      if (token) {
-        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-        if (decryptedResponse.success && decryptedResponse.user) {
-          setUser(decryptedResponse.user);
-        }
-      }
-    })();
-  }, []);
+  // useEffect(() => {
+  //   (async () => {
+  //     const token = Cookies.get("token");
+  //     if (token) {
+  //       const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+  //       if (decryptedResponse.success && decryptedResponse.user) {
+  //         setUser(decryptedResponse.user);
+  //       }
+  //     }
+  //   })();
+  // }, []);
 
   const handleRename = (newName: string) => {
     if (renameFile.file) {
@@ -125,10 +129,12 @@ export function MobileFileUpload({
       (file) => file?.name !== fileNameToRemove
     );
     setter(updatedFiles);
-    setDroppedFiles((prev) => prev.filter(name => name !== fileNameToRemove));
+    setDroppedFiles((prev) => prev.filter((name) => name !== fileNameToRemove));
   };
 
-  const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileInputChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const selectedFiles = Array.from(event.target.files || []);
     if (selectedFiles.length > 0) {
       onFileSelect(selectedFiles);
@@ -139,7 +145,7 @@ export function MobileFileUpload({
     }
     // Reset the input value to allow selecting the same file again
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
@@ -150,7 +156,7 @@ export function MobileFileUpload({
   // Convert accept object to string format for input element
   const acceptString = Object.entries(accept)
     .flatMap(([mimeType, extensions]) => [mimeType, ...extensions])
-    .join(',');
+    .join(",");
 
   const totalFiles = files.length + existingFiles.length;
   const canAddMore = totalFiles < maxFiles;
@@ -182,16 +188,21 @@ export function MobileFileUpload({
 
         {/* File limit and size information */}
         {showFileLimit && (
-          <div className="text-xs text-gray-500 text-center space-y-1">
-            {user && user.role === "candidate" && maxFiles > 1 && (
-              <p>Maximum {maxFiles} files allowed ({totalFiles}/{maxFiles})</p>
-            )}
-            {user && user.role === "candidate" && (
+          <div className="text-xs text-muted-foreground text-center space-y-1">
+            {user &&
+              (user.role === "candidate" || user.role === "") &&
+              maxFiles > 1 && (
+                <p>
+                  Maximum {maxFiles} files allowed ({totalFiles}/{maxFiles})
+                </p>
+              )}
+            {user && (user.role === "candidate" || user.role === "") && (
               <p>File size limit: 3MB per file</p>
             )}
-            {user && ["hr", "admin", "interviewer"].includes(user.role || "") && (
-              <p>File size limit: 50MB per file</p>
-            )}
+            {user &&
+              ["hr", "admin", "interviewer"].includes(user.role || "") && (
+                <p>File size limit: 50MB per file</p>
+              )}
           </div>
         )}
       </div>
@@ -202,15 +213,15 @@ export function MobileFileUpload({
         {existingFiles.map((file) => (
           <div
             key={file.id}
-            className="flex items-center justify-between p-3 border rounded-lg bg-gray-50"
+            className="flex items-center justify-between p-3 border rounded-lg bg-muted"
           >
             <div className="flex items-center space-x-3 flex-1 min-w-0">
-              <FileIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
+              <FileIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
+                <p className="text-sm font-medium text-foreground truncate">
                   {file?.name}
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   {formatFileSize(file?.size)}
                 </p>
               </div>
@@ -218,7 +229,7 @@ export function MobileFileUpload({
             <div className="flex items-center gap-1 ml-2">
               <button
                 type="button"
-                className="p-2 hover:bg-gray-200 rounded-md transition-colors"
+                className="p-2 hover:bg-muted-foreground/10 rounded-md transition-colors"
                 onClick={() =>
                   setRenameFile({
                     file: null,
@@ -227,7 +238,7 @@ export function MobileFileUpload({
                   })
                 }
               >
-                <Pencil className="h-4 w-4 text-gray-500" />
+                <Pencil className="h-4 w-4 text-muted-foreground" />
               </button>
             </div>
           </div>
@@ -237,15 +248,15 @@ export function MobileFileUpload({
         {files?.map((file) => (
           <div
             key={file?.name}
-            className="flex items-center justify-between p-3 border rounded-lg bg-blue-50"
+            className="flex items-center justify-between p-3 border rounded-lg bg-primary/10"
           >
             <div className="flex items-center space-x-3 flex-1 min-w-0">
-              <FileIcon className="h-4 w-4 text-blue-600 flex-shrink-0" />
+              <FileIcon className="h-4 w-4 text-primary flex-shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
+                <p className="text-sm font-medium text-foreground truncate">
                   {file?.name}
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   {formatFileSize(file?.size)}
                 </p>
               </div>
@@ -254,7 +265,7 @@ export function MobileFileUpload({
               {isEdit && (
                 <button
                   type="button"
-                  className="p-2 hover:bg-blue-200 rounded-md transition-colors"
+                  className="p-2 hover:bg-primary/20 rounded-md transition-colors"
                   onClick={() =>
                     setRenameFile({
                       file,
@@ -262,17 +273,17 @@ export function MobileFileUpload({
                     })
                   }
                 >
-                  <Pencil className="h-4 w-4 text-blue-600" />
+                  <Pencil className="h-4 w-4 text-primary" />
                 </button>
               )}
               {droppedFiles?.includes(file?.name) && (
                 <button
                   type="button"
-                  className="p-2 hover:bg-red-200 rounded-md transition-colors"
+                  className="p-2 hover:bg-destructive/20 rounded-md transition-colors"
                   onClick={() => handleRemoveFile(file?.name)}
                   aria-label="Remove file"
                 >
-                  <X className="h-4 w-4 text-red-500" />
+                  <X className="h-4 w-4 text-destructive" />
                 </button>
               )}
             </div>
@@ -281,8 +292,8 @@ export function MobileFileUpload({
 
         {/* Empty state */}
         {files.length === 0 && existingFiles.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            <FileIcon className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+          <div className="text-center py-8 text-muted-foreground">
+            <FileIcon className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
             <p className="text-sm">No files selected</p>
           </div>
         )}

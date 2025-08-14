@@ -14,6 +14,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { UserPlus, Home, ChevronRight } from "lucide-react";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import LoaderSkeletonUsers from "./components/loader-skeleton-users";
@@ -60,14 +62,14 @@ function UsersPage() {
         description:
           "Error: " +
           (typeof error === "object" &&
-          error !== null &&
-          "data" in error &&
-          typeof error.data === "object" &&
-          error.data &&
-          "error" in error.data
+            error !== null &&
+            "data" in error &&
+            typeof error.data === "object" &&
+            error.data &&
+            "error" in error.data
             ? (error.data as { error: string }).error
             : "Unknown error"),
-         title: "Failed to delete user",
+        title: "Failed to delete user",
         variant: "destructive",
       });
     }
@@ -126,83 +128,119 @@ function UsersPage() {
   }
 
   return (
-    <div className="w-[100%] py-6">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Users</CardTitle>
-          <Button onClick={() => router.push("/auth/signup")}>
-            Create User
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Created At</TableHead>
-                <TableHead className="w-[140px]">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users?.map((user: User) => (
-                <UserTableRow
-                  key={user._id}
-                  user={user}
-                  isDeleting={isDeleting}
-                  isUpdating={isDeleting}
-                  onDeleteClick={() => {
-                    setUserIdToDelete(user._id);
-                    setShowDeleteDialog(true);
-                  }}
-                  onEditClick={handleEditClick}
-                  onPasswordClick={handlePasswordClick}
-                />
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+    <div className="h-screen flex flex-col overflow-hidden w-full">
+      {/* Header section with improved design and breadcrumbs */}
+      <div className="flex-shrink-0 px-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+        <Card className="border-0 shadow-none bg-transparent">
+          <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-2 py-3 px-0">
+            {/* Left Section - Breadcrumbs */}
+            <div className="flex items-center text-sm text-muted-foreground">
+              <Link
+                href="/dashboard"
+                className="flex items-center hover:text-foreground transition-colors"
+              >
+                <Home className="h-4 w-4 mr-2" />
+                Dashboard
+              </Link>
+              <ChevronRight className="h-4 w-4 mx-2" />
+              <Link
+                href="/dashboard/settings"
+                className="hover:text-foreground transition-colors"
+              >
+                Settings
+              </Link>
+              <ChevronRight className="h-4 w-4 mx-2" />
+              <span className="text-foreground font-semibold">
+                User Management
+              </span>
+            </div>
 
-      <ConfirmationDialog
-        isOpen={showDeleteDialog}
-        setIsOpen={setShowDeleteDialog}
-        title="Delete User"
-        message="Are you sure you want to delete the user? You can always
+            {/* Right Section - Create User Button */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3">
+              <Button variant="primary" onClick={() => router.push("/auth/signup")}>
+                <UserPlus className="h-4 w-4 mr-2" />
+                Create User
+              </Button>
+            </div>
+          </CardHeader>
+        </Card>
+      </div>
+
+      <div className="flex-1 min-h-0 px-4 pb-4 mt-4 overflow-y-auto">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>All Users</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Created At</TableHead>
+                  <TableHead className="w-[140px]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users?.map((user: User) => (
+                  <UserTableRow
+                    key={user._id}
+                    user={user}
+                    isDeleting={isDeleting}
+                    isUpdating={isDeleting}
+                    onDeleteClick={() => {
+                      setUserIdToDelete(user._id);
+                      setShowDeleteDialog(true);
+                    }}
+                    onEditClick={handleEditClick}
+                    onPasswordClick={handlePasswordClick}
+                  />
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        <ConfirmationDialog
+          isOpen={showDeleteDialog}
+          setIsOpen={setShowDeleteDialog}
+          title="Delete User"
+          message="Are you sure you want to delete the user? You can always
               reactivate the user from edit form."
-        onConfirm={() => {
-          if (userIdToDelete) {
-            handleDelete(userIdToDelete);
-            setUserIdToDelete(null);
-          }
-          setShowDeleteDialog(false);
-        }}
-        onCancel={() => setShowDeleteDialog(false)}
-      />
+          onConfirm={() => {
+            if (userIdToDelete) {
+              handleDelete(userIdToDelete);
+              setUserIdToDelete(null);
+            }
+            setShowDeleteDialog(false);
+          }}
+          onCancel={() => setShowDeleteDialog(false)}
+        />
 
-      {selectedUser && (
-        <EditUserDialog
-          isOpen={isOpen}
-          onOpenChange={(open) => {
-            setIsOpen(open);
-            if (!open) setSelectedUser(null);
-          }}
-          selectedUser={selectedUser}
-          onSuccess={refetch}
-        />
-      )}
-      {selectedPasswordUser && (
-        <ResetPasswordDialog
-          isOpen={isPasswordOpen}
-          onOpenChange={(open) => {
-            setIsPasswordOpen(open);
-            if (!open) setSelectedPasswordUser(null);
-          }}
-          candidateId={selectedPasswordUser.candidateId}
-          name={selectedPasswordUser.name}
-        />
-      )}
+        {selectedUser && (
+          <EditUserDialog
+            isOpen={isOpen}
+            onOpenChange={(open) => {
+              setIsOpen(open);
+              if (!open) setSelectedUser(null);
+            }}
+            selectedUser={selectedUser}
+            onSuccess={refetch}
+          />
+        )}
+        {selectedPasswordUser && (
+          <ResetPasswordDialog
+            isOpen={isPasswordOpen}
+            onOpenChange={(open) => {
+              setIsPasswordOpen(open);
+              if (!open) setSelectedPasswordUser(null);
+            }}
+            candidateId={selectedPasswordUser.candidateId}
+            name={selectedPasswordUser.name}
+          />
+        )}
+      </div>
     </div>
   );
 }

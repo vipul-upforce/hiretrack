@@ -18,6 +18,12 @@ export const candidateSchema = (customFields: Yup.Schema<unknown>) =>
         /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
         "Please enter a valid email address"
       ),
+    contact: Yup.string()
+      .required("Contact number is required")
+      .matches(
+        /^[\d\s\-\+\(\)]{10,15}$/,
+        "Please enter a valid contact number (10-15 digits)"
+      ),
     location: Yup.string()
       .required("Location is required")
       .matches(
@@ -93,6 +99,8 @@ export const candidateSchema = (customFields: Yup.Schema<unknown>) =>
   });
 export interface CandidateFormValues {
   name: string;
+  email: string;
+  contact: string;
   location: string;
   experience: number;
   skills: string[];
@@ -109,5 +117,4 @@ export interface CandidateFormValues {
     interviewerId: string | { _id: string; name: string; email: string } | null;
     time: Date | null;
   } | null;
-  email?: string;
 }

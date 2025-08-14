@@ -4,16 +4,32 @@ import { CustomField } from "../../Types/CustomField";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash, GripVertical } from "lucide-react";
+import { 
+  Edit, 
+  Trash, 
+  GripVertical, 
+  Type, 
+  FileText, 
+  Hash, 
+  ChevronDown, 
+  List, 
+  Circle, 
+  CheckSquare, 
+  Calendar, 
+  Clock, 
+  CalendarClock, 
+  Lock, 
+  Upload,
+  Eye,
+  EyeOff,
+  User,
+  Users,
+  Star,
+  CreditCard,
+  Settings
+} from "lucide-react";
 import CustomFieldForm from "../Form/CustomFieldForm";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { DeleteDialog } from "@/components/ui/specialized-dialogs";
 import {
   DragDropContext,
   Droppable,
@@ -25,6 +41,36 @@ import {
   DraggableProvidedDragHandleProps,
 } from "@hello-pangea/dnd";
 import { createPortal } from "react-dom";
+
+const fieldTypeIcons: Record<string, React.ElementType> = {
+  text: Type,
+  textarea: FileText,
+  number: Hash,
+  select: ChevronDown,
+  multiSelect: List,
+  radio: Circle,
+  checkbox: CheckSquare,
+  date: Calendar,
+  time: Clock,
+  datetime: CalendarClock,
+  password: Lock,
+  file: Upload,
+};
+
+const fieldTypeLabels: Record<string, string> = {
+  text: "Text Input",
+  textarea: "Text Area",
+  number: "Number Input",
+  select: "Select Dropdown",
+  multiSelect: "Multi-Select",
+  radio: "Radio Buttons",
+  checkbox: "Checkbox",
+  date: "Date Picker",
+  time: "Time Picker",
+  datetime: "Date & Time",
+  password: "Password",
+  file: "File Upload",
+};
 
 function CustomFieldList() {
   const [isOpen, setIsOpen] = useState(false);
@@ -115,8 +161,8 @@ function CustomFieldList() {
               }}
             >
               {orderedFields.length === 0 ? (
-                <div className="w-full text-center justify-center border-none py-10 text-gray-500">
-                  No Global Meta fields
+                <div className="w-full text-center justify-center border-none py-10 text-gray-500 dark:text-gray-400">
+                  No personalized form fields
                 </div>
               ) : (
                 orderedFields.map((field, index) => (
@@ -210,48 +256,139 @@ export const CustomFieldItem = React.memo(
     handleDeleteCustomField,
   }: CustomFieldItemProps) => {
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const IconComponent = fieldTypeIcons[field.type] || Type;
 
     return (
       <>
         <div className="w-full">
           <Card
             className={`
-              w-full transition-all duration-75
+              w-full transition-all duration-200 border-l-4 border-l-blue-500 dark:border-l-blue-400 !bg-white dark:!bg-gray-900 !border !border-gray-200 dark:!border-gray-700/50 backdrop-blur-sm
               ${
                 isDragging
-                  ? "shadow-lg ring-2 ring-primary ring-offset-2"
-                  : "hover:shadow"
+                  ? "!shadow-2xl ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-2 dark:ring-offset-gray-900 scale-105 border-l-blue-600 dark:border-l-blue-300"
+                  : "hover:!shadow-xl hover:border-l-blue-600 dark:hover:border-l-blue-300 hover:-translate-y-0.5 hover:!bg-gray-50 dark:hover:!bg-gray-800"
               }
             `}
           >
-            <CardHeader className="p-4">
-              <div className="flex justify-between items-center w-full">
-                <div className="flex items-center gap-2">
+            <CardHeader className="pb-4 pt-5">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-3 flex-1">
                   <div
                     {...dragHandleProps}
-                    className="rounded-md p-1.5 hover:bg-muted cursor-grab active:cursor-grabbing touch-none select-none"
+                    className="rounded-md p-2 hover:bg-gray-100 dark:hover:bg-gray-700/50 cursor-grab active:cursor-grabbing touch-none select-none mt-0.5 transition-colors duration-150"
                   >
                     <GripVertical className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <CardTitle className="capitalize">
-                    {field.label.split(" |||||(")[0]}
-                  </CardTitle>
+                  
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-xl shadow-sm">
+                          <IconComponent className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <div className="flex-1">
+                          <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                            {field.label.split(" |||||(")[0]}
+                          </CardTitle>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {fieldTypeLabels[field.type] || field.type}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Field Properties */}
+                    <div className="grid grid-cols-2 gap-4 mt-3">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-sm">
+                          <div className={`w-2 h-2 rounded-full ${field.required ? 'bg-red-500' : 'bg-gray-300'}`} />
+                          <span className="text-gray-600 dark:text-gray-300">
+                            {field.required ? 'Required' : 'Optional'}
+                          </span>
+                        </div>
+                        
+                        {field.defaultValue && 
+                         field.defaultValue !== '' && 
+                         !(Array.isArray(field.defaultValue) && field.defaultValue.length === 0) && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Settings className="h-3 w-3 text-blue-500" />
+                            <span className="text-gray-600 dark:text-gray-300 truncate">
+                              Default: <span className="font-medium text-blue-600 dark:text-blue-400">
+                                {Array.isArray(field.defaultValue) ? 
+                                  field.defaultValue.slice(0, 2).join(', ') + (field.defaultValue.length > 2 ? '...' : '') : 
+                                  field.defaultValue
+                                }
+                              </span>
+                            </span>
+                          </div>
+                        )}
+                        
+                        {field.options && field.options.length > 0 && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <List className="h-3 w-3 text-indigo-500" />
+                            <span className="text-gray-600 dark:text-gray-300">
+                              <span className="font-medium text-indigo-600 dark:text-indigo-400">{field.options.length}</span> option{field.options.length !== 1 ? 's' : ''}
+                            </span>
+                            <div className="flex items-center gap-1 ml-2">
+                              {field.options.slice(0, 3).map((option, idx) => (
+                                <span key={idx} className="px-2 py-0.5 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 text-indigo-700 dark:text-indigo-300 text-xs rounded-md font-medium">
+                                  {option.length > 8 ? option.substring(0, 8) + '...' : option}
+                                </span>
+                              ))}
+                              {field.options.length > 3 && (
+                                <span className="px-2 py-0.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs rounded-md font-medium border border-gray-300 dark:border-gray-500">
+                                  +{field.options.length - 3}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="space-y-2">
+                        {field.private && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <EyeOff className="h-3 w-3 text-orange-500" />
+                            <span className="text-gray-600 dark:text-gray-300">Hidden from candidates</span>
+                          </div>
+                        )}
+                        
+                        {field.privateInt && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <User className="h-3 w-3 text-purple-500" />
+                            <span className="text-gray-600 dark:text-gray-300">Hidden from interviewers</span>
+                          </div>
+                        )}
+                        
+                        {field.showOnCard && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <CreditCard className="h-3 w-3 text-green-500" />
+                            <span className="text-gray-600 dark:text-gray-300">Shows on cards</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  {field.jobId ? (
-                    <Badge variant="secondary" className="rounded-full">
+                
+                <div className="flex items-center gap-1 ml-4">
+                  {field.jobId && (
+                    <Badge variant="outline" className="text-xs px-2 py-1 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700/50">
                       Job Specific
                     </Badge>
-                  ) : null}
-                  {field.candidateId ? (
-                    <Badge variant="secondary" className="rounded-full">
+                  )}
+                  {field.candidateId && (
+                    <Badge variant="outline" className="text-xs px-2 py-1 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700/50">
                       Candidate Specific
                     </Badge>
-                  ) : null}
+                  )}
+                  
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => handleEditCustomField()}
+                    className="h-8 w-8 p-0 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400"
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
@@ -259,57 +396,25 @@ export const CustomFieldItem = React.memo(
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowDeleteDialog(true)}
+                    className="h-8 w-8 p-0 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400"
                   >
                     <Trash className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="capitalize px-4">
-              <div className="flex gap-2 flex-wrap">
-                {field.type && <Badge>{field.type}</Badge>}
-                {field.persistance && <Badge>{field.persistance}</Badge>}
-                {field.required && (
-                  <Badge>{field.required ? "Required" : "Optional"}</Badge>
-                )}
-                {field?.private && <Badge>Hidden from Candidate</Badge>}
-                {field?.privateInt && <Badge>Hidden from Interviewer</Badge>}
-                {field.defaultValue && <Badge>{field.defaultValue}</Badge>}
-                {field.options && <Badge>{field.options.length}</Badge>}
-                {field.showOnCard && <Badge>Showing on Card</Badge>}
-              </div>
-            </CardContent>
           </Card>
         </div>
-        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-          <DialogContent aria-describedby="delete-field-description">
-            <DialogHeader>
-              <DialogTitle>Delete Meta Field</DialogTitle>
-              <DialogDescription id="delete-field-description">
-                Are you sure you want to delete the field &quot;
-                {field.label.split(" |||||(")[0]}
-                &quot;? This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setShowDeleteDialog(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() => {
-                  handleDeleteCustomField();
-                  setShowDeleteDialog(false);
-                }}
-              >
-                Delete
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <DeleteDialog
+          isOpen={showDeleteDialog}
+          onClose={() => setShowDeleteDialog(false)}
+          onConfirm={() => {
+            handleDeleteCustomField();
+            setShowDeleteDialog(false);
+          }}
+          itemName={field.label.split(" |||||(")[0]}
+          itemType="Meta Field"
+        />
       </>
     );
   }

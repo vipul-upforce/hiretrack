@@ -211,14 +211,14 @@ export function CreateJobDialog({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="">
+        <Button variant="primary">
           <Plus className="h-4 w-4 mr-2" />
           Create Job
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[80vw] xl:max-w-[50vw] h-[90vh] p-0 overflow-hidden flex flex-col justify-center ">
-        <DialogHeader className="px-6 py-2 pb-0">
-          <DialogTitle className="text-lg font-semibold">
+      <DialogContent size="2xl" className="max-h-[90vh] p-0 overflow-hidden flex flex-col">
+        <DialogHeader className="px-6 py-4 pr-12">
+          <DialogTitle>
             Create New Job Position
           </DialogTitle>
           <DialogDescription>
@@ -236,7 +236,7 @@ export function CreateJobDialog({
                 <JobForm />
                 <CustomFields formName={formName} />
               </div>
-              <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4 mt-auto">
+              <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10 mt-auto">
                 <Button
                   type="button"
                   variant="outline"
@@ -246,6 +246,7 @@ export function CreateJobDialog({
                 </Button>
                 <Button
                   type="submit"
+                  variant="primary"
                   onClick={() => scrollToError(errors)}
                   disabled={isSubmitting}
                 >

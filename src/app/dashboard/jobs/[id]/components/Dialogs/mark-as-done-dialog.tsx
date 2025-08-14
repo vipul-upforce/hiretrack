@@ -20,7 +20,6 @@ const ConfirmAndRemarkDialog = ({
   isLoading = false,
   loadingText = "Marking as done...",
   message,
-  className = "sm:max-w-[400px]",
   title = "Mark as Done",
 }: {
   isOpen: boolean;
@@ -29,7 +28,6 @@ const ConfirmAndRemarkDialog = ({
   onCancel: () => void;
   isLoading?: boolean;
   loadingText?: string;
-  className?: string;
   title?: string;
   assignmentId?: string;
   onAddHistoryEntry?: (historyEntry: any) => void;
@@ -64,13 +62,13 @@ const ConfirmAndRemarkDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className={className}>
-        <DialogHeader>
+      <DialogContent className="overflow-hidden flex flex-col" size="lg">
+        <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle>{title}</DialogTitle>
           {message && <DialogDescription>{message}</DialogDescription>}
         </DialogHeader>
-        <div className="space-y-4 py-4 pt-0">
-          <div>
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          <div className="mb-6">
             <Label htmlFor="remark-textarea">Remark</Label>
             <Textarea
               id="remark-textarea"
@@ -90,11 +88,20 @@ const ConfirmAndRemarkDialog = ({
             />
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={handleCancel} disabled={isLoading}>
+        <DialogFooter className="px-6 py-4">
+          <Button
+            variant="outline"
+            onClick={handleCancel}
+            disabled={isLoading}
+            className="border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+          >
             Cancel
           </Button>
-          <Button disabled={isLoading} onClick={handleConfirm}>
+          <Button
+            disabled={isLoading}
+            onClick={handleConfirm}
+            variant="info"
+          >
             {isLoading ? loadingText : "Mark as done"}
           </Button>
         </DialogFooter>

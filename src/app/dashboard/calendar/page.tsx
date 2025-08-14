@@ -9,6 +9,7 @@ import { EventClickArg } from "@fullcalendar/core";
 import { DateClickArg } from "@fullcalendar/interaction";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Search, X } from "lucide-react";
 import { CandidateDetailsDialog } from "../jobs/[id]/components/Dialogs/candidate-details-dialog";
 import { formatTime } from "../jobs/[id]/hooks/dateTimeFormatting";
 import { Candidate, CandidateStatus } from "@/types/candidate";
@@ -17,6 +18,7 @@ import LoaderSkeletonCalender from "./components/loader-skeleton-calender";
 import { RenderEvent } from "./components/renderCalendarEvent";
 import { useSSE } from "@/hooks/useSSE";
 import useRoles from "@/hooks/useRoles";
+import { useSelector } from "react-redux";
 
 interface Interviewer {
   _id: string;
@@ -107,6 +109,7 @@ export default function CalendarPage() {
   const [searchText, setSearchText] = useState("");
   const [filterText, setFilterText] = useState("");
 
+  const { user } = useSelector((state: any) => state.auth || {});
   const role = useRoles();
   const { candidates: sseCandidates } = useSSE(
     role || "",
@@ -132,8 +135,10 @@ export default function CalendarPage() {
   const mergedAssignments = (
     assignments && assignments[0]?.data ? [...assignments[0].data] : []
   ).map((assignment: CandidateAssignment) => {
-    const sseCandidate = sseCandidates.find(
-      (c: CandidateAssignment) => c._id === assignment._id
+    const sseCandidate = sseCandidates.find((c: CandidateAssignment) =>
+      role === "interviewer"
+        ? c._id === assignment?._id && c.assignment?.interviewerId === user._id
+        : c._id === assignment._id
     );
     return sseCandidate || assignment;
   });
@@ -194,12 +199,16 @@ export default function CalendarPage() {
         ? new Date(candidate?.assignment?.time)
         : undefined;
 
+      const hasGoogleMeet = candidate?.assignment?.googleMeet;
+      const baseTitle =
+        candidate?.jobId && typeof candidate.jobId === "object"
+          ? candidate?.jobId?.title
+          : "Unknown";
+      const title = hasGoogleMeet ? `📹 ${baseTitle}` : baseTitle;
+
       return {
         id: candidate._id,
-        title:
-          candidate?.jobId && typeof candidate.jobId === "object"
-            ? candidate?.jobId?.title
-            : "Unknown",
+        title,
         start: startTime,
         end: endTime,
         allDay: false,
@@ -207,6 +216,8 @@ export default function CalendarPage() {
         endStr: endTime?.toISOString() || "",
         url: "",
         display: "auto",
+        backgroundColor: hasGoogleMeet ? "#3b82f6" : undefined,
+        borderColor: hasGoogleMeet ? "#1d4ed8" : undefined,
         extendedProps: {
           candidate: {
             ...candidate,
@@ -293,12 +304,14 @@ export default function CalendarPage() {
   };
 
   const getInterviewerName = (candidate: CandidateAssignment) => {
-    if (candidate?.assignment?.interviewerId) {
-      return typeof candidate.assignment.interviewerId === "object"
-        ? candidate.assignment.interviewerId.name
-        : "Unknown";
+    if (
+      candidate?.assignment?.interviewerId &&
+      typeof candidate.assignment.interviewerId === "object" &&
+      candidate.assignment.interviewerId._id &&
+      candidate.assignment.interviewerId.name
+    ) {
+      return candidate.assignment.interviewerId.name;
     }
-    return "Unknown";
   };
 
   if (isLoading) {
@@ -306,47 +319,60 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-80px)] flex flex-col gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Interview Calendar</CardTitle>
-        </CardHeader>
-      </Card>
+    <div className="h-screen flex flex-col overflow-hidden w-full">
+      {/* Header section with improved design */}
+      <div className="flex-shrink-0 px-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+        <Card className="border-0 shadow-none bg-transparent">
+          <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-2 py-3 px-0">
+            {/* Title */}
+            <CardTitle className="line-clamp-2 md:mr-2 text-xl font-bold">
+              Calendar
+            </CardTitle>
 
-      {/* Search Input and Filter Button */}
-      <div className="flex gap-2 items-center">
-        <Input
-          placeholder="Search assignments..."
-          value={searchText}
-          onChange={(e) => {
-            const value = e.target.value;
-            const sanitizedValue = value.replace(
-              /[\/\\*+\?|\{\}\[\]()^$\.]/g,
-              ""
-            );
-            setSearchText(sanitizedValue);
-          }}
-          className="max-w-md"
-          onKeyPress={(e) => {
-            if (e.key === "Enter") {
-              applyFilter();
-            }
-          }}
-        />
-        <Button onClick={applyFilter}>Filter</Button>
-        <Button
-          onClick={() => {
-            setFilterText("");
-            setSearchText("");
-          }}
-        >
-          Clear
-        </Button>
+            {/* Right Section - Search and Filter */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3">
+              <div className="flex gap-2 items-center">
+                <Input
+                  placeholder="Search assignments..."
+                  value={searchText}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const sanitizedValue = value.replace(
+                      /[\/\\*+\?|\{\}\[\]()^$\.]/g,
+                      ""
+                    );
+                    setSearchText(sanitizedValue);
+                  }}
+                  className="max-w-lg w-96"
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter") {
+                      applyFilter();
+                    }
+                  }}
+                />
+                <Button variant="outline" onClick={applyFilter}>
+                  <Search className="h-4 w-4 mr-2" />
+                  Filter
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setFilterText("");
+                    setSearchText("");
+                  }}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Clear
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-6 flex-1 min-h-0">
-        <Card className="h-full">
-          <CardContent className="p-4 h-full">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-6 flex-1 min-h-0 px-4 pb-4 mt-4">
+        <div className="h-full border-0">
+          <div className="p-0 h-full">
             <FullCalendar
               ref={calendarRef}
               plugins={[dayGridPlugin]}
@@ -373,27 +399,27 @@ export default function CalendarPage() {
               eventTextColor="var(--primary-foreground)"
               eventContent={(arg) => {
                 return (
-                  <div className="bg-white w-full rounded-lg border border-gray-200 p-1.5 shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-pointer">
+                  <div className="bg-white dark:bg-gray-800 w-full rounded-lg border border-gray-200 dark:border-gray-600 p-1.5 shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-pointer">
                     <div className="flex items-baseline gap-1 items-center justify-between">
-                      <span className="font-medium text-sm truncate">
+                      <span className="font-medium text-sm truncate text-gray-900 dark:text-gray-100">
                         {arg.event._def.extendedProps.candidate.name}
                       </span>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
                         {arg.event.start ? formatTime(arg.event.start) : ""}
                       </span>
                     </div>
-                    <div className="text-xs text-gray-700 truncate">
+                    <div className="text-xs text-gray-700 dark:text-gray-300 truncate">
                       {arg.event._def.extendedProps.interviewer.name}
                     </div>
-                    <div className="text-[10px] text-gray-500 truncate">
+                    <div className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
                       {arg.event.title}
                     </div>
                   </div>
                 );
               }}
             />
-          </CardContent>
-        </Card>
+          </div>
+        </div>
         <div className="flex flex-col gap-4 sticky top-6 h-[calc(100vh-140px)] overflow-auto">
           {/* Unscheduled interviews */}
           {/* <Card>

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendMail } from ".";
+import { sendEventEmailWithHistory } from "@/lib/unifiedEmailService";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
-import { User } from "@/lib/mongodb";
+import { Settings, User, EmailHistory } from "@/lib/mongodb";
 import mongoose from "mongoose";
 import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
 import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
@@ -69,10 +70,32 @@ async function sendQueuedEmail(data: any, req: NextRequest) {
     status,
     emailList,
     candidateDetailsPage,
+    sentBy,
+    sentByEmail,
+    sentByName,
+    candidateId,
+    jobId,
   } = data;
 
+  const settings = await Settings.findOne({
+    organizationId: new mongoose.Types.ObjectId(organizationId),
+  }).lean();
+  if (!settings || !settings.mailConfig) {
+    throw new Error("Mail configuration not found");
+  }
+
+  const fromEmail =
+    settings.mailConfig.resend_from ||
+    settings.mailConfig.brevo_from ||
+    settings.mailConfig.smtp_from ||
+    "system@hiretrack.com";
+
   const startDateString = startTime
-    ? await getFormattedDate(req, new Date(startTime))
+    ? ((await getFormattedDate(req, new Date(startTime))) as string) +
+      " " +
+      settings.timeZone.offset +
+      " " +
+      settings.timeZone.name
     : "N/A";
   const startDate = startTime
     ? ((await getFormattedDate(req, new Date(startTime), true)) as Date)
@@ -120,38 +143,157 @@ async function sendQueuedEmail(data: any, req: NextRequest) {
     eventDescription || ""
   )}`;
 
+  const organization = await User?.findOne({
+    organizationId,
+  }).populate({
+    path: "organizationId",
+    select: "name", // populate only organization name
+  });
+  const organizationName =
+    typeof organization?.organizationId === "object"
+      ? organization.organizationId.name
+      : "";
   // Use the request's host header to determine the client's base URI
 
   const { emailContent, emailSubject } = await getMappedEmailTemplate(
-    "assignment-event",
+    "interview-assignment",
     {
       eventTitle,
-      startDate: startDateString as string,
+      interviewDate: startDateString as string,
       endDate: endDateString as string,
-      jobName,
+      jobTitle: jobName,
       interviewerName,
       candidateName,
-      status,
-      googleCalendarLink,
+      interviewType: status,
+      meetingLink: googleCalendarLink,
       outlookCalendarLink,
-      candidateDetailsPage,
+      candidateProfileLink: candidateDetailsPage,
+      organizationName,
     },
     organizationId
   );
 
-  return await sendMail(
+  const systemUser = await User.findOneAndUpdate(
+    { email: fromEmail, organizationId },
+    {
+      $setOnInsert: {
+        name: "HireTrack System",
+        email: fromEmail,
+        role: "system",
+        organizationId,
+      },
+    },
+    { upsert: true, new: true }
+  );
+
+  // Ensure sentBy is a valid ObjectId, falling back to the system user if needed
+  const sentById =
+    sentBy && sentBy !== "system" ? sentBy : systemUser._id.toString();
+  const sentByEmailValue =
+    sentByEmail && sentByEmail !== fromEmail ? sentByEmail : systemUser.email;
+  const sentByNameValue =
+    sentByName && sentByName !== "HireTrack System"
+      ? sentByName
+      : systemUser.name;
+
+  // Use the legacy sendMail function which properly handles BCC
+  // First email in array becomes TO, rest become BCC
+  const emailStatus = await sendMail(
     organizationId,
-    [email, ...emailList],
+    [email, ...emailList], // First email is TO (interviewer), rest are BCC (HR/Admins)
     emailSubject,
     emailContent
   );
+
+  // Create history records for all recipients
+  const historyPromises = [];
+
+  // Get provider from existing settings
+  const provider = settings?.mailConfig?.mailProvider || "unknown";
+
+  // Create history record for interviewer (primary recipient)
+  historyPromises.push(
+    EmailHistory.create({
+      organizationId: new mongoose.Types.ObjectId(organizationId),
+      sentBy: new mongoose.Types.ObjectId(sentById),
+      sentByEmail: sentByEmailValue,
+      sentByName: sentByNameValue,
+      recipientType: "user",
+      recipientId: new mongoose.Types.ObjectId(), // Would need interviewer ID if available
+      recipientEmail: email,
+      recipientName: interviewerName,
+      subject: emailSubject,
+      body: emailContent,
+      cc: [],
+      bcc: emailList,
+      replyTo: sentByEmailValue,
+      attachments: [],
+      status: emailStatus.status === 200 ? "sent" : "failed",
+      sentAt: emailStatus.status === 200 ? new Date() : undefined,
+      error: emailStatus.status !== 200 ? emailStatus.message : undefined,
+      provider,
+      metadata: {
+        candidateId: new mongoose.Types.ObjectId(candidateId),
+        jobId: jobId ? new mongoose.Types.ObjectId(jobId) : undefined,
+        templateUsed: "interview-assignment",
+        eventType: "interview_assignment",
+      },
+    })
+  );
+
+  // Create history records for BCC recipients (HR/Admins)
+  const hrHistoryPromises = emailList.map(async (hrEmail) => {
+    try {
+      const hrUser = await User.findOne({
+        email: hrEmail,
+        organizationId: new mongoose.Types.ObjectId(organizationId),
+      })
+        .select("_id name")
+        .lean();
+
+      return await EmailHistory.create({
+        organizationId: new mongoose.Types.ObjectId(organizationId),
+        sentBy: new mongoose.Types.ObjectId(sentById),
+        sentByEmail: sentByEmailValue,
+        sentByName: sentByNameValue,
+        recipientType: "user",
+        recipientId: hrUser?._id || new mongoose.Types.ObjectId(),
+        recipientEmail: hrEmail,
+        recipientName: hrUser?.name || hrEmail,
+        subject: emailSubject,
+        body: emailContent,
+        cc: [],
+        bcc: [],
+        replyTo: sentByEmailValue,
+        attachments: [],
+        status: emailStatus.status === 200 ? "sent" : "failed",
+        sentAt: emailStatus.status === 200 ? new Date() : undefined,
+        error: emailStatus.status !== 200 ? emailStatus.message : undefined,
+        provider,
+        metadata: {
+          candidateId: new mongoose.Types.ObjectId(candidateId),
+          jobId: jobId ? new mongoose.Types.ObjectId(jobId) : undefined,
+          templateUsed: "interview-assignment",
+          eventType: "interview_assignment",
+        },
+      });
+    } catch (error) {
+      console.error(`Failed to create history for ${hrEmail}:`, error);
+      return null;
+    }
+  });
+
+  historyPromises.push(...hrHistoryPromises);
+  await Promise.all(historyPromises);
+
+  return emailStatus;
 }
 
 export async function PUT(req: NextRequest) {
   try {
     let organizationId;
     const data = await req.json();
-    const token = req.cookies.get("token");
+    const token = req.cookies.get("auth_token");
     let decryptedResponse;
     if (token?.value) {
       decryptedResponse = await verifyAndDecryptToken(String(token?.value));
@@ -171,18 +313,52 @@ export async function PUT(req: NextRequest) {
     if (!User) {
       throw new Error("Database not connected");
     }
+    const latestRemark = data.feedback[data.feedback.length - 1];
+    // console.log(latestRemark, "feee---ddd");
+    const newDate = data.dateTime;
+    const completionDate = (await getFormattedDate(
+      req,
+      newDate,
+      false,
+      organizationId
+    )) as string;
 
-    const candidateDetails = `${req.headers.get("Origin")}/candidate/${data.id}`;
+    const candidateDetails = `${req.headers.get("Origin")}/candidate/${data.candidateId}`;
+    console.log("Detaielsss-------sssss", candidateDetails);
 
     const { emailContent, emailSubject } = await getMappedEmailTemplate(
-      "marked-as-done",
+      "step-completed",
       {
-        candidate_name: data.name,
-        unassigner: decryptedResponse?.user.name,
-        candidateDetails,
+        // candidate_name: data.name,
+        candidateName: data.name,
+        completedBy: decryptedResponse?.user.name,
+        candidateProfileLink: candidateDetails,
+        jobTitle: data.title,
+        organizationName: decryptedResponse?.user.organizationInfo.name,
+        stepName: data?.status,
+        feedback: latestRemark?.description || "N/A",
+        rating: latestRemark?.rating || "N/A",
+        completionDate: completionDate,
       },
       organizationId
     );
+
+    const settings = await Settings.findOne({
+      organizationId: new mongoose.Types.ObjectId(organizationId),
+    }).lean();
+    if (!settings || !settings.mailConfig) {
+      return NextResponse.json(
+        { error: "Mail configuration not found" },
+        { status: 500 }
+      );
+    }
+
+    const fromEmail =
+      settings.mailConfig.resend_from ||
+      settings.mailConfig.brevo_from ||
+      settings.mailConfig.smtp_from ||
+      "system@hiretrack.com";
+
     const users = await User.find({
       organizationId: new mongoose.Types.ObjectId(organizationId),
       role: { $in: ["hr", "admin"] },
@@ -193,12 +369,35 @@ export async function PUT(req: NextRequest) {
 
     console.log("%%EMAILS: ", users);
 
+    const systemUser = await User.findOneAndUpdate(
+      { email: fromEmail, organizationId },
+      {
+        $setOnInsert: {
+          name: "HireTrack System",
+          email: fromEmail,
+          role: "system",
+          organizationId,
+        },
+      },
+      { upsert: true, new: true }
+    );
+
     const emailList = users.map((user) => user.email);
-    const emailStatus = await sendMail(
+    const emailStatus = await sendEventEmailWithHistory(
       organizationId,
-      [undefined, ...emailList] as string[],
+      emailList,
       emailSubject,
-      emailContent
+      emailContent,
+      {
+        sentBy: decryptedResponse?.user._id || systemUser._id.toString(),
+        sentByEmail: decryptedResponse?.user.email || systemUser.email,
+        sentByName: decryptedResponse?.user.name || systemUser.name,
+        metadata: {
+          candidateId: data.id,
+          templateUsed: "marked-as-done",
+          eventType: "task_completion",
+        },
+      }
     );
     if (emailStatus.status === 200) {
       return NextResponse.json({ message: "Email sent successfully." });
@@ -240,7 +439,7 @@ export async function POST(req: NextRequest) {
     // console.log("~~~~~~~~~~~ ", candidateDetailsPage);
 
     let organizationId;
-    const token = req.cookies.get("token");
+    const token = req.cookies.get("auth_token");
     let decryptedResponse;
     if (token?.value) {
       decryptedResponse = await verifyAndDecryptToken(String(token?.value));
@@ -284,7 +483,7 @@ export async function POST(req: NextRequest) {
     //   );
     // }
 
-    if (!User) {
+    if (!User || !Settings) {
       throw new Error("Database not connected");
     }
 
@@ -295,6 +494,22 @@ export async function POST(req: NextRequest) {
     })
       .select("email")
       .lean();
+
+    const settings = await Settings.findOne({
+      organizationId: new mongoose.Types.ObjectId(organizationId),
+    }).lean();
+    if (!settings || !settings.mailConfig) {
+      return NextResponse.json(
+        { error: "Mail configuration not found" },
+        { status: 500 }
+      );
+    }
+
+    const fromEmail =
+      settings.mailConfig.resend_from ||
+      settings.mailConfig.brevo_from ||
+      settings.mailConfig.smtp_from ||
+      "system@hiretrack.com";
 
     console.log("%%EMAILS: ", users);
 
@@ -315,7 +530,11 @@ export async function POST(req: NextRequest) {
       status,
       emailList,
       candidateDetailsPage,
-      // changer: decryptedResponse?.user.name,
+      sentBy: decryptedResponse?.user._id || "system",
+      sentByEmail: decryptedResponse?.user.email || fromEmail,
+      sentByName: decryptedResponse?.user.name || "HireTrack System",
+      candidateId: id,
+      jobId: undefined, // Would need to be passed in request if available
     };
 
     if (immediate) {
@@ -352,7 +571,7 @@ export async function POST(req: NextRequest) {
 // ⛔⛔⛔ for debug only
 export async function GET(req: NextRequest) {
   try {
-    const token = req.cookies.get("token");
+    const token = req.cookies.get("auth_token");
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
         String(token?.value)

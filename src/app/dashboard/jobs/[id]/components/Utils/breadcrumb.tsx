@@ -11,7 +11,7 @@ interface BreadcrumbProps {
 
 export function Breadcrumb({ jobTitle, links }: BreadcrumbProps) {
   return (
-    <nav className="flex items-center text-sm text-muted-foreground">
+    <nav className="flex items-center text-sm text-muted-foreground font-medium">
       <Link
         href="/dashboard"
         className="flex items-center hover:text-foreground transition-colors"
@@ -31,7 +31,9 @@ export function Breadcrumb({ jobTitle, links }: BreadcrumbProps) {
         </React.Fragment>
       ))}
       <ChevronRight className="h-4 w-4 mx-2" />
-      <span className="text-foreground line-clamp-1">{jobTitle}</span>
+      <span className="text-foreground line-clamp-1 font-semibold">
+        {jobTitle}
+      </span>
     </nav>
   );
 }

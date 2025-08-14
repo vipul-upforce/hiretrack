@@ -1,8 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import dbConnect, { CandidateAccount } from "@/lib/mongodb";
 import { User, Lane } from "@/lib/mongodb";
 import mongoose from "mongoose";
+import { signupRateLimiter } from "@/lib/rateLimiter";
+import { NotificationService } from "@/lib/notifications/notificationService";
 
 const DEFAULT_LANES = [
   "applied",
@@ -13,10 +15,10 @@ const DEFAULT_LANES = [
   "rejected",
 ];
 
-export async function POST(req: Request) {
+async function handleSignup(req: NextRequest) {
   try {
     await dbConnect();
-    var { email, password, name, role, organizationId } = await req.json();
+    var { email, password, name, role, organizationId, triggerUserId, triggerUserName } = await req.json();
 
     if (!(organizationId instanceof mongoose.Types.ObjectId)) {
       organizationId = new mongoose.Types.ObjectId(organizationId);
@@ -66,6 +68,24 @@ export async function POST(req: Request) {
       lanes: DEFAULT_LANES,
     });
 
+    // Send user creation notification (only if triggerUser is provided, indicating this is an admin action)
+    if (triggerUserId && triggerUserName && role !== 'candidate') {
+      try {
+        await NotificationService.notifyUserAdded({
+          organizationId: organizationId.toString(),
+          newUserId: user._id.toString(),
+          newUserName: user.name,
+          newUserEmail: user.email,
+          newUserRole: user.role,
+          triggerUserId: triggerUserId,
+          triggerUserName: triggerUserName,
+        });
+      } catch (notificationError) {
+        console.error("Failed to send user creation notification:", notificationError);
+        // Don't fail the API call if notification fails
+      }
+    }
+
     // // Generate token
     // const token = signToken({
     //   id: user._id,
@@ -100,4 +120,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
   }
+}
+
+// Export with rate limiting
+export async function POST(req: Request) {
+  // SECURITY FIX: Apply rate limiting to prevent signup spam
+  return signupRateLimiter(req as NextRequest, handleSignup);
 }

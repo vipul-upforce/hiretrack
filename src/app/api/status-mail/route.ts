@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sendMail } from "../event-mail";
+import { sendEventEmailWithHistory } from "@/lib/unifiedEmailService";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
-import connectToDatabase, { User } from "@/lib/mongodb";
+import connectToDatabase, { Settings, User } from "@/lib/mongodb";
 import mongoose from "mongoose";
 import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
+import { Organization } from "@/lib/models/user";
+import { log } from "console";
 
 // Email queue to track pending emails
 const emailQueue = new Map<
@@ -57,7 +59,6 @@ function scheduleEmail(
 async function sendQueuedEmail(data: any) {
   const {
     organizationId,
-    email,
     eventTitle,
     candidateName,
     status,
@@ -65,36 +66,114 @@ async function sendQueuedEmail(data: any) {
     rating,
     emailList,
     actionBy,
+    jobName,
     prev_status,
     eventSubTitle,
     candidateDetails,
+    candidateId,
+    jobId,
+    sentBy,
+    sentByEmail,
+    sentByName,
+    hrContactInfo,
   } = data;
 
-  //   const eventDescription: string = `<div>
-  //   <strong>Candidate Name:</strong> ${candidateName || "N/A"}<br>
-  //   <strong>Status:</strong> ${status || "N/A"}<br>
-  //   <strong>Remark:</strong> ${remark || "N/A"}<br>
-  //   <strong>Rating:</strong> ${rating || "N/A"}
-  // </div>`;
+  const settings = await Settings.findOne({
+    organizationId: new mongoose.Types.ObjectId(organizationId),
+  }).lean();
+  if (!settings || !settings.mailConfig) {
+    throw new Error("Mail configuration not found");
+  }
 
-  const {emailContent, emailSubject} = await getMappedEmailTemplate("status-update", {
-    eventTitle,
-    candidateName,
-    status,
-    remark,
-    rating,
-    actionBy,
-    prev_status,
-    eventSubTitle,
-    candidateDetails,
-    // eventDescription,
-  }, organizationId);
-  console.log(`>>> ${email}, ${[...emailList]}`);
-  return await sendMail(
+  const fromEmail =
+    settings.mailConfig.resend_from ||
+    settings.mailConfig.brevo_from ||
+    settings.mailConfig.smtp_from ||
+    "system@hiretrack.com";
+
+  const organization = await User?.findOne({
     organizationId,
-    [email, ...emailList],
+  })
+    .populate({
+      path: "organizationId",
+      select: "name defaultLanes", // populate only organization name
+    })
+    .lean();
+  // console.log(organization, "eeeee-------mmmm");
+
+  const isOrganization = (obj: any): obj is Organization => {
+    return (
+      obj &&
+      typeof obj === "object" &&
+      "defaultLanes" in obj &&
+      Array.isArray(obj.defaultLanes)
+    );
+  };
+  // console.log(isOrganization(organization.organizationId), "isOrganization");
+  // console.log(organization.organizationId.lanes.indexOf(status) + 1, "lanes");
+  const nextSteps =
+    organization &&
+    organization.organizationId &&
+    isOrganization(organization.organizationId)
+      ? organization.organizationId.defaultLanes[
+          organization.organizationId.defaultLanes.indexOf(status) + 1
+        ] || "N/A"
+      : "N/A";
+  console.log(nextSteps, "nextSteps");
+  const organizationName =
+    typeof organization?.organizationId === "object"
+      ? organization.organizationId.name
+      : "";
+
+  const { emailContent, emailSubject } = await getMappedEmailTemplate(
+    "status-update",
+    {
+      eventTitle,
+      jobTitle: jobName,
+      candidateName,
+      newStatus: status,
+      statusMessage: remark,
+      rating,
+      actionBy,
+      nextSteps,
+      prev_status,
+      eventSubTitle,
+      candidateDetails,
+      organizationName: organizationName,
+      hrContactInfo,
+    },
+    organizationId
+  );
+
+  const systemUser = await User.findOneAndUpdate(
+    { email: fromEmail, organizationId },
+    {
+      $setOnInsert: {
+        name: "HireTrack System",
+        email: fromEmail,
+        role: "system",
+        organizationId,
+      },
+    },
+    { upsert: true, new: true }
+  );
+
+  return await sendEventEmailWithHistory(
+    organizationId,
+    emailList,
     emailSubject,
-    emailContent
+    emailContent,
+    {
+      sentBy: sentBy || systemUser._id.toString(),
+      sentByEmail: sentByEmail || systemUser.email,
+      sentByName: sentByName || systemUser.name,
+      metadata: {
+        candidateId,
+        jobId,
+        templateUsed: "status-update",
+        eventType: "status_change",
+      },
+    }
   );
 }
 
@@ -102,6 +181,7 @@ export async function POST(req: NextRequest) {
   try {
     await connectToDatabase();
     const {
+      jobName,
       eventTitle,
       candidateName,
       status,
@@ -110,10 +190,12 @@ export async function POST(req: NextRequest) {
       immediate = false,
       id,
       prev_status,
+      endTime,
+      startTime,
     } = await req.json();
 
     let organizationId;
-    const token = req.cookies.get("token");
+    const token = req.cookies.get("auth_token");
     let decryptedResponse;
     if (token?.value) {
       decryptedResponse = await verifyAndDecryptToken(String(token?.value));
@@ -147,7 +229,7 @@ export async function POST(req: NextRequest) {
       role: { $in: ["hr", "admin"] },
       $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
     })
-      .select("email")
+      .select("email name role")
       .lean();
 
     // console.log("FETCHED USERS: ", users);
@@ -159,6 +241,17 @@ export async function POST(req: NextRequest) {
         { status: 404 }
       );
     }
+    console.log("Users: ", users);
+    console.log("decryptedResponse: ", decryptedResponse);
+    let hrContactInfo = "";
+    if (decryptedResponse?.user?.role === "hr") {
+      hrContactInfo = `${decryptedResponse?.user?.email} ${decryptedResponse?.user?.name}`;
+    } else {
+      const hrUser = users.find((user) => user.role === "hr");
+      console.log("HR USER: ", hrUser);
+      hrContactInfo = hrUser ? `${hrUser.email} ${hrUser.name}` : "";
+    }
+    console.log("HR CONTACT INFO: ", hrContactInfo);
 
     const actionBy = decryptedResponse?.user.name;
     const emailList = users.map((user) => user.email);
@@ -180,10 +273,19 @@ export async function POST(req: NextRequest) {
       status,
       remark,
       rating,
+      jobName,
       emailList,
       actionBy,
       prev_status,
       candidateDetails,
+      candidateId: id, // The candidate ID from the request
+      jobId: undefined, // Would need to be passed in the request if available
+      sentBy: decryptedResponse?.user._id,
+      sentByEmail: decryptedResponse?.user.email,
+      sentByName: decryptedResponse?.user.name,
+      startTime,
+      endTime,
+      hrContactInfo,
     };
 
     if (immediate) {
@@ -221,7 +323,7 @@ export async function POST(req: NextRequest) {
 // ⛔⛔⛔ for debug only
 export async function GET(req: NextRequest) {
   try {
-    const token = req.cookies.get("token");
+    const token = req.cookies.get("auth_token");
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
         String(token?.value)

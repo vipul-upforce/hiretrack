@@ -198,7 +198,18 @@ export async function POST(req: NextRequest) {
       history: updatedHistory?.history,
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({
+      success: true,
+      updatedCandidate: {
+        ...candidateObj,
+        jobId: {
+          _id: jobId,
+          title: nextJob.title,
+          description: nextJob.description,
+        },
+        history: updatedHistory?.history,
+      },
+    });
   } catch (error: unknown) {
     console.error(error);
     if (error instanceof Error) {

@@ -29,6 +29,8 @@ import Link from "next/link";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { SignupSchema } from "../schema/Signup.schema";
 import { SignupFormValues } from "@/types/signup";
+import { useSelector } from "react-redux";
+import { User } from "@/lib/features/org/orgApi";
 
 export default function Signup() {
   const router = useRouter();
@@ -36,6 +38,9 @@ export default function Signup() {
   const [signup, { isLoading }] = useSignupMutation();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const { user: userData }: { user: User } = useSelector(
+    (state: any) => state.auth || {}
+  );
 
   const initialValues: SignupFormValues = {
     email: "",
@@ -51,43 +56,40 @@ export default function Signup() {
     { setStatus }: { setStatus: (message: string) => void }
   ) => {
     try {
-      const userData = Cookies.get("token");
       if (userData) {
-        const decryptedResponse = await verifyAndDecryptJWTToken(
-          String(userData)
-        );
-        if (decryptedResponse.success && decryptedResponse.user) {
-          try {
-            const orgID_cookie = decryptedResponse.user.organizationId || "";
-            const signupData = {
-              ...values,
-              email: values.email.toLowerCase().trim(),
-              organizationId: orgID_cookie,
-              name: values.name.trim(),
-            };
-            const response = await signup(signupData).unwrap();
+        // const decryptedResponse = userData
+        // if (decryptedResponse.success && decryptedResponse.user) {
+        try {
+          const orgID_cookie = userData.organizationId || "";
+          const signupData = {
+            ...values,
+            email: values.email.toLowerCase().trim(),
+            organizationId: orgID_cookie,
+            name: values.name.trim(),
+          };
+          const response = await signup(signupData).unwrap();
 
-            if (response.user) {
-              toast({
-                title: "Success",
-                description: "Account created successfully",
-                variant: "default",
-              });
-              router.push("/dashboard/users");
-            } else {
-              throw new Error("No user data received");
-            }
-          } catch (error: unknown) {
-            if (error && typeof error === "object" && "data" in error) {
-              const errorMessage =
-                (error.data as { error: string }).error ||
-                "Failed to parse user data from cookie";
-              throw new Error(errorMessage);
-            } else {
-              throw new Error("Failed to parse user data from cookie");
-            }
+          if (response.user) {
+            toast({
+              title: "Success",
+              description: "Account created successfully",
+              variant: "default",
+            });
+            router.push("/dashboard/users");
+          } else {
+            throw new Error("No user data received");
+          }
+        } catch (error: unknown) {
+          if (error && typeof error === "object" && "data" in error) {
+            const errorMessage =
+              (error.data as { error: string }).error ||
+              "Failed to parse user data from cookie";
+            throw new Error(errorMessage);
+          } else {
+            throw new Error("Failed to parse user data from cookie");
           }
         }
+        // }
       }
     } catch (err: unknown) {
       if (err instanceof Error) {

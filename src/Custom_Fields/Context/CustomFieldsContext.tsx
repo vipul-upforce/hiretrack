@@ -15,10 +15,12 @@ import {
   useLazyGetCustomFieldsQuery,
   useUpdateCustomFieldsMutation,
   useLazyGetCustomFieldsByOrgNameQuery,
+  User,
 } from "@/lib/features/org/orgApi";
 import Cookies from "js-cookie";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { usePathname } from "next/navigation";
+import { useSelector } from "react-redux";
 
 const getOrgParamFromUrl = (): string | null => {
   if (typeof window === "undefined") return null;
@@ -39,40 +41,43 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
     const [getCustomFieldsByOrgName] = useLazyGetCustomFieldsByOrgNameQuery();
     const [userLoggedIn, setUserLoggedIn] = useState<boolean>(false);
     const pathname = usePathname();
+    const { user }: { user: User } = useSelector(
+      (state: any) => state.auth || {}
+    );
     // const searchParams = useSearchParams();
 
     const postCustomFields = useCallback(async () => {
       // debugger;
-      const token = Cookies.get("token");
+      // const token = Cookies.get("token");
       if (
-        (token && pathname?.includes("jobs-board")) ||
+        (user && user.id && pathname?.includes("jobs-board")) ||
         pathname?.includes("jobs") ||
         pathname?.includes("settings") ||
         pathname?.endsWith("dashboard")
       ) {
-        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-        if (decryptedResponse.success && decryptedResponse.user) {
-          const userObject = decryptedResponse.user;
-          const orgId = userObject.organizationId;
-          // debugger;
-          updateCustomFields({
-            orgId: orgId,
-            customFields: customFields,
-          });
-        }
+        // const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+        // if (decryptedResponse.success && decryptedResponse.user) {
+        // const userObject = user;
+        const orgId = user?.organizationId;
+        // debugger;
+        updateCustomFields({
+          orgId: orgId,
+          customFields: customFields,
+        });
+        // }
       }
     }, [customFields, updateCustomFields, pathname]);
 
     const getCustomFields = useCallback(async () => {
-      const token = Cookies.get("token");
-      if (token) {
-        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-        if (decryptedResponse.success && decryptedResponse.user) {
-          const userObject = decryptedResponse.user;
-          const orgId = userObject.organizationId;
-          const data = await getCustomField(orgId);
-          if (data.data) setCustomFields(data.data);
-        }
+      // const token = Cookies.get("token");
+      if (user && user.role !== "" && user.role !== "candidate") {
+        // const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+        // if (decryptedResponse.success && decryptedResponse.user) {
+        const userObject = user;
+        const orgId = userObject.organizationId;
+        const data = await getCustomField(orgId);
+        if (data.data) setCustomFields(data.data);
+        // }
       } else if (pathname?.includes("/apply-jobs")) {
         // debugger;
         const orgParam = getOrgParamFromUrl();

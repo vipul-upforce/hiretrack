@@ -3,6 +3,8 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Cookies from "js-cookie";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import { useSelector } from "react-redux";
+import { User } from "@/lib/features/org/orgApi";
 
 export default function UsersLayout({
   children,
@@ -10,17 +12,19 @@ export default function UsersLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-
+  const { user }: { user: User } = useSelector(
+    (state: any) => state.auth || {}
+  );
   const checkUser = async () => {
-    const token = Cookies.get("token");
-    if (token) {
-      const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-      if (decryptedResponse.success && decryptedResponse.user) {
-        if (decryptedResponse.user.role !== "admin") {
-          // debugger;
-          router.push("/dashboard");
-        }
+    // const token = Cookies.get("token");
+    if (user) {
+      // const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+      // if (decryptedResponse.success && decryptedResponse.user) {
+      if (user.role !== "admin") {
+        // debugger;
+        router.push("/dashboard");
       }
+      // }
     }
   };
 

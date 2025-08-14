@@ -1,0 +1,135 @@
+/* Basic dark mode support for react-multi-date-picker */
+.dark .wren-picker.rmdp-wrapper {
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    border-color: hsl(var(--border));
+}
+
+.dark .wren-picker.rmdp-wrapper .rmdp-header {
+    background: hsl(var(--muted) / 0.2);
+    color: hsl(var(--foreground));
+    border-color: hsl(var(--border));
+}
+
+.dark .wren-picker.rmdp-wrapper .rmdp-header-values {
+    color: hsl(var(--foreground));
+}
+
+.dark .wren-picker.rmdp-wrapper .rmdp-day {
+    color: hsl(var(--foreground));
+}
+
+.dark .wren-picker.rmdp-wrapper .rmdp-day:hover {
+    background: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+}
+
+.dark .wren-picker.rmdp-wrapper .rmdp-day.rmdp-selected {
+    color: hsl(var(--primary-foreground));
+}
+
+.dark .wren-picker.rmdp-wrapper .rmdp-week-day {
+    color: hsl(var(--muted-foreground));
+}
+
+.dark .wren-picker.rmdp-wrapper .rmdp-day.rmdp-today span {
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+}
+
+/* Fix custom plugin buttons in dark mode */
+.dark .wren-picker .flex.items-center.justify-between.gap-2.p-3 button {
+    background: hsl(var(--secondary));
+    color: hsl(var(--secondary-foreground));
+    border-color: hsl(var(--border));
+}
+
+.dark .wren-picker .flex.items-center.justify-between.gap-2.p-3 button:hover {
+    background: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+}
+
+/* Specifically target the Done button */
+.dark .wren-picker .flex.items-center.justify-between.gap-2.p-3 button.border-primary {
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    border-color: hsl(var(--primary));
+}
+
+.dark .wren-picker .flex.items-center.justify-between.gap-2.p-3 button.border-primary:hover {
+    background: hsl(var(--primary));
+    opacity: 0.9;
+}
+
+.dark .wren-picker.rmdp-wrapper .rmdp-time-picker {
+    background: hsl(var(--background));
+    border-color: hsl(var(--border));
+}
+
+.dark .wren-picker.rmdp-wrapper .rmdp-time-picker input {
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    border-color: hsl(var(--border));
+}
+
+.rmdp-time-picker div input {
+    width: 30px !important;
+}
+
+.dark .rmdp-time-picker div .rmdp-am {
+    color: hsl(var(--foreground));
+}
+
+.rmdp-container {
+    width: 100% !important;
+}
+
+/* Enhanced styling for better appearance */
+.wren-picker.rmdp-wrapper {
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border: 1px solid hsl(var(--border));
+}
+
+.dark .wren-picker.rmdp-wrapper {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+}
+
+/* Better button styling for the action buttons */
+.wren-picker .flex.items-center.justify-between.gap-2.p-3 {
+    background: hsl(var(--muted) / 0.2);
+    border-top: 1px solid hsl(var(--border) / 0.3);
+}
+
+.dark .wren-picker .flex.items-center.justify-between.gap-2.p-3 {
+    background: hsl(var(--muted) / 0.1);
+    border-top: 1px solid hsl(var(--border) / 0.5);
+}
+
+/* Additional dark mode styles for better coverage */
+.dark .wren-picker.rmdp-wrapper .rmdp-day.rmdp-disabled {
+    color: hsl(var(--muted-foreground) / 0.5);
+}
+
+.dark .wren-picker.rmdp-wrapper .rmdp-month-picker,
+.dark .wren-picker.rmdp-wrapper .rmdp-year-picker {
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+}
+
+.dark .wren-picker.rmdp-wrapper .rmdp-month-picker div,
+.dark .wren-picker.rmdp-wrapper .rmdp-year-picker div {
+    color: hsl(var(--foreground));
+}
+
+.dark .wren-picker.rmdp-wrapper .rmdp-month-picker div:hover,
+.dark .wren-picker.rmdp-wrapper .rmdp-year-picker div:hover {
+    background: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+}
+
+.dark .wren-picker.rmdp-wrapper .rmdp-time-picker select {
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    border-color: hsl(var(--border));
+}

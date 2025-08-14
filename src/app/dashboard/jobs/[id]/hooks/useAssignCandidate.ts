@@ -88,16 +88,25 @@ export const useAssignCandidate = ({
           interviewerId: values.interviewerId,
           time: values?.time?.toISOString(),
           assignedAt: new Date().toISOString(),
+          // Include Google Meet data if available
+          ...(values.googleMeetData && { googleMeet: values.googleMeetData }),
         },
         attachments: [...candidate.attachments, ...values.attachments],
       };
+
+      console.log("📝 Assignment Update:", {
+        hasGoogleMeetData: !!values.googleMeetData,
+        googleMeetData: values.googleMeetData,
+        assignment: updatedCandidate.assignment,
+      });
 
       const previousInterviewer =
         typeof candidate.assignment?.interviewerId === "object"
           ? candidate.assignment.interviewerId.name
           : "";
       const previousInterviewerId =
-        typeof candidate.assignment?.interviewerId === "object"
+        typeof candidate.assignment?.interviewerId === "object" &&
+        Object.keys(candidate.assignment?.interviewerId).length > 0
           ? Object(candidate.assignment.interviewerId._id)
           : null;
 
@@ -109,7 +118,7 @@ export const useAssignCandidate = ({
         );
         if (foundNextInterviewer) {
           nextInterviewer = foundNextInterviewer.name;
-          nextInterviewerId = Object(foundNextInterviewer._id);
+          nextInterviewerId = foundNextInterviewer._id;
         }
       }
 
@@ -134,14 +143,14 @@ export const useAssignCandidate = ({
       if (!error) {
         sentAssignmentMail(result, sendEmail);
       }
-      await updateCandidateHistory({
+      const updatedHistory = await updateCandidateHistory({
         candidateId: updatedCandidate._id,
         jobId: candidate.jobId._id || candidate.jobId,
         newEntry: newHistoryEntry,
       }).unwrap();
 
       if (result) {
-        onUpdate(result);
+        onUpdate({ ...result, history: updatedHistory });
         onOpenChange(false);
         setLocalCandidate(result);
       }
@@ -242,7 +251,16 @@ export const useAssignCandidate = ({
         jobId: candidate.jobId._id || candidate.jobId,
         newEntry: newHistoryEntry,
       }).unwrap();
-      sendUnassignEmail({ name: result.name });
+      // sendUnassignEmail({ name: result.name });
+      sendUnassignEmail({
+        name: result.name,
+        candidateId: updatedCandidate._id,
+        jobId: candidate.jobId.title || candidate.jobId,
+        title: candidate.jobId.title || candidate.jobId,
+        dateTime: new Date().toISOString(),
+        status: candidate?.status,
+        feedback: newHistoryEntry.note,
+      });
       toast({
         title: "Success",
         description: "Interviewer has been unassigned successfully",

@@ -1,10 +1,8 @@
 "use client";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import Radio from "@mui/material/Radio";
-import RadioGroup from "@mui/material/RadioGroup";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import { Checkbox } from "@mui/material";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import dayjs, { Dayjs } from "dayjs";
 import { FileDropZone } from "@/components/ui/file-drop-zone";
 import { ChipInput } from "@/components/ui/chip-input";
@@ -26,7 +24,7 @@ import {
 } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
-import { Calendar } from "@/components/ui/calendar";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 
 interface FileData {
@@ -40,13 +38,13 @@ interface RenderFieldProps {
   label: string;
   type: string;
   value:
-    | string
-    | string[]
-    | boolean
-    | FileData[]
-    | Dayjs
-    | [Dayjs, Dayjs]
-    | undefined;
+  | string
+  | string[]
+  | boolean
+  | FileData[]
+  | Dayjs
+  | [Dayjs, Dayjs]
+  | undefined;
   onChange?: (
     value: string | string[] | boolean | FileData[] | Dayjs | [Dayjs, Dayjs]
   ) => void;
@@ -188,18 +186,17 @@ export const RenderFieldInFilter = ({
           {options?.map((option, index) => (
             <div className="flex items-center space-x-2" key={option}>
               <Checkbox
-                name={option}
+                id={`${option}-${index}`}
                 checked={(value as string[])?.includes(option)}
-                className="capitalize"
-                onChange={(e) => {
+                onCheckedChange={(checked) => {
                   const currentValues = (value as string[]) || [];
-                  const newValues = currentValues.includes(option)
-                    ? currentValues.filter((val) => val !== option)
-                    : [...currentValues, option];
+                  const newValues = checked
+                    ? [...currentValues, option]
+                    : currentValues.filter((val) => val !== option);
                   onChange?.(newValues);
                 }}
               />
-              <Label htmlFor={`${option}-${option}-${index}`}>{option}</Label>
+              <Label htmlFor={`${option}-${index}`}>{option}</Label>
             </div>
           ))}
         </div>
@@ -224,21 +221,22 @@ export const RenderFieldInFilter = ({
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={
+              <DatePicker
+                value={
                   value && (value as [Dayjs, Dayjs])[0]
                     ? (value as [Dayjs, Dayjs])[0].toDate()
-                    : undefined
+                    : null
                 }
-                onSelect={(date) => {
+                onChange={(date) => {
                   const newRange = [
                     date ? dayjs(date) : undefined,
                     (value as [Dayjs, Dayjs])?.[1],
                   ] as [Dayjs, Dayjs];
                   onChange?.(newRange);
                 }}
-                initialFocus
+                showTimePicker={false}
+                format="MM/DD/YYYY"
+                placeholder="Select start date"
               />
             </PopoverContent>
           </Popover>
@@ -259,21 +257,22 @@ export const RenderFieldInFilter = ({
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={
+              <DatePicker
+                value={
                   value && (value as [Dayjs, Dayjs])[1]
                     ? (value as [Dayjs, Dayjs])[1].toDate()
-                    : undefined
+                    : null
                 }
-                onSelect={(date) => {
+                onChange={(date) => {
                   const newRange = [
                     (value as [Dayjs, Dayjs])?.[0],
                     date ? dayjs(date) : undefined,
                   ] as [Dayjs, Dayjs];
                   onChange?.(newRange);
                 }}
-                initialFocus
+                showTimePicker={false}
+                format="MM/DD/YYYY"
+                placeholder="Select end date"
               />
             </PopoverContent>
           </Popover>
@@ -292,7 +291,7 @@ export const RenderFieldInFilter = ({
               ] as [string, string];
               onChange?.(newRange);
             }}
-            onBlur={() => {}}
+            onBlur={() => { }}
             name={name as string}
           />
           <TimePicker
@@ -304,7 +303,7 @@ export const RenderFieldInFilter = ({
               ] as [string, string];
               onChange?.(newRange);
             }}
-            onBlur={() => {}}
+            onBlur={() => { }}
             name={name as string}
           />
         </div>
@@ -322,9 +321,9 @@ export const RenderFieldInFilter = ({
               ];
               onChange?.(newRange);
             }}
-            onBlur={() => {}}
-            // min={min ? dayjs(min) : undefined}
-            // max={max ? dayjs(max) : undefined}
+            onBlur={() => { }}
+          // min={min ? dayjs(min) : undefined}
+          // max={max ? dayjs(max) : undefined}
           />
           <DateTimePicker
             value={value ? (value as [Dayjs, Dayjs])[1] : undefined}
@@ -335,9 +334,9 @@ export const RenderFieldInFilter = ({
               ];
               onChange?.(newRange);
             }}
-            onBlur={() => {}}
-            // min={min ? dayjs(min) : undefined}
-            // max={max ? dayjs(max) : undefined}
+            onBlur={() => { }}
+          // min={min ? dayjs(min) : undefined}
+          // max={max ? dayjs(max) : undefined}
           />
         </div>
       );
@@ -346,23 +345,16 @@ export const RenderFieldInFilter = ({
       return (
         <RadioGroup
           value={value as string}
-          onChange={(e) => onChange?.(e.target.value)}
-          onBlur={() => {}}
-          name={label}
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            gap: "10px",
-          }}
+          onValueChange={(newValue) => onChange?.(newValue)}
+          className="flex flex-row gap-4"
         >
           {options?.map((option) => (
-            <FormControlLabel
-              key={option}
-              className="capitalize"
-              value={option}
-              control={<Radio />}
-              label={option}
-            />
+            <div key={option} className="flex items-center space-x-2">
+              <RadioGroupItem value={option} id={`${label}-${option}`} />
+              <Label htmlFor={`${label}-${option}`} className="capitalize">
+                {option}
+              </Label>
+            </div>
           ))}
         </RadioGroup>
       );
@@ -407,11 +399,11 @@ export const RenderFieldInFilter = ({
           existingFiles={
             Array.isArray(value)
               ? (value as FileData[]).map((file) => ({
-                  name: file.name,
-                  type: file.type,
-                  size: file.size,
-                  preview: file.base64,
-                }))
+                name: file.name,
+                type: file.type,
+                size: file.size,
+                preview: file.base64,
+              }))
               : []
           }
         />

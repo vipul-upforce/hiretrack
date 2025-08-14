@@ -18,6 +18,8 @@ export interface Candidate {
     skills?: string[];
   };
   name: string;
+  email: string;
+  contact: string;
   location: string;
   experience: number;
   skills: string[];
@@ -54,7 +56,6 @@ export interface Candidate {
     description: string;
   };
   history?: ICandidateHistory[];
-  email?: string;
   isDeleted?: boolean;
   scores?: {
     overall: number;
@@ -66,6 +67,15 @@ export interface Candidate {
     recommendation: string;
     notes: string;
     failure?: string;
+  };
+  followUp?: {
+    note: string;
+    date?: Date | string;
+    userId?: {
+      _id: string;
+      name: string;
+      email: string;
+    };
   };
 }
 
@@ -96,9 +106,19 @@ export interface Remark {
 }
 
 interface Assignment {
-  interviewerId: string | { _id: string; name: string; email: string };
+  interviewerId:
+    | string
+    | { _id: string; name: string; email: string; duration: string };
   time: string;
+  duration?: string;
   assignedAt: string;
+  googleMeet?: {
+    eventId: string;
+    meetingLink: string;
+    htmlLink: string;
+    summary: string;
+    description: string;
+  };
   status?: string;
   assignment?: { status: string };
   jobId?: Job;

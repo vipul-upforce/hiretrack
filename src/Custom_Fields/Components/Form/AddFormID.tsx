@@ -103,7 +103,7 @@ const AddFormID: React.FC<AddFormIDProps> = ({ isOpen, setIsOpen, formId }) => {
                   <div className="text-red-500">{errors.formName}</div>
                 ) : null}
               </div>
-              <Button type="submit" className="text-white rounded px-4 py-2">
+              <Button type="submit" variant="success" className="rounded px-4 py-2">
                 {formId ? "Update Form" : "Add Form"}
               </Button>
             </form>

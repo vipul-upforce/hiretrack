@@ -40,6 +40,7 @@ export const useUnassignHandlers = (
         ...localCandidate,
         assignment: null,
       };
+
       const result = await updateCandidate(updatedCandidate).unwrap();
       if (result) {
         onUpdate?.(result);
@@ -73,7 +74,21 @@ export const useUnassignHandlers = (
           jobId: localCandidate?.jobId._id || localCandidate?.jobId || "",
           newEntry: newHistoryEntry,
         }).unwrap();
-        sendUnassignEmail({ name: result.name });
+        sendUnassignEmail({
+          name: result.name,
+          candidateId: updatedCandidate._id || "",
+          jobId: localCandidate?.jobId.title || localCandidate?.jobId || "",
+          title: localCandidate?.jobId.title || localCandidate?.jobId || "",
+          dateTime: new Date().toISOString(),
+          status: localCandidate?.status,
+          feedback: newHistoryEntry.note,
+          // note: {
+          //   description: "",
+          //   date: "",
+          //   rating: 0,
+          //   userId: null,
+          // },
+        });
 
         if (pathname === "/dashboard/calendar") {
           onOpenChange?.(false);

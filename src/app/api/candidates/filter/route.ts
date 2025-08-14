@@ -11,7 +11,8 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const page = parseInt(request.nextUrl.searchParams.get("page") || "1");
-    const limit = 100;
+    const limit = parseInt(request.nextUrl.searchParams.get("limit") || "100");
+    // const limit = 100;
     const skip = (page - 1) * limit;
     const {
       name,

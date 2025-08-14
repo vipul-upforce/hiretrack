@@ -66,7 +66,7 @@ export default function GeminiConfigs({ onClose }: { onClose: () => void }) {
     }
   };
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <div className="px-6 py-4">Loading...</div>;
 
   const formFields: Array<{
     label: string;
@@ -82,55 +82,71 @@ export default function GeminiConfigs({ onClose }: { onClose: () => void }) {
   ];
 
   return (
-    <Formik<geminiValues>
-      initialValues={initialValues}
-      validationSchema={validationSchema}
-      onSubmit={handleSubmit}
-      enableReinitialize
-    >
-      {({
-        values,
-        handleChange,
-        handleBlur,
-        handleSubmit,
-        isSubmitting,
-        errors,
-        touched,
-      }) => (
-        <Form onSubmit={handleSubmit} className="space-y-4">
-          {formFields.map(({ label, name, placeholder }) => (
-            <div key={name} className="space-y-2">
-              <Label htmlFor={name}>{label}</Label>
-              <Input
-                id={name}
-                name={name}
-                value={
-                  typeof values[name] === "string"
-                    ? (values[name] as string)
-                    : ""
-                }
-                onChange={handleChange}
-                onBlur={handleBlur}
-                placeholder={placeholder}
-                className={
-                  errors[name] && touched[name] ? "border-red-500" : ""
-                }
-              />
-              <ErrorMessage
-                name={name}
-                component="div"
-                className="text-red-500 text-sm"
-              />
+    <>
+      <Formik<geminiValues>
+        initialValues={initialValues}
+        validationSchema={validationSchema}
+        onSubmit={handleSubmit}
+        enableReinitialize
+      >
+        {({
+          values,
+          handleChange,
+          handleBlur,
+          handleSubmit,
+          isSubmitting,
+          errors,
+          touched,
+        }) => (
+          <Form onSubmit={handleSubmit} className="flex flex-col h-full">
+            <div className="px-6 py-4 space-y-4">
+              {formFields.map(({ label, name, placeholder }) => (
+                <div key={name} className="space-y-2">
+                  <Label htmlFor={name}>{label}</Label>
+                  <Input
+                    id={name}
+                    name={name}
+                    value={
+                      typeof values[name] === "string"
+                        ? (values[name] as string)
+                        : ""
+                    }
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    placeholder={placeholder}
+                    className={
+                      errors[name] && touched[name] ? "border-red-500" : ""
+                    }
+                  />
+                  <ErrorMessage
+                    name={name}
+                    component="div"
+                    className="text-red-500 text-sm"
+                  />
+                </div>
+              ))}
             </div>
-          ))}
 
-          <div className="w-full flex justify-end">
-            <Button type="submit" disabled={isSubmitting || isUpdating}>
-              {isSubmitting || isUpdating ? "Saving..." : "Save Settings"}
-            </Button>
-          </div>
-        </Form>
-      )}
-    </Formik>
+            <div className="flex justify-end gap-2 border-t border-border/10 px-6 py-4 mt-auto">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={onClose}
+                disabled={isSubmitting || isUpdating}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="default"
+                disabled={isSubmitting || isUpdating}
+              >
+                {isSubmitting || isUpdating ? "Saving..." : "Save"}
+              </Button>
+            </div>
+          </Form>
+        )}
+      </Formik>
+    </>
   );
 }

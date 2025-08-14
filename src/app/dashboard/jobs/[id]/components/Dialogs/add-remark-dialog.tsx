@@ -13,6 +13,7 @@ import {
   DialogFooter,
   DialogTrigger,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -23,6 +24,7 @@ import { sentStatusMailHandler } from "@/lib/utils";
 import { useSendStatusMailMutation } from "@/lib/features/org/orgApi";
 import { Switch } from "@/components/ui/switch";
 import { Eye, EyeOff } from "lucide-react";
+import { useSelector } from "react-redux";
 // import { sentRemarkMail } from "@/lib/utils";
 
 const AddRemarksDialog = ({
@@ -31,14 +33,17 @@ const AddRemarksDialog = ({
   onOpenChange,
   setOpenRemarksFor,
   refetch,
+  onRemarkAdded,
 }: {
   candidate: Candidate;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   setOpenRemarksFor: (id: string | null) => void;
   refetch: () => void;
+  onRemarkAdded?: (updatedCandidate: Candidate) => void;
 }) => {
   const [newRemark, setNewRemark] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [remarkRating, setRemarkRating] = useState<number | null>(null);
   const [remarkRatingHistory, setRemarkRatingHistory] = useState<number | null>(
     null
@@ -47,112 +52,135 @@ const AddRemarksDialog = ({
   const [isSubRemarkPrivate, setIsSubRemarkPrivate] = useState(true);
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
   const [sendStatusMail] = useSendStatusMailMutation();
+  const { user } = useSelector((state: any) => state.auth || {});
 
   const handleAddRemark = async () => {
-    const token = Cookies.get("token");
-    if (token) {
-      const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-      if (decryptedResponse.success && decryptedResponse.user) {
-        const user = decryptedResponse.user;
-        if (!newRemark.trim() || !user?.id) {
+    if (isSubmitting) return;
+    // const token = Cookies.get("token");
+    if (user) {
+      // const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+      // if (decryptedResponse.success && decryptedResponse.user) {
+      // const user = decryptedResponse.user;
+      if (!newRemark.trim() || !user?.id) {
+        toast({
+          title: "Error",
+          description: "Please add remarks",
+          variant: "destructive",
+        });
+        return;
+      }
+      setIsSubmitting(true);
+      try {
+        const newRemarkObj = {
+          description: String(newRemark).trim(),
+          date: new Date().toISOString(),
+          rating: remarkRating ? Number(remarkRating) : undefined,
+          userId: {
+            _id: user.id,
+            name: user.name,
+            email: user.email,
+          },
+        };
+        const newRemarkHistoryObj = {
+          description: String(newRemark).trim(),
+          isPrivate: isSubRemarkPrivate,
+          date: new Date().toISOString(),
+          rating: remarkRatingHistory ? Number(remarkRatingHistory) : undefined,
+          userId: {
+            _id: user.id,
+            name: user.name,
+            email: user.email,
+          },
+        };
+
+        // debugger;
+        // const updateData = {
+        //   candidateId: candidate?._id,
+        //   jobId: candidate.jobId,
+        //   remarks: [...(candidate?.remarks || []), newRemarkObj],
+        // };
+        // const updateData = {
+        //   _id: candidate?._id,
+        //   name: candidate.name,
+        //   remarks: [...(candidate?.remarks || []), newRemarkObj],
+        // };
+        // debugger;
+        // const updateData = {
+        //   candidateId: candidate?._id,
+        //   jobId: candidate.jobId,
+        //   remarks: [...(candidate?.remarks || []), newRemarkObj],
+        // };
+        const updateData = {
+          _id: candidate?._id,
+          name: candidate.name,
+          jobId: candidate?.jobId,
+          remarks: [...(candidate?.remarks || []), newRemarkObj],
+        };
+
+        const newHistoryEntry = {
+          dateTime: new Date().toISOString(),
+          currentInterviewer: null,
+          previousInterviewer: null,
+          remark: newRemarkHistoryObj,
+          assignmentBy: user!.id,
+          title: null,
+          note: {
+            description: "",
+            date: "",
+            rating: 0,
+            userId: null,
+          },
+          attachments: [],
+        };
+        toast({
+          title: "Updating",
+          description: `Updating ${candidate.name}'s remarks`,
+        });
+        // debugger;
+        await updateCandidateHistory({
+          candidateId: candidate?._id,
+          jobId: candidate.jobId,
+          newEntry: newHistoryEntry,
+        }).unwrap();
+        // debugger;
+        const wasUpdatedRecently =
+          candidate.updatedAt &&
+          Date.now() - new Date(candidate.updatedAt).getTime() <= 20 * 1000; // 20 seconds
+
+        const updatedCandidate = await updateCandidate(updateData).unwrap();
+        if (wasUpdatedRecently) {
+          await sentStatusMailHandler(updatedCandidate, sendStatusMail);
+        }
+        // sentRemarkMail(result, sendEmail);
+
+        onOpenChange(false);
+
+        setNewRemark("");
+        setRemarkRating(null);
+        setRemarkRatingHistory(null);
+        setOpenRemarksFor("");
+
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        await refetch();
+        debugger;
+        onRemarkAdded?.(updatedCandidate);
+        toast({
+          title: "Success",
+          description: "Remark added successfully",
+        });
+      } catch (error: unknown) {
+        if (error instanceof Error) {
           toast({
             title: "Error",
-            description: "Please add remarks",
+            description: error.message,
             variant: "destructive",
           });
-          return;
         }
-
-        try {
-          const newRemarkObj = {
-            description: String(newRemark).trim(),
-            date: new Date().toISOString(),
-            rating: remarkRating ? Number(remarkRating) : undefined,
-            userId: {
-              _id: user.id,
-              name: user.name,
-              email: user.email,
-            },
-          };
-          const newRemarkHistoryObj = {
-            description: String(newRemark).trim(),
-            isPrivate: isSubRemarkPrivate,
-            date: new Date().toISOString(),
-            rating: remarkRatingHistory
-              ? Number(remarkRatingHistory)
-              : undefined,
-            userId: {
-              _id: user.id,
-              name: user.name,
-              email: user.email,
-            },
-          };
-
-          // debugger;
-          // const updateData = {
-          //   candidateId: candidate?._id,
-          //   jobId: candidate.jobId,
-          //   remarks: [...(candidate?.remarks || []), newRemarkObj],
-          // };
-          const updateData = {
-            _id: candidate?._id,
-            name: candidate.name,
-            remarks: [...(candidate?.remarks || []), newRemarkObj],
-          };
-
-          const newHistoryEntry = {
-            dateTime: new Date().toISOString(),
-            currentInterviewer: null,
-            previousInterviewer: null,
-            remark: newRemarkHistoryObj,
-            assignmentBy: user!.id,
-            title: null,
-            note: {
-              description: "",
-              date: "",
-              rating: 0,
-              userId: null,
-            },
-            attachments: [],
-          };
-          toast({
-            title: "Updating",
-            description: `Updating ${candidate.name}'s remarks`,
-          });
-          // debugger;
-          await updateCandidateHistory({
-            candidateId: candidate?._id,
-            jobId: candidate.jobId,
-            newEntry: newHistoryEntry,
-          }).unwrap();
-          const updatedCandidate = await updateCandidate(updateData).unwrap();
-          await sentStatusMailHandler(updatedCandidate, sendStatusMail);
-          // sentRemarkMail(result, sendEmail);
-
-          onOpenChange(false);
-
-          setNewRemark("");
-          setRemarkRating(null);
-          setRemarkRatingHistory(null);
-          setOpenRemarksFor("");
-
-          await new Promise((resolve) => setTimeout(resolve, 100));
-          await refetch();
-
-          toast({
-            title: "Success",
-            description: "Remark added successfully",
-          });
-        } catch (error: unknown) {
-          if (error instanceof Error) {
-            toast({
-              title: "Error",
-              description: error.message,
-              variant: "destructive",
-            });
-          }
-        }
+      } finally {
+        setIsSubmitting(false);
       }
+
+      // }
     }
   };
 
@@ -161,11 +189,15 @@ const AddRemarksDialog = ({
       <DialogTrigger asChild>
         <div></div>
       </DialogTrigger>
-      <DialogContent className="w-[700px] p-6">
-        <DialogHeader>
+      <DialogContent size="lg" className="p-0 overflow-hidden flex flex-col">
+        <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle>Add Remarks for {candidate.name}</DialogTitle>
+          <DialogDescription>
+            Add your observations and feedback for this candidate. You can
+            include a rating and set privacy preferences.
+          </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           <Textarea
             placeholder="Add a remark..."
             className="max-h-80 overflow-y-auto"
@@ -174,7 +206,7 @@ const AddRemarksDialog = ({
           />
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <Label htmlFor="rating">Rating:</Label>
+              <Label htmlFor="rating">Ratings:</Label>
               <Rating
                 name="half-rating"
                 onChange={(e, value) => {
@@ -183,6 +215,17 @@ const AddRemarksDialog = ({
                 }}
                 defaultValue={0}
                 precision={0.5}
+                sx={{
+                  "& .MuiRating-iconEmpty": {
+                    color: "rgb(156 163 175)",
+                  },
+                  "& .MuiRating-iconFilled": {
+                    color: "#fbbf24",
+                  },
+                  "& .MuiRating-iconHover": {
+                    color: "#f59e0b",
+                  },
+                }}
               />
             </div>
             <div className="flex flex-row items-center justify-evenly">
@@ -208,11 +251,17 @@ const AddRemarksDialog = ({
             </div>
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="border-t bg-background px-6 py-4 sticky bottom-0 z-10">
           <Button variant="secondary" onClick={() => onOpenChange(false)}>
             No Remarks
           </Button>
-          <Button onClick={handleAddRemark}>Add Remark</Button>
+          <Button
+            onClick={handleAddRemark}
+            disabled={isSubmitting || !newRemark.trim() || !user?.id}
+            variant="info"
+          >
+            {isSubmitting ? "Submitting..." : "Add Remark"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import Cookies from "js-cookie";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import withAuthGuard from "@/components/withAuthGuard";
+import { useSelector } from "react-redux";
 
 export type FileWithPreview = {
   id: string;
@@ -58,7 +59,10 @@ export function CVBatchProcessor() {
   const [postBatch] = usePostBatchMutation();
   const [isPosting, setIsPosting] = useState(false);
   const { toast } = useToast();
-  const [User, setUser] = useState<User | null>(null);
+  // const [User, setUser] = useState<User | null>(null);
+  const { user: User }: { user: User } = useSelector(
+    (state: any) => state.auth || {}
+  );
 
   // Fetch all batches using RTK Query
   const {
@@ -69,22 +73,22 @@ export function CVBatchProcessor() {
     skip: !User?.organizationId,
   });
 
-  const getUser = async () => {
-    // debugger;
-    const userData = Cookies.get("token");
-    if (userData) {
-      const decryptedResponse = await verifyAndDecryptJWTToken(
-        String(userData)
-      );
-      if (decryptedResponse.success && decryptedResponse.user) {
-        setUser(decryptedResponse.user);
-      }
-    }
-  };
+  // const getUser = async () => {
+  //   // debugger;
+  //   const userData = Cookies.get("token");
+  //   if (userData) {
+  //     const decryptedResponse = await verifyAndDecryptJWTToken(
+  //       String(userData)
+  //     );
+  //     if (decryptedResponse.success && decryptedResponse.user) {
+  //       setUser(decryptedResponse.user);
+  //     }
+  //   }
+  // };
 
-  useEffect(() => {
-    getUser();
-  }, []);
+  // useEffect(() => {
+  //   getUser();
+  // }, []);
 
   useEffect(() => {
     if (batches) {

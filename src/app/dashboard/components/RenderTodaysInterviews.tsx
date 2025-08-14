@@ -46,9 +46,9 @@ export const RenderTodaysInterviews = ({
                 <div>
                   <p className="text-sm text-muted-foreground mb-1.5">Skills</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {assignment.skills.slice(0, 3).map((skill) => (
+                    {assignment.skills.slice(0, 3).map((skill, skillIndex) => (
                       <Badge
-                        key={skill}
+                        key={`${assignment.id}-skill-${skillIndex}-${skill}`}
                         variant="secondary"
                         className="text-xs"
                       >
@@ -73,8 +73,8 @@ export const RenderTodaysInterviews = ({
                     <p className="text-sm font-medium">
                       {assignment.assignment.time
                         ? formatDate(
-                          assignment.assignment.time.toLocaleString()
-                        )
+                            assignment.assignment.time.toLocaleString()
+                          )
                         : "N/A"}
                     </p>
                   </div>
@@ -87,8 +87,8 @@ export const RenderTodaysInterviews = ({
                     <p className="text-sm font-medium">
                       {assignment.assignment.time
                         ? formatTime(
-                          assignment.assignment.time.toLocaleString()
-                        )
+                            assignment.assignment.time.toLocaleString()
+                          )
                         : "N/A"}
                     </p>
                   </div>

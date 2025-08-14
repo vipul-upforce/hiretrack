@@ -93,14 +93,14 @@ export const sentStatusMailHandler = async (
     //     : "",
     eventTitle: "Status Updated for " + result.name,
     prev_status: result.prev_status || "",
-    // startTime: new Date().toISOString(),
-    // endTime: new Date().toISOString(),
-    // jobName:
-    //   result.jobId &&
-    //   typeof result.jobId !== "string" &&
-    //   (result.jobId as unknown as IJob).title
-    //     ? (result.jobId as unknown as IJob).title
-    //     : "Unknown Job",
+    startTime: new Date().toISOString(),
+    endTime: new Date().toISOString(),
+    jobName:
+      result.jobId &&
+      typeof result.jobId !== "string" &&
+      (result.jobId as unknown as IJob).title
+        ? (result.jobId as unknown as IJob).title
+        : "Unknown Job",
     // interviewerName:
     //   latestRemark && typeof latestRemark.userId === "object"
     //     ? latestRemark.userId.name
@@ -177,12 +177,12 @@ export const sentUnAssignmentMail = async (
     //     : "Interview for Unknown Position",
     // startTime: result.assignment?.time,
     // endTime: result.assignment?.time,
-    // jobName:
-    //   result.jobId &&
-    //   typeof result.jobId !== "string" &&
-    //   (result.jobId as unknown as IJob).title
-    //     ? (result.jobId as unknown as IJob).title
-    //     : "Unknown Job",
+    jobName:
+      result.jobId &&
+      typeof result.jobId !== "string" &&
+      (result.jobId as unknown as IJob).title
+        ? (result.jobId as unknown as IJob).title
+        : "Unknown Job",
     // interviewerName:
     //   typeof result.assignment.interviewerId === "object"
     //     ? result.assignment.interviewerId.name

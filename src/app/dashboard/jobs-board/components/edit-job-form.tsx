@@ -108,6 +108,7 @@ const convertFileToBase64 = (file: FileOrAttachment): Promise<string> => {
 };
 
 export const scrollToError = (errors: FormikErrors<any>) => {
+  // debugger;
   if (!errors || Object.keys(errors).length === 0) return;
 
   const firstErrorKey = Object.keys(errors)[0];
@@ -121,9 +122,11 @@ export const scrollToError = (errors: FormikErrors<any>) => {
     const cfKey = Object.keys(customFieldErrors)[0];
     if (cfKey) {
       // Use name attribute for Formik fields
-      element = document.querySelector(
-        `[name="customFields.${cfKey}"]`
-      ) as HTMLElement;
+      element =
+        (document.querySelector(
+          `[id="customFields.${cfKey}"]`
+        ) as HTMLElement) ||
+        (document.querySelector(`[data-field-name="${cfKey}"]`) as HTMLElement);
     }
   } else {
     // Use name attribute for top-level fields
@@ -282,7 +285,7 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
       onSubmit={onSubmit}
     >
       {({ isSubmitting, setFieldValue, values, errors }) => (
-        <Form className="flex flex-col h-[calc(90vh-80px)] overflow-hidden border-t pt-4 mb-[70px] sticky top-0">
+        <Form className="flex flex-col border-t pt-4 mb-[70px] overflow-y-hidden sticky top-0">
           <div className="flex-1 overflow-y-auto px-6 py-4 pt-0 space-y-4">
             <JobForm
               job={job}
@@ -307,6 +310,7 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
             <div>
               <AddSpecificCustomFieldButton
                 jobId={job._id}
+                jobTitle={job.title}
                 onSave={(newField) => {
                   handleAddCustomField(newField, selectedFormId?.formId || "");
                 }}

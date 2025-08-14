@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { User } from "@/lib/mongodb";
+import connectToDatabase, { Settings, User } from "@/lib/mongodb";
 import { Candidate } from "@/lib/mongodb";
 import { handleCustomFieldFiles, handleFileAttachments } from "@/lib/fileUtils";
 import { handleSingleFile } from "@/lib/fileUtils";
@@ -14,6 +14,10 @@ import { IinfoUpdateLog } from "@/lib/models/history";
 import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
 import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
 import { ITag } from "@/lib/models/organization";
+import { NotificationService } from "@/lib/notifications/notificationService";
+import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
+import { sendEventEmailWithHistory } from "@/lib/unifiedEmailService";
+import { Types } from "mongoose";
 
 interface UpdateObject {
   $set: Record<string, unknown>;
@@ -45,6 +49,7 @@ export async function PUT(
   const fieldsToTrack = [
     "name",
     "email",
+    "contact",
     "location",
     "experience",
     "currentCTC",
@@ -61,7 +66,7 @@ export async function PUT(
     await connectToDatabase();
     const data = await request.json();
     // console.log("🟢🟢🟢 INCOMING DATA: ", data);
-    const token = request.cookies.get("token");
+    const token = request.cookies.get("auth_token");
 
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
@@ -372,6 +377,7 @@ export async function PUT(
           User
         ) {
           const latestRemark = data.remarks[data.remarks.length - 1];
+
           if (latestRemark?.description) {
             const users = await User.find({
               organizationId,
@@ -379,32 +385,65 @@ export async function PUT(
               $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
             }).select("email");
 
+            const organization = await User?.findOne({
+              organizationId,
+            }).populate({
+              path: "organizationId",
+              select: "name", // populate only organization name
+            });
+            // console.log(organization, "remark-organization");
+
             const emailList = [undefined, ...users.map((user) => user.email)];
             const remark_adder = userData?.name || "user";
             const remark_for = data.name || existingCandidate.name;
             const remark = latestRemark.description.trim();
             const rating = latestRemark.rating || "None";
             const candidateDetails = `${request.headers.get("origin")}/candidate/${data._id}`;
+            const remarkDate = (await getFormattedDate(
+              request,
+              latestRemark.date,
+              false,
+              organizationId
+            )) as string;
+            // console.log("⛔⛔⛔ APLPICTION DATE: ", remarkDate);
+
+            const organizationName =
+              typeof organization?.organizationId === "object"
+                ? organization.organizationId.name
+                : "";
 
             if (emailList.length > 0 && remark !== "") {
               const { emailContent, emailSubject } =
                 await getMappedEmailTemplate(
-                  "remark-add",
+                  "new-remark",
                   {
-                    remark_adder,
-                    remark_for,
+                    reviewerName: remark_adder,
+                    candidateName: remark_for,
                     rating,
-                    remark,
-                    candidateDetails,
+                    jobTitle: data?.jobId?.title,
+                    remarkDate: remarkDate,
+                    remarkText: remark,
+                    candidateProfileLink: candidateDetails,
+                    organizationName: organizationName,
+                    recipientName: emailList[0] || "",
                   },
                   organizationId
                 );
 
-              sendMail(
+              sendEventEmailWithHistory(
                 organizationId,
                 emailList as string[],
                 emailSubject,
-                emailContent
+                emailContent,
+                {
+                  sentBy: userData.id.toString(),
+                  sentByEmail: userData.email,
+                  sentByName: userData.name,
+                  metadata: {
+                    templateUsed: "new-remark",
+                    eventType: "new-remark",
+                  },
+                }
               );
             }
           }
@@ -493,6 +532,10 @@ export async function PUT(
             select: "name email",
           },
           {
+            path: "followUp.userId",
+            select: "name email",
+          },
+          {
             path: "jobId",
             select: "_id description title",
           },
@@ -568,6 +611,140 @@ export async function PUT(
         { path: "history.note.userId", select: "_id name email" },
       ]);
 
+      // Send notifications for various updates
+      try {
+        const jobInfo = updatedCandidate.jobId as any;
+
+        // Assignment notifications
+        if ("assignment" in data) {
+          const oldAssignment = existingCandidate.assignment;
+          const newAssignment = data.assignment;
+
+          if (newAssignment && newAssignment.interviewerId) {
+            // If assignment is new or interviewer changed
+            if (
+              !oldAssignment ||
+              oldAssignment.interviewerId !== newAssignment.interviewerId
+            ) {
+              // Get interviewer information
+              const interviewer = await User?.findById(
+                newAssignment.interviewerId
+              ).select("name email");
+
+              if (interviewer) {
+                await NotificationService.notifyCandidateAssigned({
+                  organizationId: organizationId,
+                  candidateId: updatedCandidate._id.toString(),
+                  candidateName: updatedCandidate.name,
+                  jobId:
+                    jobInfo?._id?.toString() ||
+                    updatedCandidate.jobId?.toString() ||
+                    "",
+                  jobTitle: jobInfo?.title || "Unknown Job",
+                  interviewerId: newAssignment.interviewerId,
+                  interviewerName: interviewer.name,
+                  triggerUserId: userData._id,
+                  triggerUserName: userData.name,
+                });
+              }
+
+              // Meeting scheduled notification if time is provided
+              if (newAssignment.time) {
+                await NotificationService.notifyMeetingScheduled({
+                  organizationId: organizationId,
+                  candidateId: updatedCandidate._id.toString(),
+                  candidateName: updatedCandidate.name,
+                  jobId:
+                    jobInfo?._id?.toString() ||
+                    updatedCandidate.jobId?.toString() ||
+                    "",
+                  jobTitle: jobInfo?.title || "Unknown Job",
+                  interviewerId: newAssignment.interviewerId,
+                  interviewerName: interviewer?.name || "Unknown Interviewer",
+                  meetingDate: new Date(newAssignment.time),
+                  triggerUserId: userData._id,
+                  triggerUserName: userData.name,
+                });
+              }
+            }
+          }
+        }
+
+        // Remarks notification
+        if (
+          "remarks" in data &&
+          Array.isArray(data.remarks) &&
+          data.remarks.length > 0
+        ) {
+          const existingRemarks = existingCandidate.remarks || [];
+          if (data.remarks.length > existingRemarks.length) {
+            const latestRemark = data.remarks[data.remarks.length - 1];
+            if (latestRemark?.description) {
+              await NotificationService.notifyRemarkAdded({
+                organizationId: organizationId,
+                candidateId: updatedCandidate._id.toString(),
+                candidateName: updatedCandidate.name,
+                jobId:
+                  jobInfo?._id?.toString() ||
+                  updatedCandidate.jobId?.toString() ||
+                  "",
+                jobTitle: jobInfo?.title || "Unknown Job",
+                remarkText: latestRemark.description,
+                triggerUserId: userData._id,
+                triggerUserName: userData.name,
+              });
+            }
+          }
+        }
+
+        // Follow-up notification
+        if ("followUp" in data && data.followUp) {
+          const oldFollowUp = existingCandidate.followUp;
+          if (
+            !oldFollowUp ||
+            JSON.stringify(oldFollowUp) !== JSON.stringify(data.followUp)
+          ) {
+            await NotificationService.notifyFollowUpAdded({
+              organizationId: organizationId,
+              candidateId: updatedCandidate._id.toString(),
+              candidateName: updatedCandidate.name,
+              jobId:
+                jobInfo?._id?.toString() ||
+                updatedCandidate.jobId?.toString() ||
+                "",
+              jobTitle: jobInfo?.title || "Unknown Job",
+              followupNote: data.followUp.note || "",
+              followupDate: data.followUp.date
+                ? new Date(data.followUp.date)
+                : undefined,
+              triggerUserId: userData._id,
+              triggerUserName: userData.name,
+            });
+          }
+        }
+
+        // General candidate details update notification
+        if (updates.length > 0) {
+          // Only send if there are significant updates (not just tracking fields)
+          const significantUpdates = updates.filter(
+            (update) =>
+              !update.title.includes("Updated tracking") &&
+              !update.title.includes("Updated _id")
+          );
+
+          if (significantUpdates.length > 0) {
+            // This could be enhanced to send a general "candidate details updated" notification
+            // For now, we'll rely on the specific update types above
+          }
+        }
+      } catch (notificationError) {
+        console.error(
+          "Failed to send candidate update notifications:",
+          notificationError
+        );
+        // Don't fail the API call if notification fails
+      }
+
       // console.log("UPDATED SCRE: ", updatedCandidate.scores);
       // console.log(
       //   "🔥🔥🔥🔥 In CandidateUpdate: ",
@@ -577,7 +754,10 @@ export async function PUT(
         ...updatedCandidate,
         history: candidateHistoryPopulated?.history,
       });
-      return NextResponse.json(updatedCandidate);
+      return NextResponse.json({
+        ...updatedCandidate,
+        history: candidateHistoryPopulated?.history,
+      });
     }
 
     return NextResponse.json(existingCandidate);
@@ -596,7 +776,7 @@ export async function GET(
   try {
     await connectToDatabase();
     let role = "";
-    const token = _request.cookies.get("token");
+    const token = _request.cookies.get("auth_token");
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
         String(token?.value)
@@ -629,6 +809,10 @@ export async function GET(
         },
         {
           path: "remarks.userId",
+          select: "name email",
+        },
+        {
+          path: "followUp.userId",
           select: "name email",
         },
         {
@@ -751,6 +935,10 @@ export async function DELETE(
       },
       {
         path: "remarks.userId",
+        select: "name email",
+      },
+      {
+        path: "followUp.userId",
         select: "name email",
       },
       {

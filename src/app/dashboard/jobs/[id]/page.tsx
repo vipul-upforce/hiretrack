@@ -6,17 +6,21 @@ import {
   DroppableProvided,
 } from "@hello-pangea/dnd";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { CreateCandidateDialog } from "./components/Dialogs/create-candidate-dialog";
 import { CreateLaneDialog } from "./components/Dialogs/create-lane-dialog";
 import { CandidateDetailsDialog } from "./components/Dialogs/candidate-details-dialog";
 import { initialCandidateColumns } from "./data/initial-data";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { useFetchJobByIdQuery } from "@/lib/features/job/jobApi";
 import { useFetchCandidatesQuery } from "@/lib/features/candidate/candidateApi";
 import { Candidate, CandidateColumn, CandidateStatus } from "@/types/candidate";
 import LoaderSkeleton from "./components/Lanes/loader-skeleton";
-import { useGetLanesQuery } from "@/lib/features/lane/laneApi";
+import {
+  useGetLanesQuery,
+  useGetJobLanesQuery,
+} from "@/lib/features/lane/laneApi";
+import { useGetJobLaneConfigQuery } from "@/lib/features/checklist/checklistApi";
 import { User } from "@/lib/features/users/usersApi";
 import Cookies from "js-cookie";
 import { Breadcrumb } from "./components/Utils/breadcrumb";
@@ -32,10 +36,38 @@ import EditLaneDialog from "./components/Lanes/edit-lane-dialog";
 import { useSSE } from "@/hooks/useSSE";
 import { mergeRefs } from "react-merge-refs";
 import { Skeleton } from "@/components/ui/skeleton";
-// import CandidatesPage from "./CandidatesPage";
+import { QuickSelectAndFilter } from "./components/QuickSelectAndFilter";
+import { Button } from "@/components/ui/button";
+import { Settings2, BarChart3 } from "lucide-react";
+import { CustomFieldsContext } from "@/Custom_Fields/Context";
+import CustomFieldDialog from "@/Custom_Fields/Components/Common/CustomFieldDialog";
+import Stepper from "@/Custom_Fields/Components/Stepper";
+import { useContext, useCallback } from "react";
+import { JobAnalyticsModal } from "../../jobs-board/components/JobAnalyticsModal";
+import ChecklistRemarksDialog from "./components/Dialogs/checklist-remarks-dialog";
+import { LaneChecklistConfigDialog } from "./components/Dialogs/lane-checklist-config-dialog";
+import { useSelector } from "react-redux";
+
+interface FilterState {
+  search: string;
+  logicalOperator: "AND" | "OR";
+  topCandidates: boolean;
+  appliedThisWeek: boolean;
+  appliedToday: boolean;
+  appliedIn15Days: boolean;
+  toFollowUp: boolean;
+  assigned: boolean;
+  notAssigned: boolean;
+  withRemarks: boolean;
+  withoutRemarks: boolean;
+}
 
 export default function JobProgressPage() {
   const id = useParams()?.id as string;
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const candidateIdParam = searchParams.get("candidateId");
+
   const [columns, setColumns] = useState<CandidateColumn[]>(
     initialCandidateColumns
   );
@@ -43,7 +75,7 @@ export default function JobProgressPage() {
     null
   );
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
+  // const [user, setUser] = useState<User | null>(null);
   const [openRemarksFor, setOpenRemarksFor] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -56,10 +88,37 @@ export default function JobProgressPage() {
   const [initialLaneToEdit, setInitialLaneToEdit] = useState<string | null>(
     null
   );
-  const { ref: scrollRef, setIsDndDragging } =
-    useDragToScroll<HTMLDivElement>();
+  const [isChecklistConfigOpen, setIsChecklistConfigOpen] = useState(false);
+  const [checklistConfigLane, setChecklistConfigLane] = useState<{
+    laneId: string;
+    laneName: string;
+    initialTab?: "incoming" | "outgoing";
+  } | null>(null);
 
-  // Initialize useSSE hook with hardcoded role "admin" and jobId
+  // Handler for configuring checklist
+  const handleConfigureChecklist = useCallback(
+    (
+      laneId: string,
+      laneName: string,
+      initialTab?: "incoming" | "outgoing"
+    ) => {
+      setChecklistConfigLane({ laneId, laneName, initialTab });
+      setIsChecklistConfigOpen(true);
+    },
+    []
+  );
+
+  const [filterConditions, setFilterConditions] = useState<FilterState | null>(
+    null
+  );
+  const { user } = useSelector((state: any) => state.auth || {});
+
+  const {
+    ref: scrollRef,
+    setIsDndDragging,
+    isDragging,
+  } = useDragToScroll<HTMLDivElement>();
+
   const { candidates: sseCandidates, lanes: updatedLanes } = useSSE(
     user?.role || "",
     setSelectedCandidate,
@@ -77,14 +136,32 @@ export default function JobProgressPage() {
     isLoading: isCandidatesLoading,
     refetch,
   } = useFetchCandidatesQuery(id as string);
-  const { data: lanes, isLoading: isLanesLoading } = useGetLanesQuery(
-    user?.id || undefined,
-    { skip: !user?.id }
+  // NEW: Use job-specific lanes with fallback to user lanes
+  const {
+    data: jobLanes,
+    isLoading: isJobLanesLoading,
+    error: jobLanesError,
+  } = useGetJobLanesQuery(id as string, { skip: !id });
+  const { data: userLanes, isLoading: isUserLanesLoading } = useGetLanesQuery(
+    { userId: user?.id, jobId: id as string },
+    { skip: !user?.id || !id }
   );
+
+  // Use job-specific lanes if available, fallback to user lanes
+  const lanes = jobLanes || userLanes;
+  const isLanesLoading = isJobLanesLoading || isUserLanesLoading;
+
+  // Fetch job lane configuration for checklist indicators
+  const { data: jobLaneConfig } = useGetJobLaneConfigQuery(id as string, {
+    skip: !id,
+  });
+
   const [droppedFileData, setDroppedFileData] = useState<File | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLaneEditOpen, setIsLaneEditOpen] = useState(false);
   const [isFileOver, setIsFileOver] = useState(false);
+  const [isCustomFieldsOpen, setIsCustomFieldsOpen] = useState(false);
+  const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
 
   const {
     handleAddLane,
@@ -96,6 +173,7 @@ export default function JobProgressPage() {
     columns,
     setColumns,
     user,
+    jobId: id, // NEW: Pass jobId for job-specific operations
     setIsConfirmLaneDeleteOpen,
     setIsLaneEditOpen,
     refetch,
@@ -107,6 +185,9 @@ export default function JobProgressPage() {
     handleCandidateUpdate,
     handleDeleteClick,
     handleDeleteConfirm,
+    pendingMoves,
+    completePendingMove,
+    cancelPendingMove,
   } = useCandidate({
     columns,
     setColumns,
@@ -120,7 +201,22 @@ export default function JobProgressPage() {
     selectedCandidate,
     refetch,
     candidateToDelete,
+    jobLaneConfig,
   });
+
+  // Merge candidatesFromQuery and sseCandidates
+  const mergedCandidates = useMemo(() => {
+    const candidateMap = new Map<string, Candidate>(
+      candidatesFromQuery?.map((c) => [c._id, c]) || []
+    );
+
+    // Update or add candidates from SSE
+    sseCandidates.forEach((sseCandidate) => {
+      candidateMap.set(sseCandidate._id, sseCandidate);
+    });
+
+    return Array.from(candidateMap.values());
+  }, [candidatesFromQuery, sseCandidates]);
 
   // useEffect(() => {
   //   console.log("Loading states:", {
@@ -142,17 +238,17 @@ export default function JobProgressPage() {
   //   scrollRef,
   // ]);
 
-  useEffect(() => {
-    const token = Cookies.get("token");
-    if (token) {
-      verifyAndDecryptJWTToken(token).then((decryptedResponse) => {
-        console.log("User fetch result:", decryptedResponse);
-        if (decryptedResponse.success && decryptedResponse.user) {
-          setUser(decryptedResponse.user);
-        }
-      });
-    }
-  }, []);
+  // useEffect(() => {
+  //   // const token = Cookies.get("token");
+  //   if (user) {
+  //     verifyAndDecryptJWTToken(token).then((decryptedResponse) => {
+  //       console.log("User fetch result:", decryptedResponse);
+  //       if (decryptedResponse.success && decryptedResponse.user) {
+  //         setUser(decryptedResponse.user);
+  //       }
+  //     });
+  //   }
+  // }, []);
 
   useEffect(() => {
     if (!isDialogOpen) {
@@ -160,29 +256,156 @@ export default function JobProgressPage() {
     }
   }, [isDialogOpen]);
 
+  // Handle candidateId URL parameter to auto-open candidate dialog
+  useEffect(() => {
+    if (candidateIdParam && candidatesFromQuery && !selectedCandidate) {
+      const candidate = candidatesFromQuery.find(
+        (c) => c._id === candidateIdParam
+      );
+      if (candidate) {
+        setSelectedCandidate(candidate);
+        setIsDetailsOpen(true);
+      }
+    }
+  }, [candidateIdParam, candidatesFromQuery, selectedCandidate]);
+
+  // Handle candidate details dialog close - clean up URL parameter
+  const handleCandidateDialogClose = (open: boolean) => {
+    setIsDetailsOpen(open);
+    if (!open && candidateIdParam) {
+      // Remove candidateId parameter from URL when dialog is closed
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("candidateId");
+      const newUrl = params.toString() ? `?${params.toString()}` : "";
+      router.replace(`/dashboard/jobs/${id}${newUrl}`, { scroll: false });
+    }
+  };
+
   // Combine candidates from useFetchCandidatesQuery and useSSE
   useEffect(() => {
     if (candidatesFromQuery && lanes) {
-      const mergedCandidates = [...candidatesFromQuery];
-      // debugger;
-      // console.log(
-      //   "🙌🙌🙌🙌 ",
-      //   mergedCandidates.find((c) => c._id === selectedCandidate?._id)?.history
-      // );
-      sseCandidates.forEach((sseCandidate) => {
-        const index = mergedCandidates.findIndex(
-          (c) => c._id === sseCandidate._id
-        );
-        if (index >= 0) {
-          mergedCandidates[index] = sseCandidate;
-        } else {
-          if (showArchived || !sseCandidate.isDeleted) {
-            mergedCandidates.push(sseCandidate);
-          }
-        }
-      });
+      let currentCandidates = [...mergedCandidates];
 
-      const lanesArray = updatedLanes || [...lanes.lanes];
+      // Apply filter conditions if they exist
+      if (filterConditions) {
+        currentCandidates = currentCandidates.filter((candidate) => {
+          // Apply text search
+          if (filterConditions.search) {
+            const searchLower = filterConditions.search.toLowerCase();
+            const matchesSearch =
+              candidate.name.toLowerCase().includes(searchLower) ||
+              candidate.skills.some((skill) =>
+                skill.toLowerCase().includes(searchLower)
+              ) ||
+              candidate.experience.toString().includes(searchLower) ||
+              (candidate.assignment?.interviewerId as any)?.name
+                ?.toLowerCase()
+                .includes(searchLower) ||
+              candidate.location.toLowerCase().includes(searchLower);
+            if (!matchesSearch) return false;
+          }
+
+          // Apply other filters
+          const activeFilters = [
+            {
+              key: "topCandidates",
+              filter: (candidate: Candidate) =>
+                candidate.scores?.overall && candidate.scores.overall >= 7,
+            },
+            {
+              key: "appliedThisWeek",
+              filter: (candidate: Candidate) => {
+                if (!candidate.tracking?.createdAt) return false;
+                const oneWeekAgo = new Date();
+                oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                return new Date(candidate.tracking.createdAt) >= oneWeekAgo;
+              },
+            },
+            {
+              key: "appliedToday",
+              filter: (candidate: Candidate) => {
+                if (!candidate.tracking?.createdAt) return false;
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                return (
+                  new Date(candidate.tracking.createdAt) >= today &&
+                  new Date(candidate.tracking.createdAt) < tomorrow
+                );
+              },
+            },
+            {
+              key: "appliedIn15Days",
+              filter: (candidate: Candidate) => {
+                if (!candidate.tracking?.createdAt) return false;
+                const fifteenDaysAgo = new Date();
+                fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
+                return new Date(candidate.tracking.createdAt) >= fifteenDaysAgo;
+              },
+            },
+            {
+              key: "toFollowUp",
+              filter: (candidate: Candidate) =>
+                candidate.followUp && candidate.followUp.note,
+            },
+            {
+              key: "assigned",
+              filter: (candidate: Candidate) => candidate.assignment,
+            },
+            {
+              key: "notAssigned",
+              filter: (candidate: Candidate) => !candidate.assignment,
+            },
+            {
+              key: "withRemarks",
+              filter: (candidate: Candidate) =>
+                candidate.remarks && candidate.remarks.length > 0,
+            },
+            {
+              key: "withoutRemarks",
+              filter: (candidate: Candidate) =>
+                !candidate.remarks || candidate.remarks.length === 0,
+            },
+          ].filter(
+            (filter) =>
+              filterConditions[filter.key as keyof FilterState] === true
+          );
+
+          if (activeFilters.length > 0) {
+            if (filterConditions.logicalOperator === "AND") {
+              return activeFilters.every(({ filter }) => filter(candidate));
+            } else {
+              return activeFilters.some(({ filter }) => filter(candidate));
+            }
+          }
+
+          return true;
+        });
+      }
+      // Apply archived filter
+      currentCandidates = currentCandidates.filter(
+        (candidate) => showArchived || !candidate.isDeleted
+      );
+
+      // Handle different lane data structures
+      let lanesArray;
+      if (updatedLanes) {
+        lanesArray = updatedLanes;
+      } else if (jobLanes?.lanes) {
+        lanesArray = [...jobLanes.lanes];
+      } else if (userLanes?.lanes) {
+        lanesArray = [...userLanes.lanes];
+      } else {
+        lanesArray = [
+          "applied",
+          "screening",
+          "shortlisted",
+          "processing",
+          "accepted",
+          "rejected",
+        ];
+      }
 
       lanesArray.forEach((lane) => {
         if (!initialCandidateColumns.find((item) => item.id === lane)) {
@@ -196,14 +419,12 @@ export default function JobProgressPage() {
 
       const updatedColumns = lanesArray.map((lane) => {
         const column = initialCandidateColumns.find((item) => item.id === lane);
-        const candidates = mergedCandidates.filter(
+        const candidates = currentCandidates.filter(
           (candidate) =>
             candidate.status === lane &&
             (showArchived ? candidate.isDeleted : !candidate.isDeleted)
         );
-        // if (updateSelectedCandodate) {
-        //   handleCandidateUpdate(updateSelectedCandodate);
-        // }
+
         return {
           id: lane as CandidateStatus,
           title: column?.title || lane,
@@ -213,16 +434,14 @@ export default function JobProgressPage() {
 
       setColumns(updatedColumns);
     }
-  }, [candidatesFromQuery, sseCandidates, lanes, updatedLanes, showArchived]);
+  }, [mergedCandidates, lanes, updatedLanes, showArchived, filterConditions]);
 
-  // Update initialLaneToEdit when laneToEdit is set
   useEffect(() => {
     if (laneToEdit && initialLaneToEdit === null) {
       setInitialLaneToEdit(laneToEdit);
     }
   }, [laneToEdit]);
 
-  // Reset initialLaneToEdit when the edit dialog is closed
   useEffect(() => {
     if (!isLaneEditOpen) {
       setInitialLaneToEdit(null);
@@ -230,179 +449,218 @@ export default function JobProgressPage() {
     }
   }, [isLaneEditOpen]);
 
-  // Fallback UI to ensure div renders
+  // useEffect(() => {
+  //   const token = Cookies.get("token");
+  //   if (token) {
+  //     verifyAndDecryptJWTToken(token).then((decryptedResponse) => {
+  //       if (decryptedResponse.success && decryptedResponse.user) {
+  //         setUser(decryptedResponse.user);
+  //       }
+  //     });
+  //   }
+  // }, []);
+
+  useEffect(() => {
+    if (!isDialogOpen) {
+      setDroppedFileData(null);
+    }
+  }, [isDialogOpen]);
+
+  // Fallback UI
   if (isJobLoading || isCandidatesLoading || isLanesLoading || !lanes) {
     return (
       <>
-        <div className="space-y-6 overflow-x-hidden" style={{ width: "100%" }}>
-          <Skeleton className="w-56 h-[16px] rounded-lg" />
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div className="font-semibold text-lg">
-                <Skeleton className="w-40 h-[16px] rounded-lg" />
-              </div>
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="showArchived"
-                    checked={showArchived}
-                    onCheckedChange={(checked) =>
-                      setShowArchived(checked as boolean)
-                    }
-                  />
-                  <label
-                    htmlFor="showArchived"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Show Archived
-                  </label>
+        <div
+          className="h-screen flex flex-col overflow-hidden"
+          style={{ width: "100%" }}
+        >
+          <div className="flex-shrink-0 p-4 pb-2">
+            <Skeleton className="w-56 h-[16px] rounded-lg" />
+            <Card className="mt-2">
+              <CardHeader className="flex flex-row items-center justify-between py-3">
+                <div className="font-semibold text-lg">
+                  <Skeleton className="w-40 h-[16px] rounded-lg" />
                 </div>
-                <div className="flex space-x-2">
-                  <CreateLaneDialog onAddLane={handleAddLane} />
-                  <CreateCandidateDialog
-                    jobId={id as string}
-                    isOpen={isDialogOpen}
-                    setIsOpen={setIsDialogOpen}
-                    resumeFile={droppedFileData}
-                  />
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="showArchived"
+                      checked={showArchived}
+                      onCheckedChange={(checked) =>
+                        setShowArchived(checked as boolean)
+                      }
+                    />
+                    <label
+                      htmlFor="showArchived"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      Show Archived
+                    </label>
+                  </div>
+                  <div className="flex space-x-2">
+                    <CreateLaneDialog onAddLane={handleAddLane} />
+                    <CreateCandidateDialog
+                      jobId={id as string}
+                      isOpen={isDialogOpen}
+                      setIsOpen={setIsDialogOpen}
+                      resumeFile={droppedFileData}
+                    />
+                  </div>
                 </div>
-              </div>
-            </CardHeader>
-          </Card>
+              </CardHeader>
+            </Card>
+          </div>
 
-          <DragDropContext
-            onDragStart={() => setIsDndDragging(true)}
-            onDragEnd={(result: any) => {
-              // console.log(
-              //   "onDragEnd triggered, scrollRef.current:",
-              //   scrollRef.current
-              // );
-              setIsDndDragging(false);
-              onDragEnd(result);
-            }}
-          >
-            <Droppable droppableId="lanes" direction="horizontal" type="lane">
-              {(provided: DroppableProvided) => (
-                <div
-                  {...provided.droppableProps}
-                  ref={mergeRefs([provided.innerRef, scrollRef])}
-                  className="grid grid-flow-col flex flex-row justify-start overflow-x-scroll pb-4 z-0"
-                >
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
-          </DragDropContext>
+          <div className="flex-1 overflow-hidden px-4 pb-2">
+            <DragDropContext
+              onDragStart={(start) => {
+                setIsDndDragging(true);
+                console.log("Drag started for:", start.draggableId);
+              }}
+              onDragUpdate={(update) => {
+                // No prevalidation needed - using client-side validation
+              }}
+              onDragEnd={(result: any) => {
+                setIsDndDragging(false);
+                onDragEnd(result);
+              }}
+            >
+              <Droppable droppableId="lanes" direction="horizontal" type="lane">
+                {(provided: DroppableProvided) => (
+                  <div
+                    {...provided.droppableProps}
+                    ref={mergeRefs([provided.innerRef, scrollRef])}
+                    className="h-full flex gap-0.5 overflow-x-auto"
+                  >
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            </DragDropContext>
+          </div>
         </div>
         <LoaderSkeleton />
       </>
     );
   }
+
   if (jobError) {
     return <NoDataFound name={"Job"} />;
   }
 
   return (
-    <div className="space-y-6 overflow-x-hidden" style={{ width: "100%" }}>
-      <Breadcrumb
-        jobTitle={job?.title}
-        links={[{ title: "Jobs", href: "/dashboard/jobs-board" }]}
+    <div
+      className="h-screen flex flex-col overflow-hidden"
+      style={{ width: "100%" }}
+    >
+      <div className="flex-shrink-0 px-4 pt-4 pb-2">
+        <div className="flex items-center justify-between">
+          <Breadcrumb
+            jobTitle={job?.title}
+            links={[{ title: "Jobs", href: "/dashboard/jobs-board" }]}
+          />
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsCustomFieldsOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <Settings2 className="h-4 w-4" />
+              Personalized form fields
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsAnalyticsOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <BarChart3 className="h-4 w-4" />
+              Analytics
+            </Button>
+            <CreateLaneDialog onAddLane={handleAddLane} />
+            <CreateCandidateDialog
+              jobId={id as string}
+              isOpen={isDialogOpen}
+              setIsOpen={setIsDialogOpen}
+              resumeFile={droppedFileData}
+            />
+          </div>
+        </div>
+      </div>
+
+      <QuickSelectAndFilter
+        currentJobId={id}
+        candidates={mergedCandidates}
+        onFilterChange={setFilterConditions}
+        showArchived={showArchived}
+        onShowArchivedChange={setShowArchived}
       />
 
-      <Card>
-        <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-4">
-          {/* Title */}
-          <CardTitle className="line-clamp-2 md:mr-2 text-lg">
-            Candidates for {job?.title}
-          </CardTitle>
-
-          {/* Right Section */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 sm:gap-4">
-            {/* Show Archived */}
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="showArchived"
-                checked={showArchived}
-                onCheckedChange={(checked) =>
-                  setShowArchived(checked as boolean)
-                }
-              />
-              <label
-                htmlFor="showArchived"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Show Archived
-              </label>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-2">
-              <CreateLaneDialog onAddLane={handleAddLane} />
-              <CreateCandidateDialog
-                jobId={id as string}
-                isOpen={isDialogOpen}
-                setIsOpen={setIsDialogOpen}
-                resumeFile={droppedFileData}
-              />
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
-
       {/* <CandidatesPage /> */}
-      <DragDropContext
-        onDragStart={() => setIsDndDragging(true)}
-        onDragEnd={(result: any) => {
-          console.log(
-            "onDragEnd triggered, scrollRef.current:",
-            scrollRef.current
-          );
-          setIsDndDragging(false);
-          onDragEnd(result);
-        }}
-      >
-        <Droppable droppableId="lanes" direction="horizontal" type="lane">
-          {(provided: DroppableProvided) => (
-            <div
-              {...provided.droppableProps}
-              ref={mergeRefs([provided.innerRef, scrollRef])}
-              // ref={provided.innerRef}
-              className="grid grid-flow-col overflow-x-scroll pb-4 z-0"
-            >
-              {columns.map((column, index) => {
-                return (
-                  <KanbanColumn
-                    key={column.id}
-                    column={column}
-                    index={index}
-                    isFileOver={isFileOver}
-                    setIsFileOver={setIsFileOver}
-                    handleFileDrop={handleFileDrop}
-                    handleDeleteLane={handleDeleteLane}
-                    handleEditLane={handleEditLaneClick}
-                    setLaneToDelete={setLaneToDelete}
-                    setLaneToEdit={setLaneToEdit}
-                    refetch={refetch}
-                    selectedCandidate={selectedCandidate}
-                    setSelectedCandidate={setSelectedCandidate}
-                    isDetailsOpen={isDetailsOpen}
-                    setIsDetailsOpen={setIsDetailsOpen}
-                    openRemarksFor={openRemarksFor}
-                    setOpenRemarksFor={setOpenRemarksFor}
-                    handleDeleteClick={handleDeleteClick}
-                  />
-                );
-              })}
-              {provided.placeholder}
-            </div>
-          )}
-        </Droppable>
-      </DragDropContext>
+      <div className="flex-1 overflow-hidden px-4 pb-2 pt-2">
+        <DragDropContext
+          onDragStart={(start) => {
+            setIsDndDragging(true);
+            console.log("Drag started for:", start.draggableId);
+          }}
+          onDragUpdate={(update) => {
+            // No prevalidation needed - using client-side validation
+          }}
+          onDragEnd={(result: any) => {
+            setIsDndDragging(false);
+            onDragEnd(result);
+          }}
+        >
+          <Droppable droppableId="lanes" direction="horizontal" type="lane">
+            {(provided: DroppableProvided) => (
+              <div
+                {...provided.droppableProps}
+                ref={mergeRefs([provided.innerRef, scrollRef])}
+                className="h-full flex gap-1 overflow-x-auto"
+              >
+                {columns.map((column, index) => {
+                  // Find the lane configuration for this column
+                  const laneConfig = jobLaneConfig?.laneConfigs?.find(
+                    (config) => config.laneId === column.id
+                  );
+
+                  return (
+                    <KanbanColumn
+                      key={column.id}
+                      column={column}
+                      index={index}
+                      isDragging={isDragging}
+                      isFileOver={isFileOver}
+                      setIsFileOver={setIsFileOver}
+                      handleFileDrop={handleFileDrop}
+                      handleDeleteLane={handleDeleteLane}
+                      handleEditLane={handleEditLaneClick}
+                      setLaneToDelete={setLaneToDelete}
+                      setLaneToEdit={setLaneToEdit}
+                      refetch={refetch}
+                      selectedCandidate={selectedCandidate}
+                      setSelectedCandidate={setSelectedCandidate}
+                      isDetailsOpen={isDetailsOpen}
+                      setIsDetailsOpen={setIsDetailsOpen}
+                      openRemarksFor={openRemarksFor}
+                      setOpenRemarksFor={setOpenRemarksFor}
+                      handleDeleteClick={handleDeleteClick}
+                      onConfigureChecklist={handleConfigureChecklist}
+                      pendingMoves={pendingMoves}
+                      laneConfig={laneConfig}
+                    />
+                  );
+                })}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
+      </div>
 
       <CandidateDetailsDialog
         candidate={selectedCandidate}
         isOpen={isDetailsOpen}
-        onOpenChange={setIsDetailsOpen}
+        onOpenChange={handleCandidateDialogClose}
         onUpdate={handleCandidateUpdate}
       />
 
@@ -433,10 +691,172 @@ export default function JobProgressPage() {
         isOpen={isConfirmLaneDeleteOpen}
         setIsOpen={setIsConfirmLaneDeleteOpen}
         title="Are you sure?"
-        message="This will remove the lane from all the jobs in this organization"
+        message="This will remove the lane from this job only. Other jobs will not be affected."
         onConfirm={() => laneToDelete && handleConfirmDeleteLane(laneToDelete)}
         onCancel={() => setIsConfirmLaneDeleteOpen(false)}
       />
+
+      {/* Custom Fields Dialog */}
+      <CandidateCustomFieldsDialog
+        isOpen={isCustomFieldsOpen}
+        onClose={() => setIsCustomFieldsOpen(false)}
+      />
+
+      {/* Job Analytics Modal */}
+      {job && user && (
+        <JobAnalyticsModal
+          isOpen={isAnalyticsOpen}
+          onClose={() => setIsAnalyticsOpen(false)}
+          job={job}
+          organizationId={user?.organizationId || ""}
+        />
+      )}
+
+      {/* Checklist and Remarks Dialog */}
+      {openRemarksFor &&
+        (() => {
+          const candidate = columns
+            .flatMap((col) => col.candidates)
+            .find((c) => {
+              if (c._id === openRemarksFor) return true;
+              if (openRemarksFor.startsWith("{")) {
+                try {
+                  const parsed = JSON.parse(openRemarksFor);
+                  return parsed.candidateId === c._id;
+                } catch (e) {
+                  console.error(
+                    "Failed to parse openRemarksFor JSON:",
+                    openRemarksFor,
+                    e
+                  );
+                  return false;
+                }
+              }
+              return false;
+            });
+
+          if (!candidate) {
+            console.error(
+              "Candidate not found for openRemarksFor:",
+              openRemarksFor
+            );
+            return null;
+          }
+
+          const checklistInfo = openRemarksFor.startsWith("{")
+            ? openRemarksFor
+            : undefined;
+
+          if (!checklistInfo) {
+            return null;
+          }
+
+          return (
+            <ChecklistRemarksDialog
+              candidate={candidate}
+              isOpen={!!openRemarksFor}
+              onOpenChange={(open) => !open && setOpenRemarksFor(null)}
+              setOpenRemarksFor={setOpenRemarksFor}
+              refetch={refetch}
+              checklistInfo={checklistInfo}
+              onChecklistSuccess={(candidateId) => {
+                completePendingMove(candidateId);
+              }}
+              onChecklistCancel={cancelPendingMove}
+            />
+          );
+        })()}
+
+      {/* Lane Checklist Configuration Dialog */}
+      {checklistConfigLane && (
+        <LaneChecklistConfigDialog
+          isOpen={isChecklistConfigOpen}
+          onOpenChange={setIsChecklistConfigOpen}
+          jobId={id}
+          laneId={checklistConfigLane.laneId}
+          laneName={checklistConfigLane.laneName}
+          initialTab={checklistConfigLane.initialTab}
+        />
+      )}
     </div>
+  );
+}
+
+// Dialog component that auto-selects candidate form
+function CandidateCustomFieldsDialog({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+}) {
+  const context = useContext(CustomFieldsContext);
+  const {
+    setStepName,
+    customFields,
+    stepName,
+    selectedFormId,
+    selecteFormIdTarget,
+  } = context;
+  const [hasAutoSelected, setHasAutoSelected] = useState(false);
+
+  // console.log("CandidateCustomFieldsDialog context:", {
+  //   customFieldsKeys: Object.keys(customFields || {}),
+  //   customFieldsCount: Object.keys(customFields || {}).length,
+  //   stepName,
+  //   selectedFormId,
+  //   hasContext: !!context,
+  //   isOpen,
+  //   hasAutoSelected,
+  // });
+
+  // Auto-select candidate form when dialog opens
+  useEffect(() => {
+    if (
+      isOpen &&
+      !hasAutoSelected &&
+      customFields &&
+      Object.keys(customFields).length > 0
+    ) {
+      console.log("Attempting to auto-select candidate form...");
+
+      // Find the "candidate" form ID
+      const candidateFormEntry = Object.entries(customFields).find(
+        ([_, form]) => form.formName.toLowerCase() === "candidate"
+      );
+
+      if (candidateFormEntry) {
+        const [formId] = candidateFormEntry;
+        selecteFormIdTarget(formId);
+        setStepName("formCustomFieldList");
+        setHasAutoSelected(true);
+      } else {
+        setStepName("FormList");
+        setHasAutoSelected(true);
+      }
+    }
+  }, [isOpen, hasAutoSelected, customFields, selecteFormIdTarget, setStepName]);
+
+  const handleClose = useCallback(() => {
+    setStepName("FormList");
+    setHasAutoSelected(false);
+    onClose();
+  }, [setStepName, onClose]);
+
+  // Reset auto-selection flag when dialog closes
+  useEffect(() => {
+    if (!isOpen) {
+      setHasAutoSelected(false);
+    }
+  }, [isOpen]);
+
+  return (
+    <CustomFieldDialog
+      isOpen={isOpen}
+      onClose={handleClose}
+      title="Personalized form fields"
+    >
+      <Stepper />
+    </CustomFieldDialog>
   );
 }

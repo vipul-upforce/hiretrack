@@ -77,6 +77,7 @@ function ActionItems({
           experience: assignment.experience,
           skills: assignment.skills,
           expectedCTC: assignment.expectedCTC,
+          contact: assignment.contact,
           currentCTC: assignment.currentCTC,
           noticePeriod: assignment.noticePeriod,
           resume: assignment.resume,
@@ -118,6 +119,26 @@ function ActionItems({
         openRemarks={openRemarksFor === candidate._id}
         setOpenRemarksFor={setOpenRemarksFor}
         onDashboard={true}
+        onEditClick={(candidate) => {
+          // Handle edit - could open edit dialog
+          console.log("Edit candidate:", candidate);
+        }}
+        onAssignClick={(candidate) => {
+          // Handle assign - could open assign dialog
+          console.log("Assign candidate:", candidate);
+        }}
+        onMarkAsDoneClick={(candidate) => {
+          // Handle mark as done
+          console.log("Mark as done:", candidate);
+        }}
+        onFollowUpClick={(candidate) => {
+          // Handle follow up
+          console.log("Follow up:", candidate);
+        }}
+        onAddRemarkClick={(candidate) => {
+          // Handle add remark
+          console.log("Add remark:", candidate);
+        }}
       />
       <CandidateDetailsDialog
         candidate={candidate}

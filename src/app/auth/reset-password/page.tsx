@@ -163,7 +163,7 @@ function ResetPasswordContent() {
                   )}
                 </div>
 
-                <Button type="submit" className="w-full">
+                <Button type="submit" variant="primary" className="w-full">
                   Reset Password
                 </Button>
               </Form>

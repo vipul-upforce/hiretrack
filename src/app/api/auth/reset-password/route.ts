@@ -4,8 +4,9 @@ import crypto from "crypto";
 import dbConnect, { CandidateAccount } from "@/lib/mongodb";
 import { User } from "@/lib/mongodb";
 import { verifyAndDecryptToken } from "../../../../../middleware";
+import { passwordResetRateLimiter } from "@/lib/rateLimiter";
 
-export async function POST(req: Request) {
+async function handleResetPassword(req: NextRequest) {
   try {
     await dbConnect();
     const { token, password } = await req.json();
@@ -89,6 +90,12 @@ export async function POST(req: Request) {
   }
 }
 
+// Export with rate limiting for POST
+export async function POST(req: Request) {
+  // SECURITY FIX: Apply rate limiting to prevent password reset abuse
+  return passwordResetRateLimiter(req as NextRequest, handleResetPassword);
+}
+
 export async function PUT(req: NextRequest) {
   try {
     await dbConnect();
@@ -114,7 +121,7 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    const token = req.cookies.get("token");
+    const token = req.cookies.get("auth_token");
     if (!token?.value) {
       return NextResponse.json(
         { error: "Authentication token missing" },

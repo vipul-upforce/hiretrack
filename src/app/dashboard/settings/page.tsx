@@ -1,102 +1,306 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import SettingDialog from "./components/setting-dialog";
 import AddCustomFieldButton from "@/Custom_Fields/Components/AddCustomFieldButton";
 import withAuthGuard from "@/components/withAuthGuard";
+import {
+  Database,
+  Mail,
+  Globe,
+  Bot,
+  Building2,
+  HardDrive,
+  Download,
+  Clock,
+  FileText,
+  Activity,
+  Tags,
+  Shield,
+  Settings as SettingsIcon,
+  Users,
+  Lock,
+  MessageSquare,
+  Palette,
+  Zap,
+  Server,
+  Key,
+  Bell,
+  Archive,
+  Monitor,
+  FolderOpen,
+  UserCheck,
+  Cog,
+  Sparkles,
+  ExternalLink,
+  Calendar,
+} from "lucide-react";
 
 function Settings() {
   const [openDialog, setOpenDialog] = useState<string | null>(null);
+  const router = useRouter();
 
-  const settings = [
+  // Helper function to check if setting opens in new page
+  const opensInNewPage = (key: string) => {
+    return ["users", "portal", "templates", "logs"].includes(key);
+  };
+
+  const settingGroups = [
     {
-      title: "Storage Settings",
-      key: "fs",
-      description: "Configure your organization's storage settings.",
+      title: "Organization Settings",
+      description: "Core organization configuration and branding",
+      icon: Building2,
+      settings: [
+        {
+          title: "Portal Configuration",
+          key: "portal",
+          description: "Customize portal appearance and branding",
+          icon: Globe,
+        },
+        {
+          title: "Time Zone",
+          key: "timezone",
+          description: "Set organization's default timezone",
+          icon: Clock,
+        },
+        {
+          title: "Multiple Organizations",
+          key: "multipleorgs",
+          description: "Configure multi-tenant organization settings",
+          icon: Building2,
+        },
+        {
+          title: "Storage Settings",
+          key: "fs",
+          description: "Manage file storage and disk space allocation",
+          icon: HardDrive,
+        },
+      ],
     },
     {
-      title: "Email Configs",
-      key: "mail",
-      description: "Configure the SMTP configurations for your organization.",
+      title: "Security & Access",
+      description: "User management and security settings",
+      icon: Shield,
+      settings: [
+        {
+          title: "User Management",
+          key: "users",
+          description: "Manage user accounts and permissions",
+          icon: UserCheck,
+        },
+        {
+          title: "Two Factor Authentication",
+          key: "twoFA",
+          description: "Enable 2FA for enhanced account security",
+          icon: Lock,
+        },
+      ],
     },
     {
-      title: "Portal",
-      key: "portal",
-      description: "Update the Portal configurations of your organization.",
+      title: "Communication",
+      description: "Email and notification configuration",
+      icon: MessageSquare,
+      settings: [
+        {
+          title: "Email Configuration",
+          key: "mail",
+          description: "Configure SMTP settings for email delivery",
+          icon: Mail,
+        },
+        {
+          title: "Email Templates",
+          key: "templates",
+          description: "Customize email notification templates",
+          icon: FileText,
+        },
+        {
+          title: "AI Providers",
+          key: "ai-providers",
+          description: "Configure AI providers for resume processing",
+          icon: Bot,
+        },
+        {
+          title: "Google Calendar",
+          key: "google-calendar",
+          description: "Connect Google Calendar for interview scheduling",
+          icon: Calendar,
+        },
+      ],
     },
     {
-      title: "Gemini",
-      key: "gemini",
-      description: "Update the Gemini configurations of your organization.",
-    },
-    {
-      title: "Multiple Organizations",
-      key: "multipleorgs",
-      description: "Choose if there could be multiple organizations or not.",
-    },
-    {
-      title: "Backups",
-      key: "backups",
-      description: "Create and manage database backups",
-    },
-    {
-      title: "Assets",
-      key: "assets",
-      description: "Download media assets of your server",
-    },
-    {
-      title: "Time Zone",
-      key: "timezone",
-      description: "Select the Time Zone for your organization.",
-    },
-    {
-      title: "Email Template",
-      key: "templates",
-      description: "Customize your E-mail templates.",
-    },
-    {
-      title: "Logs",
-      key: "logs",
-      description:
-        "Inspect the logs and all the activity on your organization and server.",
-    },
-    {
-      title: "Tags",
-      key: "tags",
-      description: "Manage the tags for candidates.",
-    },
-    {
-      title: "Two Factor Authentication",
-      key: "twoFA",
-      description: "Enable Two Factor Authentication for Your Organization.",
+      title: "Data & System",
+      description: "Backup, logs, and system management",
+      icon: Database,
+      settings: [
+        {
+          title: "Database Backups",
+          key: "backups",
+          description: "Schedule and manage data backups",
+          icon: Archive,
+        },
+        {
+          title: "System Logs",
+          key: "logs",
+          description: "View system activity and audit logs",
+          icon: Activity,
+        },
+        {
+          title: "Media Assets",
+          key: "assets",
+          description: "Download and manage server media files",
+          icon: Download,
+        },
+      ],
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-full">
-      {settings.map((option) => (
-        <div key={option.key} className="h-full">
-          <Card
-            className="hover:bg-gray-100 h-full dark:hover:bg-gray-800 min-w-[25vw] transition cursor-pointer mr-4"
-            onClick={() => setOpenDialog(option.key)}
-          >
-            <CardHeader>
-              <CardTitle>{option.title}</CardTitle>
-            </CardHeader>
-            <CardContent>{option.description}</CardContent>
-          </Card>
+    <div className="h-screen flex flex-col overflow-hidden w-full">
+      {/* Header section with improved design */}
+      <div className="flex-shrink-0 px-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+        <Card className="border-0 shadow-none bg-transparent">
+          <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-2 py-3 px-0">
+            {/* Title */}
+            <CardTitle className="line-clamp-2 md:mr-2 text-xl font-bold">
+              Settings
+            </CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
 
-          {/* Dialog Component */}
-          {openDialog === option.key && (
-            <SettingDialog
-              isOpen={openDialog === option.key}
-              onClose={() => setOpenDialog(null)}
-              setting={option}
-            />
-          )}
+      <div className="flex-1 min-h-0 px-4 pb-4 mt-4 space-y-8 overflow-y-auto">
+
+      {settingGroups.map((group) => (
+        <div key={group.title} className="space-y-4">
+          {/* Group Header */}
+          <div className="flex items-center gap-3 pb-2 border-b border-gray-200 dark:border-gray-700">
+            <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
+              <group.icon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                {group.title}
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {group.description}
+              </p>
+            </div>
+          </div>
+
+          {/* Settings Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {group.settings.map((option) => (
+              <div key={option.key}>
+                <Card
+                  className="h-full transition-all duration-200 cursor-pointer border border-gray-200 dark:border-gray-800 hover:shadow-lg bg-white dark:bg-black card-hover-border"
+                  onClick={() => {
+                    if (option.key === "users") {
+                      router.push("/dashboard/users");
+                    } else if (option.key === "portal") {
+                      router.push("/dashboard/settings/portal");
+                    } else if (option.key === "templates") {
+                      router.push("/dashboard/settings/templates");
+                    } else if (option.key === "logs") {
+                      router.push("/dashboard/settings/logs");
+                    } else {
+                      setOpenDialog(option.key);
+                    }
+                  }}
+                >
+                  <CardHeader className="pb-3 relative">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700">
+                        <option.icon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                      </div>
+                      <div className="flex-1">
+                        <CardTitle className="text-base font-medium text-gray-900 dark:text-gray-100">
+                          {option.title}
+                        </CardTitle>
+                      </div>
+                      {opensInNewPage(option.key) && (
+                        <div className="absolute top-4 right-4">
+                          <ExternalLink className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500 opacity-60" />
+                        </div>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                      {option.description}
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* Dialog Component */}
+                {openDialog === option.key && option.key !== "portal" && option.key !== "templates" && option.key !== "logs" && (
+                  <SettingDialog
+                    isOpen={openDialog === option.key}
+                    onClose={() => setOpenDialog(null)}
+                    setting={option}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       ))}
-      <AddCustomFieldButton />
+
+      {/* Custom Fields Section */}
+      <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-3 pb-2">
+          <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
+            <Palette className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+              Custom Fields
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Create and manage custom form fields for candidates
+            </p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <AddCustomFieldButton />
+          <Card
+            className="h-full transition-all duration-200 cursor-pointer border border-gray-200 dark:border-gray-800 hover:shadow-lg bg-white dark:bg-black card-hover-border"
+            onClick={() => setOpenDialog("tags")}
+          >
+            <CardHeader className="pb-3">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700">
+                  <Tags className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                </div>
+                <div className="flex-1">
+                  <CardTitle className="text-base font-medium text-gray-900 dark:text-gray-100">
+                    Candidate Tags
+                  </CardTitle>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                Organize candidates with custom tags
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Dialog Component for Tags */}
+        {openDialog === "tags" && (
+          <SettingDialog
+            isOpen={openDialog === "tags"}
+            onClose={() => setOpenDialog(null)}
+            setting={{
+              title: "Candidate Tags",
+              key: "tags",
+              description: "Organize candidates with custom tags",
+            }}
+          />
+        )}
+      </div>
+      </div>
     </div>
   );
 }

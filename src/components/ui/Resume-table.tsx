@@ -1,6 +1,9 @@
 import { Fragment } from "react";
 import type { Resume } from "@/lib/redux/types";
-import { initialEducation, initialWorkExperience } from "@/lib/redux/resumeSlice";
+import {
+  initialEducation,
+  initialWorkExperience,
+} from "@/lib/redux/resumeSlice";
 import { deepClone } from "@/lib/deep-clone";
 import { cx } from "@/lib/cx";
 
@@ -62,7 +65,7 @@ export const ResumeTable = ({ resume }: { resume: Resume }) => {
         <TableRowHeader>Profile</TableRowHeader>
         <TableRow label="Name" value={resume.profile.name} />
         <TableRow label="Email" value={resume.profile.email} />
-        <TableRow label="Phone" value={resume.profile.phone} />
+        <TableRow label="Phone" value={resume.profile.contact} />
         <TableRow label="Location" value={resume.profile.location} />
         <TableRow label="Link" value={resume.profile.url} />
         <TableRow label="Summary" value={resume.profile.summary} />

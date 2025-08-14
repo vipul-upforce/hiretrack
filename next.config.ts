@@ -1,6 +1,20 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Enable experimental features for better performance
+  experimental: {
+    // Enable Turbopack for faster builds
+    turbo: {
+      rules: {
+        "*.svg": {
+          loaders: ["@svgr/webpack"],
+          as: "*.js",
+        },
+      },
+    },
+  },
+
+  // Optimize images
   images: {
     domains: [
       "192.168.56.1",
@@ -10,8 +24,59 @@ const nextConfig: NextConfig = {
       "rms-bucket-upforcetech.s3.us-east-1.amazonaws.com",
     ],
     unoptimized: true,
+    // Disable image optimization in development for faster builds
+    dangerouslyAllowSVG: true,
+    contentDispositionType: "attachment",
   },
+
+  // Disable React Strict Mode for faster development
   reactStrictMode: false,
+
+  // Optimize webpack configuration
+  webpack: (config, { dev, isServer }) => {
+    // Optimize for development
+    if (dev) {
+      config.watchOptions = {
+        poll: 1000,
+        aggregateTimeout: 300,
+        ignored: ["**/node_modules", "**/.git", "**/.next"],
+      };
+
+      // Faster source maps in development
+      config.devtool = "eval-source-map";
+    }
+
+    // Optimize resolve
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      canvas: false,
+    };
+
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        canvas: false,
+        path: false,
+      };
+    }
+
+    // Handle PDF.js worker
+    config.module.rules.push({
+      test: /\.node$/,
+      use: "node-loader",
+    });
+
+    // Add rule for PDF.js worker
+    config.module.rules.push({
+      test: /pdf\.worker\.(min\.)?js/,
+      type: "asset/resource",
+    });
+
+    return config;
+  },
+
+  // Optimize headers
   async headers() {
     return [
       {
@@ -32,28 +97,27 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  webpack: (config, { isServer }) => {
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      canvas: false,
-    };
 
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        canvas: false,
-        path: false,
-      };
-    }
-
-    config.module.rules.push({
-      test: /\.node$/,
-      use: "node-loader",
-    });
-
-    return config;
+  // Optimize TypeScript compilation
+  typescript: {
+    // Disable TypeScript checking during build for faster builds
+    ignoreBuildErrors: false,
   },
+
+  // Optimize ESLint
+  eslint: {
+    // Disable ESLint during builds for faster builds
+    ignoreDuringBuilds: true,
+  },
+
+  // Optimize output
+  output: "standalone",
+
+  // Optimize compression
+  compress: true,
+
+  // Optimize powered by header
+  poweredByHeader: false,
 };
 
 export default nextConfig;

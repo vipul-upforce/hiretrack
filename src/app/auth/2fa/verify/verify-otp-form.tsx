@@ -8,6 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import Cookies from "js-cookie";
+import { fetchUserFromToken } from "@/lib/redux/authSlice";
+import { useDispatch } from "react-redux";
+import { AppDispatch } from "@/lib/redux/store";
 
 export default function VerifyOtpForm() {
   const router = useRouter();
@@ -18,6 +21,7 @@ export default function VerifyOtpForm() {
   const [cooldownSeconds, setCooldownSeconds] = useState(60);
   const email = searchParams?.get("email");
   const organizationId = searchParams?.get("orgId");
+  const dispatch = useDispatch<AppDispatch>();
 
   // Countdown timer effect
   useEffect(() => {
@@ -42,14 +46,16 @@ export default function VerifyOtpForm() {
       });
 
       if (response.ok) {
-        const { user } = await response.json();
-        Cookies.set("token", user, { expires: 30 });
+        // const { user } = await response.json();
+        // Cookies.set("token", user, { expires: 30 });
         toast({ title: "Success", description: "Login successful" });
         router.push("/dashboard");
       } else {
         const { message } = await response.json();
         toast({ title: "Error", description: message, variant: "destructive" });
       }
+
+      dispatch(fetchUserFromToken());
     } catch (error) {
       toast({
         title: "Error",
@@ -123,7 +129,12 @@ export default function VerifyOtpForm() {
                 required
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button
+              type="submit"
+              variant="primary"
+              className="w-full"
+              disabled={isLoading}
+            >
               {isLoading ? "Verifying..." : "Verify"}
             </Button>
           </form>

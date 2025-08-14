@@ -16,19 +16,22 @@ export function loadTemplate(
   let content = fs.readFileSync(templatePath, "utf-8");
   for (const [key, value] of Object.entries(variables)) {
     const regex = new RegExp(`{{\\s*${key}\\s*}}`, "g");
-    content = content.replace(regex, value);
+    content = content?.replace(regex, value);
   }
 
   return content;
 }
 
-export const MapTemplate = (  templateHtml: string,
-  variables: Record<string, string>) => {
-    let content = templateHtml
-    for (const [key, value] of Object.entries(variables)) {
-      const regex = new RegExp(`{{\\s*${key}\\s*}}`, "g");
-      content = content.replace(regex, value);
-    }
-  
-    return content;
-}
+export const MapTemplate = (
+  templateHtml: string,
+  variables: Record<string, string>
+) => {
+  let content = templateHtml;
+
+  for (const [key, value] of Object.entries(variables)) {
+    const regex = new RegExp(`{{\\s*${key}\\s*}}`, "g");
+    content = content?.replace(regex, value);
+  }
+
+  return content;
+};

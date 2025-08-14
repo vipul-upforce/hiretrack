@@ -11,6 +11,7 @@ export interface OrgInfo {
 export interface Organization {
   _id: ObjectId | string;
   name?: string;
+  defaultLanes?: string[];
 }
 
 export interface IUser {

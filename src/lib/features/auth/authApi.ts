@@ -23,6 +23,8 @@ interface AuthResponse {
   message: string;
   user: User;
   _id?: string;
+  twofa?: boolean;
+  organizationId?: string;
   organizations?: OneOfMulOrganization[];
 }
 

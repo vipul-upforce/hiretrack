@@ -25,8 +25,15 @@ import { Resume } from "@/lib/redux/types";
 import { parseResumeFromPdf } from "@/lib/parse-resume-from-pdf";
 import FormUpdater from "../dashboard/jobs/[id]/components/Utils/FormUpdater";
 import * as pdfjs from "pdfjs-dist";
+
+// Configure PDF.js worker
+if (typeof window !== "undefined" && !pdfjs.GlobalWorkerOptions.workerSrc) {
+  pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+}
 import { candidateSchema } from "../dashboard/jobs/[id]/schemas/candidate-schema";
 import { useApplyHandler } from "./useApplyHandler";
+import { TermsConfirmationDialog } from "@/components/TermsConfirmationDialog";
+import { User } from "lucide-react";
 
 // New function to store application status in localStorage
 const storeGuestApplication = (jobId: string, candidateId: string) => {
@@ -75,8 +82,14 @@ export async function evaluateCandidate(
   try {
     const result = await evaluateCandidateMutation({ candidateId }).unwrap();
     return result;
-  } catch {
-    return null;
+  } catch (e) {
+    console.log("_______", e);
+    return typeof e === "object" &&
+      "data" in e &&
+      typeof e.data === "object" &&
+      "error" in e.data
+      ? e.data.error
+      : "failed to re-evaluate candidate";
   }
 }
 
@@ -101,6 +114,9 @@ interface CreateCandidateDialogProps {
   setIsOpen: (isOpen: boolean) => void;
   resumeFile?: File | null;
   closeParent: () => void;
+  jobTitle?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
 }
 
 const getInitialValues = (customFields: CustomFieldValues) => ({
@@ -118,6 +134,7 @@ const getInitialValues = (customFields: CustomFieldValues) => ({
   time: undefined,
   customFields: { ...customFields },
   email: "",
+  contact: "",
 });
 
 const handleFileParse = async (
@@ -169,6 +186,9 @@ export function ApplyAsGuestDialog({
   setIsOpen,
   resumeFile,
   closeParent,
+  jobTitle,
+  primaryColor = "#6366f1",
+  secondaryColor = "#8b5cf6",
 }: CreateCandidateDialogProps) {
   const { toast } = useToast();
   const [createGuestCandidate] = useCreateGuestCandidateMutation();
@@ -186,6 +206,8 @@ export function ApplyAsGuestDialog({
   const [resetForm, setResetForm] = useState(false);
   const [hasAlreadyApplied, setHasAlreadyApplied] = useState(false);
   const { formikRef, handleApply } = useApplyHandler<CandidateFormValues>();
+  const [showTermsDialog, setShowTermsDialog] = useState(false);
+  const [pendingFormValues, setPendingFormValues] = useState<any>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -202,7 +224,22 @@ export function ApplyAsGuestDialog({
     }
   }, [isOpen, resumeFile, jobId]);
 
+  const handleTermsConfirm = () => {
+    if (pendingFormValues) {
+      setShowTermsDialog(false);
+      actualSubmit(pendingFormValues);
+      setPendingFormValues(null);
+    }
+  };
+
   const handleSubmit = async (values: CandidateFormValues) => {
+    // Show terms confirmation dialog first
+    debugger;
+    setPendingFormValues(values);
+    setShowTermsDialog(true);
+  };
+
+  const actualSubmit = async (values: CandidateFormValues) => {
     // console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
     // First check if already applied
     if (hasAppliedAsGuest(jobId)) {
@@ -267,6 +304,7 @@ export function ApplyAsGuestDialog({
           parseFloat(String(values.noticePeriod)).toFixed(0)
         ),
         email: values.email || parsedResumeData?.profile?.email,
+        contact: values.contact,
         ...(values.assignee && values.time
           ? {
               assignee: values.assignee === "-1" ? "" : values.assignee,
@@ -292,6 +330,13 @@ export function ApplyAsGuestDialog({
         remarks: [],
       };
 
+      // Debug: Log the candidate data being sent
+      console.log("Guest candidate data being sent:", candidateData);
+      console.log("JobId value:", jobId);
+      console.log("JobId type:", typeof jobId);
+      console.log("candidateData.jobId:", candidateData.jobId);
+      console.log("candidateData.jobId._id:", candidateData.jobId._id);
+
       // Step 1: Create the candidate
       const createdCandidate =
         await createGuestCandidate(candidateData).unwrap();
@@ -301,9 +346,17 @@ export function ApplyAsGuestDialog({
       storeGuestApplication(jobId, candidateId);
 
       if (values.resume && values.resume.type === "application/pdf") {
-        const pageCount = await checkPdfPageCount(values.resume);
-        if (pageCount <= 4) {
-          evaluateCandidate(candidateId, evaluateCandidateMutation);
+        try {
+          const pageCount = await checkPdfPageCount(values.resume);
+          if (pageCount <= 4) {
+            evaluateCandidate(candidateId, evaluateCandidateMutation);
+          }
+        } catch (pdfError) {
+          console.warn(
+            "PDF page count check failed, skipping AI evaluation:",
+            pdfError
+          );
+          // Continue with submission even if PDF check fails
         }
       }
 
@@ -319,24 +372,33 @@ export function ApplyAsGuestDialog({
       setIsOpen(false);
       closeParent();
     } catch (error) {
-      if (typeof error === "object" && error !== null && "data" in error) {
-        const errorData = (error as { data?: { error?: string } }).data;
-        if (
-          typeof errorData === "object" &&
-          errorData !== null &&
-          "error" in errorData
+      console.error("Guest application error:", error);
+
+      let errorMessage =
+        "Failed to create candidate due to an unexpected error.";
+
+      // Handle RTK Query error format
+      if (typeof error === "object" && error !== null) {
+        if ("data" in error) {
+          const errorData = (error as { data?: any }).data;
+          if (errorData?.error) {
+            errorMessage = errorData.error;
+          } else if (errorData?.message) {
+            errorMessage = errorData.message;
+          } else if (typeof errorData === "string") {
+            errorMessage = errorData;
+          }
+        } else if (
+          "message" in error &&
+          typeof (error as any).message === "string"
         ) {
-          toast({
-            title: "Error",
-            description: errorData.error || "Failed to create candidate",
-            variant: "destructive",
-          });
-          return;
+          errorMessage = (error as any).message;
         }
       }
+
       toast({
         title: "Error",
-        description: "Failed to create candidate due to an unexpected error.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -357,20 +419,78 @@ export function ApplyAsGuestDialog({
         <button
           type="button"
           disabled={isSendingEmail || hasAlreadyApplied}
-          className={`w-full md:w-fit inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${hasAlreadyApplied && "bg-gray-200 text-gray-600"}`}
+          className="w-full md:w-fit inline-flex items-center justify-center rounded-lg px-6 py-3 text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+          style={
+            hasAlreadyApplied
+              ? {
+                  backgroundColor: "#f3f4f6",
+                  color: "#6b7280",
+                  border: "1px solid #d1d5db",
+                }
+              : {
+                  backgroundColor: `${primaryColor}15`,
+                  color: primaryColor,
+                  border: `2px solid ${primaryColor}`,
+                }
+          }
+          onMouseEnter={(e) => {
+            if (!hasAlreadyApplied && !isSendingEmail) {
+              const target = e.target as HTMLElement;
+              target.style.backgroundColor = primaryColor;
+              target.style.color = "white";
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!hasAlreadyApplied && !isSendingEmail) {
+              const target = e.target as HTMLElement;
+              target.style.backgroundColor = `${primaryColor}15`;
+              target.style.color = primaryColor;
+            }
+          }}
         >
-          {isSendingEmail
-            ? "Processing..."
-            : hasAlreadyApplied
-              ? "Applied"
-              : "Apply As Guest"}
+          {isSendingEmail ? (
+            <>
+              <div
+                className="animate-spin rounded-full h-4 w-4 border-b-2 mr-2"
+                style={{ borderColor: primaryColor }}
+              ></div>
+              Processing...
+            </>
+          ) : hasAlreadyApplied ? (
+            <>
+              <svg
+                className="w-4 h-4 mr-2"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              Applied
+            </>
+          ) : (
+            <>
+              <User className="w-4 h-4 mr-2" />
+              Apply As Guest
+            </>
+          )}
         </button>
       </DialogTrigger>
       <DialogContent className="w-full h-full max-w-none max-h-none m-0 p-0 rounded-none sm:rounded-lg sm:w-[95vw] sm:h-[95vh] sm:max-w-[95vw] sm:max-h-[95vh] md:w-[90vw] md:h-[90vh] md:max-w-[90vw] md:max-h-[90vh] lg:w-[85vw] lg:h-[85vh] lg:max-w-[85vw] lg:max-h-[85vh] xl:w-[80vw] xl:h-[80vh] xl:max-w-[80vw] xl:max-h-[80vh] overflow-hidden flex flex-col justify-center">
         <DialogHeader
-          className={`px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0 ${hasAlreadyApplied && "hidden"}`}
+          className={`px-6 py-4 flex-shrink-0 text-left ${hasAlreadyApplied && "hidden"}`}
         >
-          <DialogTitle className="text-lg sm:text-xl">Apply</DialogTitle>
+          <DialogTitle className="text-left text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+            Apply
+          </DialogTitle>
+          {jobTitle && (
+            <p className="text-left text-sm text-gray-600 dark:text-gray-400 mt-1">
+              Applying for: {jobTitle}
+            </p>
+          )}
         </DialogHeader>
         {hasAlreadyApplied ? (
           <div className="p-4 sm:p-6 text-center flex flex-col justify-center items-center h-full">
@@ -418,9 +538,9 @@ export function ApplyAsGuestDialog({
             enableReinitialize={false}
           >
             {({ isSubmitting, errors, touched, setFieldValue }) => (
-              <Form className="flex flex-col h-full overflow-hidden">
+              <Form className="flex flex-col flex-1 min-h-0 sticky top-0 overflow-y-clip">
                 <FormUpdater parsedResumeData={parsedResumeData} />
-                <div className="flex-1 overflow-hidden px-4 py-2">
+                <div className="flex-1 overflow-hidden px-6 py-4 border-t">
                   <CandidateForm
                     onFileUpload={async (file: File) => {
                       setFieldValue("resume", file);
@@ -428,21 +548,56 @@ export function ApplyAsGuestDialog({
                     }}
                   />
                 </div>
-                <div className="flex-shrink-0 flex justify-end space-x-2 border-t bg-background px-4 sm:px-6 py-3 sm:py-4 safe-area-inset-bottom">
+                <div className="flex-shrink-0 flex justify-end space-x-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10 safe-area-inset-bottom">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => setIsOpen(false)}
-                    className="flex-1 sm:flex-none"
+                    className="flex-1 sm:flex-none transition-all duration-200 hover:shadow-md"
+                    style={{
+                      borderColor: "#d1d5db",
+                      color: "#6b7280",
+                    }}
+                    onMouseEnter={(e) => {
+                      const target = e.target as HTMLElement;
+                      target.style.borderColor = "#9ca3af";
+                      target.style.backgroundColor = "#f9fafb";
+                    }}
+                    onMouseLeave={(e) => {
+                      const target = e.target as HTMLElement;
+                      target.style.borderColor = "#d1d5db";
+                      target.style.backgroundColor = "transparent";
+                    }}
                   >
                     Cancel
                   </Button>
                   <Button
                     type={Object.keys(errors).length == 0 ? "button" : "submit"}
                     onClick={handleApply}
-                    className="flex-1 sm:flex-none"
+                    className="flex-1 sm:flex-none transition-all duration-200 hover:shadow-md text-white"
+                    style={{
+                      backgroundColor: primaryColor,
+                      borderColor: primaryColor,
+                    }}
+                    onMouseEnter={(e) => {
+                      const target = e.target as HTMLElement;
+                      target.style.backgroundColor = secondaryColor;
+                      target.style.borderColor = secondaryColor;
+                    }}
+                    onMouseLeave={(e) => {
+                      const target = e.target as HTMLElement;
+                      target.style.backgroundColor = primaryColor;
+                      target.style.borderColor = primaryColor;
+                    }}
                   >
-                    {isSubmitting ? "Saving..." : "Apply"}
+                    {isSubmitting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Saving...
+                      </>
+                    ) : (
+                      "Apply"
+                    )}
                   </Button>
                 </div>
               </Form>
@@ -450,6 +605,16 @@ export function ApplyAsGuestDialog({
           </Formik>
         )}
       </DialogContent>
+
+      <TermsConfirmationDialog
+        isOpen={showTermsDialog}
+        onClose={() => {
+          setShowTermsDialog(false);
+          setPendingFormValues(null);
+        }}
+        onConfirm={handleTermsConfirm}
+        isLoading={isSendingEmail}
+      />
     </Dialog>
   );
 }

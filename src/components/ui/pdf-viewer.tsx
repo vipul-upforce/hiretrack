@@ -22,7 +22,6 @@ export function PDFViewer({ files }: PDFViewerProps) {
     size?: number;
   } | null>(null);
 
-
   const downloadFile = (url: string, filename: string) => {
     const link = document.createElement("a");
     link.href = url;
@@ -38,18 +37,15 @@ export function PDFViewer({ files }: PDFViewerProps) {
         {files.map((file, index) => (
           <div
             key={index}
-            style={{
-              backgroundColor: "rgb(249 250 251 / var(--tw-bg-opacity, 1))",
-            }}
-            className="flex items-center gap-2 p-2 rounded-md border hover:bg-muted/50 transition-colors group w-full "
+            className="flex items-center gap-2 p-3 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group w-full"
           >
             <div
               className="flex items-center gap-2 flex-1 cursor-pointer w-full"
               onClick={() => setSelectedFile(file)}
             >
-              <div className="p-3 bg-grey-100 rounded-md">
+              <div className="p-3 bg-gray-200 dark:bg-gray-600 rounded-md">
                 <svg
-                  className="w-5 h-5"
+                  className="w-5 h-5 text-gray-600 dark:text-gray-300"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -64,9 +60,11 @@ export function PDFViewer({ files }: PDFViewerProps) {
                 </svg>
               </div>
               <div className="flex-1 w-[90%]">
-                <p className="text-sm font-medium truncate break-all text-wrap">{file.name}</p>
+                <p className="text-sm font-medium truncate break-all text-wrap text-gray-900 dark:text-gray-100">
+                  {file.name}
+                </p>
                 {file.size && (
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     {Math.round(file.size / 1024)}KB
                   </p>
                 )}
@@ -75,7 +73,7 @@ export function PDFViewer({ files }: PDFViewerProps) {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
               onClick={() => downloadFile(file.url, file.name)}
             >
               <Download className="h-4 w-4" />
@@ -88,18 +86,20 @@ export function PDFViewer({ files }: PDFViewerProps) {
         <DialogContent className="sm:max-w-[80vw] xl:max-w-[50vw] h-[90vh] p-0 flex flex-col justify-start">
           <DialogTitle></DialogTitle>
           <div
-            className=" pl-4 border-b shrink-0"
+            className="pl-4 border-b border-gray-200 dark:border-gray-700 shrink-0 bg-gray-50 dark:bg-gray-800"
             style={{
               display: "contents",
             }}
           >
-            <div className="flex items-center gap-2 pl-4">
-              <File className="h-4 w-4" />
-              <span className="font-medium truncate">{selectedFile?.name}</span>
+            <div className="flex items-center gap-2 pl-4 py-3">
+              <File className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+              <span className="font-medium truncate text-gray-900 dark:text-gray-100">
+                {selectedFile?.name}
+              </span>
             </div>
 
             <button
-              className="absolute right-12 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
+              className="absolute right-12 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
               onClick={() =>
                 selectedFile &&
                 downloadFile(selectedFile.url, selectedFile.name)

@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
   try {
     await dbConnect();
     let organizationId = "";
-    const token = req.cookies.get("token");
+    const token = req.cookies.get("auth_token");
     if (!token) {
       const url = new URL(req.url);
       organizationId = url.searchParams?.get("orgId") || "";
@@ -72,7 +72,8 @@ export async function PUT(req: NextRequest) {
   try {
     await dbConnect();
     let organizationId = "";
-    const token = req.cookies.get("token");
+    const token = req.cookies.get("auth_token");
+
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
         String(token?.value)
@@ -94,14 +95,19 @@ export async function PUT(req: NextRequest) {
     }
 
     const { enable2FA } = await req.json();
-    // let storageObj;
-    // if (multipleOrg) {
-    //   storageObj = { storageType: "local" };
-    // }
+
+    // Check email configuration before enabling 2FA
+    const settings = await Settings.findOne({ organizationId });
+    
+    if (enable2FA && (!settings?.mailConfig?.mailProvider || settings.mailConfig.mailProvider === "")) {
+      return NextResponse.json(
+        { error: "Email configuration with valid provider is required to enable 2FA" },
+        { status: 400 }
+      );
+    }
 
     const updatedUser = await Settings.findOneAndUpdate(
       {
-        // organizationId: userData.organizationId,
         organizationId: organizationId,
       },
       {

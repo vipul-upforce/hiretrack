@@ -1,179 +1,204 @@
 "use client";
 
-import { useState } from "react";
-import { format } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
+import React, { useRef, useState, useEffect } from "react";
+import MultiDatePicker from "react-multi-date-picker";
+import TimePicker from "react-multi-date-picker/plugins/time_picker";
+import { Calendar, Clock, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { useFormikContext } from "formik";
+import "./wren-datepicker.css";
 
-interface DatePickerProps {
-  date?: Date;
-  onDateChange: (date?: Date) => void;
-  placeholder?: string;
-  onBlur?: () => void;
-}
-
-export function DatePicker({
-  date,
-  onDateChange,
-  placeholder,
-  onBlur,
-}: DatePickerProps) {
-  const [open, setOpen] = useState(false);
-  const { setFieldTouched } = useFormikContext();
-  const hours = Array.from({ length: 12 }, (_, i) => i + 1);
-  const minutes = Array.from({ length: 12 }, (_, i) => i * 5);
-
-  const handleDateSelect = (selectedDate: Date | undefined) => {
-    if (selectedDate) {
-      const newDate = new Date(selectedDate);
-      if (date) {
-        newDate.setHours(date.getHours());
-        newDate.setMinutes(date.getMinutes());
-      }
-      onDateChange(newDate);
-    }
-  };
-
-  const handleTimeChange = (
-    type: "hour" | "minute" | "ampm",
-    value: string
-  ) => {
-    if (date) {
-      const newDate = new Date(date);
-      if (type === "hour") {
-        newDate.setHours(
-          (parseInt(value) % 12) + (newDate.getHours() >= 12 ? 12 : 0)
-        );
-      } else if (type === "minute") {
-        newDate.setMinutes(parseInt(value));
-      } else if (type === "ampm") {
-        const currentHours = newDate.getHours();
-        newDate.setHours(
-          value === "PM" ? currentHours + 12 : currentHours - 12
-        );
-      }
-      onDateChange(newDate);
-    }
-  };
-
-  const handleBlur = () => {
-    onBlur?.();
+// Common plugin for Today, Now, Done buttons (flex row)
+const PickerActionsPlugin = ({
+  onChange,
+  onDone,
+  showNow,
+  pickerRef,
+  position,
+}: {
+  onChange: (date: any) => void;
+  onDone: () => void;
+  showNow: boolean;
+  pickerRef: React.RefObject<any>;
+  position: "bottom" | "top";
+}) => {
+  const handleClear = () => {
+    onChange(null);
   };
 
   return (
-    <Popover
-      open={open}
-      modal={true}
-      onOpenChange={(open) => {
-        setOpen(open);
-        setFieldTouched("validTill", true);
-      }}
+    <div
+      className={`flex items-center justify-between gap-2 p-3 border-t border-border/30 bg-muted/20 ${
+        position === "top" ? "border-b" : ""
+      }`}
     >
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          className={cn(
-            "w-full justify-start text-left font-normal",
-            !date && "text-muted-foreground"
-          )}
-          onBlur={handleBlur}
+      <div className="flex gap-2">
+        <button
+          type="button"
+          className="flex items-center gap-1 px-1.5 py-1 rounded border border-border text-[0.7rem] font-medium bg-background hover:bg-muted transition"
+          onClick={() => onChange(new Date(new Date().setHours(0, 0, 0, 0)))}
         >
-          <CalendarIcon className="mr-2 h-4 w-4" />
-          {date
-            ? format(date, "MM/dd/yyyy hh:mm aa")
-            : placeholder || "Select date & time"}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-0">
-        <div className="sm:flex">
-          {/* Date Picker */}
-          <Calendar
-            mode="single"
-            selected={date}
-            onSelect={handleDateSelect}
-            initialFocus
-          />
-
-          {/* Time Picker */}
-          <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
-            {/* Hour Selection */}
-            <ScrollArea className="w-64 sm:w-auto">
-              <div className="flex sm:flex-col p-2">
-                {hours.map((hour) => (
-                  <Button
-                    key={hour}
-                    size="icon"
-                    variant={
-                      date && date.getHours() % 12 === hour % 12
-                        ? "default"
-                        : "ghost"
-                    }
-                    className="sm:w-full shrink-0 aspect-square"
-                    onClick={() => handleTimeChange("hour", hour.toString())}
-                  >
-                    {hour}
-                  </Button>
-                ))}
-              </div>
-              <ScrollBar orientation="horizontal" className="sm:hidden" />
-            </ScrollArea>
-
-            {/* Minute Selection */}
-            <ScrollArea className="w-64 sm:w-auto">
-              <div className="flex sm:flex-col p-2">
-                {minutes.map((minute) => (
-                  <Button
-                    key={minute}
-                    size="icon"
-                    variant={
-                      date && date.getMinutes() === minute ? "default" : "ghost"
-                    }
-                    className="sm:w-full shrink-0 aspect-square"
-                    onClick={() =>
-                      handleTimeChange("minute", minute.toString())
-                    }
-                  >
-                    {minute.toString().padStart(2, "0")}
-                  </Button>
-                ))}
-              </div>
-              <ScrollBar orientation="horizontal" className="sm:hidden" />
-            </ScrollArea>
-
-            {/* AM/PM Selection */}
-            <ScrollArea className="">
-              <div className="flex sm:flex-col p-2">
-                {["AM", "PM"].map((ampm) => (
-                  <Button
-                    key={ampm}
-                    size="icon"
-                    variant={
-                      date &&
-                      ((ampm === "AM" && date.getHours() < 12) ||
-                        (ampm === "PM" && date.getHours() >= 12))
-                        ? "default"
-                        : "ghost"
-                    }
-                    className="sm:w-full shrink-0 aspect-square"
-                    onClick={() => handleTimeChange("ampm", ampm)}
-                  >
-                    {ampm}
-                  </Button>
-                ))}
-              </div>
-            </ScrollArea>
-          </div>
-        </div>
-      </PopoverContent>
-    </Popover>
+          <Calendar className="h-3 w-3" /> Today
+        </button>
+        {showNow && (
+          <button
+            type="button"
+            className="flex items-center gap-1 px-1.5 py-1 rounded border border-border text-[0.7rem] font-medium bg-background hover:bg-muted transition"
+            onClick={() => onChange(new Date())}
+          >
+            <Clock className="h-3 w-3" /> Now
+          </button>
+        )}
+        <button
+          type="button"
+          className="flex items-center gap-1 px-1.5 py-1 rounded border border-border text-[0.7rem] font-medium bg-background hover:bg-muted transition"
+          onClick={handleClear}
+        >
+          <X className="h-3 w-3" /> Clear
+        </button>
+      </div>
+      <button
+        type="button"
+        className="flex items-center gap-1 px-1.5 py-1 rounded border border-primary text-[0.7rem] font-bold bg-primary/90 text-white hover:bg-primary"
+        onClick={onDone}
+      >
+        <Check className="h-3 w-3" /> Done
+      </button>
+    </div>
   );
+};
+PickerActionsPlugin.position = "bottom";
+
+interface DatePickerProps {
+  value: any;
+  onChange: (date: any) => void;
+  format?: string;
+  placeholder?: string;
+  className?: string;
+  disabled?: boolean;
+  showTimePicker?: boolean;
+  timePickerPosition?: "bottom" | "right" | "left" | "top";
+  timePickerProps?: Record<string, any>;
+  showNowButton?: boolean;
+  range?: boolean;
+  open?: boolean;
+  onOpen?: () => void;
+  onClose?: () => void;
+  portalContainer?: HTMLElement | null;
 }
+
+export const DatePicker: React.FC<DatePickerProps> = ({
+  value,
+  onChange,
+  format = "MM/DD/YYYY hh:mm A",
+  placeholder = "Select date and time",
+  className = "",
+  disabled = false,
+  showTimePicker = true,
+  timePickerPosition = "bottom",
+  timePickerProps = {},
+  showNowButton = true,
+  range = false,
+  open,
+  onOpen,
+  onClose,
+  portalContainer,
+}) => {
+  const pickerRef = useRef<any>(null);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const doneClicked = useRef(false);
+  const allowOutsideClose = useRef(false);
+  const pickerContainerRef = useRef<HTMLDivElement>(null);
+
+  // Plugins array, conditionally include TimePicker
+  const plugins = [
+    ...(showTimePicker
+      ? [
+          <TimePicker
+            key="time"
+            position={timePickerPosition}
+            hideSeconds
+            {...timePickerProps}
+          />,
+        ]
+      : []),
+    <PickerActionsPlugin
+      position="bottom"
+      key="actions"
+      onChange={onChange}
+      onDone={() => {
+        doneClicked.current = true;
+        if (pickerRef.current) pickerRef.current.closeCalendar();
+      }}
+      showNow={!!showTimePicker && showNowButton}
+      pickerRef={pickerRef}
+    />,
+  ];
+
+  // Control open/close state
+  const controlledOpen = open !== undefined ? open : internalOpen;
+
+  // Global click listener to detect outside clicks
+  useEffect(() => {
+    if (internalOpen && showTimePicker) {
+      const handleClick = (event: MouseEvent) => {
+        if (
+          pickerContainerRef.current &&
+          !pickerContainerRef.current.contains(event.target as Node)
+        ) {
+          allowOutsideClose.current = true;
+          if (pickerRef.current) pickerRef.current.closeCalendar();
+        }
+      };
+      document.addEventListener("mousedown", handleClick);
+      return () => document.removeEventListener("mousedown", handleClick);
+    }
+  }, [internalOpen, showTimePicker]);
+
+  // Use the same className as the Input component
+  const inputClassName =
+    "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm";
+
+  const handleClear = () => {
+    onChange(null);
+  };
+
+  return (
+    <div ref={pickerContainerRef} className={cn("relative", className)}>
+      <MultiDatePicker
+        ref={pickerRef}
+        value={value}
+        onChange={onChange}
+        format={format}
+        placeholder={placeholder}
+        className="wren-picker"
+        inputClass={inputClassName}
+        disabled={disabled}
+        plugins={plugins}
+        calendarPosition="bottom"
+        range={range}
+        portal={!!portalContainer}
+        portalTarget={portalContainer}
+        onOpen={() => {
+          setInternalOpen(true);
+          doneClicked.current = false;
+          allowOutsideClose.current = false;
+          onOpen?.();
+        }}
+        onClose={() => {
+          // Allow click outside to always close
+          if (
+            showTimePicker &&
+            !doneClicked.current &&
+            !allowOutsideClose.current
+          )
+            return false;
+          setInternalOpen(false);
+          doneClicked.current = false;
+          allowOutsideClose.current = false;
+          onClose?.();
+        }}
+      />
+    </div>
+  );
+};

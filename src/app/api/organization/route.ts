@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   let createdOrg = null;
   let admin = null;
   let organizationId = "";
-  const token = req.cookies.get("token");
+  const token = req.cookies.get("auth_token");
   if (token?.value) {
     const decryptedResponse = await verifyAndDecryptToken(String(token?.value));
     const userData = decryptedResponse.user;
@@ -210,7 +210,7 @@ export function OPTIONS() {
 //!!! THIS IMPLIES RESTRICT ACCESS TO REGISTER/ORG PAGE
 export async function GET(req: NextRequest) {
   // let organizationId;
-  // const token = req.cookies.get("token");
+
   // if (token?.value) {
   //   const decryptedResponse = await verifyAndDecryptToken(String(token?.value));
   //   const userData = decryptedResponse.user;
@@ -218,47 +218,63 @@ export async function GET(req: NextRequest) {
   //     organizationId = userData.organizationId || "";
   //   }
   // }
-  await connectToDatabase();
-  if (!Settings) {
-    throw new Error("Not connected to Database");
-  }
-  // if (organizationId != "") {
-  //   const settings = await Settings.find({
-  //     organizationId: String(organizationId),
-  //   });
-  //   console.log("✅✅✅ ", settings);
-  //   if (settings[0].multipleOrg !== false) {
-  //     return {
-  //       allow: true,
-  //     };
-  //   }
-  //   return {
-  //     allow: false,
-  //   };
-  // } else {
-  const settings = await Settings.find(
-    {},
-    {
-      fileStorage: 0,
-      mailConfig: 0,
-      gemini: 0,
+
+  try {
+    await connectToDatabase();
+    if (!Settings) {
+      return NextResponse.json(
+        { error: "Settings model not found" },
+        { status: 500 }
+      );
     }
-  );
-  // console.log("⛔⛔⛔ ", settings);
-  if (settings.length > 1 || settings.length === 0) {
+    // if (organizationId != "") {
+    //   const settings = await Settings.find({
+    //     organizationId: String(organizationId),
+    //   });
+    //   console.log("✅✅✅ ", settings);
+    //   if (settings[0].multipleOrg !== false) {
+    //     return {
+    //       allow: true,
+    //     };
+    //   }
+    //   return {
+    //     allow: false,
+    //   };
+    // } else {
+    const settings = await Settings.find(
+      {},
+      {
+        fileStorage: 0,
+        mailConfig: 0,
+        gemini: 0,
+        aiProviders: 0,
+        emailTemplates: 0,
+        googleCalendar: 0,
+        twoFA: 0,
+      }
+    );
+    // console.log("⛔⛔⛔ ", settings);
+    if (settings.length > 1 || settings.length === 0) {
+      return NextResponse.json({
+        allow: true,
+        data: settings,
+      });
+    } else if (settings.length === 1 && settings[0].multipleOrg !== false) {
+      return NextResponse.json({
+        allow: true,
+        data: settings,
+      });
+    }
     return NextResponse.json({
-      allow: true,
+      allow: false,
       data: settings,
     });
-  } else if (settings.length === 1 && settings[0].multipleOrg !== false) {
-    return NextResponse.json({
-      allow: true,
-      data: settings,
-    });
+    // }
+  } catch (error) {
+    console.error("Organization API error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
-  return NextResponse.json({
-    allow: false,
-    data: settings,
-  });
-  // }
 }

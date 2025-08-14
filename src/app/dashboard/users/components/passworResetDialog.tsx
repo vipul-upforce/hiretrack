@@ -85,7 +85,7 @@ export function ResetPasswordDialog({
             touched,
             isSubmitting,
           }) => (
-            <Form className="space-y-4">
+            <Form className="space-y-4 p-4">
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">

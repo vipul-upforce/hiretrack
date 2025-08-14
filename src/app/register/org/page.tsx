@@ -51,7 +51,11 @@ const OrgSchema = Yup.object().shape({
   email: Yup.string()
     .required("Email is required")
     .trim("Email cannot be only spaces")
-    .matches(/^[a-z][a-z0-9._%+-]*@[a-z0-9.-]+\.[a-z]{2,}$/, "Invalid Email"),
+    // .matches(/^[a-z0-9][a-z0-9._%+-]*@[a-z0-9.-]+\.[a-z]{2,}$/, "Invalid Email"),
+    .matches(
+      /^[a-z0-9][a-z0-9._%+-]*@[a-z0-9.-]+\.[a-z]{2,}$/,
+      "Invalid Email"
+    ),
   password: Yup.string()
     .min(6, "Password must be at least 6 characters.")
     .matches(/[a-z]/, "Password must include at least one lowercase letter")

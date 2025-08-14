@@ -48,22 +48,27 @@ export function UserTableRow({
             onDeleteClick(user._id);
           }}
           disabled={isDeleting || user.isDeleted}
+          className="bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
         >
           <Trash2 className="h-4 w-4" />
         </Button>
         <Button
+          variant="outline"
           size="icon"
           onClick={() => onEditClick(user)}
           disabled={isUpdating}
+          className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
         >
-          <EditIcon className="h-4 w-4" />
+          <EditIcon className="h-4 w-4 text-gray-700 dark:text-gray-300" />
         </Button>
         <Button
+          variant="outline"
           size="icon"
           onClick={() => onPasswordClick(user._id, user.name)}
           disabled={isUpdating}
+          className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
         >
-          <ShieldQuestion className="h-4 w-4" />
+          <ShieldQuestion className="h-4 w-4 text-gray-700 dark:text-gray-300" />
         </Button>
       </TableCell>
     </TableRow>

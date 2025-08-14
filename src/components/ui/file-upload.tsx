@@ -1,13 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { Upload, File as FileIcon, Pencil, X } from "lucide-react";
+import { Upload, File as FileIcon, Pencil, X, Paperclip } from "lucide-react";
 import { RenameFileDialog } from "./rename-file-dialog";
-import Cookies from "js-cookie";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import { useSelector } from "react-redux";
+import { Button } from "./button";
+
 interface FileUploadProps {
   onFileSelect: (files: File[]) => void;
+  colorScheme?: "blue" | "green";
+  isResume?: boolean;
+  dropZone?: boolean;
   onExistingFilesChange?: (
     files: Array<{
       id: string;
@@ -53,16 +57,15 @@ interface User {
 
 export const formatFileSize = (bytes: number): string => {
   if (bytes === 0) return "0 Bytes";
-
   const k = 1024;
   const sizes = ["Bytes", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 };
 
 export function FileUpload({
   onFileSelect,
+  dropZone = false,
   accept,
   maxFiles = 1,
   files,
@@ -70,25 +73,39 @@ export function FileUpload({
   id = "",
   setter,
   isEdit = true,
+  colorScheme = "blue", // Default to blue
+  isResume = false, // Default to false
 }: FileUploadProps) {
   const [renameFile, setRenameFile] = useState<RenameFileState>({
     file: null,
     isExisting: false,
   });
-  const [user, setuser] = useState<User | null>(null);
-  // const [droppedFiles, setDroppedFiles] = useState<string[]>();
+  const getColorClasses = (scheme: "blue" | "green") => {
+    switch (scheme) {
+      case "green":
+        return {
+          bg: "bg-green-50 dark:bg-green-900/20",
+          border: "border-green-200 dark:border-green-800",
+          icon: "text-green-600 dark:text-green-400",
+          text: "text-green-700 dark:text-green-300",
+          hoverBg: "hover:bg-green-100 dark:hover:bg-green-800/50",
+        };
+      case "blue":
+      default:
+        return {
+          bg: "bg-blue-50 dark:bg-blue-900/20",
+          border: "border-blue-200 dark:border-blue-800",
+          icon: "text-blue-600 dark:text-blue-400",
+          text: "text-blue-700 dark:text-blue-300",
+          hoverBg: "hover:bg-blue-100 dark:hover:bg-blue-800/50",
+        };
+    }
+  };
 
-  useEffect(() => {
-    (async () => {
-      const token = Cookies.get("token");
-      if (token) {
-        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-        if (decryptedResponse.success && decryptedResponse.user) {
-          setuser(decryptedResponse.user);
-        }
-      }
-    })();
-  }, []);
+  const colors = getColorClasses(colorScheme);
+  const { user }: { user: User } = useSelector(
+    (state: any) => state.auth || {}
+  );
 
   const handleRename = (newName: string) => {
     if (renameFile.file) {
@@ -101,19 +118,14 @@ export function FileUpload({
         );
         setter?.(updatedFiles);
       } else {
-        // Assuming renameFile.file is an object with a url property
-
         const updatedFiles = files.map((f) =>
           f === renameFile.file ? { ...f, name: newName } : f
         );
         setter?.(updatedFiles);
       }
-      // setDroppedFiles((prev = []) => {
-      //   const combined = [...prev, newName];
-      //   return Array.from(new Set(combined));
-      // });
     }
   };
+
   const handleRemoveFile = (fileNameToRemove: string) => {
     const updatedFiles = files.filter(
       (file) => file?.name !== fileNameToRemove
@@ -124,46 +136,77 @@ export function FileUpload({
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
       onFileSelect(acceptedFiles);
-      // setDroppedFiles((prev = []) => {
-      //   const combined = [...prev, ...acceptedFiles.map((file) => file?.name)];
-      //   return Array.from(new Set(combined));
-      // });
     },
     [onFileSelect]
   );
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop,
     accept,
     maxFiles,
+    noClick: true,
+    noKeyboard: true,
   });
 
   return (
     <div className="space-y-4" id={id}>
-      <div
-        {...getRootProps()}
-        className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer
-          ${isDragActive ? "border-primary bg-primary/10" : "border-gray-300"}`}
-      >
-        <input {...getInputProps()} />
-        <Upload className="mx-auto h-8 w-8 text-gray-400" />
-        <p className="mt-2 text-sm text-gray-500">
-          {isDragActive
-            ? "Drop the files here..."
-            : "Drag 'n' drop files here, or click to select files"}
-        </p>
-        <p className="mt-2 text-sm text-gray-500">
-          {user && user.role === "candidate" && !accept["application/pdf"]
-            ? "Maximum 2 files are allowed"
-            : null}
-        </p>
-        <p className="mt-2 text-sm text-gray-500">
-          {user && user.role === "candidate"
-            ? "File should have less than 3MB size"
-            : null}
-        </p>
-      </div>
+      {/* Always render the hidden input for both modes */}
+      <input {...getInputProps()} id="file-upload-input" className="hidden" />
 
+      {dropZone ? (
+        <div
+          {...getRootProps()}
+          className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer
+            ${isDragActive ? "border-primary bg-primary/10" : "border-border"}`}
+        >
+          <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
+          <p className="mt-2 text-sm text-muted-foreground">
+            {isDragActive
+              ? "Drop the files here..."
+              : "Drag 'n' drop files here, or click to select files"}
+          </p>
+          {(user?.role === "candidate" || user?.role === "") && (
+            <>
+              {!accept["application/pdf"] && (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Maximum 2 files are allowed
+                </p>
+              )}
+              <p className="mt-2 text-sm text-muted-foreground">
+                File should have less than 3MB size
+              </p>
+            </>
+          )}
+        </div>
+      ) : (
+        <div className="flex items-center gap-3 ">
+          <Button
+            type="button"
+            onClick={open}
+            variant="outline"
+            className="flex items-center gap-2 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200 dark:border-purple-800 hover:from-purple-100 hover:to-pink-100 dark:hover:from-purple-900/30 dark:hover:to-pink-900/30 text-purple-700 dark:text-purple-300"
+          >
+            <Paperclip className="w-4 h-4" />
+            {isResume ? "Resume" : "Add Documents"}
+          </Button>
+          {(user?.role === "candidate" || user?.role === "") && (
+            <div className="space-y-1 flex items-center gap-2">
+              {!accept["application/pdf"] && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Max 2 files
+                </p>
+              )}
+              <p className="text-sm text-muted-foreground m-0">3MB per file</p>
+            </div>
+          )}
+          {/* {user && ["hr", "admin", "interviewer"].includes(user.role) && (
+            <p className="text-sm text-muted-foreground">
+              100MB per file            </p>
+          )} */}
+        </div>
+      )}
+
+      {/* File Previews */}
       <div className="space-y-2 overflow-y-auto">
         {existingFiles.map((file) => (
           <div
@@ -173,79 +216,71 @@ export function FileUpload({
             <div className="flex items-center space-x-2">
               <FileIcon className="h-4 w-4" />
               <span className="text-sm break-words max-w-[350px]">
-                {file?.name}
+                {file.name}
               </span>
               <span className="text-xs text-gray-500">
-                ({formatFileSize(file?.size)})
+                ({formatFileSize(file.size)})
               </span>
               <button
                 type="button"
                 className="p-2 hover:bg-muted rounded-md hover:text-red-500"
-                onClick={() => handleRemoveFile(file?.name)}
-                aria-label="Remove file"
+                onClick={() => handleRemoveFile(file.name)}
               >
                 <X className="h-4 w-4 text-muted-foreground" />
               </button>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                className="p-2 hover:bg-muted rounded-md"
-                onClick={() =>
-                  setRenameFile({
-                    file: null,
-                    isExisting: true,
-                    existingFile: file,
-                  })
-                }
-              >
-                <Pencil className="h-4 w-4 text-muted-foreground" />
-              </button>
-            </div>
+            <button
+              type="button"
+              className="p-2 hover:bg-muted rounded-md"
+              onClick={() =>
+                setRenameFile({
+                  file: null,
+                  isExisting: true,
+                  existingFile: file,
+                })
+              }
+            >
+              <Pencil className="h-4 w-4 text-muted-foreground" />
+            </button>
           </div>
         ))}
 
-        {files?.map((file) => (
+        {files.map((file) => (
           <div
-            key={file?.name}
-            className="flex items-center justify-between p-2 border rounded break-all w-full"
+            key={file.name}
+            className={`flex items-center justify-between p-3 ${colors.bg} ${colors.border} rounded-lg`}
           >
-            <div className="flex items-center space-x-2">
-              <FileIcon className="h-4 w-4" />
-              <span className="text-sm break-words max-w-[350px]">
-                {file?.name}
+            <div className="flex items-center gap-2">
+              <FileIcon className={`w-4 h-4 ${colors.icon}`} />
+              <span className={`text-sm font-medium ${colors.text}`}>
+                {file.name}
+              </span>
+              <span className={`text-xs ${colors.icon}`}>
+                ({formatFileSize(file.size)})
               </span>
             </div>
-            <div className="flex items-center space-x-4 justify-end">
-              <span className="text-xs text-gray-500">
-                ({formatFileSize(file?.size)})
-              </span>
-              <div className="flex items-center gap-2">
-                {isEdit && (
-                  <button
-                    type="button"
-                    className="p-2 hover:bg-muted rounded-md"
-                    onClick={() =>
-                      setRenameFile({
-                        file,
-                        isExisting: false,
-                      })
-                    }
-                  >
-                    <Pencil className="h-4 w-4 text-muted-foreground" />
-                  </button>
-                )}
-                {/* {droppedFiles?.includes(file.name) && ( */}
+            <div className="flex items-center gap-1">
+              {isEdit && (
                 <button
                   type="button"
-                  className="p-2 hover:bg-muted rounded-md hover:text-red-500"
-                  onClick={() => handleRemoveFile(file?.name)}
-                  aria-label="Remove file"
+                  className={`p-2 ${colors.hoverBg} rounded-md text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300`}
+                  onClick={() =>
+                    setRenameFile({
+                      file,
+                      isExisting: false,
+                    })
+                  }
                 >
-                  <X className="h-4 w-4 text-muted-foreground" />
+                  <Pencil className="h-4 " />
                 </button>
-                {/* )} */}
-              </div>
+              )}
+              <button
+                type="button"
+                className="p-2 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-md text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                onClick={() => handleRemoveFile(file.name)}
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
           </div>
         ))}

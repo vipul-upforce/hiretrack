@@ -53,14 +53,70 @@ export async function GET(request: NextRequest) {
         },
       },
       {
-        // Lookup for candidateId
+        // Add fields to handle candidateId conversion safely
+        $addFields: {
+          candidateObjectId: {
+            $switch: {
+              branches: [
+                {
+                  case: { $eq: [{ $type: "$candidateId" }, "objectId"] },
+                  then: "$candidateId",
+                },
+                {
+                  case: { $eq: [{ $type: "$candidateId" }, "string"] },
+                  then: {
+                    $cond: {
+                      if: { $eq: [{ $strLenCP: "$candidateId" }, 24] },
+                      then: { $toObjectId: "$candidateId" },
+                      else: null,
+                    },
+                  },
+                },
+                {
+                  case: {
+                    $and: [
+                      { $eq: [{ $type: "$candidateId" }, "object"] },
+                      { $ne: ["$candidateId._id", null] },
+                    ],
+                  },
+                  then: {
+                    $cond: {
+                      if: { $eq: [{ $type: "$candidateId._id" }, "objectId"] },
+                      then: "$candidateId._id",
+                      else: {
+                        $cond: {
+                          if: {
+                            $and: [
+                              {
+                                $eq: [{ $type: "$candidateId._id" }, "string"],
+                              },
+                              { $eq: [{ $strLenCP: "$candidateId._id" }, 24] },
+                            ],
+                          },
+                          then: { $toObjectId: "$candidateId._id" },
+                          else: null,
+                        },
+                      },
+                    },
+                  },
+                },
+              ],
+              default: null,
+            },
+          },
+        },
+      },
+      {
+        // Lookup for candidateId - only if candidateObjectId is valid
         $lookup: {
           from: "candidates",
-          let: { cid: { $toObjectId: "$candidateId" } },
+          let: { cid: "$candidateObjectId" },
           pipeline: [
             {
               $match: {
-                $expr: { $eq: ["$_id", "$$cid"] },
+                $expr: {
+                  $and: [{ $ne: ["$$cid", null] }, { $eq: ["$_id", "$$cid"] }],
+                },
               },
             },
           ],
@@ -75,35 +131,74 @@ export async function GET(request: NextRequest) {
         },
       },
       {
-        // Lookup for jobId
+        // Add fields to handle jobId conversion safely
+        $addFields: {
+          jobObjectId: {
+            $switch: {
+              branches: [
+                {
+                  case: { $eq: [{ $type: "$jobId" }, "objectId"] },
+                  then: "$jobId",
+                },
+                {
+                  case: { $eq: [{ $type: "$jobId" }, "string"] },
+                  then: {
+                    $cond: {
+                      if: { $eq: [{ $strLenCP: "$jobId" }, 24] },
+                      then: { $toObjectId: "$jobId" },
+                      else: null,
+                    },
+                  },
+                },
+                {
+                  case: {
+                    $and: [
+                      { $eq: [{ $type: "$jobId" }, "object"] },
+                      { $ne: ["$jobId._id", null] },
+                    ],
+                  },
+                  then: {
+                    $cond: {
+                      if: { $eq: [{ $type: "$jobId._id" }, "objectId"] },
+                      then: "$jobId._id",
+                      else: {
+                        $cond: {
+                          if: {
+                            $and: [
+                              { $eq: [{ $type: "$jobId._id" }, "string"] },
+                              { $eq: [{ $strLenCP: "$jobId._id" }, 24] },
+                            ],
+                          },
+                          then: { $toObjectId: "$jobId._id" },
+                          else: null,
+                        },
+                      },
+                    },
+                  },
+                },
+              ],
+              default: null,
+            },
+          },
+        },
+      },
+      {
+        // Lookup for jobId - only if jobObjectId is valid
         $lookup: {
           from: "jobs",
-          let: { jid: { $toObjectId: "$jobId" } },
+          let: { jid: "$jobObjectId" },
           pipeline: [
             {
               $match: {
-                $expr: { $eq: ["$_id", "$$jid"] },
+                $expr: {
+                  $and: [{ $ne: ["$$jid", null] }, { $eq: ["$_id", "$$jid"] }],
+                },
               },
             },
           ],
           as: "jobData",
         },
       },
-      // {
-      //   // Lookup for jobId
-      //   $lookup: {
-      //     from: "users",
-      //     let: { uid: { $toObjectId: "$history.remarks.userId" } },
-      //     pipeline: [
-      //       {
-      //         $match: {
-      //           $expr: { $eq: ["$_id", "$$uid"] },
-      //         },
-      //       },
-      //     ],
-      //     as: "history.remarks.userId",
-      //   },
-      // },
       {
         // Unwind jobData
         $unwind: {
@@ -120,23 +215,6 @@ export async function GET(request: NextRequest) {
           as: "history.assignmentBy",
         },
       },
-      // {
-      //   $lookup: {
-      //     from: "users",
-      //     localField: "history.remark.userId",
-      //     foreignField: "_id",
-      //     as: "history.remark.userId",
-      //   },
-      // },
-      // {
-      //   // Lookup for remark.userId
-      //   $lookup: {
-      //     from: "users",
-      //     localField: "history.remark.userId",
-      //     foreignField: "_id",
-      //     as: "history.remark.userId",
-      //   },
-      // },
       {
         // Lookup for currentInterviewer
         $lookup: {
@@ -171,6 +249,14 @@ export async function GET(request: NextRequest) {
       {
         // Sort by parsedDateTime in descending order
         $sort: { "history.parsedDateTime": -1 },
+      },
+      {
+        // Remove temporary fields used for conversion
+        $project: {
+          candidateObjectId: 0,
+          jobObjectId: 0,
+          "history.parsedDateTime": 0,
+        },
       },
       {
         // Count total matching documents (for pagination)

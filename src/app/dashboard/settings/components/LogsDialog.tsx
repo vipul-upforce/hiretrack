@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, ComponentType } from "react";
 import type { SettingComponentProps } from "./setting-dialog";
-import { Checkbox, Link } from "@mui/material";
+import { Checkbox } from "@/components/ui/checkbox";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Candidate, Remark } from "@/types/candidate";
 import { Job } from "@/types/job";
@@ -286,8 +286,12 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
           </div>
           {assignmentBy && (
             <div className="flex flex-col items-end text-right">
-              <p className="text-xs font-light text-gray-400">Updated by</p>
-              <p className="font-light text-gray-500 text-sm">{assignmentBy}</p>
+              <p className="text-xs font-light text-muted-foreground">
+                Updated by
+              </p>
+              <p className="font-light text-muted-foreground text-sm">
+                {assignmentBy}
+              </p>
             </div>
           )}
         </div>
@@ -298,8 +302,12 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
           <p>{log.title}</p>
           {assignmentBy && (
             <div className="flex flex-col items-end text-right">
-              <p className="text-xs font-light text-gray-400">Updated by</p>
-              <p className="font-light text-gray-500 text-sm">{assignmentBy}</p>
+              <p className="text-xs font-light text-muted-foreground">
+                Updated by
+              </p>
+              <p className="font-light text-muted-foreground text-sm">
+                {assignmentBy}
+              </p>
             </div>
           )}
         </div>
@@ -308,14 +316,14 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg p-6 h-[80vh] flex flex-col font-sans">
+    <div className="flex-1 overflow-y-auto px-6 py-4 flex flex-col font-sans">
       {/* Tabs */}
       <div className="flex border-b mb-6 flex-shrink-0 justify-between">
         <div className="flex space-x-2">
           <button
             className={`py-2 px-4 text-sm font-medium rounded-t-md transition-colors ${activeTab === "nginx"
-              ? "border-b-2 border-blue-500 text-blue-600"
-              : "text-gray-600 hover:bg-gray-100"
+                ? "border-b-2 border-blue-500 text-blue-600"
+                : "text-gray-600 hover:bg-gray-100"
               }`}
             onClick={() => {
               setActiveTab("nginx");
@@ -330,8 +338,8 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
           </button>
           <button
             className={`py-2 px-4 text-sm font-medium rounded-t-md transition-colors ${activeTab === "server"
-              ? "border-b-2 border-blue-500 text-blue-600"
-              : "text-gray-600 hover:bg-gray-100"
+                ? "border-b-2 border-blue-500 text-blue-600"
+                : "text-gray-600 hover:bg-gray-100"
               }`}
             onClick={() => {
               setActiveTab("server");
@@ -370,8 +378,8 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
                         <li
                           key={file}
                           className={`cursor-pointer p-2 text-sm rounded ${selectedFile === file
-                            ? "bg-blue-100 text-blue-700"
-                            : "hover:bg-gray-100"
+                              ? "bg-blue-100 text-blue-700"
+                              : "hover:bg-gray-100"
                             }`}
                           onClick={() => {
                             setSelectedFile(file);
@@ -435,7 +443,7 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
                       </div>
                     </div>
                     <div
-                      className={`bg-gray-100 p-4 rounded-md flex-1 overflow-y-auto min-h-0 ${isLoading && "border-b-red-500"}`}
+                      className={`bg-muted p-4 rounded-md flex-1 overflow-y-auto min-h-0 ${isLoading && "border-b-red-500"}`}
                       ref={logContainerRef}
                     >
                       {fileContent.length > 0 ? (
@@ -447,10 +455,10 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
                             return (
                               <div
                                 key={`${offset}-${index}`}
-                                className="border-b border-gray-200 py-1 flex flex-row items-center"
+                                className="border-b border-border py-1 flex flex-row items-center"
                               >
                                 {showLn && (
-                                  <p className="text-sm text-gray-400 mr-2">
+                                  <p className="text-sm text-muted-foreground mr-2">
                                     {index + 1}
                                   </p>
                                 )}
@@ -639,8 +647,8 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
                               <span className="font-medium">Status:</span>{" "}
                               <span
                                 className={`capitalize ${log.candidateData?.status === "rejected"
-                                  ? "text-red-500"
-                                  : "text-green-500"
+                                    ? "text-red-500"
+                                    : "text-green-500"
                                   }`}
                               >
                                 {log.candidateData?.status || "N/A"}
@@ -661,13 +669,13 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
                                   ))
                                 : "None"}
                             </p> */}
-                            <Link
-                              variant="caption"
+                            <a
                               target="_blank"
                               href={`/candidate/${log.candidateData._id}`}
+                              className="text-sm text-primary hover:underline"
                             >
                               View All Details
-                            </Link>
+                            </a>
                           </div>
                           <div className="space-y-2">
                             <h4 className="font-medium text-gray-700">
@@ -689,8 +697,8 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
                               <span className="font-medium">Status:</span>{" "}
                               <span
                                 className={`capitalize ${log.jobData?.status === "open"
-                                  ? "text-green-500"
-                                  : "text-gray-500"
+                                    ? "text-green-500"
+                                    : "text-gray-500"
                                   }`}
                               >
                                 {log.jobData?.status || "N/A"}

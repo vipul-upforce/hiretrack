@@ -1,13 +1,16 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
 import dbConnect, { CandidateAccount, Settings } from "@/lib/mongodb";
-import { signToken } from "@/lib/jwt";
 import { User, Organization } from "@/lib/mongodb";
 import { OneOfMulOrganization } from "@/components/auth/OrganizationDialog";
 import { IUser } from "@/lib/models/user";
 import { IUCandidateAccount } from "@/lib/models/candidateAccount";
+import { setSecureAuthTokens } from "@/lib/secureTokens";
+import { loginRateLimiter } from "@/lib/rateLimiter";
+import { signToken } from "@/app/actions/auth";
+import { UserWithoutCF } from "@/types/login";
 
-export async function POST(req: Request) {
+async function handleLogin(req: NextRequest) {
   try {
     await dbConnect();
     const { email, password, orgId } = await req.json();
@@ -72,11 +75,31 @@ const userLogin = async (users: IUser[], orgId: string, password: string) => {
       );
     }
 
-    const orgInfo = await Organization!.findById(userInOrg.organizationId);
-    const fileStorage = await Settings!
-      .findOne({ organizationId: userInOrg.organizationId }, { _id: 0 })
-      .select("fileStorage")
+    const orgInfo = await Organization!
+      .findById(userInOrg.organizationId)
       .lean();
+    const orgSettings = await Settings!
+      .findOne({ organizationId: userInOrg.organizationId }, { _id: 0 })
+      .select("fileStorage twoFA")
+      .lean();
+
+    if (orgSettings.twoFA.enable2FA) {
+      const response = NextResponse.json({
+        message: "Continuing to next step for 2fa",
+        twofa: true,
+        organizationId: orgId,
+      });
+      response.headers.set("X-Content-Type-Options", "nosniff");
+      // response.headers.set("X-Frame-Options", "DENY");
+      response.headers.set("X-Frame-Options", "SAMEORIGIN");
+      response.headers.set("X-XSS-Protection", "1; mode=block");
+      response.headers.set(
+        "Referrer-Policy",
+        "strict-origin-when-cross-origin"
+      );
+
+      return response;
+    }
 
     const user = {
       id: userInOrg._id.toString(),
@@ -85,7 +108,7 @@ const userLogin = async (users: IUser[], orgId: string, password: string) => {
       role: userInOrg.role,
       organizationId: userInOrg.organizationId,
       organizationInfo: orgInfo,
-      fileStorage: fileStorage?.fileStorage?.storageType,
+      fileStorage: orgSettings?.fileStorage?.storageType,
     };
 
     const response = returnTokenBasedResponse(user);
@@ -121,7 +144,7 @@ const userLogin = async (users: IUser[], orgId: string, password: string) => {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }
 
-  const orgInfo = await Organization!.findById(user.organizationId);
+  const orgInfo = await Organization!.findById(user.organizationId).lean();
   const fileStorage = await Settings!
     .findOne({ organizationId: user.organizationId }, { _id: 0 })
     .select("fileStorage")
@@ -173,13 +196,12 @@ const candidateLogin = async (
       );
     }
 
-    const orgInfo = await Organization!.findById(
-      candidateInOrg.organizationId,
-      {
+    const orgInfo = await Organization!
+      .findById(candidateInOrg.organizationId, {
         adminId: 0,
         lanes: 0,
-      }
-    );
+      })
+      .lean();
     const tokenObj = {
       id: candidateInOrg._id.toString(),
       name: candidateInOrg.name,
@@ -227,10 +249,12 @@ const candidateLogin = async (
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }
 
-  const orgInfo = await Organization!.findById(candidate.organizationId, {
-    adminId: 0,
-    lanes: 0,
-  });
+  const orgInfo = await Organization!
+    .findById(candidate.organizationId, {
+      adminId: 0,
+      lanes: 0,
+    })
+    .lean();
 
   const tokenObj = {
     id: candidate._id.toString(),
@@ -355,7 +379,9 @@ const checkMultipleOrgs = async (
         );
       }
 
-      const orgInfo = await Organization!.findById(userInOrg.organizationId);
+      const orgInfo = await Organization!
+        .findById(userInOrg.organizationId)
+        .lean();
       const fileStorage = await Settings!
         .findOne({ organizationId: userInOrg.organizationId }, { _id: 0 })
         .select("fileStorage")
@@ -393,13 +419,12 @@ const checkMultipleOrgs = async (
         );
       }
 
-      const orgInfo = await Organization!.findById(
-        candidateInOrg.organizationId,
-        {
+      const orgInfo = await Organization!
+        .findById(candidateInOrg.organizationId, {
           adminId: 0,
           lanes: 0,
-        }
-      );
+        })
+        .lean();
 
       const tokenObj = {
         id: candidateInOrg._id.toString(),
@@ -477,21 +502,33 @@ const checkMultipleOrgs = async (
   );
 };
 
-const returnTokenBasedResponse = async (obj: unknown) => {
-  const token = signToken(obj);
+const returnTokenBasedResponse = async (obj: any) => {
+  const userWithoutCustomFields: UserWithoutCF = {
+    ...obj,
+  };
+  if (userWithoutCustomFields.organizationInfo) {
+    userWithoutCustomFields.organizationInfo = {
+      ...userWithoutCustomFields.organizationInfo,
+    };
+    delete userWithoutCustomFields.organizationInfo.customFields;
+  }
+
+  const token = await signToken(userWithoutCustomFields);
 
   const response = NextResponse.json({
     message: "Logged In Successfully",
     user: token,
   });
-
-  response.cookies.set("token", token, {
-    httpOnly: false,
-    sameSite: "strict",
-    // expires: new Date(Date.now() + 2 * 60 * 1000),
-    expires: 30,
-    // maxAge: 30 * 24 * 60 * 60,
+  // SECURITY FIX: Use secure token system with improved security
+  const resp = setSecureAuthTokens(response, token, {
+    expires: 30, // 30 days
+    maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
   });
-
-  return response;
+  return resp;
 };
+
+// Export with rate limiting
+export async function POST(req: Request) {
+  // SECURITY FIX: Apply rate limiting to prevent brute force attacks
+  return loginRateLimiter(req as NextRequest, handleLogin);
+}

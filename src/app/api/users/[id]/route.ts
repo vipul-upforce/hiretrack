@@ -4,6 +4,7 @@ import { User } from "@/lib/mongodb";
 import { auth } from "@/lib/auth";
 import { verifyAndDecryptToken } from "@/lib/utils";
 import { signToken } from "@/app/actions/auth";
+import { setSecureAuthTokens } from "@/lib/secureTokens";
 
 export async function DELETE(
   req: NextRequest,
@@ -143,7 +144,7 @@ export async function PUT(
 
     await User.findByIdAndUpdate(id, userData);
 
-    const token = req.cookies.get("token");
+    const token = req.cookies.get("auth_token");
     if (token) {
       const data = verifyAndDecryptToken(token.value);
       if (data.email === userData?.email) {
@@ -183,10 +184,11 @@ const refreshAndReAssignToken = async (data: unknown) => {
 
   const response = NextResponse.json({ message: "User updated successfully" });
 
-  response.cookies.set("token", newToken, {
-    httpOnly: false,
-    sameSite: "strict",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+  // SECURITY FIX: Use secure token system with improved security
+  setSecureAuthTokens(response, newToken, {
+    expires: 30, // 30 days
+    maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
   });
+
   return response;
 };

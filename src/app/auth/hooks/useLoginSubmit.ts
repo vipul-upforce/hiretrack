@@ -7,10 +7,14 @@ import { useCustomFields } from "@/Custom_Fields/hooks/use-customFields";
 import Cookies from "js-cookie";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import * as jose from "jose";
-import CryptoJS from "crypto-js";
+
 import { LoginFormValues, UserWithoutCF } from "@/types/login";
 import { useCallback } from "react";
 import { OneOfMulOrganization } from "@/components/auth/OrganizationDialog";
+import { signToken } from "@/lib/jwt";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchUserFromToken } from "@/lib/redux/authSlice";
+import { AppDispatch } from "@/lib/redux/store";
 
 interface HandleLoginSubmitProps {
   selectedOrg?: string;
@@ -32,28 +36,12 @@ export const useHandleLoginSubmit = ({
   const { toast } = useToast();
   const [login, { isLoading }] = useLoginMutation();
   const { setUserLoggedIn } = useCustomFields();
+  const dispatch = useDispatch<AppDispatch>();
 
-  const signToken = async (payload: unknown) => {
-    const JWT_SECRET = "your_jwt_secret_key";
-    try {
-      const parsedPayload = payload;
-      const encryptedPayload = CryptoJS.AES.encrypt(
-        JSON.stringify(parsedPayload),
-        JWT_SECRET
-      ).toString();
-      const secretKey = new TextEncoder().encode(JWT_SECRET);
-      const jwt = await new jose.SignJWT({ user: encryptedPayload })
-        .setProtectedHeader({ alg: "HS256" })
-        .setIssuedAt()
-        .setExpirationTime("30d")
-        .sign(secretKey);
-      return jwt;
-    } catch {
-      throw new Error("Failed to sign token");
-    }
-  };
+  const { user, isAuthenticated } = useSelector((state: any) => state.auth);
+  // debugger
 
-  const getRedirectUrl = (userRole: string, organizationName?: string) => {
+  const getRedirectUrl = () => {
     const redirectTo =
       searchParams?.get("redirect") || searchParams?.get("returnUrl");
 
@@ -68,12 +56,14 @@ export const useHandleLoginSubmit = ({
       }
     }
 
-    if (userRole === "candidate") {
-      return isMultiple ? `/apply-jobs?o=${organizationName}` : "/apply-jobs";
+    if (user?.role === "candidate") {
+      return isMultiple
+        ? `/apply-jobs?o=${user.organizationInfo?.name}`
+        : "/apply-jobs";
     } else if (
-      userRole === "admin" ||
-      userRole === "interviewer" ||
-      userRole === "hr"
+      user?.role === "admin" ||
+      user?.role === "interviewer" ||
+      user?.role === "hr"
     ) {
       return "/dashboard";
     }
@@ -86,6 +76,7 @@ export const useHandleLoginSubmit = ({
       values: LoginFormValues,
       { setStatus }: { setStatus: (message: string) => void }
     ) => {
+      // debugger
       setLoginFormValues(values);
       try {
         const response = await login({
@@ -103,49 +94,51 @@ export const useHandleLoginSubmit = ({
           setOrganizationDialogOpen(true);
           return;
         }
+        let is2FAEnabled = response.twofa;
 
         const decryptedResponse = await verifyAndDecryptJWTToken(
           String(response.user)
         );
 
-        if (!decryptedResponse.success || !decryptedResponse.user) {
-          setStatus(decryptedResponse.error || "Failed to process login.");
-          toast({
-            title: "Error",
-            description: decryptedResponse.error || "Failed to process login.",
-            variant: "destructive",
-          });
-          return;
-        }
-        let is2FAEnabled = false;
-        try {
-          const check2FA = await fetch(
-            `/api/settings/twofa?orgId=${decryptedResponse.user.organizationId}`
-          );
-          const data = await check2FA.json();
-          is2FAEnabled = data.twoFA.enable2FA;
-          if (!check2FA.ok) {
-            throw new Error("Failed to fetch 2FA info");
-          }
-        } catch (error) {
-          console.error(error);
-          setStatus("Failed to fetch 2FA info");
-          toast({
-            title: "Error",
-            description: "Failed to fetch 2FA info",
-            variant: "destructive",
-          });
-        }
+        // if (!decryptedResponse.success || !decryptedResponse.user) {
+        //   setStatus(decryptedResponse.error || "Failed to process login.");
+        //   toast({
+        //     title: "Error",
+        //     description: decryptedResponse.error || "Failed to process login.",
+        //     variant: "destructive",
+        //   });
+        //   return;
+        // }
+
+        // try {
+        //   const check2FA = await fetch(
+        //     `/api/settings/twofa?orgId=${decryptedResponse.user.organizationId}`
+        //   );
+        //   const data = await check2FA.json();
+        //   is2FAEnabled = data.twoFA.enable2FA;
+        //   if (!check2FA.ok) {
+        //     throw new Error("Failed to fetch 2FA info");
+        //   }
+        // } catch (error) {
+        //   console.error(error);
+        //   setStatus("Failed to fetch 2FA info");
+        //   toast({
+        //     title: "Error",
+        //     description: "Failed to fetch 2FA info",
+        //     variant: "destructive",
+        //   });
+        // }
         // const { is2FAEnabled } = await check2FA(String(response.user));
 
         if (is2FAEnabled) {
+          const organizationId = response.organizationId;
           try {
             const otpResponse = await fetch("/api/auth/2fa/send-otp", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 email: values.email.toLowerCase().trim(),
-                organizationId: decryptedResponse.user.organizationId,
+                organizationId,
               }),
             });
             // const data = await otpResponse.json();
@@ -159,7 +152,7 @@ export const useHandleLoginSubmit = ({
               variant: "default",
             });
             router.push(
-              `/auth/2fa/verify?email=${values.email.toLowerCase().trim()}&orgId=${decryptedResponse.user.organizationId}`
+              `/auth/2fa/verify?email=${values.email.toLowerCase().trim()}&orgId=${organizationId}`
             );
           } catch (error) {
             console.error(error);
@@ -173,32 +166,41 @@ export const useHandleLoginSubmit = ({
           return;
         }
 
-        const userWithoutCustomFields: UserWithoutCF = {
-          ...decryptedResponse.user,
-        };
-        if (userWithoutCustomFields.organizationInfo) {
-          userWithoutCustomFields.organizationInfo = {
-            ...userWithoutCustomFields.organizationInfo,
-          };
-          delete userWithoutCustomFields.organizationInfo.customFields;
+        // const userWithoutCustomFields: UserWithoutCF = {
+        //   ...decryptedResponse.user,
+        // };
+        // if (userWithoutCustomFields.organizationInfo) {
+        //   userWithoutCustomFields.organizationInfo = {
+        //     ...userWithoutCustomFields.organizationInfo,
+        //   };
+        //   delete userWithoutCustomFields.organizationInfo.customFields;
+        // }
+        // const token = await signToken(userWithoutCustomFields);
+        // Cookies.set("token", String(token), { expires: 30 });
+
+        const redirectUrl = getRedirectUrl();
+        console.log("REIRECTURL: ", redirectUrl);
+        // new Promise(()=>{})
+        // setTimeout(()=>{
+        // },4000)
+        console.log("user status: ", user, isAuthenticated);
+        if (isAuthenticated) {
+          router.refresh();
+          router.push(redirectUrl);
+          window.location.href = redirectUrl;
+
+          setUserLoggedIn(true);
+
+          toast({
+            title: "Success",
+            description: "Login successful",
+            variant: "default",
+          });
         }
-        const token = await signToken(userWithoutCustomFields);
-        Cookies.set("token", String(token), { expires: 30 });
-        setUserLoggedIn(true);
 
-        toast({
-          title: "Success",
-          description: "Login successful",
-          variant: "default",
-        });
-
-        const redirectUrl = getRedirectUrl(
-          decryptedResponse.user.role,
-          decryptedResponse.user.organizationInfo?.name
-        );
-
-        router.push(redirectUrl);
+        dispatch(fetchUserFromToken());
       } catch (err: unknown) {
+        console.log(err);
         const errorMessage =
           err &&
           typeof err === "object" &&

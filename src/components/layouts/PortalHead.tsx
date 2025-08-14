@@ -5,6 +5,9 @@ import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { IUser } from "@/lib/models/user";
+import { useTheme } from "@/components/theme-provider";
+import { useSelector } from "react-redux";
+import { User } from "@/lib/features/org/orgApi";
 
 interface PortalHeadProps {
   portalName?: string;
@@ -17,33 +20,40 @@ export default function PortalHead({
   portalLogo = "/default/favicon.png",
   isLoading = false,
 }: PortalHeadProps) {
-  const [user, setUser] = useState<IUser | null>(null);
-  // debugger;
+  // const [user, setUser] = useState<IUser | null>(null);
+  const { theme } = useTheme();
+  const { user }: { user: User } = useSelector(
+    (state: any) => state.auth || {}
+  );
+
   // Get user from cookies when component mounts
-  useEffect(() => {
-    (async () => {
-      const user = Cookies.get("token");
-      if (user) {
-        const decryptedResponse = await verifyAndDecryptJWTToken(String(user));
-        if (decryptedResponse.success && decryptedResponse.user) {
-          setUser(decryptedResponse.user);
-        }
-      }
-    })();
-  }, []);
-  // console.log("PortalHead render:", { portalName, portalLogo, isLoading });
-  // console.log("PortalHead Head component output:", {
-  //   title: isLoading ? "" : portalName,
-  //   favicon: portalLogo || null,
-  // });
+  // useEffect(() => {
+  //   (async () => {
+  //     const user = Cookies.get("token");
+  //     if (user) {
+  //       const decryptedResponse = await verifyAndDecryptJWTToken(String(user));
+  //       if (decryptedResponse.success && decryptedResponse.user) {
+  //         setUser(decryptedResponse.user);
+  //       }
+  //     }
+  //   })();
+  // }, []);
+
+  // Determine which logo to use
+  const getLogoUrl = () => {
+    // If user has set a custom logo, use it
+    if (portalLogo && portalLogo !== "/default/favicon.png") {
+      return portalLogo;
+    }
+
+    // Otherwise use default logos based on theme
+    return theme === "dark" ? "/logo_dark.png" : "/logo.png";
+  };
 
   return (
     <Head>
       <title>{isLoading ? "Hiretrack" : portalName}</title>
-      <link
-        rel="icon"
-        href={portalLogo || `/${user?.organizationInfo?.name}/favicon.png`}
-      />
+      <link rel="icon" href={getLogoUrl()} />
     </Head>
   );
 }

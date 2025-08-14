@@ -39,7 +39,7 @@ export async function PUT(
     await connectToDatabase();
     const data = await request.json();
     const { id } = await params;
-    const token = request.cookies.get("token");
+    const token = request.cookies.get("auth_token");
     let userData;
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(

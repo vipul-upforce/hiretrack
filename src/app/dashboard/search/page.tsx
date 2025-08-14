@@ -1,14 +1,28 @@
 import { Suspense } from "react";
 import CandidateSearch from "@/components/forms/candidate-search";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function Page() {
   return (
-    <div className="">
-      <h1 className="text-3xl font-bold mb-4">Candidate Search</h1>
-      <Suspense fallback={<Skeleton className="h-[600px] w-full" />}>
-        <CandidateSearch />
-      </Suspense>
+    <div className="h-screen flex flex-col overflow-hidden w-full">
+      {/* Header section with improved design */}
+      <div className="flex-shrink-0 px-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+        <Card className="border-0 shadow-none bg-transparent">
+          <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-2 py-3 px-0">
+            {/* Title */}
+            <CardTitle className="line-clamp-2 md:mr-2 text-xl font-bold">
+              Candidate Search
+            </CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
+
+      <div className="flex-1 min-h-0 px-4 pb-4 mt-4 overflow-y-auto">
+        <Suspense fallback={<Skeleton className="h-[600px] w-full" />}>
+          <CandidateSearch />
+        </Suspense>
+      </div>
     </div>
   );
 }

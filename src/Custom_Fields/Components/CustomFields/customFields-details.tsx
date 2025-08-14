@@ -1,10 +1,13 @@
+"use client";
+
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { PDFViewer } from "@/components/ui/pdf-viewer";
-import { Label } from "@radix-ui/react-label";
-import { Dayjs } from "dayjs";
 import { ImageGallery } from "@/components/ui/image-gallery";
 import { useCustomFields } from "@/Custom_Fields/hooks/use-customFields";
 import useRoles from "@/hooks/useRoles";
-// import useRoles from "@/hooks/useRoles";
+import { format } from "date-fns";
+import { Dayjs } from "dayjs";
 
 interface FileData {
   base64: string;
@@ -72,15 +75,91 @@ const CustomFieldsData = ({ customFields: cfWOFormatting }: FormValues) => {
   if (!customFields || Object.keys(customFields).length === 0) {
     return null;
   }
+
+  const getFieldType = (fieldName: string): any | undefined => {
+    for (const form of Object.values(cfMetaData)) {
+      if (form && typeof form === "object" && "fields" in form) {
+        const field = (form as any).fields.find(
+          (f: any) => f.label === fieldName
+        );
+        if (field) {
+          return field;
+        }
+      }
+    }
+    return undefined;
+  };
+
+  // Helper function to format value based on field type
+  const formatValue = (value: any, fieldName: string): string => {
+    const fieldType = getFieldType(fieldName);
+
+    if (!fieldType) {
+      return String(value);
+    }
+
+    switch (fieldType) {
+      case "date":
+        if (typeof value === "string" && value) {
+          try {
+            return format(new Date(value), "MMM dd, yyyy");
+          } catch {
+            return String(value);
+          }
+        }
+        return String(value);
+
+      case "datetime":
+        if (typeof value === "string" && value) {
+          try {
+            return format(new Date(value), "MMM dd, yyyy 'at' h:mm a");
+          } catch {
+            return String(value);
+          }
+        }
+        return String(value);
+
+      case "time":
+        if (typeof value === "string" && value) {
+          try {
+            // Handle time format (HH:mm)
+            const [hours, minutes] = value.split(":");
+            const date = new Date();
+            date.setHours(parseInt(hours), parseInt(minutes));
+            return format(date, "h:mm a");
+          } catch {
+            return String(value);
+          }
+        }
+        return String(value);
+
+      default:
+        return String(value);
+    }
+  };
+
+  const sortedCustomFields = Object.entries(customFields).sort(
+    ([keyA], [keyB]) => {
+      const aField = getFieldType(keyA);
+      const bField = getFieldType(keyB);
+
+      const aIsIndividual = aField && (aField.candidateId || aField.jobId);
+      const bIsIndividual = bField && (bField.candidateId || bField.jobId);
+
+      if (aIsIndividual && !bIsIndividual) {
+        return 1;
+      }
+      if (!aIsIndividual && bIsIndividual) {
+        return -1;
+      }
+
+      return (aField?.renderOrder ?? 0) - (bField?.renderOrder ?? 0);
+    }
+  );
+
   return (
     <div className="flex flex-col gap-4">
-      {/* {role !== "candidate" && (
-        <>
-          <hr className="mt-4" />
-          <div className="font-bold text-lg">Meta Fields</div>
-        </>
-      )} */}
-      {Object.entries(customFields).map(([key, value]) => {
+      {sortedCustomFields.map(([key, value]) => {
         if (
           (typeof value === "string" && value.trim() === "") ||
           (Array.isArray(value) && value.length === 0)
@@ -89,11 +168,11 @@ const CustomFieldsData = ({ customFields: cfWOFormatting }: FormValues) => {
         }
 
         return (
-          <div key={key} className="space-y-1">
-            <Label className="font-semibold capitalize">
+          <div key={key} className="space-y-2">
+            <Label className="font-semibold text-gray-900 dark:text-white capitalize">
               {key.split(" |||||(")[0]}
             </Label>
-            <div className="text-sm text-gray-700">
+            <div className="text-gray-700 dark:text-gray-300">
               {Array.isArray(value) && value.length > 0 && (
                 <>
                   {value.some(
@@ -147,7 +226,7 @@ const CustomFieldsData = ({ customFields: cfWOFormatting }: FormValues) => {
                       !file.type?.endsWith("pdf") &&
                       !file.type?.startsWith("image")
                   ) && (
-                    <div className="flex flex-col gap-3 mt-2">
+                    <div className="flex flex-col gap-2">
                       {value
                         .filter(
                           (file): file is FileData =>
@@ -161,12 +240,12 @@ const CustomFieldsData = ({ customFields: cfWOFormatting }: FormValues) => {
                         .map((file) => (
                           <div
                             key={file.name}
-                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors duration-200"
+                            className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
                           >
                             <div className="flex items-center gap-3">
-                              <div className="p-2 bg-grey-100 rounded-md">
+                              <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
                                 <svg
-                                  className="w-5 h-5"
+                                  className="w-5 h-5 text-gray-600 dark:text-gray-400"
                                   fill="none"
                                   stroke="currentColor"
                                   viewBox="0 0 24 24"
@@ -181,45 +260,63 @@ const CustomFieldsData = ({ customFields: cfWOFormatting }: FormValues) => {
                                 </svg>
                               </div>
                               <div className="flex flex-col">
-                                <span className="text-sm font-medium text-gray-700">
+                                <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
                                   {file.name}
                                 </span>
-                                <span className="text-xs text-gray-500">
+                                <span className="text-xs text-gray-500 dark:text-gray-400">
                                   {(file.size / 1024).toFixed(1)} KB
                                 </span>
                               </div>
                             </div>
-                            <a
-                              href={file.base64}
-                              download={file.name}
-                              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-blue-50 rounded-md hover:bg-blue-100 transition-colors duration-200"
+                            <Button
+                              asChild
+                              variant="info"
+                              size="sm"
+                              className="text-xs"
                             >
-                              <svg
-                                className="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                                xmlns="http://www.w3.org/2000/svg"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                                />
-                              </svg>
-                              Download
-                            </a>
+                              <a href={file.base64} download={file.name}>
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                                  />
+                                </svg>
+                                Download
+                              </a>
+                            </Button>
                           </div>
                         ))}
                     </div>
                   )}
                   {value.every(
                     (item): item is string => typeof item === "string"
-                  ) && <span>{value.join(", ")}</span>}
+                  ) && (
+                    <div className="flex flex-wrap gap-2">
+                      {value.map((item, index) => (
+                        <span
+                          key={index}
+                          className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm rounded-full border border-gray-200 dark:border-gray-600"
+                        >
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </>
               )}
-              {(!Array.isArray(value) || value.length === 0) && String(value)}
+              {(!Array.isArray(value) || value.length === 0) && (
+                <span className="text-gray-700 dark:text-gray-300">
+                  {formatValue(value, key)}
+                </span>
+              )}
             </div>
           </div>
         );

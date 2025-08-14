@@ -1,11 +1,55 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import dbConnect, { CandidateAccount, Organization, User } from "@/lib/mongodb";
+import { validateInput, VALIDATION_PATTERNS, MAX_LENGTHS, sanitizeString } from "@/lib/inputValidation";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     await dbConnect();
-    const { email, password, name, orgName } = await req.json();
+    const requestData = await req.json();
+    
+    // SECURITY FIX: Validate candidate signup input
+    const validation = validateInput(requestData, {
+      email: {
+        required: true,
+        type: 'email',
+        maxLength: MAX_LENGTHS.email
+      },
+      password: {
+        required: true,
+        type: 'string',
+        minLength: 8,
+        maxLength: 128
+      },
+      name: {
+        required: true,
+        type: 'string',
+        maxLength: MAX_LENGTHS.name,
+        pattern: VALIDATION_PATTERNS.safeString,
+        sanitize: true
+      },
+      orgName: {
+        type: 'string',
+        maxLength: MAX_LENGTHS.name,
+        pattern: VALIDATION_PATTERNS.safeString,
+        sanitize: true
+      }
+    });
+
+    if (!validation.isValid) {
+      return NextResponse.json(
+        { 
+          error: 'Invalid candidate registration data', 
+          details: validation.errors 
+        },
+        { status: 400 }
+      );
+    }
+    
+    // Sanitize inputs
+    const { email, password, orgName } = requestData;
+    const name = sanitizeString(requestData.name);
+    const sanitizedOrgName = orgName ? sanitizeString(orgName) : undefined;
     if (!CandidateAccount || !Organization || !User) {
       return NextResponse.json(
         { error: "Database not connected" },
@@ -16,10 +60,10 @@ export async function POST(req: Request) {
     let organizationInfo;
     let organizationId;
 
-    if (orgName) {
+    if (sanitizedOrgName) {
       // If orgName is provided, find the organization by name
       organizationInfo = await Organization.findOne(
-        { name: orgName },
+        { name: sanitizedOrgName },
         {
           adminId: 0,
           lanes: 0,
@@ -27,7 +71,7 @@ export async function POST(req: Request) {
       );
       if (!organizationInfo) {
         return NextResponse.json(
-          { error: `Organization "${orgName}" not found` },
+          { error: `Organization "${sanitizedOrgName}" not found` },
           { status: 404 }
         );
       }

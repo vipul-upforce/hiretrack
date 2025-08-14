@@ -48,49 +48,66 @@ export default function twoFASettings({ onClose }: { onClose: () => void }) {
       });
       refetch();
       onClose();
-    } catch {
+    } catch (e: any) {
       toast({
         title: "Error",
-        description: "Failed to update 2FA settings",
+        description: e.data.error || "Failed to update 2FA settings",
         variant: "destructive",
       });
     }
   };
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <div className="px-6 py-4">Loading...</div>;
 
   return (
-    <Formik<TwoFAValues>
-      initialValues={initialValues}
-      validationSchema={validationSchema}
-      onSubmit={handleSubmit}
-      enableReinitialize
-    >
-      {({ values, setFieldValue, handleSubmit, isSubmitting }) => (
-        <Form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="enable2FA"
-              checked={values.enable2FA}
-              disabled={error && "status" in error && error?.status === 403}
-              onCheckedChange={(checked) =>
-                setFieldValue("enable2FA", Boolean(checked))
-              }
-            />
-            <Label htmlFor="enable2FA">Enable 2FA</Label>
-          </div>
-          <ErrorMessage
-            name="enable2FA"
-            component="div"
-            className="text-red-500 text-sm"
-          />
-          <div className="w-full flex justify-end">
-            <Button type="submit" disabled={isSubmitting || isUpdating}>
-              {isSubmitting || isUpdating ? "Saving..." : "Save Settings"}
-            </Button>
-          </div>
-        </Form>
-      )}
-    </Formik>
+    <>
+      <Formik<TwoFAValues>
+        initialValues={initialValues}
+        validationSchema={validationSchema}
+        onSubmit={handleSubmit}
+        enableReinitialize
+      >
+        {({ values, setFieldValue, handleSubmit, isSubmitting }) => (
+          <Form onSubmit={handleSubmit} className="flex flex-col h-full">
+            <div className="px-6 py-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="enable2FA"
+                  checked={values.enable2FA}
+                  disabled={error && "status" in error && error?.status === 403}
+                  onCheckedChange={(checked) =>
+                    setFieldValue("enable2FA", Boolean(checked))
+                  }
+                />
+                <Label htmlFor="enable2FA">Enable 2FA</Label>
+              </div>
+              <ErrorMessage
+                name="enable2FA"
+                component="div"
+                className="text-red-500 text-sm"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 border-t border-border/10 px-6 py-4 mt-auto">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={isSubmitting || isUpdating}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting || isUpdating}
+                variant="default"
+              >
+                {isSubmitting || isUpdating ? "Saving..." : "Save"}
+              </Button>
+            </div>
+          </Form>
+        )}
+      </Formik>
+    </>
   );
 }

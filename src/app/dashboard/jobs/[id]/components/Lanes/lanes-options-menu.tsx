@@ -8,6 +8,7 @@ import {
   SortAsc,
   SortDesc,
   X,
+  ClipboardCheck,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -21,11 +22,13 @@ import { ReactNode } from "react";
 
 interface LaneOptionsMenuProps {
   laneId: string;
+  laneName: string;
   onEdit: (id: string) => void;
   onSort: (field: string, direction: "asc" | "desc") => void;
   handleDeleteLane: () => void;
   setLaneToDelete: (laneId: string) => void;
   setLaneToEdit: (laneId: string) => void;
+  onConfigureChecklist?: (laneId: string, laneName: string) => void;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
 }
@@ -45,7 +48,7 @@ interface SortField {
 const MenuItem = ({ icon, label, onClick, className = "" }: MenuItemProps) => (
   <button
     className={cn(
-      "flex items-center justify-between w-full px-2 py-2 text-left hover:bg-gray-100 focus:outline-none focus:bg-gray-100",
+      "flex items-center justify-between w-full px-2 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700",
       className
     )}
     onClick={onClick}
@@ -69,11 +72,13 @@ const SORT_FIELDS: SortField[] = [
 
 export function LaneOptionsMenu({
   laneId,
+  laneName,
   handleDeleteLane,
   setLaneToDelete,
   setLaneToEdit,
   onEdit,
   onSort,
+  onConfigureChecklist,
   isOpen,
   setIsOpen,
 }: LaneOptionsMenuProps) {
@@ -106,6 +111,14 @@ export function LaneOptionsMenu({
         setIsOpen(false);
       },
     },
+    ...(onConfigureChecklist ? [{
+      icon: <ClipboardCheck className="mr-2 h-4 w-4" />,
+      label: "Checklists",
+      onClick: () => {
+        onConfigureChecklist(laneId, laneName);
+        setIsOpen(false);
+      },
+    }] : []),
     {
       icon: <ArrowUpDown className="mr-2 h-4 w-4" />,
       label: "Sort",
@@ -129,8 +142,8 @@ export function LaneOptionsMenu({
       <DropdownMenuTrigger
         asChild
         className={cn(
-          "p-1.5 rounded-full hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-colors overflow-x-visible",
-          isOpen ? "bg-gray-200" : ""
+          "p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-600 transition-colors overflow-x-visible",
+          isOpen ? "bg-gray-200 dark:bg-gray-700" : ""
         )}
       >
         <Button
@@ -157,9 +170,9 @@ export function LaneOptionsMenu({
           </>
         }
         {showSortMenu && (
-          <div className="w-64 animate-fade-in-right absolute top-0  bg-white border border-gray-200 rounded-lg shadow-lg p-4 overflow-x-scroll sort-menu pb-0">
+          <div className="w-64 animate-fade-in-right absolute top-0 bg-gray-900 border border-gray-800 rounded-lg shadow-xl p-4 overflow-x-scroll sort-menu pb-0">
             <div className="flex items-center justify-between ">
-              <span className="font-thin text-muted-foreground ml-2">
+              <span className="font-thin text-gray-400 ml-2">
                 Sort Candidates by
               </span>
               <Button
@@ -177,9 +190,9 @@ export function LaneOptionsMenu({
                 <button
                   key={field.value}
                   className={cn(
-                    "flex items-center px-2 py-1 rounded hover:bg-gray-100 text-left transition-colors justify-between",
+                    "flex items-center px-2 py-1 rounded hover:bg-gray-800 text-left transition-colors justify-between text-gray-300",
                     selectedSortField === field.value
-                      ? "bg-gray-100 font-semibold"
+                      ? "bg-gray-800 font-semibold text-white"
                       : ""
                   )}
                   onClick={() => {
@@ -195,7 +208,7 @@ export function LaneOptionsMenu({
                   {sortDirection === "asc" &&
                     field.value === selectedSortField && (
                       <Button
-                        className="w-8 h-8 rounded-full"
+                        className="w-8 h-8 rounded-full border-gray-700 hover:bg-gray-800 bg-gray-900 text-gray-300"
                         variant={"outline"}
                         size="sm"
                         onClick={() => handleSortDirection("desc")}
@@ -207,7 +220,7 @@ export function LaneOptionsMenu({
                   {sortDirection === "desc" &&
                     field.value === selectedSortField && (
                       <Button
-                        className="w-8 h-8 rounded-full"
+                        className="w-8 h-8 rounded-full border-gray-700 hover:bg-gray-800 bg-gray-900 text-gray-300"
                         variant={"outline"}
                         size="sm"
                         onClick={() => handleSortDirection("asc")}

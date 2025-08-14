@@ -49,8 +49,11 @@ export const candidateDetailsFields: FieldConfig[] = [
     id: "skills",
     render: (candidate: Candidate) => (
       <div className="flex flex-wrap gap-2">
-        {candidate.skills.map((skill) => (
-          <Badge key={skill} variant="secondary">
+        {candidate.skills.map((skill, skillIndex) => (
+          <Badge
+            key={`${candidate._id}-skill-${skillIndex}-${skill}`}
+            variant="secondary"
+          >
             {skill}
           </Badge>
         ))}
@@ -61,6 +64,9 @@ export const candidateDetailsFields: FieldConfig[] = [
     label: "",
     id: "metafields",
     render: (candidate: Candidate) => (
+      // <CustomFieldsData
+      //   customFields={{ customFields: candidate.customFields || {} } as any}
+      // />
       <CustomFieldsData customFields={candidate.customFields || {}} />
     ),
     shouldRender: (candidate) =>
@@ -77,7 +83,6 @@ export const candidateDetailsFields: FieldConfig[] = [
       isReEvaluating: boolean,
       isEvaluatingFor: string,
       onReEvaluate: () => void
-
     ) => (
       <ResumeEvaluationDetails
         labelClass={labelClass}
@@ -119,7 +124,8 @@ export const candidateDetailsFields: FieldConfig[] = [
       setEditingRemark: React.Dispatch<
         React.SetStateAction<IEditRemark | null>
       >,
-      setIsEditRemarkDialogOpen: React.Dispatch<React.SetStateAction<boolean>>
+      setIsEditRemarkDialogOpen: React.Dispatch<React.SetStateAction<boolean>>,
+      showHeader?: boolean
     ) => (
       <HistoryAndLogTable
         candidate={candidate}
@@ -128,6 +134,7 @@ export const candidateDetailsFields: FieldConfig[] = [
         handleRemarkUpdate={handleRemarkUpdate}
         setEditingRemark={setEditingRemark}
         setIsEditRemarkDialogOpen={setIsEditRemarkDialogOpen}
+        showHeader={showHeader}
       />
     ),
     shouldRender: (candidate) =>
@@ -160,29 +167,37 @@ export const candidateDetailsFields: FieldConfig[] = [
   {
     label: "",
     id: "interview-assignment",
-    render: (candidate: Candidate) => (
-      <div className="space-y-4 border-t pt-4">
-        <h3 className="font-semibold">Interview Assignment</h3>
-        {candidate.assignment ? (
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span>
-                Interviewer:{" "}
-                {typeof candidate.assignment.interviewerId === "object" &&
-                  candidate.assignment.interviewerId
-                  ? candidate.assignment.interviewerId.name
-                  : "Unknown"}
-              </span>
+    render: (candidate: Candidate) => {
+      // Check if assignment exists and has valid interviewer data
+      const hasValidInterviewer =
+        candidate.assignment &&
+        candidate.assignment.interviewerId &&
+        typeof candidate.assignment.interviewerId === "object" &&
+        candidate.assignment.interviewerId._id &&
+        candidate.assignment.interviewerId.name;
+
+      return (
+        <div className="space-y-4 border-t pt-4">
+          <h3 className="font-semibold">Interview Assignment</h3>
+          {hasValidInterviewer ? (
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span>
+                  Interviewer:{" "}
+                  {typeof candidate.assignment.interviewerId === "object" &&
+                    candidate.assignment.interviewerId.name}
+                </span>
+              </div>
+              <div>
+                Interview Date: {formatDate(candidate.assignment.time)} on{" "}
+                {formatTime(candidate.assignment.time)}
+              </div>
             </div>
-            <div>
-              Interview Date: {formatDate(candidate.assignment.time)} on{" "}
-              {formatTime(candidate.assignment.time)}
-            </div>{" "}
-          </div>
-        ) : (
-          <div>Not assigned to any interviewer</div>
-        )}
-      </div>
-    ),
+          ) : (
+            <div>Not assigned to any interviewer</div>
+          )}
+        </div>
+      );
+    },
   },
 ];

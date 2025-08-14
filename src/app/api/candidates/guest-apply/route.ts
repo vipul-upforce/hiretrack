@@ -6,13 +6,69 @@ import { handleFileAttachments } from "@/lib/fileUtils";
 import mongoose from "mongoose";
 import { Job } from "@/lib/mongodb"; // Add import for Job model
 import { Attachment } from "../route";
-// import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
+import { validateInput, VALIDATION_PATTERNS, MAX_LENGTHS, sanitizeString } from "@/lib/inputValidation";
+import { NotificationService } from "@/lib/notifications/notificationService";
 
 export async function POST(request: NextRequest) {
   try {
     await connectToDatabase();
     const data = await request.json();
-    // console.log("&&&&&&&&&&&&&&DATAPAYLOAD: ", data);
+    
+    // SECURITY FIX: Validate guest application input
+    const validation = validateInput(data, {
+      jobId: {
+        required: true,
+        type: 'object',
+        customValidator: (value) => {
+          return value && typeof value._id === 'string' && /^[0-9a-fA-F]{24}$/.test(value._id);
+        }
+      },
+      name: {
+        required: true,
+        type: 'string',
+        maxLength: MAX_LENGTHS.name,
+        pattern: VALIDATION_PATTERNS.safeString,
+        sanitize: true
+      },
+      email: {
+        required: true,
+        type: 'email',
+        maxLength: MAX_LENGTHS.email
+      },
+      contact: {
+        required: true,
+        type: 'string',
+        maxLength: 20,
+        pattern: VALIDATION_PATTERNS.contact
+      },
+      dateTime: {
+        type: 'string',
+        maxLength: 50
+      },
+      customFields: {
+        type: 'object'
+      }
+    });
+
+    if (!validation.isValid) {
+      return NextResponse.json(
+        { 
+          error: 'Invalid application data', 
+          details: validation.errors 
+        },
+        { status: 400 }
+      );
+    }
+
+    // Sanitize string inputs
+    if (data.name) data.name = sanitizeString(data.name);
+    if (data.customFields) {
+      Object.keys(data.customFields).forEach(key => {
+        if (typeof data.customFields[key] === 'string') {
+          data.customFields[key] = sanitizeString(data.customFields[key]);
+        }
+      });
+    }
 
     const { jobId, dateTime } = data;
     if (!Job) {
@@ -45,9 +101,9 @@ export async function POST(request: NextRequest) {
     }
 
     const fileStorage = "local";
-    const candidateStatus = organizationInfo.lanes.includes("applied")
+    const candidateStatus = (organizationInfo.defaultLanes || ["applied"]).includes("applied")
       ? "applied"
-      : organizationInfo.lanes[0];
+      : (organizationInfo.defaultLanes || ["applied"])[0];
 
     if (data.attachments) {
       const images = data.attachments.filter((attachment: Attachment) =>
@@ -92,6 +148,7 @@ export async function POST(request: NextRequest) {
       expectedCTC: data.expectedCTC,
       currentCTC: data.currentCTC,
       noticePeriod: data.noticePeriod,
+      contact: data.contact,
       status: candidateStatus,
       remarks: data.remarks || [],
       tracking: {
@@ -163,6 +220,31 @@ export async function POST(request: NextRequest) {
         },
       ],
     });
+
+    // Trigger notification for candidate application (guest apply)
+    try {
+      console.log("🔔 Triggering guest candidate applied notification:", {
+        organizationId: organizationId.toString(),
+        candidateId: candidate._id.toString(),
+        candidateName: candidateData.name,
+        jobTitle: job.title,
+      });
+      
+      await NotificationService.notifyCandidateApplied({
+        organizationId: organizationId.toString(),
+        candidateId: candidate._id.toString(),
+        candidateName: candidateData.name,
+        candidateEmail: candidateData.email,
+        jobId: jobId._id,
+        jobTitle: job.title || "Unknown Job",
+        // No trigger user for guest applications
+      });
+      
+      console.log("✅ Guest notification sent successfully");
+    } catch (notificationError) {
+      console.error("❌ Failed to send guest notification:", notificationError);
+      // Don't fail the API call if notification fails
+    }
 
     return NextResponse.json(candidate, { status: 201 });
   } catch (error: unknown) {

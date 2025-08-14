@@ -38,7 +38,7 @@ export function FilePreviewDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[80vw] xl:max-w-[50vw] h-[90vh] p-0 flex flex-col">
-        <DialogHeader className="p-4 pb-2 flex flex-row items-start justify-between space-y-0 border-b shrink-0">
+        <DialogHeader className="px-6 py-4 flex flex-row items-start justify-between space-y-0 border-b shrink-0">
           <div className="flex-1">
             <DialogTitle className="flex items-center gap-2 text-base font-medium">
               <File className="h-4 w-4" />

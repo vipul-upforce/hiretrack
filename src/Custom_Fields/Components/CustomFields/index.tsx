@@ -2,11 +2,11 @@
 
 import { Label } from "@/components/ui/label";
 import { RenderField } from "./RenderField";
-import { useField, useFormikContext } from "formik";
+import { FieldMetaProps, useField, useFormikContext } from "formik";
 import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
 import { Dayjs } from "dayjs";
 import useRoles from "@/hooks/useRoles";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo } from "react";
 import { CustomField } from "@/Custom_Fields/Types/CustomField";
 
 interface FormValues {
@@ -30,19 +30,15 @@ interface FileData {
   size: number;
 }
 
-const useConditionallyValidatedField = (
-  name: string,
-  shouldValidate: boolean
-) => {
-  const [field, meta, helpers] = useField({
-    name,
-    validate: () => {
-      if (!shouldValidate) {
-        return undefined;
-      }
-    },
-  });
-  return [field, meta, helpers];
+// Convert the hook to a regular validation function
+const createFieldValidator = (shouldValidate: boolean) => {
+  return () => {
+    if (!shouldValidate) {
+      return undefined;
+    }
+    // Add any other validation logic here if needed
+    return undefined;
+  };
 };
 
 function CustomFields({
@@ -64,6 +60,7 @@ function CustomFields({
   } = useFormikContext<FormValues>();
 
   const role = useRoles();
+  // debugger;
   const { formNameObject } = useCustomForm(
     formName,
     undefined,
@@ -71,34 +68,67 @@ function CustomFields({
     undefined
     // role || ""
   );
+
   new Promise(() => {
     setTimeout(() => {}, 1000);
   });
-  // debugger;
+
   const allFields = role !== "candidate" && role !== "";
   const fieldRefs = useRef<{ [key: string]: HTMLElement | null }>({});
-  // if (!role || !formNameObject || !formNameObject.fields) {
-  //   return <div>Loading...</div>;
-  // }
 
-  // console.log("⛔⛔⛔⛔⛔⛔⛔⛔ values: ", values);
-  // Create useField hooks for each custom field
-  const customFieldHooks: { [key: string]: any } = {};
-  // debugger;
-  console.log("ROLE AT CF:::::: ", role);
-  if (formNameObject?.fields) {
-    formNameObject.fields.forEach((field: CustomField) => {
-      if (field.jobId || field.candidateId) return;
+  // Pre-calculate all fields that will be rendered
+  const fieldsToRender = useMemo(() => {
+    if (!formNameObject?.fields) return [];
 
-      const shouldValidate = allFields || (!allFields && !field.private);
-      // eslint-disable-next-line react-hooks/rules-of-hooks
-      const [fieldProps, fieldMeta] = useConditionallyValidatedField(
-        `customFields.${field.label}`,
-        shouldValidate
-      );
-      customFieldHooks[field.label] = { fieldProps, fieldMeta };
+    return formNameObject.fields.filter((field) => {
+      // Apply the same filtering logic used in the render
+      if (field.jobId && field.jobId !== values._id) {
+        return false;
+      }
+      if (field.candidateId && field.candidateId !== values._id) {
+        return false;
+      }
+      if (!allFields && field.private) {
+        return false;
+      }
+      return true;
     });
-  }
+  }, [formNameObject?.fields, values._id, allFields]);
+
+  // Create field hooks for ALL potential fields at the top level
+  // This ensures consistent hook order regardless of which fields are rendered
+  const fieldHooks = useMemo(() => {
+    const hooks: { [key: string]: any } = {};
+
+    if (formNameObject?.fields) {
+      formNameObject.fields.forEach((field) => {
+        const shouldValidate = allFields || (!allFields && !field.private);
+        hooks[field.label] = {
+          shouldValidate,
+          validator: createFieldValidator(shouldValidate),
+        };
+      });
+    }
+
+    return hooks;
+  }, [formNameObject?.fields, allFields]);
+
+  // Call useField for ALL potential fields (not just visible ones)
+  // This maintains consistent hook order
+  const allFieldStates = useMemo(() => {
+    const states: { [key: string]: [any, any] } = {};
+
+    if (formNameObject?.fields) {
+      formNameObject.fields.forEach((field) => {
+        const shouldValidate = allFields || (!allFields && !field.private);
+        // We need to call useField for each field, but we can't do it here in useMemo
+        // Let's restructure this differently
+      });
+    }
+
+    return states;
+  }, [formNameObject?.fields, allFields]);
+
   // Focus on first field with error only after form submission
   useEffect(() => {
     if (
@@ -109,7 +139,6 @@ function CustomFields({
       const firstErrorNormalField = Object.keys(errors)[0];
       const firstErrorField = Object.keys(errors.customFields)[0];
       const fieldElement = fieldRefs.current[firstErrorField];
-      // console.log("firstErrorNormalField : ", firstErrorNormalField);
 
       if (fieldElement && firstErrorNormalField === "customFields") {
         // Scroll to the field and focus it
@@ -141,17 +170,24 @@ function CustomFields({
 
   return (
     <div className="flex flex-col gap-2">
-      {formNameObject?.fields.map((field) => {
-        const fieldHook = customFieldHooks[field.label];
-        if (field.jobId && field.jobId !== values._id) {
-          return null;
-        }
-        if (field.candidateId && field.candidateId !== values._id) {
-          return null;
-        }
-        if (!allFields && field.private) {
-          return null;
-        }
+      {fieldsToRender.map((field) => {
+        const shouldValidate = allFields || (!allFields && !field.private);
+
+        // Get field props directly using getFieldProps instead of useField -- avoids "rules of hooks" violation
+        const fieldProps = getFieldProps(`customFields.${field.label}`);
+        const fieldError = errors.customFields?.[field.label];
+        const fieldTouched = submitCount > 0;
+
+        // Create a mock fieldMeta object similar to what useField would return
+        const fieldMeta = {
+          touched: fieldTouched,
+          error: fieldError,
+          initialTouched: false,
+          initialError: undefined,
+          initialValue: undefined,
+          value: fieldProps.value,
+        };
+
         return (
           <div
             key={field.id}
@@ -169,7 +205,6 @@ function CustomFields({
             {RenderField({
               getFieldProps,
               label: field.label,
-              // formId: field.id,
               setFieldValue,
               setFieldTouched,
               type: field.type,
@@ -178,17 +213,17 @@ function CustomFields({
                 ?.map((opt) => opt.trim())
                 .filter((opt) => opt !== ""),
               setFieldError,
-              fieldHook, // Pass the field hook for additional functionality
+              fieldHook: { fieldProps, fieldMeta },
               isEditMode,
             })}
-            {fieldHook?.fieldMeta.touched && fieldHook?.fieldMeta.error && (
+            {fieldMeta.touched && fieldMeta.error && (
               <div
                 className="text-red-500 text-xs capitalize"
                 style={{
                   marginTop: "-5px",
                 }}
               >
-                {fieldHook.fieldMeta.error}
+                {fieldMeta.error}
               </div>
             )}
           </div>

@@ -30,7 +30,7 @@ sonarcloud-check:
   script:
     - sonar-scanner
   only:
-    - main-backup
+    - main
     - merge_requests
   variables:
     SONAR_TOKEN: "$SONAR_TOKEN"
@@ -71,7 +71,7 @@ build:
     paths:
       - hiretrack-v1-gl.tar.gz
   only:
-    - main-backup
+    - main
 
 deploy:
   stage: deploy
@@ -99,4 +99,4 @@ deploy:
       EOF
   environment: production
   only:
-    - main-backup
+    - main

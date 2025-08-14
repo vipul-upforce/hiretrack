@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sendMail } from "@/app/api/event-mail";
+import { sendEventEmailWithHistory } from "@/lib/unifiedEmailService";
 import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
-import { User } from "@/lib/mongodb";
+import { Settings, User } from "@/lib/mongodb";
 import dbConnect from "@/lib/mongodb";
+import mongoose from "mongoose";
+import { otpRateLimiter } from "@/lib/rateLimiter";
 
-export async function POST(req: NextRequest) {
+async function handleSendOtp(req: NextRequest) {
   try {
     await dbConnect();
     const { email, organizationId } = await req.json();
@@ -16,8 +18,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const settings = await Settings.findOne({ organizationId: new mongoose.Types.ObjectId(organizationId) }).lean();
+    if (!settings || !settings.mailConfig) {
+      return NextResponse.json({ message: "Mail configuration not found" }, { status: 500 });
+    }
+
+    const fromEmail = settings.mailConfig.resend_from || settings.mailConfig.brevo_from || settings.mailConfig.smtp_from || "system@hiretrack.com";
+
     // Check if user has an existing OTP and its generation time
-    const user = await User?.findOne({ email, organizationId });
+    const user = await User?.findOne({ email, organizationId }).populate({
+      path: "organizationId",
+      select: "name", // populate only organization name
+    });
+    // console.log(user, "otp........");
 
     if (user && user.otp && user.otpExpires) {
       const currentTime = new Date();
@@ -46,19 +59,47 @@ export async function POST(req: NextRequest) {
       { $set: { otp, otpExpires } },
       { upsert: true } // Create user if not found
     );
-
+    const organizationName =
+      typeof user?.organizationId === "object" ? user.organizationId.name : "";
     // Send email with the OTP
     const { emailContent, emailSubject } = await getMappedEmailTemplate(
-      "2fa-otp",
-      { otp },
+      "send-otp",
+      {
+        otpCode: otp,
+        expirationTime: otpExpires,
+        organizationName: organizationName,
+        userName: user?.name,
+      },
       organizationId
     );
 
-    const mailResult = await sendMail(
+    const systemUser = await User.findOneAndUpdate(
+      { email: fromEmail, organizationId },
+      {
+        $setOnInsert: {
+          name: "HireTrack System",
+          email: fromEmail,
+          role: "system",
+          organizationId,
+        },
+      },
+      { upsert: true, new: true }
+    );
+
+    const mailResult = await sendEventEmailWithHistory(
       organizationId,
       [email],
       emailSubject,
-      emailContent
+      emailContent,
+      {
+        sentBy: systemUser._id.toString(),
+        sentByEmail: systemUser.email,
+        sentByName: systemUser.name,
+        metadata: {
+          templateUsed: "2fa-otp",
+          eventType: "2fa_authentication",
+        },
+      }
     );
 
     if (mailResult.status === 200) {
@@ -76,4 +117,10 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// Export with rate limiting
+export async function POST(req: Request) {
+  // SECURITY FIX: Apply rate limiting to prevent OTP spam
+  return otpRateLimiter(req as NextRequest, handleSendOtp);
 }

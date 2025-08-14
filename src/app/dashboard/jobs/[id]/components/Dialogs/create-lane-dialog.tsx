@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { QuickCreateDialog } from "@/components/ui/specialized-dialogs";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -23,15 +17,8 @@ export function CreateLaneDialog({ onAddLane }: CreateLaneDialogProps) {
   const [title, setTitle] = useState("");
   const { toast } = useToast();
 
-  const handleOpenChange = (open: boolean) => {
-    setIsOpen(open);
-    if (!open) {
-      setTitle("");
-    }
-  };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = () => {
     if (!title.trim()) {
       toast({
         title: "Error",
@@ -46,47 +33,43 @@ export function CreateLaneDialog({ onAddLane }: CreateLaneDialogProps) {
     setIsOpen(false);
   };
 
+  const isValid = title.trim().length > 0;
+
   return (
-    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button variant="outline">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Lane
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Add New Lane</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">Lane Title</Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => {
-                const newValue = e.target.value;
-                const regex = /^[a-zA-Z0-9\s]*$/;
-                if (regex.test(newValue)) {
-                  setTitle(newValue);
-                }
-              }}
-              placeholder="Enter lane title..."
-              maxLength={50}
-            />
-          </div>
-          <div className="flex justify-end space-x-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => handleOpenChange(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit">Add Lane</Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <>
+      <Button variant="outline" onClick={() => setIsOpen(true)}>
+        <Plus className="h-4 w-4 mr-2" />
+        Add Lane
+      </Button>
+      
+      <QuickCreateDialog
+        isOpen={isOpen}
+        onClose={() => {
+          setIsOpen(false);
+          setTitle("");
+        }}
+        onSubmit={handleSubmit}
+        title="Add New Lane"
+        submitLabel="Add Lane"
+        isValid={isValid}
+      >
+        <div className="space-y-2">
+          <Label htmlFor="title">Lane Title</Label>
+          <Input
+            id="title"
+            value={title}
+            onChange={(e) => {
+              const newValue = e.target.value;
+              const regex = /^[a-zA-Z0-9\s]*$/;
+              if (regex.test(newValue)) {
+                setTitle(newValue);
+              }
+            }}
+            placeholder="Enter lane title..."
+            maxLength={50}
+          />
+        </div>
+      </QuickCreateDialog>
+    </>
   );
 }

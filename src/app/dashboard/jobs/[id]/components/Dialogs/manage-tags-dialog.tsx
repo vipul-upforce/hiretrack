@@ -126,8 +126,8 @@ const ManageTagsDialog = ({
     );
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md p-6">
-        <DialogHeader>
+      <DialogContent className="max-w-md p-0 overflow-hidden flex flex-col">
+        <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle>Manage Tags</DialogTitle>
         </DialogHeader>
         {isLoading ? (
@@ -137,7 +137,7 @@ const ManageTagsDialog = ({
         ) : error || updateError ? (
           <p className="text-red-500">An error occurred. Please try again.</p>
         ) : (
-          <div className="flex flex-col gap-4 max-h-[72vh] overflow-y-auto">
+          <div className="flex flex-col gap-4 max-h-[72vh] overflow-y-auto px-6 py-4">
             <div className="flex flex-col gap-2">
               <h4 className="text-sm font-medium">Add New Tags</h4>
               <div className="flex gap-2 pl-[1px]">
@@ -159,6 +159,7 @@ const ManageTagsDialog = ({
                 onClick={handleAddTag}
                 disabled={!newTagTitle.trim()}
                 className="mt-2"
+                variant="outline"
               >
                 Add
               </Button>
@@ -197,7 +198,7 @@ const ManageTagsDialog = ({
                 </div>
               )}
             </div>
-            <div className="flex fixed bottom-0 w-[90%] justify-end space-x-2 bg-background px-0 py-4">
+            <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10">
               <Button variant="outline" onClick={onClose} disabled={isUpdating}>
                 Cancel
               </Button>
@@ -205,6 +206,7 @@ const ManageTagsDialog = ({
                 onClick={handleSave}
                 disabled={isUpdating || !hasChanges}
                 className="min-w-[80px]"
+                variant="primary"
               >
                 {isUpdating ? <LoadingSpinner w={4} /> : "Save"}
               </Button>

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import AdmZip from "adm-zip";
 import connectToDatabase, {
   Candidate,
@@ -8,12 +7,14 @@ import connectToDatabase, {
 } from "@/lib/mongodb";
 import { handleSingleFile } from "@/lib/fileUtils";
 import { auth } from "@/lib/auth";
+import { AIProviderFactory, ProcessedResumeData } from "@/lib/ai-providers";
+import { decryptAIProviderKeys } from "@/lib/encryption";
 
-interface ProcessedResumeData
-  extends Record<string, string | number | string[] | boolean | undefined> {
+interface ExtendedProcessedResumeData extends ProcessedResumeData {
   name: string;
   email?: string;
   location: string;
+  contact: string;
   experience: number;
   skills: string[];
   currentCTC: number;
@@ -22,94 +23,51 @@ interface ProcessedResumeData
   organizationId: string;
   status: string;
   isDeleted: boolean;
-  error?: string;
 }
 
 async function processResume(
   base64Resume: string,
-  api_key: string,
+  decryptedAiProviders: any, // Changed: Accept already decrypted AI providers
   organizationId: string
-): Promise<ProcessedResumeData> {
+): Promise<ExtendedProcessedResumeData> {
   try {
-    const genAI = new GoogleGenerativeAI(api_key);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    // Use the already decrypted AI providers directly
+    const aiProviders = decryptedAiProviders;
 
-    const prompt = `
-    please firstly check that it is valid cv or not, 
-    if not then dont give me anything just give me message in json like 
-    { error : " this is not valid cv"}, 
-    If it as then & then only give me fields 
-    As an AI assistant specializing in resume parsing, analyze this resume and extract the following information in JSON format:
-    {
-      "name": "candidate's full name",
-      "email": "candidate's email if present",
-      "location": "candidate's location/city",
-      "experience": number of years of experience (as a number),
-      "skills": ["array", "of", "technical", "and", "soft", "skills"],
-      "currentCTC": current CTC as a number (in lakhs, 0 if not found),
-      "expectedCTC": expected CTC as a number (in lakhs, 0 if not found),
-      "noticePeriod": notice period in months (as a number, 0 if not found),
-      "scores": {
-        "overall": // An overall rating (out of 10),
-        "experience": // A rating (out of 10),
-        "skills": // A rating (out of 10),
-        "strengths": // A list of strengths,
-        "areas_for_improvement": // A list of areas for improvement,
-        "recommendation": // A recommendation,
-        "notes": // Additional notes
-      }
-    }
-    
-    Please ensure:
-    1. All numeric fields are numbers, not strings
-    2. Skills are extracted as an array of strings
-    3. Experience is calculated based on work history
-    4. CTCs are in lakhs per annum
-    5. If any field is not found, use appropriate default values (0 for numbers, empty array for skills)
-    
-    Below is the resume content:`;
+    const activeProvider = aiProviders.activeProvider;
+    const apiKey = aiProviders[activeProvider]?.api_key;
 
-    const parts = [
-      { text: prompt },
-      {
-        inlineData: {
-          mimeType: "application/pdf",
-          data: base64Resume,
-        },
-      },
-    ];
+    console.log("processResume - Active Provider:", activeProvider);
+    console.log("processResume - Has API Key:", !!apiKey);
 
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts }],
-    });
-    const response = await result.response;
-
-    if (!response.candidates?.[0]?.content?.parts?.[0]?.text) {
-      throw new Error("No valid response from Gemini");
+    if (!apiKey) {
+      throw new Error(
+        `API key not found for active provider: ${activeProvider}`
+      );
     }
 
-    let jsonString = response.candidates[0].content.parts[0].text;
-    jsonString = jsonString
-      .replace(/```json\n?/g, "")
-      .replace(/```/g, "")
-      .trim();
+    // Get the appropriate AI provider
+    const provider = AIProviderFactory.getProvider(activeProvider);
 
-    const parsedData = JSON.parse(jsonString);
+    // Get the selected model for this provider
+    const selectedModel =
+      aiProviders[activeProvider]?.customModel ||
+      aiProviders[activeProvider]?.model;
+
+    // Process the resume using the selected provider and model
+    const parsedData = await provider.processResume(
+      base64Resume,
+      apiKey,
+      selectedModel
+    );
 
     // Check if the response indicates an invalid CV
     if (parsedData.error) {
       return {
-        name: "",
-        location: "",
-        experience: 0,
-        skills: [],
-        currentCTC: 0,
-        expectedCTC: 0,
-        noticePeriod: 0,
+        ...parsedData,
         organizationId,
         status: "rejected",
         isDeleted: false,
-        error: parsedData.error,
       };
     }
 
@@ -211,9 +169,75 @@ export async function POST(request: NextRequest) {
 
   try {
     const settings = await Settings.findOne({ organizationId: organizationId });
-    if (!settings?.gemini?.gemini_key) {
+    if (!settings) {
       return NextResponse.json(
-        { error: "Gemini API key not found" },
+        { error: "Settings not found" },
+        { status: 404 }
+      );
+    }
+
+    // Check if AI providers are configured with backward compatibility
+    let aiProviders = settings.aiProviders;
+
+    // Handle backward compatibility for legacy Gemini-only installations
+    if (!aiProviders) {
+      // Check if there's a legacy gemini configuration
+      const legacyGeminiKey = settings.gemini?.gemini_key || "";
+
+      aiProviders = {
+        activeProvider: "gemini",
+        gemini: {
+          api_key: legacyGeminiKey,
+          model: "gemini-1.5-flash",
+          customModel: "",
+        },
+        openai: {
+          api_key: "",
+          model: "gpt-4o-mini",
+          customModel: "",
+        },
+        anthropic: {
+          api_key: "",
+          model: "claude-3-5-sonnet-20241022",
+          customModel: "",
+        },
+        perplexity: {
+          api_key: "",
+          model: "sonar-pro",
+          customModel: "",
+        },
+      };
+
+      console.log("Using backward compatibility for legacy Gemini settings");
+    }
+
+    // Decrypt API keys from database - MOVED UP
+    aiProviders = decryptAIProviderKeys(aiProviders);
+
+    const activeProvider = aiProviders.activeProvider;
+    const apiKey = aiProviders[activeProvider]?.api_key;
+
+    // Add debug logging similar to evaluate API
+    console.log(
+      "AI Providers from settings:",
+      JSON.stringify(
+        {
+          activeProvider: aiProviders.activeProvider,
+          hasGeminiKey: !!aiProviders.gemini?.api_key,
+          hasOpenAIKey: !!aiProviders.openai?.api_key,
+          hasAnthropicKey: !!aiProviders.anthropic?.api_key,
+          hasPerplexityKey: !!aiProviders.perplexity?.api_key,
+        },
+        null,
+        2
+      )
+    );
+
+    if (!apiKey) {
+      return NextResponse.json(
+        {
+          error: `${activeProvider.charAt(0).toUpperCase() + activeProvider.slice(1)} API key not found`,
+        },
         { status: 404 }
       );
     }
@@ -259,9 +283,15 @@ export async function POST(request: NextRequest) {
         const arrayBuffer = await file.arrayBuffer();
         const base64Data = Buffer.from(arrayBuffer).toString("base64");
 
+        // Log the base64 data length for debugging
+        console.log(
+          `Processing file: ${file.name}, Base64 length: ${base64Data.length}`
+        );
+
+        // FIXED: Pass decrypted AI providers instead of raw settings
         const candidateData = await processResume(
           base64Data,
-          settings.gemini.gemini_key,
+          aiProviders, // Pass the already decrypted aiProviders
           organizationId as string
         );
 
