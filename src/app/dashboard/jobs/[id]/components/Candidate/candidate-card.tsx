@@ -258,7 +258,7 @@ export function CandidateCard({
               <Plus className="h-4 w-4" />
             </Button>
 
-            {/* Remarks Popover */}
+            {/* Remark Popover */}
             <RemarksPopover
               candidate={candidate}
               onMoreClick={() => onViewDetails(candidate)}
