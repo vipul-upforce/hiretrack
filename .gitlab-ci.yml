@@ -71,18 +71,14 @@ build:
     paths:
       - hiretrack-v1-gl.tar.gz
   only:
-    - main
+    - main-backup
 
 deploy:
   stage: deploy
   image: alpine:latest
-  dependencies:
-    - build
   before_script:
     - apk add --no-cache sshpass openssh-client
   script:
-    # Debug: Verify file existence
-    - ls -la
     # Transfer tarball to VM using SSHPASS environment variable
     - |
       echo "Transferring hiretrack-v1-gl.tar.gz to VM..."
