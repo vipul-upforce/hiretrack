@@ -99,4 +99,4 @@ deploy:
       EOF
   environment: production
   only:
-    - main
+    - main-backup
