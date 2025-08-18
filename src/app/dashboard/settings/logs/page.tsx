@@ -242,7 +242,11 @@ function SystemLogsPage() {
   }, [activeTab, selectedFile, searchQuery]);
 
   const renderEntryTitle = (log: LogEntry) => {
-    const assignmentBy = log.assignmentBy[0]?.name || "";
+    const assignmentBy =
+      (log.assignmentBy &&
+        log.assignmentBy.length > 0 &&
+        log.assignmentBy[0]?.name) ||
+      "";
     if (
       (log.title !== "" || !log.title) &&
       log.title !== "Assigned to Job" &&
@@ -251,9 +255,9 @@ function SystemLogsPage() {
       return (
         <div className="flex flex-row items-start justify-between w-full">
           <div className="flex flex-row w-[85%]">
-            {log.currentInterviewer.length > 0 ? (
+            {log.currentInterviewer?.length > 0 ? (
               <>
-                {log.previousInterviewer.length > 0 ? (
+                {log.previousInterviewer?.length > 0 ? (
                   <p className="pl-1">
                     {`${log.previousInterviewer[0].name} → ${log.currentInterviewer[0].name}`}
                   </p>
@@ -276,7 +280,7 @@ function SystemLogsPage() {
               <p>{log.candidateData?.name} was Archived</p>
             ) : log.title === "Unarchived" ? (
               <p>{log.candidateData?.name} was Unarchived</p>
-            ) : log.previousInterviewer.length > 0 ? (
+            ) : log.previousInterviewer?.length > 0 ? (
               <p className="pl-1">
                 Unassigned from {log.previousInterviewer[0]?.name}
               </p>
@@ -763,7 +767,7 @@ function SystemLogsPage() {
                                   <span className="font-medium">
                                     Current Interviewer:
                                   </span>{" "}
-                                  {log.currentInterviewer.length > 0
+                                  {log.currentInterviewer?.length > 0
                                     ? log.currentInterviewer
                                         .map((i) => i.name)
                                         .join(", ")
@@ -773,7 +777,7 @@ function SystemLogsPage() {
                                   <span className="font-medium">
                                     Previous Interviewer:
                                   </span>{" "}
-                                  {log.previousInterviewer.length > 0
+                                  {log.previousInterviewer?.length > 0
                                     ? log.previousInterviewer
                                         .map((i) => i.name)
                                         .join(", ")

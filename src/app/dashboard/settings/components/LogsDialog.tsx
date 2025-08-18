@@ -189,7 +189,7 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
               }
               setOffset(
                 (data.offset || 0) +
-                (data.logs?.length || data.content?.length || 0)
+                  (data.logs?.length || data.content?.length || 0)
               );
               setTotalLines(data.totalLines || 0);
               scrollToBottom();
@@ -251,7 +251,7 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
       return (
         <div className="flex flex-row items-start justify-between w-full">
           <div className="flex flex-row w-[85%]">
-            {log.currentInterviewer.length > 0 ? (
+            {log.currentInterviewer?.length > 0 ? (
               <>
                 {log.previousInterviewer.length > 0 ? (
                   <p className="pl-1">
@@ -276,7 +276,7 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
               <p>{log.candidateData?.name} was Archived</p>
             ) : log.title === "Unarchived" ? (
               <p>{log.candidateData?.name} was Unarchived</p>
-            ) : log.previousInterviewer.length > 0 ? (
+            ) : log.previousInterviewer?.length > 0 ? (
               <p className="pl-1">
                 Unassigned from {log.previousInterviewer[0]?.name}
               </p>
@@ -321,10 +321,11 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
       <div className="flex border-b mb-6 flex-shrink-0 justify-between">
         <div className="flex space-x-2">
           <button
-            className={`py-2 px-4 text-sm font-medium rounded-t-md transition-colors ${activeTab === "nginx"
+            className={`py-2 px-4 text-sm font-medium rounded-t-md transition-colors ${
+              activeTab === "nginx"
                 ? "border-b-2 border-blue-500 text-blue-600"
                 : "text-gray-600 hover:bg-gray-100"
-              }`}
+            }`}
             onClick={() => {
               setActiveTab("nginx");
               setSearchQuery("");
@@ -337,10 +338,11 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
             Nginx Logs
           </button>
           <button
-            className={`py-2 px-4 text-sm font-medium rounded-t-md transition-colors ${activeTab === "server"
+            className={`py-2 px-4 text-sm font-medium rounded-t-md transition-colors ${
+              activeTab === "server"
                 ? "border-b-2 border-blue-500 text-blue-600"
                 : "text-gray-600 hover:bg-gray-100"
-              }`}
+            }`}
             onClick={() => {
               setActiveTab("server");
               setSearchQuery("");
@@ -377,10 +379,11 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
                       {nginxFiles.map((file) => (
                         <li
                           key={file}
-                          className={`cursor-pointer p-2 text-sm rounded ${selectedFile === file
+                          className={`cursor-pointer p-2 text-sm rounded ${
+                            selectedFile === file
                               ? "bg-blue-100 text-blue-700"
                               : "hover:bg-gray-100"
-                            }`}
+                          }`}
                           onClick={() => {
                             setSelectedFile(file);
                             setSearchQuery("");
@@ -465,7 +468,7 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
                                 <p className="flex-1">
                                   {parts.map((part, i) =>
                                     part.toLowerCase() ===
-                                      searchQuery.toLowerCase() ? (
+                                    searchQuery.toLowerCase() ? (
                                       <mark
                                         key={i}
                                         className="bg-blue-200 rounded-[3px]"
@@ -570,9 +573,9 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
                               {log.remark && log.remark.description}
                             </p>
                             {log?.note &&
-                              Object.keys(log.note).length > 0 &&
-                              log?.note?.rating !== 0 &&
-                              log?.note?.rating ? (
+                            Object.keys(log.note).length > 0 &&
+                            log?.note?.rating !== 0 &&
+                            log?.note?.rating ? (
                               <div className="flex flex-row items-center">
                                 {log?.note?.rating}/5
                                 <Star
@@ -646,10 +649,11 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
                             <p>
                               <span className="font-medium">Status:</span>{" "}
                               <span
-                                className={`capitalize ${log.candidateData?.status === "rejected"
+                                className={`capitalize ${
+                                  log.candidateData?.status === "rejected"
                                     ? "text-red-500"
                                     : "text-green-500"
-                                  }`}
+                                }`}
                               >
                                 {log.candidateData?.status || "N/A"}
                               </span>
@@ -696,10 +700,11 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
                             <p>
                               <span className="font-medium">Status:</span>{" "}
                               <span
-                                className={`capitalize ${log.jobData?.status === "open"
+                                className={`capitalize ${
+                                  log.jobData?.status === "open"
                                     ? "text-green-500"
                                     : "text-gray-500"
-                                  }`}
+                                }`}
                               >
                                 {log.jobData?.status || "N/A"}
                               </span>
@@ -713,10 +718,10 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
                               <span className="font-medium">
                                 Current Interviewer:
                               </span>{" "}
-                              {log.currentInterviewer.length > 0
+                              {log.currentInterviewer?.length > 0
                                 ? log.currentInterviewer
-                                  .map((i) => i.name)
-                                  .join(", ")
+                                    .map((i) => i.name)
+                                    .join(", ")
                                 : "None"}
                             </p>
                             <p>
@@ -725,8 +730,8 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
                               </span>{" "}
                               {log.previousInterviewer.length > 0
                                 ? log.previousInterviewer
-                                  .map((i) => i.name)
-                                  .join(", ")
+                                    .map((i) => i.name)
+                                    .join(", ")
                                 : "None"}
                             </p>
                           </div>
