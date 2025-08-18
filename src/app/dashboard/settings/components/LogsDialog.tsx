@@ -322,8 +322,8 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
         <div className="flex space-x-2">
           <button
             className={`py-2 px-4 text-sm font-medium rounded-t-md transition-colors ${activeTab === "nginx"
-                ? "border-b-2 border-blue-500 text-blue-600"
-                : "text-gray-600 hover:bg-gray-100"
+              ? "border-b-2 border-blue-500 text-blue-600"
+              : "text-gray-600 hover:bg-gray-100"
               }`}
             onClick={() => {
               setActiveTab("nginx");
@@ -338,8 +338,8 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
           </button>
           <button
             className={`py-2 px-4 text-sm font-medium rounded-t-md transition-colors ${activeTab === "server"
-                ? "border-b-2 border-blue-500 text-blue-600"
-                : "text-gray-600 hover:bg-gray-100"
+              ? "border-b-2 border-blue-500 text-blue-600"
+              : "text-gray-600 hover:bg-gray-100"
               }`}
             onClick={() => {
               setActiveTab("server");
@@ -378,8 +378,8 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
                         <li
                           key={file}
                           className={`cursor-pointer p-2 text-sm rounded ${selectedFile === file
-                              ? "bg-blue-100 text-blue-700"
-                              : "hover:bg-gray-100"
+                            ? "bg-blue-100 text-blue-700"
+                            : "hover:bg-gray-100"
                             }`}
                           onClick={() => {
                             setSelectedFile(file);
@@ -647,8 +647,8 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
                               <span className="font-medium">Status:</span>{" "}
                               <span
                                 className={`capitalize ${log.candidateData?.status === "rejected"
-                                    ? "text-red-500"
-                                    : "text-green-500"
+                                  ? "text-red-500"
+                                  : "text-green-500"
                                   }`}
                               >
                                 {log.candidateData?.status || "N/A"}
@@ -697,8 +697,8 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
                               <span className="font-medium">Status:</span>{" "}
                               <span
                                 className={`capitalize ${log.jobData?.status === "open"
-                                    ? "text-green-500"
-                                    : "text-gray-500"
+                                  ? "text-green-500"
+                                  : "text-gray-500"
                                   }`}
                               >
                                 {log.jobData?.status || "N/A"}

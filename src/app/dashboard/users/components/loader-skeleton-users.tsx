@@ -11,7 +11,10 @@ import {
 } from "@/components/ui/table";
 
 const LoaderSkeletonUsers = () => (
-  <div className="w-[100%] py-6">
+  <div className="w-[100%] py-6 px-6">
+    <div className="pb-6">
+      <Skeleton className="w-56 h-[16px] rounded-lg" />
+    </div>
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Users</CardTitle>

@@ -170,7 +170,7 @@ export function LaneOptionsMenu({
           </>
         }
         {showSortMenu && (
-          <div className="w-64 animate-fade-in-right absolute top-0 bg-gray-900 border border-gray-800 rounded-lg shadow-xl p-4 overflow-x-scroll sort-menu pb-0">
+          <div className="w-64 animate-fade-in-right absolute top-0 bg-gray-900 border border-gray-800 rounded-lg shadow-xl p-4 overflow-x-hidden sort-menu pb-0 ">
             <div className="flex items-center justify-between ">
               <span className="font-thin text-gray-400 ml-2">
                 Sort Candidates by

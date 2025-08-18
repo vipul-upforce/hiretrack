@@ -538,8 +538,8 @@ export default function JobProgressPage() {
               </Droppable>
             </DragDropContext>
           </div>
+          <LoaderSkeleton />
         </div>
-        <LoaderSkeleton />
       </>
     );
   }

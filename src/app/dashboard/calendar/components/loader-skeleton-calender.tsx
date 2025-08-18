@@ -1,7 +1,7 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
 const LoaderSkeletonCalendar = () => (
-  <div className="space-y-6">
+  <div className="space-y-6 p-6">
     <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
       <div className="font-semibold leading-none tracking-tight">
         Interview Calendar

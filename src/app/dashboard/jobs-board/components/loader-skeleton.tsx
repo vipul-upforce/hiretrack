@@ -3,11 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreateJobDialog } from "./create-job-dialog";
 
 const LoaderSkeleton = () => (
-  <div className="w-full max-w-full space-y-10">
+  <div className="w-full max-w-full space-y-10 p-6">
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Job Positions</CardTitle>
-        <CreateJobDialog userRole="hr" onJobCreated={() => {}} />
+        <CreateJobDialog userRole="hr" onJobCreated={() => { }} />
       </CardHeader>
     </Card>
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
