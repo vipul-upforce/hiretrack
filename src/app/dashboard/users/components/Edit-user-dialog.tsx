@@ -148,40 +148,44 @@ export function EditUserDialog({
                   className="text-red-500 text-sm"
                 />
               </div>
-              <div>
-                <Label>Role</Label>
-                <Select
-                  value={values.role}
-                  onValueChange={(value) => setFieldValue("role", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="hr">HR</SelectItem>
-                    <SelectItem value="interviewer">Interviewer</SelectItem>
-                  </SelectContent>
-                </Select>
-                <ErrorMessage
-                  name="role"
-                  component="div"
-                  className="text-red-500 text-sm"
-                />
-              </div>
-
-              <div>
-                <Label className="flex flex-row items-center">
-                  <Checkbox
-                    id="isDeleted"
-                    checked={values.isDeleted}
-                    onCheckedChange={(checked) => {
-                      setFieldValue("isDeleted", checked);
-                    }}
+              {values.role !== "system" && (
+                <div>
+                  <Label>Role</Label>
+                  <Select
+                    value={values.role}
+                    onValueChange={(value) => setFieldValue("role", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="hr">HR</SelectItem>
+                      <SelectItem value="interviewer">Interviewer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <ErrorMessage
+                    name="role"
+                    component="div"
+                    className="text-red-500 text-sm"
                   />
-                  <p className="ml-2">Deactivate user</p>
-                </Label>
-              </div>
+                </div>
+              )}
+
+              {values.role !== "system" && (
+                <div>
+                  <Label className="flex flex-row items-center">
+                    <Checkbox
+                      id="isDeleted"
+                      checked={values.isDeleted}
+                      onCheckedChange={(checked) => {
+                        setFieldValue("isDeleted", checked);
+                      }}
+                    />
+                    <p className="ml-2">Deactivate user</p>
+                  </Label>
+                </div>
+              )}
 
               <div className="flex justify-end border-t bg-background px-6 py-4 sticky bottom-0 z-10">
                 <Button

@@ -62,11 +62,11 @@ function UsersPage() {
         description:
           "Error: " +
           (typeof error === "object" &&
-            error !== null &&
-            "data" in error &&
-            typeof error.data === "object" &&
-            error.data &&
-            "error" in error.data
+          error !== null &&
+          "data" in error &&
+          typeof error.data === "object" &&
+          error.data &&
+          "error" in error.data
             ? (error.data as { error: string }).error
             : "Unknown error"),
         title: "Failed to delete user",
@@ -157,7 +157,10 @@ function UsersPage() {
 
             {/* Right Section - Create User Button */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3">
-              <Button variant="primary" onClick={() => router.push("/auth/signup")}>
+              <Button
+                variant="primary"
+                onClick={() => router.push("/auth/signup")}
+              >
                 <UserPlus className="h-4 w-4 mr-2" />
                 Create User
               </Button>
@@ -183,20 +186,27 @@ function UsersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users?.map((user: User) => (
-                  <UserTableRow
-                    key={user._id}
-                    user={user}
-                    isDeleting={isDeleting}
-                    isUpdating={isDeleting}
-                    onDeleteClick={() => {
-                      setUserIdToDelete(user._id);
-                      setShowDeleteDialog(true);
-                    }}
-                    onEditClick={handleEditClick}
-                    onPasswordClick={handlePasswordClick}
-                  />
-                ))}
+                {users
+                  ?.slice()
+                  .sort((a, b) => {
+                    if (a.role === "system") return -1;
+                    if (b.role === "system") return 1;
+                    return 0;
+                  })
+                  .map((user: User) => (
+                    <UserTableRow
+                      key={user._id}
+                      user={user}
+                      isDeleting={isDeleting}
+                      isUpdating={isDeleting}
+                      onDeleteClick={() => {
+                        setUserIdToDelete(user._id);
+                        setShowDeleteDialog(true);
+                      }}
+                      onEditClick={handleEditClick}
+                      onPasswordClick={handlePasswordClick}
+                    />
+                  ))}
               </TableBody>
             </Table>
           </CardContent>
