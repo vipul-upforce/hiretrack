@@ -47,6 +47,8 @@ export async function POST(req: NextRequest) {
       const settings = await Settings.findOne({
         organizationId: organizationId,
       });
+      settings.portalConfigs.portalName = name;
+      await settings.save();
       if (settings?.multipleOrg === false) {
         return NextResponse.json(
           { error: "You cannot create a new organization." },
@@ -59,6 +61,8 @@ export async function POST(req: NextRequest) {
         const settings = await Settings.findOne({
           organizationId: String(totalOrgs[0]._id),
         });
+        settings.portalConfigs.portalName = name;
+        await settings.save();
         if (!settings?.multipleOrg) {
           return NextResponse.json(
             { error: "You cannot create a new organization." },
@@ -120,6 +124,9 @@ export async function POST(req: NextRequest) {
         {
           organizationId: createdOrg[0]._id,
           multipleOrg: false,
+          portalConfigs: {
+            portalName: name,
+          },
         },
       ]);
 

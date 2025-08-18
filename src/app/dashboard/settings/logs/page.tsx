@@ -26,6 +26,7 @@ import { useTheme } from "@/components/theme-provider";
 import Link from "next/link";
 import withAuthGuard from "@/components/withAuthGuard";
 import { EmailHistory } from "../components/email-history";
+import { ICandidateHistory } from "@/lib/models/history";
 
 interface LogEntry {
   candidateId: string;
@@ -50,6 +51,7 @@ interface LogEntry {
   title: string;
   note: { description: string; date: string; rating: number; userId: string[] };
   attachments: any[];
+  checklistForm: ICandidateHistory["checklistForm"];
 }
 
 function SystemLogsPage() {
@@ -250,7 +252,9 @@ function SystemLogsPage() {
     if (
       (log.title !== "" || !log.title) &&
       log.title !== "Assigned to Job" &&
-      !log.title?.includes("Followup")
+      !log.title?.includes("Followup") &&
+      !log.title?.startsWith("Email sent: ") &&
+      !log.checklistForm
     ) {
       return (
         <div className="flex flex-row items-start justify-between w-full">
