@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { EmailHistory, User, Candidate } from "@/lib/mongodb";
+import connectToDatabase, {
+  EmailHistory,
+  User,
+  Candidate,
+} from "@/lib/mongodb";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
@@ -22,6 +26,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    // Connect to database
+    await connectToDatabase();
+
+    // Update pending emails older than 5 minutes to failed
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    await EmailHistory!.updateMany(
+      {
+        status: "pending",
+        createdAt: { $lte: fiveMinutesAgo },
+        organizationId: user.organizationId,
+      },
+      { $set: { status: "failed", updatedAt: new Date() } }
+    );
+
     // Get query parameters
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
@@ -30,9 +48,6 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status") || "";
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
-
-    // Connect to database
-    await connectToDatabase();
 
     // Build query
     const query: any = { organizationId: user.organizationId };
@@ -64,7 +79,8 @@ export async function GET(request: NextRequest) {
 
     // Get paginated results
     const skip = (page - 1) * limit;
-    const emailHistory = await EmailHistory!.find(query)
+    const emailHistory = await EmailHistory!
+      .find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)

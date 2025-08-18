@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendEventEmailWithHistory } from "@/lib/unifiedEmailService";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
-import connectToDatabase, { Settings, User } from "@/lib/mongodb";
+import connectToDatabase, { Settings, User, EmailHistory } from "@/lib/mongodb";
 import mongoose from "mongoose";
 import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
 import { Organization } from "@/lib/models/user";
-import { log } from "console";
 
 // Email queue to track pending emails
 const emailQueue = new Map<
@@ -14,10 +13,153 @@ const emailQueue = new Map<
     data: any;
     timer: NodeJS.Timeout;
     timestamp: number;
+    historyIds: string[]; // Track the history entry IDs for this queued email
   }
 >();
 
-// console.log("MAP: ", emailQueue);
+// Create pending email history entries for status updates
+async function createPendingEmailHistory(data: any, organizationId: string) {
+  const {
+    emailList,
+    candidateName,
+    status,
+    sentBy,
+    sentByEmail,
+    sentByName,
+    candidateId,
+    jobId,
+    eventTitle,
+    jobName,
+    remark,
+    rating,
+    actionBy,
+    prev_status,
+    eventSubTitle,
+    candidateDetails,
+    hrContactInfo,
+  } = data;
+
+  const settings = await Settings.findOne({
+    organizationId: new mongoose.Types.ObjectId(organizationId),
+  }).lean();
+
+  const provider = settings?.mailConfig?.mailProvider || "unknown";
+  const historyIds: string[] = [];
+
+  try {
+    // Get email content for history (using placeholder values that will be updated)
+    const { emailContent, emailSubject } = await getMappedEmailTemplate(
+      "status-update",
+      {
+        eventTitle,
+        jobTitle: jobName,
+        candidateName,
+        newStatus: status,
+        statusMessage: remark,
+        rating,
+        actionBy,
+        nextSteps: "TBD", // Will be updated when actually sent
+        prev_status,
+        eventSubTitle,
+        candidateDetails,
+        organizationName: "TBD", // Will be updated when actually sent
+        hrContactInfo,
+      },
+      organizationId
+    );
+
+    // Create history records for all recipients (HR/Admins) - PENDING
+    const historyPromises = emailList.map(async (recipientEmail: string) => {
+      try {
+        const recipient = await User.findOne({
+          email: recipientEmail,
+          organizationId: new mongoose.Types.ObjectId(organizationId),
+        })
+          .select("_id name")
+          .lean();
+
+        const history = await EmailHistory.create({
+          organizationId: new mongoose.Types.ObjectId(organizationId),
+          sentBy: new mongoose.Types.ObjectId(sentBy),
+          sentByEmail: sentByEmail,
+          sentByName: sentByName,
+          recipientType: "user",
+          recipientId: recipient?._id || new mongoose.Types.ObjectId(),
+          recipientEmail: recipientEmail,
+          recipientName: recipient?.name || recipientEmail,
+          subject: emailSubject,
+          body: emailContent,
+          cc: [],
+          bcc: [],
+          replyTo: sentByEmail,
+          attachments: [],
+          status: "pending", // Mark as pending
+          sentAt: undefined, // Will be set when actually sent
+          error: undefined,
+          provider,
+          metadata: {
+            candidateId: new mongoose.Types.ObjectId(candidateId),
+            jobId: jobId ? new mongoose.Types.ObjectId(jobId) : undefined,
+            templateUsed: "status-update",
+            eventType: "status_change",
+            scheduledFor: new Date(Date.now() + 2 * 60 * 1000), // 2 minutes from now
+            previousStatus: prev_status,
+            newStatus: status,
+          },
+        });
+
+        return history._id.toString();
+      } catch (error) {
+        console.error(
+          `Failed to create pending history for ${recipientEmail}:`,
+          error
+        );
+        return null;
+      }
+    });
+
+    const resolvedHistoryIds = await Promise.all(historyPromises);
+    historyIds.push(...resolvedHistoryIds.filter((id) => id !== null));
+
+    return historyIds;
+  } catch (error) {
+    console.error("Failed to create pending email history:", error);
+    return [];
+  }
+}
+
+// Update email history entries from pending to sent/failed
+async function updateEmailHistoryStatus(
+  historyIds: string[],
+  status: "sent" | "failed",
+  error?: string,
+  updatedContent?: { subject: string; body: string }
+) {
+  try {
+    const updateData: any = {
+      status,
+      sentAt: status === "sent" ? new Date() : undefined,
+      error: status === "failed" ? error : undefined,
+    };
+
+    // Update content if provided (for final email with correct organization data)
+    if (updatedContent) {
+      updateData.subject = updatedContent.subject;
+      updateData.body = updatedContent.body;
+    }
+
+    await EmailHistory.updateMany(
+      { _id: { $in: historyIds.map((id) => new mongoose.Types.ObjectId(id)) } },
+      { $set: updateData }
+    );
+
+    console.log(
+      `Updated ${historyIds.length} status update email history entries to ${status}`
+    );
+  } catch (error) {
+    console.error("Failed to update email history status:", error);
+  }
+}
 
 function scheduleEmail(
   key: string,
@@ -37,9 +179,17 @@ function scheduleEmail(
     const queueItem = emailQueue.get(key);
     if (queueItem) {
       try {
-        await sendQueuedEmail(queueItem.data);
+        await sendQueuedEmail(queueItem.data, queueItem.historyIds);
       } catch (error) {
         console.error(`Failed to send email for ${key}:`, error);
+        // Update history to failed status
+        if (queueItem.historyIds.length > 0) {
+          await updateEmailHistoryStatus(
+            queueItem.historyIds,
+            "failed",
+            error instanceof Error ? error.message : "Unknown error"
+          );
+        }
       } finally {
         emailQueue.delete(key);
       }
@@ -50,13 +200,14 @@ function scheduleEmail(
     data,
     timer,
     timestamp: Date.now() + delayMs,
+    historyIds: [], // Will be populated after creating pending history
   });
 
   return { success: true, message: "Email scheduled" };
 }
 
 // Sends the actual email based on queue data
-async function sendQueuedEmail(data: any) {
+async function sendQueuedEmail(data: any, historyIds?: string[]) {
   const {
     organizationId,
     eventTitle,
@@ -99,7 +250,6 @@ async function sendQueuedEmail(data: any) {
       select: "name defaultLanes", // populate only organization name
     })
     .lean();
-  // console.log(organization, "eeeee-------mmmm");
 
   const isOrganization = (obj: any): obj is Organization => {
     return (
@@ -109,8 +259,7 @@ async function sendQueuedEmail(data: any) {
       Array.isArray(obj.defaultLanes)
     );
   };
-  // console.log(isOrganization(organization.organizationId), "isOrganization");
-  // console.log(organization.organizationId.lanes.indexOf(status) + 1, "lanes");
+
   const nextSteps =
     organization &&
     organization.organizationId &&
@@ -158,7 +307,7 @@ async function sendQueuedEmail(data: any) {
     { upsert: true, new: true }
   );
 
-  return await sendEventEmailWithHistory(
+  const emailStatus = await sendEventEmailWithHistory(
     organizationId,
     emailList,
     emailSubject,
@@ -175,6 +324,22 @@ async function sendQueuedEmail(data: any) {
       },
     }
   );
+
+  // If we have existing history IDs (from pending), update them
+  if (historyIds && historyIds.length > 0) {
+    await updateEmailHistoryStatus(
+      historyIds,
+      emailStatus.status === 200 ? "sent" : "failed",
+      emailStatus.status !== 200 ? emailStatus.message : undefined,
+      { subject: emailSubject, body: emailContent }
+    );
+  } else {
+    console.warn(
+      "No existing history IDs found for status update email, new records should have been created by sendEventEmailWithHistory"
+    );
+  }
+
+  return emailStatus;
 }
 
 export async function POST(req: NextRequest) {
@@ -231,9 +396,6 @@ export async function POST(req: NextRequest) {
     })
       .select("email name role")
       .lean();
-
-    // console.log("FETCHED USERS: ", users);
-    // console.log("USER COUNT: ", users.length);
 
     if (!users || users.length === 0) {
       return NextResponse.json(
@@ -300,12 +462,26 @@ export async function POST(req: NextRequest) {
         );
       }
     } else {
-      // console.log("QUEUED DATA: ", queueData);
+      // Create pending email history entries BEFORE scheduling
+      const historyIds = await createPendingEmailHistory(
+        queueData,
+        organizationId
+      );
+
+      // Schedule the email
       scheduleEmail(emailKey, queueData);
+
+      // Update the queue item with history IDs
+      const queueItem = emailQueue.get(emailKey);
+      if (queueItem) {
+        queueItem.historyIds = historyIds;
+        emailQueue.set(emailKey, queueItem);
+      }
 
       return NextResponse.json({
         message:
           "Email scheduled successfully. It will be sent in 2 minutes with the most updated information.",
+        pendingHistoryRecords: historyIds.length,
       });
     }
   } catch (error: unknown) {
@@ -349,6 +525,7 @@ export async function GET(req: NextRequest) {
         scheduledAt: new Date(value.timestamp).toISOString(),
         timeRemaining:
           Math.round((value.timestamp - Date.now()) / 1000) + " seconds",
+        pendingHistoryRecords: value.historyIds.length,
       })
     );
 
