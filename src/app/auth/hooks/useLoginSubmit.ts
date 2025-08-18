@@ -185,9 +185,11 @@ export const useHandleLoginSubmit = ({
         // },4000)
         console.log("user status: ", user, isAuthenticated);
         if (isAuthenticated) {
-          router.refresh();
-          router.push(redirectUrl);
-          window.location.href = redirectUrl;
+          // router.refresh();
+          // router.push(redirectUrl);
+          if (redirectUrl !== "/") {
+            window.location.href = redirectUrl;
+          }
 
           setUserLoggedIn(true);
 
@@ -203,9 +205,9 @@ export const useHandleLoginSubmit = ({
         console.log(err);
         const errorMessage =
           err &&
-          typeof err === "object" &&
-          "data" in err &&
-          (err.data as { error: string }).error
+            typeof err === "object" &&
+            "data" in err &&
+            (err.data as { error: string }).error
             ? (err.data as { error: string }).error
             : "An unknown error occurred";
         setStatus(errorMessage);

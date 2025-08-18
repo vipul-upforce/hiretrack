@@ -544,6 +544,7 @@ export default function EmailTemplatesPage() {
   const [selectedTemplate, setSelectedTemplate] =
     useState<string>("job-application-hr");
   const [previewMode, setPreviewMode] = useState(false);
+  const [loadingTemplate, setLoadingTemplate] = useState(false);
 
   // Custom template management
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -734,6 +735,7 @@ export default function EmailTemplatesPage() {
   };
 
   const addCustomTemplate = () => {
+    setLoading(true);
     if (!newTemplate.name.trim() || !newTemplate.subject.trim()) {
       toast.error("Please fill in template name and subject");
       return;
@@ -776,6 +778,7 @@ export default function EmailTemplatesPage() {
     setNewTemplateEditor(null);
     setShowAddDialog(false);
     toast.success("Custom template added successfully");
+    setLoading(false);
   };
 
   const deleteCustomTemplate = () => {
@@ -800,6 +803,7 @@ export default function EmailTemplatesPage() {
     setTemplateToDelete(null);
     setShowDeleteDialog(false);
     toast.success("Custom template deleted successfully");
+
   };
 
   const getCurrentTemplate = () => {
@@ -809,6 +813,7 @@ export default function EmailTemplatesPage() {
       return templates[0];
     }
     return current || defaultTemplates[0];
+
   };
 
   const renderPreview = (content: string, variables: string[]) => {
@@ -1441,7 +1446,9 @@ export default function EmailTemplatesPage() {
             <Button variant="outline" onClick={() => setShowAddDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={addCustomTemplate}>Add Template</Button>
+            <Button onClick={addCustomTemplate} disabled={loading}>
+              {loading ? 'Adding...' : 'Add Template'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1465,6 +1472,7 @@ export default function EmailTemplatesPage() {
               className="bg-red-600 hover:bg-red-700"
             >
               Delete
+
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

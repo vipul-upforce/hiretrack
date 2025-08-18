@@ -365,10 +365,10 @@ export const LaneChecklistConfigDialog = ({
         title: "Error",
         description:
           typeof error === "object" &&
-          "data" in error &&
-          error.data &&
-          typeof error.data == "object" &&
-          "error" in error.data
+            "data" in error &&
+            error.data &&
+            typeof error.data == "object" &&
+            "error" in error.data
             ? (error.data.error as string)
             : "Failed to save template",
         variant: "destructive",
@@ -459,11 +459,10 @@ export const LaneChecklistConfigDialog = ({
             <div className="flex space-x-1 bg-muted p-1 rounded-lg">
               <button
                 onClick={() => setActiveTab("incoming")}
-                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  activeTab === "incoming"
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === "incoming"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+                  }`}
               >
                 <ArrowRight className="h-4 w-4" />
                 Incoming Checklist
@@ -475,11 +474,10 @@ export const LaneChecklistConfigDialog = ({
               </button>
               <button
                 onClick={() => setActiveTab("outgoing")}
-                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  activeTab === "outgoing"
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === "outgoing"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+                  }`}
               >
                 <ArrowLeft className="h-4 w-4" />
                 Outgoing Checklist
@@ -681,7 +679,7 @@ export const LaneChecklistConfigDialog = ({
                             {...provided.droppableProps}
                             ref={provided.innerRef}
                             className={`space-y-3`}
-                            // className={`space-y-3 p-2 rounded-lg ${snapshot.isDraggingOver ? "bg-muted/50" : ""}`} //FANCY INTERACTIVE BG - TOTALLY UNNECESSARY
+                          // className={`space-y-3 p-2 rounded-lg ${snapshot.isDraggingOver ? "bg-muted/50" : ""}`} //FANCY INTERACTIVE BG - TOTALLY UNNECESSARY
                           >
                             {[...currentChecklist.fields]
                               // .sort((a, b) => a.order - b.order) WTH! INSANE!!!!!!!!!!! Lookout for anything like this, NEVER USE A SEPARATE VARIABLE FOR MAINTAINING THE ORDER OF AN ARRAY!
@@ -713,11 +711,10 @@ export const LaneChecklistConfigDialog = ({
                                           }}
                                         >
                                           <Card
-                                            className={`p-4 hover:shadow-md transition-shadow ${
-                                              snapshot.isDragging
-                                                ? "shadow-2xl bg-white dark:bg-gray-800 border-2 border-primary opacity-95 scale-105"
-                                                : "shadow-sm hover:shadow-md"
-                                            }`}
+                                            className={`p-4 hover:shadow-md transition-shadow ${snapshot.isDragging
+                                              ? "shadow-2xl bg-white dark:bg-gray-800 border-2 border-primary opacity-95 scale-105"
+                                              : "shadow-sm hover:shadow-md"
+                                              }`}
                                           >
                                             <div className="flex items-center justify-between">
                                               <div className="flex items-center gap-3">
@@ -754,7 +751,7 @@ export const LaneChecklistConfigDialog = ({
                                                     )}
                                                     {field.options &&
                                                       field.options.length >
-                                                        0 && (
+                                                      0 && (
                                                         <Badge
                                                           variant="outline"
                                                           className="text-xs px-1.5 py-0.5"
@@ -1035,11 +1032,10 @@ const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
                   return (
                     <div
                       key={type.value}
-                      className={`relative p-4 rounded-lg cursor-pointer transition-all duration-200 ${
-                        isSelected
-                          ? "bg-gray-100 dark:bg-gray-700 shadow-sm"
-                          : "bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
-                      }`}
+                      className={`relative p-4 rounded-lg cursor-pointer transition-all duration-200 ${isSelected
+                        ? "bg-gray-100 dark:bg-gray-700 shadow-sm"
+                        : "bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        }`}
                       onClick={() =>
                         setFieldData({ ...fieldData, type: type.value as any })
                       }
@@ -1056,18 +1052,16 @@ const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
                       )}
                       <div className="flex flex-col items-center text-center gap-2">
                         <IconComponent
-                          className={`h-6 w-6 ${
-                            isSelected
-                              ? "text-gray-700 dark:text-gray-300"
-                              : "text-gray-500 dark:text-gray-400"
-                          }`}
+                          className={`h-6 w-6 ${isSelected
+                            ? "text-gray-700 dark:text-gray-300"
+                            : "text-gray-500 dark:text-gray-400"
+                            }`}
                         />
                         <span
-                          className={`text-sm font-medium ${
-                            isSelected
-                              ? "text-gray-700 dark:text-gray-300"
-                              : "text-gray-700 dark:text-gray-300"
-                          }`}
+                          className={`text-sm font-medium ${isSelected
+                            ? "text-gray-700 dark:text-gray-300"
+                            : "text-gray-700 dark:text-gray-300"
+                            }`}
                         >
                           {type.label}
                         </span>
@@ -1083,54 +1077,54 @@ const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
               fieldData.type === "multiSelect" ||
               fieldData.type === "radio" ||
               fieldData.type === "checkbox") && (
-              <div>
-                <Label
-                  htmlFor="options"
-                  className="text-lg font-medium block pb-3"
-                >
-                  Options<span className="text-red-500">*</span>{" "}
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                    (Hit Enter to Add)
-                  </span>
-                </Label>
-                <ChipInput
-                  value={fieldData.options || []}
-                  onChange={(newOptions) =>
-                    setFieldData({
-                      ...fieldData,
-                      options: newOptions
-                        .map((option) => option.trim())
-                        .filter((option) => option !== ""),
-                    })
-                  }
-                  placeholder="Type an option and press Enter..."
-                  suggestions={[]}
-                />
-              </div>
-            )}
+                <div>
+                  <Label
+                    htmlFor="options"
+                    className="text-lg font-medium block pb-3"
+                  >
+                    Options<span className="text-red-500">*</span>{" "}
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      (Hit Enter to Add)
+                    </span>
+                  </Label>
+                  <ChipInput
+                    value={fieldData.options || []}
+                    onChange={(newOptions) =>
+                      setFieldData({
+                        ...fieldData,
+                        options: newOptions
+                          .map((option) => option.trim())
+                          .filter((option) => option !== ""),
+                      })
+                    }
+                    placeholder="Type an option and press Enter..."
+                    suggestions={[]}
+                  />
+                </div>
+              )}
 
             {/* Placeholder */}
             {["text", "number", "email", "textarea"].includes(
               fieldData.type
             ) && (
-              <div>
-                <Label
-                  htmlFor="placeholder"
-                  className="text-lg font-medium block pb-3"
-                >
-                  Placeholder
-                </Label>
-                <Input
-                  id="placeholder"
-                  value={fieldData.placeholder || ""}
-                  onChange={(e) =>
-                    setFieldData({ ...fieldData, placeholder: e.target.value })
-                  }
-                  className="text-lg py-3 px-4"
-                  placeholder="Enter placeholder text..."
-                />
-              </div>
-            )}
+                <div>
+                  <Label
+                    htmlFor="placeholder"
+                    className="text-lg font-medium block pb-3"
+                  >
+                    Placeholder
+                  </Label>
+                  <Input
+                    id="placeholder"
+                    value={fieldData.placeholder || ""}
+                    onChange={(e) =>
+                      setFieldData({ ...fieldData, placeholder: e.target.value })
+                    }
+                    className="text-lg py-3 px-4"
+                    placeholder="Enter placeholder text..."
+                  />
+                </div>
+              )}
 
             {/* Field Options */}
             <div>
@@ -1139,11 +1133,10 @@ const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
               </Label>
               <div className="grid grid-cols-1 gap-4">
                 <div
-                  className={`p-4 rounded-lg cursor-pointer transition-all duration-200 ${
-                    fieldData.required
-                      ? "bg-gray-50 dark:bg-gray-800"
-                      : "bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  }`}
+                  className={`p-4 rounded-lg cursor-pointer transition-all duration-200 ${fieldData.required
+                    ? "bg-gray-50 dark:bg-gray-800"
+                    : "bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    }`}
                   onClick={() =>
                     setFieldData({
                       ...fieldData,
@@ -1154,18 +1147,17 @@ const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div
-                        className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                          fieldData.required
-                            ? ""
-                            : "border-gray-300 dark:border-gray-600"
-                        }`}
+                        className={`w-5 h-5 rounded border-2 flex items-center justify-center ${fieldData.required
+                          ? ""
+                          : "border-gray-300 dark:border-gray-600"
+                          }`}
                         style={
                           fieldData.required
                             ? {
-                                backgroundColor:
-                                  "var(--portal-primary, #6366f1)",
-                                borderColor: "var(--portal-primary, #6366f1)",
-                              }
+                              backgroundColor:
+                                "var(--portal-primary, #6366f1)",
+                              borderColor: "var(--portal-primary, #6366f1)",
+                            }
                             : {}
                         }
                       >
@@ -1207,18 +1199,17 @@ const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
                         (role) => (
                           <div
                             key={role}
-                            className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${
-                              fieldData.visibleOnForm.includes(role)
-                                ? "bg-gray-50 dark:bg-gray-800"
-                                : "bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
-                            }`}
+                            className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${fieldData.visibleOnForm.includes(role)
+                              ? "bg-gray-50 dark:bg-gray-800"
+                              : "bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
+                              }`}
                             onClick={() => {
                               const isSelected =
                                 fieldData.visibleOnForm.includes(role);
                               const newVisibleOnForm = isSelected
                                 ? fieldData.visibleOnForm.filter(
-                                    (r) => r !== role
-                                  )
+                                  (r) => r !== role
+                                )
                                 : [...fieldData.visibleOnForm, role];
                               setFieldData({
                                 ...fieldData,
@@ -1229,19 +1220,18 @@ const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
                                 <div
-                                  className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
-                                    fieldData.visibleOnForm.includes(role)
-                                      ? ""
-                                      : "border-gray-300 dark:border-gray-600"
-                                  }`}
+                                  className={`w-4 h-4 rounded border-2 flex items-center justify-center ${fieldData.visibleOnForm.includes(role)
+                                    ? ""
+                                    : "border-gray-300 dark:border-gray-600"
+                                    }`}
                                   style={
                                     fieldData.visibleOnForm.includes(role)
                                       ? {
-                                          backgroundColor:
-                                            "var(--portal-primary, #3b82f6)",
-                                          borderColor:
-                                            "var(--portal-primary, #3b82f6)",
-                                        }
+                                        backgroundColor:
+                                          "var(--portal-primary, #3b82f6)",
+                                        borderColor:
+                                          "var(--portal-primary, #3b82f6)",
+                                      }
                                       : {}
                                   }
                                 >
@@ -1278,18 +1268,17 @@ const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
                         (role) => (
                           <div
                             key={role}
-                            className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${
-                              fieldData.visibleInHistory.includes(role)
-                                ? "bg-gray-50 dark:bg-gray-800"
-                                : "bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
-                            }`}
+                            className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${fieldData.visibleInHistory.includes(role)
+                              ? "bg-gray-50 dark:bg-gray-800"
+                              : "bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
+                              }`}
                             onClick={() => {
                               const isSelected =
                                 fieldData.visibleInHistory.includes(role);
                               const newVisibleInHistory = isSelected
                                 ? fieldData.visibleInHistory.filter(
-                                    (r) => r !== role
-                                  )
+                                  (r) => r !== role
+                                )
                                 : [...fieldData.visibleInHistory, role];
                               setFieldData({
                                 ...fieldData,
@@ -1300,27 +1289,26 @@ const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
                                 <div
-                                  className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
-                                    fieldData.visibleInHistory.includes(role)
-                                      ? ""
-                                      : "border-gray-300 dark:border-gray-600"
-                                  }`}
+                                  className={`w-4 h-4 rounded border-2 flex items-center justify-center ${fieldData.visibleInHistory.includes(role)
+                                    ? ""
+                                    : "border-gray-300 dark:border-gray-600"
+                                    }`}
                                   style={
                                     fieldData.visibleInHistory.includes(role)
                                       ? {
-                                          backgroundColor:
-                                            "var(--portal-primary, #8b5cf6)",
-                                          borderColor:
-                                            "var(--portal-primary, #8b5cf6)",
-                                        }
+                                        backgroundColor:
+                                          "var(--portal-primary, #8b5cf6)",
+                                        borderColor:
+                                          "var(--portal-primary, #8b5cf6)",
+                                      }
                                       : {}
                                   }
                                 >
                                   {fieldData.visibleInHistory.includes(
                                     role
                                   ) && (
-                                    <Check className="h-2.5 w-2.5 text-white" />
-                                  )}
+                                      <Check className="h-2.5 w-2.5 text-white" />
+                                    )}
                                 </div>
                                 <div>
                                   <div className="font-medium text-sm capitalize text-gray-700 dark:text-gray-300">

@@ -33,6 +33,7 @@ import {
   Lock,
   Upload,
   Check,
+  Loader2,
 } from "lucide-react";
 
 const fieldTypeIcons: Record<string, React.ElementType> = {
@@ -108,6 +109,7 @@ export const AddSpecificCustomFieldForm = memo(
       showOnCard: false,
     });
     const [hasDuplicate, setHasDuplicate] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
       if (initialValue && initialValue.id) {
@@ -145,6 +147,7 @@ export const AddSpecificCustomFieldForm = memo(
         values: CustomField,
         { resetForm, setFieldError }: FormikHelpers<CustomField>
       ) => {
+        setIsSubmitting(true);
         if (isEditMode && values.label === initialValue?.label) {
         } else {
           const isDuplicate = checkForDuplicate(
@@ -154,6 +157,7 @@ export const AddSpecificCustomFieldForm = memo(
           if (isDuplicate) {
             setFieldError("label", "");
             setHasDuplicate(true);
+            setIsSubmitting(false);
             return;
           }
 
@@ -172,6 +176,9 @@ export const AddSpecificCustomFieldForm = memo(
         }
 
         try {
+          // Simulate a short delay for better UX
+          await new Promise((resolve) => setTimeout(resolve, 500));
+
           const fieldData = {
             ...values,
             id: isEditMode
@@ -190,6 +197,8 @@ export const AddSpecificCustomFieldForm = memo(
               description: "Failed to save field",
               variant: "destructive",
             });
+        } finally {
+          setIsSubmitting(false);
         }
       },
       [
@@ -745,11 +754,19 @@ export const AddSpecificCustomFieldForm = memo(
                     variant="success"
                     size="lg"
                     disabled={
-                      !isEditMode &&
-                      (hasDuplicate || Object.keys(errors).length > 0)
+                      isSubmitting ||
+                      (!isEditMode &&
+                        (hasDuplicate || Object.keys(errors).length > 0))
                     }
                   >
-                    {isEditMode ? "Update Field" : "Create Field"}
+                    {isSubmitting && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    {isSubmitting
+                      ? "Saving..."
+                      : isEditMode
+                      ? "Update Field"
+                      : "Create Field"}
                   </Button>
                 </div>
               </div>

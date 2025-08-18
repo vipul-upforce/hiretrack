@@ -39,6 +39,7 @@ export const useRemarkHandlers = (
   );
   const [isSubRemarkPrivate, setIsSubRemarkPrivate] = useState(true);
   const [isRemarkSubmitting, setIsRemarkSubmitting] = useState(false);
+  const [isFollowUpSubmitting, setIsFollowUpSubmitting] = useState(false);
 
   useEffect(() => {
     if (user?.role === "interviewer") {
@@ -227,6 +228,7 @@ export const useRemarkHandlers = (
     }
   };
   const handleRemoveFollowUp = async () => {
+    setIsFollowUpSubmitting(true);
     try {
       const newFollowUpObj = {
         note: null,
@@ -325,6 +327,8 @@ export const useRemarkHandlers = (
           variant: "destructive",
         });
       }
+    } finally {
+      setIsFollowUpSubmitting(false);
     }
   };
   const handleAddFollowUp = async () => {
@@ -348,7 +352,7 @@ export const useRemarkHandlers = (
       });
       return;
     }
-
+    setIsFollowUpSubmitting(true);
     try {
       const newFollowUpObj = {
         note: String(newFollowUp).trim(),
@@ -447,6 +451,8 @@ export const useRemarkHandlers = (
           variant: "destructive",
         });
       }
+    } finally {
+      setIsFollowUpSubmitting(false);
     }
   };
 
@@ -489,5 +495,6 @@ export const useRemarkHandlers = (
     newFollowUp,
     newFollowUpDate,
     handleRemoveFollowUp,
+    isFollowUpSubmitting,
   };
 };

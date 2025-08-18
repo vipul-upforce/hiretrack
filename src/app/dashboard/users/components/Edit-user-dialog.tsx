@@ -23,6 +23,7 @@ import { useUpdateUserMutation } from "@/lib/features/users/usersApi";
 import { userFormVaidationSchema } from "../schemas/userFormValidation.schema";
 import { useDispatch, useSelector } from "react-redux";
 import { updateUser as updateUserInState } from "@/lib/redux/authSlice";
+import { useState } from "react";
 
 interface SelectedUser {
   id?: string;
@@ -49,8 +50,10 @@ export function EditUserDialog({
   const dispatch = useDispatch();
   const { user } = useSelector((state: any) => state.auth || {});
   const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleUpdate = async (values: SelectedUser) => {
+    setIsLoading(true);
     try {
       await updateUser({
         id: selectedUser?.id,
@@ -80,16 +83,20 @@ export function EditUserDialog({
         description:
           "Error: " +
           (typeof error === "object" &&
-          error !== null &&
-          "data" in error &&
-          typeof error.data === "object" &&
-          error.data &&
-          "error" in error.data
+            error !== null &&
+            "data" in error &&
+            typeof error.data === "object" &&
+            error.data &&
+            "error" in error.data
             ? (error.data as { error: string }).error
             : "Unknown error"),
         variant: "destructive",
       });
     }
+    finally {
+      setIsLoading(false);
+    }
+
   };
 
   if (!selectedUser) return null;
@@ -186,10 +193,10 @@ export function EditUserDialog({
               <div className="flex justify-end border-t bg-background px-6 py-4 sticky bottom-0 z-10">
                 <Button
                   type="submit"
-                  disabled={isUpdating}
+                  disabled={isUpdating || isLoading}
                   onClick={() => handleSubmit()}
                 >
-                  Update
+                  {isUpdating && isLoading ? "Updating..." : "Update User"}
                 </Button>
               </div>
             </Form>
