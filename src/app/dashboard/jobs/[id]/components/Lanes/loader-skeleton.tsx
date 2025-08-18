@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 const LoaderSkeleton = () => (
   //COMMENTED ELEMENTS ARE DIRECTLY INSERTED IN THE JOB/[ID] PAGE, WHEN ITS LOADING THE REFs BY DRAGTOSCROLL HOOK
-  <div className="h-full flex gap-3 overflow-x-auto">
+  <div className="h-full flex gap-3 overflow-x-auto px-4">
     {/* Columns Section */}
     {["1", "2", "3", "4", "5"].map((_, index) => (
       <div key={index} className="w-96 flex-shrink-0">

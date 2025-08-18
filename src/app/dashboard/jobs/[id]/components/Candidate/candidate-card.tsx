@@ -134,6 +134,7 @@ export function CandidateCard({
     setNewFollowUpDate,
     newFollowUp,
     newFollowUpDate,
+    isFollowUpSubmitting,
   } = useRemarkHandlers(
     candidate,
     user,
@@ -148,8 +149,8 @@ export function CandidateCard({
 
     user,
     async () => refetch(),
-    () => {},
-    () => {},
+    () => { },
+    () => { },
     undefined,
     undefined
   );
@@ -926,7 +927,7 @@ Google Meet Link: ${candidate.assignment.googleMeet.meetingLink}`;
           isOpen={isAssigning}
           onOpenChange={setIsAssigning}
           onUpdate={() => refetch()}
-          setLocalCandidate={() => {}}
+          setLocalCandidate={() => { }}
           onSuccess={() => {
             setIsAssigning(false);
             refetch();
@@ -953,6 +954,7 @@ Google Meet Link: ${candidate.assignment.googleMeet.meetingLink}`;
             setNewFollowUpDate(null);
             refetch();
           }}
+          isLoading={isFollowUpSubmitting}
         />
       )}
 
@@ -980,7 +982,7 @@ Google Meet Link: ${candidate.assignment.googleMeet.meetingLink}`;
             setIsAddRemarkOpen(false);
           }}
           // onOpenChange={setIsAddRemarkOpen}
-          setOpenRemarksFor={() => {}}
+          setOpenRemarksFor={() => { }}
           refetch={async () => refetch()}
         />
       }

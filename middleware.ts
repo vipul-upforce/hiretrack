@@ -130,8 +130,8 @@ export async function middleware(request: NextRequest) {
     if (userRole === "hr") {
       if (
         pathname?.includes("/auth/signup") ||
-        pathname?.includes("/dashboard/settings") ||
-        pathname?.includes("/dashboard/analytics")
+        pathname?.includes("/dashboard/settings")
+        // pathname?.includes("/dashboard/analytics")
       ) {
         return NextResponse.redirect(new URL("/dashboard", request.url));
       }

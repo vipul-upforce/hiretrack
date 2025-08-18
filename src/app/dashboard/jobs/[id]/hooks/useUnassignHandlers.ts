@@ -23,9 +23,11 @@ export const useUnassignHandlers = (
 ) => {
   const pathname = usePathname();
   const [confirmUnassignOpen, setConfirmUnassignOpen] = useState(false);
+  const [isUnassigning, setIsUnassigning] = useState(false);
   const [updateCandidate] = useUpdateCandidateMutation();
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
-  const [sendUnassignEmail, { isLoading }] = useSendUnassignMailMutation();
+  const [sendUnassignEmail, { isLoading: isSendingEmail }] =
+    useSendUnassignMailMutation();
 
   const handleUnassign = () => {
     setConfirmUnassignOpen(true);
@@ -35,6 +37,7 @@ export const useUnassignHandlers = (
     unassignNote?: string | null,
     unassignRating?: number | null
   ) => {
+    setIsUnassigning(true);
     try {
       const updatedCandidate = {
         ...localCandidate,
@@ -108,13 +111,14 @@ export const useUnassignHandlers = (
       });
     } finally {
       setConfirmUnassignOpen(false);
+      setIsUnassigning(false);
     }
   };
 
   return {
     confirmUnassignOpen,
     setConfirmUnassignOpen,
-    isLoading,
+    isLoading: isUnassigning,
     handleUnassign,
     confirmUnassign,
   };

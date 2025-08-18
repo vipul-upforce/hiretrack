@@ -22,6 +22,9 @@ import {
   useFetchOpenJobsQuery,
   useAssignJobMutation,
 } from "@/lib/features/job/jobApi";
+import { Loader2 } from "lucide-react";
+import { useState } from "react";
+
 
 interface AssignCandidateDialogProps {
   candidate: Candidate;
@@ -47,6 +50,7 @@ export function AssignJobDialog({
 }: AssignCandidateDialogProps) {
   const { data: jobs } = useFetchOpenJobsQuery();
   const [assignJob] = useAssignJobMutation();
+  const [loading, setLoading] = useState(false);
 
   // Initial form values
   const initialValues: FormValues = {
@@ -57,8 +61,8 @@ export function AssignJobDialog({
     values: FormValues,
     { setSubmitting }: FormikHelpers<FormValues>
   ) => {
+    setLoading(true);
     try {
-      // debugger;
       if (
         candidate.jobId === undefined ||
         (typeof candidate.jobId === "string" &&
@@ -90,6 +94,7 @@ export function AssignJobDialog({
       });
     } finally {
       setSubmitting(false);
+      setLoading(false);
     }
   };
 
@@ -147,8 +152,11 @@ export function AssignJobDialog({
               </div>
 
               <div className="flex relative bottom-0 justify-between w-full space-x-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10">
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Assigning..." : "Assign"}
+                <Button type="submit" disabled={isSubmitting || loading}>
+                  {isSubmitting && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  {isSubmitting && loading ? "Assigning" : "Assign"}
                 </Button>
               </div>
             </Form>

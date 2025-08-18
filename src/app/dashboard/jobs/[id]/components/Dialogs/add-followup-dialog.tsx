@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { DateTimePicker } from "@/components/ui/DateTimePicker";
 import dayjs, { Dayjs } from "dayjs";
+import { Loader2 } from "lucide-react";
 // import { sentRemarkMail } from "@/lib/utils";
 
 const AddFollowUpDialog = ({
@@ -28,6 +29,7 @@ const AddFollowUpDialog = ({
   newFollowUpDate,
   onAddingFollowup,
   handleRemoveFollowUp,
+  isLoading,
 }: {
   candidate: Candidate;
   isOpen: boolean;
@@ -41,6 +43,7 @@ const AddFollowUpDialog = ({
   newFollowUpDate?: Dayjs | null;
   onAddingFollowup: () => void;
   handleRemoveFollowUp: () => void;
+  isLoading: boolean;
 }) => {
   //   const [newFollowUp, setNewFollowUP] = useState("");
   //   const [isSubRemarkPrivate, setIsSubRemarkPrivate] = useState(true);
@@ -85,13 +88,21 @@ const AddFollowUpDialog = ({
                     onAddingFollowup();
                   }}
                   className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20"
+                  disabled={isLoading}
                 >
+                  {isLoading && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
                   Remove Followup
                 </Button>
               )}
           </div>
           <div className="flex gap-2">
-            <Button variant="secondary" onClick={() => onOpenChange(false)}>
+            <Button
+              variant="secondary"
+              onClick={() => onOpenChange(false)}
+              disabled={isLoading}
+            >
               Cancel
             </Button>
             <Button
@@ -100,7 +111,11 @@ const AddFollowUpDialog = ({
                 onAddingFollowup();
               }}
               variant="info"
+              disabled={isLoading}
             >
+              {isLoading && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
               {candidate?.followUp?.note && candidate?.followUp?.note.length > 0
                 ? "Update Followup"
                 : "Create Followup"}

@@ -69,9 +69,9 @@ function AnimatedGridPattern({
       currentSquares.map((sq) =>
         sq.id === id
           ? {
-              ...sq,
-              pos: getPos(),
-            }
+            ...sq,
+            pos: getPos(),
+          }
           : sq
       )
     );
@@ -439,7 +439,7 @@ export default function LoginFormContent({
             const favicon = document.querySelector(
               "link[rel*='icon']"
             ) as HTMLLinkElement;
-            debugger;
+            // debugger;
             if (favicon) {
               favicon.href = data.portalFavicon.url;
             } else {
@@ -512,7 +512,7 @@ export default function LoginFormContent({
     e.preventDefault();
     handleSubmit(
       { email: formData.email, password: formData.password },
-      { setStatus: () => {} }
+      { setStatus: () => { } }
     );
   };
 
