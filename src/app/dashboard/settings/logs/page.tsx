@@ -254,6 +254,7 @@ function SystemLogsPage() {
       log.title !== "Assigned to Job" &&
       !log.title?.includes("Followup") &&
       !log.title?.startsWith("Email sent: ") &&
+      !log.title?.startsWith("Direct Email") &&
       !log.checklistForm
     ) {
       return (
