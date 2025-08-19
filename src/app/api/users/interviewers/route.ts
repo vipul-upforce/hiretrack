@@ -25,6 +25,9 @@ export async function GET(req: NextRequest) {
     }
     const interviewers = await User.find({
       organizationId,
+      role: {
+        $ne: "system",
+      },
       isDeleted: { $ne: true },
     }).select("_id name email organizationId");
 
