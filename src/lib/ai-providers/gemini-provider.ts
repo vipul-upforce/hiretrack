@@ -42,6 +42,35 @@ export class GeminiProvider extends BaseAIProvider {
     }
   }
 
+  async evaluateResume(resumeBase64: string, apiKey: string, prompt: string, modelName?: string): Promise<string> {
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const selectedModel = modelName || getDefaultModel("gemini");
+    const model = genAI.getGenerativeModel({ model: selectedModel });
+
+    const result = await model.generateContent({
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { text: prompt },
+            {
+              inlineData: {
+                mimeType: "application/pdf",
+                data: resumeBase64,
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    if (!result.response.candidates?.[0]?.content?.parts?.[0]?.text) {
+      throw new Error("No valid response from Gemini");
+    }
+
+    return result.response.candidates[0].content.parts[0].text;
+  }
+
   async validateApiKey(apiKey: string, modelName?: string): Promise<{ isValid: boolean; error?: string }> {
     try {
       const genAI = new GoogleGenerativeAI(apiKey);

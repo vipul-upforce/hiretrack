@@ -11,9 +11,14 @@ export class PerplexityProvider extends BaseAIProvider {
     modelName?: string
   ): Promise<ProcessedResumeData> {
     try {
-      const prompt = this.getStandardPrompt();
+      const resumeText = await this.extractTextFromPdf(base64Resume);
+      const prompt = this.getStandardPrompt() + `
+
+Resume Text:
+${resumeText}`;
       const selectedModel = modelName || getDefaultModel("perplexity");
 
+      console.log("DEBUG DATA: ", selectedModel);
       const response = await fetch(
         "https://api.perplexity.ai/chat/completions",
         {
@@ -27,15 +32,7 @@ export class PerplexityProvider extends BaseAIProvider {
             messages: [
               {
                 role: "user",
-                content: [
-                  { type: "text", text: prompt },
-                  {
-                    type: "image_url",
-                    image_url: {
-                      url: `data:application/pdf;base64,${base64Resume}`,
-                    },
-                  },
-                ],
+                content: prompt,
               },
             ],
             max_tokens: 2000,
@@ -53,13 +50,16 @@ export class PerplexityProvider extends BaseAIProvider {
       }
 
       const data = await response.json();
+      console.log("______________ ", data);
       const content = data.choices?.[0]?.message?.content;
 
+      console.log("data.choices?.[0]?.message: ", data.choices?.[0]?.message);
       if (!content) {
         throw new Error("No valid response from Perplexity");
       }
 
-      const jsonString = this.cleanJsonResponse(content);
+      const jsonString = this.cleanJsonResponse(String(content));
+      console.log("JSONSTIRNG: ", jsonString);
       return this.parseJsonResponse(jsonString);
     } catch (error) {
       console.error(error);
@@ -69,6 +69,54 @@ export class PerplexityProvider extends BaseAIProvider {
           : "Failed to process resume with Perplexity"
       );
     }
+  }
+
+  async evaluateResume(resumeBase64: string, apiKey: string, prompt: string, modelName?: string): Promise<string> {
+    const selectedModel = modelName || getDefaultModel("perplexity");
+
+    const resumeText = await this.extractTextFromPdf(resumeBase64);
+    const finalPrompt = `${prompt}
+
+Resume Text:
+${resumeText}`;
+
+    const response = await fetch(
+      "https://api.perplexity.ai/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: selectedModel,
+          messages: [
+            {
+              role: "user",
+              content: finalPrompt,
+            },
+          ],
+          max_tokens: 2000,
+          temperature: 0.1,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Perplexity API error: ${response.status} ${response.statusText} ${errorText}`
+      );
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+
+    if (!content) {
+      throw new Error("No valid response from Perplexity");
+    }
+
+    return content;
   }
 
   async validateApiKey(
