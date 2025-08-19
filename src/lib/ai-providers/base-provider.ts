@@ -35,7 +35,9 @@ export abstract class BaseAIProvider implements AIProvider {
 
   protected getStandardPrompt(): string {
     return `
-    As an AI assistant specializing in resume parsing, analyze the provided resume text and extract the following information in JSON format:
+    first of all you should check if the provided document is a CV or Resume, 
+    If not then return JSON: {error:"Not a valid CV"}
+    othervise As an AI assistant specializing in resume parsing, analyze the provided resume text and extract the following information in JSON format:
     {
       "name": "candidate's full name",
       "email": "candidate's email if present",
@@ -66,7 +68,6 @@ export abstract class BaseAIProvider implements AIProvider {
     6. Handle unconventional formats, minor formatting issues (e.g., extra spaces, typos), or incomplete resumes by extracting as much relevant information as possible.
     7. If the resume text is not in a standard CV format, still attempt to parse it and return the JSON with available data, make sure you can fill all the fields mentioned above.
     8. If no valid data can be extracted, return JSON object { error : " this is not valid cv"}.
-
     Below is the resume content:`;
   }
 
