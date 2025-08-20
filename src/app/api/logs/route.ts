@@ -386,18 +386,18 @@ export async function GET(request: NextRequest) {
         // Remove temporary fields used for conversion
         $unset: ["candidateObjectId", "jobObjectId", "history.parsedDateTime"],
       },
-      {
-        // Add field to limit attachment sizes
-        $addFields: {
-          "history.attachments": {
-            $cond: {
-              if: { $isArray: "$history.attachments" },
-              then: { $slice: ["$history.attachments", 5] },
-              else: "$history.attachments",
-            },
-          },
-        },
-      },
+      // {
+      //   // Add field to limit attachment sizes
+      //   $addFields: {
+      //     "history.attachments": {
+      //       $cond: {
+      //         if: { $isArray: "$history.attachments" },
+      //         then: { $slice: ["$history.attachments", 5] },
+      //         else: "$history.attachments",
+      //       },
+      //     },
+      //   },
+      // },
       {
         // Use facet for pagination and counting
         $facet: {

@@ -26,7 +26,7 @@ import { useTheme } from "@/components/theme-provider";
 import Link from "next/link";
 import withAuthGuard from "@/components/withAuthGuard";
 import { EmailHistory } from "../components/email-history";
-import { ICandidateHistory } from "@/lib/models/history";
+import { ICandidateHistory, IinfoUpdateLog } from "@/lib/models/history";
 
 interface LogEntry {
   candidateId: string;
@@ -607,192 +607,218 @@ function SystemLogsPage() {
                     </div>
                   ) : logs.length > 0 ? (
                     <div className="space-y-4">
-                      {logs.map((log, i) => (
-                        <div
-                          key={`${log.candidateId}-${i}`}
-                          className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors border-gray-200 dark:border-gray-700"
-                        >
+                      {logs.map((log, i) => {
+                        return (
                           <div
-                            className="flex justify-between items-center cursor-pointer"
-                            onClick={() =>
-                              setShowDetails(
-                                showDetails === log.candidateId + i
-                                  ? null
-                                  : log.candidateId + i
-                              )
-                            }
+                            key={`${log.candidateId}-${i}`}
+                            className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors border-gray-200 dark:border-gray-700"
                           >
-                            <div className="w-full">
-                              <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                                {renderEntryTitle(log)}
-                              </h3>
-                              <div className="mb-4 text-base font-normal text-gray-500 dark:text-gray-400 flex flex-row justify-between items-start w-[full] text-wrap break-all">
-                                <p
-                                  className="max-w-[90%] text-sm whitespace-pre-wrap pb-0"
-                                  style={{ wordWrap: "break-word" }}
-                                >
-                                  {log.note &&
-                                    typeof log.note.description === "string" &&
-                                    log.note.description}
-                                  {log.remark && log.remark.description}
-                                </p>
-                                {log?.note &&
-                                Object.keys(log.note).length > 0 &&
-                                log?.note?.rating !== 0 &&
-                                log?.note?.rating ? (
-                                  <div className="flex flex-row items-center">
-                                    {log?.note?.rating}/5
-                                    <Star
-                                      size={"15px"}
-                                      className="mt-[1px]"
-                                      style={{ color: "orange" }}
-                                    />
-                                  </div>
-                                ) : null}
-                                {log.remark &&
-                                  log.remark.rating &&
-                                  log.remark.rating != 0 && (
+                            <div
+                              className="flex justify-between items-center cursor-pointer"
+                              onClick={() =>
+                                setShowDetails(
+                                  showDetails === log.candidateId + i
+                                    ? null
+                                    : log.candidateId + i
+                                )
+                              }
+                            >
+                              <div className="w-full">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                                  {renderEntryTitle(log)}
+                                </h3>
+                                <div className="mb-4 text-base font-normal text-gray-500 dark:text-gray-400 flex flex-row justify-between items-start w-[full] text-wrap break-all">
+                                  <p
+                                    className="max-w-[90%] text-sm whitespace-pre-wrap pb-0"
+                                    style={{ wordWrap: "break-word" }}
+                                  >
+                                    {log.note &&
+                                      typeof log.note.description ===
+                                        "string" &&
+                                      log.note.description}
+                                    {log.remark && log.remark.description}
+                                  </p>
+                                  {log?.note &&
+                                  Object.keys(log.note).length > 0 &&
+                                  log?.note?.rating !== 0 &&
+                                  log?.note?.rating ? (
                                     <div className="flex flex-row items-center">
-                                      {log.remark.rating}/5
+                                      {log?.note?.rating}/5
                                       <Star
                                         size={"15px"}
                                         className="mt-[1px]"
                                         style={{ color: "orange" }}
                                       />
                                     </div>
-                                  )}
-                              </div>
-                              <div className="mb-2">
-                                {log.title?.startsWith("Followup") &&
-                                  log.note &&
-                                  log.note.date && (
-                                    <FollowupDisplay
-                                      note={log.note.description as string}
-                                      date={new Date(log.note.date)}
-                                      showToolTip={false}
-                                    />
-                                  )}
-                                <AttachmentsPopover
-                                  attachments={log.attachments}
-                                  onMoreClick={() => null}
-                                />
-                              </div>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">
-                                {formatTime(log.dateTime)}{" "}
-                                {formatDate(log.dateTime)} | Candidate:{" "}
-                                {log.candidateData?.name || "N/A"}
-                              </p>
-                            </div>
-                          </div>
-                          {showDetails === log.candidateId + i && (
-                            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                              <div className="space-y-2">
-                                <h4 className="font-medium text-gray-700 dark:text-gray-300">
-                                  Candidate Details
-                                </h4>
-                                <p>
-                                  <span className="font-medium">Name:</span>{" "}
+                                  ) : null}
+                                  {log.remark &&
+                                    log.remark.rating &&
+                                    log.remark.rating != 0 && (
+                                      <div className="flex flex-row items-center">
+                                        {log.remark.rating}/5
+                                        <Star
+                                          size={"15px"}
+                                          className="mt-[1px]"
+                                          style={{ color: "orange" }}
+                                        />
+                                      </div>
+                                    )}
+                                </div>
+                                <div className="mb-2">
+                                  {log.title?.startsWith("Followup") &&
+                                    log.note &&
+                                    log.note.date && (
+                                      <FollowupDisplay
+                                        note={log.note.description as string}
+                                        date={new Date(log.note.date)}
+                                        showToolTip={false}
+                                      />
+                                    )}
+                                  <AttachmentsPopover
+                                    attachments={
+                                      Array.isArray(log.note?.description)
+                                        ? log.note.description.flatMap(
+                                            (
+                                              item: IinfoUpdateLog,
+                                              descIndex: number
+                                            ) =>
+                                              (item.attachments || []).map(
+                                                (file, fileIndex) => ({
+                                                  id: `${i}-${descIndex}-${fileIndex}-${file.name}`,
+                                                  name: file.name,
+                                                  url:
+                                                    file.url ||
+                                                    file.base64 ||
+                                                    "#",
+                                                  type: file.type,
+                                                  size: file.size,
+                                                })
+                                              )
+                                          )
+                                        : []
+                                    }
+                                    onMoreClick={() => null}
+                                  />
+                                </div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                  {formatTime(log.dateTime)}{" "}
+                                  {formatDate(log.dateTime)} | Candidate:{" "}
                                   {log.candidateData?.name || "N/A"}
                                 </p>
-                                <p>
-                                  <span className="font-medium">Email:</span>{" "}
-                                  {log.candidateData?.email || "N/A"}
-                                </p>
-                                <p>
-                                  <span className="font-medium">Location:</span>{" "}
-                                  {log.candidateData?.location || "N/A"}
-                                </p>
-                                <p>
-                                  <span className="font-medium">
-                                    Experience:
-                                  </span>{" "}
-                                  {log.candidateData?.experience || 0} years
-                                </p>
-                                <p>
-                                  <span className="font-medium">Skills:</span>{" "}
-                                  {log.candidateData?.skills?.join(", ") ||
-                                    "N/A"}
-                                </p>
-                                <p>
-                                  <span className="font-medium">Status:</span>{" "}
-                                  <span
-                                    className={`capitalize ${
-                                      log.candidateData?.status === "rejected"
-                                        ? "text-red-500"
-                                        : "text-green-500"
-                                    }`}
-                                  >
-                                    {log.candidateData?.status || "N/A"}
-                                  </span>
-                                </p>
-                                <a
-                                  target="_blank"
-                                  href={`/candidate/${log.candidateData._id}`}
-                                  className="text-sm text-primary hover:underline"
-                                >
-                                  View All Details
-                                </a>
-                              </div>
-                              <div className="space-y-2">
-                                <h4 className="font-medium text-gray-700 dark:text-gray-300">
-                                  Job Details
-                                </h4>
-                                <p>
-                                  <span className="font-medium">Title:</span>{" "}
-                                  {log.jobData?.title || "N/A"}
-                                </p>
-                                <p>
-                                  <span className="font-medium">Skills:</span>{" "}
-                                  {log.jobData?.skills?.join(", ") || "N/A"}
-                                </p>
-                                <p>
-                                  <span className="font-medium">
-                                    Experience:
-                                  </span>{" "}
-                                  {log.jobData?.experience || 0} years
-                                </p>
-                                <p>
-                                  <span className="font-medium">Status:</span>{" "}
-                                  <span
-                                    className={`capitalize ${
-                                      log.jobData?.status === "open"
-                                        ? "text-green-500"
-                                        : "text-gray-500"
-                                    }`}
-                                  >
-                                    {log.jobData?.status || "N/A"}
-                                  </span>
-                                </p>
-                              </div>
-                              <div className="space-y-2">
-                                <h4 className="font-medium text-gray-700 dark:text-gray-300">
-                                  Interviewer Details
-                                </h4>
-                                <p>
-                                  <span className="font-medium">
-                                    Current Interviewer:
-                                  </span>{" "}
-                                  {log.currentInterviewer?.length > 0
-                                    ? log.currentInterviewer
-                                        .map((i) => i.name)
-                                        .join(", ")
-                                    : "None"}
-                                </p>
-                                <p>
-                                  <span className="font-medium">
-                                    Previous Interviewer:
-                                  </span>{" "}
-                                  {log.previousInterviewer?.length > 0
-                                    ? log.previousInterviewer
-                                        .map((i) => i.name)
-                                        .join(", ")
-                                    : "None"}
-                                </p>
                               </div>
                             </div>
-                          )}
-                        </div>
-                      ))}
+                            {showDetails === log.candidateId + i && (
+                              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                <div className="space-y-2">
+                                  <h4 className="font-medium text-gray-700 dark:text-gray-300">
+                                    Candidate Details
+                                  </h4>
+                                  <p>
+                                    <span className="font-medium">Name:</span>{" "}
+                                    {log.candidateData?.name || "N/A"}
+                                  </p>
+                                  <p>
+                                    <span className="font-medium">Email:</span>{" "}
+                                    {log.candidateData?.email || "N/A"}
+                                  </p>
+                                  <p>
+                                    <span className="font-medium">
+                                      Location:
+                                    </span>{" "}
+                                    {log.candidateData?.location || "N/A"}
+                                  </p>
+                                  <p>
+                                    <span className="font-medium">
+                                      Experience:
+                                    </span>{" "}
+                                    {log.candidateData?.experience || 0} years
+                                  </p>
+                                  <p>
+                                    <span className="font-medium">Skills:</span>{" "}
+                                    {log.candidateData?.skills?.join(", ") ||
+                                      "N/A"}
+                                  </p>
+                                  <p>
+                                    <span className="font-medium">Status:</span>{" "}
+                                    <span
+                                      className={`capitalize ${
+                                        log.candidateData?.status === "rejected"
+                                          ? "text-red-500"
+                                          : "text-green-500"
+                                      }`}
+                                    >
+                                      {log.candidateData?.status || "N/A"}
+                                    </span>
+                                  </p>
+                                  <a
+                                    target="_blank"
+                                    href={`/candidate/${log.candidateData._id}`}
+                                    className="text-sm text-primary hover:underline"
+                                  >
+                                    View All Details
+                                  </a>
+                                </div>
+                                <div className="space-y-2">
+                                  <h4 className="font-medium text-gray-700 dark:text-gray-300">
+                                    Job Details
+                                  </h4>
+                                  <p>
+                                    <span className="font-medium">Title:</span>{" "}
+                                    {log.jobData?.title || "N/A"}
+                                  </p>
+                                  <p>
+                                    <span className="font-medium">Skills:</span>{" "}
+                                    {log.jobData?.skills?.join(", ") || "N/A"}
+                                  </p>
+                                  <p>
+                                    <span className="font-medium">
+                                      Experience:
+                                    </span>{" "}
+                                    {log.jobData?.experience || 0} years
+                                  </p>
+                                  <p>
+                                    <span className="font-medium">Status:</span>{" "}
+                                    <span
+                                      className={`capitalize ${
+                                        log.jobData?.status === "open"
+                                          ? "text-green-500"
+                                          : "text-gray-500"
+                                      }`}
+                                    >
+                                      {log.jobData?.status || "N/A"}
+                                    </span>
+                                  </p>
+                                </div>
+                                <div className="space-y-2">
+                                  <h4 className="font-medium text-gray-700 dark:text-gray-300">
+                                    Interviewer Details
+                                  </h4>
+                                  <p>
+                                    <span className="font-medium">
+                                      Current Interviewer:
+                                    </span>{" "}
+                                    {log.currentInterviewer?.length > 0
+                                      ? log.currentInterviewer
+                                          .map((i) => i.name)
+                                          .join(", ")
+                                      : "None"}
+                                  </p>
+                                  <p>
+                                    <span className="font-medium">
+                                      Previous Interviewer:
+                                    </span>{" "}
+                                    {log.previousInterviewer?.length > 0
+                                      ? log.previousInterviewer
+                                          .map((i) => i.name)
+                                          .join(", ")
+                                      : "None"}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                       <div id="log-sentinel" className="h-1" />
                     </div>
                   ) : (

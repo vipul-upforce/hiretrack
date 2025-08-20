@@ -364,6 +364,7 @@ export const LogsTable: React.FC<{
               {log.attachments && log.attachments.length > 0 ? (
                 <AttachmentsPopover
                   attachments={log.attachments.map((file, index) => {
+                    // debugger;
                     return {
                       id: `${i}-${logIndex}-${index}-${file.name}`,
                       name: file.name,

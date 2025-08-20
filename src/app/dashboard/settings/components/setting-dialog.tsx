@@ -84,20 +84,23 @@ const SettingDialog = ({
         size={
           setting.key === "ai-providers" || setting.key === "google-calendar"
             ? "2xl"
-            : undefined
+            : setting.key === "backups"
+              ? "lg"
+              : undefined
         }
-        className={`${setting.key === "portal" ||
+        className={`${
+          setting.key === "portal" ||
           setting.key === "templates" ||
           setting.key === "logs"
-          ? "max-w-7xl w-[90vw] min-h-[95vh] overflow-hidden flex flex-col"
-          : setting.key === "ai-providers"
-            ? "max-h-[90vh] p-0 overflow-hidden flex flex-col"
-            : setting.key === "google-calendar"
+            ? "max-w-7xl w-[90vw] min-h-[95vh] overflow-hidden flex flex-col"
+            : setting.key === "ai-providers"
               ? "max-h-[90vh] p-0 overflow-hidden flex flex-col"
-              : setting.key === "timezone"
-                ? "max-w-2xl w-[90vw] overflow-visible"
-                : "overflow-hidden"
-          }`}
+              : setting.key === "google-calendar"
+                ? "max-h-[90vh] p-0 overflow-hidden flex flex-col"
+                : setting.key === "timezone"
+                  ? "max-w-2xl w-[90vw] overflow-visible"
+                  : "overflow-hidden"
+        }`}
       >
         <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle>{setting.title}</DialogTitle>
@@ -106,11 +109,11 @@ const SettingDialog = ({
 
         {ComponentToRender && setting.key !== "tags" ? (
           setting.key === "timezone" ||
-            setting.key === "fs" ||
-            setting.key === "mail" ||
-            setting.key === "multipleorgs" ||
-            setting.key === "gemini" ||
-            setting.key === "twoFA" ? (
+          setting.key === "fs" ||
+          setting.key === "mail" ||
+          setting.key === "multipleorgs" ||
+          setting.key === "gemini" ||
+          setting.key === "twoFA" ? (
             <ComponentToRender onClose={onClose} isOpen={isOpen} />
           ) : setting.key === "ai-providers" ||
             setting.key === "google-calendar" ? (

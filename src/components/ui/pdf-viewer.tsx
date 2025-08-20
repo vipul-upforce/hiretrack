@@ -9,6 +9,7 @@ interface PDFViewerProps {
   files: Array<{
     name: string;
     url: string;
+    base64?: string;
     type: string;
     size?: number;
   }>;
@@ -18,6 +19,7 @@ export function PDFViewer({ files }: PDFViewerProps) {
   const [selectedFile, setSelectedFile] = useState<{
     name: string;
     url: string;
+    base64?: string;
     type: string;
     size?: number;
   } | null>(null);
@@ -104,7 +106,7 @@ export function PDFViewer({ files }: PDFViewerProps) {
               variant="ghost"
               size="icon"
               className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
-              onClick={() => downloadFile(file.url, file.name)}
+              onClick={() => downloadFile(file.url || file.base64, file.name)}
             >
               <Download className="h-4 w-4" />
             </Button>
@@ -130,10 +132,14 @@ export function PDFViewer({ files }: PDFViewerProps) {
 
             <button
               className="absolute right-12 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
-              onClick={() =>
+              onClick={() => {
+                // debugger;
                 selectedFile &&
-                downloadFile(selectedFile.url, selectedFile.name)
-              }
+                  downloadFile(
+                    selectedFile.url || selectedFile.base64,
+                    selectedFile.name
+                  );
+              }}
             >
               <Download className="h-4 w-4" />
             </button>
@@ -143,7 +149,7 @@ export function PDFViewer({ files }: PDFViewerProps) {
             {selectedFile?.type.startsWith("image/") ? (
               <div className="flex items-center justify-center min-h-full p-4">
                 <img
-                  src={selectedFile.url}
+                  src={selectedFile.url || selectedFile.base64}
                   alt={selectedFile.name}
                   className="max-w-full max-h-full object-contain rounded-lg"
                 />
@@ -151,7 +157,7 @@ export function PDFViewer({ files }: PDFViewerProps) {
             ) : (
               <div className="w-full h-full">
                 <iframe
-                  src={selectedFile?.url}
+                  src={selectedFile?.url || selectedFile?.base64}
                   className="w-full h-full"
                   title={selectedFile?.name}
                 />

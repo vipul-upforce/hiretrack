@@ -53,7 +53,11 @@ export async function GET(req: NextRequest) {
 
           // console.log("⛔⛔⛔ UNFORMATED DATE: ", stats.birthtime);
           // console.log("✅✅✅ FORMATED DATE: ", formattedDate);
-          const formattedDate = await getFormattedDate(req, stats.birthtime);
+          const formattedDate = await getFormattedDate(
+            req,
+            stats.birthtime,
+            true
+          );
           return {
             name: file.name,
             url: `/api/files?pathName=../backups/${encodeURIComponent(file.name)}`,

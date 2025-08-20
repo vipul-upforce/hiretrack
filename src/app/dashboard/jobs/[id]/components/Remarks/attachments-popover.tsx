@@ -73,6 +73,7 @@ const AttachmentsPopover = ({
             {attachments.length > 0 ? (
               <div className="space-y-2">
                 {visibleAttachments.map((file) => {
+                  // debugger;
                   const fileExtension = file.name
                     .split(".")
                     .pop()
@@ -118,7 +119,7 @@ const AttachmentsPopover = ({
                           </button>
                         ) : (
                           <a
-                            href={file.url}
+                            href={file.url || file.base64}
                             download={file.name}
                             className="text-xs text-blue-500 hover:underline"
                           >

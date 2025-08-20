@@ -26,8 +26,27 @@ export const settingsApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: "/api",
   }),
-  tagTypes: ["Settings"],
+  tagTypes: ["Settings", "Backups"],
   endpoints: (builder) => ({
+    getBackups: builder.query<any, void>({
+      query: () => "/backups",
+      providesTags: ["Backups"],
+    }),
+    takeSnapshot: builder.mutation<any, void>({
+      query: () => ({
+        url: "/db/take-snapshot",
+        method: "GET",
+      }),
+      invalidatesTags: ["Backups"],
+    }),
+    deleteBackup: builder.mutation<any, string>({
+      query: (fileName) => ({
+        url: "/db/take-snapshot",
+        method: "POST",
+        body: { fileName },
+      }),
+      invalidatesTags: ["Backups"],
+    }),
     getSMTPConfigs: builder.query({
       query: () => ({
         url: `/settings/smtp`,
@@ -202,6 +221,9 @@ export const settingsApi = createApi({
 });
 
 export const {
+  useGetBackupsQuery,
+  useTakeSnapshotMutation,
+  useDeleteBackupMutation,
   useGetSMTPConfigsQuery,
   useUpdateSMTPConfigsMutation,
   useGetFSConfigsQuery,
