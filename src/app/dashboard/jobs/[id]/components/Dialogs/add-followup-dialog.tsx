@@ -69,10 +69,7 @@ const AddFollowUpDialog = ({
           />
           <div className="relative" style={{ zIndex: 100 }}>
             <DateTimePicker
-              value={
-                newFollowUpDate ||
-                (candidate?.followUp?.date ? dayjs(candidate.followUp.date) : null)
-              }
+              value={newFollowUpDate !== undefined ? newFollowUpDate : (candidate?.followUp?.date ? dayjs(candidate.followUp.date) : null)}
               onChange={(date) => setNewFollowUpDate(date)}
             />
           </div>
@@ -84,6 +81,7 @@ const AddFollowUpDialog = ({
                 <Button
                   variant="ghost"
                   onClick={() => {
+                    setNewFollowUpDate(null);
                     handleRemoveFollowUp();
                     onAddingFollowup();
                   }}

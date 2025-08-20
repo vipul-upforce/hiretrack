@@ -8,23 +8,23 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  Calendar, 
-  Check, 
-  X, 
-  Copy, 
-  Info, 
-  Loader2, 
-  Eye, 
+import {
+  Calendar,
+  Check,
+  X,
+  Copy,
+  Info,
+  Loader2,
+  Eye,
   EyeOff,
   ExternalLink,
   LogOut,
   Sparkles
 } from "lucide-react";
-import { 
-  useGetGoogleCalendarConfigQuery, 
+import {
+  useGetGoogleCalendarConfigQuery,
   useUpdateGoogleCalendarMutation,
-  useDisconnectGoogleCalendarMutation 
+  useDisconnectGoogleCalendarMutation
 } from "@/lib/features/settings/settingsApi";
 import Confetti from "react-confetti";
 import { useWindowSize } from "@/hooks/use-window-size";
@@ -35,12 +35,12 @@ export default function GoogleCalendarSettings({ onClose }: { onClose: () => voi
   const { data, isLoading, refetch } = useGetGoogleCalendarConfigQuery(undefined);
   const [updateGoogleCalendar, { isLoading: isUpdating }] = useUpdateGoogleCalendarMutation();
   const [disconnectGoogleCalendar, { isLoading: isDisconnecting }] = useDisconnectGoogleCalendarMutation();
-  
+
   const [showClientSecret, setShowClientSecret] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [redirectUri, setRedirectUri] = useState("");
   const [authWindow, setAuthWindow] = useState<Window | null>(null);
-  
+
   const [formData, setFormData] = useState({
     clientId: "",
     clientSecret: "",
@@ -67,7 +67,7 @@ export default function GoogleCalendarSettings({ onClose }: { onClose: () => voi
     const handleMessage = (event: MessageEvent) => {
       console.log('Received message:', event.data); // Debug log
       if (event.origin !== window.location.origin) return;
-      
+
       if (event.data.type === 'google-calendar-connected') {
         console.log('Google Calendar connected, refetching...'); // Debug log
         setShowConfetti(true);
@@ -77,11 +77,11 @@ export default function GoogleCalendarSettings({ onClose }: { onClose: () => voi
           title: "Success!",
           description: "Google Calendar connected successfully",
         });
-        
+
         // Stop confetti after 5 seconds
         setTimeout(() => setShowConfetti(false), 5000);
       }
-      
+
       if (event.data.type === 'google-calendar-error') {
         console.error('Google Calendar error:', event.data.error); // Debug log
         toast({
@@ -110,7 +110,7 @@ export default function GoogleCalendarSettings({ onClose }: { onClose: () => voi
         clientId: formData.clientId,
         clientSecret: formData.clientSecret,
       }).unwrap();
-      
+
       toast({
         title: "Success",
         description: "Google Calendar credentials saved successfully",
@@ -129,7 +129,7 @@ export default function GoogleCalendarSettings({ onClose }: { onClose: () => voi
     const authWindowFeatures = 'width=600,height=700,left=100,top=100';
     const popup = window.open(authUrl, 'GoogleCalendarAuth', authWindowFeatures);
     setAuthWindow(popup);
-    
+
     // Fallback: Check if popup was closed manually and refetch
     const checkClosed = setInterval(() => {
       if (popup?.closed) {
@@ -166,7 +166,7 @@ export default function GoogleCalendarSettings({ onClose }: { onClose: () => voi
   return (
     <>
       {showConfetti && <Confetti width={width} height={height} />}
-      
+
       <div className="space-y-6">
         {/* Setup Instructions */}
         <Alert>
@@ -186,9 +186,9 @@ export default function GoogleCalendarSettings({ onClose }: { onClose: () => voi
               <li>Copy Client ID and Client Secret here</li>
               <li>Save credentials and try connecting</li>
             </ol>
-            <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm space-y-2">
-              <div><strong>⚠️ Critical Requirements:</strong></div>
-              <ul className="list-disc list-inside space-y-1 ml-2">
+            <div className="mt-3 p-3 bg-yellow-50 dark:bg-amber-900/20 border border-yellow-200 dark:border-amber-800/50 rounded text-sm space-y-2">
+              <div><strong className="dark:text-amber-200 ">⚠️ Critical Requirements:</strong></div>
+              <ul className="list-disc list-inside space-y-1 ml-2 dark:text-amber-300">
                 <li><strong>Enable Google Calendar API</strong> in API Library</li>
                 <li><strong>Set OAuth consent screen</strong> to External (unless internal org)</li>
                 <li><strong>Add test users</strong> if using external consent screen</li>
@@ -247,7 +247,7 @@ export default function GoogleCalendarSettings({ onClose }: { onClose: () => voi
                 disabled={isConnected}
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="clientSecret">Client Secret</Label>
               <div className="flex items-center gap-2">
@@ -271,8 +271,8 @@ export default function GoogleCalendarSettings({ onClose }: { onClose: () => voi
             </div>
 
             {!isConnected && (
-              <Button 
-                onClick={handleSaveCredentials} 
+              <Button
+                onClick={handleSaveCredentials}
                 disabled={!formData.clientId || !formData.clientSecret || isUpdating}
                 className="w-full"
               >
@@ -309,10 +309,10 @@ export default function GoogleCalendarSettings({ onClose }: { onClose: () => voi
                 </div>
               </div>
             )}
-            
+
             <div className="flex gap-2">
               {!isConnected ? (
-                <Button 
+                <Button
                   onClick={handleConnect}
                   disabled={!isConfigured}
                   className="flex-1"
@@ -322,7 +322,7 @@ export default function GoogleCalendarSettings({ onClose }: { onClose: () => voi
                   Connect Google Calendar
                 </Button>
               ) : (
-                <Button 
+                <Button
                   onClick={handleDisconnect}
                   disabled={isDisconnecting}
                   variant="outline"
@@ -355,7 +355,7 @@ export default function GoogleCalendarSettings({ onClose }: { onClose: () => voi
 
         <Separator />
 
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-2 pb-5">
           <Button variant="outline" onClick={onClose}>
             Close
           </Button>

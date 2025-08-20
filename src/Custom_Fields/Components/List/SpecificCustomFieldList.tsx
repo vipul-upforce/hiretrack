@@ -4,21 +4,21 @@ import { CustomField } from "../../Types/CustomField";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { 
-  Edit, 
-  Trash, 
-  GripVertical, 
-  Type, 
-  FileText, 
-  Hash, 
-  ChevronDown, 
-  List, 
-  Circle, 
-  CheckSquare, 
-  Calendar, 
-  Clock, 
-  CalendarClock, 
-  Lock, 
+import {
+  Edit,
+  Trash,
+  GripVertical,
+  Type,
+  FileText,
+  Hash,
+  ChevronDown,
+  List,
+  Circle,
+  CheckSquare,
+  Calendar,
+  Clock,
+  CalendarClock,
+  Lock,
   Upload,
   Eye,
   EyeOff,
@@ -317,7 +317,7 @@ function SpecificCustomFieldList({
           )}
         </Droppable>
       </DragDropContext>
-      
+
       {formOpen && (
         <AddSpecificCustomFieldForm
           isOpen={true}
@@ -383,10 +383,9 @@ export const CustomFieldItem = React.memo(
           <Card
             className={`
               w-full transition-all duration-200 border-l-4 border-l-blue-500 dark:border-l-blue-400 !bg-white dark:!bg-gray-900 !border !border-gray-200 dark:!border-gray-700/50 backdrop-blur-sm
-              ${
-                isDragging
-                  ? "!shadow-2xl ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-2 dark:ring-offset-gray-900 scale-105 border-l-blue-600 dark:border-l-blue-300"
-                  : "hover:!shadow-xl hover:border-l-blue-600 dark:hover:border-l-blue-300 hover:-translate-y-0.5 hover:!bg-gray-50 dark:hover:!bg-gray-800"
+              ${isDragging
+                ? "!shadow-2xl ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-2 dark:ring-offset-gray-900 scale-105 border-l-blue-600 dark:border-l-blue-300"
+                : "hover:!shadow-xl hover:border-l-blue-600 dark:hover:border-l-blue-300 hover:-translate-y-0.5 hover:!bg-gray-50 dark:hover:!bg-gray-800"
               }
             `}
           >
@@ -399,7 +398,7 @@ export const CustomFieldItem = React.memo(
                   >
                     <GripVertical className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  
+
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-3">
                       <div className="flex items-center gap-3">
@@ -416,7 +415,7 @@ export const CustomFieldItem = React.memo(
                         </div>
                       </div>
                     </div>
-                    
+
                     {/* Field Properties */}
                     <div className="grid grid-cols-2 gap-4 mt-3">
                       <div className="space-y-2">
@@ -426,23 +425,23 @@ export const CustomFieldItem = React.memo(
                             {field.required ? 'Required' : 'Optional'}
                           </span>
                         </div>
-                        
-                        {field.defaultValue && 
-                         field.defaultValue !== '' && 
-                         !(Array.isArray(field.defaultValue) && field.defaultValue.length === 0) && (
-                          <div className="flex items-center gap-2 text-sm">
-                            <Settings className="h-3 w-3 text-blue-500" />
-                            <span className="text-gray-600 dark:text-gray-300 truncate">
-                              Default: <span className="font-medium text-blue-600 dark:text-blue-400">
-                                {Array.isArray(field.defaultValue) ? 
-                                  field.defaultValue.slice(0, 2).join(', ') + (field.defaultValue.length > 2 ? '...' : '') : 
-                                  field.defaultValue
-                                }
+
+                        {field.defaultValue &&
+                          field.defaultValue !== '' &&
+                          !(Array.isArray(field.defaultValue) && field.defaultValue.length === 0) && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <Settings className="h-3 w-3 text-blue-500" />
+                              <span className="text-gray-600 dark:text-gray-300 truncate">
+                                Default: <span className="font-medium text-blue-600 dark:text-blue-400">
+                                  {Array.isArray(field.defaultValue) ?
+                                    field.defaultValue.slice(0, 2).join(', ') + (field.defaultValue.length > 2 ? '...' : '') :
+                                    field.defaultValue
+                                  }
+                                </span>
                               </span>
-                            </span>
-                          </div>
-                        )}
-                        
+                            </div>
+                          )}
+
                         {field.options && field.options.length > 0 && (
                           <div className="flex items-center gap-2 text-sm">
                             <List className="h-3 w-3 text-indigo-500" />
@@ -464,7 +463,7 @@ export const CustomFieldItem = React.memo(
                           </div>
                         )}
                       </div>
-                      
+
                       <div className="space-y-2">
                         {field.private && (
                           <div className="flex items-center gap-2 text-sm">
@@ -472,14 +471,14 @@ export const CustomFieldItem = React.memo(
                             <span className="text-gray-600 dark:text-gray-300">Hidden from candidates</span>
                           </div>
                         )}
-                        
+
                         {field.privateInt && (
                           <div className="flex items-center gap-2 text-sm">
                             <User className="h-3 w-3 text-purple-500" />
                             <span className="text-gray-600 dark:text-gray-300">Hidden from interviewers</span>
                           </div>
                         )}
-                        
+
                         {field.showOnCard && (
                           <div className="flex items-center gap-2 text-sm">
                             <CreditCard className="h-3 w-3 text-green-500" />
@@ -490,19 +489,19 @@ export const CustomFieldItem = React.memo(
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-1 ml-4">
                   {field.jobId && (
-                    <Badge variant="outline" className="text-xs px-2 py-1 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700/50">
+                    <Badge variant="outline" className="text-xs px-2 py-1 bg-purple-50 dark:bg-gray-800 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700/50">
                       Job Specific
                     </Badge>
                   )}
                   {field.candidateId && (
-                    <Badge variant="outline" className="text-xs px-2 py-1 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700/50">
+                    <Badge variant="outline" className="text-xs px-2 py-1 bg-green-50 dark:bg-gray-800 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700/50">
                       Candidate Specific
                     </Badge>
                   )}
-                  
+
                   <Button
                     variant="ghost"
                     size="sm"

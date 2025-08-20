@@ -43,6 +43,7 @@ const ManageTagsDialog = ({
   const [confirmDeleteDialogOpen, setConfirmDeleteDialogOpen] = useState(false);
   const [titleToDelete, setTitleToDelete] = useState("");
   const { toast } = useToast();
+
   useEffect(() => {
     if (tagsObj?.tags && orgTags.length === 0) {
       setOrgTags(tagsObj.tags);
@@ -100,7 +101,6 @@ const ManageTagsDialog = ({
       });
       onClose();
     } catch (error) {
-      console.error("Failed to update tags:", error);
       toast({
         title: "Error",
         description: "Failed to update tags. Please try again.",
@@ -149,7 +149,7 @@ const ManageTagsDialog = ({
                 />
                 <MuiColorInput
                   size="small"
-                  className="w-2/6"
+                  className="w-2/6 dark:[&_input]:!text-white dark:[&_fieldset]:!border-gray-500"
                   format="hex8"
                   value={newTagColor}
                   onChange={handleCPChange}
@@ -189,7 +189,7 @@ const ManageTagsDialog = ({
                           setConfirmDeleteDialogOpen(true);
                         }}
                         className="rounded-full  p-0 w-6 h-6"
-                        // className="bg-white text-black"
+                      // className="bg-white text-black"
                       >
                         <X />
                       </Button>

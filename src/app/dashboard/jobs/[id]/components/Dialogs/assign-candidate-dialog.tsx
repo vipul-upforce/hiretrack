@@ -531,8 +531,8 @@ export function AssignCandidateDialog({
                           <div className="ml-6 space-y-3">
                             {/* Meeting Date/Time Display */}
                             {values.time && (
-                              <div className="p-2 bg-blue-50 border border-blue-200 rounded-md">
-                                <div className="flex items-center gap-2 text-blue-800 text-sm">
+                              <div className="p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 rounded-md">
+                                <div className="flex items-center gap-2 text-blue-800 dark:text-blue-300 text-sm">
                                   <Calendar className="h-3 w-3" />
                                   <span className="font-medium">
                                     {values.time.format("dddd, MMMM D, YYYY")}{" "}
@@ -626,10 +626,10 @@ export function AssignCandidateDialog({
                                     return (
                                       <div
                                         key={email}
-                                        className="flex items-center gap-2 p-1.5 rounded border border-gray-200 bg-white text-xs"
+                                        className="flex items-center gap-2 p-1.5 rounded border border-gray-200 bg-background text-xs"
                                       >
-                                        <Mail className="h-3 w-3 text-gray-500" />
-                                        <span className="text-gray-900 truncate flex-1">
+                                        <Mail className="h-3 w-3 text-muted" />
+                                        <span className="text-muted truncate flex-1 ">
                                           {email}
                                         </span>
                                         {role && (
@@ -786,7 +786,7 @@ export function AssignCandidateDialog({
                                         (file: any, index: number) => (
                                           <div
                                             key={index}
-                                            className="flex items-center justify-between p-1.5 bg-gray-50 border border-gray-200 rounded text-xs"
+                                            className="flex items-center justify-between p-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 rounded text-xs"
                                           >
                                             <div className="flex items-center gap-1">
                                               <FileIcon className="w-3 h-3 text-gray-500" />
@@ -896,7 +896,7 @@ export function AssignCandidateDialog({
                                 (att: any, index: number) => (
                                   <div
                                     key={index}
-                                    className="flex items-center justify-between p-1.5 bg-gray-50 border border-gray-200 rounded text-xs"
+                                    className="flex items-center justify-between p-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 rounded text-xs"
                                   >
                                     <div className="flex items-center gap-1">
                                       <FileIcon className="w-3 h-3 text-gray-500" />
