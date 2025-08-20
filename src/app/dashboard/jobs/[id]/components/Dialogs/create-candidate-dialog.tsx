@@ -228,7 +228,7 @@ export function CreateCandidateDialog({
   const handleSubmit = async (values: CandidateFormValues) => {
     // Only show terms confirmation dialog for candidates applying through portal
     // Admin/HR users adding candidates internally should skip the terms dialog
-    if (user?.role === "candidate") {
+    if (user?.role === "candidate" || user?.role === "") {
       setPendingFormValues(values);
       setShowTermsDialog(true);
     } else {
@@ -342,7 +342,7 @@ export function CreateCandidateDialog({
       }
 
       // Step 3: Handle additional updates (if applicable)
-      if (user?.role === "candidate") {
+      if (user?.role === "candidate" || user?.role === "") {
         // sendAppliedEventMail(candidateId, applicationEventMailMutation);
         try {
           await updateAppliedApplication({ id: jobId });
@@ -392,7 +392,7 @@ export function CreateCandidateDialog({
       }
 
       setIsOpen(false);
-      if (user?.role === "candidate") {
+      if (user?.role === "candidate" || user?.role === "") {
         sendAppliedEventMail(candidateId, applicationEventMailMutation);
       }
       // toast({
@@ -445,7 +445,7 @@ export function CreateCandidateDialog({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        {user && user.role === "candidate" ? (
+        {user && (user.role === "candidate" || user?.role === "") ? (
           <button
             type="button"
             disabled={
@@ -477,7 +477,7 @@ export function CreateCandidateDialog({
       >
         <DialogHeader className="flex-shrink-0 px-6 py-4 border-b text-left">
           <DialogTitle className="text-left text-xl font-bold text-gray-900 dark:text-white">
-            {user && user.role === "candidate"
+            {user && (user.role === "candidate" || user?.role === "")
               ? "Add Application"
               : "Add New Candidate"}
           </DialogTitle>
@@ -539,7 +539,7 @@ export function CreateCandidateDialog({
                 >
                   {isSubmitting
                     ? "Saving..."
-                    : user && user.role === "candidate"
+                    : user && (user.role === "candidate" || user?.role === "")
                       ? "Apply"
                       : "Add Candidate"}
                 </Button>

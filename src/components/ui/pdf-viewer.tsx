@@ -22,13 +22,41 @@ export function PDFViewer({ files }: PDFViewerProps) {
     size?: number;
   } | null>(null);
 
-  const downloadFile = (url: string, filename: string) => {
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const downloadFile = async (url: string, filename: string) => {
+    if (!url || !filename) {
+      console.error("Invalid URL or filename provided");
+      return;
+    }
+
+    try {
+      // Fetch the file as a blob
+      const response = await fetch(url, {
+        method: "GET",
+        mode: "cors",
+        credentials: "same-origin",
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to fetch file: ${response.status} ${response.statusText}`
+        );
+      }
+
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename;
+
+      document.body.appendChild(link);
+      link.click();
+
+      // Clean up
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Download failed:", error);
+    }
   };
 
   return (
@@ -41,7 +69,9 @@ export function PDFViewer({ files }: PDFViewerProps) {
           >
             <div
               className="flex items-center gap-2 flex-1 cursor-pointer w-full"
-              onClick={() => setSelectedFile(file)}
+              onClick={() => {
+                setSelectedFile(file);
+              }}
             >
               <div className="p-3 bg-gray-200 dark:bg-gray-600 rounded-md">
                 <svg

@@ -363,13 +363,15 @@ export const LogsTable: React.FC<{
             <TableCell className="p-2 max-w-[250px] break-words whitespace-pre-wrap text-gray-700 dark:text-gray-300">
               {log.attachments && log.attachments.length > 0 ? (
                 <AttachmentsPopover
-                  attachments={log.attachments.map((file, index) => ({
-                    id: `${i}-${logIndex}-${index}-${file.name}`,
-                    name: file.name,
-                    url: file.url || "#",
-                    type: file.type,
-                    size: file.size,
-                  }))}
+                  attachments={log.attachments.map((file, index) => {
+                    return {
+                      id: `${i}-${logIndex}-${index}-${file.name}`,
+                      name: file.name,
+                      url: file.url || file.base64 || "#",
+                      type: file.type,
+                      size: file.size,
+                    };
+                  })}
                   onMoreClick={() => null}
                 />
               ) : (

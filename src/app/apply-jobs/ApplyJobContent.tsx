@@ -165,19 +165,46 @@ export default function ApplyJobsContent({
         }
 
         if (config?.portalHeader?.url && config?.portalFooter?.url) {
-          const [headerRes, footerRes] = await Promise.all([
-            fetch(config.portalHeader.url),
-            fetch(config.portalFooter.url),
-          ]);
-          const [headerHTML, footerHTML] = await Promise.all([
-            headerRes.text(),
-            footerRes.text(),
-          ]);
+          try {
+            const [headerRes, footerRes] = await Promise.all([
+              fetch(config.portalHeader.url),
+              fetch(config.portalFooter.url),
+            ]);
 
-          setLayoutState({
-            headerHTML,
-            footerHTML,
-          });
+            // Check if responses are OK
+            if (!headerRes.ok) {
+              throw new Error(
+                `Header fetch failed with status ${headerRes.status}`
+              );
+            }
+            if (!footerRes.ok) {
+              throw new Error(
+                `Footer fetch failed with status ${footerRes.status}`
+              );
+            }
+
+            const [headerHTML, footerHTML] = await Promise.all([
+              headerRes.text(),
+              footerRes.text(),
+            ]);
+
+            // Optional: Validate the response content (e.g., ensure it's not empty or malformed)
+            if (!headerHTML || !footerHTML) {
+              throw new Error("Empty or invalid HTML content received");
+            }
+
+            setLayoutState({
+              headerHTML,
+              footerHTML,
+            });
+          } catch (error) {
+            console.error("Failed to fetch header or footer:", error);
+            // Fallback behavior: Set default or empty state to avoid breaking the UI
+            setLayoutState({
+              headerHTML: "",
+              footerHTML: "",
+            });
+          }
         }
         return;
       }

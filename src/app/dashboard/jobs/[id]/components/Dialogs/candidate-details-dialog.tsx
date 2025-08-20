@@ -348,13 +348,15 @@ export function CandidateDetailsDialog({
             <MessageSquare className="h-4 w-4" />
             History
           </TabsTrigger>
-          <TabsTrigger
-            value="logs"
-            className={`flex items-center gap-2 data-[state=active]:bg-transparent data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 dark:data-[state=active]:border-blue-400 rounded-none h-full ${user?.role === "interviewer" ? "hidden" : ""}`}
-          >
-            <Clock className="h-4 w-4" />
-            Logs
-          </TabsTrigger>
+          {user?.role !== "candidate" && (
+            <TabsTrigger
+              value="logs"
+              className={`flex items-center gap-2 data-[state=active]:bg-transparent data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 dark:data-[state=active]:border-blue-400 rounded-none h-full ${user?.role === "interviewer" ? "hidden" : ""}`}
+            >
+              <Clock className="h-4 w-4" />
+              Logs
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <div className="flex-1 overflow-y-auto px-6 py-4">
@@ -802,24 +804,26 @@ export function CandidateDetailsDialog({
 
           <TabsContent value="history" className="space-y-6 mt-0">
             {/* Candidate History */}
-            {localCandidate.history && localCandidate.history.length > 0 && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  Candidate History
-                </h3>
-                {candidateDetailsFields
-                  .find((field) => field.id === "candidate-history")
-                  ?.render(
-                    localCandidate,
-                    user,
-                    validTimeLineItems,
-                    handleRemarkUpdate,
-                    setEditingRemark,
-                    setIsEditRemarkDialogOpen,
-                    false // showHeader = false
-                  )}
-              </div>
-            )}
+            {localCandidate.history &&
+              localCandidate.history.length > 0 &&
+              user?.role !== "candidate" && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    Candidate History
+                  </h3>
+                  {candidateDetailsFields
+                    .find((field) => field.id === "candidate-history")
+                    ?.render(
+                      localCandidate,
+                      user,
+                      validTimeLineItems,
+                      handleRemarkUpdate,
+                      setEditingRemark,
+                      setIsEditRemarkDialogOpen,
+                      false // showHeader = false
+                    )}
+                </div>
+              )}
 
             {/* Status History */}
             <div className="space-y-4">
@@ -844,7 +848,7 @@ export function CandidateDetailsDialog({
 
           <TabsContent value="logs" className="space-y-6 mt-0">
             {/* Show Logs Table - Direct content without button */}
-            {user?.role !== "interviewer" && (
+            {user?.role !== "interviewer" && user?.role !== "candidate" && (
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                   Update Logs
@@ -976,7 +980,7 @@ export function CandidateDetailsDialog({
           refetch={refetch}
           isOpen={isAssigning}
           onOpenChange={setIsAssigning}
-          onUpdate={onUpdate || (() => { })}
+          onUpdate={onUpdate || (() => {})}
           setLocalCandidate={setLocalCandidate}
           refetchAssignment={refetchAssignment}
           onSuccess={() => {
@@ -1026,7 +1030,6 @@ export function CandidateDetailsDialog({
             setIsAddingFollowUp(false);
             setNewFollowUp("");
             setNewFollowUpDate(null);
-
           }}
         />
       )}
@@ -1035,7 +1038,7 @@ export function CandidateDetailsDialog({
           candidate={localCandidate}
           isOpen={isEditing}
           onOpenChange={setIsEditing}
-          onUpdate={onUpdate || (() => { })}
+          onUpdate={onUpdate || (() => {})}
           refetchAssignment={refetchAssignment}
           onSuccess={async () => {
             await refetch();
@@ -1057,7 +1060,7 @@ export function CandidateDetailsDialog({
         onCancel={() => setConfirmUnassignOpen(false)}
         isLoading={isLoading}
         loadingText="Marking as done..."
-      // className="sm:max-w-[300px]"
+        // className="sm:max-w-[300px]"
       />
       {/* <ConfirmationDialog
         title="Mark as Done"

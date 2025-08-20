@@ -537,7 +537,7 @@ export function CandidateForm({
           <CustomFields formName="Candidate" isEditMode={isEditMode} />
 
           {/* Assignment Section - Mobile */}
-          {user && user.role !== "candidate" && (
+          {user && user.role !== "candidate" && user.role !== "" && (
             <div className="space-y-4 border-t pt-4">
               <Label className="text-lg font-semibold">Assignment</Label>
               <div className="space-y-4">
@@ -1313,7 +1313,7 @@ export function CandidateForm({
           <CustomFields formName="Candidate" isEditMode={isEditMode} />
 
           {/* Assignment Section - Desktop */}
-          {user && user.role !== "candidate" && (
+          {user && user.role !== "candidate" && user.role != "" && (
             <div className="space-y-4">
               <div className="pb-2 border-b border-gray-200 dark:border-gray-700">
                 <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">

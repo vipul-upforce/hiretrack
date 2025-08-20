@@ -178,7 +178,7 @@ export const candidateDetailsFields: FieldConfig[] = [
 
       return (
         <div className="space-y-4 border-t pt-4">
-          <h3 className="font-semibold">Interview Assignment</h3>
+          {/* <h3 className="font-semibold">Interview Assignment</h3> */}
           {hasValidInterviewer ? (
             <div className="space-y-2">
               <div className="flex justify-between">

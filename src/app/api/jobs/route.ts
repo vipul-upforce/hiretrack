@@ -16,7 +16,8 @@ export async function GET(request: NextRequest) {
     if (
       !session ||
       !session.user?.organizationId ||
-      session.user.role === "candidate"
+      session.user.role === "candidate" ||
+      session.user.role === ""
     ) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -138,7 +139,10 @@ export async function POST(request: NextRequest) {
           triggerUserName: userData.name,
         });
       } catch (notificationError) {
-        console.error("Failed to send job creation notification:", notificationError);
+        console.error(
+          "Failed to send job creation notification:",
+          notificationError
+        );
         // Don't fail the API call if notification fails
       }
     }

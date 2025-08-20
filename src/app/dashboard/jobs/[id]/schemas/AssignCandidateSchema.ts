@@ -7,6 +7,7 @@ export interface Attachment {
   id: string;
   name: string;
   url: string;
+  base64?: string;
   type: string;
   size: number;
 }
@@ -63,12 +64,14 @@ export const validationSchema = Yup.object({
   rating: Yup.number().nullable(),
   attachments: Yup.array(),
   scheduleGoogleMeet: Yup.boolean(),
-  meetDuration: Yup.number().when('scheduleGoogleMeet', {
+  meetDuration: Yup.number().when("scheduleGoogleMeet", {
     is: true,
     then: (schema) => schema.required("Please select meeting duration"),
     otherwise: (schema) => schema.nullable(),
   }),
   meetingNotes: Yup.string(),
   meetingAttachments: Yup.array(),
-  additionalGuests: Yup.array().of(Yup.string().email("Please enter valid email addresses")),
+  additionalGuests: Yup.array().of(
+    Yup.string().email("Please enter valid email addresses")
+  ),
 });
