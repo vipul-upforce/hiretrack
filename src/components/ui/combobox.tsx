@@ -133,8 +133,8 @@ export function Combobox({
           <div
             key={option.value}
             className={cn(
-              "flex cursor-pointer items-center px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground",
-              value === option.value ? "bg-accent text-accent-foreground font-medium" : "text-foreground"
+              "flex cursor-pointer items-center px-3 py-2 text-sm bg-accent hover:bg-accent hover:text-accent-foreground",
+              value === option.value ? "bg-accent hover:bg-accent text-accent-foreground font-medium" : "text-foreground"
             )}
             onClick={() => {
               console.log("Option selected:", option.value);
