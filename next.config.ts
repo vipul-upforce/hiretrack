@@ -13,7 +13,6 @@ const nextConfig: NextConfig = {
       },
     },
   },
-
   // Optimize images
   images: {
     domains: [
@@ -28,10 +27,8 @@ const nextConfig: NextConfig = {
     dangerouslyAllowSVG: true,
     contentDispositionType: "attachment",
   },
-
   // Disable React Strict Mode for faster development
   reactStrictMode: false,
-
   // Optimize webpack configuration
   webpack: (config, { dev, isServer }) => {
     // Optimize for development
@@ -41,7 +38,6 @@ const nextConfig: NextConfig = {
         aggregateTimeout: 300,
         ignored: ["**/node_modules", "**/.git", "**/.next"],
       };
-
       // Faster source maps in development
       config.devtool = "eval-source-map";
     }
@@ -61,21 +57,52 @@ const nextConfig: NextConfig = {
       };
     }
 
-    // Handle PDF.js worker
+    // Handle PDF.js worker - FIXED CONFIGURATION
+    if (isServer) {
+      // Server-side configuration for PDF.js
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        canvas: false,
+      };
+
+      // Ensure PDF.js worker can be found on server
+      config.externals = config.externals || [];
+      config.externals.push({
+        canvas: "canvas",
+      });
+    } else {
+      // Client-side configuration
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        canvas: false,
+        path: false,
+      };
+    }
+
+    // Handle PDF.js worker files
     config.module.rules.push({
       test: /\.node$/,
       use: "node-loader",
     });
 
-    // Add rule for PDF.js worker
+    // Add rule for PDF.js worker - IMPROVED
     config.module.rules.push({
       test: /pdf\.worker\.(min\.)?js/,
       type: "asset/resource",
+      generator: {
+        filename: "static/worker/[hash][ext][query]",
+      },
+    });
+
+    // Additional rule to handle PDF.js modules
+    config.module.rules.push({
+      test: /node_modules[\/\\]pdfjs-dist[\/\\].*\.js$/,
+      type: "javascript/auto",
     });
 
     return config;
   },
-
   // Optimize headers
   async headers() {
     return [
@@ -97,25 +124,20 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-
   // Optimize TypeScript compilation
   typescript: {
     // Disable TypeScript checking during build for faster builds
     ignoreBuildErrors: false,
   },
-
   // Optimize ESLint
   eslint: {
     // Disable ESLint during builds for faster builds
     ignoreDuringBuilds: true,
   },
-
   // Optimize output
   output: "standalone",
-
   // Optimize compression
   compress: true,
-
   // Optimize powered by header
   poweredByHeader: false,
 };

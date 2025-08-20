@@ -6,7 +6,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: "hr" | "interviewer" | "admin" | "candidate";
+  role: "hr" | "interviewer" | "admin" | "candidate" | "system";
   createdAt: string;
   isDeleted?: boolean;
 }

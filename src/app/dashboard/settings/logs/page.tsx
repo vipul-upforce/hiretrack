@@ -26,6 +26,7 @@ import { useTheme } from "@/components/theme-provider";
 import Link from "next/link";
 import withAuthGuard from "@/components/withAuthGuard";
 import { EmailHistory } from "../components/email-history";
+import { ICandidateHistory } from "@/lib/models/history";
 
 interface LogEntry {
   candidateId: string;
@@ -50,6 +51,7 @@ interface LogEntry {
   title: string;
   note: { description: string; date: string; rating: number; userId: string[] };
   attachments: any[];
+  checklistForm: ICandidateHistory["checklistForm"];
 }
 
 function SystemLogsPage() {
@@ -242,18 +244,25 @@ function SystemLogsPage() {
   }, [activeTab, selectedFile, searchQuery]);
 
   const renderEntryTitle = (log: LogEntry) => {
-    const assignmentBy = log.assignmentBy[0]?.name || "";
+    const assignmentBy =
+      (log.assignmentBy &&
+        log.assignmentBy.length > 0 &&
+        log.assignmentBy[0]?.name) ||
+      "";
     if (
       (log.title !== "" || !log.title) &&
       log.title !== "Assigned to Job" &&
-      !log.title?.includes("Followup")
+      !log.title?.includes("Followup") &&
+      !log.title?.startsWith("Email sent: ") &&
+      !log.title?.startsWith("Direct Email") &&
+      !log.checklistForm
     ) {
       return (
         <div className="flex flex-row items-start justify-between w-full">
           <div className="flex flex-row w-[85%]">
-            {log.currentInterviewer.length > 0 ? (
+            {log.currentInterviewer?.length > 0 ? (
               <>
-                {log.previousInterviewer.length > 0 ? (
+                {log.previousInterviewer?.length > 0 ? (
                   <p className="pl-1">
                     {`${log.previousInterviewer[0].name} → ${log.currentInterviewer[0].name}`}
                   </p>
@@ -276,7 +285,7 @@ function SystemLogsPage() {
               <p>{log.candidateData?.name} was Archived</p>
             ) : log.title === "Unarchived" ? (
               <p>{log.candidateData?.name} was Unarchived</p>
-            ) : log.previousInterviewer.length > 0 ? (
+            ) : log.previousInterviewer?.length > 0 ? (
               <p className="pl-1">
                 Unassigned from {log.previousInterviewer[0]?.name}
               </p>
@@ -763,7 +772,7 @@ function SystemLogsPage() {
                                   <span className="font-medium">
                                     Current Interviewer:
                                   </span>{" "}
-                                  {log.currentInterviewer.length > 0
+                                  {log.currentInterviewer?.length > 0
                                     ? log.currentInterviewer
                                         .map((i) => i.name)
                                         .join(", ")
@@ -773,7 +782,7 @@ function SystemLogsPage() {
                                   <span className="font-medium">
                                     Previous Interviewer:
                                   </span>{" "}
-                                  {log.previousInterviewer.length > 0
+                                  {log.previousInterviewer?.length > 0
                                     ? log.previousInterviewer
                                         .map((i) => i.name)
                                         .join(", ")

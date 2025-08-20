@@ -7,6 +7,7 @@ variables:
   VM_HOST: "$VM_HOST"
   SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar" # Defines the location of the analysis task cache
   GIT_DEPTH: "0" # Tells git to fetch all the branches of the project, required by the analysis task
+  NODE_OPTIONS: "--max-old-space-size=4096" # Increase heap size to 4GB
 
 # Cache node_modules to speed up builds
 cache:
@@ -17,7 +18,7 @@ stages:
   - scan
   - build
   - deploy
-
+  
 sonarcloud-check:
   stage: scan
   image:
@@ -39,12 +40,15 @@ sonarcloud-check:
 
 build:
   stage: build
+  variables:
+    NODE_OPTIONS: "--max-old-space-size=4096" # Job-specific memory increase
   script:
     # Debug: Check environment and variables
     - |
       echo "Pipeline started at $(date -u) UTC"
       echo "CI_PROJECT_URL=$CI_PROJECT_URL"
       echo "CI_COMMIT_REF_NAME=$CI_COMMIT_REF_NAME"
+      echo "NODE_OPTIONS=$NODE_OPTIONS"
       echo "Checking CI/CD variables:"
       echo "VM_HOST=$VM_HOST"
       echo "MONGODB_URI=$MONGODB_URI"
@@ -60,7 +64,8 @@ build:
     # Debug: Show .env contents (remove after testing)
     - cat .env
     - npm ci --legacy-peer-deps
-    - npx next build
+    # Build with explicit memory limit
+    - NODE_OPTIONS="--max-old-space-size=4096" npx next build
     # Create tarball in a temp directory, excluding .next and server.log
     - mkdir -p temp
     - tar --exclude='./.git' --exclude='./temp' -czvf temp/hiretrack-v1-gl.tar.gz .
@@ -71,7 +76,7 @@ build:
     paths:
       - hiretrack-v1-gl.tar.gz
   only:
-    - main
+    - main-backup
 
 deploy:
   stage: deploy
@@ -99,4 +104,4 @@ deploy:
       EOF
   environment: production
   only:
-    - main
+    - main-backup

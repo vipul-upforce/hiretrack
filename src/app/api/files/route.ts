@@ -44,6 +44,7 @@ export async function GET(request: NextRequest) {
       "../assets/images/",
       "../assets/documents/",
       "../assets/organizations/",
+      "../backups",
     ];
 
     // Normalize and validate the path

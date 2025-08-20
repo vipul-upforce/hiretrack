@@ -237,6 +237,7 @@ const RenderHistoryEntry = ({
       (interview.title !== "" || !interview.title) &&
       interview.title !== "Assigned to Job" &&
       !interview.title?.includes("Followup") &&
+      !interview.title?.startsWith("Direct Email") &&
       !interview.title?.startsWith("Email sent: ") &&
       !interview.checklistForm
     ) {

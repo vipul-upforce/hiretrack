@@ -1,3 +1,5 @@
+import { EvaluationResult } from "./evaluation-provider";
+
 export interface ProcessedResumeData {
   name: string;
   email?: string;
@@ -7,7 +9,7 @@ export interface ProcessedResumeData {
   currentCTC: number;
   expectedCTC: number;
   noticePeriod: number;
-  contact : string;
+  contact: string;
   scores?: {
     overall: number;
     experience: number;
@@ -22,8 +24,35 @@ export interface ProcessedResumeData {
 
 export interface AIProvider {
   name: string;
-  processResume(base64Resume: string, apiKey: string, model?: string): Promise<ProcessedResumeData>;
-  validateApiKey(apiKey: string, model?: string): Promise<{ isValid: boolean; error?: string }>;
+  processResume(
+    base64Resume: string,
+    apiKey: string,
+    model?: string
+  ): Promise<ProcessedResumeData>;
+  evaluateResume(
+    resumeBase64: string,
+    apiKey: string,
+    prompt: string,
+    model?: string
+  ): Promise<string>;
+  validateApiKey(
+    apiKey: string,
+    model?: string
+  ): Promise<{ isValid: boolean; error?: string }>;
 }
 
 export type AIProviderType = "gemini" | "openai" | "anthropic" | "perplexity";
+
+export interface AIProviderConfig {
+  api_key: string;
+  model: string;
+  customModel?: string;
+}
+
+export interface AIProviders {
+  activeProvider: AIProviderType;
+  gemini: AIProviderConfig;
+  openai: AIProviderConfig;
+  anthropic: AIProviderConfig;
+  perplexity: AIProviderConfig;
+}

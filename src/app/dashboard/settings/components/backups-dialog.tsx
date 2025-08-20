@@ -38,6 +38,7 @@ export default function BackupsDialog() {
       }
       const data = await res.json();
       setFiles(data.files || []);
+      console.log("######BACKUPS: ", files);
     } catch (err) {
       console.error("Failed to load backups:", err);
       toast({
@@ -52,6 +53,7 @@ export default function BackupsDialog() {
 
   useEffect(() => {
     fetchBackups();
+    console.log("######BACKUPS111111111: ", files);
   }, []);
 
   const takeSnapShot = async () => {
