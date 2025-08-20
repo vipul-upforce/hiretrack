@@ -25,7 +25,7 @@ const EditRemarkDialog = ({
   isEditRemarkDialogOpen: boolean;
   setIsEditRemarkDialogOpen: (x: boolean) => void;
   editingRemark: IEditRemark | null;
-  setEditingRemark: ({}: IEditRemark) => void;
+  setEditingRemark: ({ }: IEditRemark) => void;
   handleRemarkUpdate: (
     id: string,
     description: string,
@@ -47,9 +47,9 @@ const EditRemarkDialog = ({
     >
       <DialogContent className="sm:max-w-[400px]">
         <DialogHeader>
-          <DialogTitle>Edit Remark</DialogTitle>
+          <DialogTitle className="p-0">Edit Remark</DialogTitle>
         </DialogHeader>
-        <div className="">
+        <div className="p-6">
           <Textarea
             className="min-h-[120px] resize-none focus-visible:ring-offset-1"
             placeholder="Enter your remark here..."

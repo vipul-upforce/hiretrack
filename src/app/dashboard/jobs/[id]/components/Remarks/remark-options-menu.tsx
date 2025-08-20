@@ -39,7 +39,7 @@ export function RemarkOptionsMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className={`opacity-0 group-hover:opacity-100 transition duration-300 p-1.5 rounded-full hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300 ${isOpen ? "opacity-100" : ""}`}
+        className={`opacity-0 group-hover:opacity-100 transition duration-300 p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-300 ${isOpen ? "opacity-100" : ""}`}
       >
         <MoreVertical className="h-4 w-4" />
         <span className="sr-only">Open options</span>
@@ -70,7 +70,7 @@ export function RemarkOptionsMenu({
         )}
 
         <div
-          className="flex items-center justify-between px-2 py-2 cursor-pointer hover:bg-gray-100"
+          className="flex items-center justify-between px-2 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
           onClick={handleEdit}
         >
           Edit
