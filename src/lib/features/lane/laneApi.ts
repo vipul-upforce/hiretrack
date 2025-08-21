@@ -9,8 +9,8 @@ export const laneApi = createApi({
     getLanes: builder.query({
       query: ({ userId, jobId }: { userId?: string; jobId?: string }) => {
         const params = new URLSearchParams();
-        if (userId) params.append('userId', userId);
-        if (jobId) params.append('jobId', jobId);
+        if (userId) params.append("userId", userId);
+        if (jobId) params.append("jobId", jobId);
         return `lanes?${params.toString()}`;
       },
       providesTags: ["Lane"],
@@ -55,10 +55,13 @@ export const laneApi = createApi({
     // NEW: Delete job-specific lane
     deleteJobLane: builder.mutation<
       void,
-      { jobId: string; laneName: string }
+      { jobId: string; laneName: string; migrationLane?: string }
     >({
-      query: ({ jobId, laneName }) => ({
+      query: ({ jobId, laneName, migrationLane }) => ({
         url: `jobs/${jobId}/lanes/${laneName}`,
+        body: {
+          migrationLane,
+        },
         method: "DELETE",
       }),
       invalidatesTags: ["Lane"],

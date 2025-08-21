@@ -8,6 +8,8 @@ import {
   useEditLaneMutation,
   useRenameJobLaneMutation,
 } from "@/lib/features/lane/laneApi";
+import { useState } from "react";
+
 interface UseKanbanBoardProps {
   columns: CandidateColumn[];
   setColumns: (columns: CandidateColumn[]) => void;
@@ -32,6 +34,9 @@ export const useKanbanBoard = ({
   const [deleteLane] = useDeleteLaneMutation(); // Keep for backward compatibility
   const [deleteJobLane] = useDeleteJobLaneMutation(); // NEW: Job-specific deletion
   const [renameJobLane] = useRenameJobLaneMutation(); // NEW: Job-specific renaming
+  const [migrationLanes, setMigrationLanes] = useState<string[]>([]);
+  const [isMigrationDialogOpen, setIsMigrationDialogOpen] = useState(false);
+  const [laneToDelete, setLaneToDelete] = useState<string | null>(null);
 
   const updateLanesOrder = async (newColumns: CandidateColumn[]) => {
     const lansArray = newColumns.map((column) => column.id);
@@ -41,16 +46,18 @@ export const useKanbanBoard = ({
         userId: user?.id || "",
         lanes: lansArray,
       };
-      
+
       if (jobId) {
         updateData.jobId = jobId;
       }
-      
+
       await updateLanes(updateData).unwrap();
-      
+
       toast({
         title: "Success",
-        description: jobId ? "Job lanes updated successfully" : "Lanes updated successfully",
+        description: jobId
+          ? "Job lanes updated successfully"
+          : "Lanes updated successfully",
       });
     } catch (error: unknown) {
       if (error instanceof Error) {
@@ -69,7 +76,7 @@ export const useKanbanBoard = ({
     if (isDuplicate) {
       toast({
         title: "Error",
-        description: `Lane with title "${title}" already exists.`,
+        description: `Lane with title \"${title}\" already exists.`, // Corrected escaping for consistency
         variant: "destructive",
       });
       return;
@@ -117,20 +124,17 @@ export const useKanbanBoard = ({
           variant: "default",
         });
       }
-      
+
       const newColumns = columns.filter((col) => col.id !== laneId);
       setColumns(newColumns);
-    } catch (err: unknown) {
-      if (err && typeof err === "object" && "data" in err) {
+    } catch (err: any) {
+      if (err.data?.migrationNeeded) {
+        setLaneToDelete(laneId);
+        setMigrationLanes(err.data.lanes);
+        setIsMigrationDialogOpen(true);
+      } else {
         const errorMessage =
           (err.data as { error: string }).error || "Failed to delete the lane";
-        toast({
-          title: "Error",
-          description: errorMessage,
-          variant: "destructive",
-        });
-      } else {
-        const errorMessage = "An unknown error occurred";
         toast({
           title: "Error",
           description: errorMessage,
@@ -142,9 +146,40 @@ export const useKanbanBoard = ({
     await refetch();
   };
 
+  const handleMigrateAndDeleteLane = async (migrationLane: string) => {
+    if (!user?.id || !laneToDelete) return;
+
+    try {
+      if (jobId) {
+        await deleteJobLane({
+          jobId,
+          laneName: laneToDelete,
+          migrationLane,
+        }).unwrap();
+        toast({
+          title: "Lane deleted",
+          description: "Lane deleted and candidates migrated successfully",
+          variant: "default",
+        });
+      }
+      const newColumns = columns.filter((col) => col.id !== laneToDelete);
+      setColumns(newColumns);
+    } catch (err: any) {
+      const errorMessage =
+        (err.data as { error: string }).error || "Failed to delete the lane";
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+    setIsMigrationDialogOpen(false);
+    await refetch();
+  };
+
   const handleEditLane = async (prevLaneId: string, laneId: string) => {
     if (!user?.id || !prevLaneId || !laneId) return;
-    
+
     try {
       // NEW: Use job-specific renaming if jobId is provided
       if (jobId) {
@@ -200,5 +235,11 @@ export const useKanbanBoard = ({
     handleEditLaneClick,
     handleEditLane,
     handleConfirmDeleteLane,
+    handleMigrateAndDeleteLane,
+    migrationLanes,
+    isMigrationDialogOpen,
+    setIsMigrationDialogOpen,
+    laneToDelete,
+    setLaneToDelete,
   };
 };

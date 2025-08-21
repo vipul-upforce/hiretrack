@@ -43,6 +43,14 @@ export async function DELETE(
     }
 
     const { id: jobId, laneName } = await params;
+    let migrationLane: string | undefined;
+
+    try {
+      const body = await request.json();
+      migrationLane = body.migrationLane;
+    } catch (error) {
+      // Ignore error if request body is empty
+    }
 
     // Check if lane is restricted
     if (RESTRICTED_LANES.includes(laneName)) {
@@ -86,22 +94,22 @@ export async function DELETE(
     });
 
     if (candidatesInLane.length > 0) {
-      // Get the next available lane (defaulting to 'applied')
-      const fallbackLane = currentLanes.includes("applied")
-        ? "applied"
-        : currentLanes[0];
-
-      return NextResponse.json(
-        {
-          error: "Cannot delete lane: candidates are currently in this lane",
-          details: {
-            candidateCount: candidatesInLane.length,
-            candidateNames: candidatesInLane.slice(0, 5).map((c) => c.name), // Show first 5 names
-            fallbackLane,
-            suggestion: `Move ${candidatesInLane.length} candidate(s) to another lane before deleting`,
+      if (!migrationLane) {
+        const otherLanes = currentLanes.filter((lane) => lane !== laneName);
+        return NextResponse.json(
+          {
+            error: "Cannot delete lane: candidates are currently in this lane",
+            migrationNeeded: true,
+            lanes: otherLanes,
           },
-        },
-        { status: 400 }
+          { status: 400 }
+        );
+      }
+
+      // Migration lane is provided, so update candidates
+      await Candidate.updateMany(
+        { jobId: jobId, organizationId, status: laneName },
+        { $set: { status: migrationLane } }
       );
     }
 
