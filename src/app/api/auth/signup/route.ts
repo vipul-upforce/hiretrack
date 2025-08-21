@@ -18,7 +18,15 @@ const DEFAULT_LANES = [
 async function handleSignup(req: NextRequest) {
   try {
     await dbConnect();
-    var { email, password, name, role, organizationId, triggerUserId, triggerUserName } = await req.json();
+    var {
+      email,
+      password,
+      name,
+      role,
+      organizationId,
+      triggerUserId,
+      triggerUserName,
+    } = await req.json();
 
     if (!(organizationId instanceof mongoose.Types.ObjectId)) {
       organizationId = new mongoose.Types.ObjectId(organizationId);
@@ -63,13 +71,13 @@ async function handleSignup(req: NextRequest) {
     });
 
     // Create default lanes for the user
-    await Lane.create({
-      userId: user._id,
-      lanes: DEFAULT_LANES,
-    });
+    // await Lane.create({
+    //   userId: user._id,
+    //   lanes: DEFAULT_LANES,
+    // });
 
     // Send user creation notification (only if triggerUser is provided, indicating this is an admin action)
-    if (triggerUserId && triggerUserName && role !== 'candidate') {
+    if (triggerUserId && triggerUserName && role !== "candidate") {
       try {
         await NotificationService.notifyUserAdded({
           organizationId: organizationId.toString(),
@@ -81,7 +89,10 @@ async function handleSignup(req: NextRequest) {
           triggerUserName: triggerUserName,
         });
       } catch (notificationError) {
-        console.error("Failed to send user creation notification:", notificationError);
+        console.error(
+          "Failed to send user creation notification:",
+          notificationError
+        );
         // Don't fail the API call if notification fails
       }
     }

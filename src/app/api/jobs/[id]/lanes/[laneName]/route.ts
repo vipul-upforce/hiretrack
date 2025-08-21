@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { Job, Organization, Candidate } from "@/lib/mongodb";
 import { auth } from "@/lib/auth";
+import { broadcastLaneUpdate } from "@/lib/broadcast/broadCastCandidate";
 
 const DEFAULT_LANES = [
   "applied",
-  "screening", 
+  "screening",
   "shortlisted",
   "processing",
   "accepted",
-  "rejected"
+  "rejected",
 ];
 
 const RESTRICTED_LANES = ["applied", "accepted", "rejected"];
@@ -53,14 +54,11 @@ export async function DELETE(
 
     const job = await Job.findOne({
       _id: jobId,
-      organizationId: session.user.organizationId
+      organizationId: session.user.organizationId,
     });
 
     if (!job) {
-      return NextResponse.json(
-        { error: "Job not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 
     // Get current lanes
@@ -68,62 +66,66 @@ export async function DELETE(
     if (job.useCustomLanes && job.lanes) {
       currentLanes = [...job.lanes];
     } else {
-      const organization = await Organization.findById(session.user.organizationId);
+      const organization = await Organization.findById(
+        session.user.organizationId
+      );
       currentLanes = [...(organization?.defaultLanes || DEFAULT_LANES)];
     }
 
     // Check if lane exists
     if (!currentLanes.includes(laneName)) {
-      return NextResponse.json(
-        { error: "Lane not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Lane not found" }, { status: 404 });
     }
 
+    const organizationId = session.user.organizationId;
     // Check if any candidates are currently in this lane
     const candidatesInLane = await Candidate.find({
       jobId: jobId,
-      organizationId: session.user.organizationId,
-      status: laneName
+      organizationId,
+      status: laneName,
     });
 
     if (candidatesInLane.length > 0) {
       // Get the next available lane (defaulting to 'applied')
-      const fallbackLane = currentLanes.includes('applied') ? 'applied' : currentLanes[0];
-      
-      return NextResponse.json({
-        error: "Cannot delete lane: candidates are currently in this lane",
-        details: {
-          candidateCount: candidatesInLane.length,
-          candidateNames: candidatesInLane.slice(0, 5).map(c => c.name), // Show first 5 names
-          fallbackLane,
-          suggestion: `Move ${candidatesInLane.length} candidate(s) to another lane before deleting`
-        }
-      }, { status: 400 });
+      const fallbackLane = currentLanes.includes("applied")
+        ? "applied"
+        : currentLanes[0];
+
+      return NextResponse.json(
+        {
+          error: "Cannot delete lane: candidates are currently in this lane",
+          details: {
+            candidateCount: candidatesInLane.length,
+            candidateNames: candidatesInLane.slice(0, 5).map((c) => c.name), // Show first 5 names
+            fallbackLane,
+            suggestion: `Move ${candidatesInLane.length} candidate(s) to another lane before deleting`,
+          },
+        },
+        { status: 400 }
+      );
     }
 
     // Remove lane from the list
-    const newLanes = currentLanes.filter(lane => lane !== laneName);
+    const newLanes = currentLanes.filter((lane) => lane !== laneName);
 
     // Update job
     const updatedJob = await Job.findByIdAndUpdate(
       jobId,
-      { 
-        $set: { 
+      {
+        $set: {
           lanes: newLanes,
-          useCustomLanes: true // Ensure we're using custom lanes after modification
-        } 
+          useCustomLanes: true, // Ensure we're using custom lanes after modification
+        },
       },
       { new: true }
     );
-
+    broadcastLaneUpdate(organizationId, newLanes, jobId);
     return NextResponse.json({
       message: "Lane deleted successfully",
       jobId: updatedJob._id,
       lanes: updatedJob.lanes,
-      deletedLane: laneName
+      deletedLane: laneName,
     });
-
   } catch (error) {
     console.error("Delete job lane error:", error);
     return NextResponse.json(
@@ -176,7 +178,10 @@ export async function PATCH(
     const validLaneNameRegex = /^[a-zA-Z0-9\s\-_]+$/;
     if (!validLaneNameRegex.test(newLaneName)) {
       return NextResponse.json(
-        { error: "Invalid lane name. Only alphanumeric characters, spaces, hyphens, and underscores allowed." },
+        {
+          error:
+            "Invalid lane name. Only alphanumeric characters, spaces, hyphens, and underscores allowed.",
+        },
         { status: 400 }
       );
     }
@@ -191,14 +196,11 @@ export async function PATCH(
 
     const job = await Job.findOne({
       _id: jobId,
-      organizationId: session.user.organizationId
+      organizationId: session.user.organizationId,
     });
 
     if (!job) {
-      return NextResponse.json(
-        { error: "Job not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 
     // Get current lanes
@@ -206,16 +208,15 @@ export async function PATCH(
     if (job.useCustomLanes && job.lanes) {
       currentLanes = [...job.lanes];
     } else {
-      const organization = await Organization.findById(session.user.organizationId);
+      const organization = await Organization.findById(
+        session.user.organizationId
+      );
       currentLanes = [...(organization?.defaultLanes || DEFAULT_LANES)];
     }
 
     // Check if old lane exists
     if (!currentLanes.includes(laneName)) {
-      return NextResponse.json(
-        { error: "Lane not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Lane not found" }, { status: 404 });
     }
 
     // Check if new lane name already exists
@@ -227,38 +228,40 @@ export async function PATCH(
     }
 
     // Update lane name in the array
-    const newLanes = currentLanes.map(lane => lane === laneName ? newLaneName : lane);
+    const newLanes = currentLanes.map((lane) =>
+      lane === laneName ? newLaneName : lane
+    );
 
     // Update job
     const updatedJob = await Job.findByIdAndUpdate(
       jobId,
-      { 
-        $set: { 
+      {
+        $set: {
           lanes: newLanes,
-          useCustomLanes: true // Ensure we're using custom lanes after modification
-        } 
+          useCustomLanes: true, // Ensure we're using custom lanes after modification
+        },
       },
       { new: true }
     );
 
+    const organizationId = session.user.organizationId;
     // Update all candidates with the old status to the new status
     await Candidate.updateMany(
-      { 
+      {
         jobId: jobId,
-        organizationId: session.user.organizationId,
-        status: laneName 
+        organizationId,
+        status: laneName,
       },
       { $set: { status: newLaneName } }
     );
-
+    broadcastLaneUpdate(organizationId, newLanes, jobId);
     return NextResponse.json({
       message: "Lane renamed successfully",
       jobId: updatedJob._id,
       lanes: updatedJob.lanes,
       oldLaneName: laneName,
-      newLaneName: newLaneName
+      newLaneName: newLaneName,
     });
-
   } catch (error) {
     console.error("Rename job lane error:", error);
     return NextResponse.json(
