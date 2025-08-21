@@ -10,50 +10,40 @@ export function broadcastCandidateUpdate(
   const orgId = candidate.organizationId;
   const orgClients = global.sseClients?.get(orgId);
   if (!orgClients) return;
-  // let role = null;
-  // if (req) {
-  //   const cookie = await auth(req);
-  //   role = cookie?.user.role;
-  // }
+
   const encoder = new TextEncoder();
   orgClients?.forEach((client: any) => {
-    // const candidateToBeSent = {
-    //   ...candidate,
-    //   currentCTC: role === "interviewer" ? undefined : candidate.currentCTC,
-    //   expectedCTC: role === "interviewer" ? undefined : candidate.expectedCTC,
-    //   customFields: role === "interviewer" ? undefined : candidate.customFields,
-    //   history: candidate.history?.filter((entry) =>
-    //     role === "admin" || role === "hr"
-    //       ? true
-    //       : !entry.remark?.id || !entry.remark.isPrivate
-    //   ),
-    // };
-    // console.log("CANDIDATE HISTORY: ", candidateToBeSent.history);
-    const encodedSSE = signToken(candidate);
-    const data = `data: ${JSON.stringify({ type: "candidateUpdate", candidate: encodedSSE })}\n\n`;
-    // console.log("🥶🥶🥶🥶 caniddte in: ", candidate);
-    // console.log(data);
-    const clientsCount = Array.from(global.sseClients.entries()).length;
-    // console.log("⛔⛔⛔⛔ ", candidate?.followUp);
-    client.controller.enqueue(encoder.encode(data));
-    client.controller.enqueue(
-      encoder.encode(
-        `data: ${JSON.stringify({ type: "clients", clients: clientsCount })}\n\n`
-      )
-    );
+    try {
+      const encodedSSE = signToken(candidate);
+      const data = `data: ${JSON.stringify({ type: "candidateUpdate", candidate: encodedSSE })}\n\n`;
+      const clientsCount = Array.from(global.sseClients.entries()).length;
+      client.controller.enqueue(encoder.encode(data));
+      client.controller.enqueue(
+        encoder.encode(
+          `data: ${JSON.stringify({ type: "clients", clients: clientsCount })}\n\n`
+        )
+      );
+    } catch (error) {
+      console.error(`Failed to send message to client ${client.id}:`, error);
+    }
   });
 }
 export function broadcastMultipleCandidateUpdate(
   candidates: (ICandidate & { history?: ICandidateHistory[] })[]
 ) {
-  const encodedSSE = signToken(candidates);
   const orgId = candidates[0]?.organizationId;
   const orgClients = global.sseClients?.get(orgId);
   if (!orgClients) return;
+
   const encoder = new TextEncoder();
   orgClients?.forEach((client: any) => {
-    const data = `data: ${JSON.stringify({ type: "multipleCandidateUpdate", candidates: encodedSSE })}\n\n`;
-    client.controller.enqueue(encoder.encode(data));
+    try {
+      const encodedSSE = signToken(candidates);
+      const data = `data: ${JSON.stringify({ type: "multipleCandidateUpdate", candidates: encodedSSE })}\n\n`;
+      client.controller.enqueue(encoder.encode(data));
+    } catch (error) {
+      console.error(`Failed to send message to client ${client.id}:`, error);
+    }
   });
 }
 export function broadcastLaneUpdate(
@@ -61,20 +51,23 @@ export function broadcastLaneUpdate(
   lanes: string[],
   jobId?: string
 ) {
-  // console.log("ORGID: ", orgId);
   const orgClients = global.sseClients?.get(orgId);
-  // console.log("ORGID: ", orgId, orgClients);
   if (!orgClients) return;
+
   const encoder = new TextEncoder();
   orgClients?.forEach((client: any) => {
-    const data = `data: ${JSON.stringify({ type: "lanesUpdate", lanes })}\n\n`;
-    const clientsCount = Array.from(global.sseClients.entries()).length;
+    try {
+      const data = `data: ${JSON.stringify({ type: "lanesUpdate", lanes })}\n\n`;
+      const clientsCount = Array.from(global.sseClients.entries()).length;
 
-    client.controller.enqueue(encoder.encode(data));
-    client.controller.enqueue(
-      encoder.encode(
-        `data: ${JSON.stringify({ type: "clients", clients: clientsCount })}\n\n`
-      )
-    );
+      client.controller.enqueue(encoder.encode(data));
+      client.controller.enqueue(
+        encoder.encode(
+          `data: ${JSON.stringify({ type: "clients", clients: clientsCount })}\n\n`
+        )
+      );
+    } catch (error) {
+      console.error(`Failed to send message to client ${client.id}:`, error);
+    }
   });
 }
