@@ -96,7 +96,7 @@ export const candidateApi = createApi({
       query: () => "/candidates/assignments",
       providesTags: ["Candidate"],
     }),
-    filterCandidates: builder.mutation({
+    filterCandidates: builder.query({
       query: (data) => ({
         url: `/candidates/filter?page=${data.page}&limit=${data.limit}`,
         method: "POST",
@@ -188,7 +188,7 @@ export const {
   useUpdateAppliedApplicationMutation,
   useUpdateCandidateHistoryMutation,
   useDeleteCandidateMutation,
-  useFilterCandidatesMutation,
+  useFilterCandidatesQuery,
   useLazyFetchCandidatesQuery,
   useCandidateSignupMutation,
   useApplicationEventMailMutation,
