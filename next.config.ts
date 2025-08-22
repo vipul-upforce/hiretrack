@@ -122,6 +122,38 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        // Allow apply-jobs route to be embedded in iframes
+        source: "/apply-jobs",
+        headers: [
+          // Remove X-Frame-Options to allow embedding
+          { key: "X-Frame-Options", value: "ALLOWALL" },
+          // Set Content Security Policy to allow framing from any origin
+          { 
+            key: "Content-Security-Policy", 
+            value: "frame-ancestors *;" 
+          },
+          // Additional CORS headers for embedded content
+          { key: "Access-Control-Allow-Origin", value: "*" },
+          { key: "Access-Control-Allow-Credentials", value: "true" },
+        ],
+      },
+      {
+        // Also allow API routes used by apply-jobs when embedded
+        source: "/api/jobs/open-jobs",
+        headers: [
+          { key: "Access-Control-Allow-Origin", value: "*" },
+          { key: "Access-Control-Allow-Credentials", value: "true" },
+        ],
+      },
+      {
+        // Allow candidate-related API routes for embedded portal
+        source: "/api/candidates/guest-apply",
+        headers: [
+          { key: "Access-Control-Allow-Origin", value: "*" },
+          { key: "Access-Control-Allow-Credentials", value: "true" },
+        ],
+      },
     ];
   },
   // Optimize TypeScript compilation
