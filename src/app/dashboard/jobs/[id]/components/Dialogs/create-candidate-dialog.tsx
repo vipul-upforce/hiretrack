@@ -187,9 +187,19 @@ export function CreateCandidateDialog({
   const [showTermsDialog, setShowTermsDialog] = useState(false);
   const [pendingFormValues, setPendingFormValues] =
     useState<CandidateFormValues | null>(null);
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
+    
+    const checkScreenSize = () => {
+      setIsSmallScreen(window.innerWidth < 1024);
+    };
+
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    
+    return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
   // useEffect(() => {
@@ -473,7 +483,22 @@ export function CreateCandidateDialog({
         )}
       </DialogTrigger>
       <DialogContent
-        className={`sm:max-w-[80vw] xl:max-w-[65vw] h-[100vh] sm:h-[90vh] p-0 overflow-hidden flex flex-col`}
+        className={`${isSmallScreen ? 'fixed inset-0 w-screen h-screen max-w-none max-h-none m-0 p-0 rounded-none border-0' : 'lg:max-w-[80vw] xl:max-w-[65vw] lg:h-[90vh] lg:border lg:rounded-lg'} p-0 overflow-hidden flex flex-col`}
+        style={isSmallScreen ? {
+          position: 'fixed',
+          inset: '0',
+          transform: 'none',
+          left: '0',
+          top: '0',
+          width: '100vw',
+          height: '100vh',
+          maxWidth: 'none',
+          maxHeight: 'none',
+          margin: '0',
+          borderRadius: '0',
+          border: 'none',
+          zIndex: 9999
+        } as React.CSSProperties : undefined}
       >
         <DialogHeader className="flex-shrink-0 px-6 py-4 border-b text-left">
           <DialogTitle className="text-left text-xl font-bold text-gray-900 dark:text-white">

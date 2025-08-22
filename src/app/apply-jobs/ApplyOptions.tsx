@@ -95,8 +95,8 @@ export default function ApplyOptions({
         className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
         aria-hidden="true"
       />
-      <div className="fixed inset-0 flex items-center justify-center p-4 z-50">
-        <Dialog.Panel className="relative w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-gray-900 p-6 text-left align-middle shadow-2xl transition-all border border-gray-200 dark:border-gray-700 backdrop-blur-sm">
+      <div className="fixed inset-0 flex items-center justify-center lg:p-4 z-50">
+        <Dialog.Panel className="relative w-full h-full lg:w-auto lg:h-auto lg:max-w-md transform overflow-hidden rounded-none lg:rounded-2xl bg-white dark:bg-gray-900 p-6 text-left align-middle shadow-2xl transition-all border border-gray-200 dark:border-gray-700 backdrop-blur-sm">
           <button
             type="button"
             className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"

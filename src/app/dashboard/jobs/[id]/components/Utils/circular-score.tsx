@@ -87,9 +87,14 @@ export function CircularScore({
   const tooltipContent = `${category}: ${displayScore}/10`;
 
   const circleElement = (
-    <div className={cn("relative cursor-pointer", config.container)}>
+    <div className={cn(
+      "relative transition-all duration-300 ease-out", 
+      "group-hover:scale-110 group-hover:rotate-3 group-hover:-translate-y-1",
+      "group-hover:shadow-lg group-hover:shadow-black/10 dark:group-hover:shadow-white/10",
+      config.container
+    )}>
       <svg
-        className={cn("transform -rotate-90", config.svg)}
+        className={cn("transform -rotate-90 transition-all duration-300 ease-out", config.svg)}
         viewBox="0 0 100 100"
       >
           {/* Background circle */}
@@ -98,7 +103,7 @@ export function CircularScore({
             cy="50"
             r={config.radius}
             fill="none"
-            className={bgColor}
+            className={cn(bgColor, "transition-all duration-300 ease-out group-hover:opacity-80")}
             strokeWidth={config.strokeWidth}
           />
           {/* Progress circle */}
@@ -107,30 +112,66 @@ export function CircularScore({
             cy="50"
             r={config.radius}
             fill="none"
-            className={scoreColor}
+            className={cn(scoreColor, "transition-all duration-500 ease-out")}
             strokeWidth={config.strokeWidth}
             strokeLinecap="round"
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
             style={{
-              transition: "stroke-dashoffset 0.5s ease-in-out",
+              transition: "stroke-dashoffset 0.5s ease-in-out, filter 0.3s ease-out",
+              filter: "drop-shadow(0 0 0px transparent)",
+            }}
+          />
+          {/* Glow effect circle (visible on hover) */}
+          <circle
+            cx="50"
+            cy="50"
+            r={config.radius}
+            fill="none"
+            className={cn(scoreColor, "opacity-0 group-hover:opacity-30 transition-all duration-500 ease-out")}
+            strokeWidth={config.strokeWidth + 2}
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            style={{
+              filter: "blur(3px)",
             }}
           />
       </svg>
       {/* Score text */}
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className={cn("font-bold text-foreground", config.fontSize)}>
+        <span className={cn(
+          "font-bold text-foreground transition-all duration-300 ease-out",
+          "group-hover:scale-110 group-hover:text-shadow-sm",
+          config.fontSize
+        )}>
           {displayScore}
         </span>
       </div>
+      {/* Pulse animation ring */}
+      <div 
+        className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-20 transition-all duration-700 ease-out group-hover:animate-ping border-2"
+        style={{ 
+          animationIterationCount: 1,
+          borderColor: normalizedScore >= 8 ? '#10b981' : 
+                      normalizedScore >= 7 ? '#14b8a6' : 
+                      normalizedScore >= 6 ? '#3b82f6' : 
+                      normalizedScore >= 5 ? '#f59e0b' : 
+                      normalizedScore >= 3 ? '#f97316' : '#ef4444'
+        }}
+      />
     </div>
   );
 
   return (
-    <div className="flex flex-col items-center justify-center flex-1">
+    <div className="flex flex-col items-center justify-center flex-1 group cursor-pointer">
       {circleElement}
       {showLabel && (
-        <span className={cn("text-center text-muted-foreground font-bold mt-1", config.labelSize)}>
+        <span className={cn(
+          "text-center text-muted-foreground font-bold mt-1 transition-all duration-300 ease-out",
+          "group-hover:text-foreground group-hover:scale-105",
+          config.labelSize
+        )}>
           {category}
         </span>
       )}
