@@ -19,7 +19,7 @@ import {
 import { Candidate } from "@/types/candidate";
 import { formatDate, formatTime } from "../../hooks/dateTimeFormatting";
 import RemarksPopover from "../Remarks/remarks-popover";
-import { CandidateScoreBadge } from "../Utils/candidate-score-badge";
+import { GridCircularScores } from "../Utils/circular-score";
 import FollowupDisplay from "../Remarks/followup-popover";
 import { useRemarkHandlers } from "../../hooks/useRemarkHandlers";
 import { useEffect, useState } from "react";
@@ -504,14 +504,14 @@ export function CandidateCard({
             </div>
           </div>
           {candidate.email && (
-            <div className="flex items-center gap-2.5 text-gray-600 dark:text-gray-400 min-w-0">
+            <div className="col-span-2 flex items-center gap-2.5 text-gray-600 dark:text-gray-400 min-w-0">
               <Mail className="h-4 w-4 flex-shrink-0" />
               <div className="flex flex-col min-w-0 flex-1">
                 <span className="text-xs text-gray-500 dark:text-gray-500 uppercase tracking-wide truncate">
                   Email
                 </span>
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-gray-900 dark:text-gray-100 font-semibold truncate flex-1 min-w-0">
+                  <span className="text-gray-900 dark:text-gray-100 font-semibold flex-1 min-w-0">
                     {candidate.email}
                   </span>
                   <button
@@ -563,46 +563,13 @@ export function CandidateCard({
 
         {/* Scores */}
         {candidate.scores && candidate.scores.overall !== undefined && (
-          <div className="mb-5">
-            <div className="mb-2">
+          <div className="mb-3">
+            <div className="mb-1">
               <span className="text-xs text-gray-500 dark:text-gray-500 uppercase tracking-wide font-medium truncate">
                 Evaluation Scores
               </span>
             </div>
-            <div className="flex gap-2 flex-wrap justify-start">
-              {candidate.scores.overall >= 0 && (
-                <div className="truncate">
-                  <CandidateScoreBadge
-                    score={candidate.scores.overall}
-                    category="Overall"
-                  />
-                </div>
-              )}
-              {candidate.scores.experience >= 0 && (
-                <div className="truncate">
-                  <CandidateScoreBadge
-                    score={candidate.scores.experience}
-                    category="Exp"
-                  />
-                </div>
-              )}
-              {candidate.scores.skills >= 0 && (
-                <div className="truncate">
-                  <CandidateScoreBadge
-                    score={candidate.scores.skills}
-                    category="Skills"
-                  />
-                </div>
-              )}
-              {candidate.scores.affordability >= 0 && (
-                <div className="truncate">
-                  <CandidateScoreBadge
-                    score={candidate.scores.affordability}
-                    category="Affordability"
-                  />
-                </div>
-              )}
-            </div>
+            <GridCircularScores scores={candidate.scores} />
           </div>
         )}
 
