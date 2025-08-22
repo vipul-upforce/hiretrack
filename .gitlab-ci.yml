@@ -55,11 +55,13 @@ build:
       echo "NEXT_PUBLIC_RECAPTCHA_SITE_KEY=$NEXT_PUBLIC_RECAPTCHA_SITE_KEY"
       echo "RECAPTCHA_SECRET_KEY=$RECAPTCHA_SECRET_KEY"
       echo "ALLOWED_ORIGINS=$ALLOWED_ORIGINS"
+      echo "ENVIRONMENT=$ENVIRONMENT"
     # Create .env file for build
     - |
       echo "MONGODB_URI=$MONGODB_URI" > .env
       echo "NEXT_PUBLIC_RECAPTCHA_SITE_KEY=$NEXT_PUBLIC_RECAPTCHA_SITE_KEY" >> .env
       echo "RECAPTCHA_SECRET_KEY=$RECAPTCHA_SECRET_KEY" >> .env
+      echo "ENVIRONMENT=$ENVIRONMENT" >> .env
       echo "ALLOWED_ORIGINS=$ALLOWED_ORIGINS" >> .env
     # Debug: Show .env contents (remove after testing)
     - cat .env
