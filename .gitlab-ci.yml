@@ -51,6 +51,7 @@ build:
       echo "NEXT_PUBLIC_RECAPTCHA_SITE_KEY=$NEXT_PUBLIC_RECAPTCHA_SITE_KEY"
       echo "RECAPTCHA_SECRET_KEY=$RECAPTCHA_SECRET_KEY"
       echo "ENVIRONMENT=$ENVIRONMENT"
+      echo "BASE_URL=$BASE_URL"
       echo "ALLOWED_ORIGINS=$ALLOWED_ORIGINS"
     # Create .env file for build
     - |
@@ -58,6 +59,7 @@ build:
       echo "NEXT_PUBLIC_RECAPTCHA_SITE_KEY=$NEXT_PUBLIC_RECAPTCHA_SITE_KEY" >> .env
       echo "RECAPTCHA_SECRET_KEY=$RECAPTCHA_SECRET_KEY" >> .env
       echo "ENVIRONMENT=$ENVIRONMENT" >> .env
+      echo "BASE_URL=$BASE_URL" >> .env
       echo "ALLOWED_ORIGINS=$ALLOWED_ORIGINS" >> .env
     # Debug: Show .env contents (remove after testing)
     - cat .env
@@ -72,6 +74,7 @@ build:
   artifacts:
     paths:
       - hiretrack-v1-gl.tar.gz
+  environment: production
   only:
     - main
 
