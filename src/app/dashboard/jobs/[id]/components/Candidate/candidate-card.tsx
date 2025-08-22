@@ -802,7 +802,7 @@ Google Meet Link: ${candidate.assignment.googleMeet.meetingLink}`;
       {onDashboard ? (
         <div
           className={cn(
-            "bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg p-4 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 h-full hover:border-gray-300 dark:hover:border-gray-700",
+            "bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg p-4 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 h-full hover:border-gray-300 dark:hover:border-gray-700 w-[420px] flex-shrink-0",
             className
           )}
           onClick={(e) => {
