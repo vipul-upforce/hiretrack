@@ -4,11 +4,12 @@ import { scoreColors } from "@/lib/constants";
 import { useTheme } from "@/components/theme-provider";
 
 interface CircularScoreProps {
-  score: number;
+  score: number | null | undefined;
   category: string;
   size?: "xs" | "sm" | "md" | "lg";
   showLabel?: boolean;
   showTooltip?: boolean;
+  treatZeroAsEmpty?: boolean;
 }
 
 export function CircularScore({
@@ -17,10 +18,12 @@ export function CircularScore({
   size = "sm",
   showLabel = false,
   showTooltip = false,
+  treatZeroAsEmpty = false,
 }: CircularScoreProps) {
-  const normalizedScore = Math.max(0, Math.min(10, score));
-  const percentage = (normalizedScore / 10) * 100;
-  const displayScore = score % 1 === 0 ? score.toString() : score.toFixed(1);
+  const hasScore = score !== null && score !== undefined && !isNaN(score) && !(treatZeroAsEmpty && score === 0);
+  const normalizedScore = hasScore ? Math.max(0, Math.min(10, score)) : 0;
+  const percentage = hasScore ? (normalizedScore / 10) * 100 : 0;
+  const displayScore = hasScore ? (score % 1 === 0 ? score.toString() : score.toFixed(1)) : "-";
 
   // Size configurations
   const sizeConfig = {
@@ -63,7 +66,8 @@ export function CircularScore({
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
   // Color based on score
-  const getScoreColor = (score: number) => {
+  const getScoreColor = (score: number, hasScore: boolean) => {
+    if (!hasScore) return "stroke-gray-300 dark:stroke-gray-600";
     if (score >= 8) return "stroke-emerald-500";
     if (score >= 7) return "stroke-teal-500";
     if (score >= 6) return "stroke-blue-500";
@@ -72,7 +76,8 @@ export function CircularScore({
     return "stroke-red-500";
   };
 
-  const getBackgroundColor = (score: number) => {
+  const getBackgroundColor = (score: number, hasScore: boolean) => {
+    if (!hasScore) return "stroke-gray-100 dark:stroke-gray-800";
     if (score >= 8) return "stroke-emerald-100 dark:stroke-emerald-900";
     if (score >= 7) return "stroke-teal-100 dark:stroke-teal-900";
     if (score >= 6) return "stroke-blue-100 dark:stroke-blue-900";
@@ -81,8 +86,8 @@ export function CircularScore({
     return "stroke-red-100 dark:stroke-red-900";
   };
 
-  const scoreColor = getScoreColor(normalizedScore);
-  const bgColor = getBackgroundColor(normalizedScore);
+  const scoreColor = getScoreColor(normalizedScore, hasScore);
+  const bgColor = getBackgroundColor(normalizedScore, hasScore);
 
   const tooltipContent = `${category}: ${displayScore}/10`;
 
@@ -153,7 +158,8 @@ export function CircularScore({
         className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-20 transition-all duration-700 ease-out group-hover:animate-ping border-2"
         style={{ 
           animationIterationCount: 1,
-          borderColor: normalizedScore >= 8 ? '#10b981' : 
+          borderColor: !hasScore ? '#9ca3af' :
+                      normalizedScore >= 8 ? '#10b981' : 
                       normalizedScore >= 7 ? '#14b8a6' : 
                       normalizedScore >= 6 ? '#3b82f6' : 
                       normalizedScore >= 5 ? '#f59e0b' : 
@@ -252,7 +258,7 @@ export function CompactCircularScores({
   );
 }
 
-// Single line version for candidate cards with labels
+// Single line version for candidate cards with labels - always shows all 4 sections
 export function GridCircularScores({
   scores,
 }: {
@@ -263,48 +269,39 @@ export function GridCircularScores({
     affordability?: number;
   };
 }) {
-  if (!scores || Object.keys(scores).length === 0) {
-    return null;
-  }
+  const scoreData = scores || {};
 
   return (
     <div className="flex items-center justify-between w-full mb-3">
-        {scores.overall !== undefined && (
-          <CircularScore
-            score={scores.overall}
-            category="Overall"
-            size="xs"
-            showLabel={true}
-            showTooltip={false}
-          />
-        )}
-        {scores.experience !== undefined && (
-          <CircularScore
-            score={scores.experience}
-            category="Experience"
-            size="xs"
-            showLabel={true}
-            showTooltip={false}
-          />
-        )}
-        {scores.skills !== undefined && (
-          <CircularScore
-            score={scores.skills}
-            category="Skills"
-            size="xs"
-            showLabel={true}
-            showTooltip={false}
-          />
-        )}
-        {scores.affordability !== undefined && (
-          <CircularScore
-            score={scores.affordability}
-            category="Affordability"
-            size="xs"
-            showLabel={true}
-            showTooltip={false}
-          />
-        )}
+      <CircularScore
+        score={scoreData.overall}
+        category="Overall"
+        size="xs"
+        showLabel={true}
+        showTooltip={false}
+      />
+      <CircularScore
+        score={scoreData.experience}
+        category="Experience"
+        size="xs"
+        showLabel={true}
+        showTooltip={false}
+      />
+      <CircularScore
+        score={scoreData.skills}
+        category="Skills"
+        size="xs"
+        showLabel={true}
+        showTooltip={false}
+      />
+      <CircularScore
+        score={scoreData.affordability}
+        category="Affordability"
+        size="xs"
+        showLabel={true}
+        showTooltip={false}
+        treatZeroAsEmpty={true}
+      />
     </div>
   );
 }
