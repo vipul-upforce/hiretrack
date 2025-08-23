@@ -59,7 +59,7 @@ export function UserTableRow({
               size="icon"
               onClick={() => onPasswordClick(user._id, user.name)}
               disabled={isUpdating}
-              className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+              className="bg-white dark:bg-black border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               <ShieldQuestion className="h-4 w-4 text-gray-700 dark:text-gray-300" />
             </Button>
@@ -70,7 +70,7 @@ export function UserTableRow({
           size="icon"
           onClick={() => onEditClick(user)}
           disabled={isUpdating}
-          className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+          className="bg-white dark:bg-black border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
         >
           <EditIcon className="h-4 w-4 text-gray-700 dark:text-gray-300" />
         </Button>

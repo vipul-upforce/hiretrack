@@ -399,7 +399,7 @@ export default function CalendarPage() {
               eventTextColor="var(--primary-foreground)"
               eventContent={(arg) => {
                 return (
-                  <div className="bg-white dark:bg-gray-800 w-full rounded-lg border border-gray-200 dark:border-gray-600 p-1.5 shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-pointer">
+                  <div className="bg-white dark:bg-black w-full rounded-lg border border-gray-200 dark:border-gray-600 p-1.5 shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-pointer">
                     <div className="flex items-baseline gap-1 items-center justify-between">
                       <span className="font-medium text-sm truncate text-gray-900 dark:text-gray-100">
                         {arg.event._def.extendedProps.candidate.name}

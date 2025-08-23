@@ -712,7 +712,7 @@ export const LaneChecklistConfigDialog = ({
                                         >
                                           <Card
                                             className={`p-4 hover:shadow-md transition-shadow ${snapshot.isDragging
-                                              ? "shadow-2xl bg-white dark:bg-gray-800 border-2 border-primary opacity-95 scale-105"
+                                              ? "shadow-2xl bg-white dark:bg-black border-2 border-primary opacity-95 scale-105"
                                               : "shadow-sm hover:shadow-md"
                                               }`}
                                           >
@@ -1034,7 +1034,7 @@ const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
                       key={type.value}
                       className={`relative p-4 rounded-lg cursor-pointer transition-all duration-200 ${isSelected
                         ? "bg-gray-100 dark:bg-gray-700 shadow-sm"
-                        : "bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        : "bg-white dark:bg-black hover:bg-gray-100 dark:hover:bg-gray-700"
                         }`}
                       onClick={() =>
                         setFieldData({ ...fieldData, type: type.value as any })
@@ -1134,8 +1134,8 @@ const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
               <div className="grid grid-cols-1 gap-4">
                 <div
                   className={`p-4 rounded-lg cursor-pointer transition-all duration-200 ${fieldData.required
-                    ? "bg-gray-50 dark:bg-gray-800"
-                    : "bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    ? "bg-white dark:bg-black"
+                    : "bg-white dark:bg-black hover:bg-gray-100 dark:hover:bg-gray-700"
                     }`}
                   onClick={() =>
                     setFieldData({
@@ -1200,8 +1200,8 @@ const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
                           <div
                             key={role}
                             className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${fieldData.visibleOnForm.includes(role)
-                              ? "bg-gray-50 dark:bg-gray-800"
-                              : "bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
+                              ? "bg-white dark:bg-black"
+                              : "bg-white dark:bg-black hover:bg-gray-100 dark:hover:bg-gray-700"
                               }`}
                             onClick={() => {
                               const isSelected =
@@ -1269,8 +1269,8 @@ const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
                           <div
                             key={role}
                             className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${fieldData.visibleInHistory.includes(role)
-                              ? "bg-gray-50 dark:bg-gray-800"
-                              : "bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
+                              ? "bg-white dark:bg-black"
+                              : "bg-white dark:bg-black hover:bg-gray-100 dark:hover:bg-gray-700"
                               }`}
                             onClick={() => {
                               const isSelected =

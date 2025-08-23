@@ -28,7 +28,7 @@ export const NoDataFound = (props: INoDataFound) => {
           width={600}
           height={600}
         />
-        <h2 className="mt-4 text-xl font-semibold text-gray-700">
+        <h2 className="mt-4 text-xl font-semibold text-gray-900 dark:text-gray-100">
           No {name} Found
         </h2>
         <p className="mt-2 text-gray-600">

@@ -414,7 +414,7 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
                                   <div
                                     className={`bg-card border rounded-none transition-all ${
                                       snapshot.isDragging
-                                        ? "shadow-2xl bg-white dark:bg-gray-800 border-2 border-primary opacity-95 scale-105"
+                                        ? "shadow-2xl bg-white dark:bg-black border-2 border-primary opacity-95 scale-105"
                                         : "shadow-sm hover:shadow-md"
                                     }`}
                                     style={{

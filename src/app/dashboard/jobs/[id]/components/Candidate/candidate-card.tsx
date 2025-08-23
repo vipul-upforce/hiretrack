@@ -594,7 +594,7 @@ export function CandidateCard({
                 <Badge
                   key={`${candidate._id}-skill-${index}-${skill}`}
                   variant="secondary"
-                  className="text-xs px-2.5 py-1 bg-gray-100 text-gray-700 border border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 font-medium truncate max-w-full"
+                  className="text-xs px-2.5 py-1 bg-gray-100 text-gray-900 border border-gray-200 dark:bg-black dark:text-gray-100 dark:border-gray-700 font-medium truncate max-w-full"
                   title={skill}
                 >
                   {skill}
@@ -725,7 +725,7 @@ export function CandidateCard({
         candidate.assignment.interviewerId._id &&
         candidate.assignment.interviewerId.name && (
           <div
-            className="border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/70 -mx-4 -mb-4 px-4 py-1.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/70 transition-colors"
+            className="border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-black/70 -mx-4 -mb-4 px-4 py-1.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/70 transition-colors"
             onClick={(e) => {
               e.stopPropagation();
               setIsAssigning(true);
@@ -770,16 +770,28 @@ Google Meet Link: ${candidate.assignment.googleMeet.meetingLink}`;
                           <Video size={12} className="text-white" />
                         </div>
                       </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-sm">
-                        <div className="text-xs space-y-1">
-                          <div className="font-semibold">
+                      <TooltipContent 
+                        side="top" 
+                        className="max-w-sm p-3 bg-white/95 dark:bg-black/95 backdrop-blur-md border border-gray-200/50 dark:border-gray-600/50 shadow-xl rounded-lg"
+                      >
+                        <div className="space-y-2">
+                          {/* Meeting Title */}
+                          <div className="font-semibold text-gray-900 dark:text-gray-100 text-sm leading-tight">
                             {candidate.assignment.googleMeet.summary}
                           </div>
-                          <div className="text-gray-600">
+                          
+                          {/* Instructions */}
+                          <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300 bg-white/50 dark:bg-gray-700/50 px-2 py-1 rounded">
+                            <div className="w-1 h-1 bg-blue-500 rounded-full"></div>
                             Click to copy meeting details
                           </div>
-                          <div className="text-blue-500 break-all">
-                            {candidate.assignment.googleMeet.meetingLink}
+                          
+                          {/* Meeting Link */}
+                          <div className="text-xs">
+                            <div className="text-gray-500 dark:text-gray-400 mb-1">Meeting Link:</div>
+                            <div className="text-blue-600 dark:text-blue-400 break-all bg-blue-50/50 dark:bg-blue-900/20 px-2 py-1 rounded border border-blue-200/50 dark:border-blue-800/50">
+                              {candidate.assignment.googleMeet.meetingLink}
+                            </div>
                           </div>
                         </div>
                       </TooltipContent>

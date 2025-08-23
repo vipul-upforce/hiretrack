@@ -172,7 +172,7 @@ export default function BackupsDialog() {
       </div> */}
 
       {files.length > 0 && (
-        <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border">
+        <div className="mb-4 p-4 bg-white dark:bg-black rounded-lg border">
           <div className="flex flex-row justify-between ">
             <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
               <Database className="h-4 w-4" />
@@ -269,7 +269,7 @@ export default function BackupsDialog() {
               .map((file, i) => (
                 <div
                   key={i}
-                  className="flex items-center justify-between p-3 px-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  className="flex items-center justify-between p-3 px-4 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 >
                   <div className="flex items-center space-x-3 w-full">
                     <FileIcon className="h-4 w-4 text-gray-500" />

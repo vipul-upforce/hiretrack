@@ -69,76 +69,59 @@ export default function DetailsDialogHeader({
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex gap-2 items-center">
-              {candidate.name}{" "}
+              <span className="text-2xl font-semibold">{candidate.name}</span>
               {candidate.isDeleted ? (
                 <Badge className={`bg-red-500`}>Archived</Badge>
               ) : null}
-              <span className="whitespace-nowrap flex flex-row gap-2">
-                {candidate.location && (
-                  <span className="whitespace-nowrap text-sm font-normal text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                    <MapPin size={12} />
-                    {candidate.location}
-                  </span>
-                )}
-                {candidate.experience !== undefined && (
-                  <span className="whitespace-nowrap text-sm font-normal text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                    <Clock size={12} />
-                    {candidate.experience} years exp.
-                  </span>
-                )}
-                {candidate.expectedCTC !== undefined &&
-                  candidate.expectedCTC !== null && (
-                    <span className="whitespace-nowrap text-sm font-normal text-gray-600 dark:text-gray-400  flex items-center gap-1">
-                      ₹{candidate.expectedCTC.toLocaleString()} LPA
-                    </span>
-                  )}
-              </span>
             </div>
             {candidate.email && (
-              <div className="text-gray-500 font-thin text-sm flex flex-row items-center">
-                <Mail size={12} className="mr-1" />
-                {candidate.email}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="ml-2 h-6 w-6"
-                  onClick={() => handleCandidateInfoCopy(candidate.email || "")}
-                  title="Copy Email"
-                >
-                  <Copy size={14} />
-                  <span className="sr-only">Copy Email</span>
-                </Button>
+              <div className="text-gray-500 font-thin text-sm flex flex-wrap items-center gap-2 mt-2">
+                <div className="flex items-center">
+                  <Mail size={12} className="mr-1" />
+                  {candidate.email}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="ml-1 h-5 w-5"
+                    onClick={() =>
+                      handleCandidateInfoCopy(candidate.email || "")
+                    }
+                    title="Copy Email"
+                  >
+                    <Copy size={12} />
+                    <span className="sr-only">Copy Email</span>
+                  </Button>
+                </div>
                 {candidate.contact && (
-                  <>
-                    <span className="mx-2 text-gray-400">•</span>
+                  <div className="flex items-center">
                     <Phone size={12} className="mr-1" />
                     {candidate.contact}
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="ml-2 h-6 w-6"
+                      className="ml-1 h-5 w-5"
                       onClick={() =>
                         handleCandidateInfoCopy(candidate.contact || "")
                       }
                       title="Copy Contact Number"
                     >
-                      <Copy size={14} />
+                      <Copy size={12} />
                       <span className="sr-only">Copy Contact Number</span>
                     </Button>
-                  </>
+                  </div>
                 )}
-                <div className="flex flex-row items-center">
+                <div className="flex items-center gap-1">
                   {(user?.role === "admin" || user?.role === "hr") && (
                     <Popover modal={true}>
                       <PopoverTrigger asChild>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="ml-2 h-6 w-6"
+                          className="h-5 w-5"
                           title="Tags"
                           ref={triggerRef}
                         >
-                          <Tag size={14} />
+                          <Tag size={12} />
                           <span className="sr-only">Tags</span>
                         </Button>
                       </PopoverTrigger>
@@ -161,24 +144,47 @@ export default function DetailsDialogHeader({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="ml-2 h-6 w-6"
+                      className="h-5 w-5"
                       onClick={handleDownloadCV}
                       title="Download CV"
                     >
-                      <Download size={14} />
+                      <Download size={12} />
                       <span className="sr-only">Download CV</span>
                     </Button>
                   )}
                 </div>
               </div>
             )}
+            {/* Location, Experience, and CTC on a separate line below email */}
+            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+              {candidate.location && (
+                <span className="text-sm font-normal text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                  <MapPin size={12} />
+                  {candidate.location}
+                </span>
+              )}
+              {candidate.experience !== undefined && (
+                <span className="text-sm font-normal text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                  <Clock size={12} />
+                  {candidate.experience} years exp.
+                </span>
+              )}
+              {candidate.expectedCTC !== undefined &&
+                candidate.expectedCTC !== null && (
+                  <span className="text-sm font-normal text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                    ₹{candidate.expectedCTC.toLocaleString()} LPA
+                  </span>
+                )}
+            </div>
           </div>
 
           <div className="flex items-start gap-4 pl-12">
             {/* Status and Job */}
             <div className="flex flex-col items-end">
-              <CandidateStatusBadge status={candidate?.status} />
-              <p className="text-xs text-gray-500 line-clamp-2 text-end mt-1">
+              <div className="mr-0 mt-4">
+                <CandidateStatusBadge status={candidate?.status} />
+              </div>
+              <p className="text-xs text-gray-500 line-clamp-2 text-end mt-1 max-w-[200px]">
                 {candidate?.jobId?.title}
               </p>
 

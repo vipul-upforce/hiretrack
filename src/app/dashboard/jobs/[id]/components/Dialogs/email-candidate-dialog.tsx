@@ -497,7 +497,7 @@ export function EmailCandidateDialog({
                         <div className="p-4 bg-white max-h-[300px] overflow-y-auto">
                           <div dangerouslySetInnerHTML={{ __html: body }} />
                         </div>
-                        <div className="p-3 bg-gray-50 dark:bg-gray-900 border-t text-xs text-muted-foreground">
+                        <div className="p-3 bg-white dark:bg-black border-t text-xs text-muted-foreground">
                           💡 This template has professional formatting applied.
                           Switch to "Advanced HTML" mode to modify the template
                           structure.
@@ -508,7 +508,7 @@ export function EmailCandidateDialog({
                     <>
                       {/* Rich Text Editor for non-template emails */}
                       <div className="border rounded-lg">
-                        <div className="bg-gray-50 dark:bg-gray-900 p-3 border-b border-gray-200 dark:border-gray-700">
+                        <div className="bg-white dark:bg-black p-3 border-b border-gray-200 dark:border-gray-700">
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Edit className="h-4 w-4" />
                             Compose Your Email

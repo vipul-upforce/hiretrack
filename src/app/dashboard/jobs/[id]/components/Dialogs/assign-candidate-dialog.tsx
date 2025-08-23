@@ -786,7 +786,7 @@ export function AssignCandidateDialog({
                                         (file: any, index: number) => (
                                           <div
                                             key={index}
-                                            className="flex items-center justify-between p-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 rounded text-xs"
+                                            className="flex items-center justify-between p-1.5 bg-white dark:bg-black border border-gray-200 rounded text-xs"
                                           >
                                             <div className="flex items-center gap-1">
                                               <FileIcon className="w-3 h-3 text-gray-500" />
@@ -896,7 +896,7 @@ export function AssignCandidateDialog({
                                 (att: any, index: number) => (
                                   <div
                                     key={index}
-                                    className="flex items-center justify-between p-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 rounded text-xs"
+                                    className="flex items-center justify-between p-1.5 bg-white dark:bg-black border border-gray-200 rounded text-xs"
                                   >
                                     <div className="flex items-center gap-1">
                                       <FileIcon className="w-3 h-3 text-gray-500" />

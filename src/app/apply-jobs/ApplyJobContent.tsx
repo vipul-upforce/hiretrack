@@ -484,7 +484,7 @@ export default function ApplyJobsContent({
                 <Input
                   type="text"
                   placeholder="Search..."
-                  className="pl-12 pr-4 py-3 border rounded-xl bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 focus:ring-2 w-full transition-colors"
+                  className="pl-12 pr-4 py-3 border rounded-xl bg-white dark:bg-black border-gray-200 dark:border-gray-700 focus:ring-2 w-full transition-colors"
                   onFocus={(e) => {
                     e.target.style.borderColor = primaryColor;
                     e.target.style.boxShadow = `0 0 0 2px ${primaryColor}20`;
@@ -554,7 +554,7 @@ export default function ApplyJobsContent({
               jobs.map((job, index) => (
                 <div
                   key={index}
-                  className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-6 cursor-pointer hover:shadow-md transition-shadow duration-200"
+                  className="bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg p-6 cursor-pointer hover:shadow-md transition-shadow duration-200"
                   onClick={() => {
                     setSelectedJob(job);
                     setIsJobModalOpen(true);

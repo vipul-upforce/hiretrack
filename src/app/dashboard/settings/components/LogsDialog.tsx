@@ -546,7 +546,7 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
                   {logs.map((log, i) => (
                     <div
                       key={`${log.candidateId}-${i}`}
-                      className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+                      className="border rounded-lg p-4 bg-white hover:bg-gray-100 transition-colors"
                     >
                       <div
                         className="flex justify-between items-center cursor-pointer"
@@ -623,7 +623,7 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
                       {showDetails === log.candidateId + i && (
                         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                           <div className="space-y-2">
-                            <h4 className="font-medium text-gray-700">
+                            <h4 className="font-medium text-gray-900 dark:text-gray-100">
                               Candidate Details
                             </h4>
                             <p>
@@ -682,7 +682,7 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
                             </a>
                           </div>
                           <div className="space-y-2">
-                            <h4 className="font-medium text-gray-700">
+                            <h4 className="font-medium text-gray-900 dark:text-gray-100">
                               Job Details
                             </h4>
                             <p>
@@ -711,7 +711,7 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
                             </p>
                           </div>
                           <div className="space-y-2">
-                            <h4 className="font-medium text-gray-700">
+                            <h4 className="font-medium text-gray-900 dark:text-gray-100">
                               Interviewer Details
                             </h4>
                             <p>

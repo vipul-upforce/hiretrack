@@ -296,7 +296,7 @@ export function CandidateDetailsDialog({
   // console.log("TimeLine Items: ", timeLineItems);
   const validTimeLineItems = timeLineItems.filter((item) => item.title !== "");
   const header = (
-    <DialogHeader className="px-6 pt-6 pr-12">
+    <DialogHeader className="px-3 pt-3 pr-8 lg:px-4 lg:pt-4 lg:pr-10">
       {localCandidate && (
         <DetailsDialogHeader
           candidate={localCandidate}
@@ -359,10 +359,10 @@ export function CandidateDetailsDialog({
           )}
         </TabsList>
 
-        <div className="flex-1 overflow-y-auto px-6 py-4">
+        <div className="flex-1 overflow-y-auto px-4 py-3 lg:px-6 lg:py-4">
           <TabsContent value="overview" className="space-y-6 mt-0">
             {/* Contact Information Section */}
-            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 space-y-4">
+            <div className="bg-white dark:bg-black/50 rounded-lg p-4 space-y-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
                 Contact Information
               </h3>

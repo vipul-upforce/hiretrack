@@ -175,7 +175,7 @@ function Settings() {
         <div key={group.title} className="space-y-4">
           {/* Group Header */}
           <div className="flex items-center gap-3 pb-2 border-b border-gray-200 dark:border-gray-700">
-            <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
+            <div className="p-2 rounded-lg bg-gray-100 dark:bg-black">
               <group.icon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
             </div>
             <div>
@@ -249,7 +249,7 @@ function Settings() {
       {/* Custom Fields Section */}
       <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-3 pb-2">
-          <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
+          <div className="p-2 rounded-lg bg-gray-100 dark:bg-black">
             <Palette className="h-5 w-5 text-gray-600 dark:text-gray-400" />
           </div>
           <div>

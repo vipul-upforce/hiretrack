@@ -1144,7 +1144,7 @@ export default function PortalConfigurationPage() {
                   // Real Iframe Embed Preview
                   <div className="space-y-3">
                     {/* Browser Frame */}
-                    <div className="rounded-lg border bg-gray-100 dark:bg-gray-800 p-2">
+                    <div className="rounded-lg border bg-gray-100 dark:bg-black p-2">
                       <div className="flex items-center gap-2 mb-2">
                         <div className="flex gap-1">
                           <div className="w-3 h-3 rounded-full bg-red-500"></div>
@@ -1157,7 +1157,7 @@ export default function PortalConfigurationPage() {
                       </div>
                       
                       {/* Real Iframe */}
-                      <div className="bg-white dark:bg-gray-900 rounded p-2 overflow-auto">
+                      <div className="bg-white dark:bg-black rounded p-2 overflow-auto">
                         <div
                           style={{
                             width: embedWidth.includes('%') ? embedWidth : `${parseInt(embedWidth) || 400}px`,

@@ -267,7 +267,7 @@ export const CustomFieldItem = React.memo(
               ${
                 isDragging
                   ? "!shadow-2xl ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-2 dark:ring-offset-gray-900 scale-105 border-l-blue-600 dark:border-l-blue-300"
-                  : "hover:!shadow-xl hover:border-l-blue-600 dark:hover:border-l-blue-300 hover:-translate-y-0.5 hover:!bg-gray-50 dark:hover:!bg-gray-800"
+                  : "hover:!shadow-xl hover:border-l-blue-600 dark:hover:border-l-blue-300 hover:-translate-y-0.5 hover:!bg-white dark:hover:!bg-gray-800"
               }
             `}
           >

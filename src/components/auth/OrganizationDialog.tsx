@@ -64,7 +64,7 @@ const OrganizationDialog: React.FC<OrganizationDialogProps> = ({
               {data.organizations.map((org) => (
                 <div
                   key={org.orgId}
-                  className="flex items-center space-x-3 p-3 border rounded-md hover:bg-gray-50  dark:hover:bg-gray-900 transition-colors"
+                  className="flex items-center space-x-3 p-3 border rounded-md hover:bg-gray-100  dark:hover:bg-gray-900 transition-colors"
                 >
                   <RadioGroupItem
                     value={org.orgId}

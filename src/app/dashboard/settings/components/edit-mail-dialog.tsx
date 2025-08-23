@@ -528,8 +528,8 @@ export default function EmailTemplateEditor({
                                   }
                                   className={`border px-3 py-2 rounded-md transition-all duration-200 font-mono ${
                                     activeEditor
-                                      ? "border-gray-400 bg-gray-100 text-gray-700 hover:bg-gray-200 hover:border-gray-500 hover:shadow-sm cursor-pointer dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:border-gray-600"
-                                      : "border-gray-300 bg-gray-100 text-gray-500 opacity-50 cursor-not-allowed dark:border-gray-700 dark:bg-gray-800 dark:text-gray-500"
+                                      ? "border-gray-400 bg-gray-100 text-gray-700 hover:bg-gray-200 hover:border-gray-500 hover:shadow-sm cursor-pointer dark:border-gray-600 dark:bg-black dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:border-gray-600"
+                                      : "border-gray-300 bg-gray-100 text-gray-500 opacity-50 cursor-not-allowed dark:border-gray-700 dark:bg-black dark:text-gray-500"
                                   }`}
                                   disabled={!activeEditor}
                                   title={

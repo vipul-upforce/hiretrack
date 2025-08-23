@@ -962,4 +962,30 @@ body {
   .dark .rdp *::-webkit-scrollbar-corner {
     background: #2a2929;
   }
+
+  /* Full screen dialog overrides */
+  [data-fullscreen="true"] {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    min-height: 100vh !important;
+    max-height: 100vh !important;
+    max-width: none !important;
+    transform: none !important;
+    left: 0 !important;
+    top: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    z-index: 50 !important;
+  }
+
+  /* Ensure full screen dialog children also use full height */
+  [data-fullscreen="true"] > div {
+    height: 100vh !important;
+    min-height: 100vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
 }

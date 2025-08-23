@@ -67,7 +67,7 @@ export function PDFViewer({ files }: PDFViewerProps) {
         {files.map((file, index) => (
           <div
             key={index}
-            className="flex items-center gap-2 p-3 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group w-full"
+            className="flex items-center gap-2 p-3 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-black hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group w-full"
           >
             <div
               className="flex items-center gap-2 flex-1 cursor-pointer w-full"
@@ -105,7 +105,7 @@ export function PDFViewer({ files }: PDFViewerProps) {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
+              className="h-8 w-8 opacity-100 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600"
               onClick={() => downloadFile(file.url || file.base64, file.name)}
             >
               <Download className="h-4 w-4" />
@@ -118,7 +118,7 @@ export function PDFViewer({ files }: PDFViewerProps) {
         <DialogContent className="sm:max-w-[80vw] xl:max-w-[50vw] h-[90vh] p-0 flex flex-col justify-start">
           <DialogTitle></DialogTitle>
           <div
-            className="pl-4 border-b border-gray-200 dark:border-gray-700 shrink-0 bg-gray-50 dark:bg-gray-800"
+            className="pl-4 border-b border-gray-200 dark:border-gray-700 shrink-0 bg-white dark:bg-black"
             style={{
               display: "contents",
             }}

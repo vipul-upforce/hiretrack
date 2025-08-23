@@ -46,7 +46,7 @@ function CustomFieldFormList() {
         })}
         {Object.keys(customFields).length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="w-16 h-16 bg-gray-100 dark:bg-gray-900 rounded-full flex items-center justify-center mb-4">
+            <div className="w-16 h-16 bg-gray-100 dark:bg-black rounded-full flex items-center justify-center mb-4">
               <FileText className="w-8 h-8 text-gray-400" />
             </div>
             <p className="text-gray-500 dark:text-gray-400 text-lg font-medium">

@@ -611,7 +611,7 @@ function SystemLogsPage() {
                         return (
                           <div
                             key={`${log.candidateId}-${i}`}
-                            className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors border-gray-200 dark:border-gray-700"
+                            className="border rounded-lg p-4 bg-white dark:bg-black hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors border-gray-200 dark:border-gray-700"
                           >
                             <div
                               className="flex justify-between items-center cursor-pointer"

@@ -36,7 +36,7 @@ const KanbanColumn = ({
 
   return (
     <div className="flex-1 min-w-[450px] px-2">
-      <div className="h-full flex flex-col bg-gray-50/70 dark:bg-gray-800/30 rounded-lg p-3 min-w-0 w-full max-w-full">
+      <div className="h-full flex flex-col bg-white/70 dark:bg-black/30 rounded-lg p-3 min-w-0 w-full max-w-full">
         <div className="py-3 flex-shrink-0 px-2 mb-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-300 truncate">
@@ -57,7 +57,7 @@ const KanbanColumn = ({
                   className="h-full space-y-3 pb-4 min-w-0"
                 >
                   {isCreatingJob && column.id === "draft" && (
-                    <div className="animate-pulse bg-gray-100 dark:bg-gray-800 rounded-xl p-4 shadow-sm">
+                    <div className="animate-pulse bg-gray-100 dark:bg-black rounded-xl p-4 shadow-sm">
                       <div className="h-5 w-2/3 bg-gray-300 dark:bg-gray-700 rounded mb-2"></div>
                       <div className="h-4 w-1/3 bg-gray-300 dark:bg-gray-700 rounded"></div>
                     </div>

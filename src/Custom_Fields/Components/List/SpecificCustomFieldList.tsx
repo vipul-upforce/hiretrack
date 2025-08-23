@@ -385,7 +385,7 @@ export const CustomFieldItem = React.memo(
               w-full transition-all duration-200 border-l-4 border-l-blue-500 dark:border-l-blue-400 !bg-white dark:!bg-gray-900 !border !border-gray-200 dark:!border-gray-700/50 backdrop-blur-sm
               ${isDragging
                 ? "!shadow-2xl ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-2 dark:ring-offset-gray-900 scale-105 border-l-blue-600 dark:border-l-blue-300"
-                : "hover:!shadow-xl hover:border-l-blue-600 dark:hover:border-l-blue-300 hover:-translate-y-0.5 hover:!bg-gray-50 dark:hover:!bg-gray-800"
+                : "hover:!shadow-xl hover:border-l-blue-600 dark:hover:border-l-blue-300 hover:-translate-y-0.5 hover:!bg-white dark:hover:!bg-gray-800"
               }
             `}
           >
@@ -492,12 +492,12 @@ export const CustomFieldItem = React.memo(
 
                 <div className="flex items-center gap-1 ml-4">
                   {field.jobId && (
-                    <Badge variant="outline" className="text-xs px-2 py-1 bg-purple-50 dark:bg-gray-800 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700/50">
+                    <Badge variant="outline" className="text-xs px-2 py-1 bg-purple-50 dark:bg-black text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700/50">
                       Job Specific
                     </Badge>
                   )}
                   {field.candidateId && (
-                    <Badge variant="outline" className="text-xs px-2 py-1 bg-green-50 dark:bg-gray-800 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700/50">
+                    <Badge variant="outline" className="text-xs px-2 py-1 bg-green-50 dark:bg-black text-green-700 dark:text-green-300 border-green-200 dark:border-green-700/50">
                       Candidate Specific
                     </Badge>
                   )}
