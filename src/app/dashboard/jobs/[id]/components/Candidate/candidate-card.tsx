@@ -149,8 +149,8 @@ export function CandidateCard({
 
     user,
     async () => refetch(),
-    () => { },
-    () => { },
+    () => {},
+    () => {},
     undefined,
     undefined
   );
@@ -222,7 +222,7 @@ export function CandidateCard({
       {/* Main content area - will expand to fill available space */}
       <div className="flex-1 flex flex-col">
         {/* Header with name and buttons */}
-        <div className="flex justify-between items-start mb-4 pb-4 border-b border-gray-100 dark:border-gray-800">
+        <div className="flex justify-between items-start mb-2 pb-2 border-b border-gray-100 dark:border-gray-800">
           <div className="flex-1 pr-3">
             <div className="flex items-center gap-2 mb-2">
               {showStar && (
@@ -418,7 +418,7 @@ export function CandidateCard({
 
         {/* Follow-up Section - Just below header */}
         {candidate.followUp && candidate.followUp.note && (
-          <div className="mb-4 p-2 bg-amber-50 dark:bg-amber-900/20 rounded border-l-4 border-amber-400 dark:border-amber-500">
+          <div className="mb-2 p-2 bg-amber-50 dark:bg-amber-900/20 rounded border-l-4 border-amber-400 dark:border-amber-500">
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-start gap-2 flex-1 min-w-0">
                 <Bell className="h-3 w-3 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
@@ -613,7 +613,6 @@ export function CandidateCard({
           </div>
         )}
 
-
         {/* Custom fields */}
         {candidate.customFields &&
           Object.entries(candidate.customFields).filter(([key, value]) => {
@@ -700,7 +699,6 @@ export function CandidateCard({
             <GridCircularScores scores={candidate.scores} />
           </div>
         )}
-
       </div>
 
       {/* Confirmation dialog for removing follow-up */}
@@ -898,7 +896,7 @@ Google Meet Link: ${candidate.assignment.googleMeet.meetingLink}`;
           isOpen={isAssigning}
           onOpenChange={setIsAssigning}
           onUpdate={() => refetch()}
-          setLocalCandidate={() => { }}
+          setLocalCandidate={() => {}}
           onSuccess={() => {
             setIsAssigning(false);
             refetch();
@@ -953,7 +951,7 @@ Google Meet Link: ${candidate.assignment.googleMeet.meetingLink}`;
             setIsAddRemarkOpen(false);
           }}
           // onOpenChange={setIsAddRemarkOpen}
-          setOpenRemarksFor={() => { }}
+          setOpenRemarksFor={() => {}}
           refetch={async () => refetch()}
         />
       }
