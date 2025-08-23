@@ -184,7 +184,7 @@ export default function DetailsDialogHeader({
               <div className="mr-0 mt-4">
                 <CandidateStatusBadge status={candidate?.status} />
               </div>
-              <p className="text-xs text-gray-500 line-clamp-2 text-end mt-1 max-w-[200px]">
+              <p className="text-xs text-gray-500 truncate text-end mt-1 max-w-[300px]">
                 {candidate?.jobId?.title}
               </p>
 
