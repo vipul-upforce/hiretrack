@@ -33,7 +33,8 @@ export function getAuthUrl(oauth2Client: OAuth2Client): string {
   return oauth2Client.generateAuthUrl({
     access_type: "offline",
     scope: GOOGLE_CALENDAR_SCOPES,
-    prompt: "consent",
+    prompt: "consent", // This forces re-consent and ensures refresh token
+    approval_prompt: "force", // Legacy parameter for older Google OAuth
   });
 }
 

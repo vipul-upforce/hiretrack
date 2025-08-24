@@ -608,28 +608,28 @@ export function AssignCandidateDialog({
 
                                   return defaultGuests.map((email) => {
                                     let role = "";
-                                    let roleColor = "bg-gray-100 text-gray-700";
+                                    let roleColor = "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
                                     if (email === candidate.email) {
                                       role = "Candidate";
-                                      roleColor = "bg-green-100 text-green-700";
+                                      roleColor = "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400";
                                     } else if (
                                       email === selectedInterviewer?.email
                                     ) {
                                       role = "Interviewer";
-                                      roleColor = "bg-blue-100 text-blue-700";
+                                      roleColor = "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400";
                                     } else if (email === user?.email) {
                                       role = "HR";
                                       roleColor =
-                                        "bg-purple-100 text-purple-700";
+                                        "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-400";
                                     }
 
                                     return (
                                       <div
                                         key={email}
-                                        className="flex items-center gap-2 p-1.5 rounded border border-gray-200 bg-background text-xs"
+                                        className="flex items-center gap-2 p-1.5 rounded border border-gray-200 dark:border-gray-700 bg-background text-xs"
                                       >
-                                        <Mail className="h-3 w-3 text-muted" />
-                                        <span className="text-muted truncate flex-1 ">
+                                        <Mail className="h-3 w-3 text-gray-500 dark:text-gray-400" />
+                                        <span className="text-gray-700 dark:text-gray-300 truncate flex-1">
                                           {email}
                                         </span>
                                         {role && (

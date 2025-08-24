@@ -126,6 +126,27 @@ export async function GET(req: NextRequest) {
       scope: tokens.scope,
       expiry_date: tokens.expiry_date
     });
+
+    // Check if we have a refresh token
+    if (!tokens.refresh_token) {
+      console.error('No refresh token received! This usually means the user was already connected.');
+      return new NextResponse(`
+        <html>
+          <body>
+            <script>
+              window.opener.postMessage({ 
+                type: 'google-calendar-error', 
+                error: "No refresh token received. Please disconnect and reconnect your Google Calendar to refresh the connection." 
+              }, '*');
+              window.close();
+            </script>
+          </body>
+        </html>
+      `, {
+        headers: { "Content-Type": "text/html" },
+      });
+    }
+
     oauth2Client.setCredentials(tokens);
 
     // Validate that we have the required scopes

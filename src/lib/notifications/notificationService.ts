@@ -879,6 +879,204 @@ export class NotificationService {
   }
 
   /**
+   * Notify when meeting invite is accepted
+   */
+  static async notifyMeetingInviteAccepted(params: {
+    organizationId: string;
+    candidateId: string;
+    candidateName: string;
+    jobId: string;
+    jobTitle: string;
+    attendeeEmail: string;
+    attendeeName: string;
+    interviewerId?: string;
+    interviewerName?: string;
+    meetingDate?: Date;
+  }) {
+    // Notify the organizer/interviewer
+    if (params.interviewerId) {
+      await this.createNotification({
+        organizationId: params.organizationId,
+        recipientId: params.interviewerId,
+        type: NotificationType.MEETING_INVITE_ACCEPTED,
+        title: 'Meeting Invite Accepted',
+        message: `${params.attendeeName} has accepted the interview invitation with ${params.candidateName}`,
+        relatedEntity: 'meeting',
+        relatedId: params.candidateId,
+        actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
+        priority: 'medium',
+        metadata: {
+          candidateName: params.candidateName,
+          jobTitle: params.jobTitle,
+          jobId: params.jobId,
+          attendeeEmail: params.attendeeEmail,
+          attendeeName: params.attendeeName,
+          interviewerName: params.interviewerName,
+          meetingDate: params.meetingDate,
+        },
+      });
+    }
+
+    // Notify admin/hr
+    const adminHrIds = await this.getUsersByRole(params.organizationId, ['admin', 'hr']);
+    const filteredAdminHrIds = adminHrIds.filter(id => id !== params.interviewerId);
+    
+    if (filteredAdminHrIds.length > 0) {
+      await this.createBulkNotifications({
+        organizationId: params.organizationId,
+        type: NotificationType.MEETING_INVITE_ACCEPTED,
+        title: 'Meeting Invite Accepted',
+        message: `${params.attendeeName} has accepted the interview invitation with ${params.candidateName}`,
+        relatedEntity: 'meeting',
+        relatedId: params.candidateId,
+        actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
+        priority: 'medium',
+        metadata: {
+          candidateName: params.candidateName,
+          jobTitle: params.jobTitle,
+          jobId: params.jobId,
+          attendeeEmail: params.attendeeEmail,
+          attendeeName: params.attendeeName,
+          interviewerName: params.interviewerName,
+          meetingDate: params.meetingDate,
+        },
+      }, filteredAdminHrIds);
+    }
+  }
+
+  /**
+   * Notify when meeting invite is declined
+   */
+  static async notifyMeetingInviteDeclined(params: {
+    organizationId: string;
+    candidateId: string;
+    candidateName: string;
+    jobId: string;
+    jobTitle: string;
+    attendeeEmail: string;
+    attendeeName: string;
+    interviewerId?: string;
+    interviewerName?: string;
+    meetingDate?: Date;
+  }) {
+    // High priority notification to the organizer/interviewer
+    if (params.interviewerId) {
+      await this.createNotification({
+        organizationId: params.organizationId,
+        recipientId: params.interviewerId,
+        type: NotificationType.MEETING_INVITE_DECLINED,
+        title: 'Meeting Invite Declined',
+        message: `⚠️ ${params.attendeeName} has declined the interview invitation with ${params.candidateName}`,
+        relatedEntity: 'meeting',
+        relatedId: params.candidateId,
+        actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
+        priority: 'high',
+        metadata: {
+          candidateName: params.candidateName,
+          jobTitle: params.jobTitle,
+          jobId: params.jobId,
+          attendeeEmail: params.attendeeEmail,
+          attendeeName: params.attendeeName,
+          interviewerName: params.interviewerName,
+          meetingDate: params.meetingDate,
+        },
+      });
+    }
+
+    // High priority notification to admin/hr
+    const adminHrIds = await this.getUsersByRole(params.organizationId, ['admin', 'hr']);
+    const filteredAdminHrIds = adminHrIds.filter(id => id !== params.interviewerId);
+    
+    if (filteredAdminHrIds.length > 0) {
+      await this.createBulkNotifications({
+        organizationId: params.organizationId,
+        type: NotificationType.MEETING_INVITE_DECLINED,
+        title: 'Meeting Invite Declined - Action Required',
+        message: `⚠️ ${params.attendeeName} has declined the interview invitation with ${params.candidateName}. Consider rescheduling.`,
+        relatedEntity: 'meeting',
+        relatedId: params.candidateId,
+        actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
+        priority: 'high',
+        metadata: {
+          candidateName: params.candidateName,
+          jobTitle: params.jobTitle,
+          jobId: params.jobId,
+          attendeeEmail: params.attendeeEmail,
+          attendeeName: params.attendeeName,
+          interviewerName: params.interviewerName,
+          meetingDate: params.meetingDate,
+        },
+      }, filteredAdminHrIds);
+    }
+  }
+
+  /**
+   * Notify when meeting invite is tentatively accepted
+   */
+  static async notifyMeetingInviteTentative(params: {
+    organizationId: string;
+    candidateId: string;
+    candidateName: string;
+    jobId: string;
+    jobTitle: string;
+    attendeeEmail: string;
+    attendeeName: string;
+    interviewerId?: string;
+    interviewerName?: string;
+    meetingDate?: Date;
+  }) {
+    // Notify the organizer/interviewer
+    if (params.interviewerId) {
+      await this.createNotification({
+        organizationId: params.organizationId,
+        recipientId: params.interviewerId,
+        type: NotificationType.MEETING_INVITE_TENTATIVE,
+        title: 'Meeting Invite - Maybe',
+        message: `${params.attendeeName} tentatively accepted the interview invitation with ${params.candidateName}`,
+        relatedEntity: 'meeting',
+        relatedId: params.candidateId,
+        actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
+        priority: 'medium',
+        metadata: {
+          candidateName: params.candidateName,
+          jobTitle: params.jobTitle,
+          jobId: params.jobId,
+          attendeeEmail: params.attendeeEmail,
+          attendeeName: params.attendeeName,
+          interviewerName: params.interviewerName,
+          meetingDate: params.meetingDate,
+        },
+      });
+    }
+
+    // Notify admin/hr
+    const adminHrIds = await this.getUsersByRole(params.organizationId, ['admin', 'hr']);
+    const filteredAdminHrIds = adminHrIds.filter(id => id !== params.interviewerId);
+    
+    if (filteredAdminHrIds.length > 0) {
+      await this.createBulkNotifications({
+        organizationId: params.organizationId,
+        type: NotificationType.MEETING_INVITE_TENTATIVE,
+        title: 'Meeting Invite - Maybe',
+        message: `${params.attendeeName} tentatively accepted the interview invitation with ${params.candidateName}`,
+        relatedEntity: 'meeting',
+        relatedId: params.candidateId,
+        actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
+        priority: 'medium',
+        metadata: {
+          candidateName: params.candidateName,
+          jobTitle: params.jobTitle,
+          jobId: params.jobId,
+          attendeeEmail: params.attendeeEmail,
+          attendeeName: params.attendeeName,
+          interviewerName: params.interviewerName,
+          meetingDate: params.meetingDate,
+        },
+      }, filteredAdminHrIds);
+    }
+  }
+
+  /**
    * Notify when interview is completed
    */
   static async notifyInterviewCompleted(params: {

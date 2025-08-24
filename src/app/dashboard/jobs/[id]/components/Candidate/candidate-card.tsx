@@ -40,6 +40,7 @@ import {
   Calendar,
   Copy,
   Phone,
+  RefreshCw,
   Video,
 } from "lucide-react";
 import {
@@ -757,7 +758,14 @@ export function CandidateCard({
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <div
-                          className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-600 transition-colors flex-shrink-0"
+                          className={cn(
+                            "w-6 h-6 rounded-full flex items-center justify-center cursor-pointer transition-colors flex-shrink-0 relative",
+                            candidate.assignment.googleMeet.attendeeResponses?.some(a => a.responseStatus === 'declined')
+                              ? "bg-red-500 hover:bg-red-600"
+                              : candidate.assignment.googleMeet.attendeeResponses?.every(a => a.responseStatus === 'accepted')
+                              ? "bg-green-500 hover:bg-green-600"
+                              : "bg-blue-500 hover:bg-blue-600"
+                          )}
                           onClick={(e) => {
                             e.stopPropagation();
                             const meetingInfo = `Meeting: ${candidate.assignment.googleMeet.summary}
@@ -793,7 +801,90 @@ Google Meet Link: ${candidate.assignment.googleMeet.meetingLink}`;
                               {candidate.assignment.googleMeet.meetingLink}
                             </div>
                           </div>
+                          
+                          {/* Attendee Responses */}
+                          {candidate.assignment.googleMeet.attendeeResponses && 
+                           candidate.assignment.googleMeet.attendeeResponses.length > 0 && (
+                            <div className="text-xs">
+                              <div className="text-gray-500 dark:text-gray-400 mb-1">Attendee Responses:</div>
+                              <div className="space-y-1">
+                                {candidate.assignment.googleMeet.attendeeResponses.map((attendee, idx) => (
+                                  <div key={idx} className="flex items-center justify-between gap-2 px-2 py-1 bg-gray-50/50 dark:bg-gray-800/50 rounded">
+                                    <span className="text-gray-700 dark:text-gray-300 truncate flex-1">
+                                      {attendee.name || attendee.email.split('@')[0]}
+                                    </span>
+                                    <span className={cn(
+                                      "text-xs px-1.5 py-0.5 rounded font-medium",
+                                      attendee.responseStatus === 'accepted' && "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400",
+                                      attendee.responseStatus === 'declined' && "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400",
+                                      attendee.responseStatus === 'tentative' && "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400",
+                                      attendee.responseStatus === 'needsAction' && "bg-gray-100 text-gray-600 dark:bg-gray-700/50 dark:text-gray-400"
+                                    )}>
+                                      {attendee.responseStatus === 'accepted' && '✓ Accepted'}
+                                      {attendee.responseStatus === 'declined' && '✗ Declined'}
+                                      {attendee.responseStatus === 'tentative' && '? Maybe'}
+                                      {attendee.responseStatus === 'needsAction' && '⏳ Pending'}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+                
+                {/* Sync Button for Google Meet Responses */}
+                {candidate.assignment?.googleMeet?.eventId && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          className="w-6 h-6 rounded-full flex items-center justify-center bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            try {
+                              const response = await fetch('/api/google-calendar/sync-event', {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                  candidateId: candidate._id,
+                                  eventId: candidate.assignment.googleMeet.eventId,
+                                }),
+                              });
+                              
+                              if (response.ok) {
+                                const data = await response.json();
+                                toast({
+                                  title: "Sync Successful",
+                                  description: data.notificationsSent > 0 
+                                    ? `Updated attendee responses. ${data.notificationsSent} notifications sent.`
+                                    : "Attendee responses are up to date.",
+                                });
+                                // Optionally refresh the candidate data here
+                                window.location.reload();
+                              } else {
+                                throw new Error('Sync failed');
+                              }
+                            } catch (error) {
+                              console.error('Sync error:', error);
+                              toast({
+                                title: "Sync Failed",
+                                description: "Unable to sync attendee responses. Please try again.",
+                                variant: "destructive",
+                              });
+                            }
+                          }}
+                        >
+                          <RefreshCw size={12} className="text-gray-600 dark:text-gray-400" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        <p className="text-xs">Sync attendee responses</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>

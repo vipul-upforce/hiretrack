@@ -19,7 +19,8 @@ import {
   EyeOff,
   ExternalLink,
   LogOut,
-  Sparkles
+  Sparkles,
+  Shield
 } from "lucide-react";
 import {
   useGetGoogleCalendarConfigQuery,
@@ -40,6 +41,13 @@ export default function GoogleCalendarSettings({ onClose }: { onClose: () => voi
   const [showConfetti, setShowConfetti] = useState(false);
   const [redirectUri, setRedirectUri] = useState("");
   const [authWindow, setAuthWindow] = useState<Window | null>(null);
+  const [isTestingConnection, setIsTestingConnection] = useState(false);
+  const [testResult, setTestResult] = useState<{
+    success: boolean;
+    message: string;
+    details?: string;
+    data?: any;
+  } | null>(null);
 
   const [formData, setFormData] = useState({
     clientId: "",
@@ -157,6 +165,102 @@ export default function GoogleCalendarSettings({ onClose }: { onClose: () => voi
         description: "Failed to disconnect Google Calendar",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleTestConnection = async () => {
+    setIsTestingConnection(true);
+    setTestResult(null);
+    
+    try {
+      const response = await fetch('/api/google-calendar/test-connection', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      // Always try to parse the response, even if it failed
+      let data;
+      let responseText = '';
+      
+      try {
+        responseText = await response.text();
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        // If we can't parse JSON, show the raw response
+        data = {
+          success: false,
+          error: `Invalid JSON response`,
+          details: `Status: ${response.status} ${response.statusText}. Response: ${responseText.substring(0, 500)}${responseText.length > 500 ? '...' : ''}`,
+          rawResponse: responseText,
+        };
+      }
+      
+      setTestResult({
+        success: data.success || false,
+        message: data.message || data.error || `HTTP ${response.status}`,
+        details: data.details || (response.ok ? undefined : `Server returned ${response.status}: ${response.statusText}`),
+        data: {
+          ...data.data,
+          debugInfo: data.debugInfo,
+          rawResponse: data.rawResponse || (!data.success && responseText ? responseText : undefined),
+          connectionStatusUpdated: data.connectionStatusUpdated,
+        },
+      });
+
+      if (data.success) {
+        toast({
+          title: "Connection Test Passed ✅",
+          description: data.message || "Google Calendar connection is working",
+        });
+      } else {
+        toast({
+          title: "Connection Test Failed ❌",
+          description: data.details || data.error || `HTTP ${response.status}: ${response.statusText}`,
+          variant: "destructive",
+        });
+
+        // If the connection status was updated (marked as disconnected), refresh the UI
+        if (data.connectionStatusUpdated) {
+          console.log("🔄 Connection status was updated, refreshing...");
+          setTimeout(() => {
+            refetch(); // Refresh the settings data to show updated connection status
+          }, 1000); // Small delay to ensure database update is complete
+        }
+      }
+    } catch (networkError) {
+      console.error('Network error during connection test:', networkError);
+      
+      let errorMessage = "Network connection failed";
+      let errorDetails = "Unable to reach the server";
+      
+      if (networkError instanceof TypeError) {
+        if (networkError.message.includes('Failed to fetch')) {
+          errorDetails = "Network request failed. Check your internet connection or server status.";
+        } else {
+          errorDetails = `Network error: ${networkError.message}`;
+        }
+      } else if (networkError instanceof Error) {
+        errorDetails = `Error: ${networkError.message}`;
+      } else {
+        errorDetails = `Unexpected error: ${String(networkError)}`;
+      }
+      
+      const errorResult = {
+        success: false,
+        message: errorMessage,
+        details: errorDetails,
+      };
+      
+      setTestResult(errorResult);
+      toast({
+        title: "Connection Test Error",
+        description: errorDetails,
+        variant: "destructive",
+      });
+    } finally {
+      setIsTestingConnection(false);
     }
   };
 
@@ -322,33 +426,118 @@ export default function GoogleCalendarSettings({ onClose }: { onClose: () => voi
                   Connect Google Calendar
                 </Button>
               ) : (
-                <Button
-                  onClick={handleDisconnect}
-                  disabled={isDisconnecting}
-                  variant="outline"
-                  className="flex-1"
-                >
-                  {isDisconnecting ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <LogOut className="mr-2 h-4 w-4" />
-                  )}
-                  Disconnect
-                </Button>
+                <>
+                  <Button
+                    onClick={handleTestConnection}
+                    disabled={isTestingConnection}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    {isTestingConnection ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Shield className="mr-2 h-4 w-4" />
+                    )}
+                    Test Connection
+                  </Button>
+                  <Button
+                    onClick={handleDisconnect}
+                    disabled={isDisconnecting}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    {isDisconnecting ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <LogOut className="mr-2 h-4 w-4" />
+                    )}
+                    Disconnect
+                  </Button>
+                </>
               )}
             </div>
           </CardContent>
         </Card>
 
+        {/* Test Results */}
+        {testResult && (
+          <Alert className={testResult.success ? 
+            "border-green-200 bg-green-50 dark:bg-green-950/20" : 
+            "border-red-200 bg-red-50 dark:bg-red-950/20"
+          }>
+            {testResult.success ? (
+              <Check className="h-4 w-4 text-green-600" />
+            ) : (
+              <X className="h-4 w-4 text-red-600" />
+            )}
+            <AlertTitle className={testResult.success ? 
+              "text-green-800 dark:text-green-300" : 
+              "text-red-800 dark:text-red-300"
+            }>
+              Connection Test {testResult.success ? "Passed" : "Failed"}
+            </AlertTitle>
+            <AlertDescription className={testResult.success ? 
+              "text-green-700 dark:text-green-400" : 
+              "text-red-700 dark:text-red-400"
+            }>
+              <div className="space-y-2">
+                <p>{testResult.message}</p>
+                {testResult.data?.connectionStatusUpdated && (
+                  <div className="text-sm font-medium text-orange-700 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 p-2 rounded border border-orange-200 dark:border-orange-800">
+                    ⚠️ Connection status updated: Marked as disconnected due to authentication failure
+                  </div>
+                )}
+                {testResult.details && (
+                  <div className="text-sm opacity-90">
+                    <p className="font-medium mb-1">Details:</p>
+                    <div className="font-mono text-xs bg-black/5 dark:bg-white/5 p-2 rounded border">
+                      {testResult.details}
+                    </div>
+                  </div>
+                )}
+                {testResult.success && testResult.data && (
+                  <div className="text-xs opacity-80 space-y-1 mt-2 p-2 bg-white/50 dark:bg-black/20 rounded border">
+                    <div><strong>Connected Account:</strong> {testResult.data.connectedEmail}</div>
+                    <div><strong>Primary Calendar:</strong> {testResult.data.primaryCalendarName}</div>
+                    <div><strong>Time Zone:</strong> {testResult.data.primaryCalendarTimeZone}</div>
+                    <div><strong>Accessible Calendars:</strong> {testResult.data.calendarCount}</div>
+                    <div><strong>Last Tested:</strong> {new Date(testResult.data.lastTestedAt).toLocaleString()}</div>
+                  </div>
+                )}
+                {!testResult.success && testResult.data?.rawResponse && (
+                  <details className="text-xs mt-2">
+                    <summary className="cursor-pointer font-medium opacity-80 hover:opacity-100">
+                      Show Raw Server Response
+                    </summary>
+                    <div className="mt-1 font-mono text-xs bg-black/10 dark:bg-white/10 p-2 rounded border max-h-40 overflow-auto">
+                      {testResult.data.rawResponse}
+                    </div>
+                  </details>
+                )}
+                {!testResult.success && testResult.data?.debugInfo && (
+                  <details className="text-xs mt-2">
+                    <summary className="cursor-pointer font-medium opacity-80 hover:opacity-100">
+                      Show Debug Information
+                    </summary>
+                    <div className="mt-1 font-mono text-xs bg-black/10 dark:bg-white/10 p-2 rounded border max-h-40 overflow-auto">
+                      <pre>{JSON.stringify(testResult.data.debugInfo, null, 2)}</pre>
+                    </div>
+                  </details>
+                )}
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Success Message with Confetti Icon */}
-        {isConnected && (
+        {isConnected && !testResult && (
           <Alert className="border-green-200 bg-green-50 dark:bg-green-950/20">
             <Sparkles className="h-4 w-4 text-green-600" />
             <AlertTitle className="text-green-800 dark:text-green-300">
               Google Calendar Connected!
             </AlertTitle>
             <AlertDescription className="text-green-700 dark:text-green-400">
-              You can now schedule Google Meet interviews directly from the candidate assignment dialog.
+              You can now schedule Google Meet interviews directly from the candidate assignment dialog. Use the "Test Connection" button to verify everything is working properly.
             </AlertDescription>
           </Alert>
         )}

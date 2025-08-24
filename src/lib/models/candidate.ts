@@ -62,6 +62,15 @@ export interface ICandidate {
       htmlLink: string;
       summary: string;
       description: string;
+      attendeeResponses?: Array<{
+        email: string;
+        name?: string;
+        responseStatus: 'needsAction' | 'accepted' | 'declined' | 'tentative';
+        comment?: string;
+        lastUpdated: Date;
+        notificationSent?: boolean;
+      }>;
+      lastSyncedAt?: Date;
     };
   };
   customFields: {
@@ -258,6 +267,21 @@ export const candidateSchema = new Schema(
         htmlLink: String,
         summary: String,
         description: String,
+        attendeeResponses: [
+          {
+            email: String,
+            name: String,
+            responseStatus: {
+              type: String,
+              enum: ['needsAction', 'accepted', 'declined', 'tentative'],
+              default: 'needsAction'
+            },
+            comment: String,
+            lastUpdated: Date,
+            notificationSent: Boolean,
+          }
+        ],
+        lastSyncedAt: Date,
       },
     },
     customFields: {

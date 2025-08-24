@@ -15,6 +15,7 @@ interface ScheduleMeetRequest {
   scheduledTime: string;
   duration: number;
   guests: string[];
+  jobId?: string;
   jobTitle?: string;
   organizationName?: string;
   meetingNotes?: string;
@@ -254,7 +255,77 @@ Candidate: ${candidateName}`;
     const htmlLink = response.data.htmlLink || "";
     const summary = event.summary;
 
-    // Note: Candidate record will be updated in the assignment flow with Google Meet info
+    // Store initial attendee list with 'needsAction' status
+    const initialAttendeeResponses = guests.map(email => ({
+      email,
+      name: email === candidateEmail ? candidateName : 
+            email === settings.googleCalendar?.connectedEmail ? interviewerName : 
+            email.split('@')[0], // Default to email prefix for other attendees
+      responseStatus: 'needsAction' as const,
+      lastUpdated: new Date(),
+      notificationSent: false,
+    }));
+
+    // Update candidate record with Google Meet info and initial attendee responses
+    if (candidateId) {
+      await Candidate.findByIdAndUpdate(candidateId, {
+        'assignment.googleMeet': {
+          eventId,
+          meetingLink,
+          htmlLink,
+          summary,
+          description,
+          attendeeResponses: initialAttendeeResponses,
+          lastSyncedAt: new Date(),
+        },
+      });
+      console.log("✅ Updated candidate with meeting details and attendee list");
+    }
+
+    // Try to set up webhook for this event (non-blocking)
+    try {
+      // Generate unique channel ID
+      const channelId = `hiretrack-${organizationId}-${Date.now()}`;
+      const expirationTime = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 days from now
+      
+      // Only set up webhook if we have a valid BASE_URL (production environment)
+      if (process.env.BASE_URL && process.env.ENVIRONMENT === 'production') {
+        const webhookUrl = `${process.env.BASE_URL}/api/google-calendar/webhook`;
+        
+        // Watch the event for changes
+        const watchResponse = await calendar.events.watch({
+          calendarId: 'primary',
+          requestBody: {
+            id: channelId,
+            type: 'web_hook',
+            address: webhookUrl,
+            token: process.env.GOOGLE_CALENDAR_WEBHOOK_TOKEN || 'hiretrack-webhook-secret',
+            expiration: expirationTime.toString(),
+          },
+        });
+        
+        // Store webhook subscription
+        if (watchResponse.data.resourceId) {
+          const { WebhookSubscription } = await import("@/lib/mongodb");
+          await WebhookSubscription.create({
+            organizationId,
+            resourceId: watchResponse.data.resourceId,
+            channelId: channelId,
+            eventId: eventId,
+            candidateId: candidateId,
+            jobId: body.jobId || '',
+            expirationTime: new Date(expirationTime),
+            active: true,
+          });
+          console.log("✅ Webhook subscription created for event:", eventId);
+        }
+      } else {
+        console.log("ℹ️ Webhook not configured (development environment or missing BASE_URL)");
+      }
+    } catch (webhookError) {
+      console.error("⚠️ Failed to set up webhook (non-critical):", webhookError);
+      // Continue without webhook - manual sync will be available
+    }
 
     return NextResponse.json({
       success: true,
@@ -263,6 +334,7 @@ Candidate: ${candidateName}`;
       htmlLink,
       summary,
       description,
+      attendees: initialAttendeeResponses,
       message: "Google Meet scheduled successfully",
     });
   } catch (error) {
