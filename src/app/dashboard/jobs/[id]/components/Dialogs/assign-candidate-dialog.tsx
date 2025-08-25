@@ -180,7 +180,7 @@ export function AssignCandidateDialog({
     attachments: [],
     scheduleGoogleMeet: false,
     meetDuration: 30,
-    meetingNotes: "",
+    meetingNotes: candidate?.assignment?.googleMeet?.meetingNotes,
     meetingAttachments: [],
     additionalGuests: [],
   };
@@ -248,26 +248,26 @@ export function AssignCandidateDialog({
 
         const requestBody = isUpdating
           ? {
-            eventId: candidate.assignment.googleMeet.eventId,
-            candidateId: candidate._id,
-            scheduledTime: values.time?.toISOString(),
-            duration: values.meetDuration || 30,
-            guests: allGuests,
-          }
+              eventId: candidate.assignment.googleMeet.eventId,
+              candidateId: candidate._id,
+              scheduledTime: values.time?.toISOString(),
+              duration: values.meetDuration || 30,
+              guests: allGuests,
+            }
           : {
-            candidateId: candidate._id,
-            candidateName: candidate.name,
-            candidateEmail: candidate.email,
-            interviewerId: selectedInterviewer._id,
-            interviewerName: selectedInterviewer.name,
-            scheduledTime: values.time?.toISOString(),
-            duration: values.meetDuration || 30,
-            guests: allGuests,
-            jobTitle: candidate.jobId?.title || "Position",
-            organizationName: user?.organizationInfo?.name || "Company",
-            meetingNotes: values.meetingNotes || "",
-            meetingAttachments: processedMeetingAttachments,
-          };
+              candidateId: candidate._id,
+              candidateName: candidate.name,
+              candidateEmail: candidate.email,
+              interviewerId: selectedInterviewer._id,
+              interviewerName: selectedInterviewer.name,
+              scheduledTime: values.time?.toISOString(),
+              duration: values.meetDuration || 30,
+              guests: allGuests,
+              jobTitle: candidate.jobId?.title || "Position",
+              organizationName: user?.organizationInfo?.name || "Company",
+              meetingNotes: values.meetingNotes || "",
+              meetingAttachments: processedMeetingAttachments,
+            };
 
         console.log("🚀 Making Google Meet API call:", {
           apiUrl,
@@ -293,17 +293,21 @@ export function AssignCandidateDialog({
         }
 
         // Add meeting link to remark and store Google Meet info
+
         const updatedValues = {
           ...values,
           remark:
-            `${values.remark}\n\nGoogle Meet Link: ${result.meetingLink}`.trim(),
+            `${values.remark}\n\n${values.meetingNotes}\n\nGoogle Meet Link: ${result.meetingLink}`.trim(),
           googleMeetData: {
             eventId: result.eventId,
             meetingLink: result.meetingLink,
             htmlLink: result.htmlLink,
             summary: result.summary,
             description: result.description,
+            meetingNotes: values.meetingNotes,
+            meetingAttachments: processedMeetingAttachments,
           },
+          attachments: [...values.attachments, ...processedMeetingAttachments],
         };
 
         // Proceed with assignment (this will now include Google Meet data)
@@ -503,29 +507,29 @@ export function AssignCandidateDialog({
                         {/* Show checkbox only if no existing meet or in edit mode */}
                         {(!candidate.assignment?.googleMeet ||
                           values.scheduleGoogleMeet) && (
-                            <div className="flex items-center space-x-2">
-                              <Field name="scheduleGoogleMeet">
-                                {({ field }: FieldProps) => (
-                                  <Checkbox
-                                    id="scheduleGoogleMeet"
-                                    checked={field.value}
-                                    onCheckedChange={(checked) =>
-                                      setFieldValue("scheduleGoogleMeet", checked)
-                                    }
-                                  />
-                                )}
-                              </Field>
-                              <Label
-                                htmlFor="scheduleGoogleMeet"
-                                className="flex items-center gap-2 cursor-pointer"
-                              >
-                                <Calendar className="h-4 w-4" />
-                                {candidate.assignment?.googleMeet
-                                  ? "Update Google Meet"
-                                  : "Schedule Google Meet"}
-                              </Label>
-                            </div>
-                          )}
+                          <div className="flex items-center space-x-2">
+                            <Field name="scheduleGoogleMeet">
+                              {({ field }: FieldProps) => (
+                                <Checkbox
+                                  id="scheduleGoogleMeet"
+                                  checked={field.value}
+                                  onCheckedChange={(checked) =>
+                                    setFieldValue("scheduleGoogleMeet", checked)
+                                  }
+                                />
+                              )}
+                            </Field>
+                            <Label
+                              htmlFor="scheduleGoogleMeet"
+                              className="flex items-center gap-2 cursor-pointer"
+                            >
+                              <Calendar className="h-4 w-4" />
+                              {candidate.assignment?.googleMeet
+                                ? "Update Google Meet"
+                                : "Schedule Google Meet"}
+                            </Label>
+                          </div>
+                        )}
 
                         {values.scheduleGoogleMeet && (
                           <div className="ml-6 space-y-3">
@@ -608,15 +612,18 @@ export function AssignCandidateDialog({
 
                                   return defaultGuests.map((email) => {
                                     let role = "";
-                                    let roleColor = "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
+                                    let roleColor =
+                                      "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
                                     if (email === candidate.email) {
                                       role = "Candidate";
-                                      roleColor = "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400";
+                                      roleColor =
+                                        "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400";
                                     } else if (
                                       email === selectedInterviewer?.email
                                     ) {
                                       role = "Interviewer";
-                                      roleColor = "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400";
+                                      roleColor =
+                                        "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400";
                                     } else if (email === user?.email) {
                                       role = "HR";
                                       roleColor =
@@ -754,16 +761,23 @@ export function AssignCandidateDialog({
                                           e.target as HTMLInputElement
                                         ).files;
                                         if (files && files.length > 0) {
+                                          // Use only values.meetingAttachments for form state
                                           const currentFiles =
                                             values.meetingAttachments || [];
                                           const sanitizedFiles = sanitizeFiles(
                                             Array.from(files)
                                           );
+
+                                          // Ensure we don't exceed 10 files total
+                                          const availableSlots = Math.max(
+                                            0,
+                                            10 - currentFiles.length
+                                          );
                                           setFieldValue("meetingAttachments", [
                                             ...currentFiles,
                                             ...sanitizedFiles.slice(
                                               0,
-                                              10 - currentFiles.length
+                                              availableSlots
                                             ),
                                           ]);
                                         }
@@ -779,45 +793,89 @@ export function AssignCandidateDialog({
                                   </span>
                                 </div>
 
-                                {values.meetingAttachments &&
-                                  values.meetingAttachments.length > 0 && (
-                                    <div className="space-y-1">
-                                      {values.meetingAttachments.map(
-                                        (file: any, index: number) => (
-                                          <div
-                                            key={index}
-                                            className="flex items-center justify-between p-1.5 bg-white dark:bg-black border border-gray-200 rounded text-xs"
-                                          >
-                                            <div className="flex items-center gap-1">
-                                              <FileIcon className="w-3 h-3 text-gray-500" />
-                                              <span className="truncate">
-                                                {file.name}
-                                              </span>
-                                            </div>
-                                            <Button
-                                              type="button"
-                                              variant="ghost"
-                                              size="sm"
-                                              onClick={() => {
-                                                const updatedFiles =
-                                                  values.meetingAttachments?.filter(
-                                                    (_: any, i: number) =>
-                                                      i !== index
-                                                  );
-                                                setFieldValue(
-                                                  "meetingAttachments",
-                                                  updatedFiles
-                                                );
-                                              }}
-                                              className="h-4 w-4 p-0 text-gray-400 hover:text-red-500"
+                                {(() => {
+                                  const formAttachments =
+                                    values.meetingAttachments || [];
+                                  const candidateAttachments =
+                                    candidate?.assignment?.googleMeet
+                                      ?.meetingAttachments || [];
+
+                                  // If form has attachments, use those; otherwise show candidate attachments
+                                  const displayAttachments = [
+                                    ...formAttachments,
+                                    ...candidateAttachments,
+                                  ];
+                                  // formAttachments.length > 0
+                                  //   ? formAttachments
+                                  //   : candidateAttachments;
+
+                                  return (
+                                    displayAttachments.length > 0 && (
+                                      <div className="space-y-1">
+                                        {displayAttachments.map(
+                                          (file: any, index: number) => (
+                                            <div
+                                              key={`${file.name}-${index}`}
+                                              className="flex items-center justify-between p-1.5 bg-white dark:bg-black border border-gray-200 rounded text-xs"
                                             >
-                                              <X className="w-2.5 h-2.5" />
-                                            </Button>
-                                          </div>
-                                        )
-                                      )}
-                                    </div>
-                                  )}
+                                              <div className="flex items-center gap-1">
+                                                <FileIcon className="w-3 h-3 text-gray-500" />
+                                                <span className="truncate">
+                                                  {file.name}
+                                                </span>
+                                              </div>
+                                              <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => {
+                                                  // Always work with form values when removing
+                                                  const currentFormFiles =
+                                                    values.meetingAttachments ||
+                                                    [];
+
+                                                  if (
+                                                    currentFormFiles.length > 0
+                                                  ) {
+                                                    // Remove from form attachments
+                                                    const updatedFiles =
+                                                      currentFormFiles.filter(
+                                                        (_: any, i: number) =>
+                                                          i !== index
+                                                      );
+                                                    setFieldValue(
+                                                      "meetingAttachments",
+                                                      updatedFiles
+                                                    );
+                                                  } else {
+                                                    // If we're showing candidate attachments, copy them to form and remove the selected one
+                                                    const candidateFiles =
+                                                      candidate?.assignment
+                                                        ?.googleMeet
+                                                        ?.meetingAttachments ||
+                                                      [];
+                                                    const updatedFiles =
+                                                      candidateFiles.filter(
+                                                        (_: any, i: number) =>
+                                                          i !== index
+                                                      );
+                                                    setFieldValue(
+                                                      "meetingAttachments",
+                                                      updatedFiles
+                                                    );
+                                                  }
+                                                }}
+                                                className="h-4 w-4 p-0 text-gray-400 hover:text-red-500"
+                                              >
+                                                <X className="w-2.5 h-2.5" />
+                                              </Button>
+                                            </div>
+                                          )
+                                        )}
+                                      </div>
+                                    )
+                                  );
+                                })()}
                               </div>
                             </div>
                           </div>

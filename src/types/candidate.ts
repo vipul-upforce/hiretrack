@@ -2,6 +2,7 @@ import { CustomFieldValues } from "@/Custom_Fields/hooks/useCustomForm";
 import { ICandidateHistory } from "@/lib/models/history";
 import { Job } from "./job";
 import { ITag } from "@/lib/models/organization";
+import { Attachment } from "@/app/api/candidates/route";
 
 export interface JobDetail {
   title: string;
@@ -118,10 +119,12 @@ interface Assignment {
     htmlLink: string;
     summary: string;
     description: string;
+    meetingAttachments?: Attachment[];
+    meetingNotes?: string;
     attendeeResponses?: Array<{
       email: string;
       name?: string;
-      responseStatus: 'needsAction' | 'accepted' | 'declined' | 'tentative';
+      responseStatus: "needsAction" | "accepted" | "declined" | "tentative";
       comment?: string;
       lastUpdated: Date;
       notificationSent?: boolean;

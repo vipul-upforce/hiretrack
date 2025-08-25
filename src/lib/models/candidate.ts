@@ -65,7 +65,7 @@ export interface ICandidate {
       attendeeResponses?: Array<{
         email: string;
         name?: string;
-        responseStatus: 'needsAction' | 'accepted' | 'declined' | 'tentative';
+        responseStatus: "needsAction" | "accepted" | "declined" | "tentative";
         comment?: string;
         lastUpdated: Date;
         notificationSent?: boolean;
@@ -267,19 +267,29 @@ export const candidateSchema = new Schema(
         htmlLink: String,
         summary: String,
         description: String,
+        meetingNotes: String,
+        meetingAttachments: [
+          {
+            id: String,
+            name: String,
+            url: String,
+            type: { type: String, default: "pdf" },
+            size: Number,
+          },
+        ],
         attendeeResponses: [
           {
             email: String,
             name: String,
             responseStatus: {
               type: String,
-              enum: ['needsAction', 'accepted', 'declined', 'tentative'],
-              default: 'needsAction'
+              enum: ["needsAction", "accepted", "declined", "tentative"],
+              default: "needsAction",
             },
             comment: String,
             lastUpdated: Date,
             notificationSent: Boolean,
-          }
+          },
         ],
         lastSyncedAt: Date,
       },
