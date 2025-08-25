@@ -6,6 +6,8 @@ import { Settings, User, EmailHistory } from "@/lib/mongodb";
 import mongoose from "mongoose";
 import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
 import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
+import { Organization } from "@/lib/models/user";
+
 
 // Email queue to track pending emails
 const emailQueue = new Map<
@@ -251,6 +253,7 @@ async function sendQueuedEmail(
     sentByName,
     candidateId,
     jobId,
+    dashboardLink
   } = data;
 
   const settings = await Settings.findOne({
@@ -268,10 +271,10 @@ async function sendQueuedEmail(
 
   const startDateString = startTime
     ? ((await getFormattedDate(req, new Date(startTime))) as string) +
-      " " +
-      settings.timeZone.offset +
-      " " +
-      settings.timeZone.name
+    " " +
+    settings.timeZone.offset +
+    " " +
+    settings.timeZone.name
     : "N/A";
   const startDate = startTime
     ? ((await getFormattedDate(req, new Date(startTime), true)) as Date)
@@ -291,9 +294,8 @@ async function sendQueuedEmail(
 
   console.log("START TIME: BEFORE: : ", startTime);
   console.log("DATE TO BE RECORDED in EMail: ", startDateString, endDateString);
-  const eventDescription: string = `<div><strong>Job Name:</strong> ${
-    jobName || "N/A"
-  }<br>
+  const eventDescription: string = `<div><strong>Job Name:</strong> ${jobName || "N/A"
+    }<br>
   <strong>Interviewer Name:</strong> ${interviewerName || "N/A"}<br>
   <strong>Candidate Name:</strong> ${candidateName || "N/A"}<br>
   <strong>Status:</strong> ${status || "N/A"}
@@ -337,6 +339,7 @@ async function sendQueuedEmail(
       outlookCalendarLink,
       candidateProfileLink: candidateDetailsPage,
       organizationName,
+      dashboardLink
     },
     organizationId
   );
@@ -487,7 +490,7 @@ export async function PUT(req: NextRequest) {
     if (!User) {
       throw new Error("Database not connected");
     }
-    const latestRemark = data.feedback[data.feedback.length - 1];
+    const latestRemark = data.feedback;
     const newDate = data.dateTime;
     const completionDate = (await getFormattedDate(
       req,
@@ -495,9 +498,37 @@ export async function PUT(req: NextRequest) {
       false,
       organizationId
     )) as string;
+    const organization = await User?.findOne({
+      organizationId,
+    })
+      .populate({
+        path: "organizationId",
+        select: "name defaultLanes", // populate only organization name
+      })
+      .lean();
 
+    const isOrganization = (obj: any): obj is Organization => {
+      return (
+        obj &&
+        typeof obj === "object" &&
+        "defaultLanes" in obj &&
+        Array.isArray(obj.defaultLanes)
+      );
+    };
+    // console.log(latestRemark, "org---dhbd ds stap-comp-==--=--");
+
+
+    const nextSteps =
+      organization &&
+        organization.organizationId &&
+        isOrganization(organization.organizationId)
+        ? organization.organizationId.defaultLanes[
+        organization.organizationId.defaultLanes.indexOf(data.status) + 1
+        ] || "N/A"
+        : "N/A";
+    // console.log(nextSteps, "nextSteps");
     const candidateDetails = `${req.headers.get("Origin")}/candidate/${data.candidateId}`;
-    console.log("Detaielsss-------sssss", candidateDetails);
+    // console.log("Detaielsss-------sssss", candidateDetails);
 
     const { emailContent, emailSubject } = await getMappedEmailTemplate(
       "step-completed",
@@ -511,6 +542,8 @@ export async function PUT(req: NextRequest) {
         feedback: latestRemark?.description || "N/A",
         rating: latestRemark?.rating || "N/A",
         completionDate: completionDate,
+        recipientName: "",
+        nextStep: nextSteps
       },
       organizationId
     );
@@ -608,6 +641,7 @@ export async function POST(req: NextRequest) {
     } = await req.json();
 
     const candidateDetailsPage = `${req.headers.get("origin")}/candidate/${id}`;
+    const dashboardLink = `${req.headers.get("origin")}/dashboard`; // Added dashboard link
 
     let organizationId;
     const token = req.cookies.get("auth_token");
@@ -693,6 +727,7 @@ export async function POST(req: NextRequest) {
       sentByName: decryptedResponse?.user.name || "HireTrack System",
       candidateId: id,
       jobId: undefined,
+      dashboardLink
     };
 
     if (immediate) {

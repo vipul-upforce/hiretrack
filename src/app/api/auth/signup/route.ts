@@ -29,7 +29,6 @@ async function handleSignup(req: NextRequest) {
         { status: 400 }
       );
     }
-
     // Check if user already exists in the same organization
     // console.log("EXISTING USER: ",organizationId)
     const existingUser =
@@ -61,7 +60,6 @@ async function handleSignup(req: NextRequest) {
       role,
       organizationId,
     });
-
     // Create default lanes for the user
     await Lane.create({
       userId: user._id,

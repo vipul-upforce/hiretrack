@@ -148,26 +148,26 @@ export async function POST(request: NextRequest) {
           // Handle assignment data
           ...(data.assignment && data.assignment.interviewerId !== "-1"
             ? {
-                assignment: {
-                  interviewerId: data.assignment.interviewerId,
-                  assignedAt: new Date(),
-                  ...(data.assignment.time && {
-                    time: new Date(data.assignment.time),
-                  }),
-                },
-              }
+              assignment: {
+                interviewerId: data.assignment.interviewerId,
+                assignedAt: new Date(),
+                ...(data.assignment.time && {
+                  time: new Date(data.assignment.time),
+                }),
+              },
+            }
             : null),
           // Handle file data
           ...(data.resume
             ? {
-                resume: {
-                  id: data.resume.id,
-                  name: data.resume.name,
-                  url: data.resume.url,
-                  type: data.resume.type,
-                  size: data.resume.size,
-                },
-              }
+              resume: {
+                id: data.resume.id,
+                name: data.resume.name,
+                url: data.resume.url,
+                type: data.resume.type,
+                size: data.resume.size,
+              },
+            }
             : null),
           // Handle attachments array
           attachments: data.attachments.map((attachment: Attachment) => ({
@@ -257,6 +257,8 @@ export async function POST(request: NextRequest) {
               triggerUserId: userData.id,
               triggerUserName: userData.name,
             });
+            console.log(userData.id, "Triggerrrr-iiiddd ========");
+            console.log(userData.name, "Triggerrrr-name---- ========");
 
             await NotificationService.notifyCandidateApplied({
               organizationId: organizationId,

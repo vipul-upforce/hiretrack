@@ -5,12 +5,12 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
-import { 
-  User, 
-  Briefcase, 
-  Calendar, 
-  MessageSquare, 
-  UserPlus, 
+import {
+  User,
+  Briefcase,
+  Calendar,
+  MessageSquare,
+  UserPlus,
   AlertCircle,
   CheckCircle,
   Clock,
@@ -51,8 +51,8 @@ const getNotificationIcon = (type: NotificationType) => {
       return <Clock className="h-4 w-4" />;
     case NotificationType.CHECKLIST_COMPLETED:
       return <CheckCircle className="h-4 w-4" />;
-    case NotificationType.EMAIL_FAILED:
-      return <AlertCircle className="h-4 w-4" />;
+    // case NotificationType.EMAIL_FAILED:
+    //   return <AlertCircle className="h-4 w-4" />;
     default:
       return <FileText className="h-4 w-4" />;
   }
@@ -84,11 +84,11 @@ const getPriorityBadgeVariant = (priority: string) => {
   }
 };
 
-export function NotificationItem({ 
-  notification, 
-  onMarkAsRead, 
+export function NotificationItem({
+  notification,
+  onMarkAsRead,
   onClick,
-  className 
+  className
 }: NotificationItemProps) {
   const handleClick = () => {
     // Only perform the action, don't mark as read automatically
@@ -110,8 +110,8 @@ export function NotificationItem({
     <div
       className={cn(
         "flex items-start gap-3 p-3 hover:bg-accent/50 transition-colors cursor-pointer border-l-2",
-        notification.isRead 
-          ? "border-l-transparent opacity-75" 
+        notification.isRead
+          ? "border-l-transparent opacity-75"
           : "border-l-primary bg-accent/20",
         className
       )}
@@ -136,7 +136,7 @@ export function NotificationItem({
           </h4>
           <div className="flex items-center gap-1 flex-shrink-0">
             {notification.priority !== 'medium' && (
-              <Badge 
+              <Badge
                 variant={getPriorityBadgeVariant(notification.priority)}
                 className="text-xs px-1.5 py-0.5"
               >

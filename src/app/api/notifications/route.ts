@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
     const user = decryptedResponse.user;
     const { searchParams } = new URL(request.url);
-    
+
     // Parse query parameters
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "20");
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     // Build query
     const query: any = {
       organizationId: user.organizationId,
-      recipientId: user._id,
+      recipientId: user.id
     };
 
     if (isRead !== null && isRead !== undefined) {

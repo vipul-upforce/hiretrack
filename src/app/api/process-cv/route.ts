@@ -9,6 +9,7 @@ import { handleSingleFile } from "@/lib/fileUtils";
 import { auth } from "@/lib/auth";
 import { AIProviderFactory, ProcessedResumeData } from "@/lib/ai-providers";
 import { decryptAIProviderKeys } from "@/lib/encryption";
+import { NotificationService } from "@/lib/notifications/notificationService";
 
 interface ExtendedProcessedResumeData extends ProcessedResumeData {
   name: string;
@@ -384,11 +385,25 @@ export async function POST(request: NextRequest) {
         });
       }
     }
+    // console.log(cvBatchInfo, "const cvBatchInfo   ==  = = ");
 
     // Update batch status
+
+    // console.log(cvBatchInfo, "Batch ingfooo");
+
     cvBatchInfo.status = "completed";
     cvBatchInfo.completedAt = new Date();
     await cvBatchInfo.save();
+
+    // Send notification after batch processing is completed
+    await NotificationService.notifyBulkImportCompleted({
+      organizationId: organizationId as string,
+      batchId: cvBatchInfo._id.toString(),
+      successCount: cvBatchInfo.successCount,
+      failureCount: cvBatchInfo.failureCount,
+      triggerUserId: authInfo.user._id,
+      triggerUserName: authInfo.user.name || "Unknown User",
+    });
 
     return NextResponse.json({
       message: "Processing completed",

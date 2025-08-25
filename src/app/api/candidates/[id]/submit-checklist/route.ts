@@ -14,6 +14,7 @@ import {
 } from "@/lib/utils/checklistVisibility";
 import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
 import { Console } from "console";
+import { NotificationService } from "@/lib/notifications/notificationService";
 
 // POST - Submit checklist responses for a candidate
 export async function POST(
@@ -260,6 +261,26 @@ export async function POST(
       },
       { upsert: true }
     );
+
+    // Notify checklist completion
+    try {
+      const jobInfo = candidate.jobId as any;
+      await NotificationService.notifyChecklistCompleted({
+        organizationId: decoded.organizationId || "",
+        candidateId: candidate._id.toString(),
+        candidateName: candidate.name || "Unknown Candidate",
+        jobId:
+          jobInfo?._id?.toString() ||
+          candidate.jobId?.toString() ||
+          "",
+        jobTitle: jobInfo?.title || "Unknown Job",
+        triggerUserId: userId,
+        triggerUserName: user?.name || "Unknown User",
+      });
+    } catch (notificationError) {
+      console.error("Failed to send checklist completion notification:", notificationError);
+      // Continue execution even if notification fails
+    }
 
     const candidateHistoryPopulated = await History?.findOne({
       jobId:

@@ -21,6 +21,7 @@ import {
   getUserRole,
 } from "@/lib/utils/checklistVisibility";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import { NotificationService } from "@/lib/notifications/notificationService";
 
 export async function POST(request: NextRequest) {
   //Getting the history data
@@ -423,6 +424,38 @@ export async function PUT(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Notify users based on isPrivate status
+    if (data.newEntry?.remark?.description) {
+      if (data.newEntry.remark.isPrivate === false) {
+        // Notify admin, hr, and interviewers when isPrivate is false
+        await NotificationService.notifyRemarkAdded({
+          organizationId: organizationId,
+          candidateId: data.candidateId,
+          candidateName: candidateData.name,
+          jobId: data.jobId,
+          jobTitle: data.jobId?.title || "Unknown Job",
+          remarkText: data.newEntry.remark.description,
+          triggerUserId: userData.id,
+          triggerUserName: userData.name || "Unknown User",
+          roles: ['admin', 'hr', 'interviewer'], // Notify all roles
+        });
+      } else {
+        // Notify only admin and hr when isPrivate is true
+        await NotificationService.notifyRemarkAdded({
+          organizationId: organizationId,
+          candidateId: data.candidateId,
+          candidateName: candidateData.name,
+          jobId: data.jobId,
+          jobTitle: data.jobId?.title || "Unknown Job",
+          remarkText: data.newEntry.remark.description,
+          triggerUserId: userData.id,
+          triggerUserName: userData.name || "Unknown User",
+          roles: ['admin', 'hr'], // Notify only admin and hr
+        });
+      }
+    }
+
     // console.log("🚒🚒🚒🚒 In HistoryUpdate: ", candidateData.remarks.length);
     const transformedHistory = (historyData.history || []).map(
       (historyItem: any) => {

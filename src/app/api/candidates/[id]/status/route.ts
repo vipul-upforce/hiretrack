@@ -21,11 +21,11 @@ export async function PATCH(
     }
 
     const userData = decryptedResponse.user;
-    
+
     await connectToDatabase();
     const { status } = await request.json();
     const { id } = await params;
-    
+
     if (!Candidate || !Job) {
       return NextResponse.json(
         { error: "Models not found" },
@@ -41,9 +41,10 @@ export async function PATCH(
         { status: 404 }
       );
     }
+    // console.log(currentCandidate, "curenett --00 -         --999d");
 
     const oldStatus = currentCandidate.status;
-    
+
     const updatedCandidate = await Candidate.findByIdAndUpdate(
       id,
       {
@@ -59,6 +60,8 @@ export async function PATCH(
         { status: 404 }
       );
     }
+    // console.log(oldStatus, "Olda status===000000");
+    // console.log(status, "neww status===000000");
 
     // Trigger notification if status actually changed
     if (oldStatus !== status && oldStatus && status) {
@@ -75,6 +78,8 @@ export async function PATCH(
           triggerUserId: userData._id,
           triggerUserName: userData.name,
         });
+        // console.log("Status updatesss notifyyy  ===== = ");
+
       } catch (notificationError) {
         console.error("Failed to send status update notification:", notificationError);
         // Don't fail the API call if notification fails

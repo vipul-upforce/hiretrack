@@ -197,10 +197,10 @@ export default function NotificationsPage() {
           type === NotificationType.CHECKLIST_COMPLETED ||
           type === NotificationType.JOB_CREATED ||
           type === NotificationType.JOB_UPDATED ||
-          type === NotificationType.USER_ADDED ||
+          // type === NotificationType.USER_ADDED ||
           type === NotificationType.BULK_IMPORT_COMPLETED ||
-          type === NotificationType.INTERVIEW_COMPLETED ||
-          type === NotificationType.EMAIL_FAILED
+          type === NotificationType.INTERVIEW_COMPLETED
+        // type === NotificationType.EMAIL_FAILED
       );
     }
 
@@ -213,13 +213,13 @@ export default function NotificationsPage() {
           type === NotificationType.MEETING_SCHEDULED ||
           type === NotificationType.MEETING_UPDATED ||
           type === NotificationType.MEETING_CANCELLED ||
-          type === NotificationType.REMARK_ADDED ||
-          type === NotificationType.FOLLOWUP_ADDED ||
-          type === NotificationType.FOLLOWUP_UPDATED ||
-          type === NotificationType.FOLLOWUP_REMOVED ||
-          type === NotificationType.CHECKLIST_COMPLETED ||
-          type === NotificationType.CANDIDATE_STATUS_UPDATED ||
-          type === NotificationType.CANDIDATE_DETAILS_UPDATED
+          type === NotificationType.REMARK_ADDED
+        // type === NotificationType.FOLLOWUP_ADDED ||
+        // type === NotificationType.FOLLOWUP_UPDATED ||
+        // type === NotificationType.FOLLOWUP_REMOVED ||
+        // type === NotificationType.CHECKLIST_COMPLETED ||
+        // type === NotificationType.CANDIDATE_STATUS_UPDATED ||
+        // type === NotificationType.CANDIDATE_DETAILS_UPDATED
       );
     }
 
@@ -319,21 +319,21 @@ export default function NotificationsPage() {
           {(filterType !== "all" ||
             filterRead !== "all" ||
             filterPriority !== "all") && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setFilterType("all");
-                setFilterRead("all");
-                setFilterPriority("all");
-                setCurrentPage(1);
-              }}
-              className="h-9"
-            >
-              <Filter className="h-4 w-4 mr-2" />
-              Clear filters
-            </Button>
-          )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setFilterType("all");
+                  setFilterRead("all");
+                  setFilterPriority("all");
+                  setCurrentPage(1);
+                }}
+                className="h-9"
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                Clear filters
+              </Button>
+            )}
         </div>
       </div>
 
@@ -376,8 +376,8 @@ export default function NotificationsPage() {
                 </h3>
                 <p className="text-muted-foreground max-w-md">
                   {filterType !== "all" ||
-                  filterRead !== "all" ||
-                  filterPriority !== "all"
+                    filterRead !== "all" ||
+                    filterPriority !== "all"
                     ? "No notifications match your current filters. Try adjusting your filters to see more notifications."
                     : "You're all caught up! New notifications will appear here when there's activity."}
                 </p>
@@ -411,7 +411,10 @@ export default function NotificationsPage() {
                   variant="outline"
                   size="sm"
                   disabled={!pagination.hasPrev}
-                  onClick={() => setCurrentPage(pagination.currentPage - 1)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentPage(pagination.currentPage - 1);
+                  }}
                 >
                   <ChevronLeft className="h-4 w-4 mr-1" />
                   Previous
@@ -421,7 +424,10 @@ export default function NotificationsPage() {
                   variant="outline"
                   size="sm"
                   disabled={!pagination.hasNext}
-                  onClick={() => setCurrentPage(pagination.currentPage + 1)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentPage(pagination.currentPage + 1);
+                  }}
                 >
                   Next
                   <ChevronRight className="h-4 w-4 ml-1" />

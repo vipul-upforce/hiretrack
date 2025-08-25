@@ -4,6 +4,7 @@ import { Job } from "@/lib/mongodb";
 import { Candidate } from "@/lib/mongodb";
 import { handleFileAttachments, handleCustomFieldFiles } from "@/lib/fileUtils";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { NotificationService } from "@/lib/notifications/notificationService";
 
 export async function GET(
   _request: Request,
@@ -35,6 +36,8 @@ export async function PUT(
 ) {
   let fileStorage = "local";
   let organizationId;
+  let triggerUserId = "";
+  let triggerUserName = "";
   try {
     await connectToDatabase();
     const data = await request.json();
@@ -49,6 +52,8 @@ export async function PUT(
         userData = decryptedResponse.user;
         fileStorage = userData.fileStorage || "local";
         organizationId = userData.organizationId || "";
+        triggerUserId = userData.id || "";
+        triggerUserName = userData.name || "";
       }
     }
 
@@ -78,8 +83,32 @@ export async function PUT(
       );
       data.customFields = cs;
     }
+    // console.log(triggerUserId, "Idddd -== ");
+    // console.log(triggerUserName, "name -== ");
 
     const updatedJob = await Job.findByIdAndUpdate(id, data, { new: true });
+
+    if (
+      triggerUserId &&
+      triggerUserName &&
+      userData?.role !== "candidate" &&
+      organizationId
+    ) {
+      try {
+        await NotificationService.notifyJobUpdated({
+          organizationId: organizationId.toString(),
+          jobId: id,
+          jobTitle: updatedJob.title || "Untitled Job",
+          triggerUserId,
+          triggerUserName,
+        });
+        console.log("Notfyy nob Update === =- ");
+
+      } catch (notificationError) {
+        console.error("Failed to send job update notification:", notificationError);
+        // Don't fail the API call if notification fails
+      }
+    }
     return NextResponse.json(updatedJob);
   } catch (error: unknown) {
     if (error instanceof Error) {
