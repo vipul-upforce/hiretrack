@@ -45,6 +45,9 @@ import {
 import { CandidateDetailsDialog } from "./jobs/[id]/components/Dialogs/candidate-details-dialog";
 import { useLazyFetchCandidateByIdQuery } from "@/lib/features/candidate/candidateApi";
 import { Candidate } from "@/types/candidate";
+import { OnboardingProvider } from "@/components/onboarding/OnboardingProvider";
+import OnboardingModal from "@/components/onboarding/OnboardingModal";
+import OnboardingSidebar from "@/components/onboarding/OnboardingSidebar";
 
 interface SidebarItem {
   title: string;
@@ -590,6 +593,11 @@ export default function DashboardLayout({
             );
           })}
         </div>
+        
+        {/* Onboarding Widget - only show for admin users */}
+        {userData?.role === 'admin' && (
+          <OnboardingSidebar isCollapsed={isCollapsed} />
+        )}
       </div>
       <div className="px-3 pb-4 mt-auto space-y-2">
         {/* Notifications and Theme Toggle */}
@@ -667,9 +675,10 @@ export default function DashboardLayout({
   );
 
   return (
-    <div className="w-full max-w-full flex" style={{ overflowX: "hidden" }}>
-      <PortalHead isLoading={true} />
-      <aside
+    <OnboardingProvider>
+      <div className="w-full max-w-full flex" style={{ overflowX: "hidden" }}>
+        <PortalHead isLoading={true} />
+        <aside
         className={cn(
           "hidden h-screen border-r bg-background md:block transition-all duration-300",
           isCollapsed ? "w-[70px]" : "w-[240px]"
@@ -711,6 +720,10 @@ export default function DashboardLayout({
         hideEditButton={userData?.role === "interviewer"}
         hideCloseButtons={false}
       />
+
+      {/* Onboarding Modal */}
+      <OnboardingModal />
     </div>
+    </OnboardingProvider>
   );
 }
