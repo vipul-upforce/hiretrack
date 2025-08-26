@@ -762,8 +762,12 @@ export function AssignCandidateDialog({
                                         ).files;
                                         if (files && files.length > 0) {
                                           // Use only values.meetingAttachments for form state
-                                          const currentFiles =
-                                            values.meetingAttachments || [];
+                                          const allFiles = new Set([
+                                            ...values.meetingAttachments,
+                                            ...candidate?.assignment?.googleMeet
+                                              ?.meetingAttachments,
+                                          ]);
+                                          const currentFiles = [...allFiles];
                                           const sanitizedFiles = sanitizeFiles(
                                             Array.from(files)
                                           );
@@ -801,13 +805,14 @@ export function AssignCandidateDialog({
                                       ?.meetingAttachments || [];
 
                                   // If form has attachments, use those; otherwise show candidate attachments
-                                  const displayAttachments = [
-                                    ...formAttachments,
-                                    ...candidateAttachments,
-                                  ];
-                                  // formAttachments.length > 0
-                                  //   ? formAttachments
-                                  //   : candidateAttachments;
+                                  // const displayAttachments = [
+                                  //   ...formAttachments,
+                                  //   ...candidateAttachments,
+                                  // ];
+                                  const displayAttachments =
+                                    formAttachments.length > 0
+                                      ? formAttachments
+                                      : candidateAttachments;
 
                                   return (
                                     displayAttachments.length > 0 && (
