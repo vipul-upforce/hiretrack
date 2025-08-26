@@ -7,7 +7,7 @@ interface CreateNotificationParams {
   type: NotificationType;
   title: string;
   message: string;
-  relatedEntity: 'candidate' | 'job' | 'user' | 'meeting' | 'followup' | 'checklist' | 'system';
+  relatedEntity: 'candidate' | 'job' | 'user' | 'meeting' | 'followup' | 'checklist' | 'system' | 'cvBatch';
   relatedId?: string;
   actionUrl?: string;
   triggerUserId?: string;
@@ -23,7 +23,7 @@ export class NotificationService {
   static async createNotification(params: CreateNotificationParams): Promise<INotification | null> {
     try {
       await connectToDatabase();
-      
+
       if (!Notification) {
         throw new Error('Notification model not available');
       }
@@ -59,15 +59,18 @@ export class NotificationService {
     recipientIds: string[]
   ): Promise<INotification[]> {
     try {
-      console.log('📦 Creating bulk notifications for recipients:', recipientIds);
+      // console.log('📦 Creating bulk notifications for recipients:', recipientIds);
       await connectToDatabase();
-      
+
       if (!Notification) {
         console.error('❌ Notification model not available');
         throw new Error('Notification model not available');
       }
-
-      const notifications = recipientIds.map(recipientId => ({
+      const recipients = [
+        ...recipientIds,
+        ...(baseParams.triggerUserId && baseParams.triggerUserId !== "" ? [baseParams.triggerUserId] : [])
+      ];
+      const notifications = recipients.map(recipientId => ({
         organizationId: baseParams.organizationId,
         recipientId,
         type: baseParams.type,
@@ -84,6 +87,8 @@ export class NotificationService {
       }));
 
       const createdNotifications = await Notification.insertMany(notifications);
+      // console.log(createdNotifications, "Cretededdddd ***");
+
       return createdNotifications.map(n => n.toObject());
     } catch (error) {
       console.error('❌ Error creating bulk notifications:', error);
@@ -97,7 +102,7 @@ export class NotificationService {
   static async getUsersByRole(organizationId: string, roles: string[]): Promise<string[]> {
     try {
       await connectToDatabase();
-      
+
       if (!User) {
         throw new Error('User model not available');
       }
@@ -116,7 +121,7 @@ export class NotificationService {
   }
 
   // Candidate-related notifications
-  
+
   /**
    * Notify when a candidate applies
    */
@@ -131,29 +136,27 @@ export class NotificationService {
     triggerUserName?: string;
   }) {
     const adminHrIds = await this.getUsersByRole(params.organizationId, ['admin', 'hr']);
-    
+
     if (adminHrIds.length === 0) {
-      return;
+      await this.createBulkNotifications({
+        organizationId: params.organizationId,
+        type: NotificationType.CANDIDATE_APPLIED,
+        title: 'New Candidate Application',
+        message: `${params.candidateName} has applied for ${params.jobTitle}`,
+        relatedEntity: 'candidate',
+        relatedId: params.candidateId,
+        actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
+        triggerUserId: params.triggerUserId,
+        triggerUserName: params.triggerUserName,
+        priority: 'high',
+        metadata: {
+          candidateName: params.candidateName,
+          candidateEmail: params.candidateEmail,
+          jobTitle: params.jobTitle,
+          jobId: params.jobId,
+        },
+      }, adminHrIds);
     }
-    
-    await this.createBulkNotifications({
-      organizationId: params.organizationId,
-      type: NotificationType.CANDIDATE_APPLIED,
-      title: 'New Candidate Application',
-      message: `${params.candidateName} has applied for ${params.jobTitle}`,
-      relatedEntity: 'candidate',
-      relatedId: params.candidateId,
-      actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
-      triggerUserId: params.triggerUserId,
-      triggerUserName: params.triggerUserName,
-      priority: 'high',
-      metadata: {
-        candidateName: params.candidateName,
-        candidateEmail: params.candidateEmail,
-        jobTitle: params.jobTitle,
-        jobId: params.jobId,
-      },
-    }, adminHrIds);
   }
 
   /**
@@ -171,7 +174,7 @@ export class NotificationService {
     triggerUserName: string;
   }) {
     const adminHrIds = await this.getUsersByRole(params.organizationId, ['admin', 'hr']);
-    
+
     await this.createBulkNotifications({
       organizationId: params.organizationId,
       type: NotificationType.CANDIDATE_STATUS_UPDATED,
@@ -207,6 +210,8 @@ export class NotificationService {
     triggerUserId: string;
     triggerUserName: string;
   }) {
+    // console.log(params, "Notify the previous interviewer");
+
     // Notify the interviewer
     await this.createNotification({
       organizationId: params.organizationId,
@@ -231,12 +236,12 @@ export class NotificationService {
     // Also notify admin/hr
     const adminHrIds = await this.getUsersByRole(params.organizationId, ['admin', 'hr']);
     const filteredAdminHrIds = adminHrIds.filter(id => id !== params.triggerUserId);
-    
+
     if (filteredAdminHrIds.length > 0) {
       await this.createBulkNotifications({
         organizationId: params.organizationId,
         type: NotificationType.CANDIDATE_ASSIGNED,
-        title: 'Candidate Assignment Updated',
+        title: 'Candidate Assigned',
         message: `${params.candidateName} has been assigned to ${params.interviewerName}`,
         relatedEntity: 'candidate',
         relatedId: params.candidateId,
@@ -257,6 +262,43 @@ export class NotificationService {
   /**
    * Notify when a remark is added
    */
+  // static async notifyRemarkAdded(params: {
+  //   organizationId: string;
+  //   candidateId: string;
+  //   candidateName: string;
+  //   jobId: string;
+  //   jobTitle: string;
+  //   remarkText: string;
+  //   triggerUserId: string;
+  //   triggerUserName: string;
+  // }) {
+
+
+
+  //   const adminHrIds = await this.getUsersByRole(params.organizationId, ['admin', 'hr']);
+  //   const filteredAdminHrIds = adminHrIds.filter(id => id !== params.triggerUserId);
+
+  //   if (filteredAdminHrIds.length > 0) {
+  //     await this.createBulkNotifications({
+  //       organizationId: params.organizationId,
+  //       type: NotificationType.REMARK_ADDED,
+  //       title: 'New Remark Added',
+  //       message: `${params.triggerUserName} added a remark for ${params.candidateName}`,
+  //       relatedEntity: 'candidate',
+  //       relatedId: params.candidateId,
+  //       actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
+  //       triggerUserId: params.triggerUserId,
+  //       triggerUserName: params.triggerUserName,
+  //       priority: 'low',
+  //       metadata: {
+  //         candidateName: params.candidateName,
+  //         jobTitle: params.jobTitle,
+  //         jobId: params.jobId,
+  //         remarkText: params.remarkText.substring(0, 100) + (params.remarkText.length > 100 ? '...' : ''),
+  //       },
+  //     }, filteredAdminHrIds);
+  //   }
+  // }
   static async notifyRemarkAdded(params: {
     organizationId: string;
     candidateId: string;
@@ -266,11 +308,13 @@ export class NotificationService {
     remarkText: string;
     triggerUserId: string;
     triggerUserName: string;
+    roles: string[]; // Add roles parameter to specify which roles to notify
   }) {
-    const adminHrIds = await this.getUsersByRole(params.organizationId, ['admin', 'hr']);
-    const filteredAdminHrIds = adminHrIds.filter(id => id !== params.triggerUserId);
-    
-    if (filteredAdminHrIds.length > 0) {
+    // Fetch users by specified roles
+    const userIds = await this.getUsersByRole(params.organizationId, params.roles);
+    const filteredUserIds = userIds.filter(id => id !== params.triggerUserId);
+
+    if (filteredUserIds.length > 0) {
       await this.createBulkNotifications({
         organizationId: params.organizationId,
         type: NotificationType.REMARK_ADDED,
@@ -288,10 +332,9 @@ export class NotificationService {
           jobId: params.jobId,
           remarkText: params.remarkText.substring(0, 100) + (params.remarkText.length > 100 ? '...' : ''),
         },
-      }, filteredAdminHrIds);
+      }, filteredUserIds);
     }
   }
-
   /**
    * Notify when a meeting is scheduled
    */
@@ -307,6 +350,8 @@ export class NotificationService {
     triggerUserId: string;
     triggerUserName: string;
   }) {
+    // console.log(params, "Notify the previous interviewer");
+
     // Notify the interviewer if they're not the one who scheduled it
     if (params.interviewerId !== params.triggerUserId) {
       await this.createNotification({
@@ -334,7 +379,7 @@ export class NotificationService {
     // Notify admin/hr
     const adminHrIds = await this.getUsersByRole(params.organizationId, ['admin', 'hr']);
     const filteredAdminHrIds = adminHrIds.filter(id => id !== params.triggerUserId);
-    
+
     if (filteredAdminHrIds.length > 0) {
       await this.createBulkNotifications({
         organizationId: params.organizationId,
@@ -374,7 +419,7 @@ export class NotificationService {
   }) {
     const adminHrIds = await this.getUsersByRole(params.organizationId, ['admin', 'hr']);
     const filteredAdminHrIds = adminHrIds.filter(id => id !== params.triggerUserId);
-    
+
     if (filteredAdminHrIds.length > 0) {
       await this.createBulkNotifications({
         organizationId: params.organizationId,
@@ -412,7 +457,7 @@ export class NotificationService {
   }) {
     const allUserIds = await this.getUsersByRole(params.organizationId, ['admin', 'hr', 'interviewer']);
     const filteredUserIds = allUserIds.filter(id => id !== params.triggerUserId);
-    
+
     if (filteredUserIds.length > 0) {
       await this.createBulkNotifications({
         organizationId: params.organizationId,
@@ -445,9 +490,10 @@ export class NotificationService {
     triggerUserId: string;
     triggerUserName: string;
   }) {
-    const adminIds = await this.getUsersByRole(params.organizationId, ['admin']);
+    const adminIds = await this.getUsersByRole(params.organizationId, ['admin', 'hr']);
     const filteredAdminIds = adminIds.filter(id => id !== params.triggerUserId && id !== params.newUserId);
-    
+    // console.log(filteredAdminIds, "ilterids  ======++++  ");
+
     if (filteredAdminIds.length > 0) {
       await this.createBulkNotifications({
         organizationId: params.organizationId,
@@ -483,7 +529,7 @@ export class NotificationService {
   }) {
     const adminHrIds = await this.getUsersByRole(params.organizationId, ['admin', 'hr']);
     const filteredAdminHrIds = adminHrIds.filter(id => id !== params.triggerUserId);
-    
+
     if (filteredAdminHrIds.length > 0) {
       await this.createBulkNotifications({
         organizationId: params.organizationId,
@@ -520,6 +566,8 @@ export class NotificationService {
     triggerUserName: string;
   }) {
     // Notify the previous interviewer
+    // console.log(params, "Notify the previous interviewer");
+
     await this.createNotification({
       organizationId: params.organizationId,
       recipientId: params.previousInterviewerId,
@@ -528,7 +576,7 @@ export class NotificationService {
       message: `You are no longer assigned to interview ${params.candidateName}`,
       relatedEntity: 'candidate',
       relatedId: params.candidateId,
-      actionUrl: undefined, // No click action as specified
+      actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
       triggerUserId: params.triggerUserId,
       triggerUserName: params.triggerUserName,
       priority: 'medium',
@@ -539,6 +587,31 @@ export class NotificationService {
         previousInterviewerName: params.previousInterviewerName,
       },
     });
+    // Also notify admin/hr
+    const adminHrIds = await this.getUsersByRole(params.organizationId, ['admin', 'hr']);
+    const filteredAdminHrIds = adminHrIds.filter(id => id !== params.triggerUserId);
+
+    if (filteredAdminHrIds.length > 0) {
+      await this.createBulkNotifications({
+        organizationId: params.organizationId,
+        type: NotificationType.CANDIDATE_UNASSIGNED,
+        title: 'Candidate Unassigned',
+        message: `${params.previousInterviewerName}  are no longer assigned to interview ${params.candidateName}`,
+        relatedEntity: 'candidate',
+        relatedId: params.candidateId,
+        actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
+        triggerUserId: params.triggerUserId,
+        triggerUserName: params.triggerUserName,
+        priority: 'medium',
+        metadata: {
+          candidateName: params.candidateName,
+          jobTitle: params.jobTitle,
+          jobId: params.jobId,
+          previousInterviewerName: params.previousInterviewerName,
+        },
+      }, filteredAdminHrIds);
+    }
+
   }
 
   /**
@@ -581,7 +654,7 @@ export class NotificationService {
     // Also notify admin/hr
     const adminHrIds = await this.getUsersByRole(params.organizationId, ['admin', 'hr']);
     const filteredAdminHrIds = adminHrIds.filter(id => id !== params.triggerUserId);
-    
+
     if (filteredAdminHrIds.length > 0) {
       await this.createBulkNotifications({
         organizationId: params.organizationId,
@@ -643,7 +716,7 @@ export class NotificationService {
     // Also notify admin/hr
     const adminHrIds = await this.getUsersByRole(params.organizationId, ['admin', 'hr']);
     const filteredAdminHrIds = adminHrIds.filter(id => id !== params.triggerUserId);
-    
+
     if (filteredAdminHrIds.length > 0) {
       await this.createBulkNotifications({
         organizationId: params.organizationId,
@@ -680,7 +753,7 @@ export class NotificationService {
   }) {
     const adminHrIds = await this.getUsersByRole(params.organizationId, ['admin', 'hr']);
     const filteredAdminHrIds = adminHrIds.filter(id => id !== params.triggerUserId);
-    
+
     if (filteredAdminHrIds.length > 0) {
       await this.createBulkNotifications({
         organizationId: params.organizationId,
@@ -716,7 +789,7 @@ export class NotificationService {
   }) {
     const adminHrIds = await this.getUsersByRole(params.organizationId, ['admin', 'hr']);
     const filteredAdminHrIds = adminHrIds.filter(id => id !== params.triggerUserId);
-    
+
     if (filteredAdminHrIds.length > 0) {
       await this.createBulkNotifications({
         organizationId: params.organizationId,
@@ -752,7 +825,7 @@ export class NotificationService {
   }) {
     const adminHrIds = await this.getUsersByRole(params.organizationId, ['admin', 'hr']);
     const filteredAdminHrIds = adminHrIds.filter(id => id !== params.triggerUserId);
-    
+
     if (filteredAdminHrIds.length > 0) {
       await this.createBulkNotifications({
         organizationId: params.organizationId,
@@ -774,6 +847,7 @@ export class NotificationService {
     }
   }
 
+
   /**
    * Notify when job is updated
    */
@@ -786,7 +860,7 @@ export class NotificationService {
   }) {
     const allUserIds = await this.getUsersByRole(params.organizationId, ['admin', 'hr', 'interviewer']);
     const filteredUserIds = allUserIds.filter(id => id !== params.triggerUserId);
-    
+
     if (filteredUserIds.length > 0) {
       await this.createBulkNotifications({
         organizationId: params.organizationId,
@@ -795,7 +869,7 @@ export class NotificationService {
         message: `${params.triggerUserName} updated job: ${params.jobTitle}`,
         relatedEntity: 'job',
         relatedId: params.jobId,
-        actionUrl: `/dashboard/jobs/${params.jobId}`,
+        actionUrl: `/dashboard/cv-upload`,
         triggerUserId: params.triggerUserId,
         triggerUserName: params.triggerUserName,
         priority: 'low',
@@ -810,38 +884,69 @@ export class NotificationService {
   /**
    * Notify when bulk import is completed
    */
+  // static async notifyBulkImportCompleted(params: {
+  //   organizationId: string;
+  //   jobId: string;
+  //   jobTitle: string;
+  //   importedCount: number;
+  //   triggerUserId: string;
+  //   triggerUserName: string;
+  // }) {
+  //   const adminHrIds = await this.getUsersByRole(params.organizationId, ['admin', 'hr']);
+  //   const filteredAdminHrIds = adminHrIds.filter(id => id !== params.triggerUserId);
+
+  //   if (filteredAdminHrIds.length > 0) {
+  //     await this.createBulkNotifications({
+  //       organizationId: params.organizationId,
+  //       type: NotificationType.BULK_IMPORT_COMPLETED,
+  //       title: 'Bulk Import Completed',
+  //       message: `${params.triggerUserName} imported ${params.importedCount} candidates for ${params.jobTitle}`,
+  //       relatedEntity: 'job',
+  //       relatedId: params.jobId,
+  //       actionUrl: `/dashboard/jobs/${params.jobId}`,
+  //       triggerUserId: params.triggerUserId,
+  //       triggerUserName: params.triggerUserName,
+  //       priority: 'medium',
+  //       metadata: {
+  //         jobTitle: params.jobTitle,
+  //         jobId: params.jobId,
+  //         importedCount: params.importedCount,
+  //       },
+  //     }, filteredAdminHrIds);
+  //   }
+  // }
+
   static async notifyBulkImportCompleted(params: {
     organizationId: string;
-    jobId: string;
-    jobTitle: string;
-    importedCount: number;
+    batchId: string;
+    successCount: number;
+    failureCount: number;
     triggerUserId: string;
     triggerUserName: string;
   }) {
     const adminHrIds = await this.getUsersByRole(params.organizationId, ['admin', 'hr']);
     const filteredAdminHrIds = adminHrIds.filter(id => id !== params.triggerUserId);
-    
+
     if (filteredAdminHrIds.length > 0) {
       await this.createBulkNotifications({
         organizationId: params.organizationId,
         type: NotificationType.BULK_IMPORT_COMPLETED,
         title: 'Bulk Import Completed',
-        message: `${params.triggerUserName} imported ${params.importedCount} candidates for ${params.jobTitle}`,
-        relatedEntity: 'job',
-        relatedId: params.jobId,
-        actionUrl: `/dashboard/jobs/${params.jobId}`,
+        message: `${params.triggerUserName} completed processing a CV batch with ${params.successCount} successful and ${params.failureCount} failed items`,
+        relatedEntity: 'cvBatch',
+        relatedId: params.batchId,
+        actionUrl: `/dashboard/batches/${params.batchId}`,
         triggerUserId: params.triggerUserId,
         triggerUserName: params.triggerUserName,
         priority: 'medium',
         metadata: {
-          jobTitle: params.jobTitle,
-          jobId: params.jobId,
-          importedCount: params.importedCount,
+          batchId: params.batchId,
+          successCount: params.successCount,
+          failureCount: params.failureCount
         },
       }, filteredAdminHrIds);
     }
   }
-
   /**
    * Notify when candidate is rejected
    */
@@ -854,9 +959,12 @@ export class NotificationService {
     triggerUserId: string;
     triggerUserName: string;
   }) {
+
+    // console.log(params, "redected - triget");
+
     const adminHrIds = await this.getUsersByRole(params.organizationId, ['admin', 'hr']);
     const filteredAdminHrIds = adminHrIds.filter(id => id !== params.triggerUserId);
-    
+
     if (filteredAdminHrIds.length > 0) {
       await this.createBulkNotifications({
         organizationId: params.organizationId,
@@ -1092,7 +1200,7 @@ export class NotificationService {
   }) {
     const adminHrIds = await this.getUsersByRole(params.organizationId, ['admin', 'hr']);
     const filteredAdminHrIds = adminHrIds.filter(id => id !== params.triggerUserId);
-    
+
     if (filteredAdminHrIds.length > 0) {
       await this.createBulkNotifications({
         organizationId: params.organizationId,

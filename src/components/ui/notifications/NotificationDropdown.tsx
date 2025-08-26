@@ -7,11 +7,11 @@ import { CustomScrollbar } from "@/components/ui/custom-scrollbar";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { NotificationItem } from "./NotificationItem";
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  Bell, 
-  BellOff, 
+import {
+  ChevronLeft,
+  ChevronRight,
+  Bell,
+  BellOff,
   Check,
   CheckCheck,
   ExternalLink
@@ -158,7 +158,7 @@ export function NotificationDropdown({
             <div className="text-xs text-muted-foreground">
               Page {currentPage} of {totalPages} ({totalCount} total)
             </div>
-            
+
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
@@ -169,7 +169,7 @@ export function NotificationDropdown({
               >
                 <ChevronLeft className="h-3 w-3" />
               </Button>
-              
+
               <Button
                 variant="ghost"
                 size="sm"

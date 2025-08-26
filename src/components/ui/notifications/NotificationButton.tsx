@@ -89,10 +89,10 @@ export function NotificationButton({
           <NotificationBadge count={unreadCount} />
         </Button>
       </PopoverTrigger>
-      
-      <PopoverContent 
-        side="bottom" 
-        align="end" 
+
+      <PopoverContent
+        side="bottom"
+        align="end"
         className="w-80 p-0"
         sideOffset={8}
       >

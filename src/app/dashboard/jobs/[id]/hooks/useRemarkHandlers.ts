@@ -232,7 +232,8 @@ export const useRemarkHandlers = (
     try {
       const newFollowUpObj = {
         note: null,
-        date: newFollowUpDate?.toISOString() || "",
+        // date: newFollowUpDate?.toISOString() || "",
+        date: null,
         // rating: remarkRating ? Number(remarkRating) : undefined,
         userId: {
           _id: user?.id,

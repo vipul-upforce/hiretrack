@@ -601,7 +601,13 @@ export default function DashboardLayout({
       </div>
       <div className="px-3 pb-4 mt-auto space-y-2">
         {/* Notifications and Theme Toggle */}
-        <div className="flex justify-start items-center gap-2 mb-2">
+        <div
+          // className="flex justify-start items-center gap-2 mb-2"
+          className={cn(
+            "flex justify-start items-center gap-2 mb-2",
+            isCollapsed ? "flex-col" : "flex-row"
+          )}
+        >
           {userData && (
             <NotificationButton
               notifications={notificationsData?.notifications || []}
