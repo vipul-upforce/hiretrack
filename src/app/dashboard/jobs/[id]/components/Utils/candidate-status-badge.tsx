@@ -27,7 +27,7 @@ const statusColors: Record<CandidateStatus, { bg: string; text: string }> = {
     text: "text-red-700 dark:text-red-300",
   },
   default: {
-    bg: "bg-gray-100 dark:bg-gray-800",
+    bg: "bg-gray-100 dark:bg-black",
     text: "text-gray-700 dark:text-gray-300",
   },
 };

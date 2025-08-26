@@ -58,15 +58,15 @@ export async function GET(req: NextRequest) {
       const clientId = Date.now();
       orgClients.set(clientId, { id: clientId, orgId, controller });
 
-      // Send heartbeat every 3 seconds for this organization
-      // const heartbeat = setInterval(() => {
-      //   const clientsCount = orgClients.size;
-      //   controller.enqueue(
-      //     encoder.encode(
-      //       `data: ${JSON.stringify({ type: "clients", clients: clientsCount, orgId })}\n\n`
-      //     )
-      //   );
-      // }, 3000);
+      const heartbeat = setInterval(() => {
+        // THIS IS TO KEEP THE CONNECTION ALIVE - fixes sse timeout and its related issues.
+        const clientsCount = orgClients.size;
+        controller.enqueue(
+          encoder.encode(
+            `data: ${JSON.stringify({ type: "clients", clients: clientsCount, orgId })}\n\n`
+          )
+        );
+      }, 20000);
 
       // Handle disconnect
       req.signal.addEventListener("abort", () => {
@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
         if (orgClients.size === 0) {
           global.sseClients.delete(orgId); // Clean up empty organization maps
         }
-        // clearInterval(heartbeat);
+        clearInterval(heartbeat);
         controller.enqueue(
           encoder.encode(
             `data: ${JSON.stringify({ type: "clients", clients: orgClients.size, orgId })}\n\n`

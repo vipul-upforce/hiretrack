@@ -6,7 +6,7 @@ interface FileAttachmentProps {
 
 export function FileAttachment({ file }: FileAttachmentProps) {
   return (
-    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors duration-200">
+    <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors duration-200">
       <div className="flex items-center gap-3">
         <div className="p-2 bg-grey-100 rounded-md">
           <svg

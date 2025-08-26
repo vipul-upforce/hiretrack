@@ -208,6 +208,18 @@ export function ApplyAsGuestDialog({
   const { formikRef, handleApply } = useApplyHandler<CandidateFormValues>();
   const [showTermsDialog, setShowTermsDialog] = useState(false);
   const [pendingFormValues, setPendingFormValues] = useState<any>(null);
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
+
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsSmallScreen(window.innerWidth < 1024);
+    };
+
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -479,7 +491,24 @@ export function ApplyAsGuestDialog({
           )}
         </button>
       </DialogTrigger>
-      <DialogContent className="w-full h-full max-w-none max-h-none m-0 p-0 rounded-none sm:rounded-lg sm:w-[95vw] sm:h-[95vh] sm:max-w-[95vw] sm:max-h-[95vh] md:w-[90vw] md:h-[90vh] md:max-w-[90vw] md:max-h-[90vh] lg:w-[85vw] lg:h-[85vh] lg:max-w-[85vw] lg:max-h-[85vh] xl:w-[80vw] xl:h-[80vh] xl:max-w-[80vw] xl:max-h-[80vh] overflow-hidden flex flex-col justify-center">
+      <DialogContent 
+        className={`${isSmallScreen ? 'fixed inset-0 w-screen h-screen max-w-none max-h-none m-0 p-0 rounded-none border-0' : 'lg:w-[85vw] lg:h-[85vh] lg:max-w-[85vw] lg:max-h-[85vh] lg:border lg:rounded-lg xl:w-[80vw] xl:h-[80vh] xl:max-w-[80vw] xl:max-h-[80vh]'} overflow-hidden flex flex-col justify-center`}
+        style={isSmallScreen ? {
+          position: 'fixed',
+          inset: '0',
+          transform: 'none',
+          left: '0',
+          top: '0',
+          width: '100vw',
+          height: '100vh',
+          maxWidth: 'none',
+          maxHeight: 'none',
+          margin: '0',
+          borderRadius: '0',
+          border: 'none',
+          zIndex: 9999
+        } as React.CSSProperties : undefined}
+      >
         <DialogHeader
           className={`px-6 py-4 flex-shrink-0 text-left ${hasAlreadyApplied && "hidden"}`}
         >

@@ -37,6 +37,9 @@ import {
   ChevronRight,
   Expand,
   Minimize2,
+  Copy,
+  Check,
+  ExternalLink,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -154,12 +157,52 @@ export default function PortalConfigurationPage() {
   const [footerHtml, setFooterHtml] = useState<string>("");
   const [isHeaderExpanded, setIsHeaderExpanded] = useState<boolean>(false);
   const [isFooterExpanded, setIsFooterExpanded] = useState<boolean>(false);
+  const [copiedCode, setCopiedCode] = useState<boolean>(false);
+  const [embedWidth, setEmbedWidth] = useState<string>("100%");
+  const [embedHeight, setEmbedHeight] = useState<string>("600px");
+  const [embedShowBorder, setEmbedShowBorder] = useState<boolean>(true);
+  const [embedHideHeader, setEmbedHideHeader] = useState<boolean>(false);
+  const [embedHideFooter, setEmbedHideFooter] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<string>("general");
+  const [hasMultipleOrgs, setHasMultipleOrgs] = useState<boolean>(false);
 
   useEffect(() => {
     if (portalData) {
       loadPortalData(portalData);
     }
   }, [portalData]);
+
+  useEffect(() => {
+    async function checkAllowance() {
+      try {
+        const data = await fetch("/api/organization");
+        const allowance = await data?.json();
+        setHasMultipleOrgs(allowance.allow);
+      } catch (error) {
+        console.error("Error checking organization allowance:", error);
+      }
+    }
+    checkAllowance();
+  }, []);
+
+  // Helper function to generate the correct portal URL (similar to generate_share_org)
+  const generatePortalUrl = (additionalParams: string[] = []) => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    let url;
+    
+    if (hasMultipleOrgs && user?.organizationInfo?.name) {
+      const orgParam = `o=${user.organizationInfo.name}`;
+      const allParams = [orgParam, ...additionalParams].filter(Boolean);
+      url = `${origin}/apply-jobs?${allParams.join('&')}`;
+    } else {
+      const allParams = additionalParams.filter(Boolean);
+      url = allParams.length > 0 
+        ? `${origin}/apply-jobs?${allParams.join('&')}`
+        : `${origin}/apply-jobs`;
+    }
+    
+    return url;
+  };
 
   const loadPortalData = async (data: any) => {
     setSettings({
@@ -431,8 +474,13 @@ export default function PortalConfigurationPage() {
       <div className="flex-1 min-h-0 px-4 pb-4 mt-4 overflow-y-auto">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            <Tabs defaultValue="general" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+            <Tabs 
+              defaultValue="general" 
+              value={activeTab}
+              onValueChange={setActiveTab}
+              className="w-full"
+            >
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger
                   value="general"
                   className="flex items-center gap-2"
@@ -457,6 +505,13 @@ export default function PortalConfigurationPage() {
                 >
                   <FileCode className="h-4 w-4" />
                   Advanced
+                </TabsTrigger>
+                <TabsTrigger
+                  value="embed"
+                  className="flex items-center gap-2"
+                >
+                  <Code className="h-4 w-4" />
+                  Embed
                 </TabsTrigger>
               </TabsList>
 
@@ -841,6 +896,215 @@ export default function PortalConfigurationPage() {
                   </CardContent>
                 </Card>
               </TabsContent>
+
+              <TabsContent value="embed" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Code className="h-5 w-5" />
+                      Embed Configuration
+                    </CardTitle>
+                    <CardDescription>
+                      Generate an iframe embed code to integrate your candidate portal into any website
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Embed Settings */}
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-medium">Embed Settings</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="embedWidth">Width</Label>
+                          <Input
+                            id="embedWidth"
+                            value={embedWidth}
+                            onChange={(e) => setEmbedWidth(e.target.value)}
+                            placeholder="100% or 800px"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Set width in pixels (e.g., 800px) or percentage (e.g., 100%)
+                          </p>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="embedHeight">Height</Label>
+                          <Input
+                            id="embedHeight"
+                            value={embedHeight}
+                            onChange={(e) => setEmbedHeight(e.target.value)}
+                            placeholder="600px"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Set height in pixels (e.g., 600px)
+                          </p>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="embedShowBorder"
+                            checked={embedShowBorder}
+                            onChange={(e) => setEmbedShowBorder(e.target.checked)}
+                            className="rounded border-gray-300"
+                          />
+                          <Label htmlFor="embedShowBorder">Show border around iframe</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="embedHideHeader"
+                            checked={embedHideHeader}
+                            onChange={(e) => setEmbedHideHeader(e.target.checked)}
+                            className="rounded border-gray-300"
+                          />
+                          <Label htmlFor="embedHideHeader">Hide portal header</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="embedHideFooter"
+                            checked={embedHideFooter}
+                            onChange={(e) => setEmbedHideFooter(e.target.checked)}
+                            className="rounded border-gray-300"
+                          />
+                          <Label htmlFor="embedHideFooter">Hide portal footer</Label>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Generated Embed Code */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label>Generated Embed Code</Label>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const queryParams = [];
+                            if (embedHideHeader) queryParams.push('hideHeader=true');
+                            if (embedHideFooter) queryParams.push('hideFooter=true');
+                            
+                            const embedUrl = generatePortalUrl(queryParams);
+                            
+                            const embedCode = `<iframe
+  src="${embedUrl}"
+  width="${embedWidth}"
+  height="${embedHeight}"
+  ${embedShowBorder ? '' : 'frameborder="0"'}
+  style="${embedShowBorder ? 'border: 1px solid #e5e7eb;' : 'border: none;'} border-radius: 8px;"
+  allow="camera; microphone"
+  title="${settings.portalName || 'Job Portal'}"
+></iframe>`;
+                            navigator.clipboard.writeText(embedCode);
+                            setCopiedCode(true);
+                            setTimeout(() => setCopiedCode(false), 2000);
+                            toast.success("Embed code copied to clipboard!");
+                          }}
+                        >
+                          {copiedCode ? (
+                            <>
+                              <Check className="h-4 w-4 mr-2" />
+                              Copied!
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-4 w-4 mr-2" />
+                              Copy Code
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                      <div className="border rounded-lg overflow-hidden">
+                        <Editor
+                          height="200px"
+                          language="html"
+                          theme={theme === "dark" ? "vs-dark" : "vs"}
+                          value={(() => {
+                            const queryParams = [];
+                            if (embedHideHeader) queryParams.push('hideHeader=true');
+                            if (embedHideFooter) queryParams.push('hideFooter=true');
+                            
+                            const embedUrl = generatePortalUrl(queryParams);
+                            
+                            return `<iframe
+  src="${embedUrl}"
+  width="${embedWidth}"
+  height="${embedHeight}"
+  ${embedShowBorder ? '' : 'frameborder="0"'}
+  style="${embedShowBorder ? 'border: 1px solid #e5e7eb;' : 'border: none;'} border-radius: 8px;"
+  allow="camera; microphone"
+  title="${settings.portalName || 'Job Portal'}"
+></iframe>`;
+                          })()}
+                          options={{
+                            fontSize: 14,
+                            minimap: { enabled: false },
+                            scrollBeyondLastLine: false,
+                            wordWrap: "on",
+                            lineNumbers: "on",
+                            folding: false,
+                            readOnly: true,
+                            automaticLayout: true,
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Integration Instructions */}
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-medium">Integration Instructions</h3>
+                      <div className="space-y-3 text-sm text-muted-foreground">
+                        <div className="flex gap-2">
+                          <span className="font-semibold">1.</span>
+                          <p>Copy the embed code above by clicking the "Copy Code" button.</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <span className="font-semibold">2.</span>
+                          <p>Paste the code into your website's HTML where you want the portal to appear.</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <span className="font-semibold">3.</span>
+                          <p>Adjust the width and height settings to fit your website's design.</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <span className="font-semibold">4.</span>
+                          <p>The portal will automatically inherit your configured branding and colors.</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Security Notice */}
+                    <div className="rounded-lg bg-yellow-50 dark:bg-yellow-900/20 p-4">
+                      <h4 className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-2">
+                        Security Notice
+                      </h4>
+                      <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                        Make sure to only embed this portal on trusted domains. The iframe allows camera and microphone access for video interviews.
+                        You can configure additional security settings like allowed domains in your organization settings.
+                      </p>
+                    </div>
+
+                    {/* Test Link */}
+                    <div className="pt-4 border-t">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          const queryParams = [];
+                          if (embedHideHeader) queryParams.push('hideHeader=true');
+                          if (embedHideFooter) queryParams.push('hideFooter=true');
+                          const url = generatePortalUrl(queryParams);
+                          window.open(url, '_blank');
+                        }}
+                        className="w-full"
+                      >
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        Open Portal in New Tab (with current settings)
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
             </Tabs>
           </div>
 
@@ -848,171 +1112,250 @@ export default function PortalConfigurationPage() {
             <Card className="sticky top-4">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle>Preview</CardTitle>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() =>
-                      setPreviewTheme(
-                        previewTheme === "light" ? "dark" : "light"
-                      )
-                    }
-                  >
-                    {previewTheme === "light" ? (
-                      <Moon className="h-4 w-4" />
-                    ) : (
-                      <Sun className="h-4 w-4" />
-                    )}
-                  </Button>
+                  <CardTitle>
+                    {activeTab === "embed" ? "Embed Preview" : "Preview"}
+                  </CardTitle>
+                  {activeTab !== "embed" && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        setPreviewTheme(
+                          previewTheme === "light" ? "dark" : "light"
+                        )
+                      }
+                    >
+                      {previewTheme === "light" ? (
+                        <Moon className="h-4 w-4" />
+                      ) : (
+                        <Sun className="h-4 w-4" />
+                      )}
+                    </Button>
+                  )}
                 </div>
                 <CardDescription>
-                  Live preview of your portal settings
+                  {activeTab === "embed" 
+                    ? "Preview of how your portal will look when embedded"
+                    : "Live preview of your portal settings"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div
-                  className={cn(
-                    "rounded-lg overflow-hidden border",
-                    previewTheme === "dark" ? "bg-slate-900" : "bg-white"
-                  )}
-                  style={
-                    {
-                      "--portal-primary": settings.primaryColor,
-                      "--portal-secondary": settings.secondaryColor,
-                    } as React.CSSProperties
-                  }
-                >
-                  {/* Custom Header Preview */}
-                  {headerHtml && (
-                    <div className="border-b">
-                      <div dangerouslySetInnerHTML={{ __html: headerHtml }} />
-                    </div>
-                  )}
-
-                  {/* Default Header if no custom header */}
-                  {!headerHtml && (
-                    <div
-                      className="p-4"
-                      style={{
-                        background: `linear-gradient(135deg, ${settings.primaryColor} 0%, ${settings.secondaryColor} 100%)`,
-                      }}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          {(previewTheme === "dark"
-                            ? settings.portalLogoDark
-                            : settings.portalLogo) && (
-                            <div className="h-10 w-32 relative bg-white/10 rounded">
-                              <Image
-                                src={
-                                  previewTheme === "dark"
-                                    ? settings.portalLogoDark?.url || ""
-                                    : settings.portalLogo?.url || ""
-                                }
-                                alt="Logo"
-                                fill
-                                className="object-contain p-2"
-                              />
-                            </div>
-                          )}
-                          <h3 className="text-white font-semibold">
-                            {settings.portalName || "Portal Name"}
-                          </h3>
+                {activeTab === "embed" ? (
+                  // Real Iframe Embed Preview
+                  <div className="space-y-3">
+                    {/* Browser Frame */}
+                    <div className="rounded-lg border bg-gray-100 dark:bg-black p-2">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="flex gap-1">
+                          <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                          <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                          <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                        </div>
+                        <div className="flex-1 bg-white dark:bg-gray-700 rounded px-3 py-1 text-xs text-gray-500 dark:text-gray-400">
+                          yourwebsite.com/careers
                         </div>
                       </div>
-                    </div>
-                  )}
-
-                  {/* Candidate Portal Preview Content */}
-                  <div className="p-6 space-y-6">
-                    <div
-                      className={cn(
-                        "space-y-4",
-                        previewTheme === "dark" ? "text-white" : "text-gray-900"
-                      )}
-                    >
-                      {/* Job Application Header */}
-                      <div className="border-b pb-4">
-                        <h1 className="text-2xl font-bold">
-                          Senior Frontend Developer
-                        </h1>
-                        <p className="text-sm opacity-70 mt-1">
-                          Technology • Full-time • Remote
-                        </p>
-                      </div>
-
-                      {/* Job Details */}
-                      <div className="space-y-3">
-                        <h3 className="font-semibold">Job Description</h3>
-                        <p className="text-sm opacity-80 leading-relaxed">
-                          We are seeking a talented Senior Frontend Developer to
-                          join our dynamic team. You will be responsible for
-                          creating exceptional user experiences using modern web
-                          technologies.
-                        </p>
-                      </div>
-
-                      {/* Application Form Preview */}
-                      <div className="space-y-3 pt-4 border-t">
-                        <h3 className="font-semibold">
-                          Apply for this position
-                        </h3>
-                        <div className="space-y-3">
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1">
-                              <label className="text-xs font-medium opacity-70">
-                                First Name
-                              </label>
-                              <div className="h-9 border rounded bg-background/20 border-white/20" />
-                            </div>
-                            <div className="space-y-1">
-                              <label className="text-xs font-medium opacity-70">
-                                Last Name
-                              </label>
-                              <div className="h-9 border rounded bg-background/20 border-white/20" />
-                            </div>
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium opacity-70">
-                              Email Address
-                            </label>
-                            <div className="h-9 border rounded bg-background/20 border-white/20" />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium opacity-70">
-                              Upload Resume
-                            </label>
-                            <div className="h-20 border-2 border-dashed rounded bg-background/10 border-white/20 flex items-center justify-center">
-                              <span className="text-xs opacity-60">
-                                Drop files here or click to browse
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex gap-3 pt-4">
-                        <button
-                          className="px-6 py-2 rounded-lg text-white font-medium text-sm flex-1"
-                          style={{ backgroundColor: settings.primaryColor }}
+                      
+                      {/* Real Iframe */}
+                      <div className="bg-white dark:bg-black rounded p-2 overflow-auto">
+                        <div
+                          style={{
+                            width: embedWidth.includes('%') ? embedWidth : `${parseInt(embedWidth) || 400}px`,
+                            height: embedHeight.includes('px') ? embedHeight : `${parseInt(embedHeight) || 600}px`,
+                            maxWidth: '100%',
+                            maxHeight: '80vh',
+                          }}
                         >
-                          Submit Application
-                        </button>
-                        <button className="px-6 py-2 rounded-lg border border-white/20 text-current font-medium text-sm">
-                          Save as Draft
-                        </button>
+                          <iframe
+                            src={(() => {
+                              // For iframe preview, always add explicit header/footer params to override iframe auto-hide behavior
+                              const queryParams = [];
+                              queryParams.push(`hideHeader=${embedHideHeader}`);
+                              queryParams.push(`hideFooter=${embedHideFooter}`);
+                              
+                              if (hasMultipleOrgs && user?.organizationInfo?.name) {
+                                const orgParam = `o=${user.organizationInfo.name}`;
+                                const allParams = [orgParam, ...queryParams];
+                                return `/apply-jobs?${allParams.join('&')}`;
+                              } else {
+                                return `/apply-jobs?${queryParams.join('&')}`;
+                              }
+                            })()}
+                            width="100%"
+                            height="100%"
+                            frameBorder={embedShowBorder ? "1" : "0"}
+                            style={{
+                              border: embedShowBorder ? '1px solid #e5e7eb' : 'none',
+                              borderRadius: '8px',
+                              display: 'block',
+                            }}
+                            allow="camera; microphone"
+                            title={settings.portalName || 'Job Portal'}
+                          />
+                        </div>
                       </div>
+                    </div>
+                    
+                    {/* Embed Info */}
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <p className="flex items-center gap-1">
+                        <Code className="h-3 w-3" />
+                        Dimensions: {embedWidth} × {embedHeight}
+                      </p>
+                      {(embedHideHeader || embedHideFooter) && (
+                        <p className="flex items-center gap-1">
+                          <Eye className="h-3 w-3" />
+                          Hidden: {[embedHideHeader && "Header", embedHideFooter && "Footer"].filter(Boolean).join(", ")}
+                        </p>
+                      )}
                     </div>
                   </div>
+                ) : (
+                  // Normal Preview - keeping existing preview code
+                  <div
+                    className={cn(
+                      "rounded-lg overflow-hidden border",
+                      previewTheme === "dark" ? "bg-slate-900" : "bg-white"
+                    )}
+                    style={
+                      {
+                        "--portal-primary": settings.primaryColor,
+                        "--portal-secondary": settings.secondaryColor,
+                      } as React.CSSProperties
+                    }
+                  >
+                    {/* Custom Header Preview */}
+                    {headerHtml && (
+                      <div className="border-b">
+                        <div dangerouslySetInnerHTML={{ __html: headerHtml }} />
+                      </div>
+                    )}
 
-                  {/* Custom Footer Preview */}
-                  {footerHtml && (
-                    <div className="border-t">
-                      <div dangerouslySetInnerHTML={{ __html: footerHtml }} />
+                    {/* Default Header if no custom header */}
+                    {!headerHtml && (
+                      <div
+                        className="p-4"
+                        style={{
+                          background: `linear-gradient(135deg, ${settings.primaryColor} 0%, ${settings.secondaryColor} 100%)`,
+                        }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            {(previewTheme === "dark"
+                              ? settings.portalLogoDark
+                              : settings.portalLogo) && (
+                              <div className="h-10 w-32 relative bg-white/10 rounded">
+                                <Image
+                                  src={
+                                    previewTheme === "dark"
+                                      ? settings.portalLogoDark?.url || ""
+                                      : settings.portalLogo?.url || ""
+                                  }
+                                  alt="Logo"
+                                  fill
+                                  className="object-contain p-2"
+                                />
+                              </div>
+                            )}
+                            <h3 className="text-white font-semibold">
+                              {settings.portalName || "Portal Name"}
+                            </h3>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Candidate Portal Preview Content */}
+                    <div className="p-6 space-y-6">
+                      <div
+                        className={cn(
+                          "space-y-4",
+                          previewTheme === "dark" ? "text-white" : "text-gray-900"
+                        )}
+                      >
+                        {/* Job Application Header */}
+                        <div className="border-b pb-4">
+                          <h1 className="text-2xl font-bold">
+                            Senior Frontend Developer
+                          </h1>
+                          <p className="text-sm opacity-70 mt-1">
+                            Technology • Full-time • Remote
+                          </p>
+                        </div>
+
+                        {/* Job Details */}
+                        <div className="space-y-3">
+                          <h3 className="font-semibold">Job Description</h3>
+                          <p className="text-sm opacity-80 leading-relaxed">
+                            We are seeking a talented Senior Frontend Developer to
+                            join our dynamic team. You will be responsible for
+                            creating exceptional user experiences using modern web
+                            technologies.
+                          </p>
+                        </div>
+
+                        {/* Application Form Preview */}
+                        <div className="space-y-3 pt-4 border-t">
+                          <h3 className="font-semibold">
+                            Apply for this position
+                          </h3>
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-1">
+                                <label className="text-xs font-medium opacity-70">
+                                  First Name
+                                </label>
+                                <div className="h-9 border rounded bg-background/20 border-white/20" />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-xs font-medium opacity-70">
+                                  Last Name
+                                </label>
+                                <div className="h-9 border rounded bg-background/20 border-white/20" />
+                              </div>
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs font-medium opacity-70">
+                                Email Address
+                              </label>
+                              <div className="h-9 border rounded bg-background/20 border-white/20" />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs font-medium opacity-70">
+                                Upload Resume
+                              </label>
+                              <div className="h-20 border-2 border-dashed rounded bg-background/10 border-white/20 flex items-center justify-center">
+                                <span className="text-xs opacity-60">
+                                  Drop files here or click to browse
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-3 pt-4">
+                          <button
+                            className="px-6 py-2 rounded-lg text-white font-medium text-sm flex-1"
+                            style={{ backgroundColor: settings.primaryColor }}
+                          >
+                            Submit Application
+                          </button>
+                          <button className="px-6 py-2 rounded-lg border border-white/20 text-current font-medium text-sm">
+                            Save as Draft
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  )}
-                </div>
+
+                    {/* Custom Footer Preview */}
+                    {footerHtml && (
+                      <div className="border-t">
+                        <div dangerouslySetInnerHTML={{ __html: footerHtml }} />
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

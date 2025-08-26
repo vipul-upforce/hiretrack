@@ -269,7 +269,7 @@ const JobCard = ({
               {/* Candidates Count */}
               <div className="flex items-center gap-2.5 text-sm">
                 <div className="h-4 w-4 flex items-center justify-center">
-                  <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full"></div>
+                  <div className="w-2 h-2 bg-gray-400 dark:bg-white0 rounded-full"></div>
                 </div>
                 <div className="flex flex-col min-w-0 flex-1">
                   <span className="text-xs text-gray-500 dark:text-gray-500 uppercase tracking-wide truncate">
@@ -285,7 +285,7 @@ const JobCard = ({
               {(job.experience || job.experience === 0) && (
                 <div className="flex items-center gap-2.5 text-sm">
                   <div className="h-4 w-4 flex items-center justify-center">
-                    <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full"></div>
+                    <div className="w-2 h-2 bg-gray-400 dark:bg-white0 rounded-full"></div>
                   </div>
                   <div className="flex flex-col min-w-0 flex-1">
                     <span className="text-xs text-gray-500 dark:text-gray-500 uppercase tracking-wide truncate">
@@ -303,7 +303,7 @@ const JobCard = ({
                 <div className="space-y-2">
                   <div className="flex items-center gap-2.5">
                     <div className="h-4 w-4 flex items-center justify-center">
-                      <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full"></div>
+                      <div className="w-2 h-2 bg-gray-400 dark:bg-white0 rounded-full"></div>
                     </div>
                     <span className="text-xs text-gray-500 dark:text-gray-500 uppercase tracking-wide font-medium truncate">
                       Skills Required
@@ -314,7 +314,7 @@ const JobCard = ({
                       <Badge
                         key={`${job._id}-skill-${index}-${skill}`}
                         variant="secondary"
-                        className="text-xs px-2.5 py-1 bg-gray-100 text-gray-700 border border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 font-medium truncate max-w-full"
+                        className="text-xs px-2.5 py-1 bg-gray-100 text-gray-700 border border-gray-200 dark:bg-black dark:text-gray-300 dark:border-gray-700 font-medium truncate max-w-full"
                         title={skill}
                       >
                         {skill}

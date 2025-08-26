@@ -235,7 +235,7 @@ export function EmailHistory() {
                 {emails?.map((email) => (
                   <TableRow
                     key={email._id}
-                    className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900"
+                    className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
                     onClick={() => setSelectedEmail(email)}
                   >
                     <TableCell className="whitespace-nowrap">
@@ -410,7 +410,7 @@ export function EmailHistory() {
 
                 <div>
                   <p className="font-semibold text-gray-600 mb-2">Message:</p>
-                  <div className="bg-gray-50 dark:bg-gray-900 rounded p-4 whitespace-pre-wrap text-sm">
+                  <div className="bg-white dark:bg-black rounded p-4 whitespace-pre-wrap text-sm">
                     {selectedEmail.body}
                   </div>
                 </div>
@@ -427,7 +427,7 @@ export function EmailHistory() {
                           href={attachment.shareUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-2 p-2 border rounded hover:bg-gray-50 dark:hover:bg-gray-900"
+                          className="flex items-center gap-2 p-2 border rounded hover:bg-gray-100 dark:hover:bg-gray-900"
                         >
                           <Paperclip className="h-4 w-4 text-gray-400" />
                           <span className="text-sm">{attachment.fileName}</span>

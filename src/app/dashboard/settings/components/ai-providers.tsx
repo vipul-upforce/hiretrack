@@ -694,7 +694,7 @@ export default function AIProvidersConfigs({
 
                         {/* Model Capabilities */}
                         {modelValue && modelValue !== "custom" && (
-                          <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                          <div className="mt-4 p-3 bg-white dark:bg-black rounded-lg">
                             <h4 className="text-sm font-medium mb-2">
                               Model Capabilities
                             </h4>

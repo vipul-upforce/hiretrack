@@ -13,5 +13,14 @@ export interface Assignment {
     htmlLink: string;
     summary: string;
     description: string;
+    attendeeResponses?: Array<{
+      email: string;
+      name?: string;
+      responseStatus: 'needsAction' | 'accepted' | 'declined' | 'tentative';
+      comment?: string;
+      lastUpdated: Date;
+      notificationSent?: boolean;
+    }>;
+    lastSyncedAt?: Date;
   };
 }

@@ -26,7 +26,7 @@ export const AuthGuardLoading = () => {
           <div className="absolute inset-0 rounded-full bg-blue-100 dark:bg-blue-900/20 animate-pulse" />
 
           {/* Shield icon container */}
-          <div className="relative bg-white dark:bg-gray-800 rounded-full p-5 shadow-lg">
+          <div className="relative bg-white dark:bg-black rounded-full p-5 shadow-lg">
             <Shield className="w-12 h-12 text-blue-500 dark:text-blue-400" />
 
             {/* Rotating lock animation */}

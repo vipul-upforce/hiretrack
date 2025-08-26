@@ -7,7 +7,7 @@ import { SearchResults } from "@/components/forms/search-results";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { TimerResetIcon as ResetIcon, SearchIcon } from "lucide-react";
-import { useFilterCandidatesMutation } from "@/lib/features/candidate/candidateApi";
+import { useFilterCandidatesQuery } from "@/lib/features/candidate/candidateApi";
 import Cookies from "js-cookie";
 import { useToast } from "@/hooks/use-toast";
 import { Candidate } from "@/types/candidate";
@@ -78,7 +78,22 @@ function CandidateSearch() {
   const [currentFilters, setCurrentFilters] =
     useState<SearchFilter>(initialValues);
 
-  const [filterCandidates] = useFilterCandidatesMutation();
+  const { data: filteredCandidates, refetch: filterCandidates } =
+    useFilterCandidatesQuery(currentFilters);
+
+  // FIX 1: Move the setSearchResults call inside useEffect
+  useEffect(() => {
+    if (filteredCandidates) {
+      setSearchResults(filteredCandidates.candidates || []);
+      // Update pagination info if available
+      if (filteredCandidates.pagination) {
+        setCurrentPage(filteredCandidates.pagination.page || 1);
+        setCurrentPageLimit(filteredCandidates.pagination.limit || 100);
+        setTotalPages(filteredCandidates.pagination.totalPages || 0);
+        setTotalRecordsCount(filteredCandidates.pagination.total || 0);
+      }
+    }
+  }, [filteredCandidates]);
 
   // Optimistic update handler
   const handleCandidateUpdate = useCallback((updatedCandidate: Candidate) => {
@@ -92,7 +107,7 @@ function CandidateSearch() {
   const refetchResults = useCallback(async () => {
     setIsSearching(true);
     try {
-      const response = await filterCandidates(currentFilters).unwrap();
+      const response = await filterCandidates().unwrap();
       setSearchResults(response.candidates || []);
       // Update pagination info if available
       if (response.pagination) {
@@ -110,49 +125,37 @@ function CandidateSearch() {
     } finally {
       setIsSearching(false);
     }
-  }, [currentFilters, filterCandidates, toast]);
+  }, [filterCandidates, toast]); // FIX 2: Add dependencies
 
-  const handleSearch = async (values: SearchFilter) => {
-    setIsSearching(true);
-    setCurrentFilters(values);
+  const handleSearch = useCallback(
+    async (values: SearchFilter) => {
+      setIsSearching(true);
 
-    try {
-      values.organizationId = OrgID ? OrgID : values.organizationId;
-      const response = await filterCandidates(values).unwrap();
-      setSearchResults(response.candidates || []);
-      setCurrentPage(response?.pagination?.page || 1);
-      setCurrentPageLimit(response?.pagination?.limit || 100);
-      setTotalPages(response?.pagination?.totalPages || 0);
-      setTotalRecordsCount(response?.pagination?.total);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: `${error instanceof Error ? error.message : ""}`,
-        variant: "destructive",
-      });
-    } finally {
+      // FIX 3: Update filters first, then the query will automatically refetch
+      const updatedFilters = {
+        ...values,
+        organizationId: OrgID || values.organizationId,
+      };
+
+      setCurrentFilters(updatedFilters);
       setIsSearching(false);
-    }
-  };
+    },
+    [OrgID]
+  );
 
+  // FIX 4: Simplify the initial load effect
   useEffect(() => {
-    (async () => {
-      if (user) {
-        setOrgID(user.organizationId);
-        handleSearch({
-          name: "",
-          skills: [],
-          location: "",
-          createdAfter: "",
-          createdBefore: "",
-          logicOperator: "$and",
-          organizationId: user.organizationId,
-          page: currentPage,
-          limit: currentPageLimit,
-        });
-      }
-    })();
-  }, []);
+    if (user && user.organizationId) {
+      setOrgID(user.organizationId);
+      const initialFilters = {
+        ...initialValues,
+        organizationId: user.organizationId,
+        page: currentPage,
+        limit: currentPageLimit,
+      };
+      setCurrentFilters(initialFilters);
+    }
+  }, [user]); // Only depend on user
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -163,32 +166,38 @@ function CandidateSearch() {
     }
   };
 
-  const onPageChange = async (pageNumber: number) => {
-    if (!user || pageNumber < 1 || pageNumber > totalPages) return;
+  const onPageChange = useCallback(
+    async (pageNumber: number) => {
+      if (!user || pageNumber < 1 || pageNumber > totalPages) return;
 
-    setCurrentPage(pageNumber); // Update current page immediately
-    const updatedFilters = {
-      ...currentFilters,
-      organizationId: user.organizationId,
-      page: pageNumber,
-    };
+      setCurrentPage(pageNumber);
+      const updatedFilters = {
+        ...currentFilters,
+        organizationId: user.organizationId,
+        page: pageNumber,
+      };
 
-    setCurrentFilters(updatedFilters);
-    await handleSearch(updatedFilters);
-  };
-  const onLimitChange = async (pageLimit: number) => {
-    if (!user || pageLimit < 1) return;
+      setCurrentFilters(updatedFilters);
+    },
+    [user, totalPages, currentFilters]
+  );
 
-    setCurrentPageLimit(pageLimit); // Update current page immediately
-    const updatedFilters = {
-      ...currentFilters,
-      organizationId: user.organizationId,
-      limit: pageLimit,
-    };
+  const onLimitChange = useCallback(
+    async (pageLimit: number) => {
+      if (!user || pageLimit < 1) return;
 
-    setCurrentFilters(updatedFilters);
-    await handleSearch(updatedFilters);
-  };
+      setCurrentPageLimit(pageLimit);
+      const updatedFilters = {
+        ...currentFilters,
+        organizationId: user.organizationId,
+        limit: pageLimit,
+        page: 1, // Reset to first page when changing limit
+      };
+
+      setCurrentFilters(updatedFilters);
+    },
+    [user, currentFilters]
+  );
 
   const sortedResults = sortField
     ? [...searchResults].sort((a, b) => {
@@ -284,11 +293,8 @@ function CandidateSearch() {
         sortField={sortField}
         sortDirection={sortDirection}
         onSort={handleSort}
-        refetch={async () => {
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          refetchResults;
-        }} // Use the memoized version
-        onCandidateUpdate={handleCandidateUpdate} // Add the optimistic update handler
+        refetch={refetchResults}
+        onCandidateUpdate={handleCandidateUpdate}
       />
     </div>
   );

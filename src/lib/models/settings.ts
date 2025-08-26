@@ -159,6 +159,32 @@ const settingsSchema = new Schema({
       default: "",
     },
   },
+  onboardingStatus: {
+    isCompleted: {
+      type: Boolean,
+      default: false,
+    },
+    completedSteps: {
+      type: [String],
+      default: [],
+    },
+    skippedSteps: {
+      type: [String],
+      default: [],
+    },
+    doNotShowAgain: {
+      type: Boolean,
+      default: false,
+    },
+    currentStep: {
+      type: Number,
+      default: 0,
+    },
+    lastUpdated: {
+      type: Date,
+      default: Date.now,
+    },
+  },
 });
 
 export interface ISettings {
@@ -185,6 +211,7 @@ export interface ISettings {
   emailTemplates: { [key: string]: IEmailTemplate };
   twoFA?: ITwoFA;
   googleCalendar?: IGoogleCalendar;
+  onboardingStatus?: IOnboardingStatus;
 }
 
 export interface IGemini {
@@ -252,6 +279,15 @@ export interface IGoogleCalendar {
   refreshToken: string;
   expiryDate: number | null;
   connectedEmail: string;
+}
+
+export interface IOnboardingStatus {
+  isCompleted: boolean;
+  completedSteps: string[];
+  skippedSteps: string[];
+  doNotShowAgain: boolean;
+  currentStep: number;
+  lastUpdated: Date;
 }
 
 export interface SettingsDocument extends Document, ISettings {}

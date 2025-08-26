@@ -29,6 +29,7 @@ import {
   useTakeSnapshotMutation,
   useDeleteBackupMutation,
 } from "@/lib/features/settings/settingsApi";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 type BackupFile = {
   name: string;
@@ -78,7 +79,7 @@ export default function BackupsDialog() {
     return {
       totalSize,
       totalCount: files.length,
-      oldestBackup: sortedByDate[0]?.createdAt,
+      oldestBackup: new Date(sortedByDate[0]?.createdAt).toLocaleString(),
       newestBackup: new Date(
         sortedByDate[sortedByDate.length - 1]?.createdAt
       ).toLocaleString(),
@@ -171,7 +172,7 @@ export default function BackupsDialog() {
       </div> */}
 
       {files.length > 0 && (
-        <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border">
+        <div className="mb-4 p-4 bg-white dark:bg-black rounded-lg border">
           <div className="flex flex-row justify-between ">
             <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
               <Database className="h-4 w-4" />
@@ -180,7 +181,9 @@ export default function BackupsDialog() {
             <Button
               onClick={handleTakeSnapshot}
               disabled={loading}
-              className="bg-white border text-blue-600 hover:bg-blue-50 font-medium px-6 py-2 h-auto mb-2"
+              className="flex items-center justify-center font-semibold px-6 py-2 mb-2 rounded-lg transition-all duration-200 ease-in-out transform active:scale-95
+             bg-white text-blue-700 border border-blue-200 hover:bg-blue-50 hover:border-blue-300 shadow-sm
+             dark:bg-blue-700 dark:text-white dark:border-blue-600 dark:hover:bg-blue-600 dark:shadow-md"
             >
               {isTakingSnapshot ? (
                 <>
@@ -239,13 +242,17 @@ export default function BackupsDialog() {
         </div>
       )}
 
-      {files.length === 0 ? (
+      {files.length === 0 && !isLoadingBackups ? (
         <div className="text-center py-8">
           <Database className="h-12 w-12 text-gray-400 mx-auto mb-3" />
           <p className="text-gray-500">No backups found.</p>
           <p className="text-sm text-gray-400 mt-1">
             Create your first backup using the button above.
           </p>
+        </div>
+      ) : isLoadingBackups ? (
+        <div className="h-[400px] flex justify-center itmes-center">
+          <LoadingSpinner />
         </div>
       ) : (
         <div>
@@ -262,7 +269,7 @@ export default function BackupsDialog() {
               .map((file, i) => (
                 <div
                   key={i}
-                  className="flex items-center justify-between p-3 px-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  className="flex items-center justify-between p-3 px-4 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 >
                   <div className="flex items-center space-x-3 w-full">
                     <FileIcon className="h-4 w-4 text-gray-500" />

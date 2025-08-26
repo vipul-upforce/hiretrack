@@ -689,7 +689,7 @@ export default function DashboardPage() {
                   // ) :
 
                   assignments?.length > 0 ? (
-                    <div className="grid grid-cols-1 xl:grid-cols-3 lg:grid-cols-2 gap-4">
+                    <div className="flex flex-wrap gap-6 justify-start">
                       {assignments.map((assignment, index) => (
                         <div
                           key={assignment.id || assignment._id}

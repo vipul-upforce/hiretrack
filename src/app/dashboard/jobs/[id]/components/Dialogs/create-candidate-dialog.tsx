@@ -8,7 +8,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Maximize, Minimize } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Formik, Form } from "formik";
 import { candidateSchema } from "../../schemas/candidate-schema";
@@ -187,10 +187,30 @@ export function CreateCandidateDialog({
   const [showTermsDialog, setShowTermsDialog] = useState(false);
   const [pendingFormValues, setPendingFormValues] =
     useState<CandidateFormValues | null>(null);
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
+  const [isLargeViewport, setIsLargeViewport] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
+    
+    const checkScreenSize = () => {
+      setIsSmallScreen(window.innerWidth < 1024);
+      const isLarge = window.innerWidth >= 1300 && window.innerHeight >= 1000;
+      setIsLargeViewport(isLarge);
+    };
+
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    
+    return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setIsMaximized(false);
+    }
+  }, [isOpen]);
 
   // useEffect(() => {
   //   (async () => {
@@ -473,8 +493,42 @@ export function CreateCandidateDialog({
         )}
       </DialogTrigger>
       <DialogContent
-        className={`sm:max-w-[80vw] xl:max-w-[65vw] h-[100vh] sm:h-[90vh] p-0 overflow-hidden flex flex-col`}
+        className={
+          (!isLargeViewport || isMaximized)
+            ? "!max-w-none !w-screen !h-screen !min-h-screen !max-h-screen !left-0 !top-0 !translate-x-0 !translate-y-0 !min-w-0 !inset-0 !m-0 !border-0 !rounded-none overflow-hidden flex flex-col p-0"
+            : "lg:max-w-[80vw] xl:max-w-[65vw] lg:h-[90vh] lg:border lg:rounded-lg p-0 overflow-hidden flex flex-col"
+        }
+        style={
+          (!isLargeViewport || isMaximized) ? {
+            position: 'fixed' as const,
+            inset: 0,
+            width: '100vw',
+            height: '100vh',
+            minHeight: '100vh',
+            maxHeight: '100vh',
+            maxWidth: 'none',
+            transform: 'none',
+            left: 0,
+            top: 0,
+            margin: 0,
+            border: 0,
+            borderRadius: 0,
+            zIndex: 9999
+          } : undefined
+        }
       >
+        {/* Maximize/Minimize Button - Always visible */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute z-[100] h-7 w-7 text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md"
+          style={{ top: 'calc(1rem - 5px)', right: 'calc(3.5rem - 20px)' }}
+          onClick={() => setIsMaximized(!isMaximized)}
+          title={isMaximized ? "Restore" : "Maximize"}
+          type="button"
+        >
+          {isMaximized ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+        </Button>
         <DialogHeader className="flex-shrink-0 px-6 py-4 border-b text-left">
           <DialogTitle className="text-left text-xl font-bold text-gray-900 dark:text-white">
             {user && (user.role === "candidate" || user?.role === "")

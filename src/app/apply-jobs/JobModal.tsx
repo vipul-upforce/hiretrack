@@ -121,14 +121,14 @@ export default function JobModal({
         />
 
         {/* Modal Container */}
-        <div className="fixed inset-0 z-50 flex items-center justify-center sm:p-4">
-          <Dialog.Panel className="w-full h-full sm:w-full sm:max-w-4xl sm:max-h-[90vh] sm:h-auto bg-white dark:bg-gray-900 border-0 sm:border border-gray-200 dark:border-gray-700 rounded-none sm:rounded-lg shadow-xl overflow-hidden flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center lg:p-4">
+          <Dialog.Panel className="w-full h-full lg:w-full lg:max-w-4xl lg:max-h-[90vh] lg:h-auto bg-white dark:bg-black border-0 lg:border border-gray-200 dark:border-gray-700 rounded-none lg:rounded-lg shadow-xl overflow-hidden flex flex-col">
             {/* Header - Fixed */}
             <div className="flex-shrink-0 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between p-4 sm:p-6">
+              <div className="flex items-center justify-between p-3 lg:p-6">
                 <Dialog.Title
                   as="h3"
-                  className="text-2xl font-bold text-gray-900 dark:text-white flex-1 pr-4 line-clamp-2"
+                  className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white flex-1 pr-3 lg:pr-4 line-clamp-2"
                   style={{
                     wordBreak: "break-word",
                     overflowWrap: "break-word",
@@ -140,23 +140,23 @@ export default function JobModal({
                 {/* Close button */}
                 <button
                   onClick={onClose}
-                  className="flex-shrink-0 p-2 sm:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  className="flex-shrink-0 p-1 lg:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                   aria-label="Close modal"
                 >
-                  <X className="w-6 h-6 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-400" />
+                  <X className="w-5 h-5 lg:w-6 lg:h-6 text-gray-600 dark:text-gray-400" />
                 </button>
               </div>
             </div>
 
             {/* Content - Scrollable */}
             <div className="flex-1 overflow-y-auto min-h-0">
-              <div className="p-4 sm:p-6 space-y-6">
+              <div className="p-3 lg:p-6 space-y-4 lg:space-y-6">
                 {/* Description Section */}
-                <div className="space-y-3">
-                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                <div className="space-y-2 lg:space-y-3">
+                  <h4 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-white">
                     Job Description
                   </h4>
-                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                  <div className="bg-white dark:bg-black rounded-lg p-3 lg:p-4 border border-gray-200 dark:border-gray-700">
                     <div
                       id="description-marker"
                       className="text-gray-700 dark:text-gray-300 leading-relaxed prose prose-gray dark:prose-invert max-w-none"
@@ -172,15 +172,15 @@ export default function JobModal({
                 </div>
 
                 {/* Skills Section */}
-                <div className="space-y-3">
-                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                <div className="space-y-2 lg:space-y-3">
+                  <h4 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-white">
                     Required Skills
                   </h4>
                   <div className="flex flex-wrap gap-2">
                     {job.skills.map((skill: string, i: number) => (
                       <span
                         key={i}
-                        className="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full border"
+                        className="inline-flex items-center px-2 lg:px-3 py-1 text-xs lg:text-sm font-medium rounded-full border"
                         style={{
                           backgroundColor: `${primaryColor}10`,
                           color: primaryColor,
@@ -200,7 +200,7 @@ export default function JobModal({
                     <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
                       Job Links
                     </h4>
-                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                    <div className="bg-white dark:bg-black rounded-lg p-4 border border-gray-200 dark:border-gray-700">
                       {job.links.map((link, index) => (
                         <a
                           key={index}
@@ -220,22 +220,22 @@ export default function JobModal({
                   </div>
                 )} */}
                 {/* Experience & Salary Section */}
-                <div className="space-y-3">
-                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                <div className="space-y-2 lg:space-y-3">
+                  <h4 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-white">
                     Job Requirements
                   </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 lg:gap-4">
                     {/* Experience */}
-                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                      <div className="flex items-center gap-3">
+                    <div className="bg-white dark:bg-black rounded-lg p-3 lg:p-4 border border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center gap-2 lg:gap-3">
                         <div
-                          className="p-2 rounded-lg"
+                          className="p-1.5 lg:p-2 rounded-lg"
                           style={{
                             backgroundColor: `${primaryColor}15`,
                           }}
                         >
                           <Briefcase
-                            className="w-5 h-5"
+                            className="w-4 h-4 lg:w-5 lg:h-5"
                             style={{ color: primaryColor }}
                           />
                         </div>
@@ -253,7 +253,7 @@ export default function JobModal({
 
                     {/* Salary */}
                     {(job as JobWithSalary)?.salary && (
-                      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                      <div className="bg-white dark:bg-black rounded-lg p-4 border border-gray-200 dark:border-gray-700">
                         <div className="flex items-center gap-3">
                           <div
                             className="p-2 rounded-lg flex items-center justify-center"
@@ -286,11 +286,11 @@ export default function JobModal({
                 {/* Custom Fields Section */}
                 {job?.customFields &&
                   Object.keys(job.customFields).length > 0 && (
-                    <div className="space-y-3">
-                      <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    <div className="space-y-2 lg:space-y-3">
+                      <h4 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-white">
                         Additional Information
                       </h4>
-                      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                      <div className="bg-white dark:bg-black rounded-lg p-3 lg:p-4 border border-gray-200 dark:border-gray-700">
                         <CustomFieldsData
                           customFields={job?.customFields || {}}
                         />
@@ -302,12 +302,12 @@ export default function JobModal({
 
             {/* Footer - Fixed */}
             <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700">
-              <div className="p-4 sm:p-6">
-                <div className="flex flex-col sm:flex-row gap-4 sm:justify-end">
+              <div className="p-3 lg:p-6">
+                <div className="flex flex-col sm:flex-row gap-3 lg:gap-4 sm:justify-end">
                   {/* Close button - hidden on mobile, visible on desktop */}
                   <button
                     type="button"
-                    className="hidden sm:inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 transition-colors"
+                    className="hidden lg:inline-flex items-center justify-center px-4 lg:px-6 py-2 lg:py-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 transition-colors"
                     onFocus={(e) => {
                       e.target.style.boxShadow = `0 0 0 2px ${primaryColor}20`;
                     }}
@@ -324,9 +324,9 @@ export default function JobModal({
                     <button
                       onClick={handleContinue}
                       disabled={alreadyApplied || readOnly}
-                      className={`flex items-center justify-center w-full sm:w-auto px-8 py-3 text-sm font-semibold rounded-lg focus:outline-none focus:ring-2 transition-colors ${
+                      className={`flex items-center justify-center w-full sm:w-auto px-6 lg:px-8 py-2 lg:py-3 text-sm font-semibold rounded-lg focus:outline-none focus:ring-2 transition-colors ${
                         alreadyApplied || readOnly
-                          ? "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 cursor-not-allowed"
+                          ? "bg-gray-100 dark:bg-black text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 cursor-not-allowed"
                           : "text-white"
                       }`}
                       style={
@@ -366,7 +366,7 @@ export default function JobModal({
                       {alreadyApplied || readOnly ? (
                         <button
                           disabled
-                          className="flex items-center justify-center w-full px-8 py-3 text-sm font-semibold rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 cursor-not-allowed"
+                          className="flex items-center justify-center w-full px-8 py-3 text-sm font-semibold rounded-lg bg-gray-100 dark:bg-black text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 cursor-not-allowed"
                         >
                           <CheckCircle className="w-5 h-5 mr-2" />
                           Already Applied

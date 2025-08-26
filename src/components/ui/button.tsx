@@ -33,9 +33,9 @@ const buttonVariants = cva(
         "dark-primary":
           "bg-gray-800 text-white shadow hover:bg-gray-700 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600 rounded-[var(--button-radius)]",
         "dark-secondary":
-          "bg-gray-200 text-gray-900 shadow-sm hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500 rounded-[var(--button-radius)]",
+          "bg-gray-200 text-gray-900 shadow-sm hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-1000 rounded-[var(--button-radius)]",
         "dark-outline":
-          "border border-gray-300 bg-white text-gray-900 shadow-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700 rounded-[var(--button-radius)]",
+          "border border-gray-300 bg-white text-gray-900 shadow-sm hover:bg-gray-100 dark:border-gray-600 dark:bg-black dark:text-gray-100 dark:hover:bg-gray-700 rounded-[var(--button-radius)]",
       },
       size: {
         sm: "h-[var(--button-height-sm)] px-[var(--button-padding-x-sm)] text-xs",

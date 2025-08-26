@@ -184,7 +184,7 @@ export function FileUpload({
             type="button"
             onClick={open}
             variant="outline"
-            className="flex items-center gap-2 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200 dark:border-purple-800 hover:from-purple-100 hover:to-pink-100 dark:hover:from-purple-900/30 dark:hover:to-pink-900/30 text-purple-700 dark:text-purple-300"
+            className="flex items-center gap-2"
           >
             <Paperclip className="w-4 h-4" />
             {isResume ? "Resume" : "Add Documents"}

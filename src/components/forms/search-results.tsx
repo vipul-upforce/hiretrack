@@ -11,6 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { CompactCircularScores } from "@/app/dashboard/jobs/[id]/components/Utils/circular-score";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -677,52 +678,7 @@ export function SearchResults({
                     )}
                     {visibleColumns.overallScore && (
                       <TableCell>
-                        {candidate.scores && candidate.scores ? (
-                          <div className="flex flex-col gap-1">
-                            <div className="flex items-center gap-1">
-                              <Badge
-                                variant="outline"
-                                className="text-xs font-medium bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800"
-                              >
-                                Overall: {candidate.scores.overall}
-                                {!candidate.scores.overall && "N/A"}
-                              </Badge>
-                            </div>
-                            <div className="flex flex-wrap gap-1">
-                              {candidate.scores.experience !== undefined && (
-                                <Badge
-                                  variant="outline"
-                                  className="text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800"
-                                >
-                                  Exp: {candidate.scores.experience}
-                                </Badge>
-                              )}
-                              {candidate.scores.skills !== undefined && (
-                                <Badge
-                                  variant="outline"
-                                  className="text-xs bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800"
-                                >
-                                  Skills: {candidate.scores.skills}
-                                </Badge>
-                              )}
-                              {candidate.scores.affordability !== undefined && (
-                                <Badge
-                                  variant="outline"
-                                  className="text-xs bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800"
-                                >
-                                  Afford: {candidate.scores.affordability}
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        ) : (
-                          <Badge
-                            variant="outline"
-                            className="text-xs text-muted-foreground border-muted-foreground/30 bg-muted/30"
-                          >
-                            No Score
-                          </Badge>
-                        )}
+                        <CompactCircularScores scores={candidate.scores || {}} />
                       </TableCell>
                     )}
                     {visibleColumns.expectedCTC && (

@@ -16,7 +16,7 @@ interface UpdateMeetRequest {
 export async function PUT(req: NextRequest) {
   try {
     await connectToDatabase();
-    
+
     // Verify user
     let organizationId = "";
     const token = req.cookies.get("auth_token");
@@ -44,7 +44,7 @@ export async function PUT(req: NextRequest) {
         { status: 500 }
       );
     }
-    
+
     const settings = await Settings.findOne({ organizationId });
     if (!settings?.googleCalendar?.isConnected) {
       return NextResponse.json(
@@ -82,36 +82,33 @@ export async function PUT(req: NextRequest) {
     });
 
     if (!existingEvent.data) {
-      return NextResponse.json(
-        { error: "Event not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
-
     // Prepare update data
     const updateData: any = {};
 
     if (scheduledTime && duration) {
       const startDateTime = new Date(scheduledTime);
       const endDateTime = new Date(startDateTime.getTime() + duration * 60000);
-      
+
       // Get organization timezone from settings
-      let organizationTimezone = settings.timeZone?.name || 'Asia/Kolkata';
-      
+      let organizationTimezone = settings.timeZone?.name || "Asia/Kolkata";
+
       // Map common timezone names to Google Calendar format
       const timezoneMap: { [key: string]: string } = {
-        'Asia/Kolkata': 'Asia/Kolkata',
-        'America/New_York': 'America/New_York',
-        'America/Los_Angeles': 'America/Los_Angeles',
-        'Europe/London': 'Europe/London',
-        'GMT+05:30': 'Asia/Kolkata',
-        'GMT+00:00': 'UTC',
-        'GMT-05:00': 'America/New_York',
-        'GMT-08:00': 'America/Los_Angeles',
+        "Asia/Kolkata": "Asia/Kolkata",
+        "America/New_York": "America/New_York",
+        "America/Los_Angeles": "America/Los_Angeles",
+        "Europe/London": "Europe/London",
+        "GMT+05:30": "Asia/Kolkata",
+        "GMT+00:00": "UTC",
+        "GMT-05:00": "America/New_York",
+        "GMT-08:00": "America/Los_Angeles",
       };
-      
-      organizationTimezone = timezoneMap[organizationTimezone] || organizationTimezone;
-      
+
+      organizationTimezone =
+        timezoneMap[organizationTimezone] || organizationTimezone;
+
       updateData.start = {
         dateTime: startDateTime.toISOString(),
         timeZone: organizationTimezone,
@@ -134,18 +131,43 @@ export async function PUT(req: NextRequest) {
       sendUpdates: "all",
     });
 
+    // Extract updated event details for response
+
+    const updatedEvent = response.data;
+    const summary = updatedEvent.summary || existingEvent.data.summary;
+    const description =
+      updatedEvent.description || existingEvent.data.description;
+    const attendees =
+      updatedEvent.attendees?.map((att) => ({
+        email: att.email,
+        name: att.displayName || att.email?.split("@")[0] || att.email,
+        responseStatus: att.responseStatus || "needsAction",
+        lastUpdated: new Date(),
+        notificationSent: false,
+      })) || [];
+
     // Update candidate record if candidateId is provided
     if (candidateId && Candidate) {
       try {
         const updateFields: any = {};
-        if (response.data.hangoutLink) {
-          updateFields["assignment.googleMeet.meetingLink"] = response.data.hangoutLink;
+        if (updatedEvent.hangoutLink) {
+          updateFields["assignment.googleMeet.meetingLink"] =
+            updatedEvent.hangoutLink;
         }
-        if (response.data.htmlLink) {
-          updateFields["assignment.googleMeet.htmlLink"] = response.data.htmlLink;
+        if (updatedEvent.htmlLink) {
+          updateFields["assignment.googleMeet.htmlLink"] =
+            updatedEvent.htmlLink;
         }
+        // Update summary, description, and attendeeResponses if changed
+        updateFields["assignment.googleMeet.summary"] = summary;
+        updateFields["assignment.googleMeet.description"] = description;
+        updateFields["assignment.googleMeet.attendeeResponses"] = attendees;
+        updateFields["assignment.googleMeet.lastSyncedAt"] = new Date();
+
         if (Object.keys(updateFields).length > 0) {
-          await Candidate.findByIdAndUpdate(candidateId, { $set: updateFields });
+          await Candidate.findByIdAndUpdate(candidateId, {
+            $set: updateFields,
+          });
         }
       } catch (error) {
         console.error("Failed to update candidate record:", error);
@@ -154,24 +176,30 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      eventId: response.data.id,
-      meetingLink: response.data.hangoutLink,
-      htmlLink: response.data.htmlLink,
+      eventId: updatedEvent.id,
+      meetingLink: updatedEvent.hangoutLink,
+      htmlLink: updatedEvent.htmlLink,
+      summary,
+      description,
+      attendees,
       message: "Google Meet updated successfully",
     });
   } catch (error) {
     console.error("Google Meet update error:", error);
-    
+
     if (error instanceof Error && error.message.includes("invalid_grant")) {
       return NextResponse.json(
-        { error: "Google Calendar token expired. Please reconnect in settings." },
+        {
+          error: "Google Calendar token expired. Please reconnect in settings.",
+        },
         { status: 401 }
       );
     }
-    
+
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Failed to update meeting",
+        error:
+          error instanceof Error ? error.message : "Failed to update meeting",
       },
       { status: 500 }
     );
@@ -181,7 +209,7 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     await connectToDatabase();
-    
+
     // Verify user
     let organizationId = "";
     const token = req.cookies.get("auth_token");
@@ -218,7 +246,7 @@ export async function DELETE(req: NextRequest) {
         { status: 500 }
       );
     }
-    
+
     const settings = await Settings.findOne({ organizationId });
     if (!settings?.googleCalendar?.isConnected) {
       return NextResponse.json(
@@ -287,7 +315,7 @@ export async function DELETE(req: NextRequest) {
     if (candidateId && Candidate) {
       try {
         await Candidate.findByIdAndUpdate(candidateId, {
-          $unset: { "assignment.googleMeet": "" }
+          $unset: { "assignment.googleMeet": "" },
         });
       } catch (error) {
         console.error("Failed to update candidate record:", error);
@@ -300,17 +328,20 @@ export async function DELETE(req: NextRequest) {
     });
   } catch (error) {
     console.error("Google Meet cancellation error:", error);
-    
+
     if (error instanceof Error && error.message.includes("invalid_grant")) {
       return NextResponse.json(
-        { error: "Google Calendar token expired. Please reconnect in settings." },
+        {
+          error: "Google Calendar token expired. Please reconnect in settings.",
+        },
         { status: 401 }
       );
     }
-    
+
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Failed to cancel meeting",
+        error:
+          error instanceof Error ? error.message : "Failed to cancel meeting",
       },
       { status: 500 }
     );

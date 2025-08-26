@@ -22,7 +22,7 @@ const FollowupDisplay = ({
 }) => {
   const [removeFUOpen, setRemoveFUOpen] = useState(false);
   const contentWithDate = (
-    <div className="border cursor-default dark:border-accent rounded w-fit px-2 py-1 flex flex-row items-center justify-between dark:bg-gray-800 bg-blue-50 hover:bg-blue-100 dark:hover:bg-gray-900 transition-colors duration-200">
+    <div className="border cursor-default dark:border-accent rounded w-fit px-2 py-1 flex flex-row items-center justify-between dark:bg-black bg-blue-50 hover:bg-blue-100 dark:hover:bg-gray-900 transition-colors duration-200">
       <CalendarClockIcon size={14} className="mr-1 text-blue-600" />
       <div className="flex flex-row items-center justify-between w-full">
         <p className="text-foreground text-xs">

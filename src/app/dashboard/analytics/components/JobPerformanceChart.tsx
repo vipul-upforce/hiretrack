@@ -697,7 +697,7 @@ export const JobPerformanceChart: React.FC<JobPerformanceChartProps> = ({
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-gray-500"></div>
+                    <div className="w-3 h-3 rounded-full bg-white0"></div>
                     Closed Jobs
                   </span>
                   <span className="font-bold">{summary.closedJobs || 0}</span>

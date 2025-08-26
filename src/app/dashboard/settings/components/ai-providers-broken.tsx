@@ -376,7 +376,7 @@ export default function AIProvidersConfigs({
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
+                          <div className="p-2 rounded-lg bg-gray-100 dark:bg-black">
                             <provider.icon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                           </div>
                           <div>
@@ -555,7 +555,7 @@ export default function AIProvidersConfigs({
 
                       {/* Model Capabilities */}
                       {model && (
-                        <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                        <div className="mt-4 p-3 bg-white dark:bg-black rounded-lg">
                           <h4 className="text-sm font-medium mb-2">
                             Model Capabilities
                           </h4>

@@ -236,7 +236,7 @@ export function KanbanColumn({
             // opacity: snapshot.isDragging ? 0.8 : 1,
           }}
         >
-          <div className="h-full flex flex-col bg-gray-50/70 dark:bg-gray-800/30 rounded-xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm p-2 min-w-0 w-full max-w-full">
+          <div className="h-full flex flex-col bg-white/70 dark:bg-black/30 rounded-xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm p-2 min-w-0 w-full max-w-full">
             <div className="py-2 flex-shrink-0 px-2 mb-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
@@ -276,7 +276,7 @@ export function KanbanColumn({
                               <ArrowRightToLine className="h-3.5 w-3.5" />
                             </div>
                           </TooltipTrigger>
-                          <TooltipContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
+                          <TooltipContent className="bg-white dark:bg-black border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
                             <p className="text-xs">
                               Incoming checklist:{" "}
                               {laneConfig.incomingChecklist.name}
@@ -309,7 +309,7 @@ export function KanbanColumn({
                               <ArrowLeftFromLine className="h-3.5 w-3.5 scale-x-[-1]" />
                             </div>
                           </TooltipTrigger>
-                          <TooltipContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
+                          <TooltipContent className="bg-white dark:bg-black border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
                             <p className="text-xs">
                               Outgoing checklist:{" "}
                               {laneConfig.outgoingChecklist.name}

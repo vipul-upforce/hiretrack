@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Maximize, Minimize } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Formik, Form } from "formik";
 import { candidateSchema } from "../../schemas/candidate-schema";
@@ -130,6 +131,8 @@ export function EditCandidateDialog({
   const [updateCandidate] = useUpdateCandidateMutation();
   const [sendEmail] = useSendMailMutation();
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
+  const [isLargeViewport, setIsLargeViewport] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
 
   const formName = "Candidate";
   const { getDefaultValues, validationSchema } = useCustomForm(
@@ -441,6 +444,23 @@ export function EditCandidateDialog({
     customFields: getDefaultValues(candidate.customFields || {}),
   };
 
+  useEffect(() => {
+    const checkViewportSize = () => {
+      const isLarge = window.innerWidth >= 1300 && window.innerHeight >= 1000;
+      setIsLargeViewport(isLarge);
+    };
+
+    checkViewportSize();
+    window.addEventListener('resize', checkViewportSize);
+    return () => window.removeEventListener('resize', checkViewportSize);
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setIsMaximized(false);
+    }
+  }, [isOpen]);
+
   return (
     <Dialog
       open={isOpen}
@@ -452,10 +472,43 @@ export function EditCandidateDialog({
       }}
     >
       <DialogContent
-        className={`sm:max-w-[80vw] ${
-          candidate.resume ? "xl:max-w-[65vw]" : "xl:max-w-[50vw]"
-        } h-[90vh] flex flex-col justify-between overflow-hidden`}
+        className={
+          (!isLargeViewport || isMaximized)
+            ? "!max-w-none !w-screen !h-screen !min-h-screen !max-h-screen !left-0 !top-0 !translate-x-0 !translate-y-0 !min-w-0 !inset-0 !m-0 !border-0 !rounded-none overflow-hidden flex flex-col"
+            : `sm:max-w-[80vw] ${
+                candidate.resume ? "xl:max-w-[65vw]" : "xl:max-w-[50vw]"
+              } h-[90vh] flex flex-col justify-between overflow-hidden`
+        }
+        style={
+          (!isLargeViewport || isMaximized) ? {
+            position: 'fixed' as const,
+            inset: 0,
+            width: '100vw',
+            height: '100vh',
+            minHeight: '100vh',
+            maxHeight: '100vh',
+            maxWidth: 'none',
+            transform: 'none',
+            left: 0,
+            top: 0,
+            margin: 0,
+            border: 0,
+            borderRadius: 0,
+          } : {}
+        }
       >
+        {/* Maximize/Minimize Button - Always visible */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute z-[100] h-7 w-7 text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md"
+          style={{ top: 'calc(1rem - 5px)', right: 'calc(3.5rem - 20px)' }}
+          onClick={() => setIsMaximized(!isMaximized)}
+          title={isMaximized ? "Restore" : "Maximize"}
+          type="button"
+        >
+          {isMaximized ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+        </Button>
         <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle>Edit Candidate</DialogTitle>
         </DialogHeader>

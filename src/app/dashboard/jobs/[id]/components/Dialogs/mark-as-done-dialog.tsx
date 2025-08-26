@@ -93,7 +93,7 @@ const ConfirmAndRemarkDialog = ({
             variant="outline"
             onClick={handleCancel}
             disabled={isLoading}
-            className="border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+            className="border-gray-300 text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
           >
             Cancel
           </Button>

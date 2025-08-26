@@ -359,7 +359,7 @@ export function EmailHistory() {
 
           <div className="flex-1 overflow-y-auto">
             {selectedEmail && (
-              <div className="bg-white dark:bg-gray-900">
+              <div className="bg-white dark:bg-black">
                 {/* Email Header - Like Gmail */}
                 <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                   <div className="flex items-start justify-between mb-4">
@@ -468,7 +468,7 @@ export function EmailHistory() {
                             (attachment, index) => (
                               <div
                                 key={index}
-                                className="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+                                className="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors"
                                 onClick={() =>
                                   window.open(attachment.shareUrl, "_blank")
                                 }

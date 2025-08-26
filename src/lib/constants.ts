@@ -569,7 +569,7 @@ export const scoreColors: Record<
 > = {
   1: {
     bg: "rgba(254, 202, 202, 1)", // bg-red-200
-    text: "rgba(185, 28, 28, 1)", // text-red-900
+    text: "rgba(127, 29, 29, 1)", // text-red-900 - darker for better contrast
     border: "rgba(252, 165, 165, 1)", // border-red-300
     dark: {
       bg: "rgba(185, 28, 28, 0.2)", // dark:bg-red-900/20
@@ -579,7 +579,7 @@ export const scoreColors: Record<
   },
   2: {
     bg: "rgba(254, 226, 226, 1)", // bg-red-100
-    text: "rgba(220, 38, 38, 1)", // text-red-700
+    text: "rgba(153, 27, 27, 1)", // text-red-800 - darker for better contrast
     border: "rgba(254, 202, 202, 1)", // border-red-200
     dark: {
       bg: "rgba(185, 28, 28, 0.1)", // dark:bg-red-900/10
@@ -589,7 +589,7 @@ export const scoreColors: Record<
   },
   3: {
     bg: "rgba(254, 226, 226, 1)", // bg-red-100
-    text: "rgba(239, 68, 68, 1)", // text-red-500
+    text: "rgba(153, 27, 27, 1)", // text-red-800 - darker for better contrast
     border: "rgba(254, 202, 202, 1)", // border-red-200
     dark: {
       bg: "rgba(185, 28, 28, 0.1)", // dark:bg-red-900/10
@@ -599,7 +599,7 @@ export const scoreColors: Record<
   },
   4: {
     bg: "rgba(255, 237, 213, 1)", // bg-orange-100
-    text: "rgba(234, 88, 12, 1)", // text-orange-700
+    text: "rgba(194, 65, 12, 1)", // text-orange-800 - darker for better contrast
     border: "rgba(251, 191, 36, 1)", // border-orange-200
     dark: {
       bg: "rgba(234, 88, 12, 0.1)", // dark:bg-orange-900/10
@@ -607,32 +607,32 @@ export const scoreColors: Record<
       border: "rgba(194, 65, 12, 1)", // dark:border-orange-800
     },
   },
-  // Average (5): Purple theme
+  // Average (5): Amber theme
   5: {
-    bg: "rgba(254, 243, 199, 5)", // bg-amber-50
-    text: "rgba(245, 158, 11, 1)", // text-amber-500
+    bg: "rgba(254, 243, 199, 1)", // bg-amber-50 - fixed alpha value
+    text: "rgba(180, 83, 9, 1)", // text-amber-800 - darker for better contrast
     border: "rgba(252, 211, 77, 1)", // border-amber-200
     dark: {
-      bg: "rgba(254, 243, 199, 1)", // dark:bg-amber-9010
-      text: "rgba(151, 191, 36, 1)", // dark:text-amber-400
+      bg: "rgba(146, 64, 14, 0.1)", // dark:bg-amber-900/10
+      text: "rgba(251, 191, 36, 1)", // dark:text-amber-400
       border: "rgba(180, 83, 9, 1)", // dark:border-amber-800
     },
   },
-  // Above Average (6): Indigo theme
+  // Above Average (6): Lime theme
   6: {
-    bg: "rgba(236, 252, 203, 1)", // bg-lime-500
-    text: "rgba(101, 163, 13, 1)", // text-lime-700
+    bg: "rgba(236, 252, 203, 1)", // bg-lime-100 - corrected from lime-500
+    text: "rgba(77, 124, 15, 1)", // text-lime-800 - darker for better contrast
     border: "rgba(190, 242, 100, 1)", // border-lime-200
     dark: {
       bg: "rgba(77, 124, 15, 0.1)", // dark:bg-lime-900/10
       text: "rgba(163, 230, 53, 1)", // dark:text-lime-400
-      border: "rgba(101, 163, 13, 1)", // dark:border-lime-800
+      border: "rgba(77, 124, 15, 1)", // dark:border-lime-800
     },
   },
   // Good (7): Teal theme
   7: {
     bg: "rgba(204, 251, 241, 1)", // bg-teal-100
-    text: "rgba(13, 148, 136, 1)", // text-teal-500
+    text: "rgba(19, 78, 74, 1)", // text-teal-800 - darker for better contrast
     border: "rgba(45, 212, 191, 1)", // border-teal-200
     dark: {
       bg: "rgba(17, 94, 89, 0.1)", // dark:bg-teal-900/10
@@ -642,7 +642,7 @@ export const scoreColors: Record<
   },
   8: {
     bg: "rgba(204, 251, 241, 1)", // bg-teal-100
-    text: "rgba(15, 118, 110, 1)", // text-teal-700
+    text: "rgba(17, 94, 89, 1)", // text-teal-900 - darker for better contrast
     border: "rgba(45, 212, 191, 1)", // border-teal-200
     dark: {
       bg: "rgba(17, 94, 89, 0.1)", // dark:bg-teal-900/10
@@ -653,7 +653,7 @@ export const scoreColors: Record<
   // Excellent (9-10): Green theme
   9: {
     bg: "rgba(209, 250, 229, 1)", // bg-emerald-100
-    text: "rgba(16, 185, 129, 1)", // text-emerald-700
+    text: "rgba(6, 95, 70, 1)", // text-emerald-800 - darker for better contrast
     border: "rgba(52, 211, 153, 1)", // border-emerald-200
     dark: {
       bg: "rgba(6, 78, 59, 0.1)", // dark:bg-emerald-900/10
@@ -663,7 +663,7 @@ export const scoreColors: Record<
   },
   10: {
     bg: "rgba(220, 252, 231, 1)", // bg-green-100
-    text: "rgba(22, 163, 74, 1)", // text-green-700
+    text: "rgba(22, 101, 52, 1)", // text-green-800 - darker for better contrast
     border: "rgba(74, 222, 128, 1)", // border-green-200
     dark: {
       bg: "rgba(20, 83, 45, 0.1)", // dark:bg-green-900/10

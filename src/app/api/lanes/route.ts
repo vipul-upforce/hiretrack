@@ -7,11 +7,11 @@ import { broadcastLaneUpdate } from "@/lib/broadcast/broadCastCandidate";
 
 const DEFAULT_LANES = [
   "applied",
-  "screening", 
+  "screening",
   "shortlisted",
   "processing",
   "accepted",
-  "rejected"
+  "rejected",
 ];
 
 export async function GET(request: NextRequest) {
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     if (jobId && Job) {
       const job = await Job.findOne({
         _id: jobId,
-        organizationId: organizationId
+        organizationId: organizationId,
       }).lean();
 
       if (job) {
@@ -50,14 +50,14 @@ export async function GET(request: NextRequest) {
           organizationLaneOrder = job.lanes;
         } else {
           // Fall back to organization default lanes
-          const organization = await Organization.findOne({ _id: organizationId }).lean();
-          organizationLaneOrder = organization?.defaultLanes || organization?.lanes || DEFAULT_LANES;
+          const organization = await Organization.findOne({
+            _id: organizationId,
+          }).lean();
+          organizationLaneOrder =
+            organization?.defaultLanes || organization?.lanes || DEFAULT_LANES;
         }
       } else {
-        return NextResponse.json(
-          { error: "Job not found" },
-          { status: 404 }
-        );
+        return NextResponse.json({ error: "Job not found" }, { status: 404 });
       }
     } else {
       // LEGACY: Use organization lanes (backward compatibility)
@@ -68,37 +68,20 @@ export async function GET(request: NextRequest) {
         lanes?: string[];
         defaultLanes?: string[];
       };
-      
+
       if (!organization) {
         return NextResponse.json(
           { error: "Organization not found" },
           { status: 404 }
         );
       }
-      
+
       // Use defaultLanes if available, fallback to old lanes field, then DEFAULT_LANES
-      organizationLaneOrder = organization.defaultLanes || organization.lanes || DEFAULT_LANES;
+      organizationLaneOrder =
+        organization.defaultLanes || organization.lanes || DEFAULT_LANES;
     }
 
-    const lane = await Lane.findOne({ userId }).lean();
-
-    if (lane) {
-      const updatedLane = await Lane.findOneAndUpdate(
-        { userId },
-        { $set: { lanes: organizationLaneOrder } },
-        { new: true }
-      ).lean();
-
-      return NextResponse.json(updatedLane);
-    }
-
-    const newLane = new Lane({
-      userId,
-      lanes: organizationLaneOrder,
-    });
-
-    await newLane.save();
-    return NextResponse.json(newLane);
+    return NextResponse.json({ lanes: organizationLaneOrder });
   } catch (err: unknown) {
     const error = err as Error;
     const errorMessage =
@@ -111,11 +94,15 @@ export async function PUT(request: NextRequest) {
   try {
     await connectToDatabase();
     const body = await request.json();
+    console.log("PUT request body:", body); // Log 1: Capture incoming body
     const { lanes: newLanes, jobId } = body;
     const session = await auth(request);
     const organizationId = session?.user.organizationId;
-    
+
+    console.log("Session user:", { organizationId, role: session?.user?.role }); // Log 2: Verify session details
+
     if (!organizationId) {
+      console.log("Error: Missing organizationId"); // Log 3: Catch missing orgId
       return NextResponse.json(
         { error: "Organization ID is required" },
         { status: 400 }
@@ -124,6 +111,10 @@ export async function PUT(request: NextRequest) {
 
     // Check permissions
     if (!["admin", "hr"].includes(session?.user?.role || "")) {
+      console.log(
+        "Error: Insufficient permissions for user:",
+        session?.user?.role
+      ); // Log 4: Permission check failure
       return NextResponse.json(
         { error: "Insufficient permissions" },
         { status: 403 }
@@ -131,73 +122,113 @@ export async function PUT(request: NextRequest) {
     }
 
     if (!Lane || !Organization) {
-      return NextResponse.json({ error: "Database not connected" }, { status: 400 });
+      console.log("Error: Database models not connected", {
+        Lane: !!Lane,
+        Organization: !!Organization,
+      }); // Log 5: Model availability
+      return NextResponse.json(
+        { error: "Database not connected" },
+        { status: 400 }
+      );
     }
 
-    // NEW: If jobId is provided, update job-specific lanes
+    // If jobId is provided, update job-specific lanes
     if (jobId && Job) {
+      console.log("Processing job-specific update for jobId:", jobId); // Log 6: Confirm jobId received
       const job = await Job.findOne({
         _id: jobId,
-        organizationId: organizationId
+        organizationId: organizationId,
       });
 
       if (!job) {
-        return NextResponse.json(
-          { error: "Job not found" },
-          { status: 404 }
-        );
+        console.log("Error: Job not found for jobId:", jobId); // Log 7: Job lookup failure
+        return NextResponse.json({ error: "Job not found" }, { status: 404 });
       }
+
+      console.log("Current job state:", {
+        jobId,
+        useCustomLanes: job.useCustomLanes,
+        lanes: job.lanes,
+      }); // Log 8: Job state before update
 
       // Update job lanes
       const updatedJob = await Job.findByIdAndUpdate(
         jobId,
-        { 
-          $set: { 
+        {
+          $set: {
             lanes: newLanes,
-            useCustomLanes: true
-          } 
+            useCustomLanes: true,
+          },
         },
         { new: true }
       );
 
+      console.log("Updated job state:", {
+        jobId,
+        useCustomLanes: updatedJob.useCustomLanes,
+        lanes: updatedJob.lanes,
+      }); // Log 9: Job state after update
+
       // Broadcast update for job-specific lanes
+      console.log(
+        "Broadcasting lane update for jobId:",
+        jobId,
+        "with lanes:",
+        newLanes
+      ); // Log 10: Broadcast trigger
       broadcastLaneUpdate(organizationId, newLanes, jobId);
-      
+
       return NextResponse.json({
         message: "Job lanes updated successfully",
         jobId: updatedJob._id,
         lanes: updatedJob.lanes,
-        useCustomLanes: updatedJob.useCustomLanes
+        useCustomLanes: updatedJob.useCustomLanes,
       });
     } else {
-      // LEGACY: Update organization default lanes (backward compatibility)
-      const organization = await Organization.findOne({ _id: organizationId });
+      console.log(
+        "Processing organization-wide lane update for organizationId:",
+        organizationId
+      ); // Log 11: Org-level update
+      // Update organization default lanes
+      const updatedOrganization = await Organization.findByIdAndUpdate(
+        organizationId,
+        { $set: { defaultLanes: newLanes } },
+        { new: true }
+      );
 
-      if (!organization) {
+      if (!updatedOrganization) {
+        console.log(
+          "Error: Organization not found for organizationId:",
+          organizationId
+        ); // Log 12: Org lookup failure
         return NextResponse.json(
           { error: "Organization not found" },
           { status: 404 }
         );
       }
 
-      // Update organization default lanes (use new field name)
-      const updatedOrganization = await Organization.findOneAndUpdate(
-        { _id: organizationId },
-        { $set: { defaultLanes: newLanes } },
-        { new: true }
+      console.log(
+        "Updated organization lanes:",
+        updatedOrganization.defaultLanes
+      ); // Log 13: Org state after update
+      broadcastLaneUpdate(
+        organizationId,
+        updatedOrganization.defaultLanes || []
       );
-      
-      broadcastLaneUpdate(organizationId, updatedOrganization?.defaultLanes || []);
-      return NextResponse.json(updatedOrganization);
+
+      return NextResponse.json({
+        message: "Organization lanes updated successfully",
+        lanes: updatedOrganization.defaultLanes,
+      });
     }
   } catch (err: unknown) {
     const error = err as Error;
     const errorMessage =
       error instanceof Error ? error.message : "An unknown error occurred";
+    console.error("PUT error:", { errorMessage, stack: error.stack }); // Log 14: Catch block error
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
-
 export async function POST(request: Request) {
   try {
     await connectToDatabase();

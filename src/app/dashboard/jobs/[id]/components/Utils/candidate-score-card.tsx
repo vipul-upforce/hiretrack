@@ -52,7 +52,7 @@ const CandidateScoreCard = ({ candidate }) => {
                   >
                     {candidate.scores.overall}/10
                   </div>
-                  <div className="text-sm font-medium text-gray-700 mt-1">
+                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100 mt-1">
                     Overall Fit
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -104,7 +104,7 @@ const CandidateScoreCard = ({ candidate }) => {
                   >
                     {candidate.scores.experience}/10
                   </div>
-                  <div className="text-sm font-medium text-gray-700 mt-1">
+                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100 mt-1">
                     Experience
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -156,7 +156,7 @@ const CandidateScoreCard = ({ candidate }) => {
                   >
                     {candidate.scores.skills}/10
                   </div>
-                  <div className="text-sm font-medium text-gray-700 mt-1">
+                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100 mt-1">
                     Skills Match
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">

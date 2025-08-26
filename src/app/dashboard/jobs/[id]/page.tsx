@@ -47,6 +47,7 @@ import { JobAnalyticsModal } from "../../jobs-board/components/JobAnalyticsModal
 import ChecklistRemarksDialog from "./components/Dialogs/checklist-remarks-dialog";
 import { LaneChecklistConfigDialog } from "./components/Dialogs/lane-checklist-config-dialog";
 import { useSelector } from "react-redux";
+import { MigrationDialog } from "./components/Dialogs/MigrationDialog";
 
 interface FilterState {
   search: string;
@@ -83,7 +84,6 @@ export default function JobProgressPage() {
     null
   );
   const [isConfirmLaneDeleteOpen, setIsConfirmLaneDeleteOpen] = useState(false);
-  const [laneToDelete, setLaneToDelete] = useState<string | null>(null);
   const [laneToEdit, setLaneToEdit] = useState<string | null>(null);
   const [initialLaneToEdit, setInitialLaneToEdit] = useState<string | null>(
     null
@@ -169,6 +169,12 @@ export default function JobProgressPage() {
     handleEditLaneClick,
     handleEditLane,
     handleConfirmDeleteLane,
+    handleMigrateAndDeleteLane,
+    migrationLanes,
+    isMigrationDialogOpen,
+    setIsMigrationDialogOpen,
+    laneToDelete,
+    setLaneToDelete,
   } = useKanbanBoard({
     columns,
     setColumns,
@@ -694,6 +700,14 @@ export default function JobProgressPage() {
         message="This will remove the lane from this job only. Other jobs will not be affected."
         onConfirm={() => laneToDelete && handleConfirmDeleteLane(laneToDelete)}
         onCancel={() => setIsConfirmLaneDeleteOpen(false)}
+      />
+
+      <MigrationDialog
+        isOpen={isMigrationDialogOpen}
+        lanes={migrationLanes}
+        onClose={() => setIsMigrationDialogOpen(false)}
+        onMigrate={handleMigrateAndDeleteLane}
+        laneToDelete={laneToDelete}
       />
 
       {/* Custom Fields Dialog */}

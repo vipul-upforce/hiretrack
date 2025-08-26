@@ -8,7 +8,7 @@ import { deepClone } from "@/lib/deep-clone";
 import { cx } from "@/lib/cx";
 
 const TableRowHeader = ({ children }: { children: React.ReactNode }) => (
-  <tr className="divide-x bg-gray-50">
+  <tr className="divide-x bg-gray-100">
     <th className="px-3 py-2 font-semibold" scope="colgroup" colSpan={2}>
       {children}
     </th>

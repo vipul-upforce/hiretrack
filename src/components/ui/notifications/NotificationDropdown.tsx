@@ -14,7 +14,7 @@ import {
   BellOff,
   Check,
   CheckCheck,
-  ExternalLink
+  ExternalLink,
 } from "lucide-react";
 import { INotification } from "@/lib/models/notification";
 
@@ -47,7 +47,7 @@ export function NotificationDropdown({
   onPageChange,
   onClose,
   onViewAll,
-  className
+  className,
 }: NotificationDropdownProps) {
   const handleNotificationClick = (notification: INotification) => {
     if (onNotificationClick) {
@@ -80,7 +80,12 @@ export function NotificationDropdown({
   };
 
   return (
-    <div className={cn("w-80 h-[450px] bg-popover border rounded-md shadow-lg flex flex-col ml-2", className)}>
+    <div
+      className={cn(
+        "w-80 h-[450px] bg-popover border rounded-md shadow-lg flex flex-col ml-2",
+        className
+      )}
+    >
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b flex-shrink-0">
         <div className="flex items-center gap-2">

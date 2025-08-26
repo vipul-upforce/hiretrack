@@ -414,7 +414,7 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
                                   <div
                                     className={`bg-card border rounded-none transition-all ${
                                       snapshot.isDragging
-                                        ? "shadow-2xl bg-white dark:bg-gray-800 border-2 border-primary opacity-95 scale-105"
+                                        ? "shadow-2xl bg-white dark:bg-black border-2 border-primary opacity-95 scale-105"
                                         : "shadow-sm hover:shadow-md"
                                     }`}
                                     style={{
@@ -601,14 +601,16 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
                     </div>
                   </div>
                 ) : (
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowAddForm(true)}
-                    className="w-full border-dashed"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add New Lane
-                  </Button>
+                  <div className="w-full flex justify-center items-center">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowAddForm(true)}
+                      className="w-[96%] border-dashed"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add New Lane
+                    </Button>
+                  </div>
                 )}
 
                 {/* Info */}

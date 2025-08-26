@@ -86,20 +86,20 @@ export const HistoryAndLogTable: React.FC<{
             key={`${i}-${logIndex}-${interview.dateTime}`}
             className="border-b border-gray-200 dark:border-gray-700"
           >
-            <TableCell className="p-2 w-[250px] text-gray-700 dark:text-gray-300">
+            <TableCell className="p-2 w-[250px] text-gray-900 dark:text-gray-100">
               {logIndex === 0 ? `${timeDate} ${timeTime}` : ""}
             </TableCell>
-            <TableCell className="p-2 w-[250px] text-gray-700 dark:text-gray-300">
+            <TableCell className="p-2 w-[250px] text-gray-900 dark:text-gray-100">
               {log.title.replace("Updated ", "") ?? log.title ?? "N/A"}
             </TableCell>
-            <TableCell className="p-2 max-w-[200px] break-words whitespace-pre-wrap text-gray-700 dark:text-gray-300">
+            <TableCell className="p-2 max-w-[200px] break-words whitespace-pre-wrap text-gray-900 dark:text-gray-100">
               {(!log.attachments &&
                 JSON.stringify(log.previousValue as string)
                   ?.replaceAll('"', "")
                   ?.replace("~", "")) ??
                 "N/A"}
             </TableCell>
-            <TableCell className="p-2 max-w-[250px] break-words whitespace-pre-wrap text-gray-700 dark:text-gray-300">
+            <TableCell className="p-2 max-w-[250px] break-words whitespace-pre-wrap text-gray-900 dark:text-gray-100">
               {log.attachments && log.attachments.length > 0 ? (
                 <AttachmentsPopover
                   attachments={log.attachments.map((file, index) => ({
@@ -120,7 +120,7 @@ export const HistoryAndLogTable: React.FC<{
                   .replace("~", "")) ??
                 "N/A"}
             </TableCell>
-            <TableCell className="p-2 w-[250px] break-words whitespace-pre-wrap text-gray-700 dark:text-gray-300">
+            <TableCell className="p-2 w-[250px] break-words whitespace-pre-wrap text-gray-900 dark:text-gray-100">
               {typeof interview.assignmentBy === "object" &&
               interview.assignmentBy &&
               "name" in interview.assignmentBy &&
@@ -185,7 +185,7 @@ export const HistoryAndLogTable: React.FC<{
         </div>
       )}
       {showLogTable ? (
-        <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-800">
+        <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-black">
           <div className="overflow-x-auto">
             {tableRows.length > 0 ? (
               <Table className="w-[130%] text-sm">
@@ -227,7 +227,7 @@ export const HistoryAndLogTable: React.FC<{
                 </TableBody>
               </Table>
             ) : (
-              <div className="w-full text-center text-gray-700">
+              <div className="w-full text-center text-gray-900 dark:text-gray-100">
                 No Logs Yet.
               </div>
             )}
@@ -347,20 +347,20 @@ export const LogsTable: React.FC<{
             key={`${i}-${logIndex}-${interview.dateTime}`}
             className="border-b border-gray-200 dark:border-gray-700"
           >
-            <TableCell className="p-2 w-[250px] text-gray-700 dark:text-gray-300">
+            <TableCell className="p-2 w-[250px] text-gray-900 dark:text-gray-100">
               {logIndex === 0 ? `${timeDate} ${timeTime}` : ""}
             </TableCell>
-            <TableCell className="p-2 w-[250px] text-gray-700 dark:text-gray-300">
+            <TableCell className="p-2 w-[250px] text-gray-900 dark:text-gray-100">
               {log.title.replace("Updated ", "") ?? log.title ?? "N/A"}
             </TableCell>
-            <TableCell className="p-2 max-w-[200px] break-words whitespace-pre-wrap text-gray-700 dark:text-gray-300">
+            <TableCell className="p-2 max-w-[200px] break-words whitespace-pre-wrap text-gray-900 dark:text-gray-100">
               {(!log.attachments &&
                 JSON.stringify(log.previousValue as string)
                   ?.replaceAll('"', "")
                   ?.replace("~", "")) ??
                 "N/A"}
             </TableCell>
-            <TableCell className="p-2 max-w-[250px] break-words whitespace-pre-wrap text-gray-700 dark:text-gray-300">
+            <TableCell className="p-2 max-w-[250px] break-words whitespace-pre-wrap text-gray-900 dark:text-gray-100">
               {log.attachments && log.attachments.length > 0 ? (
                 <AttachmentsPopover
                   attachments={log.attachments.map((file, index) => {
@@ -384,7 +384,7 @@ export const LogsTable: React.FC<{
                   .replace("~", "")) ??
                 "N/A"}
             </TableCell>
-            <TableCell className="p-2 w-[250px] break-words whitespace-pre-wrap text-gray-700 dark:text-gray-300">
+            <TableCell className="p-2 w-[250px] break-words whitespace-pre-wrap text-gray-900 dark:text-gray-100">
               {typeof interview.assignmentBy === "object" &&
               interview.assignmentBy &&
               "name" in interview.assignmentBy &&
@@ -399,27 +399,26 @@ export const LogsTable: React.FC<{
 
   return (
     <div className="space-y-4">
-      <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-800">
-        <div className="overflow-x-auto">
-          {tableRows.length > 0 ? (
-            <Table className="w-[130%] text-sm">
-              <TableHeader>
-                <TableRow className="border-gray-200 dark:border-gray-700">
-                  <TableHead className="p-2 font-bold text-left w-[150px] text-gray-900 dark:text-gray-100">
-                    Updated At
-                  </TableHead>
-                  <TableHead className="p-2 font-bold text-left w-[150px] text-gray-900 dark:text-gray-100">
-                    Fields Updated
-                  </TableHead>
-                  <TableHead className="p-2 font-bold text-left w-[200px] text-gray-900 dark:text-gray-100">
-                    Previous
-                  </TableHead>
-                  <TableHead className="p-2 font-bold text-left w-[200px] text-gray-900 dark:text-gray-100">
-                    Updated
-                  </TableHead>
-                  <TableHead className="p-2 font-bold text-left w-[150px] text-gray-900 dark:text-gray-100">
-                    Updated By
-                  </TableHead>
+      <div className="overflow-x-auto">
+        {tableRows.length > 0 ? (
+          <Table className="w-[130%] text-sm">
+            <TableHeader>
+              <TableRow className="border-b-0">
+                <TableHead className="font-bold text-left w-[150px] text-gray-900 dark:text-gray-100 px-0 py-2">
+                  Updated At
+                </TableHead>
+                <TableHead className="font-bold text-left w-[150px] text-gray-900 dark:text-gray-100 px-0 py-2">
+                  Fields Updated
+                </TableHead>
+                <TableHead className="font-bold text-left w-[200px] text-gray-900 dark:text-gray-100 px-0 py-2">
+                  Previous
+                </TableHead>
+                <TableHead className="font-bold text-left w-[200px] text-gray-900 dark:text-gray-100 px-0 py-2">
+                  Updated
+                </TableHead>
+                <TableHead className="font-bold text-left w-[150px] text-gray-900 dark:text-gray-100 px-0 py-2">
+                  Updated By
+                </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -429,7 +428,7 @@ export const LogsTable: React.FC<{
                   <TableRow>
                     <TableCell
                       colSpan={5}
-                      className="p-2 text-center text-gray-500"
+                      className="px-0 py-2 text-center text-gray-500"
                     >
                       Candidate Info Updates Will Be Listed Here
                     </TableCell>
@@ -437,12 +436,11 @@ export const LogsTable: React.FC<{
                 )}
               </TableBody>
             </Table>
-          ) : (
-            <div className="w-full text-center text-gray-700 dark:text-gray-300">
-              No Logs Yet.
-            </div>
-          )}
-        </div>
+        ) : (
+          <div className="w-full text-center text-gray-900 dark:text-gray-100">
+            No Logs Yet.
+          </div>
+        )}
       </div>
     </div>
   );

@@ -45,6 +45,9 @@ import {
 import { CandidateDetailsDialog } from "./jobs/[id]/components/Dialogs/candidate-details-dialog";
 import { useLazyFetchCandidateByIdQuery } from "@/lib/features/candidate/candidateApi";
 import { Candidate } from "@/types/candidate";
+import { OnboardingProvider } from "@/components/onboarding/OnboardingProvider";
+import OnboardingModal from "@/components/onboarding/OnboardingModal";
+import OnboardingSidebar from "@/components/onboarding/OnboardingSidebar";
 
 interface SidebarItem {
   title: string;
@@ -123,6 +126,8 @@ export default function DashboardLayout({
 
   // Notification hooks
   const [notificationPage, setNotificationPage] = useState(1);
+  const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] =
+    useState(false);
   const { data: notificationsData, isLoading: notificationsLoading } =
     useGetNotificationsQuery(
       { page: notificationPage, limit: 10 },
@@ -446,10 +451,10 @@ export default function DashboardLayout({
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result
       ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16),
-      }
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16),
+        }
       : null;
   };
 
@@ -574,10 +579,10 @@ export default function DashboardLayout({
                   style={
                     isActive
                       ? {
-                        backgroundColor: `rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)`,
-                        color: `var(--portal-primary, #6366f1)`,
-                        borderLeft: `3px solid var(--portal-primary, #6366f1)`,
-                      }
+                          backgroundColor: `rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)`,
+                          color: `var(--portal-primary, #6366f1)`,
+                          borderLeft: `3px solid var(--portal-primary, #6366f1)`,
+                        }
                       : {}
                   }
                 >
@@ -590,6 +595,11 @@ export default function DashboardLayout({
             );
           })}
         </div>
+
+        {/* Onboarding Widget - only show for admin users */}
+        {userData?.role === "admin" && (
+          <OnboardingSidebar isCollapsed={isCollapsed} />
+        )}
       </div>
       <div className="px-3 pb-4 mt-auto space-y-2">
         {/* Notifications and Theme Toggle */}
@@ -612,6 +622,8 @@ export default function DashboardLayout({
               onMarkAllAsRead={handleMarkAllAsRead}
               onNotificationClick={handleNotificationClick}
               onPageChange={setNotificationPage}
+              isOpen={isNotificationDropdownOpen}
+              onOpenChange={setIsNotificationDropdownOpen}
               className="mr-1"
             />
           )}
@@ -673,50 +685,55 @@ export default function DashboardLayout({
   );
 
   return (
-    <div className="w-full max-w-full flex" style={{ overflowX: "hidden" }}>
-      <PortalHead isLoading={true} />
-      <aside
-        className={cn(
-          "hidden h-screen border-r bg-background md:block transition-all duration-300",
-          isCollapsed ? "w-[70px]" : "w-[240px]"
-        )}
-      >
-        <SidebarContent />
-      </aside>
-      <Sheet>
-        <SheetTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden fixed left-4 top-4 z-40"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="left" className="w-[240px] p-0">
+    <OnboardingProvider>
+      <div className="w-full max-w-full flex" style={{ overflowX: "hidden" }}>
+        <PortalHead isLoading={true} />
+        <aside
+          className={cn(
+            "hidden h-screen border-r bg-background md:block transition-all duration-300",
+            isCollapsed ? "w-[70px]" : "w-[240px]"
+          )}
+        >
           <SidebarContent />
-        </SheetContent>
-      </Sheet>
-      <main className="w-full overflow-x-hidden overflow-y-scroll h-[100vh]">
-        <div className="max-w-[100%] mx-auto overflow-x-hidden overflow-y-scroll">
-          {children}
-        </div>
-      </main>
+        </aside>
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden fixed left-4 top-4 z-40"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-[240px] p-0">
+            <SidebarContent />
+          </SheetContent>
+        </Sheet>
+        <main className="w-full overflow-x-hidden overflow-y-scroll h-[100vh]">
+          <div className="max-w-[100%] mx-auto overflow-x-hidden overflow-y-scroll">
+            {children}
+          </div>
+        </main>
 
-      {/* Candidate Details Dialog for Interviewers */}
-      <CandidateDetailsDialog
-        candidate={selectedCandidate}
-        isOpen={isCandidateDialogOpen}
-        onOpenChange={setIsCandidateDialogOpen}
-        onUpdate={() => {
-          // Optionally refresh candidate data
-          if (selectedCandidate) {
-            fetchCandidateById(selectedCandidate._id);
-          }
-        }}
-        hideEditButton={userData?.role === "interviewer"}
-        hideCloseButtons={false}
-      />
-    </div>
+        {/* Candidate Details Dialog for Interviewers */}
+        <CandidateDetailsDialog
+          candidate={selectedCandidate}
+          isOpen={isCandidateDialogOpen}
+          onOpenChange={setIsCandidateDialogOpen}
+          onUpdate={() => {
+            // Optionally refresh candidate data
+            if (selectedCandidate) {
+              fetchCandidateById(selectedCandidate._id);
+            }
+          }}
+          hideEditButton={userData?.role === "interviewer"}
+          hideCloseButtons={false}
+        />
+
+        {/* Onboarding Modal */}
+        <OnboardingModal />
+      </div>
+    </OnboardingProvider>
   );
 }

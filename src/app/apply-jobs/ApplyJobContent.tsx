@@ -28,6 +28,7 @@ import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
 import CustomFieldBadge from "../dashboard/jobs/[id]/components/Candidate/CustomFieldBadge";
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "@/lib/redux/authSlice";
+import { useIsIframe } from "./IframeDetector";
 
 interface Job {
   _id: string;
@@ -55,10 +56,34 @@ export default function ApplyJobsContent({
 }: {
   showHeaderFooter?: boolean;
 }) {
+  const isIframe = useIsIframe();
+  const searchParams = useSearchParams();
   const [orgName, setOrgName] = useState<string>("");
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isModalOpen, setIsJobModalOpen] = useState(false);
   const [appliedApplications, setAppliedApplications] = useState<string[]>([]);
+  
+  // Check query parameters for header/footer visibility
+  const hideHeaderParam = searchParams.get('hideHeader');
+  const hideFooterParam = searchParams.get('hideFooter');
+  const hideHeader = hideHeaderParam === 'true';
+  const hideFooter = hideFooterParam === 'true';
+  
+  // Determine if we should show header/footer based on query params and iframe status
+  // Priority: explicit query params > iframe auto-hide behavior
+  const hasHeaderParam = hideHeaderParam !== null;
+  const hasFooterParam = hideFooterParam !== null;
+  
+  const shouldShowHeader = showHeaderFooter && (
+    hasHeaderParam 
+      ? !hideHeader  // If hideHeader param exists, respect its value (true/false)
+      : !isIframe    // If no param, hide only if in iframe
+  );
+  const shouldShowFooter = showHeaderFooter && (
+    hasFooterParam 
+      ? !hideFooter  // If hideFooter param exists, respect its value (true/false)
+      : !isIframe    // If no param, hide only if in iframe
+  );
   const { data } = useFetchAppliedApplicationQuery(
     {},
     { skip: orgName === "" }
@@ -67,7 +92,6 @@ export default function ApplyJobsContent({
 
   const { toast } = useToast();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { setUserLoggedIn, userLoggedIn } = useCustomFields();
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [queryTitle, setQueryTitle] = useState<string>("");
@@ -398,7 +422,7 @@ export default function ApplyJobsContent({
   return (
     <div
       className={
-        showHeaderFooter ? "flex flex-col min-h-screen relative" : "relative"
+        (shouldShowHeader || shouldShowFooter) ? "flex flex-col min-h-screen relative" : "relative"
       }
     >
       {/* Background pattern */}
@@ -419,12 +443,12 @@ export default function ApplyJobsContent({
         />
       </div>
 
-      {showHeaderFooter && (
+      {shouldShowHeader && (
         <div dangerouslySetInnerHTML={{ __html: layoutState?.headerHTML }} />
       )}
       <main
         className={
-          showHeaderFooter ? "flex-1 p-4 relative z-10" : "relative z-10"
+          (shouldShowHeader || shouldShowFooter) ? "flex-1 p-4 relative z-10" : "relative z-10"
         }
       >
         <div className="container mx-auto p-2">
@@ -460,7 +484,7 @@ export default function ApplyJobsContent({
                 <Input
                   type="text"
                   placeholder="Search..."
-                  className="pl-12 pr-4 py-3 border rounded-xl bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 focus:ring-2 w-full transition-colors"
+                  className="pl-12 pr-4 py-3 border rounded-xl bg-white dark:bg-black border-gray-200 dark:border-gray-700 focus:ring-2 w-full transition-colors"
                   onFocus={(e) => {
                     e.target.style.borderColor = primaryColor;
                     e.target.style.boxShadow = `0 0 0 2px ${primaryColor}20`;
@@ -530,7 +554,7 @@ export default function ApplyJobsContent({
               jobs.map((job, index) => (
                 <div
                   key={index}
-                  className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-6 cursor-pointer hover:shadow-md transition-shadow duration-200"
+                  className="bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg p-6 cursor-pointer hover:shadow-md transition-shadow duration-200"
                   onClick={() => {
                     setSelectedJob(job);
                     setIsJobModalOpen(true);
@@ -702,7 +726,7 @@ export default function ApplyJobsContent({
           {/* )} */}
         </div>
       </main>
-      {showHeaderFooter && (
+      {shouldShowFooter && (
         <div dangerouslySetInnerHTML={{ __html: layoutState.footerHTML }} />
       )}
     </div>

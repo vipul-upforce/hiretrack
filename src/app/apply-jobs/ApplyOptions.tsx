@@ -95,8 +95,8 @@ export default function ApplyOptions({
         className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
         aria-hidden="true"
       />
-      <div className="fixed inset-0 flex items-center justify-center p-4 z-50">
-        <Dialog.Panel className="relative w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-gray-900 p-6 text-left align-middle shadow-2xl transition-all border border-gray-200 dark:border-gray-700 backdrop-blur-sm">
+      <div className="fixed inset-0 flex items-center justify-center lg:p-4 z-50">
+        <Dialog.Panel className="relative w-full h-full lg:w-auto lg:h-auto lg:max-w-md transform overflow-hidden rounded-none lg:rounded-2xl bg-white dark:bg-black p-6 text-left align-middle shadow-2xl transition-all border border-gray-200 dark:border-gray-700 backdrop-blur-sm">
           <button
             type="button"
             className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
@@ -195,7 +195,7 @@ export default function ApplyOptions({
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
                     <span
-                      className="bg-white dark:bg-gray-900 px-3 py-1 rounded-full text-xs font-medium"
+                      className="bg-white dark:bg-black px-3 py-1 rounded-full text-xs font-medium"
                       style={{
                         color: `${primaryColor}80`,
                         backgroundColor: `${primaryColor}05`,
@@ -223,7 +223,7 @@ export default function ApplyOptions({
                 {readOnly ? (
                   <Button
                     disabled
-                    className="w-full py-2.5 text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                    className="w-full py-2.5 text-sm font-medium bg-gray-100 dark:bg-black text-gray-500 dark:text-gray-400 cursor-not-allowed"
                   >
                     Already Applied
                   </Button>

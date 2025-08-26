@@ -103,7 +103,7 @@ const ChecklistResponseViewer = ({
   };
 
   return (
-    <div className="mt-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+    <div className="mt-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-black/50">
       <div
         className="p-3 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}

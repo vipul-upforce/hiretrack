@@ -1,0 +1,193 @@
+"use client";
+
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import {
+  Sparkles,
+  ChevronRight,
+  X,
+  Settings,
+  CheckCircle2,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useOnboarding } from "./OnboardingProvider";
+
+interface OnboardingSidebarProps {
+  isCollapsed: boolean;
+}
+
+const OnboardingSidebar: React.FC<OnboardingSidebarProps> = ({
+  isCollapsed,
+}) => {
+  const { setIsOpen, progress, doNotShowAgain } = useOnboarding();
+
+  // TESTING MODE: Always show the sidebar
+  // if (isLoading || onboardingStatus?.doNotShowAgain) {
+  //   return null;
+  // }
+
+  // if (onboardingStatus?.isCompleted && progress?.percentage === 100) {
+  //   return null;
+  // }
+
+  const handleOpenOnboarding = () => {
+    console.log("OnboardingSidebar - Opening onboarding dialog");
+    setIsOpen(true);
+  };
+
+  const handleDismiss = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    doNotShowAgain();
+  };
+
+  const progressPercentage = progress?.percentage || 0;
+  const isComplete = progressPercentage === 100;
+
+  if (isCollapsed) {
+    // Collapsed sidebar view - just an icon button
+    return (
+      <div className="px-3 mb-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleOpenOnboarding}
+          className={cn(
+            "w-full h-10 rounded-lg relative transition-all duration-200",
+            "hover:bg-blue-50 dark:hover:bg-blue-900/20"
+          )}
+          title={`Setup Progress: ${progressPercentage}%`}
+        >
+          {isComplete ? (
+            <CheckCircle2 className="h-5 w-5 text-green-500" />
+          ) : (
+            <Sparkles className="h-5 w-5 text-blue-500" />
+          )}
+
+          {!isComplete && (
+            <div className="absolute -top-1 -right-1">
+              <div className="w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center">
+                <span className="text-[8px] text-white font-bold">
+                  {Math.round(progressPercentage / 10)}
+                </span>
+              </div>
+            </div>
+          )}
+        </Button>
+      </div>
+    );
+  }
+
+  // Expanded sidebar view - full card
+  return (
+    <div className="px-3 mb-3 mt-16">
+      <Card
+        className={cn(
+          "border-2 transition-all duration-200 cursor-pointer hover:shadow-md",
+          isComplete
+            ? "border-green-200 bg-green-50 dark:bg-green-900/10"
+            : "border-blue-200 bg-blue-50 dark:bg-blue-900/10"
+        )}
+      >
+        <CardContent className="p-3">
+          <div className="space-y-3">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {isComplete ? (
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                ) : (
+                  <Sparkles className="h-4 w-4 text-blue-500" />
+                )}
+                <span
+                  className={cn(
+                    "text-xs font-medium",
+                    isComplete
+                      ? "text-green-700 dark:text-green-300"
+                      : "text-blue-700 dark:text-blue-300"
+                  )}
+                >
+                  {isComplete ? "Setup Complete!" : "Setup Guide"}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <Badge
+                  variant="secondary"
+                  className={cn(
+                    "text-[10px] px-1.5 py-0.5",
+                    isComplete
+                      ? "bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-200"
+                      : "bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-200"
+                  )}
+                >
+                  {progressPercentage}%
+                </Badge>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleDismiss}
+                  className="h-4 w-4 p-0 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/20"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="space-y-1">
+              <Progress
+                value={progressPercentage}
+                className={cn(
+                  "h-2",
+                  isComplete ? "bg-green-200" : "bg-blue-200"
+                )}
+              />
+              <div className="flex justify-between text-[10px] text-muted-foreground">
+                <span>
+                  {progress ? `${progress.completed}/${progress.total}` : "0/8"}{" "}
+                  configured
+                </span>
+                {!isComplete && (
+                  <span>
+                    {progress ? progress.total - progress.completed : 8}{" "}
+                    remaining
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Action Button */}
+            <Button
+              onClick={handleOpenOnboarding}
+              size="sm"
+              variant={isComplete ? "outline" : "default"}
+              className={cn(
+                "w-full h-7 text-xs gap-1.5",
+                isComplete
+                  ? "border-green-300 text-green-700 hover:bg-green-100 dark:border-green-600 dark:text-green-300 dark:hover:bg-green-900/20"
+                  : "bg-blue-600 hover:bg-blue-700 text-white"
+              )}
+            >
+              {isComplete ? (
+                <>
+                  <Settings className="h-3 w-3" />
+                  Review Setup
+                </>
+              ) : (
+                <>
+                  Continue Setup
+                  <ChevronRight className="h-3 w-3" />
+                </>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default OnboardingSidebar;

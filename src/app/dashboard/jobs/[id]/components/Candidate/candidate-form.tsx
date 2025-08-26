@@ -624,7 +624,7 @@ export function CandidateForm({
                 <Button
                   type="button"
                   variant="outline"
-                  className="flex items-center gap-2 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200 dark:border-purple-800 hover:from-purple-100 hover:to-pink-100 dark:hover:from-purple-900/30 dark:hover:to-pink-900/30 text-purple-700 dark:text-purple-300"
+                  className="flex items-center gap-2"
                   onClick={() => {
                     const input = document.createElement("input");
                     input.type = "file";
@@ -849,7 +849,7 @@ export function CandidateForm({
       {/* Desktop Layout - Side by Side */}
       <div className="hidden lg:flex lg:flex-row lg:gap-6 lg:flex-1 lg:h-full lg:overflow-hidden">
         {/* Form Section - Desktop */}
-        <div className="w-1/2 space-y-4 overflow-y-auto px-3 py-3 bg-gradient-to-b from-gray-50/50 to-white dark:from-gray-900/50 dark:to-gray-950">
+        <div className="w-1/2 space-y-4 overflow-y-auto px-3 py-3">
           {/* Resume Upload */}
           <div className="space-y-3" data-form-field="resume">
             <Label>
@@ -1056,7 +1056,7 @@ export function CandidateForm({
               <div className="space-y-2" data-form-field="name">
                 <Label
                   htmlFor="name"
-                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                  className="text-sm font-medium text-gray-900 dark:text-gray-100"
                 >
                   Full Name <span className="text-red-500">*</span>
                 </Label>
@@ -1081,7 +1081,7 @@ export function CandidateForm({
               <div className="space-y-2" data-form-field="email">
                 <Label
                   htmlFor="email"
-                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                  className="text-sm font-medium text-gray-900 dark:text-gray-100"
                 >
                   Email Address <span className="text-red-500">*</span>
                 </Label>
@@ -1107,7 +1107,7 @@ export function CandidateForm({
               <div className="space-y-2" data-form-field="contact">
                 <Label
                   htmlFor="contact"
-                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                  className="text-sm font-medium text-gray-900 dark:text-gray-100"
                 >
                   Contact Number <span className="text-red-500">*</span>
                 </Label>
@@ -1133,7 +1133,7 @@ export function CandidateForm({
               <div className="space-y-2" data-form-field="location">
                 <Label
                   htmlFor="location"
-                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                  className="text-sm font-medium text-gray-900 dark:text-gray-100"
                 >
                   Current Location <span className="text-red-500">*</span>
                 </Label>
@@ -1161,7 +1161,7 @@ export function CandidateForm({
               >
                 <Label
                   htmlFor="experience"
-                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                  className="text-sm font-medium text-gray-900 dark:text-gray-100"
                 >
                   Relevant Exp in Years <span className="text-red-500">*</span>
                 </Label>
@@ -1196,7 +1196,7 @@ export function CandidateForm({
               </h3>
             </div>
             <div className="space-y-2" id="skills" data-form-field="skills">
-              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <Label className="text-sm font-medium text-gray-900 dark:text-gray-100">
                 Skills (Hit Enter to Add){" "}
                 <span className="text-red-500">*</span>
               </Label>
@@ -1229,7 +1229,7 @@ export function CandidateForm({
               <div className="space-y-2" data-form-field="expectedCTC">
                 <Label
                   htmlFor="expectedCTC"
-                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                  className="text-sm font-medium text-gray-900 dark:text-gray-100"
                 >
                   Expected CTC (LPA) <span className="text-red-500">*</span>
                 </Label>
@@ -1255,7 +1255,7 @@ export function CandidateForm({
               <div className="space-y-2" data-form-field="currentCTC">
                 <Label
                   htmlFor="currentCTC"
-                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                  className="text-sm font-medium text-gray-900 dark:text-gray-100"
                 >
                   Current CTC (LPA) <span className="text-red-500">*</span>
                 </Label>
@@ -1284,7 +1284,7 @@ export function CandidateForm({
               >
                 <Label
                   htmlFor="noticePeriod"
-                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                  className="text-sm font-medium text-gray-900 dark:text-gray-100"
                 >
                   Notice Period (days) <span className="text-red-500">*</span>
                 </Label>
@@ -1323,7 +1323,7 @@ export function CandidateForm({
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-3">
-                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <Label className="text-sm font-medium text-gray-900 dark:text-gray-100">
                     Assign To
                   </Label>
                   <Select
@@ -1360,7 +1360,7 @@ export function CandidateForm({
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <Label className="text-sm font-medium text-gray-900 dark:text-gray-100">
                     Interview Time
                   </Label>
                   <DateTimePicker
@@ -1401,7 +1401,7 @@ export function CandidateForm({
                 <Button
                   type="button"
                   variant="outline"
-                  className="flex items-center gap-2 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200 dark:border-purple-800 hover:from-purple-100 hover:to-pink-100 dark:hover:from-purple-900/30 dark:hover:to-pink-900/30 text-purple-700 dark:text-purple-300"
+                  className="flex items-center gap-2"
                   onClick={() => {
                     const input = document.createElement("input");
                     input.type = "file";
@@ -1499,7 +1499,7 @@ export function CandidateForm({
                   {attachmentsField.value.map((file: File, index: number) => (
                     <div
                       key={index}
-                      className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+                      className="flex items-center justify-between p-3 bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg"
                     >
                       <div className="flex items-center gap-2">
                         <FileIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
@@ -1657,12 +1657,12 @@ export function CandidateForm({
                 title="Resume Preview"
               />
             ) : (
-              <div className="w-full h-full bg-gray-50 flex items-center justify-center">
+              <div className="w-full h-full bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
                 <div className="text-center p-4 sm:p-6">
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-700 mb-2">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     No Resume Preview Available
                   </h3>
-                  <p className="text-sm sm:text-base text-gray-500">
+                  <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
                     Please upload resume to see a preview here!
                   </p>
                 </div>
