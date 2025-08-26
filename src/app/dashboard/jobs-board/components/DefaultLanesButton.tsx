@@ -601,14 +601,16 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
                     </div>
                   </div>
                 ) : (
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowAddForm(true)}
-                    className="w-full border-dashed"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add New Lane
-                  </Button>
+                  <div className="w-full flex justify-center items-center">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowAddForm(true)}
+                      className="w-[96%] border-dashed"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add New Lane
+                    </Button>
+                  </div>
                 )}
 
                 {/* Info */}
