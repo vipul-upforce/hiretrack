@@ -180,8 +180,9 @@ export function AssignCandidateDialog({
     attachments: [],
     scheduleGoogleMeet: false,
     meetDuration: 30,
-    meetingNotes: candidate?.assignment?.googleMeet?.meetingNotes,
-    meetingAttachments: [],
+    meetingNotes: candidate?.assignment?.googleMeet?.meetingNotes || "",
+    meetingAttachments:
+      candidate?.assignment?.googleMeet?.meetingAttachments || [],
     additionalGuests: [],
   };
 
@@ -745,140 +746,146 @@ export function AssignCandidateDialog({
                                 Meeting Attachments (Optional)
                               </Label>
                               <div className="space-y-2">
-                                <div className="flex items-center gap-2">
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    className="flex items-center gap-2 h-8"
-                                    onClick={() => {
-                                      const input =
-                                        document.createElement("input");
-                                      input.type = "file";
-                                      input.multiple = true;
-                                      input.onchange = (e) => {
-                                        const files = (
-                                          e.target as HTMLInputElement
-                                        ).files;
-                                        if (files && files.length > 0) {
-                                          // Use only values.meetingAttachments for form state
-                                          const allFiles = new Set([
-                                            ...values.meetingAttachments,
-                                            ...candidate?.assignment?.googleMeet
-                                              ?.meetingAttachments,
-                                          ]);
-                                          const currentFiles = [...allFiles];
-                                          const sanitizedFiles = sanitizeFiles(
-                                            Array.from(files)
-                                          );
-
-                                          // Ensure we don't exceed 10 files total
-                                          const availableSlots = Math.max(
-                                            0,
-                                            10 - currentFiles.length
-                                          );
-                                          setFieldValue("meetingAttachments", [
-                                            ...currentFiles,
-                                            ...sanitizedFiles.slice(
-                                              0,
-                                              availableSlots
-                                            ),
-                                          ]);
-                                        }
-                                      };
-                                      input.click();
-                                    }}
-                                  >
-                                    <Paperclip className="w-3 h-3" />
-                                    Add Files
-                                  </Button>
-                                  <span className="text-xs text-muted-foreground">
-                                    Max 10 files
-                                  </span>
-                                </div>
-
                                 {(() => {
                                   const formAttachments =
-                                    values.meetingAttachments || [];
-                                  const candidateAttachments =
-                                    candidate?.assignment?.googleMeet
-                                      ?.meetingAttachments || [];
+                                    values.meetingAttachments;
+                                  // const candidateAttachments =
+                                  //   candidate?.assignment?.googleMeet
+                                  //     ?.meetingAttachments || [];
 
-                                  // If form has attachments, use those; otherwise show candidate attachments
-                                  // const displayAttachments = [
-                                  //   ...formAttachments,
-                                  //   ...candidateAttachments,
-                                  // ];
+                                  // Display candidateAttachments if formAttachments is undefined
                                   const displayAttachments =
+                                    formAttachments !== undefined &&
                                     formAttachments.length > 0
-                                      ? formAttachments
-                                      : candidateAttachments;
-
+                                      ? [...formAttachments]
+                                      : [];
                                   return (
-                                    displayAttachments.length > 0 && (
-                                      <div className="space-y-1">
-                                        {displayAttachments.map(
-                                          (file: any, index: number) => (
-                                            <div
-                                              key={`${file.name}-${index}`}
-                                              className="flex items-center justify-between p-1.5 bg-white dark:bg-black border border-gray-200 rounded text-xs"
-                                            >
-                                              <div className="flex items-center gap-1">
-                                                <FileIcon className="w-3 h-3 text-gray-500" />
-                                                <span className="truncate">
-                                                  {file.name}
-                                                </span>
-                                              </div>
-                                              <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => {
-                                                  // Always work with form values when removing
-                                                  const currentFormFiles =
-                                                    values.meetingAttachments ||
-                                                    [];
+                                    <div className="space-y-2">
+                                      {/* Add Files Button */}
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="flex items-center gap-2 h-8"
+                                        onClick={() => {
+                                          const input =
+                                            document.createElement("input");
+                                          input.type = "file";
+                                          input.multiple = true;
+                                          input.onchange = (e) => {
+                                            const files = (
+                                              e.target as HTMLInputElement
+                                            ).files;
+                                            if (files && files.length > 0) {
+                                              // Ensure arrays are defined before spreading
+                                              const currentFormFiles =
+                                                Array.isArray(formAttachments)
+                                                  ? formAttachments
+                                                  : [];
+                                              // const currentCandidateFiles =
+                                              //   Array.isArray(
+                                              //     candidateAttachments
+                                              //   )
+                                              //     ? candidateAttachments
+                                              //     : [];
 
-                                                  if (
-                                                    currentFormFiles.length > 0
-                                                  ) {
-                                                    // Remove from form attachments
-                                                    const updatedFiles =
-                                                      currentFormFiles.filter(
-                                                        (_: any, i: number) =>
-                                                          i !== index
-                                                      );
-                                                    setFieldValue(
-                                                      "meetingAttachments",
-                                                      updatedFiles
-                                                    );
-                                                  } else {
-                                                    // If we're showing candidate attachments, copy them to form and remove the selected one
-                                                    const candidateFiles =
-                                                      candidate?.assignment
-                                                        ?.googleMeet
-                                                        ?.meetingAttachments ||
-                                                      [];
-                                                    const updatedFiles =
-                                                      candidateFiles.filter(
-                                                        (_: any, i: number) =>
-                                                          i !== index
-                                                      );
-                                                    setFieldValue(
-                                                      "meetingAttachments",
-                                                      updatedFiles
-                                                    );
-                                                  }
-                                                }}
-                                                className="h-4 w-4 p-0 text-gray-400 hover:text-red-500"
+                                              // Combine existing files (form + candidate if form is undefined)
+                                              const allFiles =
+                                                formAttachments !== undefined
+                                                  ? currentFormFiles
+                                                  : [
+                                                      ...currentFormFiles,
+                                                      // ...currentCandidateFiles,
+                                                    ];
+
+                                              // Sanitize new files
+                                              const sanitizedFiles =
+                                                sanitizeFiles(
+                                                  Array.from(files)
+                                                );
+
+                                              // Ensure we don't exceed 10 files total
+                                              const availableSlots = Math.max(
+                                                0,
+                                                10 - allFiles.length
+                                              );
+                                              const updatedFiles = [
+                                                ...allFiles,
+                                                ...sanitizedFiles.slice(
+                                                  0,
+                                                  availableSlots
+                                                ),
+                                              ];
+
+                                              setFieldValue(
+                                                "meetingAttachments",
+                                                updatedFiles
+                                              );
+                                            }
+                                          };
+                                          input.click();
+                                        }}
+                                      >
+                                        <Paperclip className="w-3 h-3" />
+                                        Add Files
+                                      </Button>
+
+                                      {/* File List Display */}
+                                      {displayAttachments.length > 0 ? (
+                                        <ul className="space-y-2">
+                                          {displayAttachments.map(
+                                            (file: any, index: number) => (
+                                              <li
+                                                key={`${file.name}-${index}`}
+                                                className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
+                                                role="listitem"
                                               >
-                                                <X className="w-2.5 h-2.5" />
-                                              </Button>
-                                            </div>
-                                          )
-                                        )}
-                                      </div>
-                                    )
+                                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                  <FileIcon className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                                                  <span
+                                                    className="text-sm text-gray-900 dark:text-gray-100 truncate max-w-[200px]"
+                                                    title={file.name}
+                                                  >
+                                                    {file.name}
+                                                  </span>
+                                                  {file.size && (
+                                                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                                                      (
+                                                      {(
+                                                        file.size / 1024
+                                                      ).toFixed(1)}{" "}
+                                                      KB)
+                                                    </span>
+                                                  )}
+                                                </div>
+                                                <Button
+                                                  type="button"
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  onClick={() => {
+                                                    // Filter out the file at the current index from displayAttachments
+                                                    const updatedFiles =
+                                                      displayAttachments.filter(
+                                                        (_: any, i: number) =>
+                                                          i !== index
+                                                      );
+                                                    // Update the form's meetingAttachments field
+                                                    setFieldValue(
+                                                      "meetingAttachments",
+                                                      updatedFiles
+                                                    );
+                                                  }}
+                                                  className="p-1 text-gray-400 hover:text-red-500 focus:ring-2 focus:ring-red-500 focus:outline-none"
+                                                  aria-label={`Remove ${file.name}`}
+                                                >
+                                                  <X className="w-4 h-4" />
+                                                </Button>
+                                              </li>
+                                            )
+                                          )}
+                                        </ul>
+                                      ) : null}
+                                    </div>
                                   );
                                 })()}
                               </div>
