@@ -21,16 +21,16 @@ export enum NotificationType {
   BULK_IMPORT_COMPLETED = 'bulk_import_completed',
   CANDIDATE_REJECTED = 'candidate_rejected',
   INTERVIEW_COMPLETED = 'interview_completed',
-  
+
   // System notifications
-  DEADLINE_REMINDER = 'deadline_reminder',
-  EMAIL_FAILED = 'email_failed',
-  SYSTEM_MAINTENANCE = 'system_maintenance',
-  FILE_UPLOAD_COMPLETED = 'file_upload_completed',
-  REPORT_GENERATED = 'report_generated',
+  // DEADLINE_REMINDER = 'deadline_reminder',
+  // EMAIL_FAILED = 'email_failed',
+  // SYSTEM_MAINTENANCE = 'system_maintenance',
+  // FILE_UPLOAD_COMPLETED = 'file_upload_completed',
+  // REPORT_GENERATED = 'report_generated',
 }
 
-export type RelatedEntityType = 'candidate' | 'job' | 'user' | 'meeting' | 'followup' | 'checklist' | 'system';
+export type RelatedEntityType = 'candidate' | 'job' | 'user' | 'meeting' | 'followup' | 'checklist' | 'system' | 'cvBatch';
 
 export interface INotification {
   _id: string;
@@ -41,16 +41,16 @@ export interface INotification {
   message: string; // Description text
   isRead: boolean;
   priority: 'high' | 'medium' | 'low';
-  
+
   // Related entity information
   relatedEntity: RelatedEntityType;
   relatedId?: string; // ID of the related entity (optional for system notifications)
   actionUrl?: string; // URL to navigate to on click
-  
+
   // Trigger information
   triggerUserId?: string; // Who triggered this notification
   triggerUserName?: string; // Cache for display
-  
+
   // Flexible metadata for additional data
   metadata?: {
     candidateName?: string;
@@ -68,7 +68,7 @@ export interface INotification {
     errorMessage?: string;
     [key: string]: any;
   };
-  
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -114,7 +114,7 @@ export const notificationSchema = new Schema<INotification>(
     },
     relatedEntity: {
       type: String,
-      enum: ['candidate', 'job', 'user', 'meeting', 'followup', 'checklist', 'system'],
+      enum: ['candidate', 'job', 'user', 'meeting', 'followup', 'checklist', 'system', 'cvBatch'],
       required: true,
       index: true,
     },

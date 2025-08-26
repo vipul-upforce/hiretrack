@@ -57,8 +57,11 @@ export default function Signup() {
   ) => {
     try {
       if (userData) {
+        // debugger;
         // const decryptedResponse = userData
         // if (decryptedResponse.success && decryptedResponse.user) {
+        // console.log(userData, "user data--");
+
         try {
           const orgID_cookie = userData.organizationId || "";
           const signupData = {
@@ -66,6 +69,9 @@ export default function Signup() {
             email: values.email.toLowerCase().trim(),
             organizationId: orgID_cookie,
             name: values.name.trim(),
+            triggerUserId: userData.id,
+            triggerUserName: userData.name,
+
           };
           const response = await signup(signupData).unwrap();
 

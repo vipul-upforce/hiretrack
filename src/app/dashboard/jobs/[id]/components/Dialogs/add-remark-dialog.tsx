@@ -162,7 +162,7 @@ const AddRemarksDialog = ({
 
         await new Promise((resolve) => setTimeout(resolve, 100));
         await refetch();
-        debugger;
+        // debugger;
         onRemarkAdded?.(updatedCandidate);
         toast({
           title: "Success",
