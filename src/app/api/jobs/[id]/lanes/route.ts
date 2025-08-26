@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { Job, Organization, Candidate } from "@/lib/mongodb";
 import { auth } from "@/lib/auth";
-
+import { isValidObjectId } from 'mongoose';
 const DEFAULT_LANES = [
   "applied",
-  "screening", 
+  "screening",
   "shortlisted",
   "processing",
   "accepted",
@@ -34,6 +34,13 @@ export async function GET(
 
     const { id: jobId } = await params;
 
+    // Validate ObjectId
+    if (!isValidObjectId(jobId)) {
+      return NextResponse.json(
+        { error: "Invalid job ID" },
+        { status: 400 }
+      );
+    }
     // Find the job
     const job = await Job.findOne({
       _id: jobId,
@@ -165,12 +172,12 @@ export async function PUT(
       }
 
       // Check if any candidates would have invalid statuses after this change
-      const candidates = await Candidate.find({ 
+      const candidates = await Candidate.find({
         jobId: jobId,
-        organizationId: session.user.organizationId 
+        organizationId: session.user.organizationId
       });
 
-      const invalidCandidates = candidates.filter(candidate => 
+      const invalidCandidates = candidates.filter(candidate =>
         candidate.status && !lanes.includes(candidate.status)
       );
 
@@ -317,11 +324,11 @@ export async function POST(
     // Update job to use custom lanes
     const updatedJob = await Job.findByIdAndUpdate(
       jobId,
-      { 
-        $set: { 
+      {
+        $set: {
           lanes: newLanes,
           useCustomLanes: true
-        } 
+        }
       },
       { new: true }
     );

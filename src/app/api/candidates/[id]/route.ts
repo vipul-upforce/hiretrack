@@ -509,24 +509,7 @@ export async function PUT(
               const jobInfo = existingCandidate.jobId as any;
               console.log(jobInfo, "job info--44888");
 
-              // Notify general status update
-              NotificationService.notifyCandidateStatusUpdated({
-                organizationId: organizationId,
-                candidateId: existingCandidate._id.toString(),
-                candidateName: existingCandidate.name,
-                jobId:
-                  jobInfo?._id?.toString() ||
-                  existingCandidate.jobId?.toString() ||
-                  "",
-                jobTitle: jobInfo?.title || "Unknown Job",
-                oldStatus: existingCandidate.status,
-                newStatus: data.status,
-                triggerUserId: userData._id,
-                triggerUserName: userData.name,
-              });
-              console.log(jobInfo?.title, "job info--jobInfo?.title ");
-
-              // Notify rejection if status is "Rejected"
+              // Notify rejection if status is "rejected"
               if (data.status === "rejected") {
                 NotificationService.notifyCandidateRejected({
                   organizationId: organizationId,
@@ -540,7 +523,24 @@ export async function PUT(
                   triggerUserId: userData._id,
                   triggerUserName: userData.name,
                 });
+              } else {
+                // Notify general status update for non-rejected statuses
+                NotificationService.notifyCandidateStatusUpdated({
+                  organizationId: organizationId,
+                  candidateId: existingCandidate._id.toString(),
+                  candidateName: existingCandidate.name,
+                  jobId:
+                    jobInfo?._id?.toString() ||
+                    existingCandidate.jobId?.toString() ||
+                    "",
+                  jobTitle: jobInfo?.title || "Unknown Job",
+                  oldStatus: existingCandidate.status,
+                  newStatus: data.status,
+                  triggerUserId: userData._id,
+                  triggerUserName: userData.name,
+                });
               }
+              console.log(jobInfo?.title, "job info--jobInfo?.title ");
             } catch (notificationError) {
               console.error(
                 "Failed to send candidate status notifications:",
@@ -1147,7 +1147,9 @@ export async function PUT(
           const significantUpdates = updates.filter(
             (update) =>
               !update.title.includes("Updated tracking") &&
-              !update.title.includes("Updated _id")
+              !update.title.includes("Updated _id") &&
+              !update.title.includes("Updated Status")
+
           );
 
           if (significantUpdates.length > 0) {

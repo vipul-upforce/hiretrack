@@ -8,6 +8,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { id } = await params;
     // Check authentication
     const token = request.headers.get("cookie")?.match(/token=([^;]+)/)?.[1];
     if (!token) {
@@ -18,9 +19,9 @@ export async function PUT(
     if (!decryptedResponse.success || !decryptedResponse.user) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
-
+    const notificationId = id; // Use the resolved id
     const user = decryptedResponse.user;
-    const notificationId = await params.id;
+
 
     // Validate notification ID
     if (!mongoose.Types.ObjectId.isValid(notificationId)) {
