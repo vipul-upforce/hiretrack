@@ -135,9 +135,14 @@ export class NotificationService {
     triggerUserId?: string;
     triggerUserName?: string;
   }) {
-    const adminHrIds = await this.getUsersByRole(params.organizationId, ['admin', 'hr']);
 
-    if (adminHrIds.length === 0) {
+
+    const adminHrIds = await this.getUsersByRole(params.organizationId, ['admin', 'hr']);
+    const filteredAdminHrIds = adminHrIds.filter(id => id !== params.triggerUserId);
+    // console.log(adminHrIds, "'Adminsss");
+    // console.log(filteredAdminHrIds, "'filteredAdminHrIds");
+
+    if (filteredAdminHrIds.length > 0) {
       await this.createBulkNotifications({
         organizationId: params.organizationId,
         type: NotificationType.CANDIDATE_APPLIED,
@@ -155,7 +160,7 @@ export class NotificationService {
           jobTitle: params.jobTitle,
           jobId: params.jobId,
         },
-      }, adminHrIds);
+      }, filteredAdminHrIds);
     }
   }
 
@@ -311,6 +316,9 @@ export class NotificationService {
     roles: string[]; // Add roles parameter to specify which roles to notify
   }) {
     // Fetch users by specified roles
+
+    // console.log(params, "neww paramsss == = =");
+
     const userIds = await this.getUsersByRole(params.organizationId, params.roles);
     const filteredUserIds = userIds.filter(id => id !== params.triggerUserId);
 
@@ -869,7 +877,7 @@ export class NotificationService {
         message: `${params.triggerUserName} updated job: ${params.jobTitle}`,
         relatedEntity: 'job',
         relatedId: params.jobId,
-        actionUrl: `/dashboard/cv-upload`,
+        actionUrl: `/dashboard/jobs/${params.jobId}`,
         triggerUserId: params.triggerUserId,
         triggerUserName: params.triggerUserName,
         priority: 'low',
@@ -935,7 +943,7 @@ export class NotificationService {
         message: `${params.triggerUserName} completed processing a CV batch with ${params.successCount} successful and ${params.failureCount} failed items`,
         relatedEntity: 'cvBatch',
         relatedId: params.batchId,
-        actionUrl: `/dashboard/batches/${params.batchId}`,
+        actionUrl: `/dashboard/cv-upload`,
         triggerUserId: params.triggerUserId,
         triggerUserName: params.triggerUserName,
         priority: 'medium',

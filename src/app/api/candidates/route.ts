@@ -245,6 +245,9 @@ export async function POST(request: NextRequest) {
 
         // Get job information for notification
         const job = await Job?.findById(data.jobId);
+        console.log(Job, "Bobs fot Ttelee---  ");
+        console.log(data.jobId, "BobsId fot Ttelee---  ");
+        console.log(job, "BobsId fot Ttelee---  ");
 
         // Trigger notification for candidate application
         if (job) {
@@ -265,7 +268,7 @@ export async function POST(request: NextRequest) {
               candidateId: candidate._id.toString(),
               candidateName: candidateData.name,
               candidateEmail: candidateData.email,
-              jobId: data.jobId,
+              jobId: typeof data.jobId === "string" && data.jobId !== "" ? data.jobId : data.jobId._id.toString() || null,
               jobTitle: job.title || "Unknown Job",
               triggerUserId: userData.id,
               triggerUserName: userData.name,

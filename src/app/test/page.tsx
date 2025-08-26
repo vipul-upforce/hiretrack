@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { NotificationType } from "lucide-react";
+import { NotificationType } from "@/lib/models/notification";
 
 export default function TestNotificationsPage() {
     const [loading, setLoading] = useState<string | null>(null);
