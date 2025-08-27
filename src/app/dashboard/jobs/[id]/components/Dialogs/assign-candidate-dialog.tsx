@@ -178,7 +178,7 @@ export function AssignCandidateDialog({
     remark: "",
     rating: null,
     attachments: [],
-    scheduleGoogleMeet: candidate.assignment.googleMeet.eventId ? true : false,
+    scheduleGoogleMeet: candidate.assignment?.googleMeet.eventId ? true : false,
     meetDuration: 30,
     meetingNotes: candidate?.assignment?.googleMeet?.meetingNotes || "",
     meetingAttachments:
@@ -249,7 +249,7 @@ export function AssignCandidateDialog({
 
         const requestBody = isUpdating
           ? {
-              eventId: candidate.assignment.googleMeet.eventId,
+              eventId: candidate.assignment?.googleMeet.eventId,
               candidateId: candidate._id,
               scheduledTime: values.time?.toISOString(),
               duration: values.meetDuration || 30,
@@ -456,11 +456,11 @@ export function AssignCandidateDialog({
                               <div className="p-3 bg-blue-50 dark:bg-black border border-blue-200 dark:border-gray-800 rounded-md space-y-2">
                                 <div className="text-sm text-blue-900 dark:text-blue-500">
                                   <p className="font-medium">
-                                    {candidate.assignment.googleMeet.summary}
+                                    {candidate.assignment?.googleMeet.summary}
                                   </p>
                                   <p className="text-xs text-blue-700 dark:text-blue-600 mt-1">
                                     {
-                                      candidate.assignment.googleMeet.description?.split(
+                                      candidate.assignment?.googleMeet.description?.split(
                                         "\n"
                                       )[0]
                                     }
@@ -469,7 +469,7 @@ export function AssignCandidateDialog({
                                 <div className="flex items-center gap-2">
                                   <a
                                     href={
-                                      candidate.assignment.googleMeet
+                                      candidate.assignment?.googleMeet
                                         .meetingLink
                                     }
                                     target="_blank"
@@ -485,8 +485,8 @@ export function AssignCandidateDialog({
                                     size="sm"
                                     onClick={() => {
                                       navigator.clipboard.writeText(
-                                        candidate.assignment.googleMeet
-                                          .meetingLink
+                                        candidate.assignment?.googleMeet
+                                          ?.meetingLink
                                       );
                                       toast({
                                         title: "Copied!",

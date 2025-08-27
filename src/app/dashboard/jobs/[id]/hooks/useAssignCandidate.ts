@@ -89,14 +89,14 @@ export const useAssignCandidate = ({
           time: values?.time?.toISOString(),
           assignedAt: new Date().toISOString(),
           // Include Google Meet data if available
-          ...(values.googleMeetData && { googleMeet: values.googleMeetData }),
+          ...(values?.googleMeetData && { googleMeet: values?.googleMeetData }),
         },
         attachments: [...candidate.attachments, ...values.attachments],
       };
 
       console.log("📝 Assignment Update:", {
-        hasGoogleMeetData: !!values.googleMeetData,
-        googleMeetData: values.googleMeetData,
+        hasGoogleMeetData: !!values?.googleMeetData,
+        googleMeetData: values?.googleMeetData,
         assignment: updatedCandidate.assignment,
       });
 
