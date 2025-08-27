@@ -12,7 +12,10 @@ import { CreateLaneDialog } from "./components/Dialogs/create-lane-dialog";
 import { CandidateDetailsDialog } from "./components/Dialogs/candidate-details-dialog";
 import { initialCandidateColumns } from "./data/initial-data";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
-import { useFetchJobByIdQuery } from "@/lib/features/job/jobApi";
+import {
+  useFetchJobByIdQuery,
+  useUpdateJobMutation,
+} from "@/lib/features/job/jobApi";
 import { useFetchCandidatesQuery } from "@/lib/features/candidate/candidateApi";
 import { Candidate, CandidateColumn, CandidateStatus } from "@/types/candidate";
 import LoaderSkeleton from "./components/Lanes/loader-skeleton";
@@ -131,11 +134,15 @@ export default function JobProgressPage() {
     isLoading: isJobLoading,
     error: jobError,
   } = useFetchJobByIdQuery(id as string);
+
+  const [promptForStatusChangeReason, setPromptForStatusChangeReason] =
+    useState(job?.promptForStatusChangeReason || false);
   const {
     data: candidatesFromQuery,
     isLoading: isCandidatesLoading,
     refetch,
   } = useFetchCandidatesQuery(id as string);
+  const [updateJob, { isLoading }] = useUpdateJobMutation();
   // NEW: Use job-specific lanes with fallback to user lanes
   const {
     data: jobLanes,
@@ -209,6 +216,7 @@ export default function JobProgressPage() {
     candidateToDelete,
     jobLaneConfig,
     job,
+    // promptForStatusChangeReason,
   });
 
   // Merge candidatesFromQuery and sseCandidates
@@ -566,7 +574,33 @@ export default function JobProgressPage() {
             jobTitle={job?.title}
             links={[{ title: "Jobs", href: "/dashboard/jobs-board" }]}
           />
+
           <div className="flex gap-2">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="promptForStatusChangeReason"
+                checked={job.promptForStatusChangeReason}
+                disabled={isLoading}
+                onCheckedChange={async (checked: boolean) => {
+                  setPromptForStatusChangeReason(checked);
+                  try {
+                    await updateJob({
+                      ...job,
+                      promptForStatusChangeReason: checked,
+                    });
+                  } catch (error) {
+                    console.error("Failed to update job:", error);
+                    setPromptForStatusChangeReason(!checked);
+                  }
+                }}
+              />
+              <label
+                htmlFor="promptForStatusChangeReason"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Prompt for status change reason
+              </label>
+            </div>
             <Button
               variant="outline"
               onClick={() => setIsCustomFieldsOpen(true)}
@@ -583,6 +617,7 @@ export default function JobProgressPage() {
               <BarChart3 className="h-4 w-4" />
               Analytics
             </Button>
+
             <CreateLaneDialog onAddLane={handleAddLane} />
             <CreateCandidateDialog
               jobId={id as string}

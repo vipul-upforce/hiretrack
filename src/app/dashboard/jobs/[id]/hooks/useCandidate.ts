@@ -29,6 +29,7 @@ interface UseCandidateProps {
   candidateToDelete: string | null;
   jobLaneConfig?: any;
   job?: Job;
+  // promptForStatusChangeReason: boolean;
 }
 
 interface ChecklistValidationResult {
@@ -62,6 +63,7 @@ export const useCandidate = ({
   candidateToDelete,
   jobLaneConfig,
   job,
+  // promptForStatusChangeReason,
 }: UseCandidateProps) => {
   const [updateCandidate] = useUpdateCandidateMutation();
   const [deleteCandidate] = useDeleteCandidateMutation();
@@ -307,9 +309,9 @@ export const useCandidate = ({
             ]);
 
             // Show dialog with checklist - NO database update yet
-            if (job?.promptForStatusChangeReason) {
-              setOpenRemarksFor(JSON.stringify(validationInfo));
-            }
+            // if (promptForStatusChangeReason) {
+            setOpenRemarksFor(JSON.stringify(validationInfo));
+            // }
             return; // Exit early, don't update database
           } else {
             // For OPTIONAL checklists: Move the card optimistically
@@ -318,9 +320,9 @@ export const useCandidate = ({
           }
 
           // Show dialog with checklist for optional checklists
-          if (job?.promptForStatusChangeReason) {
-            setOpenRemarksFor(JSON.stringify(validationInfo));
-          }
+          // if (promptForStatusChangeReason) {
+          setOpenRemarksFor(JSON.stringify(validationInfo));
+          // }
         } else {
           // No checklist required, proceed with optimistic update and normal remarks dialog
           setColumns(newColumns);
