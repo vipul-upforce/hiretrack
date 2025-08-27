@@ -52,19 +52,26 @@ export const useAssignCandidate = ({
       return;
     }
 
-    const fileNames = candidate.attachments.map((file) => file.name);
-    const hasDuplicates = new Set(fileNames).size !== fileNames.length;
+    // const fileNames = candidate.attachments.map((file) => file.name);
+    // const hasDuplicates = new Set(fileNames).size !== fileNames.length;
 
-    if (hasDuplicates) {
-      toast({
-        title: "Alert",
-        description:
-          "A file with the same name already exists in this candidate. Please rename before submitting.",
-        variant: "destructive",
-      });
-      setSubmitting(false);
-      return;
-    }
+    const existingNames = new Set(candidate.attachments.map((a) => a.name));
+    // debugger;
+
+    const uniqueAttachments = [
+      ...candidate.attachments, // existing attachments from candidate
+      ...values.attachments.filter((a) => !existingNames.has(a.name)),
+    ];
+    // if (hasDuplicates) {
+    //   toast({
+    //     title: "Alert",
+    //     description:
+    //       "A file with the same name already exists in this candidate. Please rename before submitting.",
+    //     variant: "destructive",
+    //   });
+    //   setSubmitting(false);
+    //   return;
+    // }
 
     try {
       const newRemarkObj = {
@@ -91,7 +98,7 @@ export const useAssignCandidate = ({
           // Include Google Meet data if available
           ...(values?.googleMeetData && { googleMeet: values?.googleMeetData }),
         },
-        attachments: [...candidate.attachments, ...values.attachments],
+        attachments: uniqueAttachments,
       };
 
       console.log("📝 Assignment Update:", {
