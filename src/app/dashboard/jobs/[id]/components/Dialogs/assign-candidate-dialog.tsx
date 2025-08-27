@@ -178,7 +178,7 @@ export function AssignCandidateDialog({
     remark: "",
     rating: null,
     attachments: [],
-    scheduleGoogleMeet: false,
+    scheduleGoogleMeet: candidate.assignment.googleMeet.eventId ? true : false,
     meetDuration: 30,
     meetingNotes: candidate?.assignment?.googleMeet?.meetingNotes || "",
     meetingAttachments:
@@ -310,7 +310,6 @@ export function AssignCandidateDialog({
           },
           attachments: [...values.attachments, ...processedMeetingAttachments],
         };
-
         // Proceed with assignment (this will now include Google Meet data)
         await handleSubmit(updatedValues, formikHelpers, user, interviewers);
 
@@ -417,7 +416,7 @@ export function AssignCandidateDialog({
                     {googleCalendarData?.googleCalendar?.isConnected && (
                       <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
                         {/* Show existing Google Meet info if present */}
-                        {candidate.assignment?.googleMeet &&
+                        {candidate.assignment?.googleMeet?.eventId &&
                           !values.scheduleGoogleMeet && (
                             <div className="space-y-3">
                               <div className="flex items-center justify-between">
@@ -454,12 +453,12 @@ export function AssignCandidateDialog({
                                   </Button>
                                 </div>
                               </div>
-                              <div className="p-3 bg-blue-50 border border-blue-200 rounded-md space-y-2">
-                                <div className="text-sm text-blue-900">
+                              <div className="p-3 bg-blue-50 dark:bg-black border border-blue-200 dark:border-gray-800 rounded-md space-y-2">
+                                <div className="text-sm text-blue-900 dark:text-blue-500">
                                   <p className="font-medium">
                                     {candidate.assignment.googleMeet.summary}
                                   </p>
-                                  <p className="text-xs text-blue-700 mt-1">
+                                  <p className="text-xs text-blue-700 dark:text-blue-600 mt-1">
                                     {
                                       candidate.assignment.googleMeet.description?.split(
                                         "\n"
@@ -475,7 +474,7 @@ export function AssignCandidateDialog({
                                     }
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-xs text-blue-600 hover:text-blue-700 underline flex items-center gap-1"
+                                    className="text-xs text-blue-600 dark:text-blue-200 hover:text-blue-700 underline flex items-center gap-1"
                                   >
                                     <ExternalLink className="h-3 w-3" />
                                     Join Meeting
@@ -506,7 +505,7 @@ export function AssignCandidateDialog({
                           )}
 
                         {/* Show checkbox only if no existing meet or in edit mode */}
-                        {(!candidate.assignment?.googleMeet ||
+                        {(!candidate.assignment?.googleMeet?.eventId ||
                           values.scheduleGoogleMeet) && (
                           <div className="flex items-center space-x-2">
                             <Field name="scheduleGoogleMeet">
