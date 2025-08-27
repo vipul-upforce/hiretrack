@@ -341,7 +341,7 @@ export function JobForm(props: JobFormProps) {
             const sanitizedFiles = sanitizeFiles(files);
             setFieldValue("files", sanitizedFiles);
           }}
-        // existingFiles={job?.attachments.files} // Remove from UI
+          // existingFiles={job?.attachments.files} // Remove from UI
         />
       </div>
 
@@ -368,6 +368,22 @@ export function JobForm(props: JobFormProps) {
           // existingFiles={job?.attachments.images}
         />
       </div> */}
+
+      <div className="space-y-2">
+        <div className="space-y-2 flex items-center gap-2">
+          <Checkbox
+            id="promptForStatusChangeReason"
+            checked={values.promptForStatusChangeReason === true}
+            onCheckedChange={(checked) => {
+              setFieldValue("promptForStatusChangeReason", checked);
+            }}
+            onBlur={handleBlur}
+          />
+          <Label className="m-0 p-0" htmlFor="promptForStatusChangeReason">
+            Prompt for reason when changing candidate status
+          </Label>
+        </div>
+      </div>
     </div>
   );
 }

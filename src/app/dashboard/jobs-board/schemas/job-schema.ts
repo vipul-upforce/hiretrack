@@ -49,6 +49,7 @@ export const jobSchema = (customFields: Yup.Schema<unknown>) => {
     files: Yup.array().of(Yup.mixed()),
     images: Yup.array().of(Yup.mixed()),
     customFields: customFields,
+    promptForStatusChangeReason: Yup.boolean(),
   });
 };
 
@@ -81,4 +82,5 @@ export interface JobFormValues {
     string,
     string | boolean | string[] | File[] | Dayjs | FileData[]
   >;
+  promptForStatusChangeReason?: boolean;
 }

@@ -1131,7 +1131,7 @@ export function CandidateCard({
         loadingText="Marking as done..."
       />
 
-      {isAddRemarkOpen && (
+      {(isAddRemarkOpen || openRemarks) && (
         <AddRemarksDialog
           candidate={localCandidate}
           isOpen={openRemarks}

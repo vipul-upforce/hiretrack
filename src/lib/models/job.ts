@@ -64,6 +64,10 @@ export const jobSchema = new mongoose.Schema({
     default: false,
   },
   isDeleted: Boolean,
+  promptForStatusChangeReason: {
+    type: Boolean,
+    default: true,
+  },
 });
 
 export interface IJob extends Document<mongoose.Types.ObjectId> {
@@ -110,6 +114,7 @@ export interface IJob extends Document<mongoose.Types.ObjectId> {
   lanes?: string[];
   useCustomLanes: boolean;
   isDeleted?: boolean;
+  promptForStatusChangeReason?: boolean;
 }
 
 // export const Job = mongoose.model('Job', jobSchema);

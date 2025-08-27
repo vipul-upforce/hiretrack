@@ -13,6 +13,7 @@ export interface Job {
   title: string;
   // company?: string;
   description: string;
+  promptForStatusChangeReason?: boolean;
   skills: string[];
   experience: number;
   isPublished?: boolean;

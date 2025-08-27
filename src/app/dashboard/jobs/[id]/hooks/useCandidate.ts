@@ -12,6 +12,7 @@ import { useSendStatusMailMutation } from "@/lib/features/org/orgApi";
 import { useValidateCandidateChecklistMutation } from "@/lib/features/checklist/checklistApi";
 import { sentStatusMailHandler } from "@/lib/utils";
 import { useClientSideChecklistValidation } from "./useClientSideChecklistValidation";
+import { Job } from "@/types/job";
 
 interface UseCandidateProps {
   columns: CandidateColumn[];
@@ -27,6 +28,7 @@ interface UseCandidateProps {
   refetch: () => Promise<any>;
   candidateToDelete: string | null;
   jobLaneConfig?: any;
+  job?: Job;
 }
 
 interface ChecklistValidationResult {
@@ -59,13 +61,14 @@ export const useCandidate = ({
   refetch,
   candidateToDelete,
   jobLaneConfig,
+  job,
 }: UseCandidateProps) => {
   const [updateCandidate] = useUpdateCandidateMutation();
   const [deleteCandidate] = useDeleteCandidateMutation();
   const [updateLanes] = useUpdateLanesMutation();
   const [sendStatusMail] = useSendStatusMailMutation();
   const [pendingMoves, setPendingMoves] = useState<PendingMove[]>([]);
-  
+
   // Initialize client-side checklist validation
   const { validateCompleteMovement } = useClientSideChecklistValidation(
     jobLaneConfig,
@@ -74,55 +77,63 @@ export const useCandidate = ({
 
   // Function to complete a pending move (move card and update database)
   const completePendingMove = async (candidateId: string) => {
-    const pendingMove = pendingMoves.find(pm => pm.candidateId === candidateId);
+    const pendingMove = pendingMoves.find(
+      (pm) => pm.candidateId === candidateId
+    );
     if (!pendingMove) return;
 
     try {
       // Update the UI - move the card to target lane
       // Extract the logic outside setColumns
-const prevColumns = columns;
-const newColumns = [...prevColumns];
-const sourceColumnIndex = newColumns.findIndex(col => col.id === pendingMove.sourceLaneId);
-const targetColumnIndex = newColumns.findIndex(col => col.id === pendingMove.targetLaneId);
+      const prevColumns = columns;
+      const newColumns = [...prevColumns];
+      const sourceColumnIndex = newColumns.findIndex(
+        (col) => col.id === pendingMove.sourceLaneId
+      );
+      const targetColumnIndex = newColumns.findIndex(
+        (col) => col.id === pendingMove.targetLaneId
+      );
 
-if (sourceColumnIndex >= 0 && targetColumnIndex >= 0) {
-  const sourceColumn = newColumns[sourceColumnIndex];
-  const targetColumn = newColumns[targetColumnIndex];
- 
-  // Find and remove candidate from source
-  const candidateToMove = sourceColumn.candidates.find(c => c._id === candidateId);
-  if (candidateToMove) {
-    const newSourceCandidates = sourceColumn.candidates.filter(
-      candidate => candidate._id !== candidateId
-    );
-   
-    // Add candidate to target with updated status
-    const newTargetCandidates = [...targetColumn.candidates];
-    newTargetCandidates.splice(pendingMove.targetIndex, 0, {
-      ...candidateToMove,
-      status: pendingMove.targetLaneId,
-    });
-   
-    newColumns[sourceColumnIndex] = {
-      ...sourceColumn,
-      candidates: newSourceCandidates,
-    };
-   
-    newColumns[targetColumnIndex] = {
-      ...targetColumn,
-      candidates: newTargetCandidates,
-    };
-  }
-}
+      if (sourceColumnIndex >= 0 && targetColumnIndex >= 0) {
+        const sourceColumn = newColumns[sourceColumnIndex];
+        const targetColumn = newColumns[targetColumnIndex];
 
-// Pass the final newColumns to setColumns
-setColumns(newColumns);
+        // Find and remove candidate from source
+        const candidateToMove = sourceColumn.candidates.find(
+          (c) => c._id === candidateId
+        );
+        if (candidateToMove) {
+          const newSourceCandidates = sourceColumn.candidates.filter(
+            (candidate) => candidate._id !== candidateId
+          );
+
+          // Add candidate to target with updated status
+          const newTargetCandidates = [...targetColumn.candidates];
+          newTargetCandidates.splice(pendingMove.targetIndex, 0, {
+            ...candidateToMove,
+            status: pendingMove.targetLaneId,
+          });
+
+          newColumns[sourceColumnIndex] = {
+            ...sourceColumn,
+            candidates: newSourceCandidates,
+          };
+
+          newColumns[targetColumnIndex] = {
+            ...targetColumn,
+            candidates: newTargetCandidates,
+          };
+        }
+      }
+
+      // Pass the final newColumns to setColumns
+      setColumns(newColumns);
       // Update candidate status in database
       const updatedCandidate = await updateCandidate({
         _id: candidateId,
         status: pendingMove.targetLaneId,
       }).unwrap();
-      
+
       // Send status change email
       sentStatusMailHandler(
         {
@@ -133,11 +144,12 @@ setColumns(newColumns);
       );
 
       // Remove from pending moves
-      setPendingMoves(prev => prev.filter(pm => pm.candidateId !== candidateId));
-      
+      setPendingMoves((prev) =>
+        prev.filter((pm) => pm.candidateId !== candidateId)
+      );
+
       // Refetch to ensure consistency
       await refetch();
-      
     } catch (error) {
       // If database update fails, don't move the card
       toast({
@@ -150,11 +162,15 @@ setColumns(newColumns);
 
   // Function to cancel a pending move (just remove from pending moves)
   const cancelPendingMove = (candidateId: string) => {
-    const pendingMove = pendingMoves.find(pm => pm.candidateId === candidateId);
+    const pendingMove = pendingMoves.find(
+      (pm) => pm.candidateId === candidateId
+    );
     if (!pendingMove) return;
 
     // For mandatory checklists, the card was never moved, so just remove from pending
-    setPendingMoves(prev => prev.filter(pm => pm.candidateId !== candidateId));
+    setPendingMoves((prev) =>
+      prev.filter((pm) => pm.candidateId !== candidateId)
+    );
   };
 
   const updateLanesOrder = async (newColumns: CandidateColumn[]) => {
@@ -250,7 +266,7 @@ setColumns(newColumns);
         // Get the candidate being moved
         const candidate = sourceColumn.candidates[source.index];
         if (!candidate) {
-          console.error('Candidate not found for drag operation');
+          console.error("Candidate not found for drag operation");
           return;
         }
 
@@ -265,7 +281,10 @@ setColumns(newColumns);
         if (validationResult.validation.requiresChecklist) {
           const validationInfo = {
             ...dragInfo,
-            checklist: "checklist" in validationResult.validation? validationResult.validation.checklist:null,
+            checklist:
+              "checklist" in validationResult.validation
+                ? validationResult.validation.checklist
+                : null,
             isMandatory: validationResult.validation.isMandatory,
             checklistType: validationResult.type,
           };
@@ -274,31 +293,40 @@ setColumns(newColumns);
             // For MANDATORY checklists: DON'T move the card or update database
             // Card will only move after successful form submission
             setColumns([...columns]); // Keep original state
-            
+
             // Add to pending moves to track the intended move
-            setPendingMoves(prev => [...prev, {
-              candidateId: draggableId,
-              sourceLaneId: source.droppableId,
-              targetLaneId: destination.droppableId,
-              sourceIndex: source.index,
-              targetIndex: destination.index
-            }]);
-            
+            setPendingMoves((prev) => [
+              ...prev,
+              {
+                candidateId: draggableId,
+                sourceLaneId: source.droppableId,
+                targetLaneId: destination.droppableId,
+                sourceIndex: source.index,
+                targetIndex: destination.index,
+              },
+            ]);
+
             // Show dialog with checklist - NO database update yet
-            setOpenRemarksFor(JSON.stringify(validationInfo));
+            if (job?.promptForStatusChangeReason) {
+              setOpenRemarksFor(JSON.stringify(validationInfo));
+            }
             return; // Exit early, don't update database
           } else {
             // For OPTIONAL checklists: Move the card optimistically
             setColumns(newColumns);
             // Continue to database update below
           }
-          
+
           // Show dialog with checklist for optional checklists
-          setOpenRemarksFor(JSON.stringify(validationInfo));
+          if (job?.promptForStatusChangeReason) {
+            setOpenRemarksFor(JSON.stringify(validationInfo));
+          }
         } else {
           // No checklist required, proceed with optimistic update and normal remarks dialog
           setColumns(newColumns);
-          setOpenRemarksFor(draggableId);
+          if (job?.promptForStatusChangeReason) {
+            setOpenRemarksFor(draggableId);
+          }
         }
 
         // Update candidate status in database (only for non-mandatory or no checklist cases)
@@ -306,7 +334,7 @@ setColumns(newColumns);
           _id: draggableId,
           status: destination.droppableId,
         }).unwrap();
-        
+
         sentStatusMailHandler(
           {
             ...updatedCandidate,

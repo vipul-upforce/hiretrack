@@ -208,6 +208,7 @@ export default function JobProgressPage() {
     refetch,
     candidateToDelete,
     jobLaneConfig,
+    job,
   });
 
   // Merge candidatesFromQuery and sseCandidates
