@@ -7,7 +7,7 @@ import { User } from "@/lib/mongodb";
 import { Job } from "@/lib/mongodb";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
 import { Types } from "mongoose";
-import {getFilterPrivateCF} from "@/lib/filterPrivateCF";
+import { getFilterPrivateCF } from "@/lib/filterPrivateCF";
 
 // export async function GET(req: NextRequest) {
 //   try {
@@ -564,6 +564,7 @@ export async function GET(req: NextRequest) {
               attachments: "$candidates.attachments",
               status: "$candidates.status",
               email: "$candidates.email",
+              contact: "$candidates.contact",
               createdAt: "$candidates.createdAt",
               updatedAt: "$candidates.updatedAt",
               history: "$histories.history",
@@ -865,7 +866,10 @@ export async function GET(req: NextRequest) {
         // console.log("after filter: ", filteredCandidates.length);
 
         if (!History) return;
-        const candidatesWithPrivateCF = await getFilterPrivateCF(candidates.data, req)
+        const candidatesWithPrivateCF = await getFilterPrivateCF(
+          candidates.data,
+          req
+        );
         // console.log("befire history: ", candidates.data.length);
         const candidatesWithHistory = await Promise.all(
           candidatesWithPrivateCF.map(async (candidate) => {
@@ -916,7 +920,7 @@ export async function GET(req: NextRequest) {
     }
   } catch (error) {
     if (error instanceof Error) {
-      console.log(error)
+      console.log(error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
   }
