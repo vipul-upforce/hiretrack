@@ -550,6 +550,9 @@ export default function CalendarPage() {
               time:
                 selectedEvent.start?.toISOString() || new Date().toISOString(),
               assignedAt: new Date().toISOString(),
+              googleMeet:
+                selectedEvent.extendedProps.candidate.assignment?.googleMeet ||
+                null,
               assignment: {
                 status:
                   selectedEvent.extendedProps.candidate.assignment?.assignment
