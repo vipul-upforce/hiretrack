@@ -786,7 +786,6 @@ export function CandidateCard({
         localCandidate.assignment.interviewerId &&
         typeof localCandidate.assignment.interviewerId === "object" &&
         localCandidate.assignment.interviewerId._id &&
-        localCandidate.assignment?.googleMeet?.eventId &&
         localCandidate.assignment.interviewerId.name && (
           <div
             className="border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-black/70 -mx-4 -mb-4 px-4 py-1.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/70 transition-colors"
@@ -816,133 +815,140 @@ export function CandidateCard({
                     </Badge>
                   )}
                 </span>
-                {localCandidate.assignment?.googleMeet && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div
-                          className={cn(
-                            "w-6 h-6 rounded-full flex items-center justify-center cursor-pointer transition-colors flex-shrink-0 relative",
-                            localCandidate.assignment.googleMeet.attendeeResponses?.some(
-                              (a) => a.responseStatus === "declined"
-                            )
-                              ? "bg-red-500 hover:bg-red-600"
-                              : localCandidate.assignment.googleMeet.attendeeResponses?.every(
-                                    (a) => a.responseStatus === "accepted"
-                                  )
-                                ? "bg-green-500 hover:bg-green-600"
-                                : "bg-blue-500 hover:bg-blue-600"
-                          )}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const meetingInfo = `Meeting: ${localCandidate.assignment.googleMeet.summary}
+                {localCandidate.assignment?.googleMeet &&
+                  localCandidate.assignment?.googleMeet?.eventId && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div
+                            className={cn(
+                              "w-6 h-6 rounded-full flex items-center justify-center cursor-pointer transition-colors flex-shrink-0 relative",
+                              localCandidate.assignment.googleMeet.attendeeResponses?.some(
+                                (a) => a.responseStatus === "declined"
+                              )
+                                ? "bg-red-500 hover:bg-red-600"
+                                : localCandidate.assignment.googleMeet.attendeeResponses?.every(
+                                      (a) => a.responseStatus === "accepted"
+                                    )
+                                  ? "bg-green-500 hover:bg-green-600"
+                                  : "bg-blue-500 hover:bg-blue-600"
+                            )}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const meetingInfo = `Meeting: ${localCandidate.assignment.googleMeet.summary}
                                                   Description: ${localCandidate.assignment.googleMeet.description}
                                                   Time: ${localCandidate.assignment?.time ? `${formatDate(localCandidate.assignment.time)} at ${formatTime(localCandidate.assignment.time)}` : "Not set"}
                                                   Google Meet Link: ${localCandidate.assignment.googleMeet.meetingLink}`;
-                            copyToClipboard(meetingInfo, "Meeting information");
-                          }}
+                              copyToClipboard(
+                                meetingInfo,
+                                "Meeting information"
+                              );
+                            }}
+                          >
+                            <Video size={12} className="text-white" />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent
+                          side="top"
+                          className="max-w-sm p-3 bg-white/95 dark:bg-black/95 backdrop-blur-md border border-gray-200/50 dark:border-gray-600/50 shadow-xl rounded-lg"
                         >
-                          <Video size={12} className="text-white" />
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent
-                        side="top"
-                        className="max-w-sm p-3 bg-white/95 dark:bg-black/95 backdrop-blur-md border border-gray-200/50 dark:border-gray-600/50 shadow-xl rounded-lg"
-                      >
-                        <div className="space-y-2">
-                          {/* Meeting Title */}
-                          <div className="font-semibold text-gray-900 dark:text-gray-100 text-sm leading-tight">
-                            {localCandidate.assignment.googleMeet.summary}
-                          </div>
-
-                          {/* Instructions */}
-                          <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300 bg-white/50 dark:bg-gray-700/50 px-2 py-1 rounded">
-                            <div className="w-1 h-1 bg-blue-500 rounded-full"></div>
-                            Click to copy meeting details
-                          </div>
-
-                          {/* Meeting Link */}
-                          <div className="text-xs">
-                            <div className="text-gray-500 dark:text-gray-400 mb-1">
-                              Meeting Link:
+                          <div className="space-y-2">
+                            {/* Meeting Title */}
+                            <div className="font-semibold text-gray-900 dark:text-gray-100 text-sm leading-tight">
+                              {localCandidate.assignment.googleMeet.summary}
                             </div>
-                            <div className="text-blue-600 dark:text-blue-400 break-all bg-blue-50/50 dark:bg-blue-900/20 px-2 py-1 rounded border border-blue-200/50 dark:border-blue-800/50">
-                              {localCandidate.assignment.googleMeet.meetingLink}
-                            </div>
-                          </div>
 
-                          {/* Attendee Responses */}
-                          {localCandidate.assignment.googleMeet
-                            .attendeeResponses &&
-                            localCandidate.assignment.googleMeet
-                              .attendeeResponses.length > 0 && (
-                              <div className="text-xs">
-                                <div className="text-gray-500 dark:text-gray-400 mb-1">
-                                  Attendee Responses:
-                                </div>
-                                <div className="space-y-1">
-                                  {localCandidate.assignment.googleMeet.attendeeResponses.map(
-                                    (attendee, idx) => {
-                                      return (
-                                        <div
-                                          key={idx}
-                                          className="flex items-center justify-between gap-2 px-2 py-1 bg-gray-50/50 dark:bg-gray-800/50 rounded relative group"
-                                        >
-                                          <span className="text-gray-700 dark:text-gray-300 truncate flex-1">
-                                            {attendee.name ||
-                                              attendee.email.split("@")[0]}
-                                          </span>
-                                          <div className="flex items-center gap-1">
-                                            {attendee.comment && (
-                                              <div className="relative">
-                                                <span className="text-blue-500 text-xs cursor-help">
-                                                  <MessageCircle size={12} />
-                                                </span>
-                                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 max-w-xs">
-                                                  {attendee.comment}
-                                                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
-                                                </div>
-                                              </div>
-                                            )}
-                                            <span
-                                              className={cn(
-                                                "text-xs px-1.5 py-0.5 rounded font-medium",
-                                                attendee.responseStatus ===
-                                                  "accepted" &&
-                                                  "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400",
-                                                attendee.responseStatus ===
-                                                  "declined" &&
-                                                  "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400",
-                                                attendee.responseStatus ===
-                                                  "tentative" &&
-                                                  "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400",
-                                                attendee.responseStatus ===
-                                                  "needsAction" &&
-                                                  "bg-gray-100 text-gray-600 dark:bg-gray-700/50 dark:text-gray-400"
-                                              )}
-                                            >
-                                              {attendee.responseStatus ===
-                                                "accepted" && "✓ Accepted"}
-                                              {attendee.responseStatus ===
-                                                "declined" && "✗ Declined"}
-                                              {attendee.responseStatus ===
-                                                "tentative" && "? Maybe"}
-                                              {attendee.responseStatus ===
-                                                "needsAction" && "⏳ Pending"}
-                                            </span>
-                                          </div>
-                                        </div>
-                                      );
-                                    }
-                                  )}
-                                </div>
+                            {/* Instructions */}
+                            <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300 bg-white/50 dark:bg-gray-700/50 px-2 py-1 rounded">
+                              <div className="w-1 h-1 bg-blue-500 rounded-full"></div>
+                              Click to copy meeting details
+                            </div>
+
+                            {/* Meeting Link */}
+                            <div className="text-xs">
+                              <div className="text-gray-500 dark:text-gray-400 mb-1">
+                                Meeting Link:
                               </div>
-                            )}
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
+                              <div className="text-blue-600 dark:text-blue-400 break-all bg-blue-50/50 dark:bg-blue-900/20 px-2 py-1 rounded border border-blue-200/50 dark:border-blue-800/50">
+                                {
+                                  localCandidate.assignment.googleMeet
+                                    .meetingLink
+                                }
+                              </div>
+                            </div>
+
+                            {/* Attendee Responses */}
+                            {localCandidate.assignment.googleMeet
+                              .attendeeResponses &&
+                              localCandidate.assignment.googleMeet
+                                .attendeeResponses.length > 0 && (
+                                <div className="text-xs">
+                                  <div className="text-gray-500 dark:text-gray-400 mb-1">
+                                    Attendee Responses:
+                                  </div>
+                                  <div className="space-y-1">
+                                    {localCandidate.assignment.googleMeet.attendeeResponses.map(
+                                      (attendee, idx) => {
+                                        return (
+                                          <div
+                                            key={idx}
+                                            className="flex items-center justify-between gap-2 px-2 py-1 bg-gray-50/50 dark:bg-gray-800/50 rounded relative group"
+                                          >
+                                            <span className="text-gray-700 dark:text-gray-300 truncate flex-1">
+                                              {attendee.name ||
+                                                attendee.email.split("@")[0]}
+                                            </span>
+                                            <div className="flex items-center gap-1">
+                                              {attendee.comment && (
+                                                <div className="relative">
+                                                  <span className="text-blue-500 text-xs cursor-help">
+                                                    <MessageCircle size={12} />
+                                                  </span>
+                                                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 max-w-xs">
+                                                    {attendee.comment}
+                                                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                                                  </div>
+                                                </div>
+                                              )}
+                                              <span
+                                                className={cn(
+                                                  "text-xs px-1.5 py-0.5 rounded font-medium",
+                                                  attendee.responseStatus ===
+                                                    "accepted" &&
+                                                    "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400",
+                                                  attendee.responseStatus ===
+                                                    "declined" &&
+                                                    "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400",
+                                                  attendee.responseStatus ===
+                                                    "tentative" &&
+                                                    "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400",
+                                                  attendee.responseStatus ===
+                                                    "needsAction" &&
+                                                    "bg-gray-100 text-gray-600 dark:bg-gray-700/50 dark:text-gray-400"
+                                                )}
+                                              >
+                                                {attendee.responseStatus ===
+                                                  "accepted" && "✓ Accepted"}
+                                                {attendee.responseStatus ===
+                                                  "declined" && "✗ Declined"}
+                                                {attendee.responseStatus ===
+                                                  "tentative" && "? Maybe"}
+                                                {attendee.responseStatus ===
+                                                  "needsAction" && "⏳ Pending"}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        );
+                                      }
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
 
                 {/* Sync Button for Google Meet Responses */}
                 {localCandidate.assignment?.googleMeet?.eventId && (
