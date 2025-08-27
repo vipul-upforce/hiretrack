@@ -178,7 +178,9 @@ export function AssignCandidateDialog({
     remark: "",
     rating: null,
     attachments: [],
-    scheduleGoogleMeet: candidate.assignment?.googleMeet.eventId ? true : false,
+    scheduleGoogleMeet: candidate?.assignment?.googleMeet?.eventId
+      ? true
+      : false,
     meetDuration: 30,
     meetingNotes: candidate?.assignment?.googleMeet?.meetingNotes || "",
     meetingAttachments:

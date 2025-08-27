@@ -786,6 +786,7 @@ export function CandidateCard({
         localCandidate.assignment.interviewerId &&
         typeof localCandidate.assignment.interviewerId === "object" &&
         localCandidate.assignment.interviewerId._id &&
+        localCandidate.assignment?.googleMeet?.eventId &&
         localCandidate.assignment.interviewerId.name && (
           <div
             className="border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-black/70 -mx-4 -mb-4 px-4 py-1.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/70 transition-colors"
