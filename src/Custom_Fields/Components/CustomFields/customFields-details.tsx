@@ -37,6 +37,15 @@ const CustomFieldsData = ({ customFields: cfWOFormatting }: FormValues) => {
   // Collect private fields for interviewer and candidate
   const fieldsPrivateFromInterviewer: string[] = [];
   const fieldsPrivateFromCandidate: string[] = [];
+  const fieldsNotRegisteredHere: string[] = [];
+
+  const allFieldKeys = new Set<string>();
+  Object.values(cfMetaData).forEach((form) => {
+    form.fields.forEach((field) => {
+      allFieldKeys.add(field.label);
+    });
+  });
+
   Object.values(cfMetaData).forEach((form) => {
     form.fields.forEach((field) => {
       if (field.privateInt) {
@@ -44,6 +53,9 @@ const CustomFieldsData = ({ customFields: cfWOFormatting }: FormValues) => {
       }
       if (field.private) {
         fieldsPrivateFromCandidate.push(field.label);
+      }
+      if (!allFieldKeys.has(field.label)) {
+        fieldsNotRegisteredHere.push(field.label);
       }
     });
   });
@@ -66,7 +78,9 @@ const CustomFieldsData = ({ customFields: cfWOFormatting }: FormValues) => {
       if (role === "candidate" && fieldsPrivateFromCandidate.includes(key)) {
         return false;
       }
-
+      if (!allFieldKeys.has(key)) {
+        fieldsNotRegisteredHere.push(key);
+      }
       return true;
     })
   );
@@ -162,7 +176,8 @@ const CustomFieldsData = ({ customFields: cfWOFormatting }: FormValues) => {
       {sortedCustomFields.map(([key, value]) => {
         if (
           (typeof value === "string" && value.trim() === "") ||
-          (Array.isArray(value) && value.length === 0)
+          (Array.isArray(value) && value.length === 0) ||
+          fieldsNotRegisteredHere.includes(key)
         ) {
           return null;
         }

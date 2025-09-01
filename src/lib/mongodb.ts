@@ -21,6 +21,7 @@ import { checklistTemplateSchema, IChecklistTemplate } from "./models/ChecklistT
 import fileShareSchema, { IFileShare } from "./models/fileshare";
 import emailHistorySchema, { IEmailHistory } from "./models/emailhistory";
 import notificationSchema, { INotification } from "./models/notification";
+import { FileUrlMappingSchema, IFileUrlMapping } from "./models/fileUrlMapping";
 import webhookSubscriptionSchema, { IWebhookSubscription } from "./models/webhookSubscription";
 
 interface MongooseGlobal {
@@ -47,6 +48,7 @@ export var FileShare: mongoose.Model<IFileShare> | null = null;
 export var EmailHistory: mongoose.Model<IEmailHistory> | null = null;
 export var Notification: mongoose.Model<INotification> | null = null;
 export var WebhookSubscription: mongoose.Model<IWebhookSubscription> | null = null;
+export var FileUrlMapping: mongoose.Model<IFileUrlMapping> | null = null;
 
 const MONGODB_URI = process.env.MONGODB_URI!;
 
@@ -94,6 +96,7 @@ export default async function connectToDatabase() {
       EmailHistory = mongoose.model<IEmailHistory>("EmailHistory", emailHistorySchema);
       Notification = mongoose.model<INotification>("Notification", notificationSchema);
       WebhookSubscription = mongoose.model<IWebhookSubscription>("WebhookSubscription", webhookSubscriptionSchema);
+      FileUrlMapping = mongoose.model<IFileUrlMapping>("FileUrlMapping", FileUrlMappingSchema);
       console.log("Models registered");
       return mongoose;
     });

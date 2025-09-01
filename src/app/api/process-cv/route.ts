@@ -10,6 +10,7 @@ import { auth } from "@/lib/auth";
 import { AIProviderFactory, ProcessedResumeData } from "@/lib/ai-providers";
 import { decryptAIProviderKeys } from "@/lib/encryption";
 import { NotificationService } from "@/lib/notifications/notificationService";
+import { Types } from "mongoose";
 
 interface ExtendedProcessedResumeData extends ProcessedResumeData {
   name: string;
@@ -317,6 +318,7 @@ export async function POST(request: NextRequest) {
 
         // Create proper file object for handleSingleFile with the actual file data
         const fileObject = {
+          id: new Types.ObjectId().toHexString(),
           name: file.name,
           type: file.type,
           size: file.size,

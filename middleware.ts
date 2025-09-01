@@ -243,6 +243,8 @@ const apiExemptPaths = [
   "/api/candidates/evaluate",
   "/api/candidates/event-mail",
   "/api/files",
+  "/api/file-proxy",
+  "/api/file",
   "/api/candidates/guest-apply",
   "/api/candidates/apply-application",
   "/apply-jobs",

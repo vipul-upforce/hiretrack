@@ -1,14 +1,16 @@
 /* eslint-disable no-console */
-import { mkdir } from "fs/promises";
+
+import mongoose from "mongoose";
+
 import path from "path";
-import fs from "fs";
+import fs, { existsSync, mkdir, promises } from "fs";
 
 import {
   v2 as cloudinary,
   UploadApiResponse,
   UploadApiOptions,
 } from "cloudinary";
-import { Settings } from "./mongodb";
+import { Settings, FileUrlMapping } from "./mongodb";
 // import { NextRequest } from "next/server";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
@@ -178,6 +180,7 @@ export interface Attachments {
 }
 
 export interface CustomFieldFile {
+  id: string;
   base64: string;
   name: string;
   type: string;
@@ -198,6 +201,7 @@ export interface CustomFields {
 }
 
 export interface SingleFileField {
+  id: string;
   url: string;
   name: string;
   type: string;
@@ -205,8 +209,8 @@ export interface SingleFileField {
 }
 
 async function ensureDirectoryExists(dirPath: string) {
-  if (!fs.existsSync(dirPath)) {
-    await mkdir(dirPath, { recursive: true });
+  if (!existsSync(dirPath)) {
+    await promises.mkdir(dirPath, { recursive: true });
   }
 }
 
@@ -214,7 +218,6 @@ export async function handleFileAttachments(
   newAttachments: Attachments,
   fileStorage: string,
   organizationId: string
-  // req: NextRequest
 ) {
   const updatedAttachments: Attachments = { files: [], images: [] };
   async function processFiles(
@@ -224,13 +227,13 @@ export async function handleFileAttachments(
     const processedItems: FileAttachment[] = [];
     for (const item of items) {
       if (item.url.startsWith("data:")) {
-        let url = "";
+        let realUrl = "";
         const timestamp = new Date().getTime();
         const uploadName = item.name || `file_${timestamp}`;
 
         switch (fileStorage) {
           case "cloudinary":
-            url = await uploadFile(
+            realUrl = await uploadFile(
               item.url,
               folder,
               organizationId,
@@ -238,7 +241,7 @@ export async function handleFileAttachments(
             );
             break;
           case "s3":
-            url = await uploadFileToS3(
+            realUrl = await uploadFileToS3(
               item.url,
               folder,
               organizationId,
@@ -246,42 +249,27 @@ export async function handleFileAttachments(
             );
             break;
           default:
-            // url = await saveFileLocally(item.url, folder, uploadName, req);
-            url = await saveFileLocally(item.url, folder, uploadName);
+            const localUrl = await saveFileLocally(
+              item.url,
+              folder,
+              uploadName
+            );
+            processedItems.push({ ...item, url: localUrl });
+            continue; // Skip the rest for local files
         }
-        processedItems.push({ ...item, url: url || "" });
+
+        if (realUrl && FileUrlMapping) {
+          await FileUrlMapping.create({
+            fileId: item.id || new mongoose.Types.ObjectId().toHexString(),
+            realUrl,
+          });
+          const proxiedUrl = `/api/file/${item.id}`;
+          processedItems.push({ ...item, url: proxiedUrl });
+        } else {
+          // Handle upload failure
+          processedItems.push({ ...item, url: "" });
+        }
       } else {
-        if (fileStorage === "local") {
-          const urlParts = item.url.split("/");
-          const originalName = urlParts.pop();
-          if (!originalName) {
-            console.error("Invalid URL format - cannot extract filename");
-            processedItems.push(item);
-            continue;
-          }
-
-          const newName = item.name || originalName;
-          if (originalName !== newName) {
-            // Get the file path from the URL
-            const publicPath = path.join(process.cwd(), "..", "assets");
-            const folder = item.type.startsWith("image/")
-              ? "images"
-              : "documents";
-            const oldPath = path.join(publicPath, folder, originalName);
-            const newPath = path.join(publicPath, folder, newName);
-
-            // Rename the file if it exists
-            if (fs.existsSync(oldPath)) {
-              try {
-                await fs.promises.rename(oldPath, newPath);
-                // Update the URL with the new filename
-                item.url = item.url.replace(originalName, newName);
-              } catch (error) {
-                console.error("Error renaming file:", error);
-              }
-            }
-          }
-        }
         processedItems.push(item);
       }
     }
@@ -303,7 +291,6 @@ export async function handleCustomFieldFiles(
   customFields: CustomFields,
   fileStorage: string,
   organizationId: string
-  // req: NextRequest
 ) {
   for (const fieldKey in customFields) {
     const field = customFields[fieldKey];
@@ -323,10 +310,11 @@ export async function handleCustomFieldFiles(
         if (file.base64?.startsWith("data:")) {
           const isImage = file.type.startsWith("image/");
           const folder = isImage ? "images" : "documents";
-          let url = "";
+          let realUrl = "";
+
           switch (fileStorage) {
             case "cloudinary":
-              url = await uploadFile(
+              realUrl = await uploadFile(
                 file.base64,
                 folder,
                 organizationId,
@@ -334,7 +322,7 @@ export async function handleCustomFieldFiles(
               );
               break;
             case "s3":
-              url = await uploadFileToS3(
+              realUrl = await uploadFileToS3(
                 file.base64,
                 folder,
                 organizationId,
@@ -342,42 +330,25 @@ export async function handleCustomFieldFiles(
               );
               break;
             default:
-              // url = await saveFileLocally(file.base64, folder, file.name, req);
-              url = await saveFileLocally(file.base64, folder, file.name);
+              const localUrl = await saveFileLocally(
+                file.base64,
+                folder,
+                file.name
+              );
+              processedFiles.push({ ...file, base64: localUrl });
+              continue; // Skip the rest for local files
           }
-          processedFiles.push({ ...file, base64: url || "" });
+
+          if (realUrl && FileUrlMapping) {
+            const fileId =
+              file.id || new mongoose.Types.ObjectId().toHexString();
+            await FileUrlMapping.create({ fileId, realUrl });
+            const proxiedUrl = `/api/file/${fileId}`;
+            processedFiles.push({ ...file, base64: proxiedUrl, id: fileId });
+          } else {
+            processedFiles.push({ ...file, base64: "" });
+          }
         } else {
-          if (fileStorage === "local") {
-            const urlParts = file.base64.split("/");
-            const originalName = urlParts.pop();
-            if (!originalName) {
-              console.error("Invalid URL format - cannot extract filename");
-              processedFiles.push(file);
-              continue;
-            }
-
-            const newName = file.name || originalName;
-            if (originalName !== newName) {
-              // Get the file path from the URL
-              const publicPath = path.join(process.cwd(), "..", "assets");
-              const folder = file.type.startsWith("image/")
-                ? "images"
-                : "documents";
-              const oldPath = path.join(publicPath, folder, originalName);
-              const newPath = path.join(publicPath, folder, newName);
-
-              // Rename the file if it exists
-              if (fs.existsSync(oldPath)) {
-                try {
-                  await fs.promises.rename(oldPath, newPath);
-                  // Update the URL with the new filename
-                  file.base64 = file.base64.replace(originalName, newName);
-                } catch (error) {
-                  console.error("Error renaming file:", error);
-                }
-              }
-            }
-          }
           processedFiles.push(file);
         }
       }
@@ -392,63 +363,46 @@ export async function handleSingleFile(
   fileStorage: string,
   organizationId: string,
   orgName?: string
-  // req: NextRequest
 ) {
   if (!file) return null;
   if (file.url?.startsWith("data:")) {
     const isImage = file.type.startsWith("image/");
-
     const isHtml = file.type === "text/html";
-
     const folder = isImage
       ? "images"
       : isHtml
         ? `organizations/${orgName}`
         : "documents";
-    let url = "";
+    let realUrl = "";
+
     switch (fileStorage) {
       case "cloudinary":
-        url = await uploadFile(file.url, folder, organizationId, file.name);
+        realUrl = await uploadFile(file.url, folder, organizationId, file.name);
         break;
       case "s3":
-        url = await uploadFileToS3(file.url, folder, organizationId, file.name);
+        realUrl = await uploadFileToS3(
+          file.url,
+          folder,
+          organizationId,
+          file.name
+        );
         break;
       default:
-        // url = await saveFileLocally(file.url, folder, file.name, req);
-        url = await saveFileLocally(file.url, folder, file.name);
+        const localUrl = await saveFileLocally(file.url, folder, file.name);
+        return { ...file, url: localUrl };
     }
-    return { ...file, url: url || "" };
+
+    if (realUrl && FileUrlMapping) {
+      const fileId = file.id || new mongoose.Types.ObjectId().toHexString();
+      await FileUrlMapping.create({ fileId, realUrl });
+      const proxiedUrl = `/api/file/${fileId}`;
+      return { ...file, url: proxiedUrl, id: fileId };
+    } else {
+      return { ...file, url: "" };
+    }
   } else {
-    if (fileStorage === "local") {
-      const urlParts = file.url.split("/");
-      const originalName = urlParts.pop();
-      if (!originalName) {
-        console.error("Invalid URL format - cannot extract filename");
-        return;
-      }
-
-      const newName = file.name || originalName;
-      if (originalName !== newName) {
-        // Get the file path from the URL
-        const publicPath = path.join(process.cwd(), "..", "assets");
-        const folder = file.type.startsWith("image/") ? "images" : "documents";
-        const oldPath = path.join(publicPath, folder, originalName);
-        const newPath = path.join(publicPath, folder, newName);
-
-        // Rename the file if it exists
-        if (fs.existsSync(oldPath)) {
-          try {
-            await fs.promises.rename(oldPath, newPath);
-            // Update the URL with the new filename
-            file.url = file.url.replace(originalName, newName);
-          } catch (error) {
-            console.error("Error renaming file:", error);
-          }
-        }
-      }
-    }
+    return file;
   }
-  return file;
 }
 
 // Helper function for file sharing module
@@ -457,11 +411,16 @@ export async function uploadFileToProvider(
   fileStorage: any,
   organizationId: string,
   filePath: string
-): Promise<{ success: boolean; url?: string; fileName?: string; error?: string }> {
+): Promise<{
+  success: boolean;
+  url?: string;
+  fileName?: string;
+  error?: string;
+}> {
   try {
     const fileName = path.basename(filePath);
     const folder = path.dirname(filePath);
-    
+
     let url = "";
     switch (fileStorage.storageType) {
       case "cloudinary":
@@ -477,11 +436,11 @@ export async function uploadFileToProvider(
         url = path.join(folder, fileName);
         break;
     }
-    
+
     if (!url) {
       return { success: false, error: "Failed to upload file" };
     }
-    
+
     return { success: true, url, fileName };
   } catch (error: any) {
     console.error("Error uploading file to provider:", error);
@@ -501,23 +460,26 @@ export async function getFileFromProvider(
         // For local files, read from the file system
         const publicPath = path.join(process.cwd(), "..", "assets");
         const fullPath = path.join(publicPath, filePath);
-        
+
         if (!fs.existsSync(fullPath)) {
           return { success: false, error: "File not found" };
         }
-        
+
         const buffer = await fs.promises.readFile(fullPath);
         return { success: true, buffer };
-        
+
       case "cloudinary":
         // For Cloudinary, fetch the file from URL
         const response = await fetch(filePath);
         if (!response.ok) {
-          return { success: false, error: "Failed to fetch file from Cloudinary" };
+          return {
+            success: false,
+            error: "Failed to fetch file from Cloudinary",
+          };
         }
         const arrayBuffer = await response.arrayBuffer();
         return { success: true, buffer: Buffer.from(arrayBuffer) };
-        
+
       case "s3":
         // For S3, use AWS SDK to get the file
         // This would need to be implemented based on your S3 setup
@@ -528,7 +490,7 @@ export async function getFileFromProvider(
         }
         const s3ArrayBuffer = await s3Response.arrayBuffer();
         return { success: true, buffer: Buffer.from(s3ArrayBuffer) };
-        
+
       default:
         return { success: false, error: "Unknown storage provider" };
     }

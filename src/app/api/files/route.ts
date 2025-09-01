@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
         required: true,
         type: "string",
         // maxLength: MAX_LENGTHS.filename * 5, // Allow for directory paths
-        // pattern: /^[a-zA-Z0-9\-_.\/\\\s%]+$/, // Allow safe path characters including spaces and URL encoding
+        // pattern: /^[a-zA-Z0-9\-_.\/\\s%]+$/, // Allow safe path characters including spaces and URL encoding
       },
     });
 
@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
     }
+
 
     // SECURITY FIX: Define allowed directories based on actual implementation
     const projectRoot = process.cwd();

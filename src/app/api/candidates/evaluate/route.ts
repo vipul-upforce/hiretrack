@@ -80,24 +80,34 @@ export async function PUT(request: NextRequest) {
         ? String(candidate.jobId._id)
         : ""
     );
-    const organizationId = candidate.jobId &&
+    const organizationId =
+      candidate.jobId &&
       typeof candidate.jobId === "object" &&
       "organizationId" in candidate.jobId
-      ? String(candidate.jobId.organizationId)
-      : "";
+        ? String(candidate.jobId.organizationId)
+        : "";
 
     console.log("Looking for settings with organizationId:", organizationId);
 
     const settingsData = await Settings.findOne({
-      organizationId: organizationId
+      organizationId: organizationId,
     });
 
-    console.log("Raw settings data:", JSON.stringify({
-      found: !!settingsData,
-      hasAiProviders: !!settingsData?.aiProviders,
-      aiProvidersKeys: settingsData?.aiProviders ? Object.keys(settingsData.aiProviders) : [],
-      activeProvider: settingsData?.aiProviders?.activeProvider
-    }, null, 2));
+    console.log(
+      "Raw settings data:",
+      JSON.stringify(
+        {
+          found: !!settingsData,
+          hasAiProviders: !!settingsData?.aiProviders,
+          aiProvidersKeys: settingsData?.aiProviders
+            ? Object.keys(settingsData.aiProviders)
+            : [],
+          activeProvider: settingsData?.aiProviders?.activeProvider,
+        },
+        null,
+        2
+      )
+    );
 
     if (!settingsData) {
       return NextResponse.json(
@@ -148,14 +158,21 @@ export async function PUT(request: NextRequest) {
     const apiKey = aiProviders[activeProvider]?.api_key;
 
     // Debug logging
-    console.log("AI Providers from settings:", JSON.stringify({
-      activeProvider: aiProviders.activeProvider,
-      hasGeminiKey: !!aiProviders.gemini?.api_key,
-      hasOpenAIKey: !!aiProviders.openai?.api_key,
-      hasAnthropicKey: !!aiProviders.anthropic?.api_key,
-      hasPerplexityKey: !!aiProviders.perplexity?.api_key,
-      anthropicObject: aiProviders.anthropic
-    }, null, 2));
+    console.log(
+      "AI Providers from settings:",
+      JSON.stringify(
+        {
+          activeProvider: aiProviders.activeProvider,
+          hasGeminiKey: !!aiProviders.gemini?.api_key,
+          hasOpenAIKey: !!aiProviders.openai?.api_key,
+          hasAnthropicKey: !!aiProviders.anthropic?.api_key,
+          hasPerplexityKey: !!aiProviders.perplexity?.api_key,
+          anthropicObject: aiProviders.anthropic,
+        },
+        null,
+        2
+      )
+    );
 
     if (!apiKey) {
       return NextResponse.json(
@@ -164,6 +181,9 @@ export async function PUT(request: NextRequest) {
       );
     }
     let resumeUrl = candidate.resume.url;
+    if (!resumeUrl.startsWith("http")) {
+      resumeUrl = `${request.headers.get("origin")}${resumeUrl}`.trim();
+    }
     console.log("📌📌RESUME URL : ", resumeUrl);
     if (!resumeUrl) {
       return NextResponse.json(
@@ -185,6 +205,7 @@ export async function PUT(request: NextRequest) {
         resumeUrl = request.headers.get("origin") + resumeUrl;
       }
       const response = await fetch(resumeUrl.trim());
+      // console.log("🔥🔥🔥 Response: ", await response.json());
       if (!response.ok) {
         // console.log("Resumne FETCH",response);
         return NextResponse.json(
@@ -199,8 +220,8 @@ export async function PUT(request: NextRequest) {
 
     const jobDescription =
       candidate.jobId &&
-        typeof candidate.jobId === "object" &&
-        "description" in candidate.jobId
+      typeof candidate.jobId === "object" &&
+      "description" in candidate.jobId
         ? String(candidate.jobId.description)
         : "";
     const jobData = {
@@ -216,16 +237,23 @@ export async function PUT(request: NextRequest) {
           : [],
     };
     // Log what we're passing to the evaluation service
-    console.log("Passing to AIEvaluationService:", JSON.stringify({
-      hasAiProviders: !!aiProviders,
-      activeProvider: aiProviders.activeProvider,
-      geminiKeyLength: aiProviders.gemini?.api_key?.length
-    }, null, 2));
+    console.log(
+      "Passing to AIEvaluationService:",
+      JSON.stringify(
+        {
+          hasAiProviders: !!aiProviders,
+          activeProvider: aiProviders.activeProvider,
+          geminiKeyLength: aiProviders.gemini?.api_key?.length,
+        },
+        null,
+        2
+      )
+    );
 
     // Create settings object with decrypted aiProviders
     const settingsForEvaluation = {
       ...settingsData.toObject(),
-      aiProviders: aiProviders // Override with decrypted version
+      aiProviders: aiProviders, // Override with decrypted version
     };
 
     // Pass the settings with decrypted aiProviders

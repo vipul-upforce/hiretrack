@@ -8,7 +8,6 @@ import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
 import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
 import { Organization } from "@/lib/models/user";
 
-
 // Email queue to track pending emails
 const emailQueue = new Map<
   string,
@@ -104,7 +103,12 @@ async function createPendingEmailHistory(data: any, organizationId: string) {
 
         const hrHistory = await EmailHistory.create({
           organizationId: new mongoose.Types.ObjectId(organizationId),
-          sentBy: new mongoose.Types.ObjectId(sentBy),
+          sentBy:
+            typeof sentBy === "object" && sentBy._id
+              ? sentBy._id
+              : sentBy.id
+                ? sentBy.id
+                : new mongoose.Types.ObjectId(sentBy),
           sentByEmail: sentByEmail,
           sentByName: sentByName,
           recipientType: "user",
@@ -253,7 +257,7 @@ async function sendQueuedEmail(
     sentByName,
     candidateId,
     jobId,
-    dashboardLink
+    dashboardLink,
   } = data;
 
   const settings = await Settings.findOne({
@@ -271,10 +275,10 @@ async function sendQueuedEmail(
 
   const startDateString = startTime
     ? ((await getFormattedDate(req, new Date(startTime))) as string) +
-    " " +
-    settings.timeZone.offset +
-    " " +
-    settings.timeZone.name
+      " " +
+      settings.timeZone.offset +
+      " " +
+      settings.timeZone.name
     : "N/A";
   const startDate = startTime
     ? ((await getFormattedDate(req, new Date(startTime), true)) as Date)
@@ -294,8 +298,9 @@ async function sendQueuedEmail(
 
   console.log("START TIME: BEFORE: : ", startTime);
   console.log("DATE TO BE RECORDED in EMail: ", startDateString, endDateString);
-  const eventDescription: string = `<div><strong>Job Name:</strong> ${jobName || "N/A"
-    }<br>
+  const eventDescription: string = `<div><strong>Job Name:</strong> ${
+    jobName || "N/A"
+  }<br>
   <strong>Interviewer Name:</strong> ${interviewerName || "N/A"}<br>
   <strong>Candidate Name:</strong> ${candidateName || "N/A"}<br>
   <strong>Status:</strong> ${status || "N/A"}
@@ -339,7 +344,7 @@ async function sendQueuedEmail(
       outlookCalendarLink,
       candidateProfileLink: candidateDetailsPage,
       organizationName,
-      dashboardLink
+      dashboardLink,
     },
     organizationId
   );
@@ -517,14 +522,13 @@ export async function PUT(req: NextRequest) {
     };
     // console.log(latestRemark, "org---dhbd ds stap-comp-==--=--");
 
-
     const nextSteps =
       organization &&
-        organization.organizationId &&
-        isOrganization(organization.organizationId)
+      organization.organizationId &&
+      isOrganization(organization.organizationId)
         ? organization.organizationId.defaultLanes[
-        organization.organizationId.defaultLanes.indexOf(data.status) + 1
-        ] || "N/A"
+            organization.organizationId.defaultLanes.indexOf(data.status) + 1
+          ] || "N/A"
         : "N/A";
     // console.log(nextSteps, "nextSteps");
     const candidateDetails = `${req.headers.get("Origin")}/candidate/${data.candidateId}`;
@@ -543,7 +547,7 @@ export async function PUT(req: NextRequest) {
         rating: latestRemark?.rating || "N/A",
         completionDate: completionDate,
         recipientName: "",
-        nextStep: nextSteps
+        nextStep: nextSteps,
       },
       organizationId
     );
@@ -727,7 +731,7 @@ export async function POST(req: NextRequest) {
       sentByName: decryptedResponse?.user.name || "HireTrack System",
       candidateId: id,
       jobId: undefined,
-      dashboardLink
+      dashboardLink,
     };
 
     if (immediate) {

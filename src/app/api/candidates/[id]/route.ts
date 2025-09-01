@@ -606,7 +606,6 @@ export async function PUT(
     //   }
     // });
 
-
     if (!Candidate || !History) {
       return NextResponse.json(
         { error: "Database not connected" },
@@ -867,11 +866,7 @@ export async function PUT(
                 }
 
                 // New: Handle case where oldAssignment has time but newAssignment does not
-                if (
-                  oldAssignment?.time &&
-                  !newAssignment.time &&
-                  interviewer
-                ) {
+                if (oldAssignment?.time && !newAssignment.time && interviewer) {
                   await NotificationService.notifyMeetingCancelled({
                     organizationId: organizationId,
                     candidateId: updatedCandidate._id.toString(),
@@ -932,8 +927,6 @@ export async function PUT(
             }
           }
         }
-
-
 
         // Remarks notification
         // if (
@@ -1082,7 +1075,9 @@ export async function PUT(
                   "",
                 jobTitle: jobInfo?.title || "Unknown Job",
                 followupNote: newFollowUp.note || "",
-                followupDate: newFollowUp.date ? new Date(newFollowUp.date) : undefined,
+                followupDate: newFollowUp.date
+                  ? new Date(newFollowUp.date)
+                  : undefined,
                 triggerUserId: userData._id,
                 triggerUserName: userData.name,
               });
@@ -1109,7 +1104,13 @@ export async function PUT(
               });
             }
             // Case 3: Follow-up Removed
-            else if (oldFollowUp && oldFollowUp !== undefined && newFollowUp && newFollowUp.note === null && newFollowUp.date === null) {
+            else if (
+              oldFollowUp &&
+              oldFollowUp !== undefined &&
+              newFollowUp &&
+              newFollowUp.note === null &&
+              newFollowUp.date === null
+            ) {
               await NotificationService.notifyFollowupRemoved({
                 organizationId: organizationId,
                 candidateId: existingCandidate._id.toString(),
@@ -1125,7 +1126,10 @@ export async function PUT(
             }
           }
         } catch (notificationError) {
-          console.error("Failed to send follow-up notifications:", notificationError);
+          console.error(
+            "Failed to send follow-up notifications:",
+            notificationError
+          );
           // Continue execution even if notification fails
         }
         // General candidate details update notification
@@ -1149,7 +1153,6 @@ export async function PUT(
               !update.title.includes("Updated tracking") &&
               !update.title.includes("Updated _id") &&
               !update.title.includes("Updated Status")
-
           );
 
           if (significantUpdates.length > 0) {
@@ -1226,10 +1229,10 @@ export async function GET(
     const projection: ProjectionType<ICandidate> =
       role === "interviewer"
         ? {
-          currentCTC: 0,
-          expectedCTC: 0,
-          customFields: 0,
-        }
+            currentCTC: 0,
+            expectedCTC: 0,
+            // customFields: 0,
+          }
         : {};
     const candidate = await Candidate.findById(id, projection)
       .populate([
