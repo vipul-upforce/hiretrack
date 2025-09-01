@@ -169,6 +169,8 @@ export default function JobProgressPage() {
   const [isFileOver, setIsFileOver] = useState(false);
   const [isCustomFieldsOpen, setIsCustomFieldsOpen] = useState(false);
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
+  const [isPromptConfirmOpen, setIsPromptConfirmOpen] = useState(false);
+  const [pendingPromptValue, setPendingPromptValue] = useState(false);
 
   const {
     handleAddLane,
@@ -581,17 +583,9 @@ export default function JobProgressPage() {
                 id="promptForStatusChangeReason"
                 checked={job.promptForStatusChangeReason}
                 disabled={isLoading}
-                onCheckedChange={async (checked: boolean) => {
-                  setPromptForStatusChangeReason(checked);
-                  try {
-                    await updateJob({
-                      ...job,
-                      promptForStatusChangeReason: checked,
-                    });
-                  } catch (error) {
-                    console.error("Failed to update job:", error);
-                    setPromptForStatusChangeReason(!checked);
-                  }
+                onCheckedChange={(checked: boolean) => {
+                  setPendingPromptValue(checked);
+                  setIsPromptConfirmOpen(true);
                 }}
               />
               <label
@@ -744,6 +738,28 @@ export default function JobProgressPage() {
         onClose={() => setIsMigrationDialogOpen(false)}
         onMigrate={handleMigrateAndDeleteLane}
         laneToDelete={laneToDelete}
+      />
+
+      <ConfirmationDialog
+        isOpen={isPromptConfirmOpen}
+        setIsOpen={setIsPromptConfirmOpen}
+        title="Confirm Setting Change"
+        message={`Are you sure you want to ${pendingPromptValue ? 'enable' : 'disable'} prompting for status change reasons?`}
+        onConfirm={async () => {
+          setPromptForStatusChangeReason(pendingPromptValue);
+          try {
+            await updateJob({
+              ...job,
+              promptForStatusChangeReason: pendingPromptValue,
+            });
+          } catch (error) {
+            console.error("Failed to update job:", error);
+            setPromptForStatusChangeReason(!pendingPromptValue);
+          }
+          setIsPromptConfirmOpen(false);
+        }}
+        onCancel={() => setIsPromptConfirmOpen(false)}
+        buttonName="Confirm"
       />
 
       {/* Custom Fields Dialog */}
