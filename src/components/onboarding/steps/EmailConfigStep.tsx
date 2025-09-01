@@ -29,7 +29,7 @@ const EmailConfigStep: React.FC = () => {
   };
 
   const handleConfigureEmail = () => {
-    window.open('/dashboard/settings', '_blank');
+    window.open('/dashboard/settings?config=mail', '_blank');
   };
 
   const emailProviders = [

@@ -29,7 +29,7 @@ const AIProviderStep: React.FC = () => {
   };
 
   const handleConfigureAI = () => {
-    window.open('/dashboard/settings', '_blank');
+    window.open('/dashboard/settings?config=ai-providers', '_blank');
   };
 
   const aiProviders = [

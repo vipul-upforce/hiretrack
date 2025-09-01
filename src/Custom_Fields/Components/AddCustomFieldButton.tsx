@@ -2,6 +2,7 @@
 
 import CustomFieldDialog from "./Common/CustomFieldDialog";
 import React, { useContext, useEffect, useState, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import Stepper from "./Stepper";
 import { CustomFieldsContext } from "../Context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,11 +11,20 @@ import { FolderOpen } from "lucide-react";
 function AddCustomFields() {
   const { setStepName } = useContext(CustomFieldsContext);
   const [isOpen, setIsOpen] = useState(false);
+  const searchParams = useSearchParams();
+
   const onClick = () => {
     setTimeout(() => {
       setIsOpen(true);
     }, 200);
   };
+
+  useEffect(() => {
+    const config = searchParams.get("config");
+    if (config === "cf") {
+      setIsOpen(true);
+    }
+  }, [searchParams]);
 
   const handleClose = useCallback(() => {
     setStepName("FormList");
