@@ -1,6 +1,6 @@
 "use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import SettingDialog from "./components/setting-dialog";
 import AddCustomFieldButton from "@/Custom_Fields/Components/AddCustomFieldButton";
@@ -40,6 +40,14 @@ import {
 function Settings() {
   const [openDialog, setOpenDialog] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const config = searchParams.get("config");
+    if (config) {
+      setOpenDialog(config);
+    }
+  }, [searchParams]);
 
   // Helper function to check if setting opens in new page
   const opensInNewPage = (key: string) => {
@@ -170,136 +178,138 @@ function Settings() {
       </div>
 
       <div className="flex-1 min-h-0 px-4 pb-4 mt-4 space-y-8 overflow-y-auto">
+        {settingGroups.map((group) => (
+          <div key={group.title} className="space-y-4">
+            {/* Group Header */}
+            <div className="flex items-center gap-3 pb-2 border-b border-gray-200 dark:border-gray-700">
+              <div className="p-2 rounded-lg bg-gray-100 dark:bg-black">
+                <group.icon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                  {group.title}
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {group.description}
+                </p>
+              </div>
+            </div>
 
-      {settingGroups.map((group) => (
-        <div key={group.title} className="space-y-4">
-          {/* Group Header */}
-          <div className="flex items-center gap-3 pb-2 border-b border-gray-200 dark:border-gray-700">
+            {/* Settings Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {group.settings.map((option) => (
+                <div key={option.key}>
+                  <Card
+                    className="h-full transition-all duration-200 cursor-pointer border border-gray-200 dark:border-gray-800 hover:shadow-lg bg-white dark:bg-black card-hover-border"
+                    onClick={() => {
+                      if (option.key === "users") {
+                        router.push("/dashboard/users");
+                      } else if (option.key === "portal") {
+                        router.push("/dashboard/settings/portal");
+                      } else if (option.key === "templates") {
+                        router.push("/dashboard/settings/templates");
+                      } else if (option.key === "logs") {
+                        router.push("/dashboard/settings/logs");
+                      } else {
+                        setOpenDialog(option.key);
+                      }
+                    }}
+                  >
+                    <CardHeader className="pb-3 relative">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700">
+                          <option.icon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                        </div>
+                        <div className="flex-1">
+                          <CardTitle className="text-base font-medium text-gray-900 dark:text-gray-100">
+                            {option.title}
+                          </CardTitle>
+                        </div>
+                        {opensInNewPage(option.key) && (
+                          <div className="absolute top-4 right-4">
+                            <ExternalLink className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500 opacity-60" />
+                          </div>
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                        {option.description}
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  {/* Dialog Component */}
+                  {openDialog === option.key &&
+                    option.key !== "portal" &&
+                    option.key !== "templates" &&
+                    option.key !== "logs" && (
+                      <SettingDialog
+                        isOpen={openDialog === option.key}
+                        onClose={() => setOpenDialog(null)}
+                        setting={option}
+                      />
+                    )}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+
+        {/* Custom Fields Section */}
+        <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-3 pb-2">
             <div className="p-2 rounded-lg bg-gray-100 dark:bg-black">
-              <group.icon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+              <Palette className="h-5 w-5 text-gray-600 dark:text-gray-400" />
             </div>
             <div>
               <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                {group.title}
+                Custom Fields
               </h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {group.description}
+                Create and manage custom form fields for candidates
               </p>
             </div>
           </div>
-
-          {/* Settings Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {group.settings.map((option) => (
-              <div key={option.key}>
-                <Card
-                  className="h-full transition-all duration-200 cursor-pointer border border-gray-200 dark:border-gray-800 hover:shadow-lg bg-white dark:bg-black card-hover-border"
-                  onClick={() => {
-                    if (option.key === "users") {
-                      router.push("/dashboard/users");
-                    } else if (option.key === "portal") {
-                      router.push("/dashboard/settings/portal");
-                    } else if (option.key === "templates") {
-                      router.push("/dashboard/settings/templates");
-                    } else if (option.key === "logs") {
-                      router.push("/dashboard/settings/logs");
-                    } else {
-                      setOpenDialog(option.key);
-                    }
-                  }}
-                >
-                  <CardHeader className="pb-3 relative">
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700">
-                        <option.icon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                      </div>
-                      <div className="flex-1">
-                        <CardTitle className="text-base font-medium text-gray-900 dark:text-gray-100">
-                          {option.title}
-                        </CardTitle>
-                      </div>
-                      {opensInNewPage(option.key) && (
-                        <div className="absolute top-4 right-4">
-                          <ExternalLink className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500 opacity-60" />
-                        </div>
-                      )}
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                      {option.description}
-                    </p>
-                  </CardContent>
-                </Card>
-
-                {/* Dialog Component */}
-                {openDialog === option.key && option.key !== "portal" && option.key !== "templates" && option.key !== "logs" && (
-                  <SettingDialog
-                    isOpen={openDialog === option.key}
-                    onClose={() => setOpenDialog(null)}
-                    setting={option}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-
-      {/* Custom Fields Section */}
-      <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <div className="flex items-center gap-3 pb-2">
-          <div className="p-2 rounded-lg bg-gray-100 dark:bg-black">
-            <Palette className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-          </div>
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-              Custom Fields
-            </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Create and manage custom form fields for candidates
-            </p>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <AddCustomFieldButton />
-          <Card
-            className="h-full transition-all duration-200 cursor-pointer border border-gray-200 dark:border-gray-800 hover:shadow-lg bg-white dark:bg-black card-hover-border"
-            onClick={() => setOpenDialog("tags")}
-          >
-            <CardHeader className="pb-3">
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700">
-                  <Tags className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+            <AddCustomFieldButton />
+            <Card
+              className="h-full transition-all duration-200 cursor-pointer border border-gray-200 dark:border-gray-800 hover:shadow-lg bg-white dark:bg-black card-hover-border"
+              onClick={() => setOpenDialog("tags")}
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700">
+                    <Tags className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                  </div>
+                  <div className="flex-1">
+                    <CardTitle className="text-base font-medium text-gray-900 dark:text-gray-100">
+                      Candidate Tags
+                    </CardTitle>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <CardTitle className="text-base font-medium text-gray-900 dark:text-gray-100">
-                    Candidate Tags
-                  </CardTitle>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                Organize candidates with custom tags
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                  Organize candidates with custom tags
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
-        {/* Dialog Component for Tags */}
-        {openDialog === "tags" && (
-          <SettingDialog
-            isOpen={openDialog === "tags"}
-            onClose={() => setOpenDialog(null)}
-            setting={{
-              title: "Candidate Tags",
-              key: "tags",
-              description: "Organize candidates with custom tags",
-            }}
-          />
-        )}
-      </div>
+          {/* Dialog Component for Tags */}
+          {openDialog === "tags" && (
+            <SettingDialog
+              isOpen={openDialog === "tags"}
+              onClose={() => setOpenDialog(null)}
+              setting={{
+                title: "Candidate Tags",
+                key: "tags",
+                description: "Organize candidates with custom tags",
+              }}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

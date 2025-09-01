@@ -131,7 +131,7 @@ const ManageTagsDialog = ({
           <DialogTitle>Manage Tags</DialogTitle>
         </DialogHeader>
         {isLoading ? (
-          <div className="flex justify-center">
+          <div className="flex justify-center h-4 py-10 pb-16">
             <LoadingSpinner w={4} />
           </div>
         ) : error || updateError ? (
@@ -189,7 +189,7 @@ const ManageTagsDialog = ({
                           setConfirmDeleteDialogOpen(true);
                         }}
                         className="rounded-full  p-0 w-6 h-6"
-                      // className="bg-white text-black"
+                        // className="bg-white text-black"
                       >
                         <X />
                       </Button>
