@@ -2,6 +2,7 @@
 
 import { CandidateDetailsDialog } from "@/app/dashboard/jobs/[id]/components/Dialogs/candidate-details-dialog";
 import { toast } from "@/hooks/use-toast";
+import useRoles from "@/hooks/useRoles";
 import { Candidate } from "@/types/candidate";
 import { redirect, useParams, usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -13,6 +14,7 @@ export default function CandidateDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const pathname = usePathname();
+  const role = useRoles();
 
   useEffect(() => {
     const id = Array.isArray(params?.id) ? params.id[0] : params?.id;
@@ -29,6 +31,10 @@ export default function CandidateDetailsPage() {
         if (res.ok) {
           const data = await res.json();
           setCandidate(data);
+          const jobId = data.jobId._id;
+          if (role === "admin" || role === "hr") {
+            router.push(`/dashboard/jobs/${jobId}?candidateId=${id}`);
+          }
         } else {
           throw new Error(res.statusText || "Candidate fetch failed");
         }
