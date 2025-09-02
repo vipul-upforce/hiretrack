@@ -6,7 +6,7 @@ import { OneOfMulOrganization } from "@/components/auth/OrganizationDialog";
 import { IUser } from "@/lib/models/user";
 import { IUCandidateAccount } from "@/lib/models/candidateAccount";
 import { setSecureAuthTokens } from "@/lib/secureTokens";
-import { loginRateLimiter } from "@/lib/rateLimiter";
+import { emailLoginRateLimiter } from "@/lib/rateLimiter";
 import { signToken } from "@/app/actions/auth";
 import { UserWithoutCF } from "@/types/login";
 
@@ -527,8 +527,8 @@ const returnTokenBasedResponse = async (obj: any) => {
   return resp;
 };
 
-// Export with rate limiting
+// Export with email-based rate limiting
 export async function POST(req: Request) {
-  // SECURITY FIX: Apply rate limiting to prevent brute force attacks
-  return loginRateLimiter(req as NextRequest, handleLogin);
+  // SECURITY FIX: Apply email-based rate limiting to prevent brute force attacks
+  return emailLoginRateLimiter(req as NextRequest, handleLogin);
 }

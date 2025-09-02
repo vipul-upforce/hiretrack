@@ -7,7 +7,6 @@ import { auth } from "@/lib/auth";
 export async function POST(req: NextRequest) {
   await connectToDatabase();
   const user = await auth(req);
-  console.log("USER: ", user);
   if (!user) {
     return NextResponse.json({ error: "Not Authorized" }, { status: 401 });
   }

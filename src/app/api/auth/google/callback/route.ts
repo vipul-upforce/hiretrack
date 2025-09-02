@@ -1,16 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { Settings } from "@/lib/mongodb";
-import { createOAuth2Client, getRedirectUri } from "@/lib/google-calendar/config";
+import {
+  createOAuth2Client,
+  getRedirectUri,
+} from "@/lib/google-calendar/config";
 import { encryptText, decryptText } from "@/lib/encryption";
 import { google } from "googleapis";
 
 export async function GET(req: NextRequest) {
   try {
     await connectToDatabase();
-    
+
     // Check if Settings model is available
     if (!Settings) {
-      return new NextResponse(`
+      return new NextResponse(
+        `
         <html>
           <body>
             <script>
@@ -19,11 +23,13 @@ export async function GET(req: NextRequest) {
             </script>
           </body>
         </html>
-      `, {
-        headers: { "Content-Type": "text/html" },
-      });
+      `,
+        {
+          headers: { "Content-Type": "text/html" },
+        }
+      );
     }
-    
+
     const searchParams = req.nextUrl.searchParams;
     const code = searchParams.get("code");
     const state = searchParams.get("state");
@@ -31,7 +37,8 @@ export async function GET(req: NextRequest) {
 
     // Handle user denial
     if (error) {
-      return new NextResponse(`
+      return new NextResponse(
+        `
         <html>
           <body>
             <script>
@@ -40,9 +47,11 @@ export async function GET(req: NextRequest) {
             </script>
           </body>
         </html>
-      `, {
-        headers: { "Content-Type": "text/html" },
-      });
+      `,
+        {
+          headers: { "Content-Type": "text/html" },
+        }
+      );
     }
 
     if (!code || !state) {
@@ -55,9 +64,10 @@ export async function GET(req: NextRequest) {
     // Decode and verify state
     let stateData;
     try {
-      stateData = JSON.parse(Buffer.from(state, 'base64').toString());
+      stateData = JSON.parse(Buffer.from(state, "base64").toString());
     } catch (e) {
-      return new NextResponse(`
+      return new NextResponse(
+        `
         <html>
           <body>
             <script>
@@ -66,16 +76,19 @@ export async function GET(req: NextRequest) {
             </script>
           </body>
         </html>
-      `, {
-        headers: { "Content-Type": "text/html" },
-      });
+      `,
+        {
+          headers: { "Content-Type": "text/html" },
+        }
+      );
     }
 
     const { organizationId, timestamp } = stateData;
 
     // Verify state is not too old (10 minutes max)
     if (!timestamp || Date.now() - timestamp > 10 * 60 * 1000) {
-      return new NextResponse(`
+      return new NextResponse(
+        `
         <html>
           <body>
             <script>
@@ -84,15 +97,21 @@ export async function GET(req: NextRequest) {
             </script>
           </body>
         </html>
-      `, {
-        headers: { "Content-Type": "text/html" },
-      });
+      `,
+        {
+          headers: { "Content-Type": "text/html" },
+        }
+      );
     }
 
     // Get settings
     const settings = await Settings.findOne({ organizationId });
-    if (!settings?.googleCalendar?.clientId || !settings?.googleCalendar?.clientSecret) {
-      return new NextResponse(`
+    if (
+      !settings?.googleCalendar?.clientId ||
+      !settings?.googleCalendar?.clientSecret
+    ) {
+      return new NextResponse(
+        `
         <html>
           <body>
             <script>
@@ -101,14 +120,16 @@ export async function GET(req: NextRequest) {
             </script>
           </body>
         </html>
-      `, {
-        headers: { "Content-Type": "text/html" },
-      });
+      `,
+        {
+          headers: { "Content-Type": "text/html" },
+        }
+      );
     }
 
     // Decrypt client secret
     const clientSecret = decryptText(settings.googleCalendar.clientSecret);
-    
+
     // Create OAuth2 client
     const redirectUri = getRedirectUri(req);
     const oauth2Client = createOAuth2Client({
@@ -118,19 +139,22 @@ export async function GET(req: NextRequest) {
     });
 
     // Exchange code for tokens
-    console.log('Exchanging code for tokens...');
+    console.log("Exchanging code for tokens...");
     const { tokens } = await oauth2Client.getToken(code);
-    console.log('Received tokens:', { 
-      access_token: tokens.access_token ? 'present' : 'missing',
-      refresh_token: tokens.refresh_token ? 'present' : 'missing',
-      scope: tokens.scope,
-      expiry_date: tokens.expiry_date
-    });
+    // console.log('Received tokens:', {
+    //   access_token: tokens.access_token ? 'present' : 'missing',
+    //   refresh_token: tokens.refresh_token ? 'present' : 'missing',
+    //   scope: tokens.scope,
+    //   expiry_date: tokens.expiry_date
+    // });
 
     // Check if we have a refresh token
     if (!tokens.refresh_token) {
-      console.error('No refresh token received! This usually means the user was already connected.');
-      return new NextResponse(`
+      console.error(
+        "No refresh token received! This usually means the user was already connected."
+      );
+      return new NextResponse(
+        `
         <html>
           <body>
             <script>
@@ -142,29 +166,36 @@ export async function GET(req: NextRequest) {
             </script>
           </body>
         </html>
-      `, {
-        headers: { "Content-Type": "text/html" },
-      });
+      `,
+        {
+          headers: { "Content-Type": "text/html" },
+        }
+      );
     }
 
     oauth2Client.setCredentials(tokens);
 
     // Validate that we have the required scopes
     const requiredScopes = [
-      'https://www.googleapis.com/auth/calendar', 
-      'https://www.googleapis.com/auth/calendar.events',
-      'https://www.googleapis.com/auth/userinfo.email'
+      "https://www.googleapis.com/auth/calendar",
+      "https://www.googleapis.com/auth/calendar.events",
+      "https://www.googleapis.com/auth/userinfo.email",
     ];
-    const grantedScopes = tokens.scope?.split(' ') || [];
-    console.log('Required scopes:', requiredScopes);
-    console.log('Granted scopes:', grantedScopes);
-    
-    const hasCalendarScope = requiredScopes.slice(0, 2).some(scope => grantedScopes.includes(scope));
-    const hasEmailScope = grantedScopes.includes('https://www.googleapis.com/auth/userinfo.email');
-    
+    const grantedScopes = tokens.scope?.split(" ") || [];
+    // console.log("Required scopes:", requiredScopes);
+    // console.log("Granted scopes:", grantedScopes);
+
+    const hasCalendarScope = requiredScopes
+      .slice(0, 2)
+      .some((scope) => grantedScopes.includes(scope));
+    const hasEmailScope = grantedScopes.includes(
+      "https://www.googleapis.com/auth/userinfo.email"
+    );
+
     if (!hasCalendarScope) {
-      console.error('Missing calendar scopes!');
-      return new NextResponse(`
+      console.error("Missing calendar scopes!");
+      return new NextResponse(
+        `
         <html>
           <body>
             <script>
@@ -173,14 +204,17 @@ export async function GET(req: NextRequest) {
             </script>
           </body>
         </html>
-      `, {
-        headers: { "Content-Type": "text/html" },
-      });
+      `,
+        {
+          headers: { "Content-Type": "text/html" },
+        }
+      );
     }
-    
+
     if (!hasEmailScope) {
-      console.error('Missing email scope!');
-      return new NextResponse(`
+      console.error("Missing email scope!");
+      return new NextResponse(
+        `
         <html>
           <body>
             <script>
@@ -189,24 +223,28 @@ export async function GET(req: NextRequest) {
             </script>
           </body>
         </html>
-      `, {
-        headers: { "Content-Type": "text/html" },
-      });
+      `,
+        {
+          headers: { "Content-Type": "text/html" },
+        }
+      );
     }
 
     // Get user email
-    console.log('Getting user info...');
+    console.log("Getting user info...");
     const oauth2 = google.oauth2({
       auth: oauth2Client,
       version: "v2",
     });
     const userInfo = await oauth2.userinfo.get();
     const userEmail = userInfo.data.email || "";
-    console.log('User email:', userEmail);
+    // console.log("User email:", userEmail);
 
     // Encrypt and save tokens
     const encryptedAccessToken = encryptText(tokens.access_token || "");
-    const encryptedRefreshToken = tokens.refresh_token ? encryptText(tokens.refresh_token) : "";
+    const encryptedRefreshToken = tokens.refresh_token
+      ? encryptText(tokens.refresh_token)
+      : "";
 
     await Settings.findOneAndUpdate(
       { organizationId },
@@ -222,7 +260,8 @@ export async function GET(req: NextRequest) {
     );
 
     // Return success HTML that communicates with parent window
-    return new NextResponse(`
+    return new NextResponse(
+      `
       <html>
         <head>
           <title>Google Calendar Connected</title>
@@ -270,13 +309,17 @@ export async function GET(req: NextRequest) {
           </script>
         </body>
       </html>
-    `, {
-      headers: { "Content-Type": "text/html" },
-    });
+    `,
+      {
+        headers: { "Content-Type": "text/html" },
+      }
+    );
   } catch (error) {
     console.error("Google Calendar callback error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Connection failed";
-    return new NextResponse(`
+    const errorMessage =
+      error instanceof Error ? error.message : "Connection failed";
+    return new NextResponse(
+      `
       <html>
         <body>
           <script>
@@ -288,8 +331,10 @@ export async function GET(req: NextRequest) {
           </script>
         </body>
       </html>
-    `, {
-      headers: { "Content-Type": "text/html" },
-    });
+    `,
+      {
+        headers: { "Content-Type": "text/html" },
+      }
+    );
   }
 }

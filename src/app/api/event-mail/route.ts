@@ -576,8 +576,6 @@ export async function PUT(req: NextRequest) {
       .select("email")
       .lean();
 
-    console.log("%%EMAILS: ", users);
-
     const systemUser = await User.findOneAndUpdate(
       { email: fromEmail, organizationId },
       {
@@ -707,8 +705,6 @@ export async function POST(req: NextRequest) {
       settings.mailConfig.brevo_from ||
       settings.mailConfig.smtp_from ||
       "system@hiretrack.com";
-
-    console.log("%%EMAILS: ", users);
 
     const emailList = users.map((user) => user.email);
     const emailKey = id;

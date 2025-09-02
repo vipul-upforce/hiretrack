@@ -212,12 +212,12 @@ export function EditCandidateDialog({
             file:
               | File
               | {
-                url: string;
-                id: string;
-                name: string;
-                type: string;
-                size: number;
-              }
+                  url: string;
+                  id: string;
+                  name: string;
+                  type: string;
+                  size: number;
+                }
           ) => {
             if (file instanceof File) {
               const base64 = await convertFileToBase64(file);
@@ -257,18 +257,18 @@ export function EditCandidateDialog({
 
         resume: resumeBase64
           ? {
-            id: values?.resume?.id || uuidv4(),
-            name:
-              values.resume instanceof File
-                ? values.resume.name
-                : values?.resume?.name || "",
-            url: resumeBase64,
-            type: "pdf",
-            size:
-              values.resume instanceof File
-                ? values.resume.size
-                : values?.resume?.size || 0,
-          }
+              id: values?.resume?.id || uuidv4(),
+              name:
+                values.resume instanceof File
+                  ? values.resume.name
+                  : values?.resume?.name || "",
+              url: resumeBase64,
+              type: "pdf",
+              size:
+                values.resume instanceof File
+                  ? values.resume.size
+                  : values?.resume?.size || 0,
+            }
           : undefined,
         email: values.email, // Added email field
         currentCTC: Number(parseFloat(String(values.currentCTC)).toFixed(2)),
@@ -319,7 +319,9 @@ export function EditCandidateDialog({
       const newAssignment = result?.assignment?.interviewerId;
       debugger;
       const prevId =
-        typeof prevAssignment === "object" ? prevAssignment._id : prevAssignment;
+        typeof prevAssignment === "object"
+          ? prevAssignment._id
+          : prevAssignment;
       const newId =
         typeof newAssignment === "object" ? newAssignment._id : newAssignment;
 
@@ -347,11 +349,13 @@ export function EditCandidateDialog({
 
       let title;
       if (!previousInterviewer || previousInterviewer === "") {
-        title = `Assigned to ${nextInterviewer} : Assigned by ${user ? user.name : "No one"
-          }`;
+        title = `Assigned to ${nextInterviewer} : Assigned by ${
+          user ? user.name : "No one"
+        }`;
       } else {
-        title = `${previousInterviewer} → ${nextInterviewer} : Assigned by ${user ? user.name : "No one"
-          }`;
+        title = `${previousInterviewer} → ${nextInterviewer} : Assigned by ${
+          user ? user.name : "No one"
+        }`;
       }
 
       title = null;
@@ -451,11 +455,11 @@ export function EditCandidateDialog({
     assignment:
       candidate.assignment && Object.keys(candidate.assignment).length > 1
         ? {
-          assignment: candidate.assignment,
-          interviewerId,
-          time: candidate.assignment.time,
-          assignedAt: candidate.assignment.assignedAt,
-        }
+            assignment: candidate.assignment,
+            interviewerId,
+            time: candidate.assignment.time,
+            assignedAt: candidate.assignment.assignedAt,
+          }
         : null,
     customFields: getDefaultValues(candidate.customFields || {}),
   };
@@ -467,8 +471,8 @@ export function EditCandidateDialog({
     };
 
     checkViewportSize();
-    window.addEventListener('resize', checkViewportSize);
-    return () => window.removeEventListener('resize', checkViewportSize);
+    window.addEventListener("resize", checkViewportSize);
+    return () => window.removeEventListener("resize", checkViewportSize);
   }, []);
 
   useEffect(() => {
@@ -489,27 +493,30 @@ export function EditCandidateDialog({
     >
       <DialogContent
         className={
-          (!isLargeViewport || isMaximized)
+          !isLargeViewport || isMaximized
             ? "!max-w-none !w-screen !h-screen !min-h-screen !max-h-screen !left-0 !top-0 !translate-x-0 !translate-y-0 !min-w-0 !inset-0 !m-0 !border-0 !rounded-none overflow-hidden flex flex-col"
-            : `sm:max-w-[80vw] ${candidate.resume ? "xl:max-w-[65vw]" : "xl:max-w-[50vw]"
-            } h-[90vh] flex flex-col justify-between overflow-hidden`
+            : `sm:max-w-[80vw] ${
+                candidate.resume ? "xl:max-w-[65vw]" : "xl:max-w-[50vw]"
+              } h-[90vh] flex flex-col justify-between overflow-hidden`
         }
         style={
-          (!isLargeViewport || isMaximized) ? {
-            position: 'fixed' as const,
-            inset: 0,
-            width: '100vw',
-            height: '100vh',
-            minHeight: '100vh',
-            maxHeight: '100vh',
-            maxWidth: 'none',
-            transform: 'none',
-            left: 0,
-            top: 0,
-            margin: 0,
-            border: 0,
-            borderRadius: 0,
-          } : {}
+          !isLargeViewport || isMaximized
+            ? {
+                position: "fixed" as const,
+                inset: 0,
+                width: "100vw",
+                height: "100vh",
+                minHeight: "100vh",
+                maxHeight: "100vh",
+                maxWidth: "none",
+                transform: "none",
+                left: 0,
+                top: 0,
+                margin: 0,
+                border: 0,
+                borderRadius: 0,
+              }
+            : {}
         }
       >
         {/* Maximize/Minimize Button - Always visible */}
@@ -517,12 +524,16 @@ export function EditCandidateDialog({
           variant="ghost"
           size="icon"
           className="absolute z-[100] h-7 w-7 text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md"
-          style={{ top: 'calc(1rem - 5px)', right: 'calc(3.5rem - 20px)' }}
+          style={{ top: "calc(1rem - 5px)", right: "calc(3.5rem - 20px)" }}
           onClick={() => setIsMaximized(!isMaximized)}
           title={isMaximized ? "Restore" : "Maximize"}
           type="button"
         >
-          {isMaximized ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+          {isMaximized ? (
+            <Minimize className="h-4 w-4" />
+          ) : (
+            <Maximize className="h-4 w-4" />
+          )}
         </Button>
         <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle>Edit Candidate</DialogTitle>
@@ -557,7 +568,7 @@ export function EditCandidateDialog({
                     );
                   }}
                 />
-                <div className="gap-3 flex">
+                <div className="gap-3 flex bottom-0">
                   <Button
                     type="button"
                     variant="outline"

@@ -41,8 +41,6 @@ export async function GET(req: NextRequest) {
     //   );
     // }
 
-    console.log("ORGIDDATA: ", organizationId);
-
     const settings = await Settings.findOne({
       // organizationId: userData.organizationId,
       organizationId: organizationId,
@@ -98,10 +96,17 @@ export async function PUT(req: NextRequest) {
 
     // Check email configuration before enabling 2FA
     const settings = await Settings.findOne({ organizationId });
-    
-    if (enable2FA && (!settings?.mailConfig?.mailProvider || settings.mailConfig.mailProvider === "")) {
+
+    if (
+      enable2FA &&
+      (!settings?.mailConfig?.mailProvider ||
+        settings.mailConfig.mailProvider === "")
+    ) {
       return NextResponse.json(
-        { error: "Email configuration with valid provider is required to enable 2FA" },
+        {
+          error:
+            "Email configuration with valid provider is required to enable 2FA",
+        },
         { status: 400 }
       );
     }

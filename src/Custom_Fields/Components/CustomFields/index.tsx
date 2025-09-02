@@ -140,6 +140,8 @@ function CustomFields({
       const firstErrorField = Object.keys(errors.customFields)[0];
       const fieldElement = fieldRefs.current[firstErrorField];
 
+      // debugger;
+
       if (fieldElement && firstErrorNormalField === "customFields") {
         // Scroll to the field and focus it
         fieldElement.scrollIntoView({
@@ -147,15 +149,15 @@ function CustomFields({
           block: "nearest",
         });
 
-        // Focus the input element
-        const inputElement = fieldElement.querySelector(
-          "input, textarea, select"
-        ) as HTMLElement;
-        if (inputElement && typeof inputElement.focus === "function") {
-          setTimeout(() => {
-            inputElement.focus();
-          }, 100);
-        }
+        // // Focus the input element
+        // const inputElement = fieldElement.querySelector(
+        //   "input, textarea, select"
+        // ) as HTMLElement;
+        // if (inputElement && typeof inputElement.focus === "function") {
+        //   setTimeout(() => {
+        //     // inputElement.focus();
+        //   }, 100);
+        // }
       }
     }
   }, [submitCount]);

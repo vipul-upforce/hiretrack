@@ -221,7 +221,6 @@ export async function DELETE(req: NextRequest) {
         String(token?.value)
       );
       userData = decryptedResponse.user;
-      console.log(userData, "USERDATA  YYYisksd");
 
       if (decryptedResponse.success) {
         organizationId = userData.organizationId || "";
@@ -231,8 +230,6 @@ export async function DELETE(req: NextRequest) {
     } else {
       return NextResponse.json({ error: "No token provided" }, { status: 401 });
     }
-
-
 
     const { searchParams } = new URL(req.url);
     const eventId = searchParams.get("eventId");
@@ -245,7 +242,6 @@ export async function DELETE(req: NextRequest) {
         { status: 400 }
       );
     }
-    console.log();
     // Get Google Calendar settings
     if (!Settings) {
       return NextResponse.json(
@@ -336,15 +332,18 @@ export async function DELETE(req: NextRequest) {
         .populate("assignment.interviewerId")
         .lean(); // 👈 makes typing easier
 
-
       if (candidate) {
         const jobId =
-          candidate.jobId && typeof candidate.jobId !== "string" && "_id" in candidate.jobId
+          candidate.jobId &&
+          typeof candidate.jobId !== "string" &&
+          "_id" in candidate.jobId
             ? candidate.jobId._id.toString()
             : "";
 
         const jobTitle =
-          candidate.jobId && typeof candidate.jobId !== "string" && "title" in candidate.jobId
+          candidate.jobId &&
+          typeof candidate.jobId !== "string" &&
+          "title" in candidate.jobId
             ? candidate.jobId.title
             : "Unknown Job";
 
@@ -356,12 +355,12 @@ export async function DELETE(req: NextRequest) {
           jobTitle,
           interviewerId:
             candidate.assignment?.interviewerId &&
-              typeof candidate.assignment.interviewerId !== "string"
+            typeof candidate.assignment.interviewerId !== "string"
               ? candidate.assignment.interviewerId._id.toString()
               : "",
           interviewerName:
             candidate.assignment?.interviewerId &&
-              typeof candidate.assignment.interviewerId !== "string"
+            typeof candidate.assignment.interviewerId !== "string"
               ? candidate.assignment.interviewerId.name
               : "Interviewer",
           triggerUserId: userData?.id || "",

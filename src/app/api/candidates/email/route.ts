@@ -198,7 +198,6 @@ export async function POST(request: NextRequest) {
         candidateId: candidate._id,
       },
     });
-    console.log("CREATED HSITRY ENTRY: ", emailHistory);
     // Send email with context for automatic history tracking
     try {
       const emailResult = await sendMail(

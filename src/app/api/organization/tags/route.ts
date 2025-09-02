@@ -6,7 +6,6 @@ import { auth } from "@/lib/auth";
 export async function GET(req: NextRequest) {
   await connectToDatabase();
   const user = await auth(req);
-  console.log("USER: ", user);
   const { searchParams } = new URL(req.url);
   const orgId = searchParams?.get("organizationId");
 
@@ -47,7 +46,6 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   await connectToDatabase();
   const user = await auth(req);
-  console.log("USER: ", user);
   const { searchParams } = new URL(req.url);
   const orgId = searchParams?.get("organizationId");
   const tags = await req.json();

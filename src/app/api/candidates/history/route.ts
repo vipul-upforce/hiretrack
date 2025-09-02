@@ -229,10 +229,6 @@ export async function PATCH(request: NextRequest) {
       { path: "history.previousInterviewer", select: "_id name email" },
       { path: "history.note.userId", select: "_id name email" },
     ]);
-    // Debug logging
-    console.log("id: ", id);
-    console.log("user: ", user.id, user.name, user.role);
-    console.log("updatedHistory: ", pupulatedHistory);
     if (!updatedHistory) {
       return NextResponse.json(
         { error: "Remark not found or unauthorized" },
@@ -365,7 +361,6 @@ export async function PUT(request: NextRequest) {
     }
 
     const candidateId = new Types.ObjectId(data.candidateId);
-    console.log(candidateId, "candiateId");
     const candidateData = await Candidate.findById(candidateId)
       .populate([
         {
@@ -387,7 +382,6 @@ export async function PUT(request: NextRequest) {
       ])
       .lean();
     // const candidateDataJSON = candidateData?.toObject();
-    console.log(candidateData, "candidateData");
 
     const historyEntry = await History?.findOneAndUpdate(
       { jobId: data.jobId, candidateId: data.candidateId },
@@ -433,12 +427,15 @@ export async function PUT(request: NextRequest) {
           organizationId: organizationId,
           candidateId: data.candidateId,
           candidateName: candidateData.name,
-          jobId: typeof data.jobId === "string" && data.jobId !== "" ? data.jobId : data.jobId._id || null,
+          jobId:
+            typeof data.jobId === "string" && data.jobId !== ""
+              ? data.jobId
+              : data.jobId._id || null,
           jobTitle: data.jobId?.title || "Unknown Job",
           remarkText: data.newEntry.remark.description,
           triggerUserId: userData.id,
           triggerUserName: userData.name || "Unknown User",
-          roles: ['admin', 'hr', 'interviewer'], // Notify all roles
+          roles: ["admin", "hr", "interviewer"], // Notify all roles
         });
       } else {
         // Notify only admin and hr when isPrivate is true
@@ -446,17 +443,19 @@ export async function PUT(request: NextRequest) {
           organizationId: organizationId,
           candidateId: data.candidateId,
           candidateName: candidateData.name,
-          jobId: typeof data.jobId === "string" && data.jobId !== "" ? data.jobId : data.jobId._id || null,
+          jobId:
+            typeof data.jobId === "string" && data.jobId !== ""
+              ? data.jobId
+              : data.jobId._id || null,
           jobTitle: data.jobId?.title || "Unknown Job",
           remarkText: data.newEntry.remark.description,
           triggerUserId: userData.id,
           triggerUserName: userData.name || "Unknown User",
-          roles: ['admin', 'hr'], // Notify only admin and hr
+          roles: ["admin", "hr"], // Notify only admin and hr
         });
       }
     }
 
-    // console.log("🚒🚒🚒🚒 In HistoryUpdate: ", candidateData.remarks.length);
     const transformedHistory = (historyData.history || []).map(
       (historyItem: any) => {
         if (historyItem.checklistForm?.responses) {

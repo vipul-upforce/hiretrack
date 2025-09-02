@@ -218,7 +218,7 @@ export async function POST(
                 fieldType: response.fieldType || "text",
                 value: response.value,
                 files: response.files || [],
-                visibleInHistory: response.visibleInHistory || []
+                visibleInHistory: response.visibleInHistory || [],
               },
             ]
           )
@@ -230,7 +230,6 @@ export async function POST(
       previousInterviewer: null,
       assignmentBy: userId,
     };
-    console.log(historyEntry, "historyEntry ===-= =");
 
     // Add remark if provided
     if (remark && remark.description) {
@@ -273,16 +272,16 @@ export async function POST(
         organizationId: decoded.organizationId || "",
         candidateId: candidate._id.toString(),
         candidateName: candidate.name || "Unknown Candidate",
-        jobId:
-          jobInfo?._id?.toString() ||
-          candidate.jobId?.toString() ||
-          "",
+        jobId: jobInfo?._id?.toString() || candidate.jobId?.toString() || "",
         jobTitle: jobInfo?.title || "Unknown Job",
         triggerUserId: userId,
         triggerUserName: user?.name || "Unknown User",
       });
     } catch (notificationError) {
-      console.error("Failed to send checklist completion notification:", notificationError);
+      console.error(
+        "Failed to send checklist completion notification:",
+        notificationError
+      );
       // Continue execution even if notification fails
     }
 
@@ -300,10 +299,6 @@ export async function POST(
         { path: "history.note.userId", select: "_id name email" },
       ])
       .lean();
-    console.log(
-      "🚒🚒🚒🚒🚒GOING IN FOR THE BROADCAST.......",
-      candidateHistoryPopulated
-    );
     const candidateObj = candidate.toObject();
     broadcastCandidateUpdate({
       ...candidateObj,

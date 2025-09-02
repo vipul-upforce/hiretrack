@@ -26,17 +26,12 @@ export async function getMappedEmailTemplate(
 
   const template = emailTemplates[templateKey];
 
-  // console.log("🛴🛴🛴🛴template:  ",template, emailTemplates[0])
-
   // Fallback logic
   const useDefaultHtml = !template || !template.html?.trim();
   const useDefaultSubject = !template || !template.subject?.trim();
-  console.log("useDefault: ", useDefaultHtml, useDefaultSubject)
   const emailContent = useDefaultHtml
     ? loadTemplate(templateKey, variables)
     : MapTemplate(template.html, variables);
-
-  // console.log("⏭️⏭️⏭️ LOADED TEMPL: ",emailContent)
 
   // const emailSubject = useDefaultSubject
   //   ? defaultTemplates[templateKey]?.subject
@@ -45,11 +40,8 @@ export async function getMappedEmailTemplate(
   const rawSubject = useDefaultSubject
     ? defaultTemplates.find((template) => template.id === templateKey)?.subject
     : template.subject;
-  // console.log("rawSUBject: ",rawSubject, useDefaultSubject, defaultTemplates,templateKey, variables)
 
   const emailSubject = MapTemplate(rawSubject, variables);
-  // console.log("EMAILSUB: ",emailSubject)
-  // console.log("Final emailSubject:", emailSubject);
 
   // if (templateKey === "2fa-otp") {
   //   const emailContent = loadTemplate(templateKey, variables);

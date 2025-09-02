@@ -6,7 +6,6 @@ import { useSelector } from "react-redux";
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
   const { user } = useSelector((state: any) => state.auth || {});
-  console.log(user);
   const [uriOrgName, setOrgName] = useState<string>();
   const [isHydrated, setIsHydrated] = useState(false);
   const [portalSettings, setPortalSettings] = useState<{
@@ -51,10 +50,6 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
               'link[rel="icon"]'
             ) as HTMLLinkElement;
             if (favicon) {
-              console.log(
-                "Setting favicon from portal settings:",
-                data.portalFavicon.url
-              );
               favicon.href = data.portalFavicon.url;
             } else {
               // Create favicon link if it doesn't exist

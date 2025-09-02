@@ -504,10 +504,7 @@ export async function PUT(
           // Check specifically for status update
           if (key === "status") {
             try {
-              console.log(existingCandidate, "existingCandidate");
-
               const jobInfo = existingCandidate.jobId as any;
-              console.log(jobInfo, "job info--44888");
 
               // Notify rejection if status is "rejected"
               if (data.status === "rejected") {
@@ -540,7 +537,6 @@ export async function PUT(
                   triggerUserName: userData.name,
                 });
               }
-              console.log(jobInfo?.title, "job info--jobInfo?.title ");
             } catch (notificationError) {
               console.error(
                 "Failed to send candidate status notifications:",
@@ -797,8 +793,6 @@ export async function PUT(
         if ("assignment" in data) {
           const oldAssignment = existingCandidate.assignment;
           const newAssignment = data.assignment;
-          console.log(oldAssignment, "oldAssign ment");
-          console.log(newAssignment, "neww Assign ment");
 
           if (newAssignment) {
             // If assignment is new or interviewer changed
@@ -888,14 +882,8 @@ export async function PUT(
             const interviewer = await User?.findById(
               oldAssignment?.interviewerId
             ).select("_id name email");
-            console.log(interviewer, "Unsssogn inerview ---  opccp === ");
-            console.log(userData._id, "_id inerview ---  opccp === ");
-            console.log(userData.id, ".id inerview ---  opccp === ");
-            console.log(userData, "user data inerview ---  opccp === ");
 
             if (newAssignment === null && interviewer) {
-              console.log("gooo ");
-
               await NotificationService.notifyCandidateUnassigned({
                 organizationId: organizationId,
                 candidateId: updatedCandidate._id.toString(),
@@ -1054,9 +1042,6 @@ export async function PUT(
 
         const oldFollowUp = existingCandidate.followUp;
         const newFollowUp = data?.followUp;
-
-        console.log(oldFollowUp, "old followup");
-        console.log(newFollowUp, "new followup");
 
         try {
           const jobInfo = existingCandidate.jobId as any;

@@ -148,26 +148,26 @@ export async function POST(request: NextRequest) {
           // Handle assignment data
           ...(data.assignment && data.assignment.interviewerId !== "-1"
             ? {
-              assignment: {
-                interviewerId: data.assignment.interviewerId,
-                assignedAt: new Date(),
-                ...(data.assignment.time && {
-                  time: new Date(data.assignment.time),
-                }),
-              },
-            }
+                assignment: {
+                  interviewerId: data.assignment.interviewerId,
+                  assignedAt: new Date(),
+                  ...(data.assignment.time && {
+                    time: new Date(data.assignment.time),
+                  }),
+                },
+              }
             : null),
           // Handle file data
           ...(data.resume
             ? {
-              resume: {
-                id: data.resume.id,
-                name: data.resume.name,
-                url: data.resume.url,
-                type: data.resume.type,
-                size: data.resume.size,
-              },
-            }
+                resume: {
+                  id: data.resume.id,
+                  name: data.resume.name,
+                  url: data.resume.url,
+                  type: data.resume.type,
+                  size: data.resume.size,
+                },
+              }
             : null),
           // Handle attachments array
           attachments: data.attachments.map((attachment: Attachment) => ({
@@ -245,9 +245,6 @@ export async function POST(request: NextRequest) {
 
         // Get job information for notification
         const job = await Job?.findById(data.jobId);
-        console.log(Job, "Bobs fot Ttelee---  ");
-        console.log(data.jobId, "BobsId fot Ttelee---  ");
-        console.log(job, "BobsId fot Ttelee---  ");
 
         // Trigger notification for candidate application
         if (job) {
@@ -260,15 +257,15 @@ export async function POST(request: NextRequest) {
               triggerUserId: userData.id,
               triggerUserName: userData.name,
             });
-            console.log(userData.id, "Triggerrrr-iiiddd ========");
-            console.log(userData.name, "Triggerrrr-name---- ========");
-
             await NotificationService.notifyCandidateApplied({
               organizationId: organizationId,
               candidateId: candidate._id.toString(),
               candidateName: candidateData.name,
               candidateEmail: candidateData.email,
-              jobId: typeof data.jobId === "string" && data.jobId !== "" ? data.jobId : data.jobId._id.toString() || null,
+              jobId:
+                typeof data.jobId === "string" && data.jobId !== ""
+                  ? data.jobId
+                  : data.jobId._id.toString() || null,
               jobTitle: job.title || "Unknown Job",
               triggerUserId: userData.id,
               triggerUserName: userData.name,

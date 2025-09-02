@@ -1,6 +1,11 @@
 import connectToDatabase, { Job, Organization } from "@/lib/mongodb";
 import { NextRequest, NextResponse } from "next/server";
-import { validateQueryParams, VALIDATION_PATTERNS, MAX_LENGTHS, sanitizeString } from "@/lib/inputValidation";
+import {
+  validateQueryParams,
+  VALIDATION_PATTERNS,
+  MAX_LENGTHS,
+  sanitizeString,
+} from "@/lib/inputValidation";
 
 interface CustomField {
   label: string;
@@ -10,35 +15,39 @@ interface CustomField {
 export async function GET(request: NextRequest) {
   try {
     // SECURITY FIX: Validate query parameters for public endpoint
-    console.log("REQ INCOMING!!!! ")
+    console.log("REQ INCOMING!!!! ");
     const validation = validateQueryParams(request.nextUrl.searchParams, {
-      o: { 
-        type: 'string',
+      o: {
+        type: "string",
         maxLength: MAX_LENGTHS.name,
-        pattern: VALIDATION_PATTERNS.safeString
+        pattern: VALIDATION_PATTERNS.safeString,
       },
       title: {
-        type: 'string',
+        type: "string",
         maxLength: MAX_LENGTHS.title,
-        sanitize: true
+        sanitize: true,
       },
       limit: {
-        type: 'number',
+        type: "number",
         min: 1,
-        max: 50  // Reasonable limit for public job listings
-      }
+        max: 50, // Reasonable limit for public job listings
+      },
     });
-    
+
     if (!validation.isValid) {
       return NextResponse.json(
-        { error: 'Invalid query parameters', details: validation.errors },
+        { error: "Invalid query parameters", details: validation.errors },
         { status: 400 }
       );
     }
 
     await connectToDatabase();
-    const orgName = sanitizeString(request.nextUrl.searchParams?.get("o") || "");
-    const title = sanitizeString(request.nextUrl.searchParams?.get("title") || "");
+    const orgName = sanitizeString(
+      request.nextUrl.searchParams?.get("o") || ""
+    );
+    const title = sanitizeString(
+      request.nextUrl.searchParams?.get("title") || ""
+    );
 
     if (!Organization && !Job) {
       return NextResponse.json(
@@ -133,7 +142,6 @@ export async function GET(request: NextRequest) {
       ),
     }));
 
-    console.log("filteredJobs", filteredJobs);
     return NextResponse.json(filteredJobs);
   } catch (error: unknown) {
     if (error instanceof Error) {

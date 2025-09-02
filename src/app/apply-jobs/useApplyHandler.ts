@@ -63,8 +63,14 @@ export const useApplyHandler = <T extends Record<string, any>>() => {
         if (!errors.customFields) return;
         const cfKey = Object.keys(errors.customFields)[0];
         const el = document.querySelector(`[id="${firstErrorKey}.${cfKey}"]`);
-        el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-        (el as HTMLElement)?.focus();
+        if (el) {
+          el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          (el as HTMLElement)?.focus();
+        }
+        // else {
+        //   const el = document.querySelector(`[for="${cfKey}"]`);
+        //   (el as HTMLElement)?.focus();
+        // }
         return;
       }
       const el = document.querySelector(`[id="${firstErrorKey}"]`);

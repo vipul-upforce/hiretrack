@@ -93,22 +93,6 @@ export async function PUT(request: NextRequest) {
       organizationId: organizationId,
     });
 
-    console.log(
-      "Raw settings data:",
-      JSON.stringify(
-        {
-          found: !!settingsData,
-          hasAiProviders: !!settingsData?.aiProviders,
-          aiProvidersKeys: settingsData?.aiProviders
-            ? Object.keys(settingsData.aiProviders)
-            : [],
-          activeProvider: settingsData?.aiProviders?.activeProvider,
-        },
-        null,
-        2
-      )
-    );
-
     if (!settingsData) {
       return NextResponse.json(
         { error: "Settings not found" },

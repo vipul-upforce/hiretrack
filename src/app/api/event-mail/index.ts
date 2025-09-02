@@ -244,19 +244,6 @@ const sendBrevoMail = async (mailObj: IBrevoObj) => {
       );
     }
 
-    console.log(
-      "API Key (partial):",
-      mailObj.settings.brevo_api_key.substring(0, 10) + "..."
-    );
-
-    // Log reply_to for debugging
-    console.log(
-      "reply_to (raw):",
-      JSON.stringify(mailObj.settings.brevo_reply_to)
-    );
-    console.log("reply_to length:", mailObj.settings.brevo_reply_to?.length);
-    console.log("reply_to type:", typeof mailObj.settings.brevo_reply_to);
-
     // Validate emails
     const emailRegex = /^[\w\.\-]+@[a-zA-Z0-9\-]+\.[a-zA-Z]{2,}$/;
     if (

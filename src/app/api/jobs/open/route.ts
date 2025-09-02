@@ -138,7 +138,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 
-    console.log("ASSINGMENTBY: ", session);
     // Create a new history entry for the job assignment
     const historyEntry: ICandidateHistory = {
       dateTime: new Date().toISOString(),
@@ -154,7 +153,6 @@ export async function POST(req: NextRequest) {
       previousInterviewer: null,
       assignmentBy: session?.user.id || null,
     };
-    console.log("entrrey assignemtnby: ", historyEntry.assignmentBy);
     // Add this entry to history collection
     await History!.findOneAndUpdate(
       { jobId, candidateId },
@@ -171,7 +169,6 @@ export async function POST(req: NextRequest) {
       .populate("history.assignmentBy", "_id name email")
       .populate("history.note.userId", "_id name email");
 
-    console.log("LATEST JOB: ", latestCandidate?.jobId);
     const populatedCandidate = await candidate.populate([
       {
         path: "assignment.interviewerId",
