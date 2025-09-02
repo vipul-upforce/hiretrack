@@ -278,7 +278,7 @@ const ChecklistFieldRenderer: React.FC<{
             name={fieldId}
             value={value || ""}
             onChange={(time) => onChange(time)}
-            onBlur={() => {}}
+            onBlur={() => { }}
           />
         );
 
@@ -416,21 +416,21 @@ const ChecklistForm: React.FC<{
   errors = {},
   touched = {},
 }) => {
-  return (
-    <div className="space-y-4">
-      {checklist.fields.map((field) => (
-        <ChecklistFieldRenderer
-          key={field.id}
-          field={field}
-          value={responses[field.id]?.value}
-          onChange={(value) => onResponseChange(field.id, value)}
-          error={errors[field.id]}
-          touched={touched[field.id]}
-        />
-      ))}
-    </div>
-  );
-};
+    return (
+      <div className="space-y-4">
+        {checklist.fields.map((field) => (
+          <ChecklistFieldRenderer
+            key={field.id}
+            field={field}
+            value={responses[field.id]?.value}
+            onChange={(value) => onResponseChange(field.id, value)}
+            error={errors[field.id]}
+            touched={touched[field.id]}
+          />
+        ))}
+      </div>
+    );
+  };
 
 const ChecklistRemarksDialog = ({
   candidate,
@@ -489,13 +489,20 @@ const ChecklistRemarksDialog = ({
   useEffect(() => {
     if (hasChecklist) {
       const initialResponses: Record<string, any> = {};
+      // console.log(initialResponses, "initialResponses");
+      console.log(parsedChecklistInfo, "parsedChecklistInfo");
+
       parsedChecklistInfo.checklist!.fields.forEach((field) => {
         initialResponses[field.id] = {
           value: field.type === "checkbox" ? false : "",
           fieldLabel: field.label,
           fieldType: field.type,
+          visibleInHistory: field.visibleInHistory
+
         };
       });
+      console.log(initialResponses, "initialResponses");
+
       setChecklistResponses(initialResponses);
       setFieldErrors({}); // Clear any previous errors when initializing
       setFieldTouched({}); // Clear touched state when initializing
@@ -603,7 +610,11 @@ const ChecklistRemarksDialog = ({
         fieldType:
           parsedChecklistInfo?.checklist?.fields.find((f) => f.id === fieldId)
             ?.type || "text",
+        visibleInHistory: parsedChecklistInfo?.checklist?.fields.find((f) => f.id === fieldId)
+          ?.visibleInHistory || [],
+
       },
+
     }));
 
     // Clear field error when user provides any value (more aggressive clearing)
@@ -755,6 +766,8 @@ const ChecklistRemarksDialog = ({
       // Submit checklist if present
       if (hasChecklist && parsedChecklistInfo) {
         const checklist = parsedChecklistInfo.checklist!;
+        console.log(checklist, "checklist odjkdk");
+
         const laneConfig = jobLaneConfig?.laneConfigs.find(
           (lc) =>
             lc.laneId ===
@@ -762,6 +775,7 @@ const ChecklistRemarksDialog = ({
               ? parsedChecklistInfo.targetLane
               : parsedChecklistInfo.currentLane)
         );
+        console.log(checklistResponses, "checklistResponses =submots");
 
         await submitChecklist({
           candidateId: candidate._id,
@@ -777,10 +791,10 @@ const ChecklistRemarksDialog = ({
             responses: checklistResponses,
             remark: newRemark.trim()
               ? {
-                  description: newRemark.trim(),
-                  isPrivate: isSubRemarkPrivate,
-                  rating: remarkRating || undefined,
-                }
+                description: newRemark.trim(),
+                isPrivate: isSubRemarkPrivate,
+                rating: remarkRating || undefined,
+              }
               : undefined,
           },
         }).unwrap();
@@ -915,7 +929,7 @@ const ChecklistRemarksDialog = ({
           <DialogDescription>
             {hasChecklist
               ? parsedChecklistInfo?.checklist?.description ||
-                "Please complete the checklist before proceeding."
+              "Please complete the checklist before proceeding."
               : "Add your observations and feedback for this candidate."}
           </DialogDescription>
         </DialogHeader>

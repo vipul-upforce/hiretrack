@@ -56,6 +56,7 @@ export async function POST(
       checklistType,
       laneId,
       laneName,
+      // visibleInHistory,
       responses,
       remark,
       currentTime,
@@ -168,6 +169,7 @@ export async function POST(
       completedAt: currentTime,
       completedBy: decoded._id || decoded.id || decoded.userId,
       responses: responses, // Keep as plain object
+      // visibleInHistory,
     };
 
     // Update based on checklist type
@@ -216,6 +218,7 @@ export async function POST(
                 fieldType: response.fieldType || "text",
                 value: response.value,
                 files: response.files || [],
+                visibleInHistory: response.visibleInHistory || []
               },
             ]
           )
@@ -227,6 +230,7 @@ export async function POST(
       previousInterviewer: null,
       assignmentBy: userId,
     };
+    console.log(historyEntry, "historyEntry ===-= =");
 
     // Add remark if provided
     if (remark && remark.description) {
@@ -312,6 +316,7 @@ export async function POST(
         candidateId: id,
         checklistType,
         laneId,
+        // historyEntry,
         completedAt: checklistData.completedAt,
       },
     });

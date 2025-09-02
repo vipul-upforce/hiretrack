@@ -46,7 +46,7 @@ const AttachmentsPopover = ({
       <Popover>
         <PopoverTrigger asChild>
           {attachments.length === 0 ? (
-            ""
+            " "
           ) : (
             <Button
               onClick={(e) => e.stopPropagation()}

@@ -100,6 +100,7 @@ const candidateHistory = {
         fieldLabel: String,
         fieldType: String,
         value: Schema.Types.Mixed,
+        visibleInHistory: [String],
         files: [
           {
             id: String,
@@ -147,42 +148,42 @@ export interface ICandidateHistory {
     };
   };
   currentInterviewer:
-    | Schema.Types.ObjectId
-    | null
-    | {
-        _id: string;
-        name: string;
-        email: string;
-      };
+  | Schema.Types.ObjectId
+  | null
+  | {
+    _id: string;
+    name: string;
+    email: string;
+  };
   previousInterviewer:
-    | Schema.Types.ObjectId
-    | null
-    | {
-        _id: string;
-        name: string;
-        email: string;
-      };
+  | Schema.Types.ObjectId
+  | null
+  | {
+    _id: string;
+    name: string;
+    email: string;
+  };
   assignmentBy:
-    | Schema.Types.ObjectId
-    | string
-    | null
-    | {
-        _id: string;
-        name: string;
-        email: string;
-      };
+  | Schema.Types.ObjectId
+  | string
+  | null
+  | {
+    _id: string;
+    name: string;
+    email: string;
+  };
   note: {
     description: string | IinfoUpdateLog[];
     date: string;
     rating: number;
     userId:
-      | Schema.Types.ObjectId
-      | {
-          _id: string;
-          name: string;
-          email: string;
-        }
-      | null;
+    | Schema.Types.ObjectId
+    | {
+      _id: string;
+      name: string;
+      email: string;
+    }
+    | null;
   };
   attachments: {
     id: string;
@@ -197,6 +198,7 @@ export interface ICandidateHistory {
     checklistType: "incoming" | "outgoing";
     laneId: string;
     laneName: string;
+
     responses: Record<
       string,
       {
@@ -205,6 +207,8 @@ export interface ICandidateHistory {
         fieldType: string;
         value: any;
         files?: CustomFieldFile[];
+        visibleInHistory?: string[]; // Define visibleInHistory as string[] or undefined
+
       }
     >;
     completedAt: Date;

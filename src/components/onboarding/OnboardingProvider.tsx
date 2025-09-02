@@ -53,7 +53,7 @@ interface OnboardingProviderProps {
 
 export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children }) => {
   const [isOpen, setIsOpen] = useState(false);
-  
+
   // Debug state changes
   useEffect(() => {
     console.log("OnboardingProvider - isOpen changed to:", isOpen);
@@ -82,8 +82,8 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
       // 1. Not completed
       // 2. User hasn't chosen "do not show again"
       // 3. Progress is low (less than 50%)
-      const shouldShowOnboarding = 
-        !onboardingStatus.isCompleted && 
+      const shouldShowOnboarding =
+        !onboardingStatus.isCompleted &&
         !onboardingStatus.doNotShowAgain &&
         (progress?.percentage || 0) < 50 &&
         onboardingStatus.currentStep === 0; // Only on first visit
@@ -98,7 +98,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
   const fetchOnboardingData = async () => {
     try {
       setIsLoading(true);
-      
+
       // Fetch onboarding status
       const statusResponse = await fetch('/api/onboarding/status');
       if (statusResponse.ok) {
@@ -123,7 +123,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
       if (validateResponse.ok) {
         const validateData = await validateResponse.json();
         setProgress(validateData.progress);
-        
+
         // Update steps with validation status
         const updatedSteps = getDefaultSteps().map(step => ({
           ...step,

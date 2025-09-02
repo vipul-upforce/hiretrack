@@ -463,7 +463,7 @@ export class NotificationService {
     triggerUserId: string;
     triggerUserName: string;
   }) {
-    const allUserIds = await this.getUsersByRole(params.organizationId, ['admin', 'hr', 'interviewer']);
+    const allUserIds = await this.getUsersByRole(params.organizationId, ['admin', 'hr']);
     const filteredUserIds = allUserIds.filter(id => id !== params.triggerUserId);
 
     if (filteredUserIds.length > 0) {
@@ -1036,7 +1036,7 @@ export class NotificationService {
     // Notify admin/hr
     const adminHrIds = await this.getUsersByRole(params.organizationId, ['admin', 'hr']);
     const filteredAdminHrIds = adminHrIds.filter(id => id !== params.interviewerId);
-    
+
     if (filteredAdminHrIds.length > 0) {
       await this.createBulkNotifications({
         organizationId: params.organizationId,
@@ -1102,7 +1102,7 @@ export class NotificationService {
     // High priority notification to admin/hr
     const adminHrIds = await this.getUsersByRole(params.organizationId, ['admin', 'hr']);
     const filteredAdminHrIds = adminHrIds.filter(id => id !== params.interviewerId);
-    
+
     if (filteredAdminHrIds.length > 0) {
       await this.createBulkNotifications({
         organizationId: params.organizationId,
@@ -1168,7 +1168,7 @@ export class NotificationService {
     // Notify admin/hr
     const adminHrIds = await this.getUsersByRole(params.organizationId, ['admin', 'hr']);
     const filteredAdminHrIds = adminHrIds.filter(id => id !== params.interviewerId);
-    
+
     if (filteredAdminHrIds.length > 0) {
       await this.createBulkNotifications({
         organizationId: params.organizationId,

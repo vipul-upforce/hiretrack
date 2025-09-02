@@ -24,6 +24,7 @@ interface SubmitChecklistRequest {
   checklistType: "incoming" | "outgoing";
   laneId: string;
   laneName: string;
+
   responses: Record<
     string,
     {
@@ -31,6 +32,7 @@ interface SubmitChecklistRequest {
       fieldLabel?: string;
       fieldType?: string;
       files?: any[];
+      visibleInHistory: string[];
     }
   >;
   remark?: {

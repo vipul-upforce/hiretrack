@@ -20,12 +20,12 @@ import { Badge } from "@/components/ui/badge";
 
 // Component to display checklist responses
 const ChecklistResponseViewer = ({
-  checklistForm,
+  checklistForm
 }: {
   checklistForm: ICandidateHistory["checklistForm"];
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-
+  const role = useRoles()
   if (!checklistForm) return null;
 
   // Debug: Log the structure to understand the data format
@@ -43,6 +43,12 @@ const ChecklistResponseViewer = ({
       ? Array.from(checklistForm.responses.entries())
       : Object.entries(checklistForm.responses || {});
 
+  // 🔑 Filter by role visibility
+  const visibleResponses = responsesArray.filter(([key, resp]: [string, any]) =>
+    Array.isArray(resp?.visibleInHistory)
+      ? resp.visibleInHistory.includes(role) // show only if role is allowed
+      : true // if visibleInHistory missing, default visible
+  );
   const formatValue = (value: any, fieldType: string) => {
     if (value === null || value === undefined) return "N/A";
 
@@ -130,7 +136,7 @@ const ChecklistResponseViewer = ({
 
       {isExpanded && (
         <div className="p-3 space-y-3">
-          {responsesArray
+          {visibleResponses
             .filter(([_, response]) => {
               const responseData =
                 (response as { value: string })?.value !== undefined
@@ -213,7 +219,7 @@ const RenderHistoryEntry = ({
     description: string,
     isPrivate?: boolean
   ) => void;
-  setEditingRemark: ({}: IEditRemark | null) => void;
+  setEditingRemark: ({ }: IEditRemark | null) => void;
   setIsEditRemarkDialogOpen: (x: boolean) => void;
 }) => {
   const [isRemarkOptionsOpen, setIsRemarkOptionsOpen] = useState(false);
@@ -224,6 +230,13 @@ const RenderHistoryEntry = ({
     interview.note.description &&
     typeof interview.note.description !== "string";
   // const { formatTZDate } = useDateFormatter();
+  console.log(interview, "INTERVIEW DATA-------");
+  if (
+    interview.checklistForm &&
+    Object.keys(interview.checklistForm.responses).length === 0
+  ) {
+    return null;
+  }
 
   // Convert timeDate string to Date object for formatTZDate
   // const dateObj = new Date(timeDate);
@@ -245,12 +258,12 @@ const RenderHistoryEntry = ({
         <div className="flex flex-row items-start justify-between w-full">
           <div className="flex flex-row w-[85%]">
             {interview.currentInterviewer &&
-            typeof interview.currentInterviewer === "object" &&
-            "name" in interview.currentInterviewer ? (
+              typeof interview.currentInterviewer === "object" &&
+              "name" in interview.currentInterviewer ? (
               <>
                 {interview.previousInterviewer &&
-                typeof interview.previousInterviewer === "object" &&
-                "name" in interview.previousInterviewer ? (
+                  typeof interview.previousInterviewer === "object" &&
+                  "name" in interview.previousInterviewer ? (
                   <p className="pl-1">
                     {interview.previousInterviewer.name +
                       " → " +
@@ -269,8 +282,8 @@ const RenderHistoryEntry = ({
               <p>
                 {localCandidate.name} was added by{" "}
                 {interview.assignmentBy &&
-                typeof interview.assignmentBy === "object" &&
-                "name" in interview.assignmentBy
+                  typeof interview.assignmentBy === "object" &&
+                  "name" in interview.assignmentBy
                   ? `${interview.assignmentBy.name}`
                   : ""}
               </p>
@@ -300,8 +313,8 @@ const RenderHistoryEntry = ({
             </p>
             <p className="font-light text-gray-500 text-sm">
               {interview.assignmentBy &&
-              typeof interview.assignmentBy === "object" &&
-              "name" in interview?.assignmentBy
+                typeof interview.assignmentBy === "object" &&
+                "name" in interview?.assignmentBy
                 ? `${interview?.assignmentBy.name}`
                 : ""}
             </p>
@@ -319,8 +332,8 @@ const RenderHistoryEntry = ({
               </p>
               <p className="font-light text-gray-500 text-sm">
                 {interview.assignmentBy &&
-                typeof interview.assignmentBy === "object" &&
-                "name" in interview?.assignmentBy
+                  typeof interview.assignmentBy === "object" &&
+                  "name" in interview?.assignmentBy
                   ? `${interview?.assignmentBy.name}`
                   : ""}
               </p>
@@ -442,10 +455,10 @@ const RenderHistoryEntry = ({
         </p>
 
         {interview?.note &&
-        Object.keys(interview.note).length > 0 &&
-        // interview?.note?.rating &&
-        interview?.note?.rating !== 0 &&
-        interview?.note?.rating ? (
+          Object.keys(interview.note).length > 0 &&
+          // interview?.note?.rating &&
+          interview?.note?.rating !== 0 &&
+          interview?.note?.rating ? (
           <div className="flex flex-row items-center">
             {interview?.note?.rating}/5
             <Star

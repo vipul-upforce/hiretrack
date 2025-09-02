@@ -4,6 +4,7 @@ import { verifyAndDecryptToken } from "@/app/actions/auth";
 import { createOAuth2Client } from "@/lib/google-calendar/config";
 import { decryptText } from "@/lib/encryption";
 import { google } from "googleapis";
+import { NotificationService } from "@/lib/notifications/notificationService";
 
 interface UpdateMeetRequest {
   candidateId?: string;
@@ -212,12 +213,16 @@ export async function DELETE(req: NextRequest) {
 
     // Verify user
     let organizationId = "";
+    let userData: any = null;
+
     const token = req.cookies.get("auth_token");
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
         String(token?.value)
       );
-      const userData = decryptedResponse.user;
+      userData = decryptedResponse.user;
+      console.log(userData, "USERDATA  YYYisksd");
+
       if (decryptedResponse.success) {
         organizationId = userData.organizationId || "";
       } else {
@@ -226,6 +231,8 @@ export async function DELETE(req: NextRequest) {
     } else {
       return NextResponse.json({ error: "No token provided" }, { status: 401 });
     }
+
+
 
     const { searchParams } = new URL(req.url);
     const eventId = searchParams.get("eventId");
@@ -238,7 +245,7 @@ export async function DELETE(req: NextRequest) {
         { status: 400 }
       );
     }
-
+    console.log();
     // Get Google Calendar settings
     if (!Settings) {
       return NextResponse.json(
@@ -319,6 +326,47 @@ export async function DELETE(req: NextRequest) {
         });
       } catch (error) {
         console.error("Failed to update candidate record:", error);
+      }
+    }
+
+    // After cancelling the Google Meet in your DELETE handler:
+    if (candidateId) {
+      const candidate = await Candidate.findById(candidateId)
+        .populate("jobId")
+        .populate("assignment.interviewerId")
+        .lean(); // 👈 makes typing easier
+
+
+      if (candidate) {
+        const jobId =
+          candidate.jobId && typeof candidate.jobId !== "string" && "_id" in candidate.jobId
+            ? candidate.jobId._id.toString()
+            : "";
+
+        const jobTitle =
+          candidate.jobId && typeof candidate.jobId !== "string" && "title" in candidate.jobId
+            ? candidate.jobId.title
+            : "Unknown Job";
+
+        await NotificationService.notifyMeetingCancelled({
+          organizationId,
+          candidateId: candidate._id.toString(),
+          candidateName: candidate.name,
+          jobId,
+          jobTitle,
+          interviewerId:
+            candidate.assignment?.interviewerId &&
+              typeof candidate.assignment.interviewerId !== "string"
+              ? candidate.assignment.interviewerId._id.toString()
+              : "",
+          interviewerName:
+            candidate.assignment?.interviewerId &&
+              typeof candidate.assignment.interviewerId !== "string"
+              ? candidate.assignment.interviewerId.name
+              : "Interviewer",
+          triggerUserId: userData?.id || "",
+          triggerUserName: userData?.name || "System",
+        });
       }
     }
 

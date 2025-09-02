@@ -13,16 +13,16 @@ export function filterFieldsByRole(
   context: 'form' | 'history'
 ): IChecklistField[] {
   if (!fields || !Array.isArray(fields)) return [];
-  
+
   return fields.filter(field => {
     // Handle backward compatibility - if visibility arrays don't exist, show to all roles except 'candidate'
     const visibilityArray = context === 'form' ? field.visibleOnForm : field.visibleInHistory;
-    
+
     if (!visibilityArray || !Array.isArray(visibilityArray)) {
       // Backward compatibility: show to admin, hr, interviewer by default
       return ['admin', 'hr', 'interviewer'].includes(userRole);
     }
-    
+
     return visibilityArray.includes(userRole);
   });
 }
@@ -40,14 +40,14 @@ export function filterChecklistByRole(
   context: 'form' | 'history'
 ): IChecklist | null {
   if (!checklist) return null;
-  
+
   const filteredFields = filterFieldsByRole(checklist.fields, userRole, context);
-  
+
   // If no fields are visible, return null to indicate no checklist should be shown
   if (filteredFields.length === 0) {
     return null;
   }
-  
+
   return {
     ...checklist,
     fields: filteredFields
@@ -82,15 +82,15 @@ export function filterChecklistResponses(
   userRole: UserRole
 ): Record<string, any> {
   if (!responses || !fields) return {};
-  
+
   // Convert Map to object if needed
-  const responsesObj = responses instanceof Map 
+  const responsesObj = responses instanceof Map
     ? Object.fromEntries(responses.entries())
     : responses;
-  
+
   const visibleFields = filterFieldsByRole(fields, userRole, 'history');
   const visibleFieldIds = new Set(visibleFields.map(f => f.id));
-  
+
   // Filter responses to only include visible fields
   const filteredResponses: Record<string, any> = {};
   Object.entries(responsesObj).forEach(([fieldId, response]) => {
@@ -98,7 +98,7 @@ export function filterChecklistResponses(
       filteredResponses[fieldId] = response;
     }
   });
-  
+
   return filteredResponses;
 }
 
@@ -116,7 +116,7 @@ export function validateUserCanSubmitFields(
 ): boolean {
   const visibleFields = filterFieldsByRole(fields, userRole, 'form');
   const visibleFieldIds = new Set(visibleFields.map(f => f.id));
-  
+
   // Check if all submitted field IDs are in the visible fields
   return fieldIds.every(fieldId => visibleFieldIds.has(fieldId));
 }
@@ -128,7 +128,7 @@ export function validateUserCanSubmitFields(
  */
 export function getUserRole(role: string | undefined): UserRole | null {
   if (!role) return null;
-  
+
   const validRoles: UserRole[] = ['admin', 'hr', 'interviewer', 'candidate'];
   return validRoles.includes(role as UserRole) ? (role as UserRole) : null;
 }

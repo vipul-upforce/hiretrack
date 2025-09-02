@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 // Define user roles for visibility control
-export type UserRole = 'admin' | 'hr' | 'interviewer' | 'candidate';
+export type UserRole = 'admin' | 'hr' | 'interviewer' | 'candidate' | 'system';
 
 // Interface for checklist field items (reusing custom fields structure)
 export interface IChecklistField {
@@ -33,6 +33,8 @@ export interface IChecklist {
   createdBy: Schema.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
+  visibleInHistory?: string[];
+
 }
 
 // Interface for lane-specific configuration
@@ -56,8 +58,8 @@ export interface IJobLaneConfig extends Document {
 const checklistFieldSchema = new Schema<IChecklistField>({
   id: { type: String, required: true },
   label: { type: String, required: true },
-  type: { 
-    type: String, 
+  type: {
+    type: String,
     required: true,
     enum: ['text', 'number', 'email', 'date', 'time', 'datetime', 'checkbox', 'radio', 'select', 'multiSelect', 'textarea', 'password', 'file']
   },
@@ -127,7 +129,7 @@ export const jobLaneConfigSchema = new Schema<IJobLaneConfig>({
 jobLaneConfigSchema.index({ organizationId: 1 });
 
 // Update timestamp on save
-jobLaneConfigSchema.pre('save', function(next) {
+jobLaneConfigSchema.pre('save', function (next) {
   this.updatedAt = new Date();
   next();
 });

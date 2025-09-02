@@ -36,7 +36,7 @@ const PortalConfigStep: React.FC = () => {
 
   const configurationItems = [
     "Company/Portal name",
-    "Custom logo and favicon", 
+    "Custom logo and favicon",
     "Brand colors and theme",
     "Custom header/footer content"
   ];
@@ -47,7 +47,7 @@ const PortalConfigStep: React.FC = () => {
         <div className="w-12 h-12 bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30 rounded-full flex items-center justify-center mx-auto border border-border/50">
           <Globe className="w-6 h-6 text-purple-600 dark:text-purple-400" />
         </div>
-        
+
         <div>
           <h2 className="text-xl font-bold text-foreground mb-1">
             Portal Configuration
@@ -90,9 +90,9 @@ const PortalConfigStep: React.FC = () => {
                 ))}
               </ul>
             </div>
-            
+
             <div className="flex gap-3 pt-4">
-              <Button 
+              <Button
                 onClick={handleConfigurePortal}
                 className="flex items-center gap-2"
               >
@@ -100,8 +100,8 @@ const PortalConfigStep: React.FC = () => {
                 Configure Portal
                 <ExternalLink className="w-3 h-3" />
               </Button>
-              
-              <Button 
+
+              <Button
                 variant="outline"
                 onClick={checkConfiguration}
                 disabled={isChecking}
@@ -123,8 +123,8 @@ const PortalConfigStep: React.FC = () => {
             <div>
               <h4 className="font-medium text-blue-900 dark:text-blue-100 text-sm">Portal Branding Benefits</h4>
               <p className="text-blue-700 dark:text-blue-200 text-xs mt-1">
-                A branded portal creates a professional impression for candidates and helps maintain 
-                consistent company identity throughout the application process. You can always update 
+                A branded portal creates a professional impression for candidates and helps maintain
+                consistent company identity throughout the application process. You can always update
                 these settings later as your branding evolves.
               </p>
             </div>

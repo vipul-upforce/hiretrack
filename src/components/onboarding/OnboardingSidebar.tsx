@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useOnboarding } from "./OnboardingProvider";
+import ConfirmationDialog from "@/app/dashboard/jobs/[id]/components/Dialogs/ConfirmationDialog";
 
 interface OnboardingSidebarProps {
   isCollapsed: boolean;
@@ -22,26 +23,36 @@ interface OnboardingSidebarProps {
 const OnboardingSidebar: React.FC<OnboardingSidebarProps> = ({
   isCollapsed,
 }) => {
-  const { setIsOpen, progress, doNotShowAgain } = useOnboarding();
+  const { setIsOpen, progress, doNotShowAgain, onboardingStatus, isLoading } = useOnboarding();
+
+  const [showDismissDialog, setShowDismissDialog] = useState(false);
 
   // TESTING MODE: Always show the sidebar
-  // if (isLoading || onboardingStatus?.doNotShowAgain) {
-  //   return null;
-  // }
+  if (isLoading || onboardingStatus?.doNotShowAgain) {
+    return null;
+  }
 
-  // if (onboardingStatus?.isCompleted && progress?.percentage === 100) {
-  //   return null;
-  // }
+
+  // const handleDismiss = (e: React.MouseEvent) => {
+  //   e.stopPropagation();
+  //   doNotShowAgain();
+  //   if (onboardingStatus?.doNotShowAgain) {
+  //     return null;
+  //   }
+  // };
+  const handleDismiss = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowDismissDialog(true); // Show the confirmation dialog
+  };
+  if (isLoading || onboardingStatus?.isCompleted && progress?.percentage === 100 || onboardingStatus?.doNotShowAgain) {
+    return null;
+  }
 
   const handleOpenOnboarding = () => {
     console.log("OnboardingSidebar - Opening onboarding dialog");
     setIsOpen(true);
   };
 
-  const handleDismiss = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    doNotShowAgain();
-  };
 
   const progressPercentage = progress?.percentage || 0;
   const isComplete = progressPercentage === 100;
@@ -186,6 +197,17 @@ const OnboardingSidebar: React.FC<OnboardingSidebarProps> = ({
           </div>
         </CardContent>
       </Card>
+      <ConfirmationDialog
+        isOpen={showDismissDialog}
+        setIsOpen={setShowDismissDialog}
+        title="Dismiss Onboarding"
+        message="Are you sure you want to dismiss the onboarding guide?"
+        onConfirm={() => {
+          doNotShowAgain(); // Call the function to dismiss the onboarding
+          setShowDismissDialog(false); // Close the dialog
+        }}
+        onCancel={() => setShowDismissDialog(false)} // Close the dialog without action
+      />
     </div>
   );
 };

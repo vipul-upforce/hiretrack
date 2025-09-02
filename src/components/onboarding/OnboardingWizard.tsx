@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useOnboarding } from "./OnboardingProvider";
@@ -30,10 +30,23 @@ const OnboardingWizard: React.FC = () => {
     doNotShowAgain,
     updateOnboardingStatus,
   } = useOnboarding();
+  const [isCurrentConfigured, setIsCurrentConfigured] = useState(false);
 
   const totalSteps = steps.length + 2; // +2 for welcome and completion steps
   const currentStep = currentStepIndex;
   const currentStepData = steps[currentStepIndex - 1]; // -1 because first step is welcome
+
+  useEffect(() => {
+    const check = async () => {
+      if (currentStepData) {
+        const valid = await validateStep(currentStepData.id);
+        setIsCurrentConfigured(valid);
+      } else {
+        setIsCurrentConfigured(false);
+      }
+    };
+    check();
+  }, [currentStep, currentStepData, validateStep]);
 
   const handleNext = async () => {
     if (currentStep === 0) {
@@ -189,7 +202,10 @@ const OnboardingWizard: React.FC = () => {
               <Button
                 variant="ghost"
                 onClick={handleSkip}
-                className="text-muted-foreground hover:text-foreground"
+                disabled={isCurrentConfigured} // 👈 disable if already configured
+                className={`text-muted-foreground hover:text-foreground ${
+                  isCurrentConfigured ? "opacity-50 cursor-not-allowed" : ""
+                }`}
               >
                 <SkipForward className="w-4 h-4 mr-2" />
                 Skip

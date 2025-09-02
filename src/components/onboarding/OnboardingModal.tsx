@@ -31,7 +31,7 @@ const OnboardingModal: React.FC = () => {
   // if (onboardingStatus?.doNotShowAgain) {
   //   return null;
   // }
-  
+
   console.log("OnboardingModal - onboardingStatus:", onboardingStatus);
 
   const dialogClassName = isLargeViewport
@@ -42,7 +42,7 @@ const OnboardingModal: React.FC = () => {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent 
+      <DialogContent
         className={dialogClassName}
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
@@ -53,7 +53,7 @@ const OnboardingModal: React.FC = () => {
             Setup Wizard
           </DialogTitle>
         </DialogHeader>
-        
+
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto bg-background min-h-0">
           {!isLoading && (
