@@ -16,7 +16,7 @@ interface RateLimitStore {
 // In-memory store for rate limiting
 // In production, you might want to use Redis for distributed systems
 const rateLimitStore = new Map<string, RateLimitStore>();
-
+console.log("💬💬 rateLimitStore: ", rateLimitStore);
 // Clean up expired entries periodically
 setInterval(() => {
   const now = Date.now();
@@ -353,7 +353,7 @@ export function createEmailLoginRateLimiter() {
     handler: (req: NextRequest) => Promise<NextResponse>,
     email?: string
   ): Promise<NextResponse> {
-    const emailKey = `email:${email}`;
+    const emailKey = email || (await extractEmailFromRequest(request));
     const now = Date.now();
     const windowMs = 15 * 60 * 1000; // 15 minutes
     const maxRequests = 5; // 5 attempts per email

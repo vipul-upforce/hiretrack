@@ -29,7 +29,8 @@ import { useTestConnection } from "@/hooks/use-test-connection";
 import * as jose from "jose";
 import CryptoJS from "crypto-js";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { updateUser as updateUserInState } from "@/lib/redux/authSlice";
 
 interface User {
   id: string;
@@ -54,6 +55,7 @@ export default function FileStorageOptions({
   const { user }: { user: User } = useSelector(
     (state: any) => state.auth || {}
   );
+  const dispatch = useDispatch();
   const { toast } = useToast();
   const [showKey, setShowKey] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
@@ -187,7 +189,18 @@ export default function FileStorageOptions({
       //   expires: 30,
       //   // maxAge: 30 * 24 * 60 * 60,
       // });
+
       refetch();
+
+      if (user && values.storageType) {
+        // Update the Redux state with the new user data
+        dispatch(
+          updateUserInState({
+            ...values,
+            fileStorage: values.storageType,
+          })
+        );
+      }
       onClose();
     } catch {
       toast({
