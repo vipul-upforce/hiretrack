@@ -30,14 +30,9 @@ export function Combobox({
   // Focus the input when the dropdown opens
   React.useEffect(() => {
     if (open && inputRef.current) {
-      console.log("Dropdown opened, attempting to focus input");
       const timer = setTimeout(() => {
         if (inputRef.current) {
           inputRef.current.focus();
-          console.log(
-            "Input focused:",
-            document.activeElement === inputRef.current
-          );
         }
       }, 1000);
       return () => clearTimeout(timer);
@@ -53,8 +48,6 @@ export function Combobox({
         buttonRef.current &&
         !buttonRef.current.contains(event.target as Node)
       ) {
-        console.log("Clicked outside, closing dropdown");
-        setOpen(false);
         setSearch("");
       }
     };
@@ -79,7 +72,6 @@ export function Combobox({
         aria-expanded={open}
         className={cn("justify-between", `w-full`)}
         onClick={() => {
-          console.log("Button clicked, current open state:", open);
           setOpen(true);
         }}
       >
@@ -105,8 +97,6 @@ export function Combobox({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onMouseDown={(e) => e.stopPropagation()} // Prevent mousedown from closing dropdown
-          onFocus={() => console.log("Custom input focused")}
-          onBlur={() => console.log("Custom input blurred")}
         />
         <div className="max-h-[200px] overflow-y-auto">
           {filteredOptions.length === 0 && (
@@ -122,7 +112,6 @@ export function Combobox({
                 value === option.value ? "bg-accent hover:bg-accent text-accent-foreground font-medium" : "text-foreground"
               )}
               onClick={() => {
-                console.log("Option selected:", option.value);
                 onValueChange(option.value === value ? "" : option.value);
                 setOpen(false);
                 setSearch("");

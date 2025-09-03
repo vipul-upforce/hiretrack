@@ -532,7 +532,6 @@ export default function JobProgressPage() {
             <DragDropContext
               onDragStart={(start) => {
                 setIsDndDragging(true);
-                console.log("Drag started for:", start.draggableId);
               }}
               onDragUpdate={(update) => {
                 // No prevalidation needed - using client-side validation
@@ -636,7 +635,6 @@ export default function JobProgressPage() {
         <DragDropContext
           onDragStart={(start) => {
             setIsDndDragging(true);
-            console.log("Drag started for:", start.draggableId);
           }}
           onDragUpdate={(update) => {
             // No prevalidation needed - using client-side validation
@@ -866,7 +864,6 @@ function CandidateCustomFieldsDialog({
   } = context;
   const [hasAutoSelected, setHasAutoSelected] = useState(false);
 
-  // console.log("CandidateCustomFieldsDialog context:", {
   //   customFieldsKeys: Object.keys(customFields || {}),
   //   customFieldsCount: Object.keys(customFields || {}).length,
   //   stepName,
@@ -884,7 +881,6 @@ function CandidateCustomFieldsDialog({
       customFields &&
       Object.keys(customFields).length > 0
     ) {
-      console.log("Attempting to auto-select candidate form...");
 
       // Find the "candidate" form ID
       const candidateFormEntry = Object.entries(customFields).find(

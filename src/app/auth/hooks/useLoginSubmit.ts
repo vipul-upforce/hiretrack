@@ -179,11 +179,9 @@ export const useHandleLoginSubmit = ({
         // Cookies.set("token", String(token), { expires: 30 });
 
         const redirectUrl = getRedirectUrl();
-        console.log("REIRECTURL: ", redirectUrl);
         // new Promise(()=>{})
         // setTimeout(()=>{
         // },4000)
-        console.log("user status: ", user, isAuthenticated);
         if (isAuthenticated) {
           // router.refresh();
           // router.push(redirectUrl);

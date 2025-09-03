@@ -174,7 +174,6 @@ export const useRemarkHandlers = (
         jobId: localCandidate?.jobId,
         remarks: [...(localCandidate?.remarks || []), newRemarkObj],
       };
-      console.log(localCandidate, "local-remark");
 
       localCandidate &&
         (await updateCandidateHistory({

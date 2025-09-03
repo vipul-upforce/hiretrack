@@ -84,12 +84,6 @@ const withAuthGuard = <P extends object>(
     const isCheckingAllowance = useRef(false);
     const hasInitialized = useRef(false);
 
-    console.log("AuthGuard - Redux state:", {
-      isAuthenticated,
-      user: user?.id,
-      role: user?.role,
-    });
-
     const isAllowanceCacheValid = useCallback(() => {
       const currentUserId = user?.id || null;
       return (
@@ -104,19 +98,16 @@ const withAuthGuard = <P extends object>(
       const currentUserId = user?.id || null;
 
       if (isAllowanceCacheValid()) {
-        console.log("Using cached allowance:", allowanceCache.value);
         return allowanceCache.value!;
       }
 
       if (isCheckingAllowance.current) {
-        console.log("Allowance check already in progress");
         return allowanceCache.value ?? false;
       }
 
       isCheckingAllowance.current = true;
 
       try {
-        console.log("Fetching fresh allowance data...");
         const response = await fetch("/api/organization");
 
         if (!response.ok) {
@@ -132,7 +123,6 @@ const withAuthGuard = <P extends object>(
           userId: currentUserId,
         };
 
-        console.log("Allowance cached:", allowanceData.allow);
         return allowanceData.allow;
       } catch (error) {
         console.error("Allowance check failed:", error);
@@ -143,14 +133,12 @@ const withAuthGuard = <P extends object>(
     }, [user?.id, isAllowanceCacheValid]);
 
     const performAuthCheck = useCallback(async () => {
-      console.log("Performing auth check...");
 
       try {
         if (pathname === "/register/org") {
           if (checkAllowance) {
             const hasAllowance = await fetchAllowance();
             if (!hasAllowance) {
-              console.log("No allowance - redirecting");
               router.replace(fallbackPath);
               setAuthState("unauthorized");
               return;
@@ -160,15 +148,9 @@ const withAuthGuard = <P extends object>(
           return;
         }
 
-        console.log("Checking auth state from Redux:", {
-          isAuthenticated,
-          userId: user?.id,
-        });
-
         if (checkAllowance) {
           const hasAllowance = await fetchAllowance();
           if (!hasAllowance) {
-            console.log("No allowance - redirecting");
             router.replace(fallbackPath);
             setAuthState("unauthorized");
             return;
@@ -176,16 +158,12 @@ const withAuthGuard = <P extends object>(
         }
 
         if (!allowAuthenticated && isAuthenticated) {
-          console.log("Route doesn't allow authenticated users - redirecting");
           router.replace(fallbackPath);
           setAuthState("unauthorized");
           return;
         }
 
         if (allowAuthenticated && !isAuthenticated) {
-          console.log(
-            "Authentication required but user not authenticated - redirecting"
-          );
           router.replace(fallbackPath);
           setAuthState("unauthorized");
           return;
@@ -196,18 +174,11 @@ const withAuthGuard = <P extends object>(
           requiredRoles.length > 0 &&
           (!user?.role || !requiredRoles.includes(user.role))
         ) {
-          console.log(
-            "User role not authorized:",
-            user?.role,
-            "Required:",
-            requiredRoles
-          );
           router.replace(fallbackPath);
           setAuthState("unauthorized");
           return;
         }
 
-        console.log("Authorization successful");
         setAuthState("authorized");
       } catch (error) {
         console.error("Auth check failed:", error);
@@ -228,7 +199,6 @@ const withAuthGuard = <P extends object>(
 
     useEffect(() => {
       if (isAuthenticated === undefined) {
-        console.log("Still loading auth state from Redux...");
         setAuthState("loading");
         return;
       }
@@ -244,7 +214,6 @@ const withAuthGuard = <P extends object>(
     useEffect(() => {
       const currentUserId = user?.id || null;
       if (allowanceCache.userId && allowanceCache.userId !== currentUserId) {
-        console.log("User changed - clearing allowance cache");
         allowanceCache = {
           value: null,
           timestamp: null,

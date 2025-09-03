@@ -251,32 +251,26 @@ export function AssignCandidateDialog({
 
         const requestBody = isUpdating
           ? {
-              eventId: candidate.assignment?.googleMeet.eventId,
-              candidateId: candidate._id,
-              scheduledTime: values.time?.toISOString(),
-              duration: values.meetDuration || 30,
-              guests: allGuests,
-            }
+            eventId: candidate.assignment?.googleMeet.eventId,
+            candidateId: candidate._id,
+            scheduledTime: values.time?.toISOString(),
+            duration: values.meetDuration || 30,
+            guests: allGuests,
+          }
           : {
-              candidateId: candidate._id,
-              candidateName: candidate.name,
-              candidateEmail: candidate.email,
-              interviewerId: selectedInterviewer._id,
-              interviewerName: selectedInterviewer.name,
-              scheduledTime: values.time?.toISOString(),
-              duration: values.meetDuration || 30,
-              guests: allGuests,
-              jobTitle: candidate.jobId?.title || "Position",
-              organizationName: user?.organizationInfo?.name || "Company",
-              meetingNotes: values.meetingNotes || "",
-              meetingAttachments: processedMeetingAttachments,
-            };
-
-        console.log("🚀 Making Google Meet API call:", {
-          apiUrl,
-          method,
-          requestBody,
-        });
+            candidateId: candidate._id,
+            candidateName: candidate.name,
+            candidateEmail: candidate.email,
+            interviewerId: selectedInterviewer._id,
+            interviewerName: selectedInterviewer.name,
+            scheduledTime: values.time?.toISOString(),
+            duration: values.meetDuration || 30,
+            guests: allGuests,
+            jobTitle: candidate.jobId?.title || "Position",
+            organizationName: user?.organizationInfo?.name || "Company",
+            meetingNotes: values.meetingNotes || "",
+            meetingAttachments: processedMeetingAttachments,
+          };
 
         const response = await fetch(apiUrl, {
           method,
@@ -284,11 +278,7 @@ export function AssignCandidateDialog({
           body: JSON.stringify(requestBody),
         });
 
-        console.log("📡 API Response status:", response.status);
-        console.log("📡 API Response ok:", response.ok);
-
         const result = await response.json();
-        console.log("📊 API Response data:", result);
 
         if (!response.ok) {
           console.error("❌ API Error:", result.error);
@@ -509,29 +499,29 @@ export function AssignCandidateDialog({
                         {/* Show checkbox only if no existing meet or in edit mode */}
                         {(!candidate.assignment?.googleMeet?.eventId ||
                           values.scheduleGoogleMeet) && (
-                          <div className="flex items-center space-x-2">
-                            <Field name="scheduleGoogleMeet">
-                              {({ field }: FieldProps) => (
-                                <Checkbox
-                                  id="scheduleGoogleMeet"
-                                  checked={field.value}
-                                  onCheckedChange={(checked) =>
-                                    setFieldValue("scheduleGoogleMeet", checked)
-                                  }
-                                />
-                              )}
-                            </Field>
-                            <Label
-                              htmlFor="scheduleGoogleMeet"
-                              className="flex items-center gap-2 cursor-pointer"
-                            >
-                              <Calendar className="h-4 w-4" />
-                              {candidate.assignment?.googleMeet
-                                ? "Update Google Meet"
-                                : "Schedule Google Meet"}
-                            </Label>
-                          </div>
-                        )}
+                            <div className="flex items-center space-x-2">
+                              <Field name="scheduleGoogleMeet">
+                                {({ field }: FieldProps) => (
+                                  <Checkbox
+                                    id="scheduleGoogleMeet"
+                                    checked={field.value}
+                                    onCheckedChange={(checked) =>
+                                      setFieldValue("scheduleGoogleMeet", checked)
+                                    }
+                                  />
+                                )}
+                              </Field>
+                              <Label
+                                htmlFor="scheduleGoogleMeet"
+                                className="flex items-center gap-2 cursor-pointer"
+                              >
+                                <Calendar className="h-4 w-4" />
+                                {candidate.assignment?.googleMeet
+                                  ? "Update Google Meet"
+                                  : "Schedule Google Meet"}
+                              </Label>
+                            </div>
+                          )}
 
                         {values.scheduleGoogleMeet && (
                           <div className="ml-6 space-y-3">
@@ -757,7 +747,7 @@ export function AssignCandidateDialog({
                                   // Display candidateAttachments if formAttachments is undefined
                                   const displayAttachments =
                                     formAttachments !== undefined &&
-                                    formAttachments.length > 0
+                                      formAttachments.length > 0
                                       ? [...formAttachments]
                                       : [];
                                   return (
@@ -795,9 +785,9 @@ export function AssignCandidateDialog({
                                                 formAttachments !== undefined
                                                   ? currentFormFiles
                                                   : [
-                                                      ...currentFormFiles,
-                                                      // ...currentCandidateFiles,
-                                                    ];
+                                                    ...currentFormFiles,
+                                                    // ...currentCandidateFiles,
+                                                  ];
 
                                               // Sanitize new files
                                               const sanitizedFiles =

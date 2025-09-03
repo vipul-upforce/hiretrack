@@ -101,19 +101,13 @@ export const useAssignCandidate = ({
         attachments: uniqueAttachments,
       };
 
-      console.log("📝 Assignment Update:", {
-        hasGoogleMeetData: !!values?.googleMeetData,
-        googleMeetData: values?.googleMeetData,
-        assignment: updatedCandidate.assignment,
-      });
-
       const previousInterviewer =
         typeof candidate.assignment?.interviewerId === "object"
           ? candidate.assignment.interviewerId.name
           : "";
       const previousInterviewerId =
         typeof candidate.assignment?.interviewerId === "object" &&
-        Object.keys(candidate.assignment?.interviewerId).length > 0
+          Object.keys(candidate.assignment?.interviewerId).length > 0
           ? Object(candidate.assignment.interviewerId._id)
           : null;
 

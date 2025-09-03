@@ -55,9 +55,6 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
   const [isOpen, setIsOpen] = useState(false);
 
   // Debug state changes
-  useEffect(() => {
-    console.log("OnboardingProvider - isOpen changed to:", isOpen);
-  }, [isOpen]);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [steps, setSteps] = useState<OnboardingStep[]>([]);
   const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus | null>(null);

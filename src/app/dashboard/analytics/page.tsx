@@ -117,29 +117,6 @@ export default function AnalyticsPage() {
     refetch: refetchTrends,
   } = useApplicationTrends(filters, organizationId);
 
-  // Debug logging to understand data structure (temporarily enabled)
-  React.useEffect(() => {
-    if (jobData && !jobLoading) {
-      console.log("Job Data Structure:", {
-        summary: jobData.summary,
-        insights: jobData.insights,
-        jobPerformanceDataLength: jobData.jobPerformanceData?.length,
-      });
-    }
-  }, [jobData, jobLoading]);
-
-  // Debug date range format
-  React.useEffect(() => {
-    console.log("DateRange format:", {
-      dateRange,
-      type: typeof dateRange,
-      isArray: Array.isArray(dateRange),
-      length: dateRange?.length,
-      firstItem: dateRange?.[0],
-      firstItemType: typeof dateRange?.[0],
-    });
-  }, [dateRange]);
-
   // Get user's organization ID from token
   useEffect(() => {
     const getUserOrganization = async () => {
@@ -184,19 +161,6 @@ export default function AnalyticsPage() {
 
   const handleExport = () => {
     try {
-      // Debug log to check data availability
-      console.log("Export data check:", {
-        funnelData: funnelData,
-        funnelDataStructure: funnelData ? Object.keys(funnelData) : "null",
-        jobData: jobData,
-        jobDataStructure: jobData ? Object.keys(jobData) : "null",
-        interviewData: interviewData,
-        interviewDataStructure: interviewData
-          ? Object.keys(interviewData)
-          : "null",
-        trendsData: trendsData,
-        trendsDataStructure: trendsData ? Object.keys(trendsData) : "null",
-      });
 
       // Prepare comprehensive analytics data export
       const exportData: any[] = [];
@@ -443,8 +407,6 @@ export default function AnalyticsPage() {
       }
 
       // Export the comprehensive data
-      console.log("Final export data length:", exportData.length);
-      console.log("Export data sample:", exportData.slice(0, 5));
 
       if (exportData.length > 2) {
         // At least header + empty row
@@ -785,20 +747,19 @@ export default function AnalyticsPage() {
                       {jobLoading
                         ? "Loading..."
                         : jobData?.insights?.topPerformingJobs?.[0]?.title ||
-                          jobData?.jobPerformanceData?.[0]?.title ||
-                          "No jobs available"}
+                        jobData?.jobPerformanceData?.[0]?.title ||
+                        "No jobs available"}
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="text-sm font-medium text-green-600 dark:text-green-400">
                       {jobLoading
                         ? "-"
-                        : `${
-                            jobData?.insights?.topPerformingJobs?.[0]
-                              ?.successRate ||
-                            jobData?.jobPerformanceData?.[0]?.successRate ||
-                            0
-                          }%`}
+                        : `${jobData?.insights?.topPerformingJobs?.[0]
+                          ?.successRate ||
+                        jobData?.jobPerformanceData?.[0]?.successRate ||
+                        0
+                        }%`}
                     </div>
                   </div>
                 </div>
@@ -837,12 +798,12 @@ export default function AnalyticsPage() {
                     <div className="text-sm text-muted-foreground">
                       {dateRange && dateRange.length === 2
                         ? (() => {
-                            const fromDate = toDate(dateRange[0]);
-                            const toDateValue = toDate(dateRange[1]);
-                            return fromDate && toDateValue
-                              ? `${fromDate.toLocaleDateString()} - ${toDateValue.toLocaleDateString()}`
-                              : "Selected date range";
-                          })()
+                          const fromDate = toDate(dateRange[0]);
+                          const toDateValue = toDate(dateRange[1]);
+                          return fromDate && toDateValue
+                            ? `${fromDate.toLocaleDateString()} - ${toDateValue.toLocaleDateString()}`
+                            : "Selected date range";
+                        })()
                         : "Selected date range"}
                     </div>
                   </div>

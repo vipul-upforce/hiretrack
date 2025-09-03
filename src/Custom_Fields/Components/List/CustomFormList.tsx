@@ -8,13 +8,6 @@ function CustomFieldFormList() {
   const { customFields } = useContext(CustomFieldsContext);
   const [isOpen, setIsOpen] = useState(false);
 
-  console.log("CustomFieldFormList data:", {
-    customFields,
-    customFieldsKeys: Object.keys(customFields || {}),
-    customFieldsCount: Object.keys(customFields || {}).length,
-    formEntries: Object.entries(customFields || {}),
-  });
-
   return (
     <div>
       {/* <div className="flex justify-end"> */}

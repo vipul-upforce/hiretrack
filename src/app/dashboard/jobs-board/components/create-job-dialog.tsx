@@ -130,7 +130,7 @@ export function CreateJobDialog({
     values: JobFormValues,
     { resetForm, setSubmitting }: FormikHelpers<JobFormValues>
   ) => {
-    console.log(values);
+
 
     const fileNames = values.files.map((file) => file.name);
     const hasDuplicates = new Set(fileNames).size !== fileNames.length;

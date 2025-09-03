@@ -230,7 +230,6 @@ const RenderHistoryEntry = ({
     interview.note.description &&
     typeof interview.note.description !== "string";
   // const { formatTZDate } = useDateFormatter();
-  console.log(interview, "INTERVIEW DATA-------");
   if (
     interview.checklistForm &&
     Object.keys(interview.checklistForm.responses).length === 0
