@@ -16,6 +16,7 @@ import {
   Eye,
   Bell,
   MessageCircle,
+  Tag,
 } from "lucide-react";
 import { Candidate } from "@/types/candidate";
 import { formatDate, formatTime } from "../../hooks/dateTimeFormatting";
@@ -23,7 +24,7 @@ import RemarksPopover from "../Remarks/remarks-popover";
 import { GridCircularScores } from "../Utils/circular-score";
 import FollowupDisplay from "../Remarks/followup-popover";
 import { useRemarkHandlers } from "../../hooks/useRemarkHandlers";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import dayjs from "dayjs";
 import Cookies from "js-cookie";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
@@ -69,6 +70,14 @@ import { useToast } from "@/hooks/use-toast";
 import { EmailCandidateDialog } from "../Dialogs/email-candidate-dialog";
 import { useSelector } from "react-redux";
 import AddRemarksDialog from "../Dialogs/add-remark-dialog";
+import { formatDistanceToNow } from "date-fns";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import TagsDialog from "../Dialogs/tags-dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 interface CandidateCardProps {
   candidate: Candidate;
@@ -106,6 +115,7 @@ export function CandidateCard({
   isPending = false,
 }: CandidateCardProps) {
   const { formNameObject } = useCustomForm("Candidate");
+  const triggerRef = useRef<HTMLButtonElement>(null);
   // const [user, setUser] = useState<User | null>(null);
   const { user } = useSelector((state: any) => state.auth || {});
   const [removeFUOpen, setRemoveFUOpenLocal] = useState(false);
@@ -123,11 +133,15 @@ export function CandidateCard({
   const [isAddingFollowUp, setIsAddingFollowUp] = useState(false);
   const [confirmUnassignOpen, setConfirmUnassignOpen] = useState(false);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
-
+  const [isTagsOpen, setIsTagsOpen] = useState(false);
   // Update local candidate when prop changes
   useEffect(() => {
     setLocalCandidate(candidate);
   }, [candidate]);
+
+  const handlePopoverContentClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
 
   // Handlers for menu actions
   const {
@@ -291,22 +305,36 @@ export function CandidateCard({
         {/* Header with name and buttons */}
         <div className="flex justify-between items-start mb-2 pb-2 border-b border-gray-100 dark:border-gray-800">
           <div className="flex-1 pr-3">
-            <div className="flex items-center gap-2 mb-2">
-              {showStar && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-xs">High-scoring candidate</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-              <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100 leading-tight truncate">
-                {localCandidate.name}
-              </h3>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2 mb-2">
+                {showStar && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">High-scoring candidate</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+                <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100 leading-tight truncate">
+                  {localCandidate.name}
+                </h3>
+              </div>
+              <div className="text-sm text-gray-500 capitalize w-[150%] justify-between">
+                <p>
+                  {new Date(
+                    localCandidate.tracking.createdAt
+                  ).toLocaleDateString()}
+                  {" . "}
+                  {formatDistanceToNow(
+                    new Date(localCandidate.tracking.createdAt),
+                    { addSuffix: true }
+                  )}
+                </p>
+              </div>
             </div>
             {localCandidate.tags && <TagsList candidate={localCandidate} />}
           </div>
@@ -404,6 +432,35 @@ export function CandidateCard({
                   >
                     <UserPlus className="h-4 w-4 mr-2" />
                     Assign To
+                  </DropdownMenuItem>
+                )}
+                {user?.role !== "interviewer" && (
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsTagsOpen(!isTagsOpen);
+                      handlePopoverContentClick;
+                    }}
+                  >
+                    <Tag className="h-4 w-4 mr-2" />
+                    Tags
+                    {/* <Popover modal={true}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5"
+                          title="Tags"
+                          ref={triggerRef}
+                        >
+                          Add Tags
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        onClick={handlePopoverContentClick}
+                        className="p-0"
+                      ></PopoverContent>
+                    </Popover> */}
                   </DropdownMenuItem>
                 )}
 
@@ -1083,6 +1140,28 @@ export function CandidateCard({
           }}
         />
       )}
+
+      {
+        <Dialog open={isTagsOpen} onOpenChange={setIsTagsOpen}>
+          <DialogTitle></DialogTitle>
+          <DialogContent className="h-[340px] w-[330px]">
+            <div className="h-full">
+              <TagsDialog
+                user={user}
+                isDialog={true}
+                candidate={candidate}
+                refetch={() => {
+                  refetch;
+                  setIsTagsOpen(false);
+                }}
+                onClose={() => {
+                  triggerRef.current?.click();
+                }}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      }
 
       {/* Assign Candidate Dialog */}
       {isAssigning && (

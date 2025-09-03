@@ -16,7 +16,7 @@ const TagsList = ({ candidate }: { candidate: Candidate }) => {
 
   return (
     <TooltipProvider delayDuration={0}>
-      <div className="w-full flex flex-row items-center justify-start gap-1 mb-2 relative max-w-[90%] flex-wrap z-10">
+      <div className="w-full flex flex-row items-center justify-start gap-1 my-2 relative max-w-[90%] flex-wrap z-10">
         {candidate.tags?.map((tag, i) => (
           <Tooltip key={i}>
             <TooltipTrigger asChild>

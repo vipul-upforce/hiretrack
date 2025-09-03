@@ -17,9 +17,16 @@ interface TagsDialogProps {
   candidate: Candidate;
   refetch: () => void;
   onClose: () => void;
+  isDialog?: boolean;
 }
 
-const TagsDialog = ({ user, candidate, refetch, onClose }: TagsDialogProps) => {
+const TagsDialog = ({
+  user,
+  candidate,
+  refetch,
+  onClose,
+  isDialog,
+}: TagsDialogProps) => {
   const orgId: string =
     user && typeof user.organizationId === "string" ? user?.organizationId : "";
   const {
@@ -138,7 +145,7 @@ const TagsDialog = ({ user, candidate, refetch, onClose }: TagsDialogProps) => {
           </div>
         </div>
       )}
-      <div className="flex justify-end mt-4">
+      <div className={`flex justify-end mt-4 ${isDialog ? "w-[110%]" : ""}`}>
         <Button
           onClick={handleSave}
           disabled={isUpdating || !hasChanges}
