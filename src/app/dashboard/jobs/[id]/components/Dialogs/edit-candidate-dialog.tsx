@@ -189,7 +189,7 @@ export function EditCandidateDialog({
     // debugger;
     const fileNames = values.attachments.map((file) => file.name);
     const hasDuplicates = new Set(fileNames).size !== fileNames.length;
-    console.log(values, "VALUES");
+
 
     if (hasDuplicates) {
       toast({
@@ -212,12 +212,12 @@ export function EditCandidateDialog({
             file:
               | File
               | {
-                  url: string;
-                  id: string;
-                  name: string;
-                  type: string;
-                  size: number;
-                }
+                url: string;
+                id: string;
+                name: string;
+                type: string;
+                size: number;
+              }
           ) => {
             if (file instanceof File) {
               const base64 = await convertFileToBase64(file);
@@ -257,18 +257,18 @@ export function EditCandidateDialog({
 
         resume: resumeBase64
           ? {
-              id: values?.resume?.id || uuidv4(),
-              name:
-                values.resume instanceof File
-                  ? values.resume.name
-                  : values?.resume?.name || "",
-              url: resumeBase64,
-              type: "pdf",
-              size:
-                values.resume instanceof File
-                  ? values.resume.size
-                  : values?.resume?.size || 0,
-            }
+            id: values?.resume?.id || uuidv4(),
+            name:
+              values.resume instanceof File
+                ? values.resume.name
+                : values?.resume?.name || "",
+            url: resumeBase64,
+            type: "pdf",
+            size:
+              values.resume instanceof File
+                ? values.resume.size
+                : values?.resume?.size || 0,
+          }
           : undefined,
         email: values.email, // Added email field
         currentCTC: Number(parseFloat(String(values.currentCTC)).toFixed(2)),
@@ -279,7 +279,6 @@ export function EditCandidateDialog({
         ),
         attachments: attachmentsBase64,
       };
-      console.log(values, "aSSIGNMEN VALUE");
 
       if (values.assignment) {
         if (values.assignment.interviewerId === "-1") {
@@ -300,7 +299,6 @@ export function EditCandidateDialog({
           };
         }
       }
-      console.log(updatedCandidate, "updatedCandidate VALUE");
 
       const { data: result, error } = await updateCandidate(updatedCandidate);
       if (error) {
@@ -349,13 +347,11 @@ export function EditCandidateDialog({
 
       let title;
       if (!previousInterviewer || previousInterviewer === "") {
-        title = `Assigned to ${nextInterviewer} : Assigned by ${
-          user ? user.name : "No one"
-        }`;
+        title = `Assigned to ${nextInterviewer} : Assigned by ${user ? user.name : "No one"
+          }`;
       } else {
-        title = `${previousInterviewer} → ${nextInterviewer} : Assigned by ${
-          user ? user.name : "No one"
-        }`;
+        title = `${previousInterviewer} → ${nextInterviewer} : Assigned by ${user ? user.name : "No one"
+          }`;
       }
 
       title = null;
@@ -455,11 +451,11 @@ export function EditCandidateDialog({
     assignment:
       candidate.assignment && Object.keys(candidate.assignment).length > 1
         ? {
-            assignment: candidate.assignment,
-            interviewerId,
-            time: candidate.assignment.time,
-            assignedAt: candidate.assignment.assignedAt,
-          }
+          assignment: candidate.assignment,
+          interviewerId,
+          time: candidate.assignment.time,
+          assignedAt: candidate.assignment.assignedAt,
+        }
         : null,
     customFields: getDefaultValues(candidate.customFields || {}),
   };
@@ -495,27 +491,26 @@ export function EditCandidateDialog({
         className={
           !isLargeViewport || isMaximized
             ? "!max-w-none !w-screen !h-screen !min-h-screen !max-h-screen !left-0 !top-0 !translate-x-0 !translate-y-0 !min-w-0 !inset-0 !m-0 !border-0 !rounded-none overflow-hidden flex flex-col"
-            : `sm:max-w-[80vw] ${
-                candidate.resume ? "xl:max-w-[65vw]" : "xl:max-w-[50vw]"
-              } h-[90vh] flex flex-col justify-between overflow-hidden`
+            : `sm:max-w-[80vw] ${candidate.resume ? "xl:max-w-[65vw]" : "xl:max-w-[50vw]"
+            } h-[90vh] flex flex-col justify-between overflow-hidden`
         }
         style={
           !isLargeViewport || isMaximized
             ? {
-                position: "fixed" as const,
-                inset: 0,
-                width: "100vw",
-                height: "100vh",
-                minHeight: "100vh",
-                maxHeight: "100vh",
-                maxWidth: "none",
-                transform: "none",
-                left: 0,
-                top: 0,
-                margin: 0,
-                border: 0,
-                borderRadius: 0,
-              }
+              position: "fixed" as const,
+              inset: 0,
+              width: "100vw",
+              height: "100vh",
+              minHeight: "100vh",
+              maxHeight: "100vh",
+              maxWidth: "none",
+              transform: "none",
+              left: 0,
+              top: 0,
+              margin: 0,
+              border: 0,
+              borderRadius: 0,
+            }
             : {}
         }
       >

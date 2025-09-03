@@ -31,7 +31,6 @@ export const useSSE = (
     //   (selectedCandidate as CustomCalendarEvent)?.extendedProps?.candidate
     //     ?._id ||
     //   (selectedCandidate as any)?._def?.publicId;
-    // console.log("Updating refs and currentCandidate:", {
     //   selectedCandidate,
     //   selectedCandidateId: selectedId,
     // });
@@ -41,19 +40,16 @@ export const useSSE = (
   }, [selectedCandidate, setSelectedCandidate]);
 
   useEffect(() => {
-    // console.log("Opening SSE connection with role:", role, "jobId:", jobId);
     const eventSource = new EventSource(
       `/api/sse/candidates?role=${encodeURIComponent(role)}`
     );
 
     eventSource.onopen = () => {
-      console.log("SSE connection opened");
     };
 
     eventSource.onmessage = async (event) => {
       try {
         const data = JSON.parse(event.data);
-        // console.log("Received SSE event:", data);
         // debugger;
         if (data.type === "candidateUpdate") {
           const encodedCandidate = data.candidate;
@@ -79,7 +75,6 @@ export const useSSE = (
                 ...prev.slice(index + 1),
               ];
             }
-            //   console.log("AFTER SETTING THE UPDATED CANIDATE: ", {
             //   updatedCandidateId: updatedCandidate?._id,
             //   status: updatedCandidate.status,
             //   updatedCandidate,
@@ -101,18 +96,12 @@ export const useSSE = (
             }
           }
 
-          // console.log("Comparing IDs:", {
           //   currentSelectedId,
           //   updatedCandidateId: updatedCandidate._id,
           // });
 
           if (currentSelected && currentSelectedId === updatedCandidate._id) {
-            // console.log("Matched selected candidate, updating...");
             if (!pathname?.includes("/calendar")) {
-              // console.log(
-              //   "Updating non-calendar selected candidate:",
-              //   updatedCandidate
-              // );
               setSelectedCandidateRef.current(updatedCandidate);
             } else {
               // Construct calendar event for calendar views
@@ -122,8 +111,8 @@ export const useSSE = (
                 : currentEvent?.start || new Date();
               const endTime = updatedCandidate?.assignment?.time
                 ? new Date(
-                    new Date(startTime).setHours(startTime.getHours() + 1)
-                  ) // Default to 1-hour duration
+                  new Date(startTime).setHours(startTime.getHours() + 1)
+                ) // Default to 1-hour duration
                 : currentEvent?.end || new Date();
 
               const updatedEvent: CustomCalendarEvent = {
@@ -148,32 +137,30 @@ export const useSSE = (
                     jobDetails:
                       typeof updatedCandidate.jobId === "object"
                         ? {
-                            title: updatedCandidate.jobId?.title || "",
-                            description:
-                              updatedCandidate.jobId?.description || "",
-                          }
+                          title: updatedCandidate.jobId?.title || "",
+                          description:
+                            updatedCandidate.jobId?.description || "",
+                        }
                         : undefined,
                   },
                   interviewer:
                     typeof updatedCandidate?.assignment?.interviewerId ===
-                    "string"
+                      "string"
                       ? {
-                          _id: updatedCandidate?.assignment?.interviewerId,
-                          name: "Unknown",
-                          email: "Unknown",
-                        }
+                        _id: updatedCandidate?.assignment?.interviewerId,
+                        name: "Unknown",
+                        email: "Unknown",
+                      }
                       : updatedCandidate?.assignment?.interviewerId || {
-                          _id: "",
-                          name: "Unknown",
-                          email: "Unknown",
-                        },
+                        _id: "",
+                        name: "Unknown",
+                        email: "Unknown",
+                      },
                 },
               };
-              // console.log("Updating calendar event:", updatedEvent);
               setSelectedCandidateRef.current(updatedEvent);
             }
           } else {
-            // console.log("No match for selected candidate:", {
             //   currentSelectedId,
             //   updatedCandidateId: updatedCandidate._id,
             // });
@@ -183,7 +170,6 @@ export const useSSE = (
           setClients(data.clients);
         } else if (data.type === "lanesUpdate") {
           setLanes(data.lanes);
-          console.log("UPDATED LANES:", data.lanes);
         } else if (data.type === "multipleCandidateUpdate") {
           const decodedCandidates = await getDecodedSSE(data.candidates);
           if (!decodedCandidates) {
@@ -216,12 +202,10 @@ export const useSSE = (
     eventSource.onerror = (error) => {
       console.error("SSE error:", error);
       eventSource.close();
-      // console.log("SSE connection closed due to error");
     };
 
     return () => {
       eventSource.close();
-      // console.log("SSE connection closed on cleanup");
     };
   }, [role, jobId, pathname]);
 

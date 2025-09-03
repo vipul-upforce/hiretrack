@@ -62,25 +62,25 @@ export default function ApplyJobsContent({
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isModalOpen, setIsJobModalOpen] = useState(false);
   const [appliedApplications, setAppliedApplications] = useState<string[]>([]);
-  
+
   // Check query parameters for header/footer visibility
   const hideHeaderParam = searchParams.get('hideHeader');
   const hideFooterParam = searchParams.get('hideFooter');
   const hideHeader = hideHeaderParam === 'true';
   const hideFooter = hideFooterParam === 'true';
-  
+
   // Determine if we should show header/footer based on query params and iframe status
   // Priority: explicit query params > iframe auto-hide behavior
   const hasHeaderParam = hideHeaderParam !== null;
   const hasFooterParam = hideFooterParam !== null;
-  
+
   const shouldShowHeader = showHeaderFooter && (
-    hasHeaderParam 
+    hasHeaderParam
       ? !hideHeader  // If hideHeader param exists, respect its value (true/false)
       : !isIframe    // If no param, hide only if in iframe
   );
   const shouldShowFooter = showHeaderFooter && (
-    hasFooterParam 
+    hasFooterParam
       ? !hideFooter  // If hideFooter param exists, respect its value (true/false)
       : !isIframe    // If no param, hide only if in iframe
   );
@@ -418,7 +418,6 @@ export default function ApplyJobsContent({
 
     window.location.href = "/auth/login";
   };
-  console.log(jobs);
   return (
     <div
       className={

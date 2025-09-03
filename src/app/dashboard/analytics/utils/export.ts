@@ -17,10 +17,10 @@ export const convertToCSV = (data: ExportData[]): string => {
   data.forEach(row => {
     Object.keys(row).forEach(key => allHeaders.add(key));
   });
-  
+
   // Convert set to array and sort for consistent order
   const headers = Array.from(allHeaders).sort();
-  
+
   // Create CSV header row
   const csvHeaders = headers.map(header => {
     // Quote headers that contain special characters
@@ -29,7 +29,7 @@ export const convertToCSV = (data: ExportData[]): string => {
     }
     return header;
   }).join(',');
-  
+
   // Create CSV data rows
   const csvRows = data.map(row => {
     return headers.map(header => {
@@ -45,7 +45,7 @@ export const convertToCSV = (data: ExportData[]): string => {
       return stringValue;
     }).join(',');
   });
-  
+
   return [csvHeaders, ...csvRows].join('\n');
 };
 
@@ -55,7 +55,7 @@ export const convertToCSV = (data: ExportData[]): string => {
 export const downloadCSV = (csvString: string, filename: string): void => {
   const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
-  
+
   if (link.download !== undefined) {
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
@@ -79,17 +79,14 @@ export const generateFilename = (baseName: string, extension: string = 'csv'): s
  * Export data as CSV with automatic filename generation
  */
 export const exportToCSV = (data: ExportData[], baseName: string): void => {
-  console.log('exportToCSV called with:', { dataLength: data?.length, baseName });
-  
+
   if (!data || data.length === 0) {
     console.warn('No data to export');
     return;
   }
-  
+
   const csvString = convertToCSV(data);
-  console.log('CSV string generated, length:', csvString.length);
-  console.log('First 500 chars of CSV:', csvString.substring(0, 500));
-  
+
   const filename = generateFilename(baseName);
   downloadCSV(csvString, filename);
 };

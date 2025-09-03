@@ -389,7 +389,6 @@ export default function LoginFormContent({
   });
 
   useEffect(() => {
-    console.log("🦊🦊🦊🦊 ", user);
     // debugger;
     if (user && user.id && user.role) {
       router.push("/dashboard");

@@ -6,13 +6,6 @@ function Stepper() {
   const context = useContext(CustomFieldsContext);
   const { stepName, customFields, selectedFormId } = context;
 
-  console.log("Stepper context:", {
-    stepName,
-    customFieldsKeys: Object.keys(customFields || {}),
-    customFieldsCount: Object.keys(customFields || {}).length,
-    selectedFormId,
-    hasContext: !!context,
-  });
 
   const StepperComponent = useCallback(() => {
     switch (stepName) {
@@ -21,7 +14,6 @@ function Stepper() {
       case "formCustomFieldList":
         return <FormCustomFieldList />;
       default:
-        // console.log('Unknown step name:', stepName);
         return null;
     }
   }, [stepName]);

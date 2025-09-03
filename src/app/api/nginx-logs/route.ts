@@ -3,12 +3,10 @@ import fs from "fs";
 // import path from "path"; 
 
 export async function GET() {
-  console.log(process.platform);
   if (process.platform === "linux") {
     const logDir = "/var/log/nginx";
     try {
       const files = fs.readdirSync(logDir);
-      console.log(files, "nginx");
       const filteredFiles = files.filter((file) => !file.endsWith(".gz"));
       return NextResponse.json({ files: filteredFiles });
     } catch (error) {
@@ -23,11 +21,9 @@ export async function GET() {
     const logDir = "/Users/UpforceTech/hiretrack";
     try {
       const files = fs.readdirSync(logDir);
-      console.log(files, "nginx");
       const filteredFiles = files.filter(
         (file) => !file.endsWith(".tsbuildinfo")
       );
-      // console.log(filteredFiles);
       return NextResponse.json({ files: filteredFiles });
     } catch (error) {
       console.log(error);

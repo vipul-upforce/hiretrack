@@ -21,7 +21,6 @@ const PortalConfigStep: React.FC = () => {
       setIsChecking(true);
       const isValid = await validateStep('portal');
       setIsConfigured(isValid);
-      console.log('Portal configuration check result:', isValid);
     } catch (error) {
       console.error('Error checking portal configuration:', error);
       setIsConfigured(false);

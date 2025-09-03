@@ -49,7 +49,6 @@ const OnboardingSidebar: React.FC<OnboardingSidebarProps> = ({
   }
 
   const handleOpenOnboarding = () => {
-    console.log("OnboardingSidebar - Opening onboarding dialog");
     setIsOpen(true);
   };
 

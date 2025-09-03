@@ -189,18 +189,18 @@ export default function PortalConfigurationPage() {
   const generatePortalUrl = (additionalParams: string[] = []) => {
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
     let url;
-    
+
     if (hasMultipleOrgs && user?.organizationInfo?.name) {
       const orgParam = `o=${user.organizationInfo.name}`;
       const allParams = [orgParam, ...additionalParams].filter(Boolean);
       url = `${origin}/apply-jobs?${allParams.join('&')}`;
     } else {
       const allParams = additionalParams.filter(Boolean);
-      url = allParams.length > 0 
+      url = allParams.length > 0
         ? `${origin}/apply-jobs?${allParams.join('&')}`
         : `${origin}/apply-jobs`;
     }
-    
+
     return url;
   };
 
@@ -409,15 +409,6 @@ export default function PortalConfigurationPage() {
     );
   }
 
-  console.log("&&&&&&&&&& settings.portalName: ", settings.portalName, user);
-  console.log(
-    "dwdwdw ",
-    settings.portalName &&
-      settings.portalName !== "" &&
-      settings.portalName.length > 0
-      ? true
-      : false
-  );
 
   return (
     <div className="h-screen flex flex-col overflow-hidden w-full">
@@ -474,8 +465,8 @@ export default function PortalConfigurationPage() {
       <div className="flex-1 min-h-0 px-4 pb-4 mt-4 overflow-y-auto">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            <Tabs 
-              defaultValue="general" 
+            <Tabs
+              defaultValue="general"
               value={activeTab}
               onValueChange={setActiveTab}
               className="w-full"
@@ -530,8 +521,8 @@ export default function PortalConfigurationPage() {
                         id="portalName"
                         value={
                           settings.portalName &&
-                          settings.portalName !== "" &&
-                          settings.portalName.length > 0
+                            settings.portalName !== "" &&
+                            settings.portalName.length > 0
                             ? settings.portalName
                             : user.organizationInfo.name
                         }
@@ -599,7 +590,7 @@ export default function PortalConfigurationPage() {
                               ? "border-primary ring-2 ring-primary ring-offset-2"
                               : "border-border hover:border-primary/50",
                             combo.isDefault &&
-                              "bg-gradient-to-br from-primary/5 to-secondary/5"
+                            "bg-gradient-to-br from-primary/5 to-secondary/5"
                           )}
                           onClick={() =>
                             setSettings((prev) => ({
@@ -984,9 +975,9 @@ export default function PortalConfigurationPage() {
                             const queryParams = [];
                             if (embedHideHeader) queryParams.push('hideHeader=true');
                             if (embedHideFooter) queryParams.push('hideFooter=true');
-                            
+
                             const embedUrl = generatePortalUrl(queryParams);
-                            
+
                             const embedCode = `<iframe
   src="${embedUrl}"
   width="${embedWidth}"
@@ -1024,9 +1015,9 @@ export default function PortalConfigurationPage() {
                             const queryParams = [];
                             if (embedHideHeader) queryParams.push('hideHeader=true');
                             if (embedHideFooter) queryParams.push('hideFooter=true');
-                            
+
                             const embedUrl = generatePortalUrl(queryParams);
-                            
+
                             return `<iframe
   src="${embedUrl}"
   width="${embedWidth}"
@@ -1134,7 +1125,7 @@ export default function PortalConfigurationPage() {
                   )}
                 </div>
                 <CardDescription>
-                  {activeTab === "embed" 
+                  {activeTab === "embed"
                     ? "Preview of how your portal will look when embedded"
                     : "Live preview of your portal settings"}
                 </CardDescription>
@@ -1155,7 +1146,7 @@ export default function PortalConfigurationPage() {
                           yourwebsite.com/careers
                         </div>
                       </div>
-                      
+
                       {/* Real Iframe */}
                       <div className="bg-white dark:bg-black rounded p-2 overflow-auto">
                         <div
@@ -1172,7 +1163,7 @@ export default function PortalConfigurationPage() {
                               const queryParams = [];
                               queryParams.push(`hideHeader=${embedHideHeader}`);
                               queryParams.push(`hideFooter=${embedHideFooter}`);
-                              
+
                               if (hasMultipleOrgs && user?.organizationInfo?.name) {
                                 const orgParam = `o=${user.organizationInfo.name}`;
                                 const allParams = [orgParam, ...queryParams];
@@ -1195,7 +1186,7 @@ export default function PortalConfigurationPage() {
                         </div>
                       </div>
                     </div>
-                    
+
                     {/* Embed Info */}
                     <div className="text-xs text-muted-foreground space-y-1">
                       <p className="flex items-center gap-1">
@@ -1244,19 +1235,19 @@ export default function PortalConfigurationPage() {
                             {(previewTheme === "dark"
                               ? settings.portalLogoDark
                               : settings.portalLogo) && (
-                              <div className="h-10 w-32 relative bg-white/10 rounded">
-                                <Image
-                                  src={
-                                    previewTheme === "dark"
-                                      ? settings.portalLogoDark?.url || ""
-                                      : settings.portalLogo?.url || ""
-                                  }
-                                  alt="Logo"
-                                  fill
-                                  className="object-contain p-2"
-                                />
-                              </div>
-                            )}
+                                <div className="h-10 w-32 relative bg-white/10 rounded">
+                                  <Image
+                                    src={
+                                      previewTheme === "dark"
+                                        ? settings.portalLogoDark?.url || ""
+                                        : settings.portalLogo?.url || ""
+                                    }
+                                    alt="Logo"
+                                    fill
+                                    className="object-contain p-2"
+                                  />
+                                </div>
+                              )}
                             <h3 className="text-white font-semibold">
                               {settings.portalName || "Portal Name"}
                             </h3>

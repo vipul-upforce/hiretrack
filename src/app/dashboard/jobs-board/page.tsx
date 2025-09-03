@@ -67,17 +67,6 @@ function JobCustomFieldsDialog({
     selecteFormIdTarget,
   } = context;
   const [hasAutoSelected, setHasAutoSelected] = useState(false);
-
-  console.log("JobCustomFieldsDialog context:", {
-    customFieldsKeys: Object.keys(customFields || {}),
-    customFieldsCount: Object.keys(customFields || {}).length,
-    stepName,
-    selectedFormId,
-    hasContext: !!context,
-    isOpen,
-    hasAutoSelected,
-  });
-
   // Auto-select job position form when dialog opens
   useEffect(() => {
     if (

@@ -489,8 +489,6 @@ const ChecklistRemarksDialog = ({
   useEffect(() => {
     if (hasChecklist) {
       const initialResponses: Record<string, any> = {};
-      // console.log(initialResponses, "initialResponses");
-      console.log(parsedChecklistInfo, "parsedChecklistInfo");
 
       parsedChecklistInfo.checklist!.fields.forEach((field) => {
         initialResponses[field.id] = {
@@ -501,7 +499,6 @@ const ChecklistRemarksDialog = ({
 
         };
       });
-      console.log(initialResponses, "initialResponses");
 
       setChecklistResponses(initialResponses);
       setFieldErrors({}); // Clear any previous errors when initializing
@@ -766,7 +763,6 @@ const ChecklistRemarksDialog = ({
       // Submit checklist if present
       if (hasChecklist && parsedChecklistInfo) {
         const checklist = parsedChecklistInfo.checklist!;
-        console.log(checklist, "checklist odjkdk");
 
         const laneConfig = jobLaneConfig?.laneConfigs.find(
           (lc) =>
@@ -775,7 +771,6 @@ const ChecklistRemarksDialog = ({
               ? parsedChecklistInfo.targetLane
               : parsedChecklistInfo.currentLane)
         );
-        console.log(checklistResponses, "checklistResponses =submots");
 
         await submitChecklist({
           candidateId: candidate._id,
