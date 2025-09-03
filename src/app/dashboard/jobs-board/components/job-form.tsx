@@ -223,7 +223,7 @@ export function JobForm(props: JobFormProps) {
               min="0"
             />
           </div> */}
-          <div className="space-y-2 flex items-center gap-2">
+          <div className=" flex items-center gap-2">
             <Checkbox
               id="salary.isPrivate"
               checked={values.salary?.isPrivate === true}
@@ -232,7 +232,7 @@ export function JobForm(props: JobFormProps) {
               }}
               onBlur={handleBlur}
             />
-            <Label className="m-0 p-0" htmlFor="salary.isPrivate">
+            <Label className="m-0 p-0 mt-0" htmlFor="salary.isPrivate">
               Keep Salary Private
             </Label>
           </div>
@@ -370,7 +370,7 @@ export function JobForm(props: JobFormProps) {
       </div> */}
 
       <div className="space-y-2">
-        <div className="space-y-2 flex items-center gap-2">
+        <div className=" flex items-center gap-2">
           <Checkbox
             id="promptForStatusChangeReason"
             checked={values.promptForStatusChangeReason === true}

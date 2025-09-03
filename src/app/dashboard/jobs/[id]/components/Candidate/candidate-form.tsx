@@ -278,10 +278,11 @@ export function CandidateForm({
               )}
             </div> */}
             <MobileFileUpload
-              accept={{}}
-              maxFiles={
-                user && (user.role === "candidate" || user.role === "") ? 2 : 30
-              }
+              accept={{ "application/pdf": [".pdf"] }}
+              // maxFiles={
+              //   user && (user.role === "candidate" || user.role === "") ? 2 : 30
+              // }
+              // maxFiles={1}
               onFileSelect={async (files) => {
                 if (!user && files[0].size > 3 * 1024 * 1024) {
                   toast({
@@ -750,7 +751,12 @@ export function CandidateForm({
             </div> */}
             <MobileFileUpload
               accept={{}}
-              maxFiles={user && user.role === "candidate" ? 2 : 30}
+              maxFiles={
+                (user && (user.role === "candidate" || user.role === "")) ||
+                !user
+                  ? 2
+                  : 30
+              }
               onFileSelect={(files) => {
                 const sanitizedFiles = sanitizeFiles(files);
                 const currentFiles = attachmentsField.value || [];
@@ -1535,7 +1541,8 @@ export function CandidateForm({
             <FileUpload
               accept={{}}
               maxFiles={
-                (user && user.role === "candidate") || user.role === "" || !user
+                (user && (user.role === "candidate" || user.role === "")) ||
+                !user
                   ? 2
                   : 30
               }

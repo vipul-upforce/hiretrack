@@ -216,9 +216,9 @@ export function ApplyAsGuestDialog({
     };
 
     checkScreenSize();
-    window.addEventListener('resize', checkScreenSize);
-    
-    return () => window.removeEventListener('resize', checkScreenSize);
+    window.addEventListener("resize", checkScreenSize);
+
+    return () => window.removeEventListener("resize", checkScreenSize);
   }, []);
 
   useEffect(() => {
@@ -246,7 +246,6 @@ export function ApplyAsGuestDialog({
 
   const handleSubmit = async (values: CandidateFormValues) => {
     // Show terms confirmation dialog first
-    debugger;
     setPendingFormValues(values);
     setShowTermsDialog(true);
   };
@@ -491,23 +490,27 @@ export function ApplyAsGuestDialog({
           )}
         </button>
       </DialogTrigger>
-      <DialogContent 
-        className={`${isSmallScreen ? 'fixed inset-0 w-screen h-screen max-w-none max-h-none m-0 p-0 rounded-none border-0' : 'lg:w-[85vw] lg:h-[85vh] lg:max-w-[85vw] lg:max-h-[85vh] lg:border lg:rounded-lg xl:w-[80vw] xl:h-[80vh] xl:max-w-[80vw] xl:max-h-[80vh]'} overflow-hidden flex flex-col justify-center`}
-        style={isSmallScreen ? {
-          position: 'fixed',
-          inset: '0',
-          transform: 'none',
-          left: '0',
-          top: '0',
-          width: '100vw',
-          height: '100vh',
-          maxWidth: 'none',
-          maxHeight: 'none',
-          margin: '0',
-          borderRadius: '0',
-          border: 'none',
-          zIndex: 9999
-        } as React.CSSProperties : undefined}
+      <DialogContent
+        className={`${isSmallScreen ? "fixed inset-0 w-screen h-screen max-w-none max-h-none m-0 p-0 rounded-none border-0" : "lg:w-[85vw] lg:h-[85vh] lg:max-w-[85vw] lg:max-h-[85vh] lg:border lg:rounded-lg xl:w-[80vw] xl:h-[80vh] xl:max-w-[80vw] xl:max-h-[80vh]"} overflow-hidden flex flex-col justify-center`}
+        style={
+          isSmallScreen
+            ? ({
+                position: "fixed",
+                inset: "0",
+                transform: "none",
+                left: "0",
+                top: "0",
+                width: "100vw",
+                height: "100vh",
+                maxWidth: "none",
+                maxHeight: "none",
+                margin: "0",
+                borderRadius: "0",
+                border: "none",
+                zIndex: 9999,
+              } as React.CSSProperties)
+            : undefined
+        }
       >
         <DialogHeader
           className={`px-6 py-4 flex-shrink-0 text-left ${hasAlreadyApplied && "hidden"}`}

@@ -197,9 +197,9 @@ export default function ApplyOptions({
                     <span
                       className="bg-white dark:bg-black px-3 py-1 rounded-full text-xs font-medium"
                       style={{
-                        color: `${primaryColor}80`,
-                        backgroundColor: `${primaryColor}05`,
-                        border: `1px solid ${primaryColor}20`,
+                        color: `${primaryColor}90`,
+                        // backgroundColor: `${primaryColor}100`,
+                        border: `1px solid ${primaryColor}70`,
                       }}
                     >
                       Or

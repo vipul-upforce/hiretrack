@@ -322,7 +322,7 @@ export async function GET(req: NextRequest) {
         const pipeline = [
           {
             $match: {
-              // status: "open",
+              status: "open",
               organizationId: new Types.ObjectId(userData?.organizationId),
             },
           },

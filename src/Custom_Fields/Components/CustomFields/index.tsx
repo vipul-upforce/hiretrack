@@ -193,7 +193,7 @@ function CustomFields({
         return (
           <div
             key={field.id}
-            className="flex flex-col gap-2"
+            className="flex flex-col gap-2 mt-2 md:mt-0"
             ref={(el) => {
               fieldRefs.current[field.label] = el;
             }}

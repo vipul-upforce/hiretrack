@@ -69,9 +69,9 @@ function AnimatedGridPattern({
       currentSquares.map((sq) =>
         sq.id === id
           ? {
-            ...sq,
-            pos: getPos(),
-          }
+              ...sq,
+              pos: getPos(),
+            }
           : sq
       )
     );
@@ -512,7 +512,7 @@ export default function LoginFormContent({
     e.preventDefault();
     handleSubmit(
       { email: formData.email, password: formData.password },
-      { setStatus: () => { } }
+      { setStatus: () => {} }
     );
   };
 
@@ -614,7 +614,12 @@ export default function LoginFormContent({
       />
 
       {/* Theme Toggle in top right corner */}
-      <div className="absolute top-4 right-4 z-10">
+      <div
+        className="absolute top-4 right-4"
+        style={{
+          zIndex: 999,
+        }}
+      >
         <ThemeToggle
           variant="ghost"
           size="icon"

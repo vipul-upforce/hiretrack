@@ -35,7 +35,7 @@ const KanbanColumn = ({
   //   const router = useRouter();
 
   return (
-    <div className="flex-1 min-w-[450px] px-2">
+    <div className="flex-1 min-w-[30px] px-2">
       <div className="h-full flex flex-col bg-white/70 dark:bg-black/30 rounded-lg p-3 min-w-0 w-full max-w-full">
         <div className="py-3 flex-shrink-0 px-2 mb-4">
           <div className="flex items-center justify-between">

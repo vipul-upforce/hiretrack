@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ExternalLink, Shield, FileText } from "lucide-react";
 
 interface TermsConfirmationDialogProps {
@@ -49,26 +49,33 @@ export function TermsConfirmationDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent size="md" className="p-0 overflow-hidden flex flex-col">
+      <DialogContent
+        size={window.innerWidth < 1024 ? "sm" : "md"}
+        className="p-0 overflow-hidden flex flex-col "
+        style={{
+          zIndex: 9999,
+          marginLeft: window.innerWidth < 1024 ? "0px" : "",
+        }}
+      >
         <DialogHeader className="px-6 py-4">
           <div className="flex items-center gap-3 mb-2">
-            <div 
+            <div
               className="w-10 h-10 rounded-full flex items-center justify-center"
-              style={{ 
-                backgroundColor: 'rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)' 
+              style={{
+                backgroundColor:
+                  "rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)",
               }}
             >
-              <Shield 
-                className="w-5 h-5" 
-                style={{ color: 'var(--portal-primary, #6366f1)' }}
+              <Shield
+                className="w-5 h-5"
+                style={{ color: "var(--portal-primary, #6366f1)" }}
               />
             </div>
-            <DialogTitle>
-              Confirm Application
-            </DialogTitle>
+            <DialogTitle>Confirm Application</DialogTitle>
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-            Before submitting your application, please review and accept our terms and privacy policy.
+            Before submitting your application, please review and accept our
+            terms and privacy policy.
           </p>
         </DialogHeader>
 
@@ -79,24 +86,31 @@ export function TermsConfirmationDialog({
               <Checkbox
                 id="terms"
                 checked={termsAccepted}
-                onCheckedChange={(checked) => setTermsAccepted(checked as boolean)}
+                onCheckedChange={(checked) =>
+                  setTermsAccepted(checked as boolean)
+                }
                 className="mt-1"
               />
               <div className="flex-1">
-                <label htmlFor="terms" className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed cursor-pointer">
+                <label
+                  htmlFor="terms"
+                  className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed cursor-pointer"
+                >
                   I have read and agree to the{" "}
                   <button
                     type="button"
                     onClick={openTerms}
                     className="underline inline-flex items-center gap-1 font-medium transition-colors"
                     style={{
-                      color: 'var(--portal-primary, #6366f1)'
+                      color: "var(--portal-primary, #6366f1)",
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.color = 'var(--portal-primary-hover, #5b5fd6)';
+                      e.currentTarget.style.color =
+                        "var(--portal-primary-hover, #5b5fd6)";
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.color = 'var(--portal-primary, #6366f1)';
+                      e.currentTarget.style.color =
+                        "var(--portal-primary, #6366f1)";
                     }}
                   >
                     <FileText className="w-3 h-3" />
@@ -111,24 +125,31 @@ export function TermsConfirmationDialog({
               <Checkbox
                 id="privacy"
                 checked={privacyAccepted}
-                onCheckedChange={(checked) => setPrivacyAccepted(checked as boolean)}
+                onCheckedChange={(checked) =>
+                  setPrivacyAccepted(checked as boolean)
+                }
                 className="mt-1"
               />
               <div className="flex-1">
-                <label htmlFor="privacy" className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed cursor-pointer">
+                <label
+                  htmlFor="privacy"
+                  className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed cursor-pointer"
+                >
                   I have read and agree to the{" "}
                   <button
                     type="button"
                     onClick={openPrivacy}
                     className="underline inline-flex items-center gap-1 font-medium transition-colors"
                     style={{
-                      color: 'var(--portal-primary, #6366f1)'
+                      color: "var(--portal-primary, #6366f1)",
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.color = 'var(--portal-primary-hover, #5b5fd6)';
+                      e.currentTarget.style.color =
+                        "var(--portal-primary-hover, #5b5fd6)";
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.color = 'var(--portal-primary, #6366f1)';
+                      e.currentTarget.style.color =
+                        "var(--portal-primary, #6366f1)";
                     }}
                   >
                     <Shield className="w-3 h-3" />

@@ -230,7 +230,7 @@ export const RenderField = ({
 
     case "checkbox":
       return (
-        <div className="flex flex-row gap-4">
+        <div className="flex flex-col gap-2 md:flex-row md:gap-4">
           {options?.map((option) => (
             <div key={option} className="flex items-center space-x-2">
               <Checkbox
@@ -326,7 +326,7 @@ export const RenderField = ({
             onValueChange={(value) =>
               setFieldValue("customFields." + label, value)
             }
-            className="flex flex-row gap-4"
+            className="flex flex-col gap-2 md:flex-row md:gap-4"
           >
             {options?.map((option) => (
               <div key={option} className="flex items-center space-x-2">
