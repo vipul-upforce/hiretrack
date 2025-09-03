@@ -74,14 +74,14 @@ async function handleForgotPassword(req: NextRequest) {
       id: user._id.toString(),
       organizationId:
         user.organizationId &&
-        typeof user.organizationId === "object" &&
-        "_id" in user.organizationId
+          typeof user.organizationId === "object" &&
+          "_id" in user.organizationId
           ? (user.organizationId as Organization)._id.toString()
           : "",
       organizationName:
         user.organizationId &&
-        typeof user.organizationId === "object" &&
-        "name" in user.organizationId
+          typeof user.organizationId === "object" &&
+          "name" in user.organizationId
           ? user.organizationId.name
           : "",
       email: user.email,
@@ -98,8 +98,8 @@ async function handleForgotPassword(req: NextRequest) {
         : "",
       organizationName:
         user.organizationId &&
-        typeof user.organizationId === "object" &&
-        "name" in user.organizationId
+          typeof user.organizationId === "object" &&
+          "name" in user.organizationId
           ? String(user.organizationId.name) // Explicitly cast to string
           : "",
       email: user.email,
@@ -169,12 +169,16 @@ async function handlePasswordReset(
         user = await CandidateAccount.findOne({
           email,
           organizationId,
-        });
+        }).populate(
+          "organizationId"
+        );
       } else {
         user = await User.findOne({
           email,
           organizationId,
-        });
+        }).populate(
+          "organizationId"
+        );
       }
     } else {
       // Try regular user first, then candidate
@@ -183,10 +187,13 @@ async function handlePasswordReset(
       );
 
       if (!user) {
-        user = await CandidateAccount.findOne({ email, organizationId });
+        user = await CandidateAccount.findOne({ email, organizationId }).populate(
+          "organizationId"
+        );
         isCandidate = true;
       }
     }
+    console.log(user, "User For Reset_link --___ TT ");
 
     if (!user) {
       throw new Error(
