@@ -100,7 +100,7 @@ export default function twoFASettings({ onClose }: { onClose: () => void }) {
               <Button
                 type="submit"
                 disabled={isSubmitting || isUpdating}
-                variant="default"
+                variant="primary"
               >
                 {isSubmitting || isUpdating ? "Saving..." : "Save"}
               </Button>

@@ -132,6 +132,7 @@ export default function RemarkInputSection({
                   </div>
                   <Switch
                     id="privacy-toggle-submit"
+
                     checked={isSubRemarkPrivate}
                     onCheckedChange={() =>
                       setIsSubRemarkPrivate(!isSubRemarkPrivate)

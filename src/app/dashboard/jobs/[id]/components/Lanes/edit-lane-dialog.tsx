@@ -69,6 +69,7 @@ const EditLaneDialog = ({
           </Button>
           <Button
             disabled={!editingLane?.trim()}
+            variant="primary"
             onClick={() => {
               if (
                 prevLane &&

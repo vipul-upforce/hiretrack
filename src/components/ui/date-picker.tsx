@@ -28,9 +28,8 @@ const PickerActionsPlugin = ({
 
   return (
     <div
-      className={`flex items-center justify-between gap-2 p-3 border-t border-border/30 bg-muted/20 ${
-        position === "top" ? "border-b" : ""
-      }`}
+      className={`flex items-center justify-between gap-2 p-3 border-t border-border/30 bg-muted/20 ${position === "top" ? "border-b" : ""
+        }`}
     >
       <div className="flex gap-2">
         <button
@@ -61,6 +60,14 @@ const PickerActionsPlugin = ({
         type="button"
         className="flex items-center gap-1 px-1.5 py-1 rounded border border-primary text-[0.7rem] font-bold bg-primary/90 text-white hover:bg-primary"
         onClick={onDone}
+        style={
+          {
+            backgroundColor:
+              "var(--portal-primary, #6366f1)",
+            borderColor:
+              "var(--portal-primary, #6366f1)",
+          }
+        }
       >
         <Check className="h-3 w-3" /> Done
       </button>
@@ -114,13 +121,13 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   const plugins = [
     ...(showTimePicker
       ? [
-          <TimePicker
-            key="time"
-            position={timePickerPosition}
-            hideSeconds
-            {...timePickerProps}
-          />,
-        ]
+        <TimePicker
+          key="time"
+          position={timePickerPosition}
+          hideSeconds
+          {...timePickerProps}
+        />,
+      ]
       : []),
     <PickerActionsPlugin
       position="bottom"

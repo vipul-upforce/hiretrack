@@ -64,7 +64,7 @@ export default function TimeZoneSelect({ onClose }: { onClose: () => void }) {
   const initialValues: TimeZoneValues = {
     timeZone:
       data?.timezone?.name &&
-      TIMEZONES.some((tz) => tz.name === data.timezone.name)
+        TIMEZONES.some((tz) => tz.name === data.timezone.name)
         ? data.timezone.name
         : TIMEZONES[0].name,
   };
@@ -156,7 +156,7 @@ export default function TimeZoneSelect({ onClose }: { onClose: () => void }) {
               <Button
                 type="submit"
                 disabled={isSubmitting || isUpdating}
-                variant="default"
+                variant="primary"
               >
                 {isSubmitting || isUpdating ? "Saving..." : "Save"}
               </Button>

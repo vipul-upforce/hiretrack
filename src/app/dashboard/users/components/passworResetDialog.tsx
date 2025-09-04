@@ -173,6 +173,7 @@ export function ResetPasswordDialog({
                   type="submit"
                   disabled={isReseting || isSubmitting}
                   onClick={() => handleSubmit()}
+                  variant="primary"
                 >
                   {isReseting ? (
                     <div className="flex items-center">

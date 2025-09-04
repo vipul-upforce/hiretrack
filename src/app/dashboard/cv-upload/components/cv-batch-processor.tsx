@@ -161,6 +161,7 @@ export function CVBatchProcessor() {
             <Button
               onClick={handleProcessBatch}
               disabled={files.length === 0 || isPosting}
+              variant="primary"
             >
               {isPosting ? "Processing..." : "Process Batch"}
             </Button>

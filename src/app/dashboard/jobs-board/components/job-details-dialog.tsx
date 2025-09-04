@@ -81,7 +81,7 @@ export function JobDetailsDialog({
       <Button variant="outline" onClick={handleClose}>
         Close
       </Button>
-      <Button onClick={() => setIsEditing(true)}>Edit Job</Button>
+      <Button onClick={() => setIsEditing(true)} variant="primary">Edit Job</Button>
     </div>
   );
 

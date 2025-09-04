@@ -235,7 +235,7 @@ function SpecificCustomFieldList({
       <div className="flex justify-end mb-4">
         <Button
           type="button"
-          variant="default"
+          variant="primary"
           onClick={handleAddField}
           className="flex items-center gap-2"
         >
@@ -402,8 +402,19 @@ export const CustomFieldItem = React.memo(
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-3">
                       <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-xl shadow-sm">
-                          <IconComponent className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                        <div className="p-3 rounded-xl shadow-sm"
+                          style={
+                            {
+                              backgroundColor:
+                                "rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)",
+                            }
+                          }
+                        >
+                          <IconComponent className="h-5 w-5 "
+                            style={
+                              { color: "var(--portal-primary, #6366f1)" }
+                            }
+                          />
                         </div>
                         <div className="flex-1">
                           <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">

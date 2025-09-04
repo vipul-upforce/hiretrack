@@ -353,7 +353,12 @@ export function AssignCandidateDialog({
           >
             {({ values, errors, touched, isSubmitting, setFieldValue }) => (
               <Form className="flex-1 flex flex-col h-full overflow-hidden">
-                <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+
+                {/* <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6"> */}
+                <div className={`flex-1 px-6 py-4 space-y-6 ${!candidate.assignment?.googleMeet?.eventId && !values.scheduleGoogleMeet
+                  ? ""
+                  : "overflow-y-auto"
+                  }`}>
                   <div className="grid gap-4 py-4">
                     <div className="grid gap-2">
                       <Label htmlFor="interviewerId">Assign To</Label>
@@ -993,7 +998,7 @@ export function AssignCandidateDialog({
                   </div>
                 </div>
 
-                <div className="flex relative bottom-0 justify-between w-full space-x-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10">
+                <div className="flex justify-between w-full space-x-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10">
                   <div>
                     {candidate.assignment && (
                       <Button

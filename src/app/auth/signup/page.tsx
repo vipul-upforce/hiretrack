@@ -306,6 +306,7 @@ export default function Signup() {
                     type="submit"
                     className="w-full"
                     disabled={isLoading || isSubmitting}
+                    variant="primary"
                   >
                     {isLoading || isSubmitting
                       ? "Creating User..."
