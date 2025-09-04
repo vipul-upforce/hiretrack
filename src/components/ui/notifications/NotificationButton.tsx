@@ -30,6 +30,7 @@ interface NotificationButtonProps {
     | "ghost"
     | "link";
   buttonSize?: "default" | "sm" | "lg" | "icon";
+  fetchNotifications: () => void;
 }
 
 export function NotificationButton({
@@ -48,6 +49,7 @@ export function NotificationButton({
   className,
   buttonVariant = "ghost",
   buttonSize = "icon",
+  fetchNotifications,
 }: NotificationButtonProps) {
   const dropdownRef = React.useRef<HTMLDivElement>(null);
   const buttonRef = React.useRef<HTMLButtonElement>(null);
@@ -126,7 +128,12 @@ export function NotificationButton({
           buttonSize === "icon" && "h-8 w-8 rounded-full",
           className
         )}
-        onClick={() => onOpenChange(!isOpen)}
+        onClick={() => {
+          onOpenChange(!isOpen);
+          if (!isOpen) {
+            fetchNotifications();
+          }
+        }}
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
       >
         <Bell className="h-4 w-4" />

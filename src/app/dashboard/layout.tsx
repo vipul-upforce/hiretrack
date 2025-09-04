@@ -128,11 +128,14 @@ export default function DashboardLayout({
   const [notificationPage, setNotificationPage] = useState(1);
   const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] =
     useState(false);
-  const { data: notificationsData, isLoading: notificationsLoading } =
-    useGetNotificationsQuery(
-      { page: notificationPage, limit: 10 },
-      { skip: !userData } // Skip query if no user data
-    );
+  const {
+    data: notificationsData,
+    isLoading: notificationsLoading,
+    refetch: fetchNotifications,
+  } = useGetNotificationsQuery(
+    { page: notificationPage, limit: 10 },
+    { skip: !userData } // Skip query if no user data
+  );
   const { data: notificationCountData } = useGetNotificationCountQuery(
     undefined,
     { skip: !userData, pollingInterval: 30000 } // Poll every 30 seconds for real-time updates
@@ -622,6 +625,7 @@ export default function DashboardLayout({
               totalPages={notificationsData?.pagination?.totalPages || 1}
               isLoading={notificationsLoading}
               onMarkAsRead={handleMarkAsRead}
+              fetchNotifications={fetchNotifications}
               onMarkAllAsRead={handleMarkAllAsRead}
               onNotificationClick={handleNotificationClick}
               onPageChange={setNotificationPage}

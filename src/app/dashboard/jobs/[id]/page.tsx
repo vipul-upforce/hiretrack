@@ -41,7 +41,17 @@ import { mergeRefs } from "react-merge-refs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { QuickSelectAndFilter } from "./components/QuickSelectAndFilter";
 import { Button } from "@/components/ui/button";
-import { Settings2, BarChart3 } from "lucide-react";
+import {
+  Settings2,
+  BarChart3,
+  MoreVertical,
+  MoreHorizontal,
+} from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { CustomFieldsContext } from "@/Custom_Fields/Context";
 import CustomFieldDialog from "@/Custom_Fields/Components/Common/CustomFieldDialog";
 import Stepper from "@/Custom_Fields/Components/Stepper";
@@ -577,40 +587,58 @@ export default function JobProgressPage() {
           />
 
           <div className="flex gap-2">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="promptForStatusChangeReason"
-                checked={job.promptForStatusChangeReason}
-                disabled={isLoading}
-                onCheckedChange={(checked: boolean) => {
-                  setPendingPromptValue(checked);
-                  setIsPromptConfirmOpen(true);
-                }}
-              />
-              <label
-                htmlFor="promptForStatusChangeReason"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Prompt for status change reason
-              </label>
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => setIsCustomFieldsOpen(true)}
-              className="flex items-center gap-2"
-            >
-              <Settings2 className="h-4 w-4" />
-              Personalized form fields
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setIsAnalyticsOpen(true)}
-              className="flex items-center gap-2"
-            >
-              <BarChart3 className="h-4 w-4" />
-              Analytics
-            </Button>
-
+            {/* <Button
+                    variant="outline"
+                    onClick={() => setIsAnalyticsOpen(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <BarChart3 className="h-4 w-4" />
+                    Analytics
+                  </Button> */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="h-9">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[270px] mt-2" align="end">
+                <div className="space-y-2 pt-4 pb-2 px-1">
+                  <div className="flex items-center  mx-4 gap-2 mb-2 mt-1">
+                    <Checkbox
+                      id="promptForStatusChangeReason"
+                      checked={job.promptForStatusChangeReason}
+                      disabled={isLoading}
+                      onCheckedChange={(checked: boolean) => {
+                        setPendingPromptValue(checked);
+                        setIsPromptConfirmOpen(true);
+                      }}
+                    />
+                    <label
+                      htmlFor="promptForStatusChangeReason"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      Prompt for status change reason
+                    </label>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    onClick={() => setIsCustomFieldsOpen(true)}
+                    className="w-full justify-start gap-2"
+                  >
+                    <Settings2 className="h-4 w-4" />
+                    Personalized form fields
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => setIsAnalyticsOpen(true)}
+                    className="w-full justify-start gap-2"
+                  >
+                    <BarChart3 className="h-4 w-4" />
+                    Analytics
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
             <CreateLaneDialog onAddLane={handleAddLane} />
             <CreateCandidateDialog
               jobId={id as string}
@@ -742,7 +770,7 @@ export default function JobProgressPage() {
         isOpen={isPromptConfirmOpen}
         setIsOpen={setIsPromptConfirmOpen}
         title="Confirm Setting Change"
-        message={`Are you sure you want to ${pendingPromptValue ? 'enable' : 'disable'} prompting for status change reasons?`}
+        message={`Are you sure you want to ${pendingPromptValue ? "enable" : "disable"} prompting for status change reasons?`}
         onConfirm={async () => {
           setPromptForStatusChangeReason(pendingPromptValue);
           try {
@@ -881,7 +909,6 @@ function CandidateCustomFieldsDialog({
       customFields &&
       Object.keys(customFields).length > 0
     ) {
-
       // Find the "candidate" form ID
       const candidateFormEntry = Object.entries(customFields).find(
         ([_, form]) => form.formName.toLowerCase() === "candidate"

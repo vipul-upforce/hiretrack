@@ -306,7 +306,7 @@ export function CandidateCard({
         <div className="flex justify-between items-start mb-2 pb-2 border-b border-gray-100 dark:border-gray-800">
           <div className="flex-1 pr-3">
             <div className="flex flex-col">
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-2">
                 {showStar && (
                   <TooltipProvider>
                     <Tooltip>
