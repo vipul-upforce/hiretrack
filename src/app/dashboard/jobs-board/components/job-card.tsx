@@ -101,13 +101,17 @@ const JobCard = ({
             onClick={(e) => {
               // Only trigger on actual click, not on drag
               if (e.detail === 0) return; // Ignore programmatic clicks
-              
+
               // Check if click target is a button or inside a dropdown
               const target = e.target as HTMLElement;
-              if (target.closest('button') || target.closest('[role="menuitem"]') || target.closest('[data-radix-collection-item]')) {
+              if (
+                target.closest("button") ||
+                target.closest('[role="menuitem"]') ||
+                target.closest("[data-radix-collection-item]")
+              ) {
                 return; // Don't navigate if clicking on buttons or menu items
               }
-              
+
               // Navigate to job kanban
               router.push(`/dashboard/jobs/${job._id}`);
             }}
@@ -137,26 +141,28 @@ const JobCard = ({
                 )}
 
                 {/* Analytics Icon */}
-                <TooltipProvider>
-                  <Tooltip delayDuration={0}>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-gray-600 hover:text-gray-900 hover:bg-gray-200 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setIsAnalyticsOpen(true);
-                        }}
-                      >
-                        <BarChart3 className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent className="bg-popover border border-border text-popover-foreground">
-                      <p>View Analytics</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                {user?.role === "admin" && (
+                  <TooltipProvider>
+                    <Tooltip delayDuration={0}>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-gray-600 hover:text-gray-900 hover:bg-gray-200 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsAnalyticsOpen(true);
+                          }}
+                        >
+                          <BarChart3 className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-popover border border-border text-popover-foreground">
+                        <p>View Analytics</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
 
                 {/* Layout Icon for Opening Job Board */}
                 <Button

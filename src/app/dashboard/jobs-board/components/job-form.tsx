@@ -21,6 +21,7 @@ import { LinkIcon } from "lucide-react";
 import RichTextEditor from "@/components/ui/rte/RichTextEditor";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useSanitizeFiles } from "@/hooks/useSanitizeFiles";
+import useRoles from "@/hooks/useRoles";
 // import { Checkbox } from "@mui/material";
 // import { Checkbox } from "@mui/material";
 
@@ -76,6 +77,7 @@ export function JobForm(props: JobFormProps) {
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
   const [newLink, setNewLink] = useState("");
   const { sanitizeFiles } = useSanitizeFiles();
+  const role = useRoles();
 
   const handleAddLink = () => {
     try {
@@ -369,21 +371,23 @@ export function JobForm(props: JobFormProps) {
         />
       </div> */}
 
-      <div className="space-y-2">
-        <div className=" flex items-center gap-2">
-          <Checkbox
-            id="promptForStatusChangeReason"
-            checked={values.promptForStatusChangeReason === true}
-            onCheckedChange={(checked) => {
-              setFieldValue("promptForStatusChangeReason", checked);
-            }}
-            onBlur={handleBlur}
-          />
-          <Label className="m-0 p-0" htmlFor="promptForStatusChangeReason">
-            Prompt for reason when changing candidate status
-          </Label>
+      {role === "admin" && (
+        <div className="space-y-2">
+          <div className=" flex items-center gap-2">
+            <Checkbox
+              id="promptForStatusChangeReason"
+              checked={values.promptForStatusChangeReason === true}
+              onCheckedChange={(checked) => {
+                setFieldValue("promptForStatusChangeReason", checked);
+              }}
+              onBlur={handleBlur}
+            />
+            <Label className="m-0 p-0" htmlFor="promptForStatusChangeReason">
+              Prompt for reason when changing candidate status
+            </Label>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

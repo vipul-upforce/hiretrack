@@ -82,7 +82,7 @@ const sidebarItems: SidebarItem[] = [
     title: "Analytics",
     href: "/dashboard/analytics",
     icon: <BarChart3Icon className="h-5 w-5" />,
-    role: "hr", // HR and Admin users can access analytics
+    role: "admin", // HR and Admin users can access analytics
   },
   {
     title: "Users",

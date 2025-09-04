@@ -603,23 +603,25 @@ export default function JobProgressPage() {
               </PopoverTrigger>
               <PopoverContent className="w-[270px] mt-2" align="end">
                 <div className="space-y-2 pt-4 pb-2 px-1">
-                  <div className="flex items-center  mx-4 gap-2 mb-2 mt-1">
-                    <Checkbox
-                      id="promptForStatusChangeReason"
-                      checked={job.promptForStatusChangeReason}
-                      disabled={isLoading}
-                      onCheckedChange={(checked: boolean) => {
-                        setPendingPromptValue(checked);
-                        setIsPromptConfirmOpen(true);
-                      }}
-                    />
-                    <label
-                      htmlFor="promptForStatusChangeReason"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Prompt for status change reason
-                    </label>
-                  </div>
+                  {user?.role === "admin" && (
+                    <div className="flex items-center  mx-4 gap-2 mb-2 mt-1">
+                      <Checkbox
+                        id="promptForStatusChangeReason"
+                        checked={job.promptForStatusChangeReason}
+                        disabled={isLoading}
+                        onCheckedChange={(checked: boolean) => {
+                          setPendingPromptValue(checked);
+                          setIsPromptConfirmOpen(true);
+                        }}
+                      />
+                      <label
+                        htmlFor="promptForStatusChangeReason"
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        Prompt for status change reason
+                      </label>
+                    </div>
+                  )}
                   <Button
                     variant="ghost"
                     onClick={() => setIsCustomFieldsOpen(true)}
@@ -628,14 +630,16 @@ export default function JobProgressPage() {
                     <Settings2 className="h-4 w-4" />
                     Personalized form fields
                   </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={() => setIsAnalyticsOpen(true)}
-                    className="w-full justify-start gap-2"
-                  >
-                    <BarChart3 className="h-4 w-4" />
-                    Analytics
-                  </Button>
+                  {user?.role === "admin" && (
+                    <Button
+                      variant="ghost"
+                      onClick={() => setIsAnalyticsOpen(true)}
+                      className="w-full justify-start gap-2"
+                    >
+                      <BarChart3 className="h-4 w-4" />
+                      Analytics
+                    </Button>
+                  )}
                 </div>
               </PopoverContent>
             </Popover>
