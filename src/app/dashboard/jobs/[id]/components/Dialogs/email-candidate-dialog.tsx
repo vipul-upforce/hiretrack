@@ -625,7 +625,7 @@ export function EmailCandidateDialog({
                     "inline-flex items-center gap-2 px-4 py-2 border rounded-md cursor-pointer",
                     "hover:bg-accent hover:text-accent-foreground",
                     attachments.length >= MAX_ATTACHMENTS &&
-                      "opacity-50 cursor-not-allowed"
+                    "opacity-50 cursor-not-allowed"
                   )}
                 >
                   <Upload className="h-4 w-4" />
@@ -672,6 +672,7 @@ export function EmailCandidateDialog({
           </Button>
           <Button
             onClick={handleSend}
+            variant="primary"
             disabled={sending || emailSent}
             className={cn(
               "min-w-[120px]",

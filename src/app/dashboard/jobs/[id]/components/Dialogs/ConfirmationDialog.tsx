@@ -59,6 +59,7 @@ const ConfirmationDialog = ({
           <Button
             disabled={isLoading}
             onClick={handleConfirm}
+            variant="primary"
             className={
               buttonName === "Archive"
                 ? "bg-red-600 hover:bg-red-700 text-white dark:bg-red-500 dark:hover:bg-red-600"

@@ -352,7 +352,7 @@ export function QuickSelectAndFilter({
               <div className="flex items-center space-x-2">
                 <Button
                   variant={
-                    filters.logicalOperator === "AND" ? "default" : "outline"
+                    filters.logicalOperator === "AND" ? "primary" : "outline"
                   }
                   size="sm"
                   onClick={() =>
@@ -364,7 +364,7 @@ export function QuickSelectAndFilter({
                 </Button>
                 <Button
                   variant={
-                    filters.logicalOperator === "OR" ? "default" : "outline"
+                    filters.logicalOperator === "OR" ? "primary" : "outline"
                   }
                   size="sm"
                   onClick={() =>

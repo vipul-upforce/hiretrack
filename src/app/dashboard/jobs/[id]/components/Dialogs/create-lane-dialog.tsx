@@ -41,7 +41,7 @@ export function CreateLaneDialog({ onAddLane }: CreateLaneDialogProps) {
         <Plus className="h-4 w-4 mr-2" />
         Add Lane
       </Button>
-      
+
       <QuickCreateDialog
         isOpen={isOpen}
         onClose={() => {

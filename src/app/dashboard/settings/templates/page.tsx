@@ -928,7 +928,7 @@ export default function EmailTemplatesPage() {
             {/* Right Section - Action Buttons */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3">
               <div className="flex gap-2">
-                <Button onClick={handleSave} disabled={saving}>
+                <Button onClick={handleSave} disabled={saving} variant="primary">
                   <Save className="h-4 w-4 mr-2" />
                   {saving ? "Saving..." : "Save Changes"}
                 </Button>
@@ -949,7 +949,7 @@ export default function EmailTemplatesPage() {
                   Select a template to customize
                 </p>
               </div>
-              <Button size="sm" onClick={() => setShowAddDialog(true)}>
+              <Button size="sm" onClick={() => setShowAddDialog(true)} variant="primary" >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Custom
               </Button>
@@ -1446,7 +1446,7 @@ export default function EmailTemplatesPage() {
             <Button variant="outline" onClick={() => setShowAddDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={addCustomTemplate} disabled={loading}>
+            <Button onClick={addCustomTemplate} disabled={loading} variant="primary">
               {loading ? 'Adding...' : 'Add Template'}
             </Button>
           </DialogFooter>

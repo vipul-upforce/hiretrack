@@ -198,23 +198,23 @@ export default function SMTPConfigs({ onClose }: { onClose: () => void }) {
     const credentials =
       values.mailProvider === "resend"
         ? {
-            resend_api_key: values.resend_api_key,
-            resend_from: values.resend_from,
-            reply_to: values.resend_reply_to,
-          }
+          resend_api_key: values.resend_api_key,
+          resend_from: values.resend_from,
+          reply_to: values.resend_reply_to,
+        }
         : values.mailProvider === "brevo"
           ? {
-              brevo_api_key: values.brevo_api_key,
-              brevo_from: values.brevo_from,
-              reply_to: values.brevo_reply_to,
-            }
+            brevo_api_key: values.brevo_api_key,
+            brevo_from: values.brevo_from,
+            reply_to: values.brevo_reply_to,
+          }
           : {
-              host: values.smtp_host,
-              port: values.smtp_port,
-              from: values.smtp_from,
-              user: values.smtp_user,
-              pass: values.smtp_password,
-            };
+            host: values.smtp_host,
+            port: values.smtp_port,
+            from: values.smtp_from,
+            user: values.smtp_user,
+            pass: values.smtp_password,
+          };
 
     await testConnection(values.mailProvider, credentials);
   };
@@ -383,9 +383,9 @@ export default function SMTPConfigs({ onClose }: { onClose: () => void }) {
             </div>
 
             <div className="flex justify-end gap-2 border-t border-border/10 px-6 py-4 mt-auto">
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={onClose}
                 disabled={isSubmitting || isUpdating}
               >
@@ -397,7 +397,7 @@ export default function SMTPConfigs({ onClose }: { onClose: () => void }) {
                     <div>
                       <Button
                         type="submit"
-                        variant="default"
+                        variant="primary"
                         disabled={
                           isSubmitting || isUpdating || !isConnectionSuccessful
                         }

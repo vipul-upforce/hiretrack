@@ -667,7 +667,7 @@ export const LaneChecklistConfigDialog = ({
                   <div>
                     <div className="flex items-center justify-between mb-4">
                       <h4 className="text-sm font-medium">Checklist Fields</h4>
-                      <Button size="sm" onClick={addField}>
+                      <Button size="sm" onClick={addField} variant="primary" >
                         <Plus className="h-4 w-4 mr-2" />
                         Add Field
                       </Button>
@@ -856,7 +856,7 @@ export const LaneChecklistConfigDialog = ({
           >
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={isSubmitting}>
+          <Button onClick={handleSave} disabled={isSubmitting} variant="primary">
             <Save className="h-4 w-4 mr-2" />
             {isSubmitting ? "Saving..." : "Save Configuration"}
           </Button>
@@ -1032,10 +1032,19 @@ const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
                   return (
                     <div
                       key={type.value}
-                      className={`relative p-4 rounded-lg cursor-pointer transition-all duration-200 ${isSelected
-                        ? "bg-gray-100 dark:bg-gray-700 shadow-sm"
-                        : "bg-white dark:bg-black hover:bg-gray-100 dark:hover:bg-gray-700"
+                      className={`relative p-4 rounded-lg cursor-pointer border-2 transition-all duration-200 ${isSelected
+                        ? "shadow-md"
+                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
                         }`}
+                      style={
+                        isSelected
+                          ? {
+                            borderColor: "var(--portal-primary, #6366f1)",
+                            backgroundColor:
+                              "rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)",
+                          }
+                          : {}
+                      }
                       onClick={() =>
                         setFieldData({ ...fieldData, type: type.value as any })
                       }
@@ -1344,7 +1353,7 @@ const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
                   fieldData.type === "checkbox") &&
                   fieldData.options?.length == 0)
               }
-              variant="success"
+              variant="primary"
               size="lg"
             >
               {isEditMode ? "Update Field" : "Create Field"}

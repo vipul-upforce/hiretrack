@@ -199,6 +199,7 @@ export function EditUserDialog({
                   type="submit"
                   disabled={isUpdating || isLoading}
                   onClick={() => handleSubmit()}
+                  variant="primary"
                 >
                   {isUpdating && isLoading ? "Updating..." : "Update User"}
                 </Button>

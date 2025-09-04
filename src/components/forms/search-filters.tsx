@@ -95,14 +95,14 @@ export function SearchFilters({
     const newCols = cols.map((col) =>
       col.id === colId
         ? {
-            ...col,
-            fieldId,
-            label: selectedField.label,
-            type: selectedField.type,
-            options: selectedField.options as string[],
-            name: selectedField.label,
-            value: selectedField ? "" : (col.value ?? ""),
-          }
+          ...col,
+          fieldId,
+          label: selectedField.label,
+          type: selectedField.type,
+          options: selectedField.options as string[],
+          name: selectedField.label,
+          value: selectedField ? "" : (col.value ?? ""),
+        }
         : col
     );
     setCols(newCols);
@@ -442,11 +442,10 @@ export function SearchFilters({
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
-                        className={`w-full justify-start text-left font-normal h-9 ${
-                          hasError("createdAfter") || hasError("createdBefore")
-                            ? "border-destructive"
-                            : ""
-                        }`}
+                        className={`w-full justify-start text-left font-normal h-9 ${hasError("createdAfter") || hasError("createdBefore")
+                          ? "border-destructive"
+                          : ""
+                          }`}
                       >
                         <CalendarIcon className="mr-2 h-3 w-3" />
                         {values.createdAfter && values.createdBefore ? (
@@ -485,9 +484,9 @@ export function SearchFilters({
                         value={
                           values.createdAfter && values.createdBefore
                             ? [
-                                new Date(values.createdAfter),
-                                new Date(values.createdBefore),
-                              ]
+                              new Date(values.createdAfter),
+                              new Date(values.createdBefore),
+                            ]
                             : null
                         }
                         onChange={(dateRange) => {
@@ -604,12 +603,12 @@ export function SearchFilters({
                                   options={col?.options as string[]}
                                   value={
                                     col.value as
-                                      | string
-                                      | string[]
-                                      | boolean
-                                      | Dayjs
-                                      | [Dayjs, Dayjs]
-                                      | undefined
+                                    | string
+                                    | string[]
+                                    | boolean
+                                    | Dayjs
+                                    | [Dayjs, Dayjs]
+                                    | undefined
                                   }
                                   onChange={(value) =>
                                     updateColValue(

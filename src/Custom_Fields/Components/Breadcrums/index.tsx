@@ -17,8 +17,19 @@ const Breadcrumbs = memo(({ breadcrumbs }: BreadcrumbsProps) => {
           <React.Fragment key={index}>
             {index === 0 && (
               <div className="flex items-center space-x-2">
-                <div className="p-1.5 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                  <Home className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <div className="p-2 rounded-lg"
+                  style={
+                    {
+                      backgroundColor:
+                        "rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)",
+                    }
+                  }
+                >
+                  <Home className="h-4 w-4 "
+                    style={
+                      { color: "var(--portal-primary, #6366f1)" }
+                    }
+                  />
                 </div>
               </div>
             )}

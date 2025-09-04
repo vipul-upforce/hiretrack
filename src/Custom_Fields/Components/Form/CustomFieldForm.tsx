@@ -341,18 +341,17 @@ const CustomFieldForm = memo(
                       return (
                         <div
                           key={type.value}
-                          className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
-                            isSelected
-                              ? "shadow-md"
-                              : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-                          }`}
+                          className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${isSelected
+                            ? "shadow-md"
+                            : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                            }`}
                           style={
                             isSelected
                               ? {
-                                  borderColor: "var(--portal-primary, #6366f1)",
-                                  backgroundColor:
-                                    "rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)",
-                                }
+                                borderColor: "var(--portal-primary, #6366f1)",
+                                backgroundColor:
+                                  "rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)",
+                              }
                               : {}
                           }
                           onClick={() =>
@@ -372,11 +371,10 @@ const CustomFieldForm = memo(
                           )}
                           <div className="flex flex-col items-center text-center gap-2">
                             <IconComponent
-                              className={`h-6 w-6 ${
-                                isSelected
-                                  ? ""
-                                  : "text-gray-500 dark:text-gray-400"
-                              }`}
+                              className={`h-6 w-6 ${isSelected
+                                ? ""
+                                : "text-gray-500 dark:text-gray-400"
+                                }`}
                               style={
                                 isSelected
                                   ? { color: "var(--portal-primary, #6366f1)" }
@@ -384,11 +382,10 @@ const CustomFieldForm = memo(
                               }
                             />
                             <span
-                              className={`text-sm font-medium ${
-                                isSelected
-                                  ? ""
-                                  : "text-gray-700 dark:text-gray-300"
-                              }`}
+                              className={`text-sm font-medium ${isSelected
+                                ? ""
+                                : "text-gray-700 dark:text-gray-300"
+                                }`}
                               style={
                                 isSelected
                                   ? { color: "var(--portal-primary, #6366f1)" }
@@ -407,37 +404,37 @@ const CustomFieldForm = memo(
                 {["select", "multiSelect", "radio", "checkbox"].includes(
                   values.type
                 ) && (
-                  <div>
-                    <Label
-                      htmlFor="options"
-                      className="text-lg font-medium block pb-3"
-                    >
-                      Options{" "}
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
-                        (Hit Enter to Add)
-                      </span>
-                    </Label>
-                    <ChipInput
-                      value={values.options}
-                      onChange={(newOptions) =>
-                        setFieldValue(
-                          "options",
-                          newOptions
-                            .map((option) => option.trim())
-                            .filter((option) => option !== "")
-                        )
-                      }
-                      placeholder="Type an option and press Enter..."
-                      suggestions={[]}
+                    <div>
+                      <Label
+                        htmlFor="options"
+                        className="text-lg font-medium block pb-3"
+                      >
+                        Options{" "}
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                          (Hit Enter to Add)
+                        </span>
+                      </Label>
+                      <ChipInput
+                        value={values.options}
+                        onChange={(newOptions) =>
+                          setFieldValue(
+                            "options",
+                            newOptions
+                              .map((option) => option.trim())
+                              .filter((option) => option !== "")
+                          )
+                        }
+                        placeholder="Type an option and press Enter..."
+                        suggestions={[]}
                       // className="text-lg"
-                    />
-                    {errors.options && touched.options && (
-                      <div className="text-red-500 text-sm pt-2 flex items-center gap-1">
-                        <span>⚠️</span> {errors.options}
-                      </div>
-                    )}
-                  </div>
-                )}
+                      />
+                      {errors.options && touched.options && (
+                        <div className="text-red-500 text-sm pt-2 flex items-center gap-1">
+                          <span>⚠️</span> {errors.options}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                 <div>
                   <Label className="text-lg font-medium mb-4 block">
@@ -445,18 +442,17 @@ const CustomFieldForm = memo(
                   </Label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div
-                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
-                        values.required
-                          ? "shadow-md"
-                          : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-                      }`}
+                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${values.required
+                        ? "shadow-md"
+                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                        }`}
                       style={
                         values.required
                           ? {
-                              borderColor: "var(--portal-primary, #6366f1)",
-                              backgroundColor:
-                                "rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)",
-                            }
+                            borderColor: "var(--portal-primary, #6366f1)",
+                            backgroundColor:
+                              "rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)",
+                          }
                           : {}
                       }
                       onClick={() =>
@@ -466,19 +462,18 @@ const CustomFieldForm = memo(
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div
-                            className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                              values.required
-                                ? ""
-                                : "border-gray-300 dark:border-gray-600"
-                            }`}
+                            className={`w-5 h-5 rounded border-2 flex items-center justify-center ${values.required
+                              ? ""
+                              : "border-gray-300 dark:border-gray-600"
+                              }`}
                             style={
                               values.required
                                 ? {
-                                    backgroundColor:
-                                      "var(--portal-primary, #6366f1)",
-                                    borderColor:
-                                      "var(--portal-primary, #6366f1)",
-                                  }
+                                  backgroundColor:
+                                    "var(--portal-primary, #6366f1)",
+                                  borderColor:
+                                    "var(--portal-primary, #6366f1)",
+                                }
                                 : {}
                             }
                           >
@@ -488,11 +483,10 @@ const CustomFieldForm = memo(
                           </div>
                           <div>
                             <div
-                              className={`font-medium ${
-                                values.required
-                                  ? ""
-                                  : "text-gray-700 dark:text-gray-300"
-                              }`}
+                              className={`font-medium ${values.required
+                                ? ""
+                                : "text-gray-700 dark:text-gray-300"
+                                }`}
                               style={
                                 values.required
                                   ? { color: "var(--portal-primary, #6366f1)" }
@@ -510,18 +504,17 @@ const CustomFieldForm = memo(
                     </div>
 
                     <div
-                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
-                        values.private
-                          ? "shadow-md"
-                          : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-                      }`}
+                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${values.private
+                        ? "shadow-md"
+                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                        }`}
                       style={
                         values.private
                           ? {
-                              borderColor: "var(--portal-primary, #6366f1)",
-                              backgroundColor:
-                                "rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)",
-                            }
+                            borderColor: "var(--portal-primary, #6366f1)",
+                            backgroundColor:
+                              "rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)",
+                          }
                           : {}
                       }
                       onClick={() => setFieldValue("private", !values.private)}
@@ -529,19 +522,18 @@ const CustomFieldForm = memo(
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div
-                            className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                              values.private
-                                ? ""
-                                : "border-gray-300 dark:border-gray-600"
-                            }`}
+                            className={`w-5 h-5 rounded border-2 flex items-center justify-center ${values.private
+                              ? ""
+                              : "border-gray-300 dark:border-gray-600"
+                              }`}
                             style={
                               values.private
                                 ? {
-                                    backgroundColor:
-                                      "var(--portal-primary, #6366f1)",
-                                    borderColor:
-                                      "var(--portal-primary, #6366f1)",
-                                  }
+                                  backgroundColor:
+                                    "var(--portal-primary, #6366f1)",
+                                  borderColor:
+                                    "var(--portal-primary, #6366f1)",
+                                }
                                 : {}
                             }
                           >
@@ -551,11 +543,10 @@ const CustomFieldForm = memo(
                           </div>
                           <div>
                             <div
-                              className={`font-medium ${
-                                values.private
-                                  ? ""
-                                  : "text-gray-700 dark:text-gray-300"
-                              }`}
+                              className={`font-medium ${values.private
+                                ? ""
+                                : "text-gray-700 dark:text-gray-300"
+                                }`}
                               style={
                                 values.private
                                   ? { color: "var(--portal-primary, #6366f1)" }
@@ -573,18 +564,17 @@ const CustomFieldForm = memo(
                     </div>
 
                     <div
-                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
-                        values.privateInt
-                          ? "shadow-md"
-                          : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-                      }`}
+                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${values.privateInt
+                        ? "shadow-md"
+                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                        }`}
                       style={
                         values.privateInt
                           ? {
-                              borderColor: "var(--portal-primary, #6366f1)",
-                              backgroundColor:
-                                "rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)",
-                            }
+                            borderColor: "var(--portal-primary, #6366f1)",
+                            backgroundColor:
+                              "rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)",
+                          }
                           : {}
                       }
                       onClick={() =>
@@ -594,19 +584,18 @@ const CustomFieldForm = memo(
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div
-                            className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                              values.privateInt
-                                ? ""
-                                : "border-gray-300 dark:border-gray-600"
-                            }`}
+                            className={`w-5 h-5 rounded border-2 flex items-center justify-center ${values.privateInt
+                              ? ""
+                              : "border-gray-300 dark:border-gray-600"
+                              }`}
                             style={
                               values.privateInt
                                 ? {
-                                    backgroundColor:
-                                      "var(--portal-primary, #6366f1)",
-                                    borderColor:
-                                      "var(--portal-primary, #6366f1)",
-                                  }
+                                  backgroundColor:
+                                    "var(--portal-primary, #6366f1)",
+                                  borderColor:
+                                    "var(--portal-primary, #6366f1)",
+                                }
                                 : {}
                             }
                           >
@@ -616,11 +605,10 @@ const CustomFieldForm = memo(
                           </div>
                           <div>
                             <div
-                              className={`font-medium ${
-                                values.privateInt
-                                  ? ""
-                                  : "text-gray-700 dark:text-gray-300"
-                              }`}
+                              className={`font-medium ${values.privateInt
+                                ? ""
+                                : "text-gray-700 dark:text-gray-300"
+                                }`}
                               style={
                                 values.privateInt
                                   ? { color: "var(--portal-primary, #6366f1)" }
@@ -638,18 +626,17 @@ const CustomFieldForm = memo(
                     </div>
 
                     <div
-                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
-                        values.showOnCard
-                          ? "shadow-md"
-                          : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-                      }`}
+                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${values.showOnCard
+                        ? "shadow-md"
+                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                        }`}
                       style={
                         values.showOnCard
                           ? {
-                              borderColor: "var(--portal-primary, #6366f1)",
-                              backgroundColor:
-                                "rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)",
-                            }
+                            borderColor: "var(--portal-primary, #6366f1)",
+                            backgroundColor:
+                              "rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)",
+                          }
                           : {}
                       }
                       onClick={() =>
@@ -659,19 +646,18 @@ const CustomFieldForm = memo(
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div
-                            className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                              values.showOnCard
-                                ? ""
-                                : "border-gray-300 dark:border-gray-600"
-                            }`}
+                            className={`w-5 h-5 rounded border-2 flex items-center justify-center ${values.showOnCard
+                              ? ""
+                              : "border-gray-300 dark:border-gray-600"
+                              }`}
                             style={
                               values.showOnCard
                                 ? {
-                                    backgroundColor:
-                                      "var(--portal-primary, #6366f1)",
-                                    borderColor:
-                                      "var(--portal-primary, #6366f1)",
-                                  }
+                                  backgroundColor:
+                                    "var(--portal-primary, #6366f1)",
+                                  borderColor:
+                                    "var(--portal-primary, #6366f1)",
+                                }
                                 : {}
                             }
                           >
@@ -681,11 +667,10 @@ const CustomFieldForm = memo(
                           </div>
                           <div>
                             <div
-                              className={`font-medium ${
-                                values.showOnCard
-                                  ? ""
-                                  : "text-gray-700 dark:text-gray-300"
-                              }`}
+                              className={`font-medium ${values.showOnCard
+                                ? ""
+                                : "text-gray-700 dark:text-gray-300"
+                                }`}
                               style={
                                 values.showOnCard
                                   ? { color: "var(--portal-primary, #6366f1)" }
@@ -724,7 +709,7 @@ const CustomFieldForm = memo(
                           Default Value
                         </Label>
                         {values.type === "multiSelect" ||
-                        values.type === "checkbox" ? (
+                          values.type === "checkbox" ? (
                           <ChipInput
                             value={values.defaultValue as string[]}
                             onChange={(newOptions) =>
@@ -828,7 +813,7 @@ const CustomFieldForm = memo(
                 <div className="flex justify-end">
                   <Button
                     type="submit"
-                    variant="success"
+                    variant="primary"
                     size="lg"
                     disabled={
                       !isEditMode &&

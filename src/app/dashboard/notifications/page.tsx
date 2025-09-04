@@ -252,7 +252,7 @@ export default function NotificationsPage() {
                   Refresh
                 </Button>
                 {unreadCount > 0 && (
-                  <Button size="sm" onClick={handleMarkAllAsRead}>
+                  <Button size="sm" onClick={handleMarkAllAsRead} variant="primary">
                     <Check className="h-4 w-4 mr-2" />
                     Mark all read
                   </Button>

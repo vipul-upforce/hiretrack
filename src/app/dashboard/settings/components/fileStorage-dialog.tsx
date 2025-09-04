@@ -85,7 +85,7 @@ export default function FileStorageOptions({
         .sign(secretKey);
 
       return jwt;
-    } catch {}
+    } catch { }
   };
 
   // useEffect(() => {
@@ -503,7 +503,7 @@ export default function FileStorageOptions({
                     <div>
                       <Button
                         type="submit"
-                        variant="default"
+                        variant="primary"
                         disabled={
                           values.storageType !== "local" &&
                           (isSubmitting ||

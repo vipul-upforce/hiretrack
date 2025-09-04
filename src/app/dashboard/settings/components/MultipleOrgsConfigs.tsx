@@ -101,9 +101,9 @@ export default function MultipleOrgsConfigs({
             </div>
 
             <div className="flex justify-end gap-2 border-t border-border/10 px-6 py-4 mt-auto">
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={onClose}
                 disabled={isSubmitting || isUpdating}
               >
@@ -112,7 +112,7 @@ export default function MultipleOrgsConfigs({
               <Button
                 type="submit"
                 disabled={isSubmitting || isUpdating}
-                variant="default"
+                variant="primary"
               >
                 {isSubmitting || isUpdating ? "Saving..." : "Save"}
               </Button>

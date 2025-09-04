@@ -88,12 +88,12 @@ interface JobFormValues extends Omit<Job, "attachments"> {
 type FileOrAttachment =
   | File
   | {
-      id: string;
-      name: string;
-      url: string;
-      type: "pdf" | "image";
-      size: number;
-    };
+    id: string;
+    name: string;
+    url: string;
+    type: "pdf" | "image";
+    size: number;
+  };
 
 const convertFileToBase64 = (file: FileOrAttachment): Promise<string> => {
   if (file instanceof File) {
@@ -346,6 +346,7 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
                 type="submit"
                 onClick={() => scrollToError(errors)}
                 disabled={isSubmitting}
+                variant="primary"
               >
                 {isSubmitting ? "Saving..." : "Save"}
               </Button>

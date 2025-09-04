@@ -152,7 +152,7 @@ export function AssignJobDialog({
               </div>
 
               <div className="flex relative bottom-0 justify-between w-full space-x-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10">
-                <Button type="submit" disabled={isSubmitting || loading}>
+                <Button type="submit" disabled={isSubmitting || loading} variant="primary" >
                   {isSubmitting && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}

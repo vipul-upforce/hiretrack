@@ -107,7 +107,8 @@ export const BaseDialog = React.forwardRef<
               )}
               {primaryAction && (
                 <Button
-                  variant={primaryAction.variant || "default"}
+                  // variant={primaryAction.variant || "primary"}
+                  variant="primary"
                   onClick={primaryAction.onClick}
                   disabled={primaryAction.disabled || primaryAction.loading}
                   className="w-full sm:w-auto"

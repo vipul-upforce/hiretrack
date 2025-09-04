@@ -28,7 +28,7 @@ function FormCustomFieldList() {
     <div>
       <div className="flex justify-between">
         <Breadcrumbs breadcrumbs={breadcrumbs} />
-        <Button onClick={handleOpen}>
+        <Button onClick={handleOpen} variant="primary" >
           <Plus className="mr-2 h-4 w-4" />
           Add a new field
         </Button>

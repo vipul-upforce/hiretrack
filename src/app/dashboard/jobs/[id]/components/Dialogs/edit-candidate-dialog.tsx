@@ -584,7 +584,7 @@ export function EditCandidateDialog({
                       // scrollToErrorMassage(errors);
                     }}
                     type={Object.keys(errors).length == 0 ? "button" : "submit"}
-                    variant="success"
+                    variant="primary"
                   >
                     {isSubmitting ? "Saving..." : "Save Changes"}
                   </Button>

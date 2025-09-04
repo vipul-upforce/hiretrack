@@ -2,11 +2,11 @@ import React, { useContext, useState, useCallback } from "react";
 import { CustomFieldsContext } from "../../Context";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  TrashIcon, 
-  ChevronRight, 
-  FileText, 
-  Users, 
+import {
+  TrashIcon,
+  ChevronRight,
+  FileText,
+  Users,
   Briefcase,
   LayoutGrid,
   Settings2,
@@ -49,7 +49,7 @@ function FormIDCard({ formId, formName, fields }: CardProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showDeleteAllIndDialog, setShowDeleteAllIndDialog] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  
+
   const IconComponent = formIcons[formName.toLowerCase()] || formIcons.default;
   const globalFields = fields?.filter(field => !field.candidateId && !field.jobId) || [];
 
@@ -85,15 +85,26 @@ function FormIDCard({ formId, formName, fields }: CardProps) {
 
   return (
     <>
-      <Card 
-        onClick={hadleClick} 
+      <Card
+        onClick={hadleClick}
         className="cursor-pointer group !shadow-sm hover:!shadow-xl transition-all duration-200 hover:-translate-y-0.5 !bg-white dark:!bg-gray-900 !border-2 !border-gray-200 dark:!border-gray-700 hover:!border-blue-400 dark:hover:!border-blue-500 !rounded-xl overflow-hidden"
       >
         <CardHeader className="pb-4">
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-4 flex-1">
-              <div className="p-3 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl shadow-sm group-hover:shadow-md transition-all duration-200">
-                <IconComponent className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              <div className="p-3 rounded-xl shadow-sm group-hover:shadow-md transition-all duration-200"
+                style={
+                  {
+                    backgroundColor:
+                      "rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)",
+                  }
+                }
+              >
+                <IconComponent className="h-6 w-6"
+                  style={
+                    { color: "var(--portal-primary, #6366f1)" }
+                  }
+                />
               </div>
               <div className="flex-1 min-w-0">
                 <CardTitle className="text-xl font-semibold capitalize text-gray-900 dark:text-gray-100 mb-2 flex items-center gap-2">
@@ -140,26 +151,26 @@ function FormIDCard({ formId, formName, fields }: CardProps) {
                 <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
                 <div className="text-sm text-blue-700 dark:text-blue-300">
                   <p>
-                    {formName.toLowerCase() === 'job position' ? 
+                    {formName.toLowerCase() === 'job position' ?
                       'These fields will be shown for all existing and new jobs. Any new job or job when edited will have these fields.' :
-                     formName.toLowerCase() === 'candidate' ?
-                      'These fields will be shown for all existing and new candidates. Any new candidate or candidate when edited will have these fields.' :
-                      'These fields will be applied to all relevant items in the system.'}
+                      formName.toLowerCase() === 'candidate' ?
+                        'These fields will be shown for all existing and new candidates. Any new candidate or candidate when edited will have these fields.' :
+                        'These fields will be applied to all relevant items in the system.'}
                   </p>
                 </div>
               </div>
             </div>
-            
+
           </div>
-          
+
           <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
             {globalFields.length > 0 ? (
               <div className="space-y-2">
                 <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Recent Fields</p>
                 <div className="flex flex-wrap gap-2">
                   {globalFields.slice(0, 4).map((field) => (
-                    <div 
-                      key={field.id} 
+                    <div
+                      key={field.id}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm border border-gray-200 dark:border-gray-600"
                     >
                       <div className="w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-blue-400"></div>

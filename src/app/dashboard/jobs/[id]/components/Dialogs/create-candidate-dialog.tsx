@@ -116,7 +116,7 @@ const handleFileParse = async (
         }
       }
     };
-    reader.onerror = () => {};
+    reader.onerror = () => { };
     reader.readAsDataURL(file);
   }
 };
@@ -193,7 +193,7 @@ export function CreateCandidateDialog({
 
   useEffect(() => {
     setIsClient(true);
-    
+
     const checkScreenSize = () => {
       setIsSmallScreen(window.innerWidth < 1024);
       const isLarge = window.innerWidth >= 1300 && window.innerHeight >= 1000;
@@ -202,7 +202,7 @@ export function CreateCandidateDialog({
 
     checkScreenSize();
     window.addEventListener('resize', checkScreenSize);
-    
+
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
@@ -312,18 +312,18 @@ export function CreateCandidateDialog({
         email: values.email || parsedResumeData?.profile?.email,
         ...(values.assignee && values.time
           ? {
-              assignee: values.assignee === "-1" ? "" : values.assignee,
-              time: values.time,
-            }
+            assignee: values.assignee === "-1" ? "" : values.assignee,
+            time: values.time,
+          }
           : {}),
         resume: resumeBase64
           ? {
-              id: uuidv4(),
-              name: values.resume?.name || "",
-              url: resumeBase64, // Using base64 as URL for now; adjust if backend changes
-              type: "pdf",
-              size: values.resume?.size || 0,
-            }
+            id: uuidv4(),
+            name: values.resume?.name || "",
+            url: resumeBase64, // Using base64 as URL for now; adjust if backend changes
+            type: "pdf",
+            size: values.resume?.size || 0,
+          }
           : undefined,
         attachments: attachmentsBase64.map((base64, index) => ({
           id: uuidv4(),
@@ -379,12 +379,12 @@ export function CreateCandidateDialog({
           dateTime: new Date().toISOString() || "",
           title:
             typeof createdCandidate?.assignment?.interviewerId === "object" &&
-            createdCandidate?.assignment?.interviewerId?.name
+              createdCandidate?.assignment?.interviewerId?.name
               ? `Assigned to ${createdCandidate.assignment.interviewerId.name} : Assigned by ${user!.name}`
               : "",
           currentInterviewer:
             typeof createdCandidate?.assignment?.interviewerId === "object" &&
-            createdCandidate?.assignment?.interviewerId
+              createdCandidate?.assignment?.interviewerId
               ? Object(createdCandidate.assignment.interviewerId._id)
               : null,
           previousInterviewer: null,
@@ -478,10 +478,10 @@ export function CreateCandidateDialog({
             className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
           >
             {isSendingEmail ||
-            isCreating ||
-            isLoading ||
-            isEvaluating ||
-            isAdding
+              isCreating ||
+              isLoading ||
+              isEvaluating ||
+              isAdding
               ? "Processing..."
               : "Apply Now"}
           </button>
@@ -590,6 +590,7 @@ export function CreateCandidateDialog({
                   }}
                   type={Object.keys(errors).length == 0 ? "button" : "submit"}
                   disabled={isSubmitting || isCreating || isLoading}
+                  variant="primary"
                 >
                   {isSubmitting
                     ? "Saving..."
