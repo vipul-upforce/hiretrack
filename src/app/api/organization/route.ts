@@ -51,7 +51,10 @@ export async function POST(req: NextRequest) {
       await settings.save();
       if (settings?.multipleOrg === false) {
         return NextResponse.json(
-          { error: "You cannot create a new organization." },
+          {
+            error:
+              "Enable multiple organizations from settings of the first organization.",
+          },
           { status: 401 }
         );
       }
@@ -65,7 +68,10 @@ export async function POST(req: NextRequest) {
         await settings.save();
         if (!settings?.multipleOrg) {
           return NextResponse.json(
-            { error: "You cannot create a new organization." },
+            {
+              error:
+                "Enable multiple organizations from settings of the first organization.",
+            },
             { status: 401 }
           );
         }
