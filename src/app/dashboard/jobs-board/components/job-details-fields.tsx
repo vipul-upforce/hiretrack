@@ -25,9 +25,20 @@ export const jobDetailsFields: FieldConfig[] = [
   {
     label: "Job Description",
     render: (job) => (
-      <div className="text-sm break-words whitespace-pre-wrap">
-        {job.description || "No description Found"}
-      </div>
+      <>
+        {/* <div className="text-sm break-words whitespace-pre-wrap">
+          {job.description || "No description Found"}
+
+        </div> */}
+        <div
+          className="text-sm break-words whitespace-pre-wrap"
+          dangerouslySetInnerHTML={{
+            __html: job?.description || "No description found",
+          }}
+        />
+
+      </>
+
     ),
   },
   {
