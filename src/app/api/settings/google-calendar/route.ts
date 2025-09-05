@@ -7,15 +7,19 @@ export async function GET(req: NextRequest) {
   try {
     await connectToDatabase();
     let organizationId = "";
+    const allowRoles = ["admin", "hr", "interviewer"]
     const token = req.cookies.get("auth_token");
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
         String(token?.value)
       );
+
       const userData = decryptedResponse.user;
       if (decryptedResponse.success) {
         organizationId = userData.organizationId || "";
-        if (userData.role !== "admin") {
+
+
+        if (!allowRoles.includes(userData.role)) {
           return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
       }
@@ -27,7 +31,7 @@ export async function GET(req: NextRequest) {
         { status: 404 }
       );
     }
-    
+
     const settings = await Settings.findOne({
       organizationId: organizationId,
     });
