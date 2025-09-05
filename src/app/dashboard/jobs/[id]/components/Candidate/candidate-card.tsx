@@ -174,8 +174,8 @@ export function CandidateCard({
     localCandidate, // Use localCandidate instead of candidate
     user,
     async () => refetch(),
-    () => {},
-    () => {},
+    () => { },
+    () => { },
     undefined,
     undefined
   );
@@ -715,7 +715,7 @@ export function CandidateCard({
                 <Badge
                   key={`${localCandidate._id}-skill-${index}-${skill}`}
                   variant="secondary"
-                  className="text-xs px-2.5 py-1 bg-gray-100 text-gray-900 border border-gray-200 dark:bg-black dark:text-gray-100 dark:border-gray-700 font-medium truncate max-w-full"
+                  className="text-xs px-2.5 py-1 bg-gray-100 text-gray-900 border border-gray-200 dark:bg-secondary dark:text-gray-100 dark:border-gray-700 font-medium truncate max-w-full"
                   title={skill}
                 >
                   {skill}
@@ -885,8 +885,8 @@ export function CandidateCard({
                               )
                                 ? "bg-red-500 hover:bg-red-600"
                                 : localCandidate.assignment.googleMeet.attendeeResponses?.every(
-                                      (a) => a.responseStatus === "accepted"
-                                    )
+                                  (a) => a.responseStatus === "accepted"
+                                )
                                   ? "bg-green-500 hover:bg-green-600"
                                   : "bg-blue-500 hover:bg-blue-600"
                             )}
@@ -971,17 +971,17 @@ export function CandidateCard({
                                                 className={cn(
                                                   "text-xs px-1.5 py-0.5 rounded font-medium",
                                                   attendee.responseStatus ===
-                                                    "accepted" &&
-                                                    "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400",
+                                                  "accepted" &&
+                                                  "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400",
                                                   attendee.responseStatus ===
-                                                    "declined" &&
-                                                    "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400",
+                                                  "declined" &&
+                                                  "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400",
                                                   attendee.responseStatus ===
-                                                    "tentative" &&
-                                                    "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400",
+                                                  "tentative" &&
+                                                  "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400",
                                                   attendee.responseStatus ===
-                                                    "needsAction" &&
-                                                    "bg-gray-100 text-gray-600 dark:bg-gray-700/50 dark:text-gray-400"
+                                                  "needsAction" &&
+                                                  "bg-gray-100 text-gray-600 dark:bg-gray-700/50 dark:text-gray-400"
                                                 )}
                                               >
                                                 {attendee.responseStatus ===
@@ -1057,7 +1057,7 @@ export function CandidateCard({
       {onDashboard ? (
         <div
           className={cn(
-            "bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg p-4 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 h-full hover:border-gray-300 dark:hover:border-gray-700 w-[420px] flex-shrink-0",
+            "bg-white dark:bg-secondary border border-gray-200 dark:border-gray-800 rounded-lg p-4 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 h-full hover:border-gray-300 dark:hover:border-gray-700 w-[420px] flex-shrink-0",
             className
           )}
           onClick={(e) => {
@@ -1171,7 +1171,7 @@ export function CandidateCard({
           isOpen={isAssigning}
           onOpenChange={setIsAssigning}
           onUpdate={() => refetch()}
-          setLocalCandidate={() => {}}
+          setLocalCandidate={() => { }}
           onSuccess={() => {
             setIsAssigning(false);
             refetch();
@@ -1224,7 +1224,7 @@ export function CandidateCard({
             setOpenRemarksFor(null);
             setIsAddRemarkOpen(false);
           }}
-          setOpenRemarksFor={() => {}}
+          setOpenRemarksFor={() => { }}
           refetch={async () => refetch()}
         />
       )}

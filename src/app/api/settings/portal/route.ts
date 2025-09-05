@@ -311,18 +311,18 @@ export async function GET(req: NextRequest) {
   try {
     // SECURITY FIX: Validate query parameters
     const validation = validateQueryParams(req.nextUrl.searchParams, {
-      org: { 
+      org: {
         type: 'string',
         maxLength: MAX_LENGTHS.shortText,
         pattern: VALIDATION_PATTERNS.safeString
       },
       subdomain: {
-        type: 'string', 
+        type: 'string',
         maxLength: MAX_LENGTHS.shortText,
         pattern: VALIDATION_PATTERNS.slug
       }
     });
-    
+
     if (!validation.isValid) {
       return NextResponse.json(
         { error: 'Invalid query parameters', details: validation.errors },
@@ -331,24 +331,24 @@ export async function GET(req: NextRequest) {
     }
 
     await connectToDatabase();
-    
+
     // Give models a moment to initialize if they haven't already
     let retries = 0;
     while ((!Settings || !Organization) && retries < 5) {
       await new Promise(resolve => setTimeout(resolve, 100));
       retries++;
     }
-    
+
     if (!Settings || !Organization) {
       return NextResponse.json(
         { error: "Database models not initialized" },
         { status: 500 }
       );
     }
-    
+
     let organizationId = "";
     let isAuthenticated = false;
-    
+
     // Try to get organization from auth token
     const token = req.cookies.get("auth_token");
     if (token?.value) {
@@ -368,7 +368,7 @@ export async function GET(req: NextRequest) {
     }
 
     let settings = null;
-    
+
     if (organizationId) {
       // Authenticated user - get specific organization settings
       settings = await Settings.findOne(
@@ -426,6 +426,7 @@ export async function GET(req: NextRequest) {
       primaryColor: settings.portalConfigs?.primaryColor || "#6366f1",
       secondaryColor: settings.portalConfigs?.secondaryColor || "#8b5cf6",
     };
+    console.log(response, "etting responsee get -- = ");
 
     return NextResponse.json(response);
   } catch (error) {
@@ -489,7 +490,7 @@ export async function PUT(req: NextRequest) {
     let uploadedFavicon = null;
     let uploadedHeader = null;
     let uploadedFooter = null;
-    
+
     // Handle HTML content for header
     if (data?.portalHeaderHtml) {
       try {
@@ -502,20 +503,20 @@ export async function PUT(req: NextRequest) {
           organizationId,
           "header.html"
         );
-        
+
         console.log(`[PUT] Header file path: ${headerPath}`);
-        
+
         // Ensure directory exists
         const headerDir = path.dirname(headerPath);
         if (!fs.existsSync(headerDir)) {
           console.log(`[PUT] Creating directory: ${headerDir}`);
           fs.mkdirSync(headerDir, { recursive: true });
         }
-        
+
         // Write HTML content to file
         await fs.promises.writeFile(headerPath, data.portalHeaderHtml, 'utf8');
         console.log(`[PUT] Header HTML file created successfully at: ${headerPath}`);
-        
+
         uploadedHeader = {
           id: Date.now().toString(),
           name: "header.html",
@@ -523,7 +524,7 @@ export async function PUT(req: NextRequest) {
           type: "text/html",
           size: Buffer.byteLength(data.portalHeaderHtml, 'utf8')
         };
-        
+
         console.log(`[PUT] Header file metadata: ${JSON.stringify(uploadedHeader)}`);
       } catch (error) {
         console.error("Failed to save header HTML:", error);
@@ -533,7 +534,7 @@ export async function PUT(req: NextRequest) {
         );
       }
     }
-    
+
     // Handle HTML content for footer
     if (data?.portalFooterHtml) {
       try {
@@ -546,20 +547,20 @@ export async function PUT(req: NextRequest) {
           organizationId,
           "footer.html"
         );
-        
+
         console.log(`[PUT] Footer file path: ${footerPath}`);
-        
+
         // Ensure directory exists
         const footerDir = path.dirname(footerPath);
         if (!fs.existsSync(footerDir)) {
           console.log(`[PUT] Creating directory: ${footerDir}`);
           fs.mkdirSync(footerDir, { recursive: true });
         }
-        
+
         // Write HTML content to file
         await fs.promises.writeFile(footerPath, data.portalFooterHtml, 'utf8');
         console.log(`[PUT] Footer HTML file created successfully at: ${footerPath}`);
-        
+
         uploadedFooter = {
           id: Date.now().toString(),
           name: "footer.html",
@@ -567,7 +568,7 @@ export async function PUT(req: NextRequest) {
           type: "text/html",
           size: Buffer.byteLength(data.portalFooterHtml, 'utf8')
         };
-        
+
         console.log(`[PUT] Footer file metadata: ${JSON.stringify(uploadedFooter)}`);
       } catch (error) {
         console.error("Failed to save footer HTML:", error);
@@ -577,7 +578,7 @@ export async function PUT(req: NextRequest) {
         );
       }
     }
-    
+
     if (data?.portalLogo) {
       try {
         console.log(`[PUT] Processing portalLogo: ${data.portalLogo}`);
@@ -711,7 +712,7 @@ export async function PUT(req: NextRequest) {
         organizationId,
         "header.html"
       );
-      
+
       if (fs.existsSync(headerPath)) {
         console.log(`[PUT] No header HTML provided, removing existing file: ${headerPath}`);
         fs.unlinkSync(headerPath);
@@ -729,7 +730,7 @@ export async function PUT(req: NextRequest) {
         organizationId,
         "footer.html"
       );
-      
+
       if (fs.existsSync(footerPath)) {
         console.log(`[PUT] No footer HTML provided, removing existing file: ${footerPath}`);
         fs.unlinkSync(footerPath);
@@ -762,7 +763,7 @@ export async function PUT(req: NextRequest) {
       { portalConfigs: updatedPortal },
       { new: true, runValidators: true, upsert: true }
     );
-    console.log("updatedSettings :>> ", updatedSettings);
+    // console.log("updatedSettings :>> ", updatedSettings);
 
     if (!updatedSettings) {
       return NextResponse.json(

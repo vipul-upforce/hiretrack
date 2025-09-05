@@ -322,7 +322,7 @@ export function SearchResults({
               onClick={() => toggleFilter("unassigned")}
               className="text-xs"
             >
-              Unassigned
+              Not Assigned
             </Button>
             <Button
               variant={
@@ -728,14 +728,21 @@ export function SearchResults({
                               <Edit className="mr-2 h-4 w-4" />
                               Edit
                             </DropdownMenuItem>
-                            <DropdownMenuItem
+                            {/* <DropdownMenuItem
                               onClick={(e) =>
                                 handleAssignInterviewer(candidate, e)
                               }
                             >
                               <UserPlus className="mr-2 h-4 w-4" />
                               Assign Interviewer
-                            </DropdownMenuItem>
+                            </DropdownMenuItem> */}
+                            {/* Conditionally render Assign Interviewer if job is assigned */}
+                            {candidate.jobId && typeof candidate.jobId === "object" && candidate.jobId.title && (
+                              <DropdownMenuItem onClick={(e) => handleAssignInterviewer(candidate, e)}>
+                                <UserPlus className="mr-2 h-4 w-4" />
+                                Assign Interviewer
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem
                               onClick={(e) => handleAssignJob(candidate, e)}
                             >
@@ -896,7 +903,7 @@ export function SearchResults({
           //   refetch();
           // }}
           onUpdate={handleCandidateUpdateWithOptimism}
-          setLocalCandidate={() => {}}
+          setLocalCandidate={() => { }}
           onSuccess={() => {
             setIsAssignInterviewerOpen(false);
             setCandidateToAssignInterviewer(null);
@@ -932,7 +939,7 @@ export function SearchResults({
           candidate={candidateToAddRemark}
           isOpen={isAddRemarkOpen}
           onOpenChange={setIsAddRemarkOpen}
-          setOpenRemarksFor={() => {}}
+          setOpenRemarksFor={() => { }}
           refetch={refetch}
           onRemarkAdded={handleCandidateUpdateWithOptimism}
         />

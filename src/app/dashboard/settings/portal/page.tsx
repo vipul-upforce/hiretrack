@@ -116,8 +116,8 @@ const predefinedColorCombinations = [
   },
   {
     name: "Midnight",
-    primary: "#1e293b",
-    secondary: "#475569",
+    primary: "#94a3b8",
+    secondary: "#64748b",
   },
   {
     name: "Emerald Mint",
@@ -284,51 +284,67 @@ export default function PortalConfigurationPage() {
     value: string;
     onChange: (color: string) => void;
     label: string;
-  }) => (
-    <div className="space-y-2">
-      <Label>{label}</Label>
-      <div className="flex items-center gap-2">
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className="w-full justify-start text-left font-normal"
-            >
-              <div className="flex items-center gap-2">
-                <div
-                  className="h-4 w-4 rounded border border-border"
-                  style={{ backgroundColor: value }}
-                />
-                <span>{value}</span>
-              </div>
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-3">
-            <HexColorPicker color={value} onChange={onChange} />
-            <div className="mt-3 space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">
-                Preset Colors
-              </p>
-              <div className="grid grid-cols-5 gap-1">
-                {predefinedColors.map((color) => (
-                  <button
-                    key={color}
-                    className={cn(
-                      "h-6 w-6 rounded border border-border",
-                      value === color && "ring-2 ring-primary ring-offset-2"
-                    )}
-                    style={{ backgroundColor: color }}
-                    onClick={() => onChange(color)}
-                  />
-                ))}
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
-      </div>
-    </div>
-  );
+  }) => {
+    const handleInputChange = (e) => {
+      const newColor = e.target.value;
+      // // Validate hex color format (e.g., #RRGGBB)
+      // if (/^#[0-9A-Fa-f]{6}$/.test(newColor)) {
+      onChange(newColor);
+      // }
+    };
 
+    return (
+      <div className="space-y-2">
+        <Label>{label}</Label>
+        <div className="flex items-center gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full justify-start text-left font-normal"
+              >
+                <div className="flex items-center gap-2">
+                  <div
+                    className="h-4 w-4 rounded border border-border"
+                    style={{ backgroundColor: value }}
+                  />
+                  <span>{value}</span>
+                </div>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-3">
+              <HexColorPicker color={value} onChange={onChange} />
+              <div className="mt-3 space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">
+                  Preset Colors
+                </p>
+                <div className="grid grid-cols-5 gap-1">
+                  {predefinedColors.map((color) => (
+                    <button
+                      key={color}
+                      className={cn(
+                        "h-6 w-6 rounded border border-border",
+                        value === color && "ring-2 ring-primary ring-offset-2"
+                      )}
+                      style={{ backgroundColor: color }}
+                      onClick={() => onChange(color)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+          <input
+            type="text"
+            value={value}
+            onChange={handleInputChange}
+            placeholder="#RRGGBB"
+            className="border bg-background  border-border rounded-md px-3 py-1.5 w-24 focus:outline-none ring-primary ring-offset-2  text-sm"
+          />
+        </div>
+      </div>
+    );
+  }
   const FileUploadCard = ({
     title,
     description,
@@ -409,6 +425,15 @@ export default function PortalConfigurationPage() {
     );
   }
 
+  console.log("&&&&&&&&&& settings.portalName: ", settings.portalName, user);
+  console.log(
+    "dwdwdw ",
+    settings.portalName &&
+      settings.portalName !== "" &&
+      settings.portalName.length > 0
+      ? true
+      : false
+  );
 
   return (
     <div className="h-screen flex flex-col overflow-hidden w-full">
