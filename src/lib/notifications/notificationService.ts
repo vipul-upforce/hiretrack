@@ -66,10 +66,15 @@ export class NotificationService {
         console.error('❌ Notification model not available');
         throw new Error('Notification model not available');
       }
-      const recipients = [
-        ...recipientIds,
-        ...(baseParams.triggerUserId && baseParams.triggerUserId !== "" ? [baseParams.triggerUserId] : [])
-      ];
+
+      // const recipients = [
+      //   ...recipientIds,
+      //   ...(baseParams.triggerUserId && baseParams.triggerUserId !== "" ? [baseParams.triggerUserId] : [])
+      // ];
+      // Ensure triggerUserId is excluded (safety check)
+      const recipients = recipientIds.filter(
+        id => id !== baseParams.triggerUserId
+      );
       const notifications = recipients.map(recipientId => ({
         organizationId: baseParams.organizationId,
         recipientId,
@@ -180,25 +185,29 @@ export class NotificationService {
   }) {
     const adminHrIds = await this.getUsersByRole(params.organizationId, ['admin', 'hr']);
 
-    await this.createBulkNotifications({
-      organizationId: params.organizationId,
-      type: NotificationType.CANDIDATE_STATUS_UPDATED,
-      title: 'Candidate Status Updated',
-      message: `${params.candidateName} moved from ${params.oldStatus} to ${params.newStatus}`,
-      relatedEntity: 'candidate',
-      relatedId: params.candidateId,
-      actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
-      triggerUserId: params.triggerUserId,
-      triggerUserName: params.triggerUserName,
-      priority: 'medium',
-      metadata: {
-        candidateName: params.candidateName,
-        jobTitle: params.jobTitle,
-        jobId: params.jobId,
-        oldStatus: params.oldStatus,
-        newStatus: params.newStatus,
-      },
-    }, adminHrIds);
+    const filteredAdminHrIds = adminHrIds.filter(id => id !== params.triggerUserId);
+
+    if (filteredAdminHrIds.length > 0) {
+      await this.createBulkNotifications({
+        organizationId: params.organizationId,
+        type: NotificationType.CANDIDATE_STATUS_UPDATED,
+        title: 'Candidate Status Updated',
+        message: `${params.candidateName} moved from ${params.oldStatus} to ${params.newStatus}`,
+        relatedEntity: 'candidate',
+        relatedId: params.candidateId,
+        actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
+        triggerUserId: params.triggerUserId,
+        triggerUserName: params.triggerUserName,
+        priority: 'medium',
+        metadata: {
+          candidateName: params.candidateName,
+          jobTitle: params.jobTitle,
+          jobId: params.jobId,
+          oldStatus: params.oldStatus,
+          newStatus: params.newStatus,
+        },
+      }, filteredAdminHrIds);
+    }
   }
 
   /**

@@ -517,8 +517,8 @@ export async function PUT(
                     existingCandidate.jobId?.toString() ||
                     "",
                   jobTitle: jobInfo?.title || "Unknown Job",
-                  triggerUserId: userData._id,
-                  triggerUserName: userData.name,
+                  triggerUserId: userData?.id,
+                  triggerUserName: userData?.name,
                 });
               } else {
                 // Notify general status update for non-rejected statuses
@@ -533,8 +533,8 @@ export async function PUT(
                   jobTitle: jobInfo?.title || "Unknown Job",
                   oldStatus: existingCandidate.status,
                   newStatus: data.status,
-                  triggerUserId: userData._id,
-                  triggerUserName: userData.name,
+                  triggerUserId: userData?.id,
+                  triggerUserName: userData?.name,
                 });
               }
             } catch (notificationError) {
@@ -818,8 +818,8 @@ export async function PUT(
                     jobTitle: jobInfo?.title || "Unknown Job",
                     interviewerId: newAssignment.interviewerId,
                     interviewerName: interviewer.name,
-                    triggerUserId: userData._id,
-                    triggerUserName: userData.name,
+                    triggerUserId: userData?.id,
+                    triggerUserName: userData?.name,
                   });
                 }
 
@@ -837,8 +837,8 @@ export async function PUT(
                       interviewerId: newAssignment.interviewerId,
                       interviewerName: interviewer.name,
                       meetingDate: new Date(newAssignment.time),
-                      triggerUserId: userData._id,
-                      triggerUserName: userData.name,
+                      triggerUserId: userData?.id,
+                      triggerUserName: userData?.name,
                     });
                   } else if (oldAssignment.time !== newAssignment.time) {
                     await NotificationService.notifyMeetingUpdated({
@@ -853,7 +853,7 @@ export async function PUT(
                       interviewerId: newAssignment.interviewerId,
                       interviewerName: interviewer.name,
                       meetingDate: new Date(newAssignment.time),
-                      triggerUserId: userData._id,
+                      triggerUserId: userData.id,
                       triggerUserName: userData.name,
                     });
                   }
@@ -872,8 +872,8 @@ export async function PUT(
                     jobTitle: jobInfo?.title || "Unknown Job",
                     interviewerId: interviewer._id.toString(),
                     interviewerName: interviewer.name,
-                    triggerUserId: userData._id,
-                    triggerUserName: userData.name,
+                    triggerUserId: userData?.id,
+                    triggerUserName: userData?.name,
                   });
                 }
               }
@@ -895,8 +895,8 @@ export async function PUT(
                 jobTitle: jobInfo?.title || "Unknown Job",
                 previousInterviewerId: interviewer._id.toString(),
                 previousInterviewerName: interviewer.name,
-                triggerUserId: userData._id,
-                triggerUserName: userData.name,
+                triggerUserId: userData?.id,
+                triggerUserName: userData?.name,
               });
               await NotificationService.notifyInterviewCompleted({
                 organizationId: organizationId,
@@ -909,8 +909,8 @@ export async function PUT(
                 jobTitle: jobInfo?.title || "Unknown Job",
                 interviewerName: interviewer.name,
                 interviewerId: interviewer._id.toString(),
-                triggerUserId: userData._id,
-                triggerUserName: userData.name,
+                triggerUserId: userData?.id,
+                triggerUserName: userData?.name,
               });
             }
           }
@@ -1042,6 +1042,8 @@ export async function PUT(
 
         const oldFollowUp = existingCandidate.followUp;
         const newFollowUp = data?.followUp;
+        console.log(oldFollowUp, "oldFollowUp");
+        console.log(newFollowUp, "newFollowUp");
 
         try {
           const jobInfo = existingCandidate.jobId as any;
@@ -1063,8 +1065,8 @@ export async function PUT(
                 followupDate: newFollowUp.date
                   ? new Date(newFollowUp.date)
                   : undefined,
-                triggerUserId: userData._id,
-                triggerUserName: userData.name,
+                triggerUserId: userData?.id,
+                triggerUserName: userData?.name,
               });
             }
             // Case 2: Follow-up Updated
@@ -1084,8 +1086,8 @@ export async function PUT(
                   existingCandidate.jobId?.toString() ||
                   "",
                 jobTitle: jobInfo?.title || "Unknown Job",
-                triggerUserId: userData._id,
-                triggerUserName: userData.name,
+                triggerUserId: userData?.id,
+                triggerUserName: userData?.name,
               });
             }
             // Case 3: Follow-up Removed
@@ -1105,8 +1107,8 @@ export async function PUT(
                   existingCandidate.jobId?.toString() ||
                   "",
                 jobTitle: jobInfo?.title || "Unknown Job",
-                triggerUserId: userData._id,
-                triggerUserName: userData.name,
+                triggerUserId: userData?.id,
+                triggerUserName: userData?.name,
               });
             }
           }
@@ -1150,8 +1152,8 @@ export async function PUT(
                 updatedCandidate.jobId?.toString() ||
                 "",
               jobTitle: jobInfo?.title || "Unknown Job",
-              triggerUserId: userData._id,
-              triggerUserName: userData.name,
+              triggerUserId: userData?.id,
+              triggerUserName: userData?.name,
             });
           }
         }
@@ -1214,10 +1216,10 @@ export async function GET(
     const projection: ProjectionType<ICandidate> =
       role === "interviewer"
         ? {
-            currentCTC: 0,
-            expectedCTC: 0,
-            // customFields: 0,
-          }
+          currentCTC: 0,
+          expectedCTC: 0,
+          // customFields: 0,
+        }
         : {};
     const candidate = await Candidate.findById(id, projection)
       .populate([

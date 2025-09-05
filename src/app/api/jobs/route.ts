@@ -135,8 +135,8 @@ export async function POST(request: NextRequest) {
           organizationId: organizationId,
           jobId: newJob._id.toString(),
           jobTitle: newJob.title,
-          triggerUserId: userData._id,
-          triggerUserName: userData.name,
+          triggerUserId: userData?.id,
+          triggerUserName: userData?.name,
         });
       } catch (notificationError) {
         console.error(

@@ -391,7 +391,7 @@ export async function POST(request: NextRequest) {
 
     // Update batch status
 
-    // console.log(cvBatchInfo, "Batch ingfooo");
+    // console.log(authInfo, "authInfo ingfooo");
 
     cvBatchInfo.status = "completed";
     cvBatchInfo.completedAt = new Date();
@@ -403,8 +403,8 @@ export async function POST(request: NextRequest) {
       batchId: cvBatchInfo._id.toString(),
       successCount: cvBatchInfo.successCount,
       failureCount: cvBatchInfo.failureCount,
-      triggerUserId: authInfo.user._id,
-      triggerUserName: authInfo.user.name || "Unknown User",
+      triggerUserId: authInfo?.user?.id,
+      triggerUserName: authInfo?.user?.name || "Unknown User",
     });
 
     return NextResponse.json({
