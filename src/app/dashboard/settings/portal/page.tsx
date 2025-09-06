@@ -17,6 +17,7 @@ import {
   useGetPortalConfigsQuery,
   useUpdatePortalConfigsMutation,
 } from "@/lib/features/settings/settingsApi";
+import { updateUser as updateUserInState } from "@/lib/redux/authSlice";
 import {
   Upload,
   X,
@@ -53,7 +54,9 @@ import {
 import { cn } from "@/lib/utils";
 import { Editor } from "@monaco-editor/react";
 import Link from "next/link";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { Organization } from "@/lib/mongodb";
+import { User } from "../../jobs/[id]/schemas/AssignCandidateSchema";
 
 interface FileUpload {
   id: string;
@@ -134,6 +137,12 @@ const predefinedColorCombinations = [
 export default function PortalConfigurationPage() {
   const { theme } = useTheme();
   const router = useRouter();
+  const dispatch = useDispatch();
+
+  const { user: userCookieData }: { user: User } = useSelector(
+    (state: any) => state.auth || {}
+  );
+
   const {
     data: portalData,
     isLoading: loading,
@@ -187,18 +196,19 @@ export default function PortalConfigurationPage() {
 
   // Helper function to generate the correct portal URL (similar to generate_share_org)
   const generatePortalUrl = (additionalParams: string[] = []) => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
     let url;
 
     if (hasMultipleOrgs && user?.organizationInfo?.name) {
       const orgParam = `o=${user.organizationInfo.name}`;
       const allParams = [orgParam, ...additionalParams].filter(Boolean);
-      url = `${origin}/apply-jobs?${allParams.join('&')}`;
+      url = `${origin}/apply-jobs?${allParams.join("&")}`;
     } else {
       const allParams = additionalParams.filter(Boolean);
-      url = allParams.length > 0
-        ? `${origin}/apply-jobs?${allParams.join('&')}`
-        : `${origin}/apply-jobs`;
+      url =
+        allParams.length > 0
+          ? `${origin}/apply-jobs?${allParams.join("&")}`
+          : `${origin}/apply-jobs`;
     }
 
     return url;
@@ -269,6 +279,18 @@ export default function PortalConfigurationPage() {
       };
 
       await updatePortalConfigs(payload).unwrap();
+
+      const updatedUser = {
+        ...userCookieData,
+        organizaionInfo: {
+          ...userCookieData?.organizationInfo,
+          name: payload.portalName,
+        },
+      };
+      if (user) {
+        dispatch(updateUserInState(updatedUser));
+      }
+
       toast.success("Portal settings saved successfully");
       // The portal colors will automatically update due to cache invalidation
     } catch (error) {
@@ -344,7 +366,7 @@ export default function PortalConfigurationPage() {
         </div>
       </div>
     );
-  }
+  };
   const FileUploadCard = ({
     title,
     description,
@@ -522,10 +544,7 @@ export default function PortalConfigurationPage() {
                   <FileCode className="h-4 w-4" />
                   Advanced
                 </TabsTrigger>
-                <TabsTrigger
-                  value="embed"
-                  className="flex items-center gap-2"
-                >
+                <TabsTrigger value="embed" className="flex items-center gap-2">
                   <Code className="h-4 w-4" />
                   Embed
                 </TabsTrigger>
@@ -546,8 +565,8 @@ export default function PortalConfigurationPage() {
                         id="portalName"
                         value={
                           settings.portalName &&
-                            settings.portalName !== "" &&
-                            settings.portalName.length > 0
+                          settings.portalName !== "" &&
+                          settings.portalName.length > 0
                             ? settings.portalName
                             : user.organizationInfo.name
                         }
@@ -615,7 +634,7 @@ export default function PortalConfigurationPage() {
                               ? "border-primary ring-2 ring-primary ring-offset-2"
                               : "border-border hover:border-primary/50",
                             combo.isDefault &&
-                            "bg-gradient-to-br from-primary/5 to-secondary/5"
+                              "bg-gradient-to-br from-primary/5 to-secondary/5"
                           )}
                           onClick={() =>
                             setSettings((prev) => ({
@@ -921,7 +940,8 @@ export default function PortalConfigurationPage() {
                       Embed Configuration
                     </CardTitle>
                     <CardDescription>
-                      Generate an iframe embed code to integrate your candidate portal into any website
+                      Generate an iframe embed code to integrate your candidate
+                      portal into any website
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
@@ -938,7 +958,8 @@ export default function PortalConfigurationPage() {
                             placeholder="100% or 800px"
                           />
                           <p className="text-xs text-muted-foreground">
-                            Set width in pixels (e.g., 800px) or percentage (e.g., 100%)
+                            Set width in pixels (e.g., 800px) or percentage
+                            (e.g., 100%)
                           </p>
                         </div>
                         <div className="space-y-2">
@@ -960,30 +981,42 @@ export default function PortalConfigurationPage() {
                             type="checkbox"
                             id="embedShowBorder"
                             checked={embedShowBorder}
-                            onChange={(e) => setEmbedShowBorder(e.target.checked)}
+                            onChange={(e) =>
+                              setEmbedShowBorder(e.target.checked)
+                            }
                             className="rounded border-gray-300"
                           />
-                          <Label htmlFor="embedShowBorder">Show border around iframe</Label>
+                          <Label htmlFor="embedShowBorder">
+                            Show border around iframe
+                          </Label>
                         </div>
                         <div className="flex items-center space-x-2">
                           <input
                             type="checkbox"
                             id="embedHideHeader"
                             checked={embedHideHeader}
-                            onChange={(e) => setEmbedHideHeader(e.target.checked)}
+                            onChange={(e) =>
+                              setEmbedHideHeader(e.target.checked)
+                            }
                             className="rounded border-gray-300"
                           />
-                          <Label htmlFor="embedHideHeader">Hide portal header</Label>
+                          <Label htmlFor="embedHideHeader">
+                            Hide portal header
+                          </Label>
                         </div>
                         <div className="flex items-center space-x-2">
                           <input
                             type="checkbox"
                             id="embedHideFooter"
                             checked={embedHideFooter}
-                            onChange={(e) => setEmbedHideFooter(e.target.checked)}
+                            onChange={(e) =>
+                              setEmbedHideFooter(e.target.checked)
+                            }
                             className="rounded border-gray-300"
                           />
-                          <Label htmlFor="embedHideFooter">Hide portal footer</Label>
+                          <Label htmlFor="embedHideFooter">
+                            Hide portal footer
+                          </Label>
                         </div>
                       </div>
                     </div>
@@ -998,8 +1031,10 @@ export default function PortalConfigurationPage() {
                           size="sm"
                           onClick={() => {
                             const queryParams = [];
-                            if (embedHideHeader) queryParams.push('hideHeader=true');
-                            if (embedHideFooter) queryParams.push('hideFooter=true');
+                            if (embedHideHeader)
+                              queryParams.push("hideHeader=true");
+                            if (embedHideFooter)
+                              queryParams.push("hideFooter=true");
 
                             const embedUrl = generatePortalUrl(queryParams);
 
@@ -1007,10 +1042,10 @@ export default function PortalConfigurationPage() {
   src="${embedUrl}"
   width="${embedWidth}"
   height="${embedHeight}"
-  ${embedShowBorder ? '' : 'frameborder="0"'}
-  style="${embedShowBorder ? 'border: 1px solid #e5e7eb;' : 'border: none;'} border-radius: 8px;"
+  ${embedShowBorder ? "" : 'frameborder="0"'}
+  style="${embedShowBorder ? "border: 1px solid #e5e7eb;" : "border: none;"} border-radius: 8px;"
   allow="camera; microphone"
-  title="${settings.portalName || 'Job Portal'}"
+  title="${settings.portalName || "Job Portal"}"
 ></iframe>`;
                             navigator.clipboard.writeText(embedCode);
                             setCopiedCode(true);
@@ -1038,8 +1073,10 @@ export default function PortalConfigurationPage() {
                           theme={theme === "dark" ? "vs-dark" : "vs"}
                           value={(() => {
                             const queryParams = [];
-                            if (embedHideHeader) queryParams.push('hideHeader=true');
-                            if (embedHideFooter) queryParams.push('hideFooter=true');
+                            if (embedHideHeader)
+                              queryParams.push("hideHeader=true");
+                            if (embedHideFooter)
+                              queryParams.push("hideFooter=true");
 
                             const embedUrl = generatePortalUrl(queryParams);
 
@@ -1047,10 +1084,10 @@ export default function PortalConfigurationPage() {
   src="${embedUrl}"
   width="${embedWidth}"
   height="${embedHeight}"
-  ${embedShowBorder ? '' : 'frameborder="0"'}
-  style="${embedShowBorder ? 'border: 1px solid #e5e7eb;' : 'border: none;'} border-radius: 8px;"
+  ${embedShowBorder ? "" : 'frameborder="0"'}
+  style="${embedShowBorder ? "border: 1px solid #e5e7eb;" : "border: none;"} border-radius: 8px;"
   allow="camera; microphone"
-  title="${settings.portalName || 'Job Portal'}"
+  title="${settings.portalName || "Job Portal"}"
 ></iframe>`;
                           })()}
                           options={{
@@ -1069,23 +1106,37 @@ export default function PortalConfigurationPage() {
 
                     {/* Integration Instructions */}
                     <div className="space-y-2">
-                      <h3 className="text-sm font-medium">Integration Instructions</h3>
+                      <h3 className="text-sm font-medium">
+                        Integration Instructions
+                      </h3>
                       <div className="space-y-3 text-sm text-muted-foreground">
                         <div className="flex gap-2">
                           <span className="font-semibold">1.</span>
-                          <p>Copy the embed code above by clicking the "Copy Code" button.</p>
+                          <p>
+                            Copy the embed code above by clicking the "Copy
+                            Code" button.
+                          </p>
                         </div>
                         <div className="flex gap-2">
                           <span className="font-semibold">2.</span>
-                          <p>Paste the code into your website's HTML where you want the portal to appear.</p>
+                          <p>
+                            Paste the code into your website's HTML where you
+                            want the portal to appear.
+                          </p>
                         </div>
                         <div className="flex gap-2">
                           <span className="font-semibold">3.</span>
-                          <p>Adjust the width and height settings to fit your website's design.</p>
+                          <p>
+                            Adjust the width and height settings to fit your
+                            website's design.
+                          </p>
                         </div>
                         <div className="flex gap-2">
                           <span className="font-semibold">4.</span>
-                          <p>The portal will automatically inherit your configured branding and colors.</p>
+                          <p>
+                            The portal will automatically inherit your
+                            configured branding and colors.
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -1096,8 +1147,11 @@ export default function PortalConfigurationPage() {
                         Security Notice
                       </h4>
                       <p className="text-xs text-yellow-700 dark:text-yellow-300">
-                        Make sure to only embed this portal on trusted domains. The iframe allows camera and microphone access for video interviews.
-                        You can configure additional security settings like allowed domains in your organization settings.
+                        Make sure to only embed this portal on trusted domains.
+                        The iframe allows camera and microphone access for video
+                        interviews. You can configure additional security
+                        settings like allowed domains in your organization
+                        settings.
                       </p>
                     </div>
 
@@ -1107,10 +1161,12 @@ export default function PortalConfigurationPage() {
                         variant="outline"
                         onClick={() => {
                           const queryParams = [];
-                          if (embedHideHeader) queryParams.push('hideHeader=true');
-                          if (embedHideFooter) queryParams.push('hideFooter=true');
+                          if (embedHideHeader)
+                            queryParams.push("hideHeader=true");
+                          if (embedHideFooter)
+                            queryParams.push("hideFooter=true");
                           const url = generatePortalUrl(queryParams);
-                          window.open(url, '_blank');
+                          window.open(url, "_blank");
                         }}
                         className="w-full"
                       >
@@ -1176,10 +1232,14 @@ export default function PortalConfigurationPage() {
                       <div className="bg-white dark:bg-black rounded p-2 overflow-auto">
                         <div
                           style={{
-                            width: embedWidth.includes('%') ? embedWidth : `${parseInt(embedWidth) || 400}px`,
-                            height: embedHeight.includes('px') ? embedHeight : `${parseInt(embedHeight) || 600}px`,
-                            maxWidth: '100%',
-                            maxHeight: '80vh',
+                            width: embedWidth.includes("%")
+                              ? embedWidth
+                              : `${parseInt(embedWidth) || 400}px`,
+                            height: embedHeight.includes("px")
+                              ? embedHeight
+                              : `${parseInt(embedHeight) || 600}px`,
+                            maxWidth: "100%",
+                            maxHeight: "80vh",
                           }}
                         >
                           <iframe
@@ -1189,24 +1249,29 @@ export default function PortalConfigurationPage() {
                               queryParams.push(`hideHeader=${embedHideHeader}`);
                               queryParams.push(`hideFooter=${embedHideFooter}`);
 
-                              if (hasMultipleOrgs && user?.organizationInfo?.name) {
+                              if (
+                                hasMultipleOrgs &&
+                                user?.organizationInfo?.name
+                              ) {
                                 const orgParam = `o=${user.organizationInfo.name}`;
                                 const allParams = [orgParam, ...queryParams];
-                                return `/apply-jobs?${allParams.join('&')}`;
+                                return `/apply-jobs?${allParams.join("&")}`;
                               } else {
-                                return `/apply-jobs?${queryParams.join('&')}`;
+                                return `/apply-jobs?${queryParams.join("&")}`;
                               }
                             })()}
                             width="100%"
                             height="100%"
                             frameBorder={embedShowBorder ? "1" : "0"}
                             style={{
-                              border: embedShowBorder ? '1px solid #e5e7eb' : 'none',
-                              borderRadius: '8px',
-                              display: 'block',
+                              border: embedShowBorder
+                                ? "1px solid #e5e7eb"
+                                : "none",
+                              borderRadius: "8px",
+                              display: "block",
                             }}
                             allow="camera; microphone"
-                            title={settings.portalName || 'Job Portal'}
+                            title={settings.portalName || "Job Portal"}
                           />
                         </div>
                       </div>
@@ -1221,7 +1286,13 @@ export default function PortalConfigurationPage() {
                       {(embedHideHeader || embedHideFooter) && (
                         <p className="flex items-center gap-1">
                           <Eye className="h-3 w-3" />
-                          Hidden: {[embedHideHeader && "Header", embedHideFooter && "Footer"].filter(Boolean).join(", ")}
+                          Hidden:{" "}
+                          {[
+                            embedHideHeader && "Header",
+                            embedHideFooter && "Footer",
+                          ]
+                            .filter(Boolean)
+                            .join(", ")}
                         </p>
                       )}
                     </div>
@@ -1260,19 +1331,19 @@ export default function PortalConfigurationPage() {
                             {(previewTheme === "dark"
                               ? settings.portalLogoDark
                               : settings.portalLogo) && (
-                                <div className="h-10 w-32 relative bg-white/10 rounded">
-                                  <Image
-                                    src={
-                                      previewTheme === "dark"
-                                        ? settings.portalLogoDark?.url || ""
-                                        : settings.portalLogo?.url || ""
-                                    }
-                                    alt="Logo"
-                                    fill
-                                    className="object-contain p-2"
-                                  />
-                                </div>
-                              )}
+                              <div className="h-10 w-32 relative bg-white/10 rounded">
+                                <Image
+                                  src={
+                                    previewTheme === "dark"
+                                      ? settings.portalLogoDark?.url || ""
+                                      : settings.portalLogo?.url || ""
+                                  }
+                                  alt="Logo"
+                                  fill
+                                  className="object-contain p-2"
+                                />
+                              </div>
+                            )}
                             <h3 className="text-white font-semibold">
                               {settings.portalName || "Portal Name"}
                             </h3>
@@ -1286,7 +1357,9 @@ export default function PortalConfigurationPage() {
                       <div
                         className={cn(
                           "space-y-4",
-                          previewTheme === "dark" ? "text-white" : "text-gray-900"
+                          previewTheme === "dark"
+                            ? "text-white"
+                            : "text-gray-900"
                         )}
                       >
                         {/* Job Application Header */}
@@ -1303,10 +1376,10 @@ export default function PortalConfigurationPage() {
                         <div className="space-y-3">
                           <h3 className="font-semibold">Job Description</h3>
                           <p className="text-sm opacity-80 leading-relaxed">
-                            We are seeking a talented Senior Frontend Developer to
-                            join our dynamic team. You will be responsible for
-                            creating exceptional user experiences using modern web
-                            technologies.
+                            We are seeking a talented Senior Frontend Developer
+                            to join our dynamic team. You will be responsible
+                            for creating exceptional user experiences using
+                            modern web technologies.
                           </p>
                         </div>
 
