@@ -1341,7 +1341,7 @@ export function CandidateForm({
                     <SelectTrigger className="h-9">
                       <SelectValue placeholder="Select interviewer" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent style={{ zIndex: 9999 }}>
                       <SelectItem value="-1">None</SelectItem>
                       {interviewers?.map((interviewer) => (
                         <SelectItem

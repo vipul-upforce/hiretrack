@@ -10,7 +10,11 @@ import { pipeline } from "stream";
 import { promisify } from "util";
 import sharp from "sharp";
 import { parse } from "url";
-import { validateQueryParams, VALIDATION_PATTERNS, MAX_LENGTHS } from "@/lib/inputValidation";
+import {
+  validateQueryParams,
+  VALIDATION_PATTERNS,
+  MAX_LENGTHS,
+} from "@/lib/inputValidation";
 
 const streamPipeline = promisify(pipeline);
 
@@ -312,20 +316,20 @@ export async function GET(req: NextRequest) {
     // SECURITY FIX: Validate query parameters
     const validation = validateQueryParams(req.nextUrl.searchParams, {
       org: {
-        type: 'string',
+        type: "string",
         maxLength: MAX_LENGTHS.shortText,
-        pattern: VALIDATION_PATTERNS.safeString
+        pattern: VALIDATION_PATTERNS.safeString,
       },
       subdomain: {
-        type: 'string',
+        type: "string",
         maxLength: MAX_LENGTHS.shortText,
-        pattern: VALIDATION_PATTERNS.slug
-      }
+        pattern: VALIDATION_PATTERNS.slug,
+      },
     });
 
     if (!validation.isValid) {
       return NextResponse.json(
-        { error: 'Invalid query parameters', details: validation.errors },
+        { error: "Invalid query parameters", details: validation.errors },
         { status: 400 }
       );
     }
@@ -335,7 +339,7 @@ export async function GET(req: NextRequest) {
     // Give models a moment to initialize if they haven't already
     let retries = 0;
     while ((!Settings || !Organization) && retries < 5) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
       retries++;
     }
 
@@ -404,28 +408,30 @@ export async function GET(req: NextRequest) {
     }
 
     // For anonymous users, only return portal branding (no sensitive data)
-    const response = isAuthenticated ? {
-      fileStorage: settings.fileStorage,
-      portalLogo: settings.portalConfigs?.portalLogo || null,
-      portalLogoDark: settings.portalConfigs?.portalLogoDark || null,
-      portalFavicon: settings.portalConfigs?.portalFavicon || null,
-      portalHeader: settings.portalConfigs?.portalHeader || null,
-      portalFooter: settings.portalConfigs?.portalFooter || null,
-      portalName: settings.portalConfigs?.portalName || "",
-      primaryColor: settings.portalConfigs?.primaryColor || "#6366f1",
-      secondaryColor: settings.portalConfigs?.secondaryColor || "#8b5cf6",
-    } : {
-      // Anonymous users only get public portal branding
-      fileStorage: null,
-      portalLogo: settings.portalConfigs?.portalLogo || null,
-      portalLogoDark: settings.portalConfigs?.portalLogoDark || null,
-      portalFavicon: settings.portalConfigs?.portalFavicon || null,
-      portalHeader: settings.portalConfigs?.portalHeader || null,
-      portalFooter: settings.portalConfigs?.portalFooter || null,
-      portalName: settings.portalConfigs?.portalName || "",
-      primaryColor: settings.portalConfigs?.primaryColor || "#6366f1",
-      secondaryColor: settings.portalConfigs?.secondaryColor || "#8b5cf6",
-    };
+    const response = isAuthenticated
+      ? {
+          fileStorage: settings.fileStorage,
+          portalLogo: settings.portalConfigs?.portalLogo || null,
+          portalLogoDark: settings.portalConfigs?.portalLogoDark || null,
+          portalFavicon: settings.portalConfigs?.portalFavicon || null,
+          portalHeader: settings.portalConfigs?.portalHeader || null,
+          portalFooter: settings.portalConfigs?.portalFooter || null,
+          portalName: settings.portalConfigs?.portalName || "",
+          primaryColor: settings.portalConfigs?.primaryColor || "#6366f1",
+          secondaryColor: settings.portalConfigs?.secondaryColor || "#8b5cf6",
+        }
+      : {
+          // Anonymous users only get public portal branding
+          fileStorage: null,
+          portalLogo: settings.portalConfigs?.portalLogo || null,
+          portalLogoDark: settings.portalConfigs?.portalLogoDark || null,
+          portalFavicon: settings.portalConfigs?.portalFavicon || null,
+          portalHeader: settings.portalConfigs?.portalHeader || null,
+          portalFooter: settings.portalConfigs?.portalFooter || null,
+          portalName: settings.portalConfigs?.portalName || "",
+          primaryColor: settings.portalConfigs?.primaryColor || "#6366f1",
+          secondaryColor: settings.portalConfigs?.secondaryColor || "#8b5cf6",
+        };
     console.log(response, "etting responsee get -- = ");
 
     return NextResponse.json(response);
@@ -443,15 +449,11 @@ export async function PUT(req: NextRequest) {
     await connectToDatabase();
 
     const token = req.cookies.get("auth_token")?.value;
-    // console.log(`[PUT] Token received: ${token ? "provided" : "not provided"}`);
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const decryptedResponse = await verifyAndDecryptToken(token);
-    // console.log(
-    //   `[PUT] Token verification: ${decryptedResponse.success ? "successful" : "failed"}`
-    // );
     if (!decryptedResponse.success) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -513,23 +515,36 @@ export async function PUT(req: NextRequest) {
           fs.mkdirSync(headerDir, { recursive: true });
         }
 
+        // Remove existing header file if it exists
+        if (fs.existsSync(headerPath)) {
+          console.log(`[PUT] Removing existing header file: ${headerPath}`);
+          fs.unlinkSync(headerPath);
+          console.log(`[PUT] Existing header file removed successfully`);
+        }
+
         // Write HTML content to file
-        await fs.promises.writeFile(headerPath, data.portalHeaderHtml, 'utf8');
-        console.log(`[PUT] Header HTML file created successfully at: ${headerPath}`);
+        await fs.promises.writeFile(headerPath, data.portalHeaderHtml, "utf8");
+        console.log(
+          `[PUT] Header HTML file created successfully at: ${headerPath}`
+        );
 
         uploadedHeader = {
           id: Date.now().toString(),
           name: "header.html",
           url: `/api/files?pathName=../assets/organizations/${organizationId}/header.html`,
           type: "text/html",
-          size: Buffer.byteLength(data.portalHeaderHtml, 'utf8')
+          size: Buffer.byteLength(data.portalHeaderHtml, "utf8"),
         };
 
-        console.log(`[PUT] Header file metadata: ${JSON.stringify(uploadedHeader)}`);
+        console.log(
+          `[PUT] Header file metadata: ${JSON.stringify(uploadedHeader)}`
+        );
       } catch (error) {
         console.error("Failed to save header HTML:", error);
         return NextResponse.json(
-          { error: `Failed to save header HTML: ${error instanceof Error ? error.message : "Unknown error"}` },
+          {
+            error: `Failed to save header HTML: ${error instanceof Error ? error.message : "Unknown error"}`,
+          },
           { status: 500 }
         );
       }
@@ -557,23 +572,39 @@ export async function PUT(req: NextRequest) {
           fs.mkdirSync(footerDir, { recursive: true });
         }
 
+        // Remove existing footer file if it exists
+        if (fs.existsSync(footerPath)) {
+          console.log(`[PUT] Removing existing footer file: ${footerPath}`);
+          fs.unlinkSync(footerPath);
+          console.log(`[PUT] Existing footer file removed successfully`);
+        }
+
         // Write HTML content to file
-        await fs.promises.writeFile(footerPath, data.portalFooterHtml, 'utf8');
-        console.log(`[PUT] Footer HTML file created successfully at: ${footerPath}`);
+        await fs.promises.writeFile(footerPath, data.portalFooterHtml, "utf8");
+        console.log(
+          `[PUT] Footer HTML file created successfully at: ${footerPath}`
+        );
+        console.log(
+          `[PUT] Footer HTML length: ${fs.readFileSync(footerPath, "utf8")}`
+        );
 
         uploadedFooter = {
           id: Date.now().toString(),
           name: "footer.html",
           url: `/api/files?pathName=../assets/organizations/${organizationId}/footer.html`,
           type: "text/html",
-          size: Buffer.byteLength(data.portalFooterHtml, 'utf8')
+          size: Buffer.byteLength(data.portalFooterHtml, "utf8"),
         };
 
-        console.log(`[PUT] Footer file metadata: ${JSON.stringify(uploadedFooter)}`);
+        console.log(
+          `[PUT] Footer file metadata: ${JSON.stringify(uploadedFooter)}`
+        );
       } catch (error) {
         console.error("Failed to save footer HTML:", error);
         return NextResponse.json(
-          { error: `Failed to save footer HTML: ${error instanceof Error ? error.message : "Unknown error"}` },
+          {
+            error: `Failed to save footer HTML: ${error instanceof Error ? error.message : "Unknown error"}`,
+          },
           { status: 500 }
         );
       }
@@ -587,9 +618,6 @@ export async function PUT(req: NextRequest) {
           fileStorage,
           organizationId
         );
-        // console.log(
-        //   `[PUT] File upload result: ${JSON.stringify(uploadedLogo)}`
-        // );
       } catch (fileError) {
         console.error(
           `File upload failed: ${fileError instanceof Error ? fileError.message : "Unknown error"}`
@@ -704,17 +732,19 @@ export async function PUT(req: NextRequest) {
 
     // Handle removal of header HTML file if no content provided
     if (!data?.portalHeaderHtml) {
-      const headerPath = path.join(
-        process.cwd(),
+      const headerRelativePath = path.join(
         "..",
         "assets",
         "organizations",
         organizationId,
         "header.html"
       );
+      const headerPath = path.join(process.cwd(), headerRelativePath);
 
       if (fs.existsSync(headerPath)) {
-        console.log(`[PUT] No header HTML provided, removing existing file: ${headerPath}`);
+        console.log(
+          `[PUT] No header HTML provided, removing existing file: ${headerPath}`
+        );
         fs.unlinkSync(headerPath);
         uploadedHeader = null; // Clear the header reference
       }
@@ -722,37 +752,50 @@ export async function PUT(req: NextRequest) {
 
     // Handle removal of footer HTML file if no content provided
     if (!data?.portalFooterHtml) {
-      const footerPath = path.join(
-        process.cwd(),
+      const footerRelativePath = path.join(
         "..",
         "assets",
         "organizations",
         organizationId,
         "footer.html"
       );
+      const footerPath = path.join(process.cwd(), footerRelativePath);
 
       if (fs.existsSync(footerPath)) {
-        console.log(`[PUT] No footer HTML provided, removing existing file: ${footerPath}`);
+        console.log(
+          `[PUT] No footer HTML provided, removing existing file: ${footerPath}`
+        );
         fs.unlinkSync(footerPath);
         uploadedFooter = null; // Clear the footer reference
       }
     }
 
     const updatedPortal = {
-      portalHeader: uploadedHeader || currentSettings?.portalConfigs?.portalHeader || null,
-      portalFooter: uploadedFooter || currentSettings?.portalConfigs?.portalFooter || null,
-      portalLogo: uploadedLogo || currentSettings?.portalConfigs?.portalLogo || null,
-      portalLogoDark: uploadedLogoDark || currentSettings?.portalConfigs?.portalLogoDark || null,
-      portalFavicon: uploadedFavicon || currentSettings?.portalConfigs?.portalFavicon || null,
+      portalHeader:
+        uploadedHeader || currentSettings?.portalConfigs?.portalHeader || null,
+      portalFooter:
+        uploadedFooter || currentSettings?.portalConfigs?.portalFooter || null,
+      portalLogo:
+        uploadedLogo || currentSettings?.portalConfigs?.portalLogo || null,
+      portalLogoDark:
+        uploadedLogoDark ||
+        currentSettings?.portalConfigs?.portalLogoDark ||
+        null,
+      portalFavicon:
+        uploadedFavicon ||
+        currentSettings?.portalConfigs?.portalFavicon ||
+        null,
       portalName:
         data.portalName || currentSettings?.portalConfigs?.portalName || "",
       primaryColor:
-        data.primaryColor || currentSettings?.portalConfigs?.primaryColor || "#6366f1",
+        data.primaryColor ||
+        currentSettings?.portalConfigs?.primaryColor ||
+        "#6366f1",
       secondaryColor:
-        data.secondaryColor || currentSettings?.portalConfigs?.secondaryColor || "#8b5cf6",
+        data.secondaryColor ||
+        currentSettings?.portalConfigs?.secondaryColor ||
+        "#8b5cf6",
     };
-
-    // console.log("❓❓❓❓ ", updatedPortal);
 
     await Organization?.findByIdAndUpdate(organizationId, {
       name: updatedPortal.portalName,
@@ -763,7 +806,6 @@ export async function PUT(req: NextRequest) {
       { portalConfigs: updatedPortal },
       { new: true, runValidators: true, upsert: true }
     );
-    // console.log("updatedSettings :>> ", updatedSettings);
 
     if (!updatedSettings) {
       return NextResponse.json(

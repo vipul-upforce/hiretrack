@@ -98,7 +98,13 @@ export async function POST(req: NextRequest) {
       jobId: candidate.jobId,
     });
 
-    const lane = session?.user?.organizationInfo?.lanes[0];
+    console.log(session?.user?.organizationInfo);
+    const lane = session?.user?.organizationInfo?.lanes
+      ? session?.user?.organizationInfo?.lanes[0]
+      : session?.user?.organizationInfo?.defaultLanes
+        ? session?.user?.organizationInfo?.defaultLanes[0]
+        : "applied";
+
     // Update candidate with new job assignment and set status to "applied"
     const latestCandidate = await Candidate!.findByIdAndUpdate(candidateId, {
       jobId: jobId,

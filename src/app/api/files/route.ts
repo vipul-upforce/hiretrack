@@ -38,7 +38,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-
     // SECURITY FIX: Define allowed directories based on actual implementation
     const projectRoot = process.cwd();
     const allowedDirectories = [
@@ -110,7 +109,7 @@ export async function GET(request: NextRequest) {
         "X-Content-Type-Options": "nosniff",
         // "X-Frame-Options": "DENY",
         "X-Frame-Options": "SAMEORIGIN",
-        "Cache-Control": "private, max-age=3600", // Cache for 1 hour
+        // "Cache-Control": "private, max-age=3600", // Cache for 1 hour
       },
     });
   } catch (error: unknown) {
