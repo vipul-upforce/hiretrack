@@ -1,0 +1,31 @@
+/* Performance optimizations for drag and drop */
+.candidate-card {
+  contain: layout style paint;
+  will-change: transform;
+  transform: translateZ(0); /* Force GPU layer */
+}
+
+.candidate-card.dragging {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+.kanban-column {
+  contain: layout style;
+}
+
+.kanban-scrollbar {
+  contain: layout style paint;
+}
+
+/* Reduce repaints during drag */
+.drag-active * {
+  pointer-events: none;
+}
+
+.drag-active .candidate-card:not(.dragging) {
+  will-change: auto;
+  transform: none;
+}

@@ -24,7 +24,7 @@ import RemarksPopover from "../Remarks/remarks-popover";
 import { GridCircularScores } from "../Utils/circular-score";
 import FollowupDisplay from "../Remarks/followup-popover";
 import { useRemarkHandlers } from "../../hooks/useRemarkHandlers";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, memo, useCallback, useMemo } from "react";
 import dayjs from "dayjs";
 import Cookies from "js-cookie";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
@@ -97,7 +97,7 @@ interface CandidateCardProps {
   onAddRemarkClick?: (candidate: Candidate) => void;
 }
 
-export function CandidateCard({
+const CandidateCard = memo(function CandidateCard({
   candidate,
   index,
   onViewDetails,
@@ -181,7 +181,7 @@ export function CandidateCard({
   );
 
   // Function to handle sync attendee responses
-  const handleSyncAttendeeResponses = async (e: React.MouseEvent) => {
+  const handleSyncAttendeeResponses = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
 
     if (!localCandidate.assignment?.googleMeet?.eventId) {
@@ -246,11 +246,11 @@ export function CandidateCard({
     } finally {
       setIsSyncing(false);
     }
-  };
+  }, [localCandidate._id, localCandidate.assignment?.googleMeet?.eventId, toast]);
 
-  // Calculate average score across all categories
-  const calculateAverageScore = () => {
-    if (!localCandidate.scores) return 0;
+  // Calculate average score across all categories - memoized for performance
+  const { averageScore, showStar } = useMemo(() => {
+    if (!localCandidate.scores) return { averageScore: 0, showStar: false };
 
     const scores = [
       localCandidate.scores.overall,
@@ -259,16 +259,14 @@ export function CandidateCard({
       localCandidate.scores.affordability,
     ].filter((score) => score !== undefined && score >= 0);
 
-    if (scores.length === 0) return 0;
+    if (scores.length === 0) return { averageScore: 0, showStar: false };
 
-    return scores.reduce((sum, score) => sum + score, 0) / scores.length;
-  };
-
-  const averageScore = calculateAverageScore();
-  const showStar = averageScore > 7;
+    const avg = scores.reduce((sum, score) => sum + score, 0) / scores.length;
+    return { averageScore: avg, showStar: avg > 7 };
+  }, [localCandidate.scores]);
 
   // Copy to clipboard function
-  const copyToClipboard = async (text: string, label: string) => {
+  const copyToClipboard = useCallback(async (text: string, label: string) => {
     try {
       await navigator.clipboard.writeText(text);
       toast({
@@ -284,7 +282,7 @@ export function CandidateCard({
         duration: 2000,
       });
     }
-  };
+  }, [toast]);
 
   // Update follow-up state when dialog opens for editing
   useEffect(() => {
@@ -298,7 +296,7 @@ export function CandidateCard({
     }
   }, [isAddingFollowUp, localCandidate]);
 
-  const renderCardContent = () => (
+  const renderCardContent = useMemo(() => (
     <div className="flex flex-col h-full relative">
       {/* Main content area - will expand to fill available space */}
       <div className="flex-1 flex flex-col">
@@ -1050,7 +1048,7 @@ export function CandidateCard({
           </div>
         )}
     </div>
-  );
+  ), [localCandidate, showStar, user, onViewDetails, setOpenRemarksFor, setIsAddRemarkOpen, setIsEditing, setIsEmailDialogOpen, setIsAssigning, setIsTagsOpen, handlePopoverContentClick, setConfirmUnassignOpen, setIsAddingFollowUp, onDashboard, onDeleteClick, setRemoveFUOpenLocal, copyToClipboard, formNameObject, removeFUOpen, handleRemoveFollowUp, handleSyncAttendeeResponses, isSyncing, formatDate, formatTime]);
 
   return (
     <>
@@ -1060,7 +1058,7 @@ export function CandidateCard({
             "bg-white dark:bg-secondary border border-gray-200 dark:border-gray-800 rounded-lg p-4 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 h-full hover:border-gray-300 dark:hover:border-gray-700 w-[420px] flex-shrink-0",
             className
           )}
-          onClick={(e) => {
+          onClick={useCallback((e) => {
             // Check if click target is a button or inside a dropdown/interactive element
             const target = e.target as HTMLElement;
             if (
@@ -1080,9 +1078,9 @@ export function CandidateCard({
 
             // Always open details when clicking on card content
             onViewDetails(localCandidate);
-          }}
+          }, [onViewDetails, localCandidate])}
         >
-          {renderCardContent()}
+          {renderCardContent}
         </div>
       ) : (
         <Draggable draggableId={localCandidate._id} index={index}>
@@ -1096,7 +1094,7 @@ export function CandidateCard({
                 isPending && "opacity-50",
                 className
               )}
-              onClick={(e) => {
+              onClick={useCallback((e) => {
                 // Only trigger on actual click, not on drag
                 if (e.detail === 0) return; // Ignore programmatic clicks
 
@@ -1119,9 +1117,9 @@ export function CandidateCard({
 
                 // Always open details when clicking on card content
                 onViewDetails(localCandidate);
-              }}
+              }, [onViewDetails, localCandidate])}
             >
-              {renderCardContent()}
+              {renderCardContent}
             </div>
           )}
         </Draggable>
@@ -1243,4 +1241,6 @@ export function CandidateCard({
       )}
     </>
   );
-}
+});
+
+export { CandidateCard };

@@ -14,7 +14,7 @@ import {
 import { CandidateCard } from "../Candidate/candidate-card";
 import { Candidate } from "@/types/candidate";
 import { LaneOptionsMenu } from "./lanes-options-menu";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, memo, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { CustomScrollbar } from "@/components/ui/custom-scrollbar";
 import { useDragToScroll } from "../../hooks/useDragToScroll";
@@ -69,7 +69,7 @@ interface KanbanColumnProps {
 type SortField = string;
 type SortDirection = "asc" | "desc";
 
-export function KanbanColumn({
+const KanbanColumn = memo(function KanbanColumn({
   column,
   index,
   isFileOver,
@@ -204,7 +204,7 @@ export function KanbanColumn({
     });
   };
 
-  // Memoized sorted candidates
+  // Memoized sorted candidates with stable reference
   const sortedCandidates = useMemo(() => {
     if (!sortField) {
       return column.candidates;
@@ -212,11 +212,37 @@ export function KanbanColumn({
     return sortCandidates(column.candidates, sortField, sortDirection);
   }, [column.candidates, sortField, sortDirection]);
 
-  // Handle sort from LaneOptionsMenu
-  const handleSort = (field: SortField, direction: SortDirection) => {
+  // Memoized filtered candidates for this job
+  const filteredCandidates = useMemo(() => {
+    return sortedCandidates.filter((candidate) => {
+      if (
+        (typeof candidate.jobId !== "string" &&
+          candidate?.jobId?._id?.toString() !== jobId?.toString()) ||
+        (typeof candidate.jobId === "string" &&
+          candidate?.jobId !== jobId?.toString())
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }, [sortedCandidates, jobId]);
+
+  // Handle sort from LaneOptionsMenu - memoized to prevent re-renders
+  const handleSort = useCallback((field: SortField, direction: SortDirection) => {
     setSortField(field);
     setSortDirection(direction);
-  };
+  }, []);
+
+  // Memoized event handlers to prevent re-renders
+  const handleViewDetails = useCallback((candidate: any) => {
+    setSelectedCandidate(candidate);
+    setIsDetailsOpen(true);
+  }, [setSelectedCandidate, setIsDetailsOpen]);
+
+  const handleDeleteClickMemo = useCallback((id: string, candidate: any) => {
+    setSelectedCandidate(candidate);
+    handleDeleteClick(id);
+  }, [setSelectedCandidate, handleDeleteClick]);
 
   return (
     <Draggable
@@ -398,16 +424,7 @@ export function KanbanColumn({
                           </div>
                         </div>
                       )}
-                      {sortedCandidates.map((candidate, index) => {
-                        if (
-                          (typeof candidate.jobId !== "string" &&
-                            candidate?.jobId?._id?.toString() !==
-                              jobId?.toString()) ||
-                          (typeof candidate.jobId === "string" &&
-                            candidate?.jobId !== jobId?.toString())
-                        ) {
-                          return null;
-                        }
+                      {filteredCandidates.map((candidate, index) => {
                         // Check if this candidate is in a pending move for this lane
                         const isPending = pendingMoves.some(
                           (pm) =>
@@ -417,21 +434,14 @@ export function KanbanColumn({
 
                         return (
                           <CandidateCard
-                            key={`${column.id}-${candidate._id}`}
-                            // setIsDragging={() => setIsDragging(true)}
+                            key={candidate._id}
                             candidate={candidate}
                             index={index}
                             refetch={refetch}
-                            onViewDetails={(candidate) => {
-                              setSelectedCandidate(candidate);
-                              setIsDetailsOpen(true);
-                            }}
+                            onViewDetails={handleViewDetails}
                             openRemarks={openRemarksFor === candidate._id}
                             setOpenRemarksFor={setOpenRemarksFor}
-                            onDeleteClick={(id: string) => {
-                              setSelectedCandidate(candidate);
-                              handleDeleteClick(id);
-                            }}
+                            onDeleteClick={(id: string) => handleDeleteClickMemo(id, candidate)}
                             onEditClick={(candidate) => {
                               setSelectedCandidate(candidate);
                               // Handle edit - could open edit dialog
@@ -473,4 +483,6 @@ export function KanbanColumn({
       )}
     </Draggable>
   );
-}
+});
+
+export { KanbanColumn };

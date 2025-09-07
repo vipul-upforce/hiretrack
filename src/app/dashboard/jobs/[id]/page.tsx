@@ -6,7 +6,7 @@ import {
   DroppableProvided,
 } from "@hello-pangea/dnd";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { CreateCandidateDialog } from "./components/Dialogs/create-candidate-dialog";
 import { CreateLaneDialog } from "./components/Dialogs/create-lane-dialog";
 import { CandidateDetailsDialog } from "./components/Dialogs/candidate-details-dialog";
@@ -55,7 +55,7 @@ import {
 import { CustomFieldsContext } from "@/Custom_Fields/Context";
 import CustomFieldDialog from "@/Custom_Fields/Components/Common/CustomFieldDialog";
 import Stepper from "@/Custom_Fields/Components/Stepper";
-import { useContext, useCallback } from "react";
+import { useContext } from "react";
 import { JobAnalyticsModal } from "../../jobs-board/components/JobAnalyticsModal";
 import ChecklistRemarksDialog from "./components/Dialogs/checklist-remarks-dialog";
 import { LaneChecklistConfigDialog } from "./components/Dialogs/lane-checklist-config-dialog";
@@ -683,39 +683,64 @@ export default function JobProgressPage() {
                 ref={mergeRefs([provided.innerRef, scrollRef])}
                 className="h-full flex gap-1 overflow-x-auto"
               >
-                {columns.map((column, index) => {
-                  // Find the lane configuration for this column
-                  const laneConfig = jobLaneConfig?.laneConfigs?.find(
-                    (config) => config.laneId === column.id
-                  );
+                {useMemo(
+                  () =>
+                    columns.map((column, index) => {
+                      // Find the lane configuration for this column
+                      const laneConfig = jobLaneConfig?.laneConfigs?.find(
+                        (config) => config.laneId === column.id
+                      );
 
-                  return (
-                    <KanbanColumn
-                      key={column.id}
-                      column={column}
-                      index={index}
-                      isDragging={isDragging}
-                      isFileOver={isFileOver}
-                      setIsFileOver={setIsFileOver}
-                      handleFileDrop={handleFileDrop}
-                      handleDeleteLane={handleDeleteLane}
-                      handleEditLane={handleEditLaneClick}
-                      setLaneToDelete={setLaneToDelete}
-                      setLaneToEdit={setLaneToEdit}
-                      refetch={refetch}
-                      selectedCandidate={selectedCandidate}
-                      setSelectedCandidate={setSelectedCandidate}
-                      isDetailsOpen={isDetailsOpen}
-                      setIsDetailsOpen={setIsDetailsOpen}
-                      openRemarksFor={openRemarksFor}
-                      setOpenRemarksFor={setOpenRemarksFor}
-                      handleDeleteClick={handleDeleteClick}
-                      onConfigureChecklist={handleConfigureChecklist}
-                      pendingMoves={pendingMoves}
-                      laneConfig={laneConfig}
-                    />
-                  );
-                })}
+                      return (
+                        <KanbanColumn
+                          key={column.id}
+                          column={column}
+                          index={index}
+                          isDragging={isDragging}
+                          isFileOver={isFileOver}
+                          setIsFileOver={setIsFileOver}
+                          handleFileDrop={handleFileDrop}
+                          handleDeleteLane={handleDeleteLane}
+                          handleEditLane={handleEditLaneClick}
+                          setLaneToDelete={setLaneToDelete}
+                          setLaneToEdit={setLaneToEdit}
+                          refetch={refetch}
+                          selectedCandidate={selectedCandidate}
+                          setSelectedCandidate={setSelectedCandidate}
+                          isDetailsOpen={isDetailsOpen}
+                          setIsDetailsOpen={setIsDetailsOpen}
+                          openRemarksFor={openRemarksFor}
+                          setOpenRemarksFor={setOpenRemarksFor}
+                          handleDeleteClick={handleDeleteClick}
+                          onConfigureChecklist={handleConfigureChecklist}
+                          pendingMoves={pendingMoves}
+                          laneConfig={laneConfig}
+                        />
+                      );
+                    }),
+                  [
+                    columns,
+                    jobLaneConfig,
+                    isDragging,
+                    isFileOver,
+                    setIsFileOver,
+                    handleFileDrop,
+                    handleDeleteLane,
+                    handleEditLaneClick,
+                    setLaneToDelete,
+                    setLaneToEdit,
+                    refetch,
+                    selectedCandidate,
+                    setSelectedCandidate,
+                    isDetailsOpen,
+                    setIsDetailsOpen,
+                    openRemarksFor,
+                    setOpenRemarksFor,
+                    handleDeleteClick,
+                    handleConfigureChecklist,
+                    pendingMoves,
+                  ]
+                )}
                 {provided.placeholder}
               </div>
             )}
