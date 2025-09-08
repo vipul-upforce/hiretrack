@@ -117,10 +117,15 @@ const predefinedColorCombinations = [
     primary: "#ec4899",
     secondary: "#f43f5e",
   },
+  // {
+  //   name: "Midnight",
+  //   primary: "#94a3b8",
+  //   secondary: "#64748b",
+  // },
   {
     name: "Midnight",
-    primary: "#94a3b8",
-    secondary: "#64748b",
+    primary: "#64748b",
+    secondary: "#3e4456"
   },
   {
     name: "Emerald Mint",
@@ -565,8 +570,8 @@ export default function PortalConfigurationPage() {
                         id="portalName"
                         value={
                           settings.portalName &&
-                          settings.portalName !== "" &&
-                          settings.portalName.length > 0
+                            settings.portalName !== "" &&
+                            settings.portalName.length > 0
                             ? settings.portalName
                             : user.organizationInfo.name
                         }
@@ -634,7 +639,7 @@ export default function PortalConfigurationPage() {
                               ? "border-primary ring-2 ring-primary ring-offset-2"
                               : "border-border hover:border-primary/50",
                             combo.isDefault &&
-                              "bg-gradient-to-br from-primary/5 to-secondary/5"
+                            "bg-gradient-to-br from-primary/5 to-secondary/5"
                           )}
                           onClick={() =>
                             setSettings((prev) => ({
@@ -1331,19 +1336,19 @@ export default function PortalConfigurationPage() {
                             {(previewTheme === "dark"
                               ? settings.portalLogoDark
                               : settings.portalLogo) && (
-                              <div className="h-10 w-32 relative bg-white/10 rounded">
-                                <Image
-                                  src={
-                                    previewTheme === "dark"
-                                      ? settings.portalLogoDark?.url || ""
-                                      : settings.portalLogo?.url || ""
-                                  }
-                                  alt="Logo"
-                                  fill
-                                  className="object-contain p-2"
-                                />
-                              </div>
-                            )}
+                                <div className="h-10 w-32 relative bg-white/10 rounded">
+                                  <Image
+                                    src={
+                                      previewTheme === "dark"
+                                        ? settings.portalLogoDark?.url || ""
+                                        : settings.portalLogo?.url || ""
+                                    }
+                                    alt="Logo"
+                                    fill
+                                    className="object-contain p-2"
+                                  />
+                                </div>
+                              )}
                             <h3 className="text-white font-semibold">
                               {settings.portalName || "Portal Name"}
                             </h3>

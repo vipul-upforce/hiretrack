@@ -171,76 +171,76 @@ export default function BackupsDialog() {
         </div>
       </div> */}
 
-      {files.length > 0 && (
-        <div className="mb-4 p-4 bg-white dark:bg-black rounded-lg border">
-          <div className="flex flex-row justify-between ">
-            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-              <Database className="h-4 w-4" />
-              Backup Summary
-            </h3>
-            <Button
-              onClick={handleTakeSnapshot}
-              disabled={loading}
-              className="flex items-center justify-center font-semibold px-6 py-2 mb-2 rounded-lg transition-all duration-200 ease-in-out transform active:scale-95
+      {/* {files.length > 0 && ( */}
+      <div className="mb-4 p-4 bg-white dark:bg-black rounded-lg border">
+        <div className="flex flex-row justify-between ">
+          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+            <Database className="h-4 w-4" />
+            Backup Summary
+          </h3>
+          <Button
+            onClick={handleTakeSnapshot}
+            disabled={loading}
+            className="flex items-center justify-center font-semibold px-6 py-2 mb-2 rounded-lg transition-all duration-200 ease-in-out transform active:scale-95
              bg-white text-blue-700 border border-blue-200 hover:bg-blue-50 hover:border-blue-300 shadow-sm
              dark:bg-blue-700 dark:text-white dark:border-blue-600 dark:hover:bg-blue-600 dark:shadow-md"
-            >
-              {isTakingSnapshot ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                <>
-                  <Database className="h-4 w-4 mr-2" />
-                  Take Snapshot
-                </>
-              )}
-            </Button>
+          >
+            {isTakingSnapshot ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Creating...
+              </>
+            ) : (
+              <>
+                <Database className="h-4 w-4 mr-2" />
+                Take Snapshot
+              </>
+            )}
+          </Button>
+        </div>
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="flex items-center gap-2">
+            <HardDrive className="h-3 w-3 text-gray-500" />
+            <span className="text-gray-600 dark:text-gray-400">
+              Total Size:
+            </span>
+            <span className="font-medium">
+              {formatFileSize(backupStats.totalSize)}
+            </span>
           </div>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <HardDrive className="h-3 w-3 text-gray-500" />
-              <span className="text-gray-600 dark:text-gray-400">
-                Total Size:
-              </span>
-              <span className="font-medium">
-                {formatFileSize(backupStats.totalSize)}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FileIcon className="h-3 w-3 text-gray-500" />
-              <span className="text-gray-600 dark:text-gray-400">
-                Total Backups:
-              </span>
-              <span className="font-medium">{backupStats.totalCount}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Calendar className="h-3 w-3 text-gray-500" />
-              <span className="text-gray-600 dark:text-gray-400">Oldest:</span>
-              <span className="font-medium text-xs">
-                {backupStats.oldestBackup}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Calendar className="h-3 w-3 text-gray-500" />
-              <span className="text-gray-600 dark:text-gray-400">Newest:</span>
-              <span className="font-medium text-xs">
-                {backupStats.newestBackup}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 col-span-2">
-              <HardDrive className="h-3 w-3 text-gray-500" />
-              <span className="text-gray-600 dark:text-gray-400">
-                Average Size:
-              </span>
-              <span className="font-medium">
-                {formatFileSize(backupStats.averageSize)}
-              </span>
-            </div>
+          <div className="flex items-center gap-2">
+            <FileIcon className="h-3 w-3 text-gray-500" />
+            <span className="text-gray-600 dark:text-gray-400">
+              Total Backups:
+            </span>
+            <span className="font-medium">{backupStats.totalCount}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Calendar className="h-3 w-3 text-gray-500" />
+            <span className="text-gray-600 dark:text-gray-400">Oldest:</span>
+            <span className="font-medium text-xs">
+              {backupStats.oldestBackup}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Calendar className="h-3 w-3 text-gray-500" />
+            <span className="text-gray-600 dark:text-gray-400">Newest:</span>
+            <span className="font-medium text-xs">
+              {backupStats.newestBackup}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 col-span-2">
+            <HardDrive className="h-3 w-3 text-gray-500" />
+            <span className="text-gray-600 dark:text-gray-400">
+              Average Size:
+            </span>
+            <span className="font-medium">
+              {formatFileSize(backupStats.averageSize)}
+            </span>
           </div>
         </div>
-      )}
+      </div>
+      {/* )} */}
 
       {files.length === 0 && !isLoadingBackups ? (
         <div className="text-center py-8">
