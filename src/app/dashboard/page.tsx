@@ -93,6 +93,7 @@ export interface Assignment {
     size: number;
     _id: string;
   }[];
+  isDeleted?: boolean;
   customFields: { [key: string]: string };
   createdAt: string;
   updatedAt: string;
@@ -141,7 +142,7 @@ export default function DashboardPage() {
   const loadingRef = useRef(false);
 
   const role = useRoles();
-  const { candidates: sseCandidates } = useSSE(role || "", () => { }, null);
+  const { candidates: sseCandidates } = useSSE(role || "", () => {}, null);
 
   const isToday = (assignment: Assignment) => {
     const assignmentDate = new Date(
@@ -575,7 +576,6 @@ export default function DashboardPage() {
                     setSearchText(sanitizedValue);
                   }}
                   className="max-w-lg w-96"
-
                   onKeyPress={(e) => {
                     if (e.key === "Enter") {
                       applyFilter();
@@ -690,29 +690,34 @@ export default function DashboardPage() {
 
                   assignments?.length > 0 ? (
                     <div className="flex flex-wrap gap-6 justify-start ">
-                      {assignments.map((assignment, index) => (
-                        <div
-                          key={assignment.id || assignment._id}
-                          ref={
-                            index === assignments.length - 1
-                              ? lastElementRef
-                              : null
-                          }
-                        >
-                          <ActionItems
-                            assignment={(() => {
-                              const sseMatch = sseCandidates.find(
-                                (candidate) => candidate._id === assignment._id
-                              );
-                              return sseMatch || assignment;
-                            })()}
-                            assignments={assignments}
-                            setAssignments={setAssignments}
-                            fetchAssignments={() => { }}
-                          // fetchAssignments={() => fetchAssignmentsNoReload()}
-                          />
-                        </div>
-                      ))}
+                      {assignments
+                        .filter((assignment) => {
+                          return !assignment.isDeleted;
+                        })
+                        .map((assignment, index) => (
+                          <div
+                            key={assignment.id || assignment._id}
+                            ref={
+                              index === assignments.length - 1
+                                ? lastElementRef
+                                : null
+                            }
+                          >
+                            <ActionItems
+                              assignment={(() => {
+                                const sseMatch = sseCandidates.find(
+                                  (candidate) =>
+                                    candidate._id === assignment._id
+                                );
+                                return sseMatch || assignment;
+                              })()}
+                              assignments={assignments}
+                              setAssignments={setAssignments}
+                              fetchAssignments={() => {}}
+                              // fetchAssignments={() => fetchAssignmentsNoReload()}
+                            />
+                          </div>
+                        ))}
                     </div>
                   ) : (
                     <p className="text-lg font-semibold text-gray-500 text-center py-10 w-full flex justify-center items-center">
@@ -771,45 +776,45 @@ export default function DashboardPage() {
                   todayAssignments={
                     sseCandidates.length > 0
                       ? ([
-                        ...sseCandidates.filter((candidate) => {
-                          // Check if the interview is scheduled for today
-                          const isToday =
-                            candidate.assignment?.time &&
-                            new Date(
-                              candidate.assignment.time
-                            ).toDateString() === new Date().toDateString();
+                          ...sseCandidates.filter((candidate) => {
+                            // Check if the interview is scheduled for today
+                            const isToday =
+                              candidate.assignment?.time &&
+                              new Date(
+                                candidate.assignment.time
+                              ).toDateString() === new Date().toDateString();
 
-                          // Keep existing conditions for interviewerId
-                          return (
-                            isToday &&
-                            candidate.assignment &&
-                            typeof candidate.assignment.interviewerId ===
-                            "object" &&
-                            "_id" in candidate.assignment.interviewerId &&
-                            candidate.assignment.interviewerId._id.toString() ===
-                            user?.id?.toString()
-                          );
-                        }),
+                            // Keep existing conditions for interviewerId
+                            return (
+                              isToday &&
+                              candidate.assignment &&
+                              typeof candidate.assignment.interviewerId ===
+                                "object" &&
+                              "_id" in candidate.assignment.interviewerId &&
+                              candidate.assignment.interviewerId._id.toString() ===
+                                user?.id?.toString()
+                            );
+                          }),
 
-                        ...todayAssignments.filter(
-                          (older) =>
-                            older.assignment &&
-                            !sseCandidates.some(
-                              (latest) => latest._id === older._id
-                            ) &&
-                            older.assignment?.time &&
-                            new Date(older.assignment.time).toDateString() ===
-                            new Date().toDateString()
-                        ),
-                      ] as (Candidate & Assignment)[])
+                          ...todayAssignments.filter(
+                            (older) =>
+                              older.assignment &&
+                              !sseCandidates.some(
+                                (latest) => latest._id === older._id
+                              ) &&
+                              older.assignment?.time &&
+                              new Date(older.assignment.time).toDateString() ===
+                                new Date().toDateString()
+                          ),
+                        ] as (Candidate & Assignment)[])
                       : todayAssignments.filter((assignment) => {
-                        return (
-                          assignment.assignment?.time &&
-                          new Date(
-                            assignment.assignment.time
-                          ).toDateString() === new Date().toDateString()
-                        );
-                      })
+                          return (
+                            assignment.assignment?.time &&
+                            new Date(
+                              assignment.assignment.time
+                            ).toDateString() === new Date().toDateString()
+                          );
+                        })
                   }
                 />
               ) : (
@@ -829,26 +834,26 @@ export default function DashboardPage() {
                     interviewerAssignments={
                       sseCandidates.length > 0
                         ? ([
-                          ...sseCandidates.filter((candidate) => {
-                            // debugger;
-                            return (
-                              candidate.assignment &&
-                              typeof candidate.assignment.interviewerId ===
-                              "object" &&
-                              "_id" in candidate.assignment.interviewerId &&
-                              candidate.assignment.interviewerId._id.toString() ===
-                              user.id?.toString()
-                            );
-                          }),
+                            ...sseCandidates.filter((candidate) => {
+                              // debugger;
+                              return (
+                                candidate.assignment &&
+                                typeof candidate.assignment.interviewerId ===
+                                  "object" &&
+                                "_id" in candidate.assignment.interviewerId &&
+                                candidate.assignment.interviewerId._id.toString() ===
+                                  user.id?.toString()
+                              );
+                            }),
 
-                          ...interviewerAssignments.filter(
-                            (older) =>
-                              older.assignment &&
-                              !sseCandidates.some(
-                                (latest) => latest._id === older._id
-                              )
-                          ),
-                        ] as (Candidate & Assignment)[])
+                            ...interviewerAssignments.filter(
+                              (older) =>
+                                older.assignment &&
+                                !sseCandidates.some(
+                                  (latest) => latest._id === older._id
+                                )
+                            ),
+                          ] as (Candidate & Assignment)[])
                         : interviewerAssignments
                     }
                   />

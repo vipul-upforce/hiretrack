@@ -560,6 +560,7 @@ export async function GET(req: NextRequest) {
               },
               tags: "$candidates.tags",
               noticePeriod: "$candidates.noticePeriod",
+              isDeleted: "$candidates.isDeleted",
               remarks: "$candidates.remarks",
               attachments: "$candidates.attachments",
               status: "$candidates.status",
