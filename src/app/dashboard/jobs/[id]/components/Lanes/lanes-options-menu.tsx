@@ -1,5 +1,5 @@
 "use client";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   MoreVertical,
   Edit,
@@ -86,20 +86,48 @@ export function LaneOptionsMenu({
   const [selectedSortField, setSelectedSortField] =
     useState<string>("createdAt");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  // console.log(laneId, "laneId");
+
+  const storageKey = `lane-sort-${laneId}`;
+
+
+  // 🟢 Load saved sort preferences from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      const { field, direction } = JSON.parse(saved);
+      setSelectedSortField(field);
+      setSortDirection(direction);
+      onSort(field, direction); // auto-apply saved sort
+    }
+  }, [storageKey, onSort]);
+
+  // 🟢 Save sort preferences whenever they change
+  const saveSortPreferences = (field: string, direction: "asc" | "desc") => {
+    localStorage.setItem(
+      storageKey,
+      JSON.stringify({ field, direction })
+    );
+  };
 
   const handleSortApply = useCallback(() => {
     onSort(selectedSortField, sortDirection);
-    //setShowSortMenu(false);
-    //setIsOpen(false);
-  }, [selectedSortField, sortDirection, onSort, setIsOpen]);
+    saveSortPreferences(selectedSortField, sortDirection);
+  }, [selectedSortField, sortDirection, onSort]);
 
   const handleSortFieldSelect = useCallback((field: string) => {
     setSelectedSortField(field);
-  }, []);
+    saveSortPreferences(field, sortDirection);
+    onSort(field, sortDirection);
+  }, [sortDirection, onSort]);
 
   const handleSortDirection = useCallback((direction: "asc" | "desc") => {
     setSortDirection(direction);
-  }, []);
+    saveSortPreferences(selectedSortField, direction);
+    onSort(selectedSortField, direction);
+  }, [selectedSortField, onSort]);
+
+
 
   const menuItems = [
     {
