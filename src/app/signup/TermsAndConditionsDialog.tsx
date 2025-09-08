@@ -217,7 +217,7 @@ export function TermsAndConditionsDialog({
           >
             Decline
           </Button>
-          <Button onClick={() => onAccept?.(true)} className="sm:flex-1">
+          <Button onClick={() => onAccept?.(true)} className="sm:flex-1" variant="primary">
             Accept Terms & Conditions
           </Button>
         </DialogFooter>

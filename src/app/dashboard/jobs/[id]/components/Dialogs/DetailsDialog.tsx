@@ -53,20 +53,20 @@ export function DetailsDialog({
   const dialogStyle =
     !isLargeViewport || isMaximized
       ? {
-          position: "fixed" as const,
-          inset: 0,
-          width: "100vw",
-          height: "100vh",
-          minHeight: "100vh",
-          maxHeight: "100vh",
-          maxWidth: "none",
-          transform: "none",
-          left: 0,
-          top: 0,
-          margin: 0,
-          border: 0,
-          borderRadius: 0,
-        }
+        position: "fixed" as const,
+        inset: 0,
+        width: "100vw",
+        height: "100vh",
+        minHeight: "100vh",
+        maxHeight: "100vh",
+        maxWidth: "none",
+        transform: "none",
+        left: 0,
+        top: 0,
+        margin: 0,
+        border: 0,
+        borderRadius: 0,
+      }
       : {};
 
   return (
