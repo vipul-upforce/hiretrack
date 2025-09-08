@@ -318,6 +318,7 @@ export const LogsTable: React.FC<{
   user: User | null;
   timeLineItems: ICandidateHistory[];
 }> = ({ candidate, user, timeLineItems }) => {
+  console.log(timeLineItems, "timeLineItems");
 
   const tableRows = timeLineItems
     .sort(
@@ -384,6 +385,19 @@ export const LogsTable: React.FC<{
                         size: file?.size,
                       }
                     })}
+                    onMoreClick={() => null}
+                  />
+                ) : typeof log.previousValue === "object" && log.previousValue !== null ? (
+                  <AttachmentsPopover
+                    attachments={[
+                      {
+                        id: log.previousValue.id || `${i}-${logIndex}-single`,
+                        name: log.previousValue.name || "unknown",
+                        url: log.previousValue.url || log.previousValue.base64 || "#",
+                        type: log.previousValue.type,
+                        size: log.previousValue.size,
+                      },
+                    ]}
                     onMoreClick={() => null}
                   />
                 ) : (
