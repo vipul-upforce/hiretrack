@@ -30,6 +30,13 @@ async function handleLogin(req: NextRequest) {
       },
     });
     const candidates = await CandidateAccount.find({ email }).lean();
+    console.log(users, "users");
+    console.log(candidates, "candidates");
+
+    // Check if email exists in either collection
+    if (users.length === 0 && candidates.length === 0) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
 
     if (users.length > 0 && candidates.length > 0) {
       return await checkMultipleOrgs(orgId, users, candidates, password);
@@ -47,6 +54,8 @@ async function handleLogin(req: NextRequest) {
 
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   } catch (error) {
+    // console.log(error, "Err Of Login ");
+
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
