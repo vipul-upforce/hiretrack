@@ -172,7 +172,7 @@ export function SearchResults({
   const handleCandidateUpdateWithOptimism = useCallback(
     (updatedCandidate: Candidate) => {
       // Immediately update local state if handler is provided
-      debugger;
+      // debugger;
       if (onCandidateUpdate) {
         onCandidateUpdate(updatedCandidate);
       }
