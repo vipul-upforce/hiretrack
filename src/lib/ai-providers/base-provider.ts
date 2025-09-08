@@ -52,12 +52,19 @@ export abstract class BaseAIProvider implements AIProvider {
         "overall": // An overall rating (out of 10),
         "experience": // A rating (out of 10),
         "skills": // A rating (out of 10),
+        "affordability": // Salary alignment score (1-10) with calculation shown (include normalization logic),
         "strengths": // A list of strengths,
         "areas_for_improvement": // A list of areas for improvement,
         "recommendation": // A recommendation,
         "notes": // Additional notes
       }
     }
+
+    SALARY NORMALIZATION EXAMPLES:
+    - Candidate says "34000 expected": 34000 ÷ 1000 × 12 = 4.08 LPA
+    - Candidate says "34 LPA expected": 34 LPA (no conversion needed)
+    - Candidate says "45000 current, 50000 expected": 50000 ÷ 1000 × 12 = 6 LPA expected
+
 
     Please ensure:
     1. All numeric fields are numbers, not strings.
