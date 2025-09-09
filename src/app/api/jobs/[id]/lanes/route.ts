@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { Job, Organization, Candidate } from "@/lib/mongodb";
 import { auth } from "@/lib/auth";
-import { isValidObjectId } from 'mongoose';
+import { isValidObjectId } from "mongoose";
 const DEFAULT_LANES = [
   "applied",
   "screening",
   "shortlisted",
   "processing",
   "accepted",
-  "rejected"
+  "rejected",
 ];
 
 // GET /api/jobs/[id]/lanes - Get lanes for a specific job
@@ -36,22 +36,16 @@ export async function GET(
 
     // Validate ObjectId
     if (!isValidObjectId(jobId)) {
-      return NextResponse.json(
-        { error: "Invalid job ID" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid job ID" }, { status: 400 });
     }
     // Find the job
     const job = await Job.findOne({
       _id: jobId,
-      organizationId: session.user.organizationId
+      organizationId: session.user.organizationId,
     });
 
     if (!job) {
-      return NextResponse.json(
-        { error: "Job not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 
     let lanes;
@@ -61,8 +55,11 @@ export async function GET(
       lanes = job.lanes;
     } else {
       // Get organization default lanes
-      const organization = await Organization.findById(session.user.organizationId);
-      lanes = organization?.defaultLanes || DEFAULT_LANES;
+      const organization = await Organization.findById(
+        session.user.organizationId
+      );
+      lanes =
+        organization?.lanes || organization?.defaultLanes || DEFAULT_LANES;
     }
 
     return NextResponse.json({
@@ -72,10 +69,9 @@ export async function GET(
       useCustomLanes,
       laneRestrictions: {
         nonEditable: ["applied", "accepted", "rejected"],
-        nonDeletable: ["applied", "accepted", "rejected"]
-      }
+        nonDeletable: ["applied", "accepted", "rejected"],
+      },
     });
-
   } catch (error) {
     console.error("Get job lanes error:", error);
     return NextResponse.json(
@@ -102,7 +98,10 @@ export async function PUT(
     // Only admin and HR can modify job lanes
     if (!["admin", "hr"].includes(session.user.role)) {
       return NextResponse.json(
-        { error: "Insufficient permissions. Only admin and HR can manage job lanes." },
+        {
+          error:
+            "Insufficient permissions. Only admin and HR can manage job lanes.",
+        },
         { status: 403 }
       );
     }
@@ -121,14 +120,11 @@ export async function PUT(
     // Find the job
     const job = await Job.findOne({
       _id: jobId,
-      organizationId: session.user.organizationId
+      organizationId: session.user.organizationId,
     });
 
     if (!job) {
-      return NextResponse.json(
-        { error: "Job not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 
     // Validation
@@ -145,7 +141,9 @@ export async function PUT(
       for (const lane of lanes) {
         if (typeof lane !== "string" || !validLaneNameRegex.test(lane)) {
           return NextResponse.json(
-            { error: `Invalid lane name: ${lane}. Only alphanumeric characters, spaces, hyphens, and underscores allowed.` },
+            {
+              error: `Invalid lane name: ${lane}. Only alphanumeric characters, spaces, hyphens, and underscores allowed.`,
+            },
             { status: 400 }
           );
         }
@@ -156,7 +154,9 @@ export async function PUT(
       for (const requiredLane of requiredLanes) {
         if (!lanes.includes(requiredLane)) {
           return NextResponse.json(
-            { error: `Required lane '${requiredLane}' must be included in job lanes` },
+            {
+              error: `Required lane '${requiredLane}' must be included in job lanes`,
+            },
             { status: 400 }
           );
         }
@@ -174,28 +174,35 @@ export async function PUT(
       // Check if any candidates would have invalid statuses after this change
       const candidates = await Candidate.find({
         jobId: jobId,
-        organizationId: session.user.organizationId
+        organizationId: session.user.organizationId,
       });
 
-      const invalidCandidates = candidates.filter(candidate =>
-        candidate.status && !lanes.includes(candidate.status)
+      const invalidCandidates = candidates.filter(
+        (candidate) => candidate.status && !lanes.includes(candidate.status)
       );
 
       if (invalidCandidates.length > 0) {
-        return NextResponse.json({
-          error: "Cannot update lanes: some candidates have statuses not in the new lane list",
-          details: {
-            count: invalidCandidates.length,
-            invalidStatuses: [...new Set(invalidCandidates.map(c => c.status))],
-            suggestion: "Move candidates to valid lanes before updating job lanes"
-          }
-        }, { status: 400 });
+        return NextResponse.json(
+          {
+            error:
+              "Cannot update lanes: some candidates have statuses not in the new lane list",
+            details: {
+              count: invalidCandidates.length,
+              invalidStatuses: [
+                ...new Set(invalidCandidates.map((c) => c.status)),
+              ],
+              suggestion:
+                "Move candidates to valid lanes before updating job lanes",
+            },
+          },
+          { status: 400 }
+        );
       }
     }
 
     // Update job
     const updateData: any = {
-      useCustomLanes: Boolean(useCustomLanes)
+      useCustomLanes: Boolean(useCustomLanes),
     };
 
     if (useCustomLanes) {
@@ -205,28 +212,28 @@ export async function PUT(
       updateData.$unset = { lanes: 1 };
     }
 
-    const updatedJob = await Job.findByIdAndUpdate(
-      jobId,
-      updateData,
-      { new: true }
-    );
+    const updatedJob = await Job.findByIdAndUpdate(jobId, updateData, {
+      new: true,
+    });
 
     // Get effective lanes for response
     let effectiveLanes;
     if (updatedJob.useCustomLanes && updatedJob.lanes) {
       effectiveLanes = updatedJob.lanes;
     } else {
-      const organization = await Organization.findById(session.user.organizationId);
-      effectiveLanes = organization?.defaultLanes || DEFAULT_LANES;
+      const organization = await Organization.findById(
+        session.user.organizationId
+      );
+      effectiveLanes =
+        organization?.lanes || organization?.defaultLanes || DEFAULT_LANES;
     }
 
     return NextResponse.json({
       message: "Job lanes updated successfully",
       jobId: updatedJob._id,
       lanes: effectiveLanes,
-      useCustomLanes: updatedJob.useCustomLanes
+      useCustomLanes: updatedJob.useCustomLanes,
     });
-
   } catch (error) {
     console.error("Update job lanes error:", error);
     return NextResponse.json(
@@ -279,21 +286,21 @@ export async function POST(
     const validLaneNameRegex = /^[a-zA-Z0-9\s\-_]+$/;
     if (!validLaneNameRegex.test(laneName)) {
       return NextResponse.json(
-        { error: "Invalid lane name. Only alphanumeric characters, spaces, hyphens, and underscores allowed." },
+        {
+          error:
+            "Invalid lane name. Only alphanumeric characters, spaces, hyphens, and underscores allowed.",
+        },
         { status: 400 }
       );
     }
 
     const job = await Job.findOne({
       _id: jobId,
-      organizationId: session.user.organizationId
+      organizationId: session.user.organizationId,
     });
 
     if (!job) {
-      return NextResponse.json(
-        { error: "Job not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 
     // Get current lanes
@@ -301,8 +308,12 @@ export async function POST(
     if (job.useCustomLanes && job.lanes) {
       currentLanes = [...job.lanes];
     } else {
-      const organization = await Organization.findById(session.user.organizationId);
-      currentLanes = [...(organization?.defaultLanes || DEFAULT_LANES)];
+      const organization = await Organization.findById(
+        session.user.organizationId
+      );
+      currentLanes = [
+        ...(organization?.lanes || organization?.defaultLanes || DEFAULT_LANES),
+      ];
     }
 
     // Check if lane already exists
@@ -315,7 +326,11 @@ export async function POST(
 
     // Add lane at specified position
     const newLanes = [...currentLanes];
-    if (typeof position === "number" && position >= 0 && position <= newLanes.length) {
+    if (
+      typeof position === "number" &&
+      position >= 0 &&
+      position <= newLanes.length
+    ) {
       newLanes.splice(position, 0, laneName);
     } else {
       newLanes.push(laneName);
@@ -327,8 +342,8 @@ export async function POST(
       {
         $set: {
           lanes: newLanes,
-          useCustomLanes: true
-        }
+          useCustomLanes: true,
+        },
       },
       { new: true }
     );
@@ -337,9 +352,8 @@ export async function POST(
       message: "Lane added successfully",
       jobId: updatedJob._id,
       lanes: updatedJob.lanes,
-      useCustomLanes: updatedJob.useCustomLanes
+      useCustomLanes: updatedJob.useCustomLanes,
     });
-
   } catch (error) {
     console.error("Add job lane error:", error);
     return NextResponse.json(

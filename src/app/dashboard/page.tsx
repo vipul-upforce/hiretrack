@@ -93,6 +93,7 @@ export interface Assignment {
     size: number;
     _id: string;
   }[];
+  isDeleted?: boolean;
   customFields: { [key: string]: string };
   createdAt: string;
   updatedAt: string;
@@ -689,30 +690,35 @@ export default function DashboardPage() {
                   // ) :
 
                   assignments?.length > 0 ? (
-                    <div className="flex flex-wrap gap-6 justify-start">
-                      {assignments.map((assignment, index) => (
-                        <div
-                          key={assignment.id || assignment._id}
-                          ref={
-                            index === assignments.length - 1
-                              ? lastElementRef
-                              : null
-                          }
-                        >
-                          <ActionItems
-                            assignment={(() => {
-                              const sseMatch = sseCandidates.find(
-                                (candidate) => candidate._id === assignment._id
-                              );
-                              return sseMatch || assignment;
-                            })()}
-                            assignments={assignments}
-                            setAssignments={setAssignments}
-                            fetchAssignments={() => { }}
-                          // fetchAssignments={() => fetchAssignmentsNoReload()}
-                          />
-                        </div>
-                      ))}
+                    <div className="flex flex-wrap gap-6 justify-start ">
+                      {assignments
+                        .filter((assignment) => {
+                          return !assignment.isDeleted;
+                        })
+                        .map((assignment, index) => (
+                          <div
+                            key={assignment.id || assignment._id}
+                            ref={
+                              index === assignments.length - 1
+                                ? lastElementRef
+                                : null
+                            }
+                          >
+                            <ActionItems
+                              assignment={(() => {
+                                const sseMatch = sseCandidates.find(
+                                  (candidate) =>
+                                    candidate._id === assignment._id
+                                );
+                                return sseMatch || assignment;
+                              })()}
+                              assignments={assignments}
+                              setAssignments={setAssignments}
+                              fetchAssignments={() => { }}
+                            // fetchAssignments={() => fetchAssignmentsNoReload()}
+                            />
+                          </div>
+                        ))}
                     </div>
                   ) : (
                     <p className="text-lg font-semibold text-gray-500 text-center py-10 w-full flex justify-center items-center">

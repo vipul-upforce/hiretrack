@@ -351,6 +351,7 @@ export async function POST(request: NextRequest) {
                 updatedAt: 1,
                 remarksUser: 1,
                 attachments: 1,
+                contact: 1,
                 currentCTC: 1,
                 expectedCTC: 1,
                 customFields: 1,
