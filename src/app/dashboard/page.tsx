@@ -575,7 +575,6 @@ export default function DashboardPage() {
                     setSearchText(sanitizedValue);
                   }}
                   className="max-w-lg w-96"
-
                   onKeyPress={(e) => {
                     if (e.key === "Enter") {
                       applyFilter();
@@ -601,12 +600,13 @@ export default function DashboardPage() {
           </CardHeader>
         </Card>
       </div>
+
       <div
         ref={scrollContainerRef}
-        className="flex-1 min-h-0 px-4 pb-4 mt-4 space-y-6 overflow-y-auto "
+        className="flex-1 min-h-0 px-4 pb-4 mt-4 space-y-6 overflow-y-auto"
       >
         <div className="grid grid-cols-1 xl:grid-cols-3 lg:grid-cols-2 gap-6">
-          <Card className=" bg-secondary">
+          <Card>
             <CardHeader>
               <CardTitle className="text-lg">Total Interviews</CardTitle>
             </CardHeader>
@@ -628,7 +628,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card className=" bg-secondary">
+          <Card>
             <CardHeader>
               <CardTitle className="text-lg">This Week</CardTitle>
             </CardHeader>
@@ -644,7 +644,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card className=" bg-secondary">
+          <Card>
             <CardHeader>
               <CardTitle className="text-lg">Today</CardTitle>
             </CardHeader>
@@ -689,7 +689,7 @@ export default function DashboardPage() {
                   // ) :
 
                   assignments?.length > 0 ? (
-                    <div className="flex flex-wrap gap-6 justify-start ">
+                    <div className="flex flex-wrap gap-6 justify-start">
                       {assignments.map((assignment, index) => (
                         <div
                           key={assignment.id || assignment._id}

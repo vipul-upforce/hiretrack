@@ -713,7 +713,7 @@ const CandidateCard = memo(function CandidateCard({
                 <Badge
                   key={`${localCandidate._id}-skill-${index}-${skill}`}
                   variant="secondary"
-                  className="text-xs px-2.5 py-1 bg-gray-100 text-gray-900 border border-gray-200 dark:bg-secondary dark:text-gray-100 dark:border-gray-700 font-medium truncate max-w-full"
+                  className="text-xs px-2.5 py-1 bg-gray-100 text-gray-900 border border-gray-200 dark:bg-black dark:text-gray-100 dark:border-gray-700 font-medium truncate max-w-full"
                   title={skill}
                 >
                   {skill}
@@ -1055,7 +1055,7 @@ const CandidateCard = memo(function CandidateCard({
       {onDashboard ? (
         <div
           className={cn(
-            "bg-white dark:bg-secondary border border-gray-200 dark:border-gray-800 rounded-lg p-4 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 h-full hover:border-gray-300 dark:hover:border-gray-700 w-[420px] flex-shrink-0",
+            "bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg p-4 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 h-full hover:border-gray-300 dark:hover:border-gray-700 w-[420px] flex-shrink-0",
             className
           )}
           onClick={useCallback((e) => {
