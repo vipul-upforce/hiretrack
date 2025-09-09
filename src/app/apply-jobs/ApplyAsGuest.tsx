@@ -574,6 +574,7 @@ export function ApplyAsGuestDialog({
                 <FormUpdater parsedResumeData={parsedResumeData} />
                 <div className="flex-1 overflow-hidden px-6 py-4 border-t">
                   <CandidateForm
+                    jobId={jobId}
                     onFileUpload={async (file: File) => {
                       setFieldValue("resume", file);
                       await handleFileParse(file, setParsedResume);

@@ -46,6 +46,9 @@ import {
   BarChart3,
   MoreVertical,
   MoreHorizontal,
+  Plus,
+  Edit,
+  Trash,
 } from "lucide-react";
 import {
   Popover,
@@ -55,12 +58,16 @@ import {
 import { CustomFieldsContext } from "@/Custom_Fields/Context";
 import CustomFieldDialog from "@/Custom_Fields/Components/Common/CustomFieldDialog";
 import Stepper from "@/Custom_Fields/Components/Stepper";
+import CustomFieldForm from "@/Custom_Fields/Components/Form/CustomFieldForm";
 import { useContext } from "react";
+import { Badge } from "@/components/ui/badge";
 import { JobAnalyticsModal } from "../../jobs-board/components/JobAnalyticsModal";
 import ChecklistRemarksDialog from "./components/Dialogs/checklist-remarks-dialog";
 import { LaneChecklistConfigDialog } from "./components/Dialogs/lane-checklist-config-dialog";
 import { useSelector } from "react-redux";
 import { MigrationDialog } from "./components/Dialogs/MigrationDialog";
+import JobSpecificCustomFieldFormWrapper from "./components/customFields/JobSpecificCustomFIeldFormWrapper";
+import CandidateCustomFieldsDialog from "./components/customFields/candidateCustomFieldsDialog";
 
 interface FilterState {
   search: string;
@@ -821,6 +828,7 @@ export default function JobProgressPage() {
       <CandidateCustomFieldsDialog
         isOpen={isCustomFieldsOpen}
         onClose={() => setIsCustomFieldsOpen(false)}
+        jobId={id}
       />
 
       {/* Job Analytics Modal */}
@@ -900,81 +908,5 @@ export default function JobProgressPage() {
         />
       )}
     </div>
-  );
-}
-
-// Dialog component that auto-selects candidate form
-function CandidateCustomFieldsDialog({
-  isOpen,
-  onClose,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-}) {
-  const context = useContext(CustomFieldsContext);
-  const {
-    setStepName,
-    customFields,
-    stepName,
-    selectedFormId,
-    selecteFormIdTarget,
-  } = context;
-  const [hasAutoSelected, setHasAutoSelected] = useState(false);
-
-  //   customFieldsKeys: Object.keys(customFields || {}),
-  //   customFieldsCount: Object.keys(customFields || {}).length,
-  //   stepName,
-  //   selectedFormId,
-  //   hasContext: !!context,
-  //   isOpen,
-  //   hasAutoSelected,
-  // });
-
-  // Auto-select candidate form when dialog opens
-  useEffect(() => {
-    if (
-      isOpen &&
-      !hasAutoSelected &&
-      customFields &&
-      Object.keys(customFields).length > 0
-    ) {
-      // Find the "candidate" form ID
-      const candidateFormEntry = Object.entries(customFields).find(
-        ([_, form]) => form.formName.toLowerCase() === "candidate"
-      );
-
-      if (candidateFormEntry) {
-        const [formId] = candidateFormEntry;
-        selecteFormIdTarget(formId);
-        setStepName("formCustomFieldList");
-        setHasAutoSelected(true);
-      } else {
-        setStepName("FormList");
-        setHasAutoSelected(true);
-      }
-    }
-  }, [isOpen, hasAutoSelected, customFields, selecteFormIdTarget, setStepName]);
-
-  const handleClose = useCallback(() => {
-    setStepName("FormList");
-    setHasAutoSelected(false);
-    onClose();
-  }, [setStepName, onClose]);
-
-  // Reset auto-selection flag when dialog closes
-  useEffect(() => {
-    if (!isOpen) {
-      setHasAutoSelected(false);
-    }
-  }, [isOpen]);
-
-  return (
-    <CustomFieldDialog
-      isOpen={isOpen}
-      onClose={handleClose}
-      title="Personalized form fields"
-    >
-      <Stepper />
-    </CustomFieldDialog>
   );
 }

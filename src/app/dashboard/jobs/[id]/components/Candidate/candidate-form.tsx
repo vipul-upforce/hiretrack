@@ -33,11 +33,13 @@ import { FileDropZone } from "@/components/ui/file-drop-zone";
 interface CandidateFormProps {
   onFileUpload?: (file: File) => Promise<string | void>; // Prop to handle file upload to a persistent storage
   isEditMode?: boolean;
+  jobId?: string;
 }
 
 export function CandidateForm({
   onFileUpload,
   isEditMode = false,
+  jobId,
 }: CandidateFormProps) {
   const {
     setFieldValue,
@@ -535,7 +537,7 @@ export function CandidateForm({
           </div>
 
           {/* Custom Fields - Mobile */}
-          <CustomFields formName="Candidate" isEditMode={isEditMode} />
+          <CustomFields formName="Candidate" isEditMode={isEditMode} jobId={jobId} />
 
           {/* Assignment Section - Mobile */}
           {user && user.role !== "candidate" && user.role !== "" && (
@@ -1316,7 +1318,7 @@ export function CandidateForm({
           </div>
 
           {/* Custom Fields - Desktop */}
-          <CustomFields formName="Candidate" isEditMode={isEditMode} />
+          <CustomFields formName="Candidate" isEditMode={isEditMode} jobId={jobId} />
 
           {/* Assignment Section - Desktop */}
           {user && user.role !== "candidate" && user.role != "" && (

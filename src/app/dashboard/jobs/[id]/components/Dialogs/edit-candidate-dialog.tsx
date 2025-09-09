@@ -545,6 +545,7 @@ export function EditCandidateDialog({
               <FormUpdater parsedResumeData={parsedResumeData} />
               <div className="flex-1 overflow-y-auto px-6 py-4">
                 <CandidateForm
+                  jobId={candidate.jobId._id || id}
                   onFileUpload={async (file: File) => {
                     setFieldValue("resume", file);
                     await handleFileParse(file, setParsedResume);
