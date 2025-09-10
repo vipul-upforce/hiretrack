@@ -14,10 +14,11 @@ import {
 import { CandidateCard } from "../Candidate/candidate-card";
 import { Candidate } from "@/types/candidate";
 import { LaneOptionsMenu } from "./lanes-options-menu";
-import { useState, useMemo, useEffect, memo, useCallback } from "react";
+import { useState, useMemo, useEffect, memo, useCallback, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { CustomScrollbar } from "@/components/ui/custom-scrollbar";
+import { VirtuosoScroller } from "./VirtuosoScroller";
 import { useDragToScroll } from "../../hooks/useDragToScroll";
+import { Virtuoso } from "react-virtuoso";
 import {
   Tooltip,
   TooltipContent,
@@ -25,6 +26,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ILaneConfig } from "@/lib/models/JobLaneConfig";
+import { CustomScrollbar } from "@/components/ui/custom-scrollbar";
+import CustomScrollbarLane from "@/components/ui/custom-scrollbar-lane";
 
 interface PendingMove {
   candidateId: string;
@@ -96,11 +99,10 @@ const KanbanColumn = memo(function KanbanColumn({
   const [isLaneOpsOpenFor, setIsLaneOpsOpenFor] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
-  // const [isDragging, setIsDragging] = useState();
-  // const [jobId, setJobId] = useState<string>();
-  // Sorting function
+
   const pathname = usePathname();
   const jobId = pathname?.split("/")[3];
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
 
   const sortCandidates = (
     candidates: Candidate[],
@@ -228,29 +230,33 @@ const KanbanColumn = memo(function KanbanColumn({
   }, [sortedCandidates, jobId]);
 
   // Handle sort from LaneOptionsMenu - memoized to prevent re-renders
-  const handleSort = useCallback((field: SortField, direction: SortDirection) => {
-    setSortField(field);
-    setSortDirection(direction);
-  }, []);
+  const handleSort = useCallback(
+    (field: SortField, direction: SortDirection) => {
+      setSortField(field);
+      setSortDirection(direction);
+    },
+    []
+  );
 
   // Memoized event handlers to prevent re-renders
-  const handleViewDetails = useCallback((candidate: any) => {
-    setSelectedCandidate(candidate);
-    setIsDetailsOpen(true);
-  }, [setSelectedCandidate, setIsDetailsOpen]);
+  const handleViewDetails = useCallback(
+    (candidate: any) => {
+      setSelectedCandidate(candidate);
+      setIsDetailsOpen(true);
+    },
+    [setSelectedCandidate, setIsDetailsOpen]
+  );
 
-  const handleDeleteClickMemo = useCallback((id: string, candidate: any) => {
-    setSelectedCandidate(candidate);
-    handleDeleteClick(id);
-  }, [setSelectedCandidate, handleDeleteClick]);
+  const handleDeleteClickMemo = useCallback(
+    (id: string, candidate: any) => {
+      setSelectedCandidate(candidate);
+      handleDeleteClick(id);
+    },
+    [setSelectedCandidate, handleDeleteClick]
+  );
 
   return (
-    <Draggable
-      draggableId={column.id}
-      index={index}
-      // Ensure the column is draggable
-      isDragDisabled={false}
-    >
+    <Draggable draggableId={column.id} index={index} isDragDisabled={false}>
       {(provided: DraggableProvided) => (
         <div
           ref={provided.innerRef}
@@ -269,7 +275,6 @@ const KanbanColumn = memo(function KanbanColumn({
                   <div
                     {...provided.dragHandleProps}
                     onMouseDown={(e) => {
-                      // Prevent candidate drag interference
                       e.stopPropagation();
                       provided.dragHandleProps?.onMouseDown?.(e);
                     }}
@@ -282,7 +287,7 @@ const KanbanColumn = memo(function KanbanColumn({
                   </h3>
                 </div>
                 <div className="flex items-center space-x-2">
-                  {/* Checklist Indicators - moved to right side */}
+                  {/* Checklist Indicators */}
                   <div className="flex items-center space-x-1">
                     {laneConfig?.incomingChecklist && (
                       <TooltipProvider delayDuration={0}>
@@ -378,103 +383,109 @@ const KanbanColumn = memo(function KanbanColumn({
                 </div>
               </div>
             </div>
+
+            {/* Virtualized List Container */}
             <div className="flex-1 overflow-hidden space-y-2 pr-2 min-w-0">
               <Droppable droppableId={column.id} type="candidate">
                 {(provided: DroppableProvided) => (
-                  <CustomScrollbar
+                  <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    isDragging={isDragging}
-                    className="h-full"
-                  >
-                    <div
-                      className={`space-y-2 pb-2 min-w-0 h-full`}
-                      onDragOver={(e) => {
-                        if (
-                          e.dataTransfer.types.includes("Files") &&
-                          column.id === "applied"
-                        ) {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setIsFileOver(true);
-                          e.dataTransfer.dropEffect = "link";
-                        }
-                      }}
-                      onDragLeave={(e) => {
+                    className="h-full relative"
+                    onDragOver={(e) => {
+                      if (
+                        e.dataTransfer.types.includes("Files") &&
+                        column.id === "applied"
+                      ) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setIsFileOver(true);
+                        e.dataTransfer.dropEffect = "link";
+                      }
+                    }}
+                    onDragLeave={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsFileOver(false);
+                      e.dataTransfer.dropEffect = "none";
+                    }}
+                    onDrop={(e) => {
+                      if (e.dataTransfer.types.includes("Files")) {
                         e.preventDefault();
                         e.stopPropagation();
                         setIsFileOver(false);
-                        e.dataTransfer.dropEffect = "none";
-                      }}
-                      onDrop={(e) => {
-                        if (e.dataTransfer.types.includes("Files")) {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setIsFileOver(false);
-                          const files = Array.from(e.dataTransfer.files);
-                          if (files.length > 0) handleFileDrop(files[0]);
-                        }
-                      }}
-                    >
-                      {/* <div> */}
-                      {isFileOver && column.id === "applied" && (
-                        <div className="absolute bg-gray-200/50 h-full w-full border border-dashed border-gray-500 rounded-lg pointer-events-none">
-                          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black text-white p-2 rounded-md shadow-lg text-lg font-semibold pointer-events-none animate-fade-in">
-                            Drop file here!
-                          </div>
+                        const files = Array.from(e.dataTransfer.files);
+                        if (files.length > 0) handleFileDrop(files[0]);
+                      }
+                    }}
+                  >
+                    {isFileOver && column.id === "applied" && (
+                      <div className="absolute bg-gray-200/50 h-full w-full border border-dashed border-gray-500 rounded-lg pointer-events-none z-10">
+                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black text-white p-2 rounded-md shadow-lg text-lg font-semibold pointer-events-none animate-fade-in">
+                          Drop file here!
                         </div>
-                      )}
-                      {filteredCandidates.map((candidate, index) => {
-                        // Check if this candidate is in a pending move for this lane
-                        const isPending = pendingMoves.some(
-                          (pm) =>
-                            pm.candidateId === candidate._id &&
-                            pm.targetLaneId === column.id
-                        );
+                      </div>
+                    )}
 
-                        return (
-                          <CandidateCard
-                            key={candidate._id}
-                            candidate={candidate}
-                            index={index}
-                            refetch={refetch}
-                            onViewDetails={handleViewDetails}
-                            openRemarks={openRemarksFor === candidate._id}
-                            setOpenRemarksFor={setOpenRemarksFor}
-                            onDeleteClick={(id: string) => handleDeleteClickMemo(id, candidate)}
-                            onEditClick={(candidate) => {
-                              setSelectedCandidate(candidate);
-                              // Handle edit - could open edit dialog
-                              console.log("Edit candidate:", candidate);
-                            }}
-                            onAssignClick={(candidate) => {
-                              setSelectedCandidate(candidate);
-                              // Handle assign - could open assign dialog
-                              console.log("Assign candidate:", candidate);
-                            }}
-                            onMarkAsDoneClick={(candidate) => {
-                              setSelectedCandidate(candidate);
-                              // Handle mark as done
-                              console.log("Mark as done:", candidate);
-                            }}
-                            onFollowUpClick={(candidate) => {
-                              setSelectedCandidate(candidate);
-                              // Handle follow up
-                              console.log("Follow up:", candidate);
-                            }}
-                            onAddRemarkClick={(candidate) => {
-                              setSelectedCandidate(candidate);
-                              // Handle add remark
-                              console.log("Add remark:", candidate);
-                            }}
-                            isPending={isPending}
-                          />
-                        );
-                      })}
-                      {provided.placeholder}
-                      {/* </div> */}
-                    </div>
-                  </CustomScrollbar>
+                    <CustomScrollbarLane
+                      isDragging={isDragging}
+                      className="h-full"
+                      scrollerRef={scrollerRef} // Optional: pass this if needed
+                    >
+                      <Virtuoso
+                        style={{ height: "100%", scrollbarWidth: "none" }}
+                        data={filteredCandidates}
+                        increaseViewportBy={{ bottom: 200, top: 200 }}
+                        scrollerRef={() => scrollerRef}
+                        itemContent={(index, candidate) => {
+                          const isPending = pendingMoves.some(
+                            (pm) =>
+                              pm.candidateId === candidate._id &&
+                              pm.targetLaneId === column.id
+                          );
+                          return (
+                            <div className="pb-2">
+                              <CandidateCard
+                                key={candidate._id}
+                                candidate={candidate}
+                                index={index}
+                                refetch={refetch}
+                                onViewDetails={handleViewDetails}
+                                openRemarks={openRemarksFor === candidate._id}
+                                setOpenRemarksFor={setOpenRemarksFor}
+                                onDeleteClick={(id: string) =>
+                                  handleDeleteClickMemo(id, candidate)
+                                }
+                                onEditClick={(candidate) => {
+                                  setSelectedCandidate(candidate);
+                                  console.log("Edit candidate:", candidate);
+                                }}
+                                onAssignClick={(candidate) => {
+                                  setSelectedCandidate(candidate);
+                                  console.log("Assign candidate:", candidate);
+                                }}
+                                onMarkAsDoneClick={(candidate) => {
+                                  setSelectedCandidate(candidate);
+                                  console.log("Mark as done:", candidate);
+                                }}
+                                onFollowUpClick={(candidate) => {
+                                  setSelectedCandidate(candidate);
+                                  console.log("Follow up:", candidate);
+                                }}
+                                onAddRemarkClick={(candidate) => {
+                                  setSelectedCandidate(candidate);
+                                  console.log("Add remark:", candidate);
+                                }}
+                                isPending={isPending}
+                              />
+                            </div>
+                          );
+                        }}
+                      />
+                    </CustomScrollbarLane>
+
+                    {provided.placeholder}
+                  </div>
                 )}
               </Droppable>
             </div>
