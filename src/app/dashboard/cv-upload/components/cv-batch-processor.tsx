@@ -15,6 +15,7 @@ import Cookies from "js-cookie";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import withAuthGuard from "@/components/withAuthGuard";
 import { useSelector } from "react-redux";
+import CvBatchLoader from "./CvBatchLoader";
 
 export type FileWithPreview = {
   id: string;
@@ -174,7 +175,7 @@ export function CVBatchProcessor() {
         </div>
       )}
 
-      {isLoading && <p>Loading batches...</p>}
+      {isLoading && <CvBatchLoader />}
       {error && <p>Error fetching batches: </p>}
       {completedBatches.length > 0 && (
         <CompletedBatches batches={completedBatches} />

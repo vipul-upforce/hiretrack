@@ -11,14 +11,15 @@ import {
 } from "@/components/ui/table";
 
 const LoaderSkeletonUsers = () => (
-  <div className="w-[100%] py-6 px-6">
-    <div className="pb-6">
+  <div className="w-[100%]">
+    <div className="p-6 border-b  flex justify-between items-center">
       <Skeleton className="w-56 h-[16px] rounded-lg" />
+      <Button disabled={true}>Create User</Button>
     </div>
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+    <Card className="m-6">
+      <CardHeader className="flex flex-row items-center justify-between ">
         <CardTitle>Users</CardTitle>
-        <Button disabled={true}>Create User</Button>
+
       </CardHeader>
       <CardContent>
         <Table>

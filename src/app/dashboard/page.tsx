@@ -18,6 +18,7 @@ import { useSSE } from "@/hooks/useSSE";
 import { Candidate } from "@/types/candidate";
 import { ITag } from "@/lib/models/organization";
 import { useSelector } from "react-redux";
+import DashboardCardLoader from "./components/DashboardCardLoader";
 // import useRoles from "@/hooks/useRoles";
 interface User {
   name: string;
@@ -606,61 +607,67 @@ export default function DashboardPage() {
         ref={scrollContainerRef}
         className="flex-1 min-h-0 px-4 pb-4 mt-4 space-y-6 overflow-y-auto"
       >
-        <div className="grid grid-cols-1 xl:grid-cols-3 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Total Interviews</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold flex justify-start">
-                {isLoading ? (
-                  <LoadingSpinner />
-                ) : (
-                  assignmentsCounts?.totalInterviews
-                )}
-                {/* {isLoading ? (
+        {
+          isLoading ? (<DashboardCardLoader />) : (
+            <>
+              <div className="grid grid-cols-1 xl:grid-cols-3 lg:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Total Interviews</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold flex justify-start">
+                      {/* {isLoading ? (
+                        <LoadingSpinner />
+                      ) : ( */}
+                      {assignmentsCounts?.totalInterviews}
+                      {/* )} */}
+                      {/* {isLoading ? (
                 <LoadingSpinner />
               ) : isInterviewer ? (
                 interviewerAssignments?.length
               ) : (
                 assignments?.length
               )} */}
-              </div>
-            </CardContent>
-          </Card>
+                    </div>
+                  </CardContent>
+                </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">This Week</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold flex justify-start">
-                {isLoading ? (
-                  <LoadingSpinner />
-                ) : (
-                  assignmentsCounts?.thisweeksInterviews
-                )}
-                {/* {isLoading ? <LoadingSpinner /> : thisWeekAssignments?.length} */}
-              </div>
-            </CardContent>
-          </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">This Week</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold flex justify-start">
+                      {/* {isLoading ? (
+                        <LoadingSpinner />
+                      ) : ( */}
+                      {assignmentsCounts?.thisweeksInterviews}
+                      {/* )} */}
+                      {/* {isLoading ? <LoadingSpinner /> : thisWeekAssignments?.length} */}
+                    </div>
+                  </CardContent>
+                </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Today</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold flex justify-start">
-                {isLoading ? (
-                  <LoadingSpinner />
-                ) : (
-                  assignmentsCounts?.todaysInterviews
-                )}
-                {/* {isLoading ? <LoadingSpinner /> : todayAssignments?.length} */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Today</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold flex justify-start">
+                      {/* {isLoading ? (
+                        <LoadingSpinner />
+                      ) : ( */}
+                      {assignmentsCounts?.todaysInterviews}
+                      {/* )} */}
+                      {/* {isLoading ? <LoadingSpinner /> : todayAssignments?.length} */}
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </>
+          )
+        }
 
         {shouldShowAssignments ? (
           <div>

@@ -1,16 +1,21 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
 const LoaderSkeletonCalendar = () => (
-  <div className="space-y-6 p-6">
-    <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
+  <div className="space-y-6">
+    <div className="flex justify-between border-b items-center  text-card-foreground shadow p-6">
       <div className="font-semibold leading-none tracking-tight">
-        Interview Calendar
+        Calendar
+      </div>
+      <div className="flex items-center gap-2">
+        <Skeleton className="w-80 h-[40px] rounded-lg" />
+        <Skeleton className="w-40 h-[40px] rounded-lg" />
+        <Skeleton className="w-40 h-[40px] rounded-lg" />
       </div>
     </div>
-    <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-6 px-6">
       {/* Left Section - Calendar Skeleton */}
       <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
-        <Skeleton className="w-full h-[700px] rounded-lg" />
+        <Skeleton className="w-full h-[600px] rounded-lg" />
       </div>
 
       {/* Right Section - Today's Interviews */}

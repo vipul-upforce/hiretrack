@@ -46,6 +46,7 @@ import {
   BarChart3,
   MoreVertical,
   MoreHorizontal,
+  Plus,
 } from "lucide-react";
 import {
   Popover,
@@ -501,16 +502,16 @@ export default function JobProgressPage() {
           className="h-screen flex flex-col overflow-hidden"
           style={{ width: "100%" }}
         >
-          <div className="flex-shrink-0 p-4 pb-2">
-            <Skeleton className="w-56 h-[16px] rounded-lg" />
-            <Card className="mt-2">
-              <CardHeader className="flex flex-row items-center justify-between py-3">
+          <div className="flex-shrink-0  border-b ">
+
+            <div className="mt-2 px-3 border-b ">
+              <div className="flex flex-row items-center justify-between py-3">
                 <div className="font-semibold text-lg">
-                  <Skeleton className="w-40 h-[16px] rounded-lg" />
+                  <Skeleton className="w-40 h-[18px] rounded-lg" />
                 </div>
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center space-x-2">
-                    <Checkbox
+                    {/* <Checkbox
                       id="showArchived"
                       checked={showArchived}
                       onCheckedChange={(checked) =>
@@ -522,20 +523,25 @@ export default function JobProgressPage() {
                       className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                     >
                       Show Archived
-                    </label>
+                    </label> */}
+                    <Skeleton className="w-16 h-8 rounded-lg" />
+                    <Button variant="outline">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Lane
+                    </Button>
+                    <Button variant="primary">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Candidate
+                    </Button>
                   </div>
-                  <div className="flex space-x-2">
-                    <CreateLaneDialog onAddLane={handleAddLane} />
-                    <CreateCandidateDialog
-                      jobId={id as string}
-                      isOpen={isDialogOpen}
-                      setIsOpen={setIsDialogOpen}
-                      resumeFile={droppedFileData}
-                    />
-                  </div>
+
                 </div>
-              </CardHeader>
-            </Card>
+              </div>
+            </div>
+            <div className=" flex my-3 gap-3 px-3">
+              <Skeleton className="w-[400px] h-[30px] rounded-lg" />
+              <Skeleton className="w-[400px] h-[30px] rounded-lg" />
+            </div>
           </div>
 
           <div className="flex-1 overflow-hidden px-4 pb-2">

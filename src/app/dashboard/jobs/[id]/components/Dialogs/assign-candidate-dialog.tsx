@@ -330,7 +330,8 @@ export function AssignCandidateDialog({
       }
     } else {
       // Proceed without Google Meet
-      handleSubmit(values, formikHelpers, user, interviewers);
+      await handleSubmit(values, formikHelpers, user, interviewers);
+
     }
   };
 
