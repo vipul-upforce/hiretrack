@@ -62,11 +62,11 @@ function UsersPage() {
         description:
           "Error: " +
           (typeof error === "object" &&
-          error !== null &&
-          "data" in error &&
-          typeof error.data === "object" &&
-          error.data &&
-          "error" in error.data
+            error !== null &&
+            "data" in error &&
+            typeof error.data === "object" &&
+            error.data &&
+            "error" in error.data
             ? (error.data as { error: string }).error
             : "Unknown error"),
         title: "Failed to delete user",

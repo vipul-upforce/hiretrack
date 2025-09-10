@@ -293,7 +293,7 @@ export function EditCandidateDialog({
             interviewerId:
               typeof values.assignment.interviewerId === "string"
                 ? values.assignment.interviewerId
-                : values.assignment.interviewerId._id.replace(/"/g, ""),
+                : values.assignment?.interviewerId?._id.replace(/"/g, ""),
             time: values.assignment.time,
             assignedAt: values.assignment.assignedAt,
           };
@@ -315,13 +315,13 @@ export function EditCandidateDialog({
       // check if assignment has changed before sending email
       const prevAssignment = candidate.assignment?.interviewerId;
       const newAssignment = result?.assignment?.interviewerId;
-      debugger;
+      // debugger;
       const prevId =
         typeof prevAssignment === "object"
-          ? prevAssignment._id
+          ? prevAssignment?._id
           : prevAssignment;
       const newId =
-        typeof newAssignment === "object" ? newAssignment._id : newAssignment;
+        typeof newAssignment === "object" ? newAssignment?._id : newAssignment;
 
       // if (prevId !== newId) {
       sentAssignmentMail(result, sendEmail);
@@ -333,7 +333,7 @@ export function EditCandidateDialog({
           : null;
       const previousInterviewerId =
         typeof candidate.assignment?.interviewerId === "object"
-          ? Object(candidate.assignment.interviewerId._id)
+          ? Object(candidate.assignment.interviewerId?._id)
           : null;
 
       const nextInterviewer =
@@ -342,7 +342,7 @@ export function EditCandidateDialog({
           : null;
       const nextInterviewerId =
         result && typeof result.assignment?.interviewerId === "object"
-          ? Object(result.assignment.interviewerId._id)
+          ? Object(result.assignment.interviewerId?._id)
           : null;
 
       let title;

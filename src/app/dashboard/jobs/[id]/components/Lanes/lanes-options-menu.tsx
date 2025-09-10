@@ -198,9 +198,9 @@ export function LaneOptionsMenu({
           </>
         }
         {showSortMenu && (
-          <div className="w-64 animate-fade-in-right absolute top-0 bg-gray-900 border border-gray-800 rounded-lg shadow-xl p-4 overflow-x-hidden sort-menu pb-0 ">
+          <div className="w-64 animate-fade-in-right absolute top-0 bg-white dark:bg-gray-900 border border-1 dark:border-gray-800 rounded-lg shadow-xl p-4 overflow-x-hidden sort-menu pb-0 ">
             <div className="flex items-center justify-between ">
-              <span className="font-thin text-gray-400 ml-2">
+              <span className="font-thin text-gray-900 dark:text-gray-400 ml-2">
                 Sort Candidates by
               </span>
               <Button
@@ -218,9 +218,9 @@ export function LaneOptionsMenu({
                 <button
                   key={field.value}
                   className={cn(
-                    "flex items-center px-2 py-1 rounded hover:bg-gray-800 text-left transition-colors justify-between text-gray-300",
+                    "flex items-center px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-left transition-colors justify-between text-gray-600 dark:text-gray-300 ",
                     selectedSortField === field.value
-                      ? "bg-gray-800 font-semibold text-white"
+                      ? "bg-gray-100 dark:bg-gray-800 font-semibold"
                       : ""
                   )}
                   onClick={() => {
@@ -236,7 +236,7 @@ export function LaneOptionsMenu({
                   {sortDirection === "asc" &&
                     field.value === selectedSortField && (
                       <Button
-                        className="w-8 h-8 rounded-full border-gray-700 hover:bg-gray-800 bg-gray-900 text-gray-300"
+                        className="w-8 h-8 rounded-full border dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 bg-white dark:bg-gray-900 "
                         variant={"outline"}
                         size="sm"
                         onClick={() => handleSortDirection("desc")}
@@ -248,7 +248,7 @@ export function LaneOptionsMenu({
                   {sortDirection === "desc" &&
                     field.value === selectedSortField && (
                       <Button
-                        className="w-8 h-8 rounded-full border-gray-700 hover:bg-gray-800 bg-gray-900 text-gray-300"
+                        className="w-8 h-8 rounded-full dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 bg-white dark:bg-gray-900"
                         variant={"outline"}
                         size="sm"
                         onClick={() => handleSortDirection("asc")}

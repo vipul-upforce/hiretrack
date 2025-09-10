@@ -21,10 +21,12 @@ const LoaderSkeleton = () => (
 
           {/* Column Content */}
           <div className="flex-1 overflow-hidden p-0">
-            <div className="px-4 pb-4 space-y-3">
+            <div className="px-4 py-4 space-y-3">
               {/* <Droppable droppableId={column.id} type="candidate">
 
               </Droppable> */}
+              <Skeleton className="w-full h-[350px] rounded-lg" />
+              <Skeleton className="w-full h-[350px] rounded-lg" />
             </div>
           </div>
         </div>

@@ -58,6 +58,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import { Skeleton } from "../ui/skeleton";
 
 interface SearchResultsProps {
   results: Candidate[];
@@ -172,7 +173,7 @@ export function SearchResults({
   const handleCandidateUpdateWithOptimism = useCallback(
     (updatedCandidate: Candidate) => {
       // Immediately update local state if handler is provided
-      debugger;
+      // debugger;
       if (onCandidateUpdate) {
         onCandidateUpdate(updatedCandidate);
       }
@@ -279,8 +280,8 @@ export function SearchResults({
 
   if (isLoading) {
     return (
-      <Card className="p-6">
-        <div className="text-center py-8">Loading results...</div>
+      <Card className="p-4">
+        <Skeleton className="h-[600px] w-full" />
       </Card>
     );
   }
@@ -322,7 +323,7 @@ export function SearchResults({
               onClick={() => toggleFilter("unassigned")}
               className="text-xs"
             >
-              Not Assigned
+              Not Assign Job
             </Button>
             <Button
               variant={

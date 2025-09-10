@@ -315,161 +315,152 @@ const CandidateCard = memo(function CandidateCard({
         {/* Main content area - will expand to fill available space */}
         <div className="flex-1 flex flex-col">
           {/* Header with name and buttons */}
-          <div className="flex justify-between items-start mb-2 pb-2 border-b border-gray-100 dark:border-gray-800">
-            <div className="flex-1 pr-3">
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2">
-                  {showStar && (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="text-xs">High-scoring candidate</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  )}
-                  {showRedFlag && (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <Flag className="h-4 w-4 text-red-500 fill-red-500" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="text-xs">Low-scoring candidate</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  )}
-                  <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100 leading-tight truncate">
-                    {localCandidate.name}
-                  </h3>
-                </div>
-                <div className="text-sm text-gray-500 capitalize w-[150%] justify-between">
-                  <p>
-                    {new Date(
-                      localCandidate.tracking.createdAt
-                    ).toLocaleDateString()}
-                    {" . "}
-                    {formatDistanceToNow(
-                      new Date(localCandidate.tracking.createdAt),
-                      { addSuffix: true }
+          <div className=" mb-2 pb-2  border-b border-gray-100 dark:border-gray-800">
+            <div className="flex justify-between items-center pb-2 ">
+              <div className="flex flex-col justify-center items-center pr-3 ">
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    {showStar && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-xs">High-scoring candidate</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     )}
-                  </p>
+                    {showRedFlag && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Flag className="h-4 w-4 text-red-500 fill-red-500" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-xs">Low-scoring candidate</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                    <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100 leading-tight truncate max-w-[150px]">
+                      {localCandidate.name}
+                    </h3>
+                  </div>
                 </div>
+                {localCandidate.tags && <TagsList candidate={localCandidate} />}
               </div>
-              {localCandidate.tags && <TagsList candidate={localCandidate} />}
-            </div>
-            <div className="flex gap-1.5 flex-shrink-0">
-              {/* Add Remarks Button - handled by main page ChecklistRemarksDialog */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpenRemarksFor(localCandidate._id);
-                  setIsAddRemarkOpen(true);
-                }}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
+              {/* <div className="flex flex-col gap-2"> */}
+              <div className="flex gap-1.5 flex-shrink-0">
+                {/* Add Remarks Button - handled by main page ChecklistRemarksDialog */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 !py-0 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpenRemarksFor(localCandidate._id);
+                    setIsAddRemarkOpen(true);
+                  }}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
 
-              {/* Remark Popover */}
-              <RemarksPopover
-                candidate={localCandidate}
-                onMoreClick={() => onViewDetails(localCandidate)}
-              />
+                {/* Remark Popover */}
+                <RemarksPopover
+                  candidate={localCandidate}
+                  onMoreClick={() => onViewDetails(localCandidate)}
+                />
 
-              {/* View Details Button */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onViewDetails(localCandidate);
-                }}
-              >
-                <Eye className="h-4 w-4" />
-              </Button>
+                {/* View Details Button */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onViewDetails(localCandidate);
+                  }}
+                >
+                  <Eye className="h-4 w-4" />
+                </Button>
 
-              {/* 3-dot menu */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  {/* View Details - Always available */}
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onViewDetails(localCandidate);
-                    }}
-                  >
-                    <Info className="h-4 w-4 mr-2" />
-                    View Details
-                  </DropdownMenuItem>
-
-                  {/* Edit - Only for non-candidate roles and when not deleted */}
-                  {user?.role !== "candidate" && !localCandidate.isDeleted && (
+                {/* 3-dot menu */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    {/* View Details - Always available */}
                     <DropdownMenuItem
                       onClick={(e) => {
                         e.stopPropagation();
-                        setIsEditing(true);
+                        onViewDetails(localCandidate);
                       }}
                     >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit
+                      <Info className="h-4 w-4 mr-2" />
+                      View Details
                     </DropdownMenuItem>
-                  )}
 
-                  {/* Email - Only for non-candidate roles */}
-                  {user?.role !== "candidate" && (
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsEmailDialogOpen(true);
-                      }}
-                    >
-                      <Mail className="h-4 w-4 mr-2" />
-                      Send Email
-                    </DropdownMenuItem>
-                  )}
+                    {/* Edit - Only for non-candidate roles and when not deleted */}
+                    {user?.role !== "candidate" &&
+                      !localCandidate.isDeleted && (
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsEditing(true);
+                          }}
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                      )}
 
-                  {/* Assign To - Only for non-interviewer roles and when not deleted */}
-                  {user?.role !== "interviewer" &&
-                    !localCandidate.isDeleted && (
+                    {/* Email - Only for non-candidate roles */}
+                    {user?.role !== "candidate" && (
                       <DropdownMenuItem
                         onClick={(e) => {
                           e.stopPropagation();
-                          setIsAssigning(true);
+                          setIsEmailDialogOpen(true);
                         }}
                       >
-                        <UserPlus className="h-4 w-4 mr-2" />
-                        Assign To
+                        <Mail className="h-4 w-4 mr-2" />
+                        Send Email
                       </DropdownMenuItem>
                     )}
-                  {user?.role !== "interviewer" && (
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsTagsOpen(!isTagsOpen);
-                        handlePopoverContentClick;
-                      }}
-                    >
-                      <Tag className="h-4 w-4 mr-2" />
-                      Tags
-                      {/* <Popover modal={true}>
+
+                    {/* Assign To - Only for non-interviewer roles and when not deleted */}
+                    {user?.role !== "interviewer" &&
+                      !localCandidate.isDeleted && (
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsAssigning(true);
+                          }}
+                        >
+                          <UserPlus className="h-4 w-4 mr-2" />
+                          Assign To
+                        </DropdownMenuItem>
+                      )}
+                    {user?.role !== "interviewer" && (
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsTagsOpen(!isTagsOpen);
+                          handlePopoverContentClick;
+                        }}
+                      >
+                        <Tag className="h-4 w-4 mr-2" />
+                        Tags
+                        {/* <Popover modal={true}>
                       <PopoverTrigger asChild>
                         <Button
                           variant="ghost"
@@ -486,77 +477,124 @@ const CandidateCard = memo(function CandidateCard({
                         className="p-0"
                       ></PopoverContent>
                     </Popover> */}
-                    </DropdownMenuItem>
-                  )}
+                      </DropdownMenuItem>
+                    )}
 
-                  {/* Mark as Done - Only when assigned and not deleted */}
-                  {localCandidate.assignment && !localCandidate.isDeleted && (
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setConfirmUnassignOpen(true);
-                      }}
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Mark as Done
-                    </DropdownMenuItem>
-                  )}
+                    {/* Mark as Done - Only when assigned and not deleted */}
+                    {localCandidate.assignment && !localCandidate.isDeleted && (
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmUnassignOpen(true);
+                        }}
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Mark as Done
+                      </DropdownMenuItem>
+                    )}
 
-                  {/* Add/Edit Follow Up - Only for non-interviewer roles */}
-                  {user?.role !== "interviewer" && (
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsAddingFollowUp(true);
-                      }}
-                    >
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      {localCandidate.followUp
-                        ? "Edit Follow Up"
-                        : "Add Follow Up"}
-                    </DropdownMenuItem>
-                  )}
+                    {/* Add/Edit Follow Up - Only for non-interviewer roles */}
+                    {user?.role !== "interviewer" && (
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsAddingFollowUp(true);
+                        }}
+                      >
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        {localCandidate.followUp
+                          ? "Edit Follow Up"
+                          : "Add Follow Up"}
+                      </DropdownMenuItem>
+                    )}
 
-                  {/* Add Remark - Only for non-candidate roles */}
-                  {user?.role !== "candidate" && (
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setOpenRemarksFor(localCandidate._id);
-                        setIsAddRemarkOpen(true);
-                      }}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Remark
-                    </DropdownMenuItem>
-                  )}
+                    {/* Add Remark - Only for non-candidate roles */}
+                    {user?.role !== "candidate" && (
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenRemarksFor(localCandidate._id);
+                          setIsAddRemarkOpen(true);
+                        }}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Remark
+                      </DropdownMenuItem>
+                    )}
 
-                  {/* Separator before delete */}
-                  {!onDashboard && <DropdownMenuSeparator />}
+                    {/* Separator before delete */}
+                    {!onDashboard && <DropdownMenuSeparator />}
 
-                  {/* Delete/Archive - Only when not on dashboard */}
-                  {!onDashboard && (
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteClick?.(localCandidate._id);
-                      }}
-                      className={
-                        localCandidate.isDeleted
-                          ? "text-blue-600 dark:text-blue-400"
-                          : "text-red-600 dark:text-red-400"
-                      }
-                    >
-                      {localCandidate.isDeleted ? (
-                        <ArchiveRestore className="h-4 w-4 mr-2" />
-                      ) : (
-                        <Trash2 className="h-4 w-4 mr-2" />
-                      )}
-                      {localCandidate.isDeleted ? "Restore" : "Delete"}
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    {/* Delete/Archive - Only when not on dashboard */}
+                    {!onDashboard && (
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteClick?.(localCandidate._id);
+                        }}
+                        className={
+                          localCandidate.isDeleted
+                            ? "text-blue-600 dark:text-blue-400"
+                            : "text-red-600 dark:text-red-400"
+                        }
+                      >
+                        {localCandidate.isDeleted ? (
+                          <ArchiveRestore className="h-4 w-4 mr-2" />
+                        ) : (
+                          <Trash2 className="h-4 w-4 mr-2" />
+                        )}
+                        {localCandidate.isDeleted ? "Restore" : "Delete"}
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+            <div className="flex justify-between items-center">
+              <div className="text-[11px] text-gray-500 capitalize    justify-between">
+                <p className="leading-tight truncate">
+                  Applied:{" "}
+                  {(() => {
+                    const createdAt = new Date(
+                      localCandidate.tracking.createdAt
+                    );
+                    // const distance = formatDistanceToNow(createdAt, { addSuffix: true });
+                    // const startsWithNumber = /^\d/.test(distance);
+                    // return startsWithNumber
+                    //   ? `${createdAt.toLocaleDateString()} . ${distance}`
+                    //   : distance;
+                    const distance = formatDistanceToNow(createdAt, {
+                      addSuffix: true,
+                    });
+                    const currentTime = Date.now();
+                    // debugger
+                    const gap = currentTime - createdAt.getTime(); // Time difference in milliseconds
+                    return gap > 24 * 3600 * 1000 // 24 hours in milliseconds
+                      ? `${createdAt.toLocaleDateString()} . ${distance}`
+                      : distance;
+                  })()}
+                </p>
+              </div>
+              <div className="text-[11px] text-gray-500 capitalize  leading-tight truncate flex justify-end">
+                <p className="leading-tight truncate">
+                  Last Updated:{" "}
+                  {(() => {
+                    const updatedAt = new Date(
+                      localCandidate.tracking.updatedAt
+                    );
+                    const currentTime = Date.now();
+                    const distance = formatDistanceToNow(updatedAt, {
+                      addSuffix: true,
+                    });
+                    // debugger
+                    // const startsWithNumber = /^\d/.test(distance);
+                    const gap = currentTime - updatedAt.getTime(); // Time difference in milliseconds
+                    return gap > 24 * 3600 * 1000 // 24 hours in milliseconds
+                      ? `${updatedAt.toLocaleDateString()} . ${distance}`
+                      : distance;
+                  })()}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -743,7 +781,7 @@ const CandidateCard = memo(function CandidateCard({
                   <Badge
                     key={`${localCandidate._id}-skill-${index}-${skill}`}
                     variant="secondary"
-                    className="text-xs px-2.5 py-1 bg-gray-100 text-gray-900 border border-gray-200 dark:bg-secondary dark:text-gray-100 dark:border-gray-700 font-medium truncate max-w-full"
+                    className="text-xs px-2.5 py-1 bg-gray-100 text-gray-900 border border-gray-200 dark:bg-black dark:text-gray-100 dark:border-gray-700 font-medium truncate max-w-full"
                     title={skill}
                   >
                     {skill}
@@ -897,15 +935,16 @@ const CandidateCard = memo(function CandidateCard({
                     <span className="font-semibold">
                       {localCandidate.assignment.interviewerId.name}
                     </span>
-                    {localCandidate.assignment?.googleMeet && (
-                      <Badge
-                        variant="default"
-                        className="ml-2 text-xs bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200"
-                      >
-                        <Video size={10} className="mr-1" />
-                        Google Meet
-                      </Badge>
-                    )}
+                    {localCandidate.assignment?.googleMeet &&
+                      localCandidate?.assignment?.googleMeet?.eventId && (
+                        <Badge
+                          variant="default"
+                          className="ml-2 text-xs bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200"
+                        >
+                          <Video size={10} className="mr-1" />
+                          Google Meet
+                        </Badge>
+                      )}
                   </span>
                   {localCandidate.assignment?.googleMeet &&
                     localCandidate.assignment?.googleMeet?.eventId && (
@@ -1125,7 +1164,7 @@ const CandidateCard = memo(function CandidateCard({
       {onDashboard ? (
         <div
           className={cn(
-            "bg-white dark:bg-secondary border border-gray-200 dark:border-gray-800 rounded-lg p-4 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 h-full hover:border-gray-300 dark:hover:border-gray-700 w-[420px] flex-shrink-0",
+            "bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg p-4 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 h-full hover:border-gray-300 dark:hover:border-gray-700 w-[420px] flex-shrink-0",
             className
           )}
           onClick={useCallback(

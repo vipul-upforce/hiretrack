@@ -42,6 +42,7 @@ import {
 import { exportToCSV } from "./utils/export";
 import { useSelector } from "react-redux";
 import { User } from "@/lib/features/org/orgApi";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Placeholder components - will be implemented in subsequent phases
 
@@ -543,12 +544,13 @@ export default function AnalyticsPage() {
                 <div className="flex items-baseline space-x-2">
                   <div className="text-2xl font-bold">
                     {funnelLoading
-                      ? "-"
+                      ? <Skeleton className="w-10 h-8 rounded-lg" />
                       : `${funnelData?.summary?.overallConversionRate || 0}%`}
                   </div>
                   {!funnelLoading &&
                     funnelData?.summary?.overallConversionRate > 10 && (
-                      <TrendingUpIcon className="h-4 w-4 text-green-500" />
+                      // <TrendingUpIcon className="h-4 w-4 text-green-500" />
+                      <Skeleton className="w-10 h-5 rounded-lg" />
                     )}
                 </div>
                 <div className="text-xs text-muted-foreground space-y-1">
@@ -595,7 +597,7 @@ export default function AnalyticsPage() {
               <CardContent className="space-y-3">
                 <div className="flex items-baseline space-x-2">
                   <div className="text-2xl font-bold">
-                    {jobLoading ? "-" : jobData?.summary?.openJobs || 0}
+                    {jobLoading ? <Skeleton className="w-10 h-8 rounded-lg" /> : jobData?.summary?.openJobs || 0}
                   </div>
                   <div className="text-sm text-muted-foreground">open jobs</div>
                 </div>
@@ -643,7 +645,7 @@ export default function AnalyticsPage() {
                 <div className="flex items-baseline space-x-2">
                   <div className="text-2xl font-bold">
                     {interviewLoading
-                      ? "-"
+                      ? <Skeleton className="w-10 h-8 rounded-lg" />
                       : `${interviewData?.summary?.overallCompletionRate || 0}%`}
                   </div>
                   {!interviewLoading &&
@@ -695,7 +697,7 @@ export default function AnalyticsPage() {
                 <div className="flex items-baseline space-x-2">
                   <div className="text-2xl font-bold">
                     {trendsLoading
-                      ? "-"
+                      ? <Skeleton className="w-10 h-8 rounded-lg" />
                       : trendsData?.summary?.totalApplications || 0}
                   </div>
                   <div className="text-sm text-muted-foreground">
@@ -754,7 +756,7 @@ export default function AnalyticsPage() {
                   <div className="text-right">
                     <div className="text-sm font-medium text-green-600 dark:text-green-400">
                       {jobLoading
-                        ? "-"
+                        ? <Skeleton className="w-10 h-6 rounded-lg" />
                         : `${jobData?.insights?.topPerformingJobs?.[0]
                           ?.successRate ||
                         jobData?.jobPerformanceData?.[0]?.successRate ||
@@ -776,7 +778,7 @@ export default function AnalyticsPage() {
                   <div className="text-right">
                     <div className="text-sm font-medium">
                       {jobLoading
-                        ? "-"
+                        ? <Skeleton className="w-10 h-6 rounded-lg" />
                         : jobData?.summary?.avgTimeToFill > 0
                           ? `${jobData.summary.avgTimeToFill} days`
                           : "No hires yet"}
@@ -810,7 +812,7 @@ export default function AnalyticsPage() {
                   <div className="text-right">
                     <div className="text-sm font-medium">
                       {trendsLoading
-                        ? "-"
+                        ? <Skeleton className="w-10 h-6 rounded-lg" />
                         : trendsData?.summary?.totalApplications || 0}
                     </div>
                   </div>
@@ -826,7 +828,7 @@ export default function AnalyticsPage() {
                   <div className="text-right">
                     <div className="text-sm font-medium">
                       {interviewLoading
-                        ? "-"
+                        ? <Skeleton className="w-10 h-6 rounded-lg" />
                         : interviewData?.summary?.totalInterviewers || 0}
                     </div>
                   </div>
