@@ -426,7 +426,7 @@ export class AIEvaluationService {
     3. Skills score should ONLY consider technical abilities, not soft skills or education
     4. Experience score should ONLY consider relevant work history duration and domain match
     5. After normalization, compare candidate's expected CTC with job salary
-    6. For affordability, clearly show your salary normalization logic in the notes. If the salary or job's budget either is 0, say you can not evaluate affordability and set the score to 5. As the evaluation will be visible to intrviewers, do not mention the salary indicators in response.
+    6. Make sure the notes does not reveal the salary indicators or salary amount in response. We will use salary info and normalization only in evaluation and calculating affordability score.
     7. Provide specific evidence from the CV to justify each score
 
     Return your evaluation in this JSON format:
@@ -434,12 +434,12 @@ export class AIEvaluationService {
       "overall": // Overall suitability score (1-10) with brief justification
       "skills": // Technical skills match score (1-10) with specific skill gaps/matches noted
       "experience": // Work experience relevance score (1-10) with years and domain relevance noted
-      "contact": // Contact number in string format
+      "contact": // Parse and extract contact number from the CV in string format
       "affordability": // Salary alignment score (1-10) with calculation shown (include normalization logic)
       "strengths": // Maximum 4 bullet points of genuine strengths from CV
       "areas_for_improvement": // Maximum 4 bullet points of specific gaps or weaknesses
       "recommendation": // One of: "Strongly Recommend", "Recommend", "Consider with Reservations", "Not Recommended"
-      "notes": // Specific evidence from CV that influenced your scoring, include salary normalization logic
+      "notes": // One liner notes Specific evidence from CV that influenced your scoring.
     }
 
     SALARY NORMALIZATION EXAMPLES:
@@ -483,7 +483,7 @@ export class AIEvaluationService {
 
     const providerName = providerNames[provider] || provider;
 
-    return `\n\nEvaluated by ${providerName} using ${this.modelUsed} on ${dateStr} at ${timeStr}`;
+    return `\n\nEvaluated by ${providerName} ${this.modelUsed ? `using ${this.modelUsed}` : ""} on ${dateStr} at ${timeStr}`;
   }
 
   //   private static parseEvaluationResponse(response: string): EvaluationResult {
