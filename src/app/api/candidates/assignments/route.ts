@@ -338,6 +338,13 @@ export async function GET(req: NextRequest) {
                     },
                   },
                 },
+                {
+                  $match: {
+                    $expr: {
+                      $eq: ["$isDeleted", false],
+                    },
+                  },
+                },
                 interviewerFilter,
               ],
               as: "candidates",
