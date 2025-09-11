@@ -170,7 +170,8 @@ export default function DetailsDialogHeader({
                 </span>
               )}
               {candidate.expectedCTC !== undefined &&
-                candidate.expectedCTC !== null && (
+                candidate.expectedCTC !== null &&
+                user?.role !== "interviewer" && (
                   <span className="text-sm font-normal text-gray-600 dark:text-gray-400 flex items-center gap-1">
                     ₹{candidate.expectedCTC.toLocaleString()} LPA
                   </span>
