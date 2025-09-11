@@ -54,7 +54,13 @@ export function AssignJobDialog({
 
   // Initial form values
   const initialValues: FormValues = {
-    jobId: "",
+    // jobId: "",
+    jobId:
+      typeof candidate.jobId === "string"
+        ? candidate.jobId
+        : typeof candidate.jobId === "object"
+          ? candidate.jobId._id
+          : "",
   };
 
   const handleSubmit = async (

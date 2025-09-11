@@ -224,6 +224,8 @@ const RenderHistoryEntry = ({
 }) => {
   const [isRemarkOptionsOpen, setIsRemarkOptionsOpen] = useState(false);
   const [isRemarkOpsOpenFor, setIsRemarkOpsOpenFor] = useState<string | null>();
+  const [isNoteOpsOpenFor, setIsNoteOpsOpenFor] = useState<string | null>();
+
   const role = useRoles();
   const isLogTableEntry =
     interview.note &&
@@ -236,6 +238,7 @@ const RenderHistoryEntry = ({
   ) {
     return null;
   }
+  // console.log(interview, "interview Historuy");
 
   // Convert timeDate string to Date object for formatTZDate
   // const dateObj = new Date(timeDate);
@@ -366,13 +369,15 @@ const RenderHistoryEntry = ({
           <Dot /> {timeTime} */}
           {timeDate} <Dot /> {timeTime}
         </time>
-        <div className="relative">
+        {/* <div className="relative">
           {interview.remark?.description &&
             interview.remark?.id === isRemarkOpsOpenFor &&
             interview.assignmentBy &&
             typeof interview.assignmentBy === "object" &&
             "_id" in interview.assignmentBy &&
             (role !== "interviewer" ||
+              interview.assignmentBy?._id === user?.id) &&
+            (role !== "hr" ||
               interview.assignmentBy?._id === user?.id) &&
             user?.role !== "candidate" && (
               // (user?.role === "hr" || user?.role === "admin") && (
@@ -411,6 +416,85 @@ const RenderHistoryEntry = ({
                 }}
               />
             )}
+        </div> */}
+        <div className="relative">
+          {/* ✅ Remark options */}
+          {interview.remark?.description &&
+            interview.remark?.id === isRemarkOpsOpenFor &&
+            interview.assignmentBy &&
+            typeof interview.assignmentBy === "object" &&
+            "_id" in interview.assignmentBy &&
+            (role !== "interviewer" ||
+              interview.assignmentBy?._id === user?.id) &&
+            (role !== "hr" ||
+              interview.assignmentBy?._id === user?.id) &&
+            user?.role !== "candidate" && (
+              <RemarkOptionsMenu
+                type="remark"
+                remarkId={interview.remark?.id || ""}
+                isPrivate={interview.remark?.isPrivate || false}
+                onTogglePrivacy={async (id, isPrivate) => {
+                  await handleRemarkUpdate(
+                    id,
+                    interview.remark?.description || "",
+                    isPrivate
+                  );
+                }}
+                onEdit={(id) => {
+                  if (interview.remark) {
+                    setEditingRemark({
+                      id: interview.remark.id,
+                      description: interview.remark.description,
+                      isPrivate: interview.remark.isPrivate || false,
+                      rating: interview.remark.rating,
+                    });
+                    setIsEditRemarkDialogOpen(true);
+                  }
+                }}
+                isOpen={isRemarkOptionsOpen && interview.remark?.id === isRemarkOpsOpenFor}
+                setIsOpen={(open) => {
+                  setIsRemarkOptionsOpen(open);
+                  setIsRemarkOpsOpenFor(open ? interview.remark?.id || "" : "");
+                }}
+              />
+
+            )}
+
+          {/* ✅ Note options */}
+          {interview.note?.description &&
+           interview.assignmentBy &&
+            typeof interview.assignmentBy === "object" &&
+            "_id" in interview.assignmentBy &&
+            (role !== "interviewer" ||
+              interview.assignmentBy?._id === user?.id) &&
+                 (role !== "hr" ||
+              interview.assignmentBy?._id === user?.id) &&
+            user?.role !== "candidate" && (() => {
+              return (
+                <RemarkOptionsMenu
+                  type="note"
+                  remarkId={interview?._id}
+                  onEdit={(id) => {
+                    if (interview.note && typeof interview.note.description === "string") {
+                      setEditingRemark({
+                        id: interview?._id,
+                        description: interview.note.description, // safe now
+                        isPrivate: interview.remark.isPrivate || false,
+                        rating: interview.note.rating,
+                      });
+                      setIsEditRemarkDialogOpen(true);
+                    }
+                  }}
+                  isOpen={interview?._id === isRemarkOpsOpenFor}
+                  setIsOpen={(open) => {
+                    // setIsNoteOptionsOpen(open);
+                    setIsRemarkOptionsOpen(open);
+                    setIsRemarkOpsOpenFor(open ? interview?._id : "");
+                  }}
+                />
+              );
+            })()}
+
         </div>
       </div>
 

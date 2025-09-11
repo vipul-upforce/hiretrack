@@ -91,6 +91,7 @@ const EditRemarkDialog = ({
           </Button>
           <Button
             disabled={isLoading}
+            variant="primary"
             onClick={() => {
               handleRemarkUpdate(
                 editingRemark?.id || "",

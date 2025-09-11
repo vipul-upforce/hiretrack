@@ -305,7 +305,7 @@ export function CandidateDetailsDialog({
           refetch={async () => {
             if (
               pathname !== "/dashboard" &&
-              pathname !== "/dashboard/calendar"
+            pathname !== "/dashboard/calendar"
             ) {
               await refetch();
             } else {
@@ -373,6 +373,7 @@ export function CandidateDetailsDialog({
                     <span className="text-sm text-gray-500 dark:text-gray-400">
                       Name
                     </span>
+                    
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-gray-900 dark:text-gray-100 truncate">
                         {localCandidate.name}
