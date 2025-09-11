@@ -27,6 +27,7 @@ const LoaderSkeleton = () => (
               </Droppable> */}
               <Skeleton className="w-full h-[350px] rounded-lg" />
               <Skeleton className="w-full h-[350px] rounded-lg" />
+              <Skeleton className="w-full h-[350px] rounded-lg" />
             </div>
           </div>
         </div>

@@ -340,9 +340,10 @@ export async function GET(req: NextRequest) {
                 },
                 {
                   $match: {
-                    $expr: {
-                      $eq: ["$isDeleted", false],
-                    },
+                    $or: [
+                      { isDeleted: { $eq: false } },
+                      { isDeleted: { $exists: false } },
+                    ],
                   },
                 },
                 interviewerFilter,

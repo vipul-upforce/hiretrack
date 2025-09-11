@@ -435,7 +435,7 @@ const KanbanColumn = memo(function KanbanColumn({
                       <Virtuoso
                         style={{ height: "100%", scrollbarWidth: "none" }}
                         data={filteredCandidates}
-                        increaseViewportBy={{ bottom: 200, top: 200 }}
+                        increaseViewportBy={{ bottom: 200, top: 100 }}
                         scrollerRef={() => scrollerRef}
                         itemContent={(index, candidate) => {
                           const isPending = pendingMoves.some(
