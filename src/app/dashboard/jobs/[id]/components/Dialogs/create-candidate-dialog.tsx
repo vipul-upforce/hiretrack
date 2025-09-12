@@ -523,7 +523,7 @@ export function CreateCandidateDialog({
         <Button
           variant="ghost"
           size="icon"
-          className="absolute z-[100] h-7 w-7 text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md"
+          className={`absolute z-[100] h-7 w-7 text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md ${!isLargeViewport ? "hidden" : ""}`}
           style={{ top: "calc(1rem - 5px)", right: "calc(3.5rem - 20px)" }}
           onClick={() => setIsMaximized(!isMaximized)}
           title={isMaximized ? "Restore" : "Maximize"}
