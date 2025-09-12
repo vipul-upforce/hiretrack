@@ -305,7 +305,7 @@ export function CandidateDetailsDialog({
           refetch={async () => {
             if (
               pathname !== "/dashboard" &&
-            pathname !== "/dashboard/calendar"
+              pathname !== "/dashboard/calendar"
             ) {
               await refetch();
             } else {
@@ -373,7 +373,7 @@ export function CandidateDetailsDialog({
                     <span className="text-sm text-gray-500 dark:text-gray-400">
                       Name
                     </span>
-                    
+
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-gray-900 dark:text-gray-100 truncate">
                         {localCandidate.name}
@@ -522,11 +522,11 @@ export function CandidateDetailsDialog({
 
             {/* AI Assessment Scores Section */}
             <div className="space-y-4">
-              {localCandidate.scores?.overall !== undefined &&
+              {localCandidate.scores?.overall !== undefined && (
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                   AI Assessment Scores
                 </h3>
-              }
+              )}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {localCandidate.scores?.overall !== undefined &&
                   (() => {
@@ -816,7 +816,7 @@ export function CandidateDetailsDialog({
             {localCandidate.history &&
               localCandidate.history.length > 0 &&
               user?.role !== "candidate" && (
-                <div className="space-y-4">
+                <div className="space-y-4 focus-visible:outline-none">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                     Candidate History
                   </h3>

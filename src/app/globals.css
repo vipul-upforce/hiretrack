@@ -43,6 +43,9 @@ body {
 .dark *::-webkit-scrollbar-corner {
   background: #2a2929;
 }
+*:focus-visible {
+  outline: none;
+}
 
 /* Firefox scrollbar */
 * {

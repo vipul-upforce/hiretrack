@@ -106,9 +106,11 @@ async function createPendingEmailHistory(data: any, organizationId: string) {
           sentBy:
             typeof sentBy === "object" && sentBy._id
               ? sentBy._id
-              : sentBy.id
-                ? sentBy.id
-                : new mongoose.Types.ObjectId(sentBy),
+              : typeof sentBy === "string"
+                ? new mongoose.Types.ObjectId(sentBy)
+                : sentBy.id || null,
+          // ? sentBy.id
+          // : new mongoose.Types.ObjectId(sentBy),
           sentByEmail: sentByEmail,
           sentByName: sentByName,
           recipientType: "user",
