@@ -1,0 +1,5 @@
+---
+description: Check for any existing reusable component or logic in the project, if it exists and is exported or can be easily exported then use that instead of writing new code for the same logic.
+globs:*.tsx, *.ts, *.js, *.jsx
+alwaysApply: true
+---

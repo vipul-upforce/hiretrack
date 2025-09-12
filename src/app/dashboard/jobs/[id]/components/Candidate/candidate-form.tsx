@@ -458,15 +458,17 @@ export function CandidateForm({
           {/* Skills - Mobile */}
           <div className="space-y-2">
             <Label>
-              Skills (Hit Enter to Add) <span className="text-red-500">*</span>
+              Skills (Type and press Enter, comma, or space){" "}
+              <span className="text-red-500">*</span>
             </Label>
             <ChipInput
-              placeholder="Hit Enter to Add"
+              placeholder="Type skills separated by comma, space, or press Enter"
               value={skillsField.value}
               onChange={(skills) => setFieldValue("skills", skills)}
               onSuggestionClick={(suggestion) => {
                 setFieldValue("skills", [...skillsField.value, suggestion]);
               }}
+              showAddButton={true}
             />
             {skillsMeta.touched && skillsMeta.error && (
               <p className="text-sm text-red-500">{skillsMeta.error}</p>
@@ -537,7 +539,11 @@ export function CandidateForm({
           </div>
 
           {/* Custom Fields - Mobile */}
-          <CustomFields formName="Candidate" isEditMode={isEditMode} jobId={jobId} />
+          <CustomFields
+            formName="Candidate"
+            isEditMode={isEditMode}
+            jobId={jobId}
+          />
 
           {/* Assignment Section - Mobile */}
           {user && user.role !== "candidate" && user.role !== "" && (
@@ -571,7 +577,7 @@ export function CandidateForm({
                     <p className="text-sm text-red-500">
                       {String(
                         errors.assignment[
-                        "interviewerId" as keyof typeof errors.assignment
+                          "interviewerId" as keyof typeof errors.assignment
                         ] || ""
                       )}
                     </p>
@@ -755,7 +761,7 @@ export function CandidateForm({
               accept={{}}
               maxFiles={
                 (user && (user.role === "candidate" || user.role === "")) ||
-                  !user
+                !user
                   ? 2
                   : 30
               }
@@ -1072,10 +1078,11 @@ export function CandidateForm({
                   id="name"
                   placeholder="Enter full name"
                   {...nameField}
-                  className={`h-9 px-3 transition-all duration-200 ${nameMeta.error && nameMeta.touched
+                  className={`h-9 px-3 transition-all duration-200 ${
+                    nameMeta.error && nameMeta.touched
                       ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                       : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
-                    }`}
+                  }`}
                 />
                 {nameMeta.touched && nameMeta.error && (
                   <p className="text-sm text-red-500 flex items-center gap-1">
@@ -1097,10 +1104,11 @@ export function CandidateForm({
                   type="email"
                   placeholder="Enter email address"
                   {...emailField}
-                  className={`h-9 px-3 transition-all duration-200 ${emailMeta.error && emailMeta.touched
+                  className={`h-9 px-3 transition-all duration-200 ${
+                    emailMeta.error && emailMeta.touched
                       ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                       : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
-                    }`}
+                  }`}
                 />
                 {emailMeta.touched && emailMeta.error && (
                   <p className="text-sm text-red-500 flex items-center gap-1">
@@ -1122,10 +1130,11 @@ export function CandidateForm({
                   type="tel"
                   placeholder="Enter contact number"
                   {...contactField}
-                  className={`h-9 px-3 transition-all duration-200 ${contactMeta.error && contactMeta.touched
+                  className={`h-9 px-3 transition-all duration-200 ${
+                    contactMeta.error && contactMeta.touched
                       ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                       : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
-                    }`}
+                  }`}
                 />
                 {contactMeta.touched && contactMeta.error && (
                   <p className="text-sm text-red-500 flex items-center gap-1">
@@ -1146,10 +1155,11 @@ export function CandidateForm({
                   id="location"
                   placeholder="Enter location"
                   {...locationField}
-                  className={`h-9 px-3 transition-all duration-200 ${locationMeta.error && locationMeta.touched
+                  className={`h-9 px-3 transition-all duration-200 ${
+                    locationMeta.error && locationMeta.touched
                       ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                       : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
-                    }`}
+                  }`}
                 />
                 {locationMeta.touched && locationMeta.error && (
                   <p className="text-sm text-red-500 flex items-center gap-1">
@@ -1175,10 +1185,11 @@ export function CandidateForm({
                   type="number"
                   step="0.1"
                   {...experienceField}
-                  className={`h-9 px-3 transition-all duration-200 w-full max-w-xs ${experienceMeta.error && experienceMeta.touched
+                  className={`h-9 px-3 transition-all duration-200 w-full max-w-xs ${
+                    experienceMeta.error && experienceMeta.touched
                       ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                       : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
-                    }`}
+                  }`}
                 />
                 {experienceMeta.touched && experienceMeta.error && (
                   <p className="text-sm text-red-500 flex items-center gap-1">
@@ -1200,11 +1211,11 @@ export function CandidateForm({
             </div>
             <div className="space-y-2" id="skills" data-form-field="skills">
               <Label className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                Skills (Hit Enter to Add){" "}
+                Skills (Type and press Enter, comma, or space){" "}
                 <span className="text-red-500">*</span>
               </Label>
               <ChipInput
-                placeholder="Hit Enter to Add Skills"
+                placeholder="Type skills separated by comma, space, or press Enter"
                 value={skillsField.value}
                 onChange={(skills) => setFieldValue("skills", skills)}
                 onSuggestionClick={(suggestion) => {
@@ -1241,10 +1252,11 @@ export function CandidateForm({
                   placeholder="Enter expected CTC in LPA"
                   type="number"
                   {...expectedCTCField}
-                  className={`h-9 px-3 transition-all duration-200 ${expectedCTCMeta.error && expectedCTCMeta.touched
+                  className={`h-9 px-3 transition-all duration-200 ${
+                    expectedCTCMeta.error && expectedCTCMeta.touched
                       ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                       : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
-                    }`}
+                  }`}
                 />
                 {expectedCTCMeta.touched && expectedCTCMeta.error && (
                   <p className="text-sm text-red-500 flex items-center gap-1">
@@ -1266,10 +1278,11 @@ export function CandidateForm({
                   placeholder="Enter current CTC in LPA"
                   type="number"
                   {...currentCTCField}
-                  className={`h-9 px-3 transition-all duration-200 ${currentCTCMeta.error && currentCTCMeta.touched
+                  className={`h-9 px-3 transition-all duration-200 ${
+                    currentCTCMeta.error && currentCTCMeta.touched
                       ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                       : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
-                    }`}
+                  }`}
                 />
                 {currentCTCMeta.touched && currentCTCMeta.error && (
                   <p className="text-sm text-red-500 flex items-center gap-1">
@@ -1294,10 +1307,11 @@ export function CandidateForm({
                   placeholder="Enter notice period in days"
                   type="number"
                   {...noticePeriodField}
-                  className={`h-9 px-3 transition-all duration-200 w-full max-w-xs ${noticePeriodMeta.error && noticePeriodMeta.touched
+                  className={`h-9 px-3 transition-all duration-200 w-full max-w-xs ${
+                    noticePeriodMeta.error && noticePeriodMeta.touched
                       ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                       : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
-                    }`}
+                  }`}
                 />
                 {noticePeriodMeta.touched && noticePeriodMeta.error && (
                   <p className="text-sm text-red-500 flex items-center gap-1">
@@ -1310,7 +1324,11 @@ export function CandidateForm({
           </div>
 
           {/* Custom Fields - Desktop */}
-          <CustomFields formName="Candidate" isEditMode={isEditMode} jobId={jobId} />
+          <CustomFields
+            formName="Candidate"
+            isEditMode={isEditMode}
+            jobId={jobId}
+          />
 
           {/* Assignment Section - Desktop */}
           {user && user.role !== "candidate" && user.role != "" && (
@@ -1352,7 +1370,7 @@ export function CandidateForm({
                       <span className="w-1 h-1 bg-red-500 rounded-full"></span>
                       {String(
                         errors.assignment[
-                        "interviewerId" as keyof typeof errors.assignment
+                          "interviewerId" as keyof typeof errors.assignment
                         ] || ""
                       )}
                     </p>
@@ -1536,7 +1554,7 @@ export function CandidateForm({
               accept={{}}
               maxFiles={
                 (user && (user.role === "candidate" || user.role === "")) ||
-                  !user
+                !user
                   ? 2
                   : 30
               }
