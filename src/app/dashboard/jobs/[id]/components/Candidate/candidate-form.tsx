@@ -164,7 +164,7 @@ export function CandidateForm({
         <div className="flex-1 overflow-y-auto px-3 py-4 space-y-4">
           {/* Resume Upload */}
           <div className="space-y-3">
-            <Label>
+            <Label className="font-semibold">
               Resume <span className="text-red-500">*</span>
             </Label>
             {/* <div className="space-y-3">
@@ -360,7 +360,7 @@ export function CandidateForm({
           {/* Personal Information Grid - Mobile */}
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">
+              <Label htmlFor="name" className="font-semibold">
                 Name <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -377,7 +377,7 @@ export function CandidateForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">
+              <Label htmlFor="email" className="font-semibold">
                 Email <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -395,7 +395,7 @@ export function CandidateForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="contact">
+              <Label htmlFor="contact" className="font-semibold">
                 Contact Number <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -415,7 +415,7 @@ export function CandidateForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="location">
+              <Label htmlFor="location" className="font-semibold">
                 Current Location <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -434,7 +434,7 @@ export function CandidateForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="experience">
+              <Label htmlFor="experience" className="font-semibold">
                 Relevant Exp in Years <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -457,7 +457,7 @@ export function CandidateForm({
 
           {/* Skills - Mobile */}
           <div className="space-y-2">
-            <Label>
+            <Label className="font-semibold">
               Skills (Type and press Enter, comma, or space){" "}
               <span className="text-red-500">*</span>
             </Label>
@@ -478,7 +478,7 @@ export function CandidateForm({
           {/* CTC and Notice Period - Mobile */}
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="expectedCTC">
+              <Label htmlFor="expectedCTC" className="font-semibold">
                 Expected CTC (LPA) <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -498,7 +498,7 @@ export function CandidateForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="currentCTC">
+              <Label htmlFor="currentCTC" className="font-semibold">
                 Current CTC (LPA) <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -518,7 +518,7 @@ export function CandidateForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="noticePeriod">
+              <Label htmlFor="noticePeriod" className="font-semibold">
                 Notice Period (days) <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -627,7 +627,7 @@ export function CandidateForm({
 
           {/* Additional Attachments - Mobile */}
           <div className="space-y-3">
-            <Label>Additional Attachments</Label>
+            <Label className="font-semibold">Additional Attachments</Label>
             {/* <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <Button
@@ -866,7 +866,7 @@ export function CandidateForm({
         <div className="w-1/2 space-y-4 overflow-y-auto px-3 py-3">
           {/* Resume Upload */}
           <div className="space-y-3" data-form-field="resume">
-            <Label>
+            <Label className="font-semibold">
               Resume <span className="text-red-500">*</span>
             </Label>
             {/* <div className="space-y-3">
@@ -1070,7 +1070,7 @@ export function CandidateForm({
               <div className="space-y-2" data-form-field="name">
                 <Label
                   htmlFor="name"
-                  className="text-sm font-medium text-gray-900 dark:text-gray-100"
+                  className="text-sm font-semibold text-gray-900 dark:text-gray-100"
                 >
                   Full Name <span className="text-red-500">*</span>
                 </Label>
@@ -1095,7 +1095,7 @@ export function CandidateForm({
               <div className="space-y-2" data-form-field="email">
                 <Label
                   htmlFor="email"
-                  className="text-sm font-medium text-gray-900 dark:text-gray-100"
+                  className="text-sm font-semibold text-gray-900 dark:text-gray-100"
                 >
                   Email Address <span className="text-red-500">*</span>
                 </Label>
@@ -1121,7 +1121,7 @@ export function CandidateForm({
               <div className="space-y-2" data-form-field="contact">
                 <Label
                   htmlFor="contact"
-                  className="text-sm font-medium text-gray-900 dark:text-gray-100"
+                  className="text-sm font-semibold text-gray-900 dark:text-gray-100"
                 >
                   Contact Number <span className="text-red-500">*</span>
                 </Label>
@@ -1147,7 +1147,7 @@ export function CandidateForm({
               <div className="space-y-2" data-form-field="location">
                 <Label
                   htmlFor="location"
-                  className="text-sm font-medium text-gray-900 dark:text-gray-100"
+                  className="text-sm font-semibold text-gray-900 dark:text-gray-100"
                 >
                   Current Location <span className="text-red-500">*</span>
                 </Label>
@@ -1175,7 +1175,7 @@ export function CandidateForm({
               >
                 <Label
                   htmlFor="experience"
-                  className="text-sm font-medium text-gray-900 dark:text-gray-100"
+                  className="text-sm font-semibold text-gray-900 dark:text-gray-100"
                 >
                   Relevant Exp in Years <span className="text-red-500">*</span>
                 </Label>
@@ -1210,7 +1210,7 @@ export function CandidateForm({
               </h3>
             </div>
             <div className="space-y-2" id="skills" data-form-field="skills">
-              <Label className="text-sm font-medium text-gray-900 dark:text-gray-100">
+              <Label className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                 Skills (Type and press Enter, comma, or space){" "}
                 <span className="text-red-500">*</span>
               </Label>
@@ -1243,7 +1243,7 @@ export function CandidateForm({
               <div className="space-y-2" data-form-field="expectedCTC">
                 <Label
                   htmlFor="expectedCTC"
-                  className="text-sm font-medium text-gray-900 dark:text-gray-100"
+                  className="text-sm font-semibold text-gray-900 dark:text-gray-100"
                 >
                   Expected CTC (LPA) <span className="text-red-500">*</span>
                 </Label>
@@ -1269,7 +1269,7 @@ export function CandidateForm({
               <div className="space-y-2" data-form-field="currentCTC">
                 <Label
                   htmlFor="currentCTC"
-                  className="text-sm font-medium text-gray-900 dark:text-gray-100"
+                  className="text-sm font-semibold text-gray-900 dark:text-gray-100"
                 >
                   Current CTC (LPA) <span className="text-red-500">*</span>
                 </Label>
@@ -1298,7 +1298,7 @@ export function CandidateForm({
               >
                 <Label
                   htmlFor="noticePeriod"
-                  className="text-sm font-medium text-gray-900 dark:text-gray-100"
+                  className="text-sm font-semibold text-gray-900 dark:text-gray-100"
                 >
                   Notice Period (days) <span className="text-red-500">*</span>
                 </Label>
@@ -1341,7 +1341,7 @@ export function CandidateForm({
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-3">
-                  <Label className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  <Label className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                     Assign To
                   </Label>
                   <Select
@@ -1378,7 +1378,7 @@ export function CandidateForm({
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  <Label className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                     Interview Time
                   </Label>
                   <DateTimePicker

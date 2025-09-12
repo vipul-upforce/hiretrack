@@ -203,7 +203,7 @@ function CustomFields({
               fieldRefs.current[field.label] = el;
             }}
           >
-            <Label htmlFor={field.label} className="capitalize">
+            <Label htmlFor={field.label} className="capitalize font-semibold">
               {field.label.split(" |||||(")[0]}
               {field.required && (
                 <span className="text-red-500 text-sm capitalize">*</span>

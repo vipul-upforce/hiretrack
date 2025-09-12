@@ -103,7 +103,7 @@ export function JobForm(props: JobFormProps) {
   return (
     <div className="space-y-4 pt-0">
       <div className="space-y-2">
-        <Label htmlFor="title">
+        <Label htmlFor="title" className="font-semibold">
           Job Title <span className="text-red-500">*</span>
         </Label>
         <Input
@@ -120,7 +120,7 @@ export function JobForm(props: JobFormProps) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="description">
+        <Label htmlFor="description" className="font-semibold">
           Description <span className="text-red-500">*</span>
         </Label>
         <RichTextEditor
@@ -139,7 +139,7 @@ export function JobForm(props: JobFormProps) {
       </div>
 
       <div className="space-y-2" id="skills">
-        <Label>
+        <Label className="font-semibold">
           Required Skills (Hit Enter to add){" "}
           <span className="text-red-500">*</span>
         </Label>
@@ -165,7 +165,7 @@ export function JobForm(props: JobFormProps) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="experience">
+        <Label htmlFor="experience" className="font-semibold">
           Experience (years) <span className="text-red-500">*</span>
         </Label>
         <Input
@@ -187,7 +187,7 @@ export function JobForm(props: JobFormProps) {
         )}
       </div>
       <div className="space-y-2">
-        <Label>Salary</Label>
+        <Label className="font-semibold">Salary</Label>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
             <Input
@@ -242,7 +242,7 @@ export function JobForm(props: JobFormProps) {
       </div>
 
       <div className="space-y-2">
-        <Label>Job Links</Label>
+        <Label className="font-semibold">Job Links</Label>
         <div className="space-y-2">
           {values.links.map((link, index) => (
             <div key={index} className="flex items-center gap-2">
@@ -291,7 +291,9 @@ export function JobForm(props: JobFormProps) {
           </DialogHeader>
           <div className="space-y-4 p-4">
             <div className="space-y-2">
-              <Label htmlFor="link">URL</Label>
+              <Label htmlFor="link" className="font-semibold">
+                URL
+              </Label>
               <Input
                 id="link"
                 placeholder="https://example.com"
@@ -322,7 +324,7 @@ export function JobForm(props: JobFormProps) {
       </Dialog>
 
       <div className="space-y-2">
-        <Label>Attachments</Label>
+        <Label className="font-semibold">Attachments</Label>
         <FileUpload
           onFileSelect={(newFiles) => {
             const sanitizedFiles = sanitizeFiles(newFiles);
