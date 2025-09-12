@@ -11,15 +11,17 @@ import { Label } from "@/components/ui/label";
 import useRoles from "@/hooks/useRoles";
 
 interface RemarkOptionsMenuProps {
+  type: "remark" | "note";
   remarkId: string;
-  isPrivate: boolean;
-  onTogglePrivacy: (id: string, isPrivate: boolean) => void;
+  isPrivate?: boolean;
+  onTogglePrivacy?: (id: string, isPrivate: boolean) => void;
   onEdit: (id: string) => void;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
 }
 
 export function RemarkOptionsMenu({
+  type,
   remarkId,
   isPrivate,
   onTogglePrivacy,
@@ -39,13 +41,15 @@ export function RemarkOptionsMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className={`opacity-0 group-hover:opacity-100 transition duration-300 p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-300 ${isOpen ? "opacity-100" : ""}`}
+        className={`opacity-0 group-hover:opacity-100 transition duration-300 p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-300 ${isOpen ? "opacity-100" : ""
+          }`}
       >
         <MoreVertical className="h-4 w-4" />
         <span className="sr-only">Open options</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">
-        {role !== "interviewer" && (
+        {/* ✅ Show privacy toggle only for remarks */}
+        {type === "remark" && role !== "interviewer" && (
           <>
             <div className="flex items-center justify-between px-2 py-2">
               <div className="flex items-center space-x-2">

@@ -320,8 +320,6 @@ export const LogsTable: React.FC<{
   user: User | null;
   timeLineItems: ICandidateHistory[];
 }> = ({ candidate, user, timeLineItems }) => {
-  console.log(timeLineItems, "timeLineItems");
-
   const tableRows = timeLineItems
     .sort(
       (a, b) =>

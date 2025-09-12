@@ -181,7 +181,7 @@ export function AssignCandidateDialog({
     scheduleGoogleMeet: candidate?.assignment?.googleMeet?.eventId
       ? true
       : false,
-    meetDuration: 30,
+    meetDuration: 60,
     meetingNotes: candidate?.assignment?.googleMeet?.meetingNotes || "",
     meetingAttachments:
       candidate?.assignment?.googleMeet?.meetingAttachments || [],

@@ -17,6 +17,7 @@ import {
   Bell,
   MessageCircle,
   Tag,
+  Briefcase,
 } from "lucide-react";
 import { Candidate } from "@/types/candidate";
 import { formatDate, formatTime } from "../../hooks/dateTimeFormatting";
@@ -79,6 +80,7 @@ import {
 } from "@/components/ui/popover";
 import TagsDialog from "../Dialogs/tags-dialog";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { AssignJobDialog } from "../Dialogs/assign-job-dialog";
 
 interface CandidateCardProps {
   candidate: Candidate;
@@ -180,7 +182,9 @@ const CandidateCard = memo(function CandidateCard({
     undefined,
     undefined
   );
-
+  const [candidateToAssignJob, setCandidateToAssignJob] =
+    useState<Candidate | null>(null);
+  const [isAssignJobOpen, setIsAssignJobOpen] = useState(false);
   // Function to handle sync attendee responses
   const handleSyncAttendeeResponses = useCallback(
     async (e: React.MouseEvent) => {
@@ -308,7 +312,23 @@ const CandidateCard = memo(function CandidateCard({
       }
     }
   }, [isAddingFollowUp, localCandidate]);
-
+  // const handleCandidateUpdateWithOptimism = useCallback(
+  //   (updatedCandidate: Candidate) => {
+  //     // Immediately update local state if handler is provided
+  //     // debugger;
+  //     if (onCandidateUpdate) {
+  //       onCandidateUpdate(updatedCandidate);
+  //     }
+  //     // refetch();
+  //   },
+  //   [onCandidateUpdate]
+  // );
+  //   [onCandidateUpdate])
+  const handleAssignJob = (candidate: Candidate, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCandidateToAssignJob(candidate);
+    setIsAssignJobOpen(true);
+  };
   const renderCardContent = useMemo(
     () => (
       <div className="flex flex-col h-full relative">
@@ -450,6 +470,12 @@ const CandidateCard = memo(function CandidateCard({
                           Assign To
                         </DropdownMenuItem>
                       )}
+                    <DropdownMenuItem
+                      onClick={(e) => handleAssignJob(candidate, e)}
+                    >
+                      <Briefcase className="mr-2 h-4 w-4" />
+                      Assign Job
+                    </DropdownMenuItem>
                     {user?.role !== "interviewer" && (
                       <DropdownMenuItem
                         onClick={(e) => {
@@ -1133,7 +1159,6 @@ const CandidateCard = memo(function CandidateCard({
     [
       localCandidate,
       showStar,
-      showRedFlag,
       user,
       onViewDetails,
       setOpenRemarksFor,
@@ -1352,6 +1377,27 @@ const CandidateCard = memo(function CandidateCard({
             name: localCandidate.name,
             email: localCandidate.email,
           }}
+        />
+      )}
+      {candidateToAssignJob && (
+        <AssignJobDialog
+          candidate={candidateToAssignJob}
+          isOpen={isAssignJobOpen}
+          onOpenChange={setIsAssignJobOpen}
+          onJobAssignment={() => {
+            setIsAssignJobOpen(false);
+            setCandidateToAssignJob(null);
+            refetch();
+          }}
+          // onJobAssignment={(updatedCandidate) => {
+          // If this returns updated candidate
+          // if (updatedCandidate && onCandidateUpdate) {
+          //   onCandidateUpdate(updatedCandidate);
+          // }
+          // handleCandidateUpdateWithOptimism;
+          // setIsAssignJobOpen(false);
+          // setCandidateToAssignJob(null);
+          // }}
         />
       )}
     </>

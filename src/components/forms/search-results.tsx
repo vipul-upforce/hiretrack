@@ -750,13 +750,17 @@ export function SearchResults({
                               <Briefcase className="mr-2 h-4 w-4" />
                               Assign Job
                             </DropdownMenuItem>
+                              {candidate.jobId && typeof candidate.jobId === "object" && candidate.jobId.title && (
+                           <>
                             <DropdownMenuSeparator />
+                          
                             <DropdownMenuItem
                               onClick={(e) => handleAddRemark(candidate, e)}
                             >
                               <Plus className="mr-2 h-4 w-4" />
                               Add Remark
-                            </DropdownMenuItem>
+                            </DropdownMenuItem></>
+                               )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
