@@ -382,10 +382,11 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
                       <div
                         {...provided.droppableProps}
                         ref={provided.innerRef}
-                        className={`space-y-2 px-2 ${snapshot.isDraggingOver
-                          ? "bg-muted/20 rounded-lg p-2"
-                          : ""
-                          }`}
+                        className={`space-y-2 px-2 ${
+                          snapshot.isDraggingOver
+                            ? "bg-muted/20 rounded-lg p-2"
+                            : ""
+                        }`}
                       >
                         {defaultLanes.map((lane, index) => (
                           <Draggable
@@ -411,10 +412,11 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
                                   }}
                                 >
                                   <div
-                                    className={`bg-card border rounded-none transition-all ${snapshot.isDragging
-                                      ? "shadow-2xl bg-white dark:bg-black border-2 border-primary opacity-95 scale-105"
-                                      : "shadow-sm hover:shadow-md"
-                                      }`}
+                                    className={`bg-card border rounded-none transition-all ${
+                                      snapshot.isDragging
+                                        ? "shadow-2xl bg-white dark:bg-black border-2 border-primary opacity-95 scale-105"
+                                        : "shadow-sm hover:shadow-md"
+                                    }`}
                                     style={{
                                       ...(snapshot.isDragging && {
                                         width: "320px",
@@ -473,10 +475,11 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
                                           ) : (
                                             <div className="flex items-center gap-2">
                                               <span
-                                                className={`capitalize font-medium text-foreground select-none ${!isRestricted(lane, "edit")
-                                                  ? "cursor-pointer"
-                                                  : "cursor-default"
-                                                  }`}
+                                                className={`capitalize font-medium text-foreground select-none ${
+                                                  !isRestricted(lane, "edit")
+                                                    ? "cursor-pointer"
+                                                    : "cursor-default"
+                                                }`}
                                                 onDoubleClick={() =>
                                                   !isRestricted(lane, "edit") &&
                                                   startEdit(lane)
@@ -619,19 +622,17 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
                       <p className="font-medium mb-1">Important Notes:</p>
                       <ul className="space-y-1 text-xs">
                         <li>
-                          • These default lanes will be applied to all new jobs
+                          These default lanes will be applied to all new jobs
                         </li>
                         <li>
-                          • System lanes (Applied, Accepted, Rejected) cannot be
+                          System lanes (Applied, Accepted, Rejected) cannot be
                           modified
                         </li>
                         <li>
-                          • Existing jobs will continue using their current
-                          lanes
+                          Existing jobs will continue using their current lanes
                         </li>
                         <li>
-                          • Individual jobs can override these defaults if
-                          needed
+                          Individual jobs can override these defaults if needed
                         </li>
                       </ul>
                     </div>
@@ -649,7 +650,8 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
             >
               Cancel
             </Button>
-            <Button onClick={saveDefaultLanes}
+            <Button
+              onClick={saveDefaultLanes}
               disabled={saving || loading}
               variant="primary"
             >

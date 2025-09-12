@@ -407,7 +407,7 @@ function KanbanPage() {
       <div className="flex-1 overflow-hidden px-4 pb-4 mt-4">
         <DragDropContext onDragEnd={onDragEnd}>
           <div className="h-full overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 hover:scrollbar-thumb-gray-400 dark:hover:scrollbar-thumb-gray-500">
-            <div className="h-full flex gap-1 w-max min-w-full">
+            <div className="h-full flex gap-1  min-w-full">
               {columns.map((column) => (
                 <KanbanColumn
                   key={column.id}
