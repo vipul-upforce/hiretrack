@@ -29,6 +29,7 @@ import { MobileFileUpload } from "@/components/ui/file-upload-mobile";
 import { useSanitizeFiles } from "@/hooks/useSanitizeFiles";
 import { useSelector } from "react-redux";
 import { FileDropZone } from "@/components/ui/file-drop-zone";
+import { normalizeCTCToLPA, formatCTCAsLPA } from "@/lib/ctc-normalizer";
 
 interface CandidateFormProps {
   onFileUpload?: (file: File) => Promise<string | void>; // Prop to handle file upload to a persistent storage
@@ -72,8 +73,30 @@ export function CandidateForm({
   const formRef = useRef<HTMLDivElement>(null);
   const { sanitizeFiles } = useSanitizeFiles();
 
+  // State to track converted CTC values
+  const [convertedExpectedCTC, setConvertedExpectedCTC] = useState<
+    number | null
+  >(null);
+  const [convertedCurrentCTC, setConvertedCurrentCTC] = useState<number | null>(
+    null
+  );
+  const [showExpectedCTCWarning, setShowExpectedCTCWarning] = useState(false);
+  const [showCurrentCTCWarning, setShowCurrentCTCWarning] = useState(false);
+
+  // Handle form submission and apply CTC conversions
   useEffect(() => {
+    // When form is about to be submitted, apply the converted CTC values
     if (submitCount > 0) {
+      // Apply converted values for API submission
+      if (convertedExpectedCTC !== null) {
+        setFieldValue("expectedCTC", convertedExpectedCTC);
+      }
+
+      if (convertedCurrentCTC !== null) {
+        setFieldValue("currentCTC", convertedCurrentCTC);
+      }
+
+      // Handle form errors
       const errorKeys = Object.keys(errors);
       if (errorKeys.length > 0) {
         const firstErrorKey = errorKeys[0];
@@ -101,7 +124,13 @@ export function CandidateForm({
         }
       }
     }
-  }, [submitCount, errors]);
+  }, [
+    submitCount,
+    errors,
+    convertedExpectedCTC,
+    convertedCurrentCTC,
+    setFieldValue,
+  ]);
 
   // Get the current interviewer ID from the assignment
   const currentInterviewerId =
@@ -478,14 +507,47 @@ export function CandidateForm({
           {/* CTC and Notice Period - Mobile */}
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="expectedCTC" className="font-semibold">
-                Expected CTC (LPA) <span className="text-red-500">*</span>
-              </Label>
+              <div className="flex flex-col">
+                <Label htmlFor="expectedCTC" className="font-semibold">
+                  Expected CTC (LPA) <span className="text-red-500">*</span>
+                </Label>
+                {/* <span className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  Enter as LPA (e.g., 12), annual (e.g., 12,00,000), or monthly
+                  (e.g., 50,000)
+                </span> */}
+              </div>
               <Input
                 id="expectedCTC"
                 placeholder="in LPA..."
-                type="number"
+                type="text"
                 {...expectedCTCField}
+                onChange={(e) => {
+                  const inputValue = e.target.value;
+                  // Allow empty field or valid number input with commas
+                  if (inputValue === "" || /^[\d,.\s]*$/.test(inputValue)) {
+                    setFieldValue("expectedCTC", inputValue);
+
+                    // Calculate converted value but don't set it in the field yet
+                    if (inputValue) {
+                      const normalizedValue = normalizeCTCToLPA(inputValue);
+                      setConvertedExpectedCTC(normalizedValue);
+                      setShowExpectedCTCWarning(true);
+                    } else {
+                      setShowExpectedCTCWarning(false);
+                    }
+                  }
+                }}
+                onBlur={(e) => {
+                  // Keep the original value in the field
+                  // The converted value will be used when submitting the form
+                  if (e.target.value) {
+                    const normalizedValue = normalizeCTCToLPA(e.target.value);
+                    setConvertedExpectedCTC(normalizedValue);
+                    setShowExpectedCTCWarning(true);
+                  } else {
+                    setShowExpectedCTCWarning(false);
+                  }
+                }}
                 className={
                   expectedCTCMeta.error && expectedCTCMeta.touched
                     ? "border-red-500"
@@ -495,17 +557,56 @@ export function CandidateForm({
               {expectedCTCMeta.touched && expectedCTCMeta.error && (
                 <p className="text-sm text-red-500">{expectedCTCMeta.error}</p>
               )}
+              {showExpectedCTCWarning && convertedExpectedCTC !== null && (
+                <p className="text-sm text-orange-500 flex items-center gap-1 mt-1">
+                  <span className="w-1 h-1 bg-orange-500 rounded-full"></span>
+                  Will be saved as {formatCTCAsLPA(convertedExpectedCTC)}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="currentCTC" className="font-semibold">
-                Current CTC (LPA) <span className="text-red-500">*</span>
-              </Label>
+              <div className="flex flex-col">
+                <Label htmlFor="currentCTC" className="font-semibold">
+                  Current CTC (LPA) <span className="text-red-500">*</span>
+                </Label>
+                {/* <span className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  Enter as LPA (e.g., 10), annual (e.g., 10,00,000), or monthly
+                  (e.g., 40,000)
+                </span> */}
+              </div>
               <Input
                 id="currentCTC"
                 placeholder="in LPA..."
-                type="number"
+                type="text"
                 {...currentCTCField}
+                onChange={(e) => {
+                  const inputValue = e.target.value;
+                  // Allow empty field or valid number input with commas
+                  if (inputValue === "" || /^[\d,.\s]*$/.test(inputValue)) {
+                    setFieldValue("currentCTC", inputValue);
+
+                    // Calculate converted value but don't set it in the field yet
+                    if (inputValue) {
+                      const normalizedValue = normalizeCTCToLPA(inputValue);
+                      setConvertedCurrentCTC(normalizedValue);
+                      setShowCurrentCTCWarning(true);
+                    } else {
+                      setShowCurrentCTCWarning(false);
+                    }
+                  }
+                }}
+                onBlur={(e) => {
+                  // Keep the original value in the field
+                  // The converted value will be used when submitting the form
+                  if (e.target.value) {
+                    const normalizedValue = normalizeCTCToLPA(e.target.value);
+                    setConvertedCurrentCTC(normalizedValue);
+                    setShowCurrentCTCWarning(true);
+                  } else {
+                    setShowCurrentCTCWarning(false);
+                  }
+                }}
                 className={
                   currentCTCMeta.error && currentCTCMeta.touched
                     ? "border-red-500"
@@ -514,6 +615,12 @@ export function CandidateForm({
               />
               {currentCTCMeta.touched && currentCTCMeta.error && (
                 <p className="text-sm text-red-500">{currentCTCMeta.error}</p>
+              )}
+              {showCurrentCTCWarning && convertedCurrentCTC !== null && (
+                <p className="text-sm text-orange-500 flex items-center gap-1 mt-1">
+                  <span className="w-1 h-1 bg-orange-500 rounded-full"></span>
+                  Will be saved as {formatCTCAsLPA(convertedCurrentCTC)}
+                </p>
               )}
             </div>
 
@@ -1241,17 +1348,50 @@ export function CandidateForm({
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2" data-form-field="expectedCTC">
-                <Label
-                  htmlFor="expectedCTC"
-                  className="text-sm font-semibold text-gray-900 dark:text-gray-100"
-                >
-                  Expected CTC (LPA) <span className="text-red-500">*</span>
-                </Label>
+                <div className="flex flex-col">
+                  <Label
+                    htmlFor="expectedCTC"
+                    className="text-sm font-semibold text-gray-900 dark:text-gray-100"
+                  >
+                    Expected CTC (LPA) <span className="text-red-500">*</span>
+                  </Label>
+                  {/* <span className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    Enter as LPA (e.g., 12), annual (e.g., 12,00,000), or
+                    monthly (e.g., 50,000)
+                  </span> */}
+                </div>
                 <Input
                   id="expectedCTC"
                   placeholder="Enter expected CTC in LPA"
-                  type="number"
+                  type="text"
                   {...expectedCTCField}
+                  onChange={(e) => {
+                    const inputValue = e.target.value;
+                    // Allow empty field or valid number input with commas
+                    if (inputValue === "" || /^[\d,.\s]*$/.test(inputValue)) {
+                      setFieldValue("expectedCTC", inputValue);
+
+                      // Calculate converted value but don't set it in the field yet
+                      if (inputValue) {
+                        const normalizedValue = normalizeCTCToLPA(inputValue);
+                        setConvertedExpectedCTC(normalizedValue);
+                        setShowExpectedCTCWarning(true);
+                      } else {
+                        setShowExpectedCTCWarning(false);
+                      }
+                    }
+                  }}
+                  onBlur={(e) => {
+                    // Keep the original value in the field
+                    // The converted value will be used when submitting the form
+                    if (e.target.value) {
+                      const normalizedValue = normalizeCTCToLPA(e.target.value);
+                      setConvertedExpectedCTC(normalizedValue);
+                      setShowExpectedCTCWarning(true);
+                    } else {
+                      setShowExpectedCTCWarning(false);
+                    }
+                  }}
                   className={`h-9 px-3 transition-all duration-200 ${
                     expectedCTCMeta.error && expectedCTCMeta.touched
                       ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
@@ -1264,20 +1404,59 @@ export function CandidateForm({
                     {expectedCTCMeta.error}
                   </p>
                 )}
+                {showExpectedCTCWarning && convertedExpectedCTC !== null && (
+                  <p className="text-sm text-orange-500 flex items-center gap-1 mt-1">
+                    <span className="w-1 h-1 bg-orange-500 rounded-full"></span>
+                    Will be saved as {formatCTCAsLPA(convertedExpectedCTC)}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2" data-form-field="currentCTC">
-                <Label
-                  htmlFor="currentCTC"
-                  className="text-sm font-semibold text-gray-900 dark:text-gray-100"
-                >
-                  Current CTC (LPA) <span className="text-red-500">*</span>
-                </Label>
+                <div className="flex flex-col">
+                  <Label
+                    htmlFor="currentCTC"
+                    className="text-sm font-semibold text-gray-900 dark:text-gray-100"
+                  >
+                    Current CTC (LPA) <span className="text-red-500">*</span>
+                  </Label>
+                  {/* <span className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    Enter as LPA (e.g., 10), annual (e.g., 10,00,000), or
+                    monthly (e.g., 40,000)
+                  </span> */}
+                </div>
                 <Input
                   id="currentCTC"
                   placeholder="Enter current CTC in LPA"
-                  type="number"
+                  type="text"
                   {...currentCTCField}
+                  onChange={(e) => {
+                    const inputValue = e.target.value;
+                    // Allow empty field or valid number input with commas
+                    if (inputValue === "" || /^[\d,.\s]*$/.test(inputValue)) {
+                      setFieldValue("currentCTC", inputValue);
+
+                      // Calculate converted value but don't set it in the field yet
+                      if (inputValue) {
+                        const normalizedValue = normalizeCTCToLPA(inputValue);
+                        setConvertedCurrentCTC(normalizedValue);
+                        setShowCurrentCTCWarning(true);
+                      } else {
+                        setShowCurrentCTCWarning(false);
+                      }
+                    }
+                  }}
+                  onBlur={(e) => {
+                    // Keep the original value in the field
+                    // The converted value will be used when submitting the form
+                    if (e.target.value) {
+                      const normalizedValue = normalizeCTCToLPA(e.target.value);
+                      setConvertedCurrentCTC(normalizedValue);
+                      setShowCurrentCTCWarning(true);
+                    } else {
+                      setShowCurrentCTCWarning(false);
+                    }
+                  }}
                   className={`h-9 px-3 transition-all duration-200 ${
                     currentCTCMeta.error && currentCTCMeta.touched
                       ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
@@ -1288,6 +1467,12 @@ export function CandidateForm({
                   <p className="text-sm text-red-500 flex items-center gap-1">
                     <span className="w-1 h-1 bg-red-500 rounded-full"></span>
                     {currentCTCMeta.error}
+                  </p>
+                )}
+                {showCurrentCTCWarning && convertedCurrentCTC !== null && (
+                  <p className="text-sm text-orange-500 flex items-center gap-1 mt-1">
+                    <span className="w-1 h-1 bg-orange-500 rounded-full"></span>
+                    Will be saved as {formatCTCAsLPA(convertedCurrentCTC)}
                   </p>
                 )}
               </div>
