@@ -88,12 +88,12 @@ interface JobFormValues extends Omit<Job, "attachments"> {
 type FileOrAttachment =
   | File
   | {
-    id: string;
-    name: string;
-    url: string;
-    type: "pdf" | "image";
-    size: number;
-  };
+      id: string;
+      name: string;
+      url: string;
+      type: "pdf" | "image";
+      size: number;
+    };
 
 const convertFileToBase64 = (file: FileOrAttachment): Promise<string> => {
   if (file instanceof File) {
@@ -303,7 +303,7 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
               }}
             />
 
-            <CustomFields formName={formName} />
+            <CustomFields formName={formName} jobId={job._id} />
           </div>
 
           <div className="flex justify-between space-x-2 border-t bg-background px-6 py-4 fixed bottom-0 w-full">
