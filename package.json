@@ -115,7 +115,6 @@
     "react-multi-date-picker": "^4.5.2",
     "react-redux": "^9.1.0",
     "react-virtuoso": "^4.14.0",
-    "react-window": "^2.1.0",
     "recharts": "^3.1.0",
     "redux-persist": "^6.0.0",
     "resend": "^4.2.0",

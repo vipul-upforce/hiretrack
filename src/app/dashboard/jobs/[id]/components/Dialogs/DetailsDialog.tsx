@@ -84,7 +84,7 @@ export function DetailsDialog({
           <Button
             variant="ghost"
             size="icon"
-            className={`absolute z-[100] h-7 w-7 text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md ${!isLargeViewport ? "hidden" : ""}`}
+            className={`absolute top-2 right-10  z-[100] h-7 w-7 text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md ${!isLargeViewport ? "hidden" : ""}`}
             onClick={() => setIsMaximized(!isMaximized)}
             title={isMaximized ? "Restore" : "Maximize"}
           >

@@ -76,8 +76,7 @@ const AddFollowUpDialog = ({
         </div>
         <DialogFooter className="flex justify-between items-center border-t bg-background px-6 py-4 sticky bottom-0 z-10">
           <div className="flex-1">
-            {candidate?.followUp?.note &&
-              candidate?.followUp?.note.length > 0 && (
+            {(candidate?.followUp?.date || candidate?.followUp?.note) && (
                 <Button
                   variant="ghost"
                   onClick={() => {
@@ -114,7 +113,7 @@ const AddFollowUpDialog = ({
               {isLoading && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              {candidate?.followUp?.note && candidate?.followUp?.note.length > 0
+              {candidate?.followUp?.note || candidate?.followUp?.date
                 ? "Update Followup"
                 : "Create Followup"}
             </Button>

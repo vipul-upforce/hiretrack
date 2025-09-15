@@ -528,7 +528,7 @@ const CandidateCard = memo(function CandidateCard({
                         }}
                       >
                         <MessageSquare className="h-4 w-4 mr-2" />
-                        {localCandidate.followUp
+                           {localCandidate?.followUp?.note || localCandidate?.followUp?.date 
                           ? "Edit Follow Up"
                           : "Add Follow Up"}
                       </DropdownMenuItem>
@@ -625,7 +625,7 @@ const CandidateCard = memo(function CandidateCard({
           </div>
 
           {/* Follow-up Section - Just below header */}
-          {localCandidate.followUp && (
+          {(localCandidate?.followUp?.date || localCandidate?.followUp?.note) && (
             <div className="mb-2 p-2 bg-amber-50 dark:bg-amber-900/20 rounded border-l-4 border-amber-400 dark:border-amber-500">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-start gap-2 flex-1 min-w-0">
