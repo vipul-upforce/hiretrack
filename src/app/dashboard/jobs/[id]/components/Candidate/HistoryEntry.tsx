@@ -461,7 +461,8 @@ const RenderHistoryEntry = ({
             )}
 
           {/* ✅ Note options */}
-          {interview.note?.description &&
+          {(interview.title?.includes("Followup") ? interview.note : interview.note?.description) &&
+          // interview.note?.description &&
            interview.assignmentBy &&
             typeof interview.assignmentBy === "object" &&
             "_id" in interview.assignmentBy &&
@@ -485,11 +486,11 @@ const RenderHistoryEntry = ({
                       setIsEditRemarkDialogOpen(true);
                     }
                   }}
-                  isOpen={interview?._id === isRemarkOpsOpenFor}
+                  isOpen={interview?._id === isNoteOpsOpenFor}
                   setIsOpen={(open) => {
                     // setIsNoteOptionsOpen(open);
                     setIsRemarkOptionsOpen(open);
-                    setIsRemarkOpsOpenFor(open ? interview?._id : "");
+                    setIsNoteOpsOpenFor(open ? interview?._id : "");
                   }}
                 />
               );

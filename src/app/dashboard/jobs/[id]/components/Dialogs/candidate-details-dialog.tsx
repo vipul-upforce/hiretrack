@@ -449,7 +449,7 @@ export function CandidateDetailsDialog({
 
             {/* Follow-up Section */}
             {localCandidate.followUp &&
-              localCandidate.followUp.note &&
+              // localCandidate.followUp.note &&
               user?.role !== "interviewer" && (
                 <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4 border-l-4 border-amber-400 dark:border-amber-500">
                   <div className="flex items-start justify-between gap-3">

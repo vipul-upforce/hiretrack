@@ -29,7 +29,8 @@ export const useRemarkHandlers = (
       : ""
   );
   const [newFollowUpDate, setNewFollowUpDate] = useState<Dayjs | null>(
-    localCandidate?.followUp?.date && (localCandidate?.followUp?.date as string).length > 1
+    localCandidate?.followUp?.date &&
+      (localCandidate?.followUp?.date as string).length > 1
       ? dayjs(localCandidate?.followUp?.date)
       : null
   );
@@ -49,13 +50,20 @@ export const useRemarkHandlers = (
 
   // Update follow-up state when candidate data changes
   useEffect(() => {
-    if (localCandidate?.followUp?.note && localCandidate?.followUp?.note.length > 1) {
+    if (
+      localCandidate?.followUp?.note &&
+      localCandidate?.followUp?.note.length > 1
+    ) {
       setNewFollowUp(localCandidate.followUp.note);
     } else {
+      handleAddFollowUp;
       setNewFollowUp("");
     }
 
-    if (localCandidate?.followUp?.date && (localCandidate?.followUp?.date as string).length > 1) {
+    if (
+      localCandidate?.followUp?.date &&
+      (localCandidate?.followUp?.date as string).length > 1
+    ) {
       setNewFollowUpDate(dayjs(localCandidate.followUp.date));
     } else {
       setNewFollowUpDate(null);
@@ -332,10 +340,10 @@ export const useRemarkHandlers = (
     }
   };
   const handleAddFollowUp = async () => {
-    if (!newFollowUp.trim()) {
+    if (!newFollowUp.trim() && !newFollowUpDate?.toISOString()) {
       toast({
         title: "Error",
-        description: "Please enter a follow-up note before submitting.",
+        description: "Please provide either a follow-up note or a date.",
         variant: "destructive",
       });
       return;

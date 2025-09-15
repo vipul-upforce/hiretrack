@@ -133,7 +133,7 @@ export const historySchema = new Schema({
 });
 
 export interface ICandidateHistory {
-  _id: string;
+  _id?: string;
   dateTime: string;
   title: string | null;
   remark?: {
