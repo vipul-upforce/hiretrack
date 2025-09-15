@@ -65,7 +65,7 @@ function CustomFields({
   // debugger;
   const { formNameObject } = useCustomForm(
     formName,
-    undefined,
+    jobId,
     undefined,
     undefined
     // role || ""
@@ -100,13 +100,13 @@ function CustomFields({
     });
   }, [formNameObject?.fields, values._id, allFields, jobId]);
 
-  // Create field hooks for ALL potential fields at the top level
-  // This ensures consistent hook order regardless of which fields are rendered
+  // Create field hooks ONLY for fields that will be rendered
+  // This prevents job-specific fields from being included in other contexts
   const fieldHooks = useMemo(() => {
     const hooks: { [key: string]: any } = {};
 
-    if (formNameObject?.fields) {
-      formNameObject.fields.forEach((field) => {
+    if (fieldsToRender) {
+      fieldsToRender.forEach((field) => {
         const shouldValidate = allFields || (!allFields && !field.private);
         hooks[field.label] = {
           shouldValidate,
@@ -116,23 +116,18 @@ function CustomFields({
     }
 
     return hooks;
-  }, [formNameObject?.fields, allFields]);
+  }, [fieldsToRender, allFields]);
 
-  // Call useField for ALL potential fields (not just visible ones)
-  // This maintains consistent hook order
+  // Only track field states for fields that will be rendered
+  // This prevents job-specific fields from being included in other contexts
   const allFieldStates = useMemo(() => {
     const states: { [key: string]: [any, any] } = {};
 
-    if (formNameObject?.fields) {
-      formNameObject.fields.forEach((field) => {
-        const shouldValidate = allFields || (!allFields && !field.private);
-        // We need to call useField for each field, but we can't do it here in useMemo
-        // Let's restructure this differently
-      });
-    }
+    // We're not actually using this for anything, but keeping the structure
+    // in case there are dependencies elsewhere in the code
 
     return states;
-  }, [formNameObject?.fields, allFields]);
+  }, [fieldsToRender]);
 
   // Focus on first field with error only after form submission
   useEffect(() => {

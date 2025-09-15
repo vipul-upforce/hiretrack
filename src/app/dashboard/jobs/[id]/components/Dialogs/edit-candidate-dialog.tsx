@@ -137,7 +137,7 @@ export function EditCandidateDialog({
   const formName = "Candidate";
   const { getDefaultValues, validationSchema } = useCustomForm(
     formName,
-    undefined,
+    id, // Pass the job ID from the URL params
     candidate._id
   );
   const pathname = usePathname();

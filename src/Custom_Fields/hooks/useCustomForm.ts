@@ -64,7 +64,7 @@ const useCustomForm = (
     role === "" ? "candidate" : role || undefined
   );
 
-  const initialValues = formNameObject?.fields.reduce(
+  const initialValues = filteredFields.reduce(
     (acc, field) => {
       if (field.type === "date") {
         acc[field.label] = field.defaultValue || dayjs().format("YYYY-MM-DD");
@@ -87,17 +87,28 @@ const useCustomForm = (
   const getDefaultValues = (formValues: CustomFieldValues) => {
     if (!initialValues) return {};
 
+    // Create a copy of initialValues to avoid modifying the original
+    const filteredValues = { ...initialValues };
+
+    // Only include values for fields that are in our filtered list
+    // This ensures job-specific fields are only included when relevant
+    const fieldLabels = filteredFields.map((field) => field.label);
+
     Object.keys(formValues).forEach((key) => {
-      if (
-        (typeof formValues[key] === "string" && formValues[key] !== "") ||
-        (typeof formValues[key] === "object" &&
-          Object.entries(formValues[key]).length > 0) ||
-        (Array.isArray(formValues[key]) && formValues[key].length > 0)
-      ) {
-        initialValues[key] = formValues[key];
+      // Only process this field if it's in our filtered fields list
+      if (fieldLabels.includes(key)) {
+        if (
+          (typeof formValues[key] === "string" && formValues[key] !== "") ||
+          (typeof formValues[key] === "object" &&
+            Object.entries(formValues[key]).length > 0) ||
+          (Array.isArray(formValues[key]) && formValues[key].length > 0)
+        ) {
+          filteredValues[key] = formValues[key];
+        }
       }
     });
-    return initialValues;
+
+    return filteredValues;
   };
 
   return {
