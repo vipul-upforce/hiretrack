@@ -44,9 +44,11 @@ const createFieldValidator = (shouldValidate: boolean) => {
 function CustomFields({
   formName,
   isEditMode = false,
+  jobId,
 }: {
   formName: string;
   isEditMode?: boolean;
+  jobId?: string;
 }) {
   const {
     values,
@@ -81,19 +83,22 @@ function CustomFields({
     if (!formNameObject?.fields) return [];
 
     return formNameObject.fields.filter((field) => {
-      // Apply the same filtering logic used in the render
-      if (field.jobId && field.jobId !== values._id) {
+      // For job-specific fields, check against the provided jobId
+      if (field.jobId && field.jobId !== jobId) {
         return false;
       }
+      // For candidate-specific fields, check against the candidate ID
       if (field.candidateId && field.candidateId !== values._id) {
         return false;
       }
+      // Hide private fields from candidates
       if (!allFields && field.private) {
         return false;
       }
+      // Show global fields (no jobId or candidateId) and matching job-specific fields
       return true;
     });
-  }, [formNameObject?.fields, values._id, allFields]);
+  }, [formNameObject?.fields, values._id, allFields, jobId]);
 
   // Create field hooks for ALL potential fields at the top level
   // This ensures consistent hook order regardless of which fields are rendered
@@ -198,7 +203,7 @@ function CustomFields({
               fieldRefs.current[field.label] = el;
             }}
           >
-            <Label htmlFor={field.label} className="capitalize">
+            <Label htmlFor={field.label} className="capitalize font-semibold">
               {field.label.split(" |||||(")[0]}
               {field.required && (
                 <span className="text-red-500 text-sm capitalize">*</span>

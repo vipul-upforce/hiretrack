@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { X } from "lucide-react";
+import { X, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface ChipInputProps {
   value?: string[];
@@ -12,6 +13,7 @@ interface ChipInputProps {
   onSuggestionClick?: (suggestion: string) => void;
   onBlur?: () => void;
   fullWidth?: boolean;
+  showAddButton?: boolean;
 }
 
 export function ChipInput({
@@ -22,6 +24,7 @@ export function ChipInput({
   onSuggestionClick,
   onBlur,
   fullWidth,
+  showAddButton = false,
 }: ChipInputProps) {
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [inputValue, setInputValue] = React.useState("");
@@ -44,35 +47,66 @@ export function ChipInput({
     onChange(newValues);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    const input = inputRef.current;
-    if (input) {
-      if (e.key === "Delete" || e.key === "Backspace") {
-        if (input.value === "" && (selectedValues || []).length > 0) {
-          handleUnselect(selectedValues[selectedValues.length - 1]);
-        }
-      }
-      if (e.key === "Enter" && input.value !== "") {
-        e.preventDefault();
-        const trimmedValue = input.value.trim();
-        const hasAlphanumeric = /[a-zA-Z0-9]/.test(trimmedValue);
-        const hasLongSpecialCharSequence = /[^a-zA-Z0-9]{5,}/.test(
-          trimmedValue
-        );
+  const addSkill = (value: string) => {
+    const trimmedValue = value.trim();
+    const hasAlphanumeric = /[a-zA-Z0-9]/.test(trimmedValue);
+    const hasLongSpecialCharSequence = /[^a-zA-Z0-9]{5,}/.test(trimmedValue);
 
-        if (
-          trimmedValue !== "" &&
-          hasAlphanumeric &&
-          !hasLongSpecialCharSequence
-        ) {
-          const currentValues = selectedValues || [];
-          if (!currentValues.includes(trimmedValue)) {
-            const newValues = [...currentValues, trimmedValue];
-            setSelectedValues(newValues);
-            onChange(newValues);
-            setInputValue("");
-          }
-        }
+    if (trimmedValue !== "" && hasAlphanumeric && !hasLongSpecialCharSequence) {
+      const currentValues = selectedValues || [];
+      if (!currentValues.includes(trimmedValue)) {
+        const newValues = [...currentValues, trimmedValue];
+        setSelectedValues(newValues);
+        onChange(newValues);
+        setInputValue("");
+      }
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // For desktop: handle Enter key
+    if (e.key === "Enter" && inputValue !== "") {
+      e.preventDefault();
+      addSkill(inputValue);
+    }
+
+    // Handle backspace for removing chips
+    if (e.key === "Delete" || e.key === "Backspace") {
+      if (inputValue === "" && (selectedValues || []).length > 0) {
+        handleUnselect(selectedValues[selectedValues.length - 1]);
+      }
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setInputValue(value);
+
+    // Mobile-friendly: Check for comma or space separation
+    if (value.includes(",")) {
+      const parts = value.split(/[,]+/).filter((part) => part.trim() !== "");
+      if (parts.length > 1) {
+        // Add all parts except the last one (which might be incomplete)
+        parts.slice(0, -1).forEach((part) => addSkill(part));
+        // Set the last part as the current input value
+        setInputValue(parts[parts.length - 1]);
+      }
+    }
+  };
+
+  // Handle composition events for mobile keyboards
+  const handleCompositionEnd = (
+    e: React.CompositionEvent<HTMLInputElement>
+  ) => {
+    const value = e.currentTarget.value;
+    setInputValue(value);
+
+    // Check if the composition ended with a comma or space
+    if (value.includes(",")) {
+      const parts = value.split(/[,]+/).filter((part) => part.trim() !== "");
+      if (parts.length > 1) {
+        parts.slice(0, -1).forEach((part) => addSkill(part));
+        setInputValue(parts[parts.length - 1]);
       }
     }
   };
@@ -112,8 +146,9 @@ export function ChipInput({
             ref={inputRef}
             type="text"
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            onChange={handleInputChange}
             onKeyDown={handleKeyDown}
+            onCompositionEnd={handleCompositionEnd}
             onBlur={() => {
               onBlur?.();
               setTimeout(() => setOpen(false), 500);
@@ -122,6 +157,17 @@ export function ChipInput({
             placeholder={placeholder}
             className="ml-2 bg-transparent outline-none placeholder:text-muted-foreground flex-1"
           />
+          {showAddButton && inputValue.trim() !== "" && (
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="ml-2 h-6 w-6 p-0"
+              onClick={() => addSkill(inputValue)}
+            >
+              <Plus className="h-3 w-3" />
+            </Button>
+          )}
         </div>
       </div>
 

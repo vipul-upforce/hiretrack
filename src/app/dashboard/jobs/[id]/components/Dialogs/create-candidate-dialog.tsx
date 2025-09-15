@@ -116,7 +116,7 @@ const handleFileParse = async (
         }
       }
     };
-    reader.onerror = () => { };
+    reader.onerror = () => {};
     reader.readAsDataURL(file);
   }
 };
@@ -201,9 +201,9 @@ export function CreateCandidateDialog({
     };
 
     checkScreenSize();
-    window.addEventListener('resize', checkScreenSize);
+    window.addEventListener("resize", checkScreenSize);
 
-    return () => window.removeEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener("resize", checkScreenSize);
   }, []);
 
   useEffect(() => {
@@ -312,18 +312,18 @@ export function CreateCandidateDialog({
         email: values.email || parsedResumeData?.profile?.email,
         ...(values.assignee && values.time
           ? {
-            assignee: values.assignee === "-1" ? "" : values.assignee,
-            time: values.time,
-          }
+              assignee: values.assignee === "-1" ? "" : values.assignee,
+              time: values.time,
+            }
           : {}),
         resume: resumeBase64
           ? {
-            id: uuidv4(),
-            name: values.resume?.name || "",
-            url: resumeBase64, // Using base64 as URL for now; adjust if backend changes
-            type: "pdf",
-            size: values.resume?.size || 0,
-          }
+              id: uuidv4(),
+              name: values.resume?.name || "",
+              url: resumeBase64, // Using base64 as URL for now; adjust if backend changes
+              type: "pdf",
+              size: values.resume?.size || 0,
+            }
           : undefined,
         attachments: attachmentsBase64.map((base64, index) => ({
           id: uuidv4(),
@@ -379,12 +379,12 @@ export function CreateCandidateDialog({
           dateTime: new Date().toISOString() || "",
           title:
             typeof createdCandidate?.assignment?.interviewerId === "object" &&
-              createdCandidate?.assignment?.interviewerId?.name
+            createdCandidate?.assignment?.interviewerId?.name
               ? `Assigned to ${createdCandidate.assignment.interviewerId.name} : Assigned by ${user!.name}`
               : "",
           currentInterviewer:
             typeof createdCandidate?.assignment?.interviewerId === "object" &&
-              createdCandidate?.assignment?.interviewerId
+            createdCandidate?.assignment?.interviewerId
               ? Object(createdCandidate.assignment.interviewerId._id)
               : null,
           previousInterviewer: null,
@@ -478,10 +478,10 @@ export function CreateCandidateDialog({
             className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
           >
             {isSendingEmail ||
-              isCreating ||
-              isLoading ||
-              isEvaluating ||
-              isAdding
+            isCreating ||
+            isLoading ||
+            isEvaluating ||
+            isAdding
               ? "Processing..."
               : "Apply Now"}
           </button>
@@ -494,40 +494,46 @@ export function CreateCandidateDialog({
       </DialogTrigger>
       <DialogContent
         className={
-          (!isLargeViewport || isMaximized)
+          !isLargeViewport || isMaximized
             ? "!max-w-none !w-screen !h-screen !min-h-screen !max-h-screen !left-0 !top-0 !translate-x-0 !translate-y-0 !min-w-0 !inset-0 !m-0 !border-0 !rounded-none overflow-hidden flex flex-col p-0"
             : "lg:max-w-[80vw] xl:max-w-[65vw] lg:h-[90vh] lg:border lg:rounded-lg p-0 overflow-hidden flex flex-col"
         }
         style={
-          (!isLargeViewport || isMaximized) ? {
-            position: 'fixed' as const,
-            inset: 0,
-            width: '100vw',
-            height: '100vh',
-            minHeight: '100vh',
-            maxHeight: '100vh',
-            maxWidth: 'none',
-            transform: 'none',
-            left: 0,
-            top: 0,
-            margin: 0,
-            border: 0,
-            borderRadius: 0,
-            zIndex: 9999
-          } : undefined
+          !isLargeViewport || isMaximized
+            ? {
+                position: "fixed" as const,
+                inset: 0,
+                width: "100vw",
+                height: "100dvh",
+                minHeight: "100dvh",
+                maxHeight: "100dvh",
+                maxWidth: "none",
+                transform: "none",
+                left: 0,
+                top: 0,
+                margin: 0,
+                border: 0,
+                borderRadius: 0,
+                zIndex: 9999,
+              }
+            : undefined
         }
       >
         {/* Maximize/Minimize Button - Always visible */}
         <Button
           variant="ghost"
           size="icon"
-          className="absolute z-[100] h-7 w-7 text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md"
-          style={{ top: 'calc(1rem - 5px)', right: 'calc(3.5rem - 20px)' }}
+          className={`absolute z-[100] h-7 w-7 text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md ${!isLargeViewport ? "hidden" : ""}`}
+          style={{ top: "calc(1rem - 5px)", right: "calc(3.5rem - 20px)" }}
           onClick={() => setIsMaximized(!isMaximized)}
           title={isMaximized ? "Restore" : "Maximize"}
           type="button"
         >
-          {isMaximized ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+          {isMaximized ? (
+            <Minimize className="h-4 w-4" />
+          ) : (
+            <Maximize className="h-4 w-4" />
+          )}
         </Button>
         <DialogHeader className="flex-shrink-0 px-6 py-4 border-b text-left">
           <DialogTitle className="text-left text-xl font-bold text-gray-900 dark:text-white">
@@ -564,6 +570,7 @@ export function CreateCandidateDialog({
               <FormUpdater parsedResumeData={parsedResumeData} />
               <div className="flex-1 overflow-y-auto px-6 py-4 h-full">
                 <CandidateForm
+                  jobId={jobId}
                   onFileUpload={async (file: File) => {
                     setFieldValue("resume", file);
                     await handleFileParse(file, setParsedResume);
@@ -575,7 +582,7 @@ export function CreateCandidateDialog({
                   }}
                 />
               </div>
-              <div className="flex-shrink-0 flex justify-end bottom-0 space-x-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10">
+              <div className="flex-shrink-0 flex justify-end bottom-0 space-x-2 border-t bg-background px-6 py-4 sticky z-999">
                 <Button
                   type="button"
                   variant="outline"

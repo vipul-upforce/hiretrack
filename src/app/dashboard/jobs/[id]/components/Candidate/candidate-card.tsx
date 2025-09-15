@@ -39,6 +39,7 @@ import {
   MapPin,
   Clock,
   Star,
+  Flag,
   Mail,
   Calendar,
   Copy,
@@ -256,8 +257,9 @@ const CandidateCard = memo(function CandidateCard({
   );
 
   // Calculate average score across all categories - memoized for performance
-  const { averageScore, showStar } = useMemo(() => {
-    if (!localCandidate.scores) return { averageScore: 0, showStar: false };
+  const { averageScore, showStar, showRedFlag } = useMemo(() => {
+    if (!localCandidate.scores)
+      return { averageScore: 0, showStar: false, showRedFlag: false };
 
     const scores = [
       localCandidate.scores.overall,
@@ -266,10 +268,15 @@ const CandidateCard = memo(function CandidateCard({
       localCandidate.scores.affordability,
     ].filter((score) => score !== undefined && score >= 0);
 
-    if (scores.length === 0) return { averageScore: 0, showStar: false };
+    if (scores.length === 0)
+      return { averageScore: 0, showStar: false, showRedFlag: false };
 
     const avg = scores.reduce((sum, score) => sum + score, 0) / scores.length;
-    return { averageScore: avg, showStar: avg > 7 };
+    return {
+      averageScore: avg,
+      showStar: avg > 7,
+      showRedFlag: avg < 4,
+    };
   }, [localCandidate.scores]);
 
   // Copy to clipboard function
@@ -341,6 +348,18 @@ const CandidateCard = memo(function CandidateCard({
                           </TooltipTrigger>
                           <TooltipContent>
                             <p className="text-xs">High-scoring candidate</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                    {showRedFlag && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Flag className="h-4 w-4 text-red-500 fill-red-500" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-xs">Low-scoring candidate</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>

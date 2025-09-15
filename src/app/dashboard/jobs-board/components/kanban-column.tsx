@@ -54,7 +54,7 @@ const KanbanColumn = ({
                 <div
                   {...provided.droppableProps}
                   ref={provided.innerRef}
-                  className="h-full space-y-3 pb-4 min-w-0"
+                  className="h-auto space-y-3 pb-4 min-w-0"
                 >
                   {isCreatingJob && column.id === "draft" && (
                     <div className="animate-pulse bg-gray-100 dark:bg-black rounded-xl p-4 shadow-sm">

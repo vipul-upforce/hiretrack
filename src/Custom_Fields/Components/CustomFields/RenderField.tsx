@@ -265,7 +265,10 @@ export const RenderField = ({
                   setFieldTouched("customFields." + label, true);
                 }}
               />
-              <Label htmlFor={`${label}-${option}`} className="capitalize">
+              <Label
+                htmlFor={`${label}-${option}`}
+                className="capitalize font-medium"
+              >
                 {option}
               </Label>
             </div>
@@ -331,7 +334,10 @@ export const RenderField = ({
             {options?.map((option) => (
               <div key={option} className="flex items-center space-x-2">
                 <RadioGroupItem value={option} id={`${label}-${option}`} />
-                <Label htmlFor={`${label}-${option}`} className="capitalize">
+                <Label
+                  htmlFor={`${label}-${option}`}
+                  className="capitalize font-medium "
+                >
                   {option}
                 </Label>
               </div>

@@ -53,20 +53,20 @@ export function DetailsDialog({
   const dialogStyle =
     !isLargeViewport || isMaximized
       ? {
-        position: "fixed" as const,
-        inset: 0,
-        width: "100vw",
-        height: "100vh",
-        minHeight: "100vh",
-        maxHeight: "100vh",
-        maxWidth: "none",
-        transform: "none",
-        left: 0,
-        top: 0,
-        margin: 0,
-        border: 0,
-        borderRadius: 0,
-      }
+          position: "fixed" as const,
+          inset: 0,
+          width: "100vw",
+          height: "100vh",
+          minHeight: "100vh",
+          maxHeight: "100vh",
+          maxWidth: "none",
+          transform: "none",
+          left: 0,
+          top: 0,
+          margin: 0,
+          border: 0,
+          borderRadius: 0,
+        }
       : {};
 
   return (
@@ -84,7 +84,7 @@ export function DetailsDialog({
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-3 right-5 z-50 h-6 w-6 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md mr-5"
+            className={`absolute z-[100] h-7 w-7 text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md ${!isLargeViewport ? "hidden" : ""}`}
             onClick={() => setIsMaximized(!isMaximized)}
             title={isMaximized ? "Restore" : "Maximize"}
           >

@@ -43,14 +43,60 @@ export const candidateSchema = (customFields: Yup.Schema<unknown>) =>
           )
       )
       .min(1, "At least one skill is required"),
-    expectedCTC: Yup.number()
+    expectedCTC: Yup.mixed()
       .required("Expected CTC is required")
-      .min(0, "CTC cannot be negative")
-      .max(100000000, "Can not be more then 100CR"),
-    currentCTC: Yup.number()
+      .test(
+        "is-valid-ctc",
+        "Expected CTC must be a valid number",
+        function (value) {
+          if (value === undefined || value === null || value === "")
+            return false;
+          // If it's already a number, it's valid
+          if (typeof value === "number") return !isNaN(value) && value >= 0;
+          // If it's a string, try to convert it
+          if (typeof value === "string") {
+            const cleanValue = value.replace(/[,\s]/g, "");
+            const numValue = parseFloat(cleanValue);
+            return !isNaN(numValue) && numValue >= 0;
+          }
+          return false;
+        }
+      )
+      .transform((value) => {
+        // This will normalize the value after validation
+        if (typeof value === "string") {
+          const cleanValue = value.replace(/[,\s]/g, "");
+          return parseFloat(cleanValue);
+        }
+        return value;
+      }),
+    currentCTC: Yup.mixed()
       .required("Current CTC is required")
-      .min(0, "CTC cannot be negative")
-      .max(100000000, "Can not be more then 100CR"),
+      .test(
+        "is-valid-ctc",
+        "Current CTC must be a valid number",
+        function (value) {
+          if (value === undefined || value === null || value === "")
+            return false;
+          // If it's already a number, it's valid
+          if (typeof value === "number") return !isNaN(value) && value >= 0;
+          // If it's a string, try to convert it
+          if (typeof value === "string") {
+            const cleanValue = value.replace(/[,\s]/g, "");
+            const numValue = parseFloat(cleanValue);
+            return !isNaN(numValue) && numValue >= 0;
+          }
+          return false;
+        }
+      )
+      .transform((value) => {
+        // This will normalize the value after validation
+        if (typeof value === "string") {
+          const cleanValue = value.replace(/[,\s]/g, "");
+          return parseFloat(cleanValue);
+        }
+        return value;
+      }),
     noticePeriod: Yup.number()
       .required("Notice period is required")
       .integer("Notice period must be an integer")
@@ -62,10 +108,10 @@ export const candidateSchema = (customFields: Yup.Schema<unknown>) =>
     assignment: Yup.object()
       .shape({
         interviewerId: Yup.mixed().nullable(), // Allow string or object
-        time: Yup.date().nullable()
+        time: Yup.date().nullable(),
         // .when("interviewerId", (interviewerId, schema) => {
         //   // Handle both string and object cases
-          
+
         //   const id = typeof interviewerId === "string" ? interviewerId : "_id" in interviewerId && interviewerId?._id;
         //   if (id && id !== "-1") {
         //     return schema
@@ -80,16 +126,14 @@ export const candidateSchema = (customFields: Yup.Schema<unknown>) =>
         "interviewer-required-if-time",
         "Interviewer ID is required if a time is set",
         function (value) {
-          const interviewerId = typeof value?.interviewerId === "string"
-            ? value.interviewerId
-            : (value?.interviewerId as Interviewer)?._id;
-          if (
-            value?.time &&
-            (!interviewerId || interviewerId === "-1")
-          ) {
+          const interviewerId =
+            typeof value?.interviewerId === "string"
+              ? value.interviewerId
+              : (value?.interviewerId as Interviewer)?._id;
+          if (value?.time && (!interviewerId || interviewerId === "-1")) {
             return this.createError({
               path: "assignment.interviewerId",
-             message: "Interviewer ID is required when time is set",
+              message: "Interviewer ID is required when time is set",
             });
           }
           return true;
@@ -104,8 +148,8 @@ export interface CandidateFormValues {
   location: string;
   experience: number;
   skills: string[];
-  expectedCTC: number;
-  currentCTC: number;
+  expectedCTC: number | string;
+  currentCTC: number | string;
   noticePeriod: number;
   // currentLocation: string;
   resume: File | null;

@@ -296,7 +296,6 @@ export async function PATCH(request: NextRequest) {
         { status: 400 }
       );
     }
-    console.log(data, "data");
 
     if (!user || !["admin", "hr", "interviewer"].includes(user.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -315,7 +314,6 @@ export async function PATCH(request: NextRequest) {
 
     const filter: any = {};
     const updateFields: any = {};
-    console.log(isRemark, "isRemark");
 
     if (isRemark) {
       // 🔹 Update remark

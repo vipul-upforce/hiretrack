@@ -5,6 +5,8 @@ import {
   ClipboardCheck,
   ChevronDown,
   ChevronRight,
+  EyeClosedIcon,
+  EyeOffIcon,
 } from "lucide-react";
 import { RemarkOptionsMenu } from "../Remarks/remark-options-menu";
 import AttachmentsPopover from "../Remarks/attachments-popover";
@@ -16,16 +18,22 @@ import useRoles from "@/hooks/useRoles";
 import FollowupDisplay from "../Remarks/followup-popover";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 // import { useDateFormatter } from "@/components/timezoneFormat/useGetFormattedTZ";
 
 // Component to display checklist responses
 const ChecklistResponseViewer = ({
-  checklistForm
+  checklistForm,
 }: {
   checklistForm: ICandidateHistory["checklistForm"];
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const role = useRoles()
+  const role = useRoles();
   if (!checklistForm) return null;
 
   // Debug: Log the structure to understand the data format
@@ -44,10 +52,11 @@ const ChecklistResponseViewer = ({
       : Object.entries(checklistForm.responses || {});
 
   // 🔑 Filter by role visibility
-  const visibleResponses = responsesArray.filter(([key, resp]: [string, any]) =>
-    Array.isArray(resp?.visibleInHistory)
-      ? resp.visibleInHistory.includes(role) // show only if role is allowed
-      : true // if visibleInHistory missing, default visible
+  const visibleResponses = responsesArray.filter(
+    ([key, resp]: [string, any]) =>
+      Array.isArray(resp?.visibleInHistory)
+        ? resp.visibleInHistory.includes(role) // show only if role is allowed
+        : true // if visibleInHistory missing, default visible
   );
   const formatValue = (value: any, fieldType: string) => {
     if (value === null || value === undefined) return "N/A";
@@ -219,7 +228,7 @@ const RenderHistoryEntry = ({
     description: string,
     isPrivate?: boolean
   ) => void;
-  setEditingRemark: ({ }: IEditRemark | null) => void;
+  setEditingRemark: ({}: IEditRemark | null) => void;
   setIsEditRemarkDialogOpen: (x: boolean) => void;
 }) => {
   const [isRemarkOptionsOpen, setIsRemarkOptionsOpen] = useState(false);
@@ -260,12 +269,12 @@ const RenderHistoryEntry = ({
         <div className="flex flex-row items-start justify-between w-full">
           <div className="flex flex-row w-[85%]">
             {interview.currentInterviewer &&
-              typeof interview.currentInterviewer === "object" &&
-              "name" in interview.currentInterviewer ? (
+            typeof interview.currentInterviewer === "object" &&
+            "name" in interview.currentInterviewer ? (
               <>
                 {interview.previousInterviewer &&
-                  typeof interview.previousInterviewer === "object" &&
-                  "name" in interview.previousInterviewer ? (
+                typeof interview.previousInterviewer === "object" &&
+                "name" in interview.previousInterviewer ? (
                   <p className="pl-1">
                     {interview.previousInterviewer.name +
                       " → " +
@@ -284,8 +293,8 @@ const RenderHistoryEntry = ({
               <p>
                 {localCandidate.name} was added by{" "}
                 {interview.assignmentBy &&
-                  typeof interview.assignmentBy === "object" &&
-                  "name" in interview.assignmentBy
+                typeof interview.assignmentBy === "object" &&
+                "name" in interview.assignmentBy
                   ? `${interview.assignmentBy.name}`
                   : ""}
               </p>
@@ -315,8 +324,8 @@ const RenderHistoryEntry = ({
             </p>
             <p className="font-light text-gray-500 text-sm">
               {interview.assignmentBy &&
-                typeof interview.assignmentBy === "object" &&
-                "name" in interview?.assignmentBy
+              typeof interview.assignmentBy === "object" &&
+              "name" in interview?.assignmentBy
                 ? `${interview?.assignmentBy.name}`
                 : ""}
             </p>
@@ -334,8 +343,8 @@ const RenderHistoryEntry = ({
               </p>
               <p className="font-light text-gray-500 text-sm">
                 {interview.assignmentBy &&
-                  typeof interview.assignmentBy === "object" &&
-                  "name" in interview?.assignmentBy
+                typeof interview.assignmentBy === "object" &&
+                "name" in interview?.assignmentBy
                   ? `${interview?.assignmentBy.name}`
                   : ""}
               </p>
@@ -362,13 +371,28 @@ const RenderHistoryEntry = ({
           setIsRemarkOptionsOpen(false);
         }}
       >
-        <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500 flex flex-row items-center group">
-          {/* {typeof formattedDate === "string"
+        <div className="flex flex-row items-center gap-2">
+          <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500 flex flex-row items-center group">
+            {/* {typeof formattedDate === "string"
             ? formattedDate
             : formattedDate.toString()}{" "}
           <Dot /> {timeTime} */}
-          {timeDate} <Dot /> {timeTime}
-        </time>
+            {timeDate} <Dot /> {timeTime}
+          </time>
+
+          {!!interview.remark.isPrivate && !!interview.remark.description && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger>
+                  <EyeOffIcon className="h-3 w-3 text-gray-400 dark:text-gray-500" />
+                </TooltipTrigger>
+                <TooltipContent className="bg-gray-900/95 dark:bg-black/95">
+                  <p className="text-xs">Private remark</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
         {/* <div className="relative">
           {interview.remark?.description &&
             interview.remark?.id === isRemarkOpsOpenFor &&
@@ -426,8 +450,7 @@ const RenderHistoryEntry = ({
             "_id" in interview.assignmentBy &&
             (role !== "interviewer" ||
               interview.assignmentBy?._id === user?.id) &&
-            (role !== "hr" ||
-              interview.assignmentBy?._id === user?.id) &&
+            (role !== "hr" || interview.assignmentBy?._id === user?.id) &&
             user?.role !== "candidate" && (
               <RemarkOptionsMenu
                 type="remark"
@@ -451,13 +474,15 @@ const RenderHistoryEntry = ({
                     setIsEditRemarkDialogOpen(true);
                   }
                 }}
-                isOpen={isRemarkOptionsOpen && interview.remark?.id === isRemarkOpsOpenFor}
+                isOpen={
+                  isRemarkOptionsOpen &&
+                  interview.remark?.id === isRemarkOpsOpenFor
+                }
                 setIsOpen={(open) => {
                   setIsRemarkOptionsOpen(open);
                   setIsRemarkOpsOpenFor(open ? interview.remark?.id || "" : "");
                 }}
               />
-
             )}
 
           {/* ✅ Note options */}
@@ -468,15 +493,18 @@ const RenderHistoryEntry = ({
             "_id" in interview.assignmentBy &&
             (role !== "interviewer" ||
               interview.assignmentBy?._id === user?.id) &&
-                 (role !== "hr" ||
-              interview.assignmentBy?._id === user?.id) &&
-            user?.role !== "candidate" && (() => {
+            (role !== "hr" || interview.assignmentBy?._id === user?.id) &&
+            user?.role !== "candidate" &&
+            (() => {
               return (
                 <RemarkOptionsMenu
                   type="note"
                   remarkId={interview?._id}
                   onEdit={(id) => {
-                    if (interview.note && typeof interview.note.description === "string") {
+                    if (
+                      interview.note &&
+                      typeof interview.note.description === "string"
+                    ) {
                       setEditingRemark({
                         id: interview?._id,
                         description: interview.note.description, // safe now
@@ -495,7 +523,6 @@ const RenderHistoryEntry = ({
                 />
               );
             })()}
-
         </div>
       </div>
 
@@ -539,10 +566,10 @@ const RenderHistoryEntry = ({
         </p>
 
         {interview?.note &&
-          Object.keys(interview.note).length > 0 &&
-          // interview?.note?.rating &&
-          interview?.note?.rating !== 0 &&
-          interview?.note?.rating ? (
+        Object.keys(interview.note).length > 0 &&
+        // interview?.note?.rating &&
+        interview?.note?.rating !== 0 &&
+        interview?.note?.rating ? (
           <div className="flex flex-row items-center">
             {interview?.note?.rating}/5
             <Star
