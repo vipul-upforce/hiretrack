@@ -160,7 +160,8 @@ export function QuickSelectAndFilter({
       },
       {
         key: "assigned",
-        filter: (candidate: Candidate) => candidate.assignment,
+        filter: (candidate: Candidate) =>
+          candidate.assignment && candidate.assignment.interviewerId,
       },
       {
         key: "notAssigned",

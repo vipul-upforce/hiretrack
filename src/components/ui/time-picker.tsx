@@ -36,10 +36,31 @@ export default function TimePicker({
 
   // Sync with external value changes
   React.useEffect(() => {
+    if (value) {
+      const [hour, minute] = value.split(":");
+      const isPM = parseInt(hour) >= 12;
+      const formattedHour = isPM
+        ? hour === "12"
+          ? "12"
+          : `${parseInt(hour) - 12}`
+        : hour === "0"
+          ? "12"
+          : hour;
+      setHours(parseInt(formattedHour));
+      setMinutes(parseInt(minute));
+      setMeridiem(isPM ? "PM" : "AM");
+      setSelectedTime(value);
+    }
     if (value && value !== selectedTime) {
       const [hour, minute] = value.split(":");
       const isPM = parseInt(hour) >= 12;
-      const formattedHour = isPM ? (hour === "12" ? "12" : `${parseInt(hour) - 12}`) : (hour === "0" ? "12" : hour);
+      const formattedHour = isPM
+        ? hour === "12"
+          ? "12"
+          : `${parseInt(hour) - 12}`
+        : hour === "0"
+          ? "12"
+          : hour;
       setHours(parseInt(formattedHour));
       setMinutes(parseInt(minute));
       setMeridiem(isPM ? "PM" : "AM");
@@ -51,11 +72,16 @@ export default function TimePicker({
   const handleHoursChange = (newHours: string) => {
     const hoursNum = Number.parseInt(newHours);
     setHours(hoursNum);
-    
+
     if (hoursNum && minutes !== undefined && meridiem) {
-      const formattedHours = hoursNum === 12
-        ? meridiem === "AM" ? "0" : "12"
-        : meridiem === "PM" ? hoursNum + 12 : hoursNum;
+      const formattedHours =
+        hoursNum === 12
+          ? meridiem === "AM"
+            ? "0"
+            : "12"
+          : meridiem === "PM"
+            ? hoursNum + 12
+            : hoursNum;
       const timeString = `${formattedHours}:${minutes.toString().padStart(2, "0")}`;
       setSelectedTime(timeString);
       onChange(timeString);
@@ -66,11 +92,16 @@ export default function TimePicker({
   const handleMinutesChange = (newMinutes: string) => {
     const minutesNum = Number.parseInt(newMinutes);
     setMinutes(minutesNum);
-    
+
     if (hours !== undefined && minutesNum !== undefined && meridiem) {
-      const formattedHours = hours === 12
-        ? meridiem === "AM" ? "0" : "12"
-        : meridiem === "PM" ? hours + 12 : hours;
+      const formattedHours =
+        hours === 12
+          ? meridiem === "AM"
+            ? "0"
+            : "12"
+          : meridiem === "PM"
+            ? hours + 12
+            : hours;
       const timeString = `${formattedHours}:${minutesNum.toString().padStart(2, "0")}`;
       setSelectedTime(timeString);
       onChange(timeString);
@@ -80,11 +111,16 @@ export default function TimePicker({
 
   const handleMeridiemChange = (newMeridiem: "AM" | "PM") => {
     setMeridiem(newMeridiem);
-    
+
     if (hours !== undefined && minutes !== undefined && newMeridiem) {
-      const formattedHours = hours === 12
-        ? newMeridiem === "AM" ? "0" : "12"
-        : newMeridiem === "PM" ? hours + 12 : hours;
+      const formattedHours =
+        hours === 12
+          ? newMeridiem === "AM"
+            ? "0"
+            : "12"
+          : newMeridiem === "PM"
+            ? hours + 12
+            : hours;
       const timeString = `${formattedHours}:${minutes.toString().padStart(2, "0")}`;
       setSelectedTime(timeString);
       onChange(timeString);
@@ -105,7 +141,7 @@ export default function TimePicker({
           value={value}
         >
           <Clock className="mr-2 size-4" />
-          {selectedTime ? (
+          {selectedTime && hours && minutes && meridiem ? (
             `${hours?.toString().padStart(2, "0")}:${minutes?.toString().padStart(2, "0")} ${meridiem}`
           ) : (
             <span>Pick a time</span>
@@ -116,10 +152,7 @@ export default function TimePicker({
         <div className="flex items-end gap-2">
           <div className="grid gap-1.5">
             <Label htmlFor="hours">Hours</Label>
-            <Select
-              value={hours?.toString()}
-              onValueChange={handleHoursChange}
-            >
+            <Select value={hours?.toString()} onValueChange={handleHoursChange}>
               <SelectTrigger id="hours" className="w-[70px]">
                 <SelectValue placeholder="Hours" />
               </SelectTrigger>
@@ -152,10 +185,7 @@ export default function TimePicker({
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor="meridiem">AM/PM</Label>
-            <Select
-              value={meridiem}
-              onValueChange={handleMeridiemChange}
-            >
+            <Select value={meridiem} onValueChange={handleMeridiemChange}>
               <SelectTrigger id="meridiem" className="w-[70px]">
                 <SelectValue placeholder="AM/PM" />
               </SelectTrigger>
