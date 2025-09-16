@@ -239,7 +239,7 @@ export async function POST(request: NextRequest) {
           $push: {
             history: {
               dateTime: new Date().toISOString(),
-              title: `Direct Email Sent`,
+              title: !!subject ? subject : "Direct Email Sent",
               previousInterviewer: null,
               currentInterviewer: null,
               assignmentBy: user.id,

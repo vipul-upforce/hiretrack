@@ -263,7 +263,8 @@ const RenderHistoryEntry = ({
       !interview.title?.includes("Followup") &&
       !interview.title?.startsWith("Direct Email") &&
       !interview.title?.startsWith("Email sent: ") &&
-      !interview.checklistForm
+      !interview.checklistForm &&
+      !(interview?.note?.description as string)?.startsWith("Email sent")
     ) {
       return (
         <div className="flex flex-row items-start justify-between w-full">
@@ -486,9 +487,11 @@ const RenderHistoryEntry = ({
             )}
 
           {/* ✅ Note options */}
-          {(interview.title?.includes("Followup") ? interview.note : interview.note?.description) &&
-          // interview.note?.description &&
-           interview.assignmentBy &&
+          {(interview.title?.includes("Followup")
+            ? interview.note
+            : interview.note?.description) &&
+            // interview.note?.description &&
+            interview.assignmentBy &&
             typeof interview.assignmentBy === "object" &&
             "_id" in interview.assignmentBy &&
             (role !== "interviewer" ||

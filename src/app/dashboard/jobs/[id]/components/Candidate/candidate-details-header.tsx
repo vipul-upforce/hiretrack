@@ -185,7 +185,7 @@ export default function DetailsDialogHeader({
                 candidate.expectedCTC !== null &&
                 user?.role !== "interviewer" && (
                   <span className="text-sm font-normal text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                    ₹{candidate.expectedCTC.toLocaleString()} LPA
+                    ₹{candidate.expectedCTC} LPA
                   </span>
                 )}
             </div>
