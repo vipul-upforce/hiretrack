@@ -45,18 +45,37 @@ const useCustomForm = (
   const fields = formNameObject?.fields || [];
   let filteredFields = fields;
 
-  if (jobId) {
+  // For new candidates (no candidateId) in a job context (with jobId)
+  if (jobId && !candidateId) {
     filteredFields = fields.filter(
-      (field) => field.jobId === jobId || !field.jobId
+      (field) =>
+        // Include job-specific fields for this job
+        (field.jobId === jobId && !field.candidateId) ||
+        // Include global fields (no jobId, no candidateId)
+        (!field.jobId && !field.candidateId)
     );
-  } else if (candidateId) {
+  }
+  // For existing candidates (with candidateId)
+  else if (candidateId) {
     filteredFields = fields.filter(
-      (field) => field.candidateId === candidateId || !field.candidateId
+      (field) =>
+        // Include candidate-specific fields for this candidate
+        field.candidateId === candidateId ||
+        // Include job-specific fields if we have a jobId
+        (jobId && field.jobId === jobId && !field.candidateId) ||
+        // Include global fields (no jobId, no candidateId)
+        (!field.jobId && !field.candidateId)
     );
-  } else if (fetchGlobal) {
+  }
+  // For global fields only (fetchGlobal is true)
+  else if (fetchGlobal) {
     filteredFields = fields.filter(
       (field) => !field.jobId && !field.candidateId
     );
+  }
+  // Default case - include all fields that don't have specific restrictions
+  else {
+    filteredFields = fields;
   }
 
   const validationSchema = getYupSchema(

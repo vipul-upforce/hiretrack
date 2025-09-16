@@ -174,7 +174,7 @@ export function CreateCandidateDialog({
   const { validationSchema, initialValues: inits } = useCustomForm(
     formName,
     jobId, // Pass the jobId to filter job-specific fields
-    undefined,
+    undefined, // No candidateId for new candidates
     false // Don't use fetchGlobal, as we want job-specific fields too
   );
   const [resetForm, setResetForm] = useState(false);
