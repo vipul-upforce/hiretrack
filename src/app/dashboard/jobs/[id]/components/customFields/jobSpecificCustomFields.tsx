@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { CustomFieldsContext } from "@/Custom_Fields/Context";
-import { Edit, Plus, Settings2, Trash } from "lucide-react";
+import { AlertCircle, Edit, Plus, Settings2, Trash } from "lucide-react";
 import { useContext, useMemo, useState } from "react";
 import JobSpecificCustomFieldForm from "./jobSpecificCustomFieldForm";
 
@@ -73,7 +73,8 @@ export default function JobSpecificCustomFields({ jobId }: { jobId: string }) {
           {/* <h3 className="text-lg font-semibold">
             Job-specific candidate fields
           </h3> */}
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-sm text-orange-500 dark:text-gray-400 flex flex-row items-center gap-2 ">
+            <AlertCircle className="h-4 w-4" />
             These fields will only appear for candidates applying to this
             specific job.
           </p>
