@@ -179,7 +179,7 @@ function scheduleEmail(
     const queueItem = emailQueue.get(key);
     if (queueItem) {
       try {
-        await sendQueuedEmail(queueItem.data, queueItem.historyIds);
+        await sendQueuedEmail(queueItem.data, undefined, queueItem.historyIds);
       } catch (error) {
         console.error(`Failed to send email for ${key}:`, error);
         // Update history to failed status
@@ -207,7 +207,11 @@ function scheduleEmail(
 }
 
 // Sends the actual email based on queue data
-async function sendQueuedEmail(data: any, historyIds?: string[]) {
+async function sendQueuedEmail(
+  data: any,
+  senderEmail?: string,
+  historyIds?: string[]
+) {
   const {
     organizationId,
     eventTitle,
@@ -322,7 +326,8 @@ async function sendQueuedEmail(data: any, historyIds?: string[]) {
         templateUsed: "status-update",
         eventType: "status_change",
       },
-    }
+    },
+    senderEmail || sentByEmail // Pass the triggerer's email to exclude from recipients
   );
 
   // If we have existing history IDs (from pending), update them
@@ -360,12 +365,14 @@ export async function POST(req: NextRequest) {
     } = await req.json();
 
     let organizationId;
+    let senderEmail;
     const token = req.cookies.get("auth_token");
     let decryptedResponse;
     if (token?.value) {
       decryptedResponse = await verifyAndDecryptToken(String(token?.value));
       if (decryptedResponse.success) {
         organizationId = decryptedResponse.user?.organizationId;
+        senderEmail = decryptedResponse.user?.email;
       } else {
         return NextResponse.json({ error: "Invalid token." }, { status: 401 });
       }
@@ -451,7 +458,7 @@ export async function POST(req: NextRequest) {
     };
 
     if (immediate) {
-      const emailStatus = await sendQueuedEmail(queueData);
+      const emailStatus = await sendQueuedEmail(queueData, senderEmail);
 
       if (emailStatus.status === 200) {
         return NextResponse.json({ message: "Email sent successfully." });

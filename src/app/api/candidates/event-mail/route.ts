@@ -11,10 +11,23 @@ import { ICandidate } from "@/lib/models/candidate";
 import mongoose from "mongoose";
 import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
 import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
+import { verifyAndDecryptToken } from "@/app/actions/auth";
 
 export async function POST(req: NextRequest) {
   try {
     const { candidateId } = await req.json();
+
+    // Get user information from token
+    let senderEmail;
+    const token = req.cookies.get("auth_token");
+    if (token?.value) {
+      const decryptedResponse = await verifyAndDecryptToken(
+        String(token?.value)
+      );
+      if (decryptedResponse.success && decryptedResponse.user) {
+        senderEmail = decryptedResponse.user.email;
+      }
+    }
     if (!Candidate || !User) {
       throw new Error("Database not connected");
     }
@@ -233,7 +246,9 @@ export async function POST(req: NextRequest) {
       organizationId,
       [email, ...hrEmails], // First email is TO, rest are BCC
       candidateEmailSubject,
-      candidateEmailContent
+      candidateEmailContent,
+      undefined, // bcc parameter
+      senderEmail // triggerer's email to exclude
     );
 
     // Update all history records based on the result

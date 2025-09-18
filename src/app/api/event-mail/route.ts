@@ -16,6 +16,7 @@ const emailQueue = new Map<
     timer: NodeJS.Timeout;
     timestamp: number;
     historyIds: string[]; // Track the history entry IDs for this queued email
+    senderEmail?: string; // Store the sender's email to exclude from recipients
   }
 >();
 
@@ -193,7 +194,8 @@ function scheduleEmail(
   key: string,
   data: any,
   delayMs: number = 2 * 60 * 1000,
-  req: NextRequest
+  req: NextRequest,
+  senderEmail?: string
 ) {
   if (emailQueue.has(key)) {
     const existingItem = emailQueue.get(key)!;
@@ -209,7 +211,12 @@ function scheduleEmail(
     const queueItem = emailQueue.get(key);
     if (queueItem) {
       try {
-        await sendQueuedEmail(queueItem.data, req, queueItem.historyIds);
+        await sendQueuedEmail(
+          queueItem.data,
+          req,
+          queueItem.historyIds,
+          queueItem.senderEmail
+        );
       } catch (error) {
         console.error(`Failed to send email for ${key}:`, error);
         // Update history to failed status
@@ -231,6 +238,7 @@ function scheduleEmail(
     timer,
     timestamp: Date.now() + delayMs,
     historyIds: [], // Will be populated after creating pending history
+    senderEmail, // Store sender's email to exclude from recipients
   });
 
   return { success: true, message: "Email scheduled" };
@@ -240,7 +248,8 @@ function scheduleEmail(
 async function sendQueuedEmail(
   data: any,
   req: NextRequest,
-  historyIds?: string[]
+  historyIds?: string[],
+  senderEmail?: string
 ) {
   const {
     organizationId,
@@ -356,7 +365,9 @@ async function sendQueuedEmail(
     organizationId,
     [email, ...emailList],
     emailSubject,
-    emailContent
+    emailContent,
+    undefined, // bcc parameter
+    senderEmail || undefined // triggerer's email to exclude
   );
 
   // If we have existing history IDs (from pending), update them
@@ -650,11 +661,13 @@ export async function POST(req: NextRequest) {
     let organizationId;
     const token = req.cookies.get("auth_token");
     let decryptedResponse;
+    let senderEmail;
     if (token?.value) {
       decryptedResponse = await verifyAndDecryptToken(String(token?.value));
       const userData = decryptedResponse.user;
       if (decryptedResponse.success) {
         organizationId = userData.organizationId || "";
+        senderEmail = userData.email || "";
       }
     }
 
@@ -733,7 +746,12 @@ export async function POST(req: NextRequest) {
     };
 
     if (immediate) {
-      const emailStatus = await sendQueuedEmail(queueData, req);
+      const emailStatus = await sendQueuedEmail(
+        queueData,
+        req,
+        undefined,
+        senderEmail
+      );
 
       if (emailStatus.status === 200) {
         return NextResponse.json({ message: "Email sent successfully." });
@@ -751,7 +769,7 @@ export async function POST(req: NextRequest) {
       );
 
       // Schedule the email
-      scheduleEmail(emailKey, queueData, 2 * 60 * 1000, req);
+      scheduleEmail(emailKey, queueData, 2 * 60 * 1000, req, senderEmail);
 
       // Update the queue item with history IDs
       const queueItem = emailQueue.get(emailKey);
