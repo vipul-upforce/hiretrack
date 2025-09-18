@@ -190,16 +190,16 @@ export async function sendEventEmailWithHistory(
       };
     }
     const mailConfig = settings.mailConfig;
-
+    const triggerer =
+      ("sentByEmail" in context ? context.sentByEmail : triggererEmail) ||
+      triggererEmail;
     // Filter out triggerer's email if provided
     let filteredEmails = emails;
-    if (triggererEmail) {
-      filteredEmails = emails.filter(
-        (email) => email && email !== triggererEmail
-      );
+    if (triggerer) {
+      filteredEmails = emails.filter((email) => email && email !== triggerer);
       console.log(
         "⌛ Filtered out triggerer's email:",
-        triggererEmail,
+        triggerer,
         "from recipients:",
         emails,
         "-> result:",

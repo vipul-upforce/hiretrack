@@ -57,7 +57,8 @@ export async function sendMail(
   bcc?: string[],
   replyTo?: string,
   from?: string,
-  context?: EmailContext
+  context?: EmailContext,
+  triggererEmail?: string
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
     // Validate mail configuration
@@ -87,22 +88,35 @@ export async function sendMail(
         }
         break;
       default:
-        return { success: false, error: `Unsupported mail provider: ${mailConfig.mailProvider}` };
+        return {
+          success: false,
+          error: `Unsupported mail provider: ${mailConfig.mailProvider}`,
+        };
     }
 
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(fromEmail)) {
-      return { success: false, error: `Invalid from email format: ${fromEmail}` };
+      return {
+        success: false,
+        error: `Invalid from email format: ${fromEmail}`,
+      };
     }
     if (!emailRegex.test(to)) {
       return { success: false, error: `Invalid to email format: ${to}` };
     }
 
-    // Filter and validate CC/BCC arrays
-    const validCc = cc?.filter(email => email.trim() !== '') || [];
-    const validBcc = bcc?.filter(email => email.trim() !== '') || [];
+    const triggerer =
+      ("sentByEmail" in context ? context.sentByEmail : triggererEmail) ||
+      triggererEmail;
 
+    // Filter and validate CC/BCC arrays
+    const validCc = (cc || []).filter(
+      (email) => email.trim() !== "" && email.trim() !== triggerer
+    );
+    const validBcc = (bcc || []).filter(
+      (email) => email.trim() !== "" && email.trim() !== triggerer
+    );
     const emailOptions: EmailOptions = {
       to,
       subject,
@@ -114,9 +128,8 @@ export async function sendMail(
       from: fromEmail,
     };
 
-
     let result: { success: boolean; messageId?: string; error?: string };
-    
+
     switch (mailConfig.mailProvider) {
       case "smtp":
         result = await sendSMTPMail(mailConfig, emailOptions);
@@ -144,7 +157,9 @@ export async function sendMail(
           history.sentAt = new Date();
           await history.save();
         } else {
-          console.warn(`Email history not found for ID: ${context.emailHistoryId}`);
+          console.warn(
+            `Email history not found for ID: ${context.emailHistoryId}`
+          );
         }
       } catch (historyError) {
         console.error("Failed to update email history:", historyError);
@@ -159,10 +174,18 @@ export async function sendMail(
   }
 }
 
-async function sendSMTPMail(config: Ismtp, options: EmailOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
+async function sendSMTPMail(
+  config: Ismtp,
+  options: EmailOptions
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
     // Validate SMTP config
-    if (!config.smtp_host || !config.smtp_port || !config.smtp_user || !config.smtp_password) {
+    if (
+      !config.smtp_host ||
+      !config.smtp_port ||
+      !config.smtp_user ||
+      !config.smtp_password
+    ) {
       return { success: false, error: "SMTP configuration incomplete" };
     }
 
@@ -187,10 +210,10 @@ async function sendSMTPMail(config: Ismtp, options: EmailOptions): Promise<{ suc
 
     // Only include CC/BCC if they have values
     if (options.cc && options.cc.length > 0) {
-      mailOptions.cc = options.cc.join(', ');
+      mailOptions.cc = options.cc.join(", ");
     }
     if (options.bcc && options.bcc.length > 0) {
-      mailOptions.bcc = options.bcc.join(', ');
+      mailOptions.bcc = options.bcc.join(", ");
     }
 
     const result = await transporter.sendMail(mailOptions);
@@ -201,7 +224,10 @@ async function sendSMTPMail(config: Ismtp, options: EmailOptions): Promise<{ suc
   }
 }
 
-async function sendResendMail(config: Ismtp, options: EmailOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
+async function sendResendMail(
+  config: Ismtp,
+  options: EmailOptions
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
     // Validate Resend config
     if (!config.resend_api_key) {
@@ -241,7 +267,10 @@ async function sendResendMail(config: Ismtp, options: EmailOptions): Promise<{ s
   }
 }
 
-async function sendBrevoMail(config: Ismtp, options: EmailOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
+async function sendBrevoMail(
+  config: Ismtp,
+  options: EmailOptions
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
     // Validate Brevo config
     if (!config.brevo_api_key) {
@@ -263,12 +292,11 @@ async function sendBrevoMail(config: Ismtp, options: EmailOptions): Promise<{ su
 
     // Only include CC/BCC if they have values
     if (options.cc && options.cc.length > 0) {
-      emailPayload.cc = options.cc.map(email => ({ email }));
+      emailPayload.cc = options.cc.map((email) => ({ email }));
     }
     if (options.bcc && options.bcc.length > 0) {
-      emailPayload.bcc = options.bcc.map(email => ({ email }));
+      emailPayload.bcc = options.bcc.map((email) => ({ email }));
     }
-
 
     const response = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
@@ -282,7 +310,10 @@ async function sendBrevoMail(config: Ismtp, options: EmailOptions): Promise<{ su
     if (!response.ok) {
       const errorData = await response.json();
       console.error("Brevo API error:", errorData);
-      return { success: false, error: `Brevo error: ${errorData.message || "Failed to send email"}` };
+      return {
+        success: false,
+        error: `Brevo error: ${errorData.message || "Failed to send email"}`,
+      };
     }
 
     const result = await response.json();
