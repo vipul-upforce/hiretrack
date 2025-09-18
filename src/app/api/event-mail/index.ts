@@ -51,7 +51,8 @@ export const sendMail = async (
   email: string[],
   eventTitle: string,
   htmlContent: string,
-  bcc?: string[]
+  bcc?: string[],
+  triggererEmail?: string
 ): Promise<{ status: number; message: string }> => {
   try {
     await connectToDatabase();
@@ -89,8 +90,26 @@ export const sendMail = async (
         bcc = [...email].slice(1);
       }
     }
-    mailTo = mailTo.filter((mailId) => (mailId ? true : false));
-    console.log("⌛ filtered mails: ", email);
+    // Filter out the triggerer's email if provided
+    if (triggererEmail) {
+      mailTo = mailTo.filter((mailId) => mailId && mailId !== triggererEmail);
+      if (bcc) {
+        bcc = bcc.filter((mailId) => mailId && mailId !== triggererEmail);
+      }
+    } else {
+      // Just filter out empty emails if no triggerer email provided
+      mailTo = mailTo.filter((mailId) => !!mailId);
+      if (bcc) {
+        bcc = bcc.filter((mailId) => !!mailId);
+      }
+    }
+    // mailTo = mailTo.filter((mailId) => (mailId ? true : false));
+    console.log(
+      "⌛ filtered mails (excluding triggerer): ",
+      mailTo,
+      "bcc:",
+      bcc
+    );
 
     // const allEmails = [...(email || []), ...(bcc || [])];
     console.log("BCC: ", bcc);

@@ -68,6 +68,7 @@ import { useSelector } from "react-redux";
 import { MigrationDialog } from "./components/Dialogs/MigrationDialog";
 import JobSpecificCustomFieldFormWrapper from "./components/customFields/JobSpecificCustomFIeldFormWrapper";
 import CandidateCustomFieldsDialog from "./components/customFields/candidateCustomFieldsDialog";
+import { GlobalRemarksDialog } from "./components/Dialogs/global-remarks-dialog";
 
 interface FilterState {
   search: string;
@@ -910,6 +911,14 @@ export default function JobProgressPage() {
           initialTab={checklistConfigLane.initialTab}
         />
       )}
+
+      {/* Global Remarks Dialog - Stays mounted even when cards are virtualized */}
+      <GlobalRemarksDialog
+        openRemarksFor={openRemarksFor}
+        setOpenRemarksFor={setOpenRemarksFor}
+        candidates={mergedCandidates}
+        refetch={refetch}
+      />
     </div>
   );
 }

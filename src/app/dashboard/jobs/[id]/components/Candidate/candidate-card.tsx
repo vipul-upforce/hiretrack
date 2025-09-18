@@ -1363,15 +1363,18 @@ const CandidateCard = memo(function CandidateCard({
         loadingText="Marking as done..."
       />
 
-      {/* {(isAddRemarkOpen || openRemarks) && ( */}
-      <AddRemarksDialog
-        candidate={localCandidate}
-        isOpen={isAddRemarkOpen || openRemarks}
-        onOpenChange={onAddRemarkOpenChange}
-        setOpenRemarksFor={() => {}}
-        refetch={async () => refetch()}
-      />
-      {/* )} */}
+      {/* {(isAddRemarkOpen || openRemarks) && (
+        <AddRemarksDialog
+          candidate={localCandidate}
+          isOpen={openRemarks}
+          onOpenChange={() => {
+            setOpenRemarksFor(null);
+            setIsAddRemarkOpen(false);
+          }}
+          setOpenRemarksFor={() => {}}
+          refetch={async () => refetch()}
+        />
+      )} */}
 
       {/* Email Candidate Dialog */}
       {isEmailDialogOpen && (

@@ -172,7 +172,8 @@ export async function sendEventEmailWithHistory(
       templateUsed?: string;
       eventType?: string;
     };
-  }
+  },
+  triggererEmail?: string
 ): Promise<{ status: number; message: string }> {
   try {
     await dbConnect();
@@ -190,18 +191,37 @@ export async function sendEventEmailWithHistory(
     }
     const mailConfig = settings.mailConfig;
 
+    // Filter out triggerer's email if provided
+    let filteredEmails = emails;
+    if (triggererEmail) {
+      filteredEmails = emails.filter(
+        (email) => email && email !== triggererEmail
+      );
+      console.log(
+        "⌛ Filtered out triggerer's email:",
+        triggererEmail,
+        "from recipients:",
+        emails,
+        "-> result:",
+        filteredEmails
+      );
+    } else {
+      // Just filter out empty emails if no triggerer email provided
+      filteredEmails = emails.filter((email) => !!email);
+    }
+
     // 2. Find recipient users to get their IDs and correct names
     const candidateRecipient =
-      emails[0] && context.metadata.eventType === "job_application"
+      filteredEmails[0] && context.metadata.eventType === "job_application"
         ? await Candidate.findOne({
-            email: emails[0],
+            email: filteredEmails[0],
             organizationId: new mongoose.Types.ObjectId(organizationId),
           })
             .select("_id name email")
             .lean()
         : null;
     const recipients = await User.find({
-      email: { $in: emails },
+      email: { $in: filteredEmails },
       organizationId: new mongoose.Types.ObjectId(organizationId),
     })
       .select("_id name email")
