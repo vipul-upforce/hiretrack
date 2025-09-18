@@ -212,7 +212,8 @@ export async function POST(request: NextRequest) {
         emailData.from,
         {
           emailHistoryId: String(emailHistory._id),
-        }
+        },
+        user.email
       );
 
       // Check if email was sent successfully
