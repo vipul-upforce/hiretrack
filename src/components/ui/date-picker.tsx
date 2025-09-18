@@ -28,8 +28,9 @@ const PickerActionsPlugin = ({
 
   return (
     <div
-      className={`flex items-center justify-between gap-2 p-3 border-t border-border/30 bg-muted/20 ${position === "top" ? "border-b" : ""
-        }`}
+      className={`flex items-center justify-between gap-2 p-3 border-t border-border/30 bg-muted/20 ${
+        position === "top" ? "border-b" : ""
+      }`}
     >
       <div className="flex gap-2">
         <button
@@ -60,14 +61,10 @@ const PickerActionsPlugin = ({
         type="button"
         className="flex items-center gap-1 px-1.5 py-1 rounded border border-primary text-[0.7rem] font-bold bg-primary/90 text-white hover:bg-primary"
         onClick={onDone}
-        style={
-          {
-            backgroundColor:
-              "var(--portal-primary, #6366f1)",
-            borderColor:
-              "var(--portal-primary, #6366f1)",
-          }
-        }
+        style={{
+          backgroundColor: "var(--portal-primary, #6366f1)",
+          borderColor: "var(--portal-primary, #6366f1)",
+        }}
       >
         <Check className="h-3 w-3" /> Done
       </button>
@@ -97,8 +94,8 @@ interface DatePickerProps {
 export const DatePicker: React.FC<DatePickerProps> = ({
   value,
   onChange,
-  format = "MM/DD/YYYY hh:mm A",
-  placeholder = "Select date and time",
+  format = "MM/DD/YYYY",
+  placeholder = "Select date",
   className = "",
   disabled = false,
   showTimePicker = true,
@@ -111,6 +108,8 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   onClose,
   portalContainer,
 }) => {
+  // console.log(value, "value");
+
   const pickerRef = useRef<any>(null);
   const [internalOpen, setInternalOpen] = useState(false);
   const doneClicked = useRef(false);
@@ -121,13 +120,13 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   const plugins = [
     ...(showTimePicker
       ? [
-        <TimePicker
-          key="time"
-          position={timePickerPosition}
-          hideSeconds
-          {...timePickerProps}
-        />,
-      ]
+          <TimePicker
+            key="time"
+            position={timePickerPosition}
+            hideSeconds
+            {...timePickerProps}
+          />,
+        ]
       : []),
     <PickerActionsPlugin
       position="bottom"

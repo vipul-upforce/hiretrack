@@ -23,12 +23,23 @@ export function DateTimePicker({
   // Convert Dayjs to Date for the new DatePicker
   const dateValue = value ? value.toDate() : null;
 
-  const handleDateChange = (date: Date | null) => {
-    if (date) {
-      onChange(dayjs(date));
+  const handleDateChange = (date: any) => {
+    let normalizedDate: Date | null = null;
+
+    if (date && typeof date === "object") {
+      if ("toDate" in date) {
+        normalizedDate = date.toDate();
+      } else if (date instanceof Date) {
+        normalizedDate = date;
+      }
+    }
+
+    if (normalizedDate && !isNaN(normalizedDate.getTime())) {
+      onChange(dayjs(normalizedDate));
     } else {
       onChange(null);
     }
+
     onBlur?.();
   };
 

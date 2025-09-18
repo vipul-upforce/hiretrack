@@ -20,10 +20,18 @@ export function CircularScore({
   showTooltip = false,
   treatZeroAsEmpty = false,
 }: CircularScoreProps) {
-  const hasScore = score !== null && score !== undefined && !isNaN(score) && !(treatZeroAsEmpty && score === 0);
+  const hasScore =
+    score !== null &&
+    score !== undefined &&
+    !isNaN(score) &&
+    !(treatZeroAsEmpty && score === 0);
   const normalizedScore = hasScore ? Math.max(0, Math.min(10, score)) : 0;
   const percentage = hasScore ? (normalizedScore / 10) * 100 : 0;
-  const displayScore = hasScore ? (score % 1 === 0 ? score.toString() : score.toFixed(1)) : "-";
+  const displayScore = hasScore
+    ? score % 1 === 0
+      ? score.toString()
+      : score.toFixed(1)
+    : "-";
 
   // Size configurations
   const sizeConfig = {
@@ -45,7 +53,7 @@ export function CircularScore({
     },
     md: {
       container: "w-16 h-16",
-      svg: "w-16 h-16", 
+      svg: "w-16 h-16",
       strokeWidth: 4,
       radius: 24,
       fontSize: "text-sm",
@@ -92,80 +100,47 @@ export function CircularScore({
   const tooltipContent = `${category}: ${displayScore}/10`;
 
   const circleElement = (
-    <div className={cn(
-      "relative transition-all duration-300 ease-out", 
-      "group-hover:scale-110 group-hover:rotate-3 group-hover:-translate-y-1",
-      "group-hover:shadow-lg group-hover:shadow-black/10 dark:group-hover:shadow-white/10",
-      config.container
-    )}>
-      <svg
-        className={cn("transform -rotate-90 transition-all duration-300 ease-out", config.svg)}
-        viewBox="0 0 100 100"
-      >
-          {/* Background circle */}
-          <circle
-            cx="50"
-            cy="50"
-            r={config.radius}
-            fill="none"
-            className={cn(bgColor, "transition-all duration-300 ease-out group-hover:opacity-80")}
-            strokeWidth={config.strokeWidth}
-          />
-          {/* Progress circle */}
-          <circle
-            cx="50"
-            cy="50"
-            r={config.radius}
-            fill="none"
-            className={cn(scoreColor, "transition-all duration-500 ease-out")}
-            strokeWidth={config.strokeWidth}
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
-            style={{
-              transition: "stroke-dashoffset 0.5s ease-in-out, filter 0.3s ease-out",
-              filter: "drop-shadow(0 0 0px transparent)",
-            }}
-          />
-          {/* Glow effect circle (visible on hover) */}
-          <circle
-            cx="50"
-            cy="50"
-            r={config.radius}
-            fill="none"
-            className={cn(scoreColor, "opacity-0 group-hover:opacity-30 transition-all duration-500 ease-out")}
-            strokeWidth={config.strokeWidth + 2}
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
-            style={{
-              filter: "blur(3px)",
-            }}
-          />
+    <div className={cn("relative", config.container)}>
+      <svg viewBox="0 0 100 100">
+        {/* Background circle */}
+        <circle
+          cx="50"
+          cy="50"
+          r={config.radius}
+          fill="none"
+          className={cn(bgColor)}
+          strokeWidth={config.strokeWidth}
+        />
+        {/* Progress circle */}
+        <circle
+          cx="50"
+          cy="50"
+          r={config.radius}
+          fill="none"
+          className={cn(scoreColor, "transition-all duration-500 ease-out")}
+          strokeWidth={config.strokeWidth}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          style={{
+            transition:
+              "stroke-dashoffset 0.5s ease-in-out, filter 0.3s ease-out",
+            filter: "drop-shadow(0 0 0px transparent)",
+          }}
+        />
       </svg>
       {/* Score text */}
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className={cn(
-          "font-bold text-foreground transition-all duration-300 ease-out",
-          "group-hover:scale-110 group-hover:text-shadow-sm",
-          config.fontSize
-        )}>
+        <span
+          className={cn(
+            "font-bold text-foreground transition-all duration-300 ease-out",
+            config.fontSize
+          )}
+        >
           {displayScore}
         </span>
       </div>
       {/* Pulse animation ring */}
-      <div 
-        className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-20 transition-all duration-700 ease-out group-hover:animate-ping border-2"
-        style={{ 
-          animationIterationCount: 1,
-          borderColor: !hasScore ? '#9ca3af' :
-                      normalizedScore >= 8 ? '#10b981' : 
-                      normalizedScore >= 7 ? '#14b8a6' : 
-                      normalizedScore >= 6 ? '#3b82f6' : 
-                      normalizedScore >= 5 ? '#f59e0b' : 
-                      normalizedScore >= 3 ? '#f97316' : '#ef4444'
-        }}
-      />
     </div>
   );
 
@@ -173,11 +148,12 @@ export function CircularScore({
     <div className="flex flex-col items-center justify-center flex-1 group cursor-pointer">
       {circleElement}
       {showLabel && (
-        <span className={cn(
-          "text-center text-muted-foreground font-bold mt-1 transition-all duration-300 ease-out",
-          "group-hover:text-foreground group-hover:scale-105",
-          config.labelSize
-        )}>
+        <span
+          className={cn(
+            "text-center text-muted-foreground font-bold mt-1",
+            config.labelSize
+          )}
+        >
           {category}
         </span>
       )}
@@ -197,11 +173,11 @@ function CompactScoreBadge({
   const normalizedScore = Math.max(1, Math.min(10, score));
   const roundedScore = Math.round(normalizedScore);
   const colorData = scoreColors[roundedScore] || scoreColors[1];
-  
+
   // Use dark mode colors if theme is dark
   const isDarkMode = theme === "dark";
   const colors = isDarkMode ? colorData.dark : colorData;
-  
+
   const displayScore = score % 1 === 0 ? score.toString() : score.toFixed(1);
 
   return (

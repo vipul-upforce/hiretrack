@@ -185,6 +185,13 @@ const CandidateCard = memo(function CandidateCard({
   const [candidateToAssignJob, setCandidateToAssignJob] =
     useState<Candidate | null>(null);
   const [isAssignJobOpen, setIsAssignJobOpen] = useState(false);
+
+  const onAddRemarkOpenChange = () => {
+    // debugger;
+    setOpenRemarksFor(null);
+    setIsAddRemarkOpen(false);
+  };
+
   // Function to handle sync attendee responses
   const handleSyncAttendeeResponses = useCallback(
     async (e: React.MouseEvent) => {
@@ -528,7 +535,8 @@ const CandidateCard = memo(function CandidateCard({
                         }}
                       >
                         <MessageSquare className="h-4 w-4 mr-2" />
-                           {localCandidate?.followUp?.note || localCandidate?.followUp?.date 
+                        {localCandidate?.followUp?.note ||
+                        localCandidate?.followUp?.date
                           ? "Edit Follow Up"
                           : "Add Follow Up"}
                       </DropdownMenuItem>
@@ -625,7 +633,8 @@ const CandidateCard = memo(function CandidateCard({
           </div>
 
           {/* Follow-up Section - Just below header */}
-          {(localCandidate?.followUp?.date || localCandidate?.followUp?.note) && (
+          {(localCandidate?.followUp?.date ||
+            localCandidate?.followUp?.note) && (
             <div className="mb-2 p-2 bg-amber-50 dark:bg-amber-900/20 rounded border-l-4 border-amber-400 dark:border-amber-500">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-start gap-2 flex-1 min-w-0">
@@ -1354,18 +1363,15 @@ const CandidateCard = memo(function CandidateCard({
         loadingText="Marking as done..."
       />
 
-      {(isAddRemarkOpen || openRemarks) && (
-        <AddRemarksDialog
-          candidate={localCandidate}
-          isOpen={openRemarks}
-          onOpenChange={() => {
-            setOpenRemarksFor(null);
-            setIsAddRemarkOpen(false);
-          }}
-          setOpenRemarksFor={() => {}}
-          refetch={async () => refetch()}
-        />
-      )}
+      {/* {(isAddRemarkOpen || openRemarks) && ( */}
+      <AddRemarksDialog
+        candidate={localCandidate}
+        isOpen={isAddRemarkOpen || openRemarks}
+        onOpenChange={onAddRemarkOpenChange}
+        setOpenRemarksFor={() => {}}
+        refetch={async () => refetch()}
+      />
+      {/* )} */}
 
       {/* Email Candidate Dialog */}
       {isEmailDialogOpen && (
