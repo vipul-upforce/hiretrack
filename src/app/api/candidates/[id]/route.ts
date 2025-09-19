@@ -1216,10 +1216,10 @@ export async function GET(
     const projection: ProjectionType<ICandidate> =
       role === "interviewer"
         ? {
-          currentCTC: 0,
-          expectedCTC: 0,
-          // customFields: 0,
-        }
+            currentCTC: 0,
+            expectedCTC: 0,
+            // customFields: 0,
+          }
         : {};
     const candidate = await Candidate.findById(id, projection)
       .populate([

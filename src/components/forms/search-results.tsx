@@ -39,6 +39,10 @@ import {
   Calendar,
   Clock,
   Target,
+  MoreVertical,
+  Archive,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { format } from "date-fns";
 import { CandidateDetailsDialog } from "@/app/dashboard/jobs/[id]/components/Dialogs/candidate-details-dialog";
@@ -47,10 +51,10 @@ import { EditCandidateDialog } from "@/app/dashboard/jobs/[id]/components/Dialog
 import { AssignCandidateDialog } from "@/app/dashboard/jobs/[id]/components/Dialogs/assign-candidate-dialog";
 import { AssignJobDialog } from "@/app/dashboard/jobs/[id]/components/Dialogs/assign-job-dialog";
 import AddRemarksDialog from "@/app/dashboard/jobs/[id]/components/Dialogs/add-remark-dialog";
-import { useCallback, useState } from "react";
+import ConfirmationDialog from "../../app/dashboard/jobs/[id]/components/Dialogs/ConfirmationDialog";
+import { useCallback, useState, useEffect } from "react";
 import { Candidate } from "@/types/candidate";
 import { itemsPerPage } from "./candidate-search";
-import { useEffect } from "react";
 import {
   Select,
   SelectContent,
@@ -59,6 +63,9 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Skeleton } from "../ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "@/hooks/use-toast";
+import { useDeleteCandidateMutation } from "@/lib/features/candidate/candidateApi";
 
 interface SearchResultsProps {
   results: Candidate[];
@@ -67,6 +74,7 @@ interface SearchResultsProps {
   totalPages: number;
   onPageChange: (page: number) => void;
   onLimitChange: (page: number) => void;
+  currentPageLimit: number; // Add this prop
   sortField: string | null;
   sortDirection: "asc" | "desc";
   onSort: (field: string) => void;
@@ -84,6 +92,7 @@ export function SearchResults({
   onPageChange,
   onLimitChange,
   sortField,
+  currentPageLimit,
   sortDirection,
   onSort,
   refetch,
@@ -104,11 +113,23 @@ export function SearchResults({
   const [candidateToAssignInterviewer, setCandidateToAssignInterviewer] =
     useState<Candidate | null>(null);
   const [isAssignJobOpen, setIsAssignJobOpen] = useState(false);
-  const [candidateToAssignJob, setCandidateToAssignJob] =
-    useState<Candidate | null>(null);
+  const [candidateToAssignJob, setCandidateToAssignJob] = useState<
+    Candidate | Candidate[] | null
+  >(null);
   const [isAddRemarkOpen, setIsAddRemarkOpen] = useState(false);
   const [candidateToAddRemark, setCandidateToAddRemark] =
     useState<Candidate | null>(null);
+  const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
+  const [selectAll, setSelectAll] = useState(false);
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [confirmDialogConfig, setConfirmDialogConfig] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => Promise<void>;
+    onCancel: () => void;
+  } | null>(null);
+  const [deleteCandidate] = useDeleteCandidateMutation();
 
   // Quick filter states
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
@@ -147,6 +168,8 @@ export function SearchResults({
             const oneMonthAgo = new Date();
             oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
             return new Date(candidate.createdAt) >= oneMonthAgo;
+          case "archived": // Add deleted filter
+            return candidate.isDeleted === true;
           default:
             return true;
         }
@@ -157,6 +180,9 @@ export function SearchResults({
   // Apply filters when results or activeFilters change
   useEffect(() => {
     setFilteredResults(applyFilters(results, activeFilters));
+    // Reset selected candidates when results change
+    setSelectedCandidates([]);
+    setSelectAll(false);
   }, [results, activeFilters]);
 
   const toggleFilter = (filter: string) => {
@@ -170,6 +196,121 @@ export function SearchResults({
   const clearAllFilters = () => {
     setActiveFilters([]);
   };
+
+  // Handle individual candidate selection
+  const handleSelectCandidate = (candidateId: string) => {
+    setSelectedCandidates((prev) =>
+      prev.includes(candidateId)
+        ? prev.filter((id) => id !== candidateId)
+        : [...prev, candidateId]
+    );
+  };
+
+  // Handle select all
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedCandidates([]);
+    } else {
+      setSelectedCandidates(filteredResults.map((candidate) => candidate._id));
+    }
+    setSelectAll(!selectAll);
+  };
+
+  // Handle bulk assign job
+  const handleBulkAssignJob = () => {
+    const candidatesToAssign = filteredResults.filter((candidate) =>
+      selectedCandidates.includes(candidate._id)
+    );
+    setCandidateToAssignJob(candidatesToAssign);
+    setIsAssignJobOpen(true);
+  };
+
+  // Handle bulk delete with confirmation
+  const handleBulkDelete = () => {
+    setConfirmDialogConfig({
+      title: "Confirm Delete",
+      message: `Are you sure you want to delete ${selectedCandidates.length} candidate(s)? This action cannot be undone.`,
+      onConfirm: async () => {
+        setIsDeleting(true);
+        console.log(selectedCandidates, "selectedCandidates");
+
+        try {
+          const deletePromises = selectedCandidates.map((candidateId) =>
+            deleteCandidate(candidateId).unwrap()
+          );
+          const results = await Promise.allSettled(deletePromises);
+          const successfulDeletes = results.filter(
+            (result) => result.status === "fulfilled"
+          ).length;
+
+          if (successfulDeletes > 0) {
+            toast({
+              title: "Success",
+              description: `Successfully deleted ${successfulDeletes} candidate(s)`,
+            });
+            setSelectedCandidates([]);
+            setSelectAll(false);
+            await refetch();
+          } else {
+            toast({
+              title: "Warning",
+              description: "No candidates were deleted",
+              variant: "destructive",
+            });
+          }
+        } catch {
+          toast({
+            title: "Error",
+            description: "Failed to delete candidates",
+            variant: "destructive",
+          });
+        } finally {
+          setIsDeleting(false);
+          setIsConfirmDialogOpen(false);
+        }
+      },
+      onCancel: () => {
+        setIsConfirmDialogOpen(false);
+      },
+    });
+    setIsConfirmDialogOpen(true);
+  };
+
+  // Handle single candidate delete with confirmation
+  const handleDeleteCandidate = (candidate: Candidate, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setConfirmDialogConfig({
+      title: "Confirm Delete",
+      message: `Are you sure you want to delete ${candidate.name}? This action cannot be undone.`,
+      onConfirm: async () => {
+        setIsDeleting(true);
+        try {
+          await deleteCandidate(candidate._id).unwrap();
+          toast({
+            title: "Success",
+            description: `Candidate ${candidate.name} deleted successfully`,
+          });
+          // await refetch();
+        } catch (error: any) {
+          toast({
+            title: "Error",
+            description:
+              error?.data?.error ||
+              `Failed to delete candidate ${candidate.name}`,
+            variant: "destructive",
+          });
+        } finally {
+          setIsDeleting(false);
+          setIsConfirmDialogOpen(false);
+        }
+      },
+      onCancel: () => {
+        setIsConfirmDialogOpen(false);
+      },
+    });
+    setIsConfirmDialogOpen(true);
+  };
+
   const handleCandidateUpdateWithOptimism = useCallback(
     (updatedCandidate: Candidate) => {
       // Immediately update local state if handler is provided
@@ -183,6 +324,7 @@ export function SearchResults({
   );
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
     {
+      select: true,
       name: true,
       skills: false,
       location: true,
@@ -193,6 +335,7 @@ export function SearchResults({
       experience: true,
       createdAt: true,
       actions: true,
+      archived: false,
     }
   );
 
@@ -285,12 +428,21 @@ export function SearchResults({
       </Card>
     );
   }
-
+  // if (results.length === 0) {
+  //   return (
+  //     <Card className="p-6">
+  //       <div className="text-center py-8">
+  //         No results found. Try adjusting your search criteria.
+  //       </div>
+  //     </Card>
+  //   );
+  // }
   if (results.length === 0) {
     return (
       <Card className="p-6">
         <div className="text-center py-8">
-          No results found. Try adjusting your search criteria.
+          <Skeleton className="h-[400px] w-full mb-4" />
+          <p>No results found. Try adjusting your search criteria.</p>
         </div>
       </Card>
     );
@@ -391,6 +543,16 @@ export function SearchResults({
             >
               This Month
             </Button>
+            <Button
+              variant={
+                activeFilters.includes("archived") ? "secondary" : "outline"
+              }
+              size="sm"
+              onClick={() => toggleFilter("archived")}
+              className="text-xs"
+            >
+              Archived
+            </Button>
             {activeFilters.length > 0 && (
               <Button
                 variant="ghost"
@@ -403,40 +565,68 @@ export function SearchResults({
             )}
           </div>
 
-          {/* Columns Button */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Eye className="h-4 w-4 mr-2" />
-                Columns
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-48">
-              {Object.entries(visibleColumns).map(([key, value]) => (
-                <DropdownMenuCheckboxItem
-                  key={key}
-                  checked={value}
-                  onCheckedChange={(checked) =>
-                    setVisibleColumns((prev) => ({
-                      ...prev,
-                      [key]: !!checked,
-                    }))
-                  }
-                >
-                  {key === "jobAssignment"
-                    ? "Job Assignment"
-                    : key === "overallScore"
-                      ? "Overall Score"
-                      : key === "actions"
-                        ? "Actions"
-                        : key.toLocaleUpperCase()}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center gap-2">
+            {selectedCandidates.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleBulkAssignJob}>
+                    <Briefcase className="mr-2 h-4 w-4" />
+                    Assign Job
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleBulkDelete}>
+                    <Archive className="mr-2 h-4 w-4" />
+                    Archive
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Eye className="h-4 w-4 mr-2" />
+                  Columns
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-48">
+                {Object.entries(visibleColumns).map(([key, value]) => (
+                  <DropdownMenuCheckboxItem
+                    key={key}
+                    checked={value}
+                    onCheckedChange={(checked) =>
+                      setVisibleColumns((prev) => ({
+                        ...prev,
+                        [key]: !!checked,
+                      }))
+                    }
+                  >
+                    {key === "jobAssignment"
+                      ? "Job Assignment"
+                      : key === "overallScore"
+                        ? "Overall Score"
+                        : key === "actions"
+                          ? "Actions"
+                          : key === "select"
+                            ? "Select"
+                            : key === "archived"
+                              ? "Archived"
+                              : key.toLocaleUpperCase()}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
-        {/* Count Display Above Table */}
         <div className="px-4 py-2 bg-muted/20 border-b">
           <div className="text-sm text-muted-foreground">
             {activeFilters.length > 0 ? (
@@ -447,7 +637,7 @@ export function SearchResults({
                 </span>{" "}
                 of{" "}
                 <span className="font-medium text-foreground">
-                  {results.length}
+                  {totalResultsCount}
                 </span>{" "}
                 results
                 {activeFilters.length > 0 && (
@@ -471,6 +661,10 @@ export function SearchResults({
                 <span className="font-medium text-foreground">
                   {results.length}
                 </span>{" "}
+                of{" "}
+                <span className="font-medium text-foreground">
+                  {totalResultsCount}
+                </span>{" "}
                 results
               </>
             )}
@@ -481,6 +675,15 @@ export function SearchResults({
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50 hover:bg-muted/50 border-b-2">
+                {visibleColumns.select && (
+                  <TableHead className="w-[50px]">
+                    <Checkbox
+                      checked={selectAll}
+                      onCheckedChange={handleSelectAll}
+                      aria-label="Select all candidates"
+                    />
+                  </TableHead>
+                )}
                 {visibleColumns.name && (
                   <TableHead
                     className="cursor-pointer font-semibold text-foreground"
@@ -589,6 +792,18 @@ export function SearchResults({
                     </div>
                   </TableHead>
                 )}
+                {visibleColumns.archived && (
+                  <TableHead
+                    className="cursor-pointer font-semibold text-foreground"
+                    onClick={() => onSort("isDeleted")}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Archive className="h-4 w-4 text-muted-foreground" />
+                      <span>Deleted</span>
+                      {getSortIcon("isDeleted")}
+                    </div>
+                  </TableHead>
+                )}
                 {visibleColumns.actions && (
                   <TableHead className="w-[50px] font-semibold text-foreground">
                     <div className="flex items-center justify-center">
@@ -606,6 +821,17 @@ export function SearchResults({
                     key={candidate._id}
                     className="hover:bg-muted/50 cursor-pointer"
                   >
+                    {visibleColumns.select && (
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedCandidates.includes(candidate._id)}
+                          onCheckedChange={() =>
+                            handleSelectCandidate(candidate._id)
+                          }
+                          aria-label={`Select ${candidate.name}`}
+                        />
+                      </TableCell>
+                    )}
                     {visibleColumns.name && (
                       <TableCell className="font-medium">
                         <span
@@ -679,7 +905,9 @@ export function SearchResults({
                     )}
                     {visibleColumns.overallScore && (
                       <TableCell>
-                        <CompactCircularScores scores={candidate.scores || {}} />
+                        <CompactCircularScores
+                          scores={candidate.scores || {}}
+                        />
                       </TableCell>
                     )}
                     {visibleColumns.expectedCTC && (
@@ -700,6 +928,18 @@ export function SearchResults({
                         {format(
                           new Date(candidate.tracking?.createdAt || Date.now()),
                           "MMM d, yyyy"
+                        )}
+                      </TableCell>
+                    )}
+                    {visibleColumns.archived && (
+                      <TableCell>
+                        {candidate.isDeleted && (
+                          <Badge
+                            variant="outline"
+                            className={`text-xs bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800`}
+                          >
+                            {candidate.isDeleted ? "archived" : "Active"}
+                          </Badge>
                         )}
                       </TableCell>
                     )}
@@ -729,38 +969,48 @@ export function SearchResults({
                               <Edit className="mr-2 h-4 w-4" />
                               Edit
                             </DropdownMenuItem>
-                            {/* <DropdownMenuItem
-                              onClick={(e) =>
-                                handleAssignInterviewer(candidate, e)
-                              }
-                            >
-                              <UserPlus className="mr-2 h-4 w-4" />
-                              Assign Interviewer
-                            </DropdownMenuItem> */}
-                            {/* Conditionally render Assign Interviewer if job is assigned */}
-                            {candidate.jobId && typeof candidate.jobId === "object" && candidate.jobId.title && (
-                              <DropdownMenuItem onClick={(e) => handleAssignInterviewer(candidate, e)}>
-                                <UserPlus className="mr-2 h-4 w-4" />
-                                Assign Interviewer
-                              </DropdownMenuItem>
-                            )}
+                            {candidate.jobId &&
+                              typeof candidate.jobId === "object" &&
+                              candidate.jobId.title && (
+                                <DropdownMenuItem
+                                  onClick={(e) =>
+                                    handleAssignInterviewer(candidate, e)
+                                  }
+                                >
+                                  <UserPlus className="mr-2 h-4 w-4" />
+                                  Assign Interviewer
+                                </DropdownMenuItem>
+                              )}
                             <DropdownMenuItem
                               onClick={(e) => handleAssignJob(candidate, e)}
                             >
                               <Briefcase className="mr-2 h-4 w-4" />
                               Assign Job
                             </DropdownMenuItem>
-                              {candidate.jobId && typeof candidate.jobId === "object" && candidate.jobId.title && (
-                           <>
-                            <DropdownMenuSeparator />
-                          
                             <DropdownMenuItem
-                              onClick={(e) => handleAddRemark(candidate, e)}
+                              onClick={(e) =>
+                                handleDeleteCandidate(candidate, e)
+                              }
+                              disabled={candidate.isDeleted}
                             >
-                              <Plus className="mr-2 h-4 w-4" />
-                              Add Remark
-                            </DropdownMenuItem></>
-                               )}
+                              <Archive className="mr-2 h-4 w-4" />
+                              {candidate.isDeleted ? "Unarchived" : "Archive"}
+                            </DropdownMenuItem>
+                            {candidate.jobId &&
+                              typeof candidate.jobId === "object" &&
+                              candidate.jobId.title && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={(e) =>
+                                      handleAddRemark(candidate, e)
+                                    }
+                                  >
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Add Remark
+                                  </DropdownMenuItem>
+                                </>
+                              )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -782,7 +1032,7 @@ export function SearchResults({
                   <>
                     Showing{" "}
                     <span className="font-medium text-foreground">
-                      {results.length}
+                      {filteredResults.length}
                     </span>{" "}
                     of{" "}
                     <span className="font-medium text-foreground">
@@ -819,49 +1069,51 @@ export function SearchResults({
                 )}
               </div>
 
-              {/* Pagination Controls */}
-              {totalPages > 1 && (
-                <>
-                  <div className="flex items-center gap-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={currentPage === 1 || isLoading}
-                      onClick={() => onPageChange(currentPage - 1)}
+              <div className="flex justify-end gap-3">
+                {totalPages > 0 && (
+                  <>
+                    <div className="flex items-center gap-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={currentPage === 1 || isLoading}
+                        onClick={() => onPageChange(currentPage - 1)}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <span className="text-sm text-muted-foreground">
+                        Page {currentPage} of {totalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={currentPage === totalPages || isLoading}
+                        onClick={() => onPageChange(currentPage + 1)}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <Select
+                      name="limit"
+                      // value={String(results.length)}
+                      value={String(currentPageLimit)}
+                      onValueChange={(value) => onLimitChange(Number(value))}
+                      disabled={isLoading}
                     >
-                      Previous
-                    </Button>
-                    <span className="text-sm text-muted-foreground">
-                      Page {currentPage} of {totalPages}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={currentPage === totalPages || isLoading}
-                      onClick={() => onPageChange(currentPage + 1)}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                  <Select
-                    name="limit"
-                    value={String(results.length)}
-                    onValueChange={(value) => onLimitChange(Number(value))}
-                    disabled={isLoading}
-                  >
-                    <SelectTrigger className="w-[100px] text-sm">
-                      <SelectValue placeholder="Items per page" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[10, 20, 50, 100].map((limit) => (
-                        <SelectItem key={limit} value={String(limit)}>
-                          {limit}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </>
-              )}
+                      <SelectTrigger className="w-[100px] text-sm">
+                        <SelectValue placeholder="Items per page" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[10, 20, 50, 100].map((limit) => (
+                          <SelectItem key={limit} value={String(limit)}>
+                            {limit}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -908,7 +1160,7 @@ export function SearchResults({
           //   refetch();
           // }}
           onUpdate={handleCandidateUpdateWithOptimism}
-          setLocalCandidate={() => { }}
+          setLocalCandidate={() => {}}
           onSuccess={() => {
             setIsAssignInterviewerOpen(false);
             setCandidateToAssignInterviewer(null);
@@ -922,19 +1174,22 @@ export function SearchResults({
           candidate={candidateToAssignJob}
           isOpen={isAssignJobOpen}
           onOpenChange={setIsAssignJobOpen}
-          // onJobAssignment={() => {
-          //   setIsAssignJobOpen(false);
-          //   setCandidateToAssignJob(null);
-          //   refetch();
-          // }}
-          onJobAssignment={(updatedCandidate) => {
-            // If this returns updated candidate
-            if (updatedCandidate && onCandidateUpdate) {
-              onCandidateUpdate(updatedCandidate);
+          onJobAssignment={(updatedCandidates) => {
+            if (updatedCandidates && onCandidateUpdate) {
+              if (Array.isArray(updatedCandidates)) {
+                updatedCandidates.forEach((candidate) =>
+                  onCandidateUpdate(candidate)
+                );
+              } else {
+                onCandidateUpdate(updatedCandidates);
+              }
             }
             handleCandidateUpdateWithOptimism;
             setIsAssignJobOpen(false);
             setCandidateToAssignJob(null);
+            setSelectedCandidates([]);
+            setSelectAll(false);
+            refetch();
           }}
         />
       )}
@@ -944,7 +1199,7 @@ export function SearchResults({
           candidate={candidateToAddRemark}
           isOpen={isAddRemarkOpen}
           onOpenChange={setIsAddRemarkOpen}
-          setOpenRemarksFor={() => { }}
+          setOpenRemarksFor={() => {}}
           refetch={refetch}
           onRemarkAdded={handleCandidateUpdateWithOptimism}
         />
@@ -960,6 +1215,20 @@ export function SearchResults({
             // TODO: Implement job update functionality
             console.log("Job updated:", selectedJob);
           }}
+        />
+      )}
+
+      {isConfirmDialogOpen && confirmDialogConfig && (
+        <ConfirmationDialog
+          isOpen={isConfirmDialogOpen}
+          setIsOpen={setIsConfirmDialogOpen}
+          title={confirmDialogConfig.title}
+          message={confirmDialogConfig.message}
+          onConfirm={confirmDialogConfig.onConfirm}
+          onCancel={confirmDialogConfig.onCancel}
+          isLoading={isDeleting}
+          loadingText="Deleting..."
+          buttonName="Archive"
         />
       )}
     </>
