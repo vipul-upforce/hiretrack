@@ -240,7 +240,16 @@ export const useCandidate = ({
         ? newSourceCandidates
         : [...destColumn.candidates];
 
-    const [removed] = newSourceCandidates.splice(source.index, 1);
+    // Find the candidate by ID instead of using the index
+    const sourceIndex = newSourceCandidates.findIndex(
+      (c) => c._id === draggableId
+    );
+    if (sourceIndex === -1) {
+      console.error("Could not find candidate with ID:", draggableId);
+      return;
+    }
+
+    const [removed] = newSourceCandidates.splice(sourceIndex, 1);
 
     if (source.droppableId !== destination.droppableId) {
       newDestCandidates.splice(destination.index, 0, {
@@ -265,10 +274,17 @@ export const useCandidate = ({
 
     if (source.droppableId !== destination.droppableId) {
       try {
-        // Get the candidate being moved
-        const candidate = sourceColumn.candidates[source.index];
+        // Add a class to prevent flicker during the critical update phase
+        document.body.classList.add("dnd-updating");
+
+        // Get the candidate being moved by ID instead of index
+        // This ensures we get the correct candidate regardless of sorting
+        const candidate = sourceColumn.candidates.find(
+          (c) => c._id === draggableId
+        );
         if (!candidate) {
           console.error("Candidate not found for drag operation");
+          document.body.classList.remove("dnd-updating");
           return;
         }
 
@@ -352,6 +368,9 @@ export const useCandidate = ({
           description: "Failed to validate or update candidate status",
           variant: "destructive",
         });
+      } finally {
+        // Always remove the updating class
+        document.body.classList.remove("dnd-updating");
       }
       await refetch();
     } else {

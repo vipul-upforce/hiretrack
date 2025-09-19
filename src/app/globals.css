@@ -1177,3 +1177,42 @@ body {
     flex-direction: column !important;
   }
 }
+
+/* Fix for drag and drop flickering */
+/* Make the placeholder invisible to prevent flickering */
+.dnd-dragging [data-rbd-placeholder-context-id] {
+  opacity: 0 !important;
+  transition: none !important;
+}
+
+/* Ensure the dragged item looks correct */
+.dnd-dragging [data-rbd-draggable-id][data-rbd-dragging="true"] {
+  transform: translate3d(0, 0, 0) !important;
+  transition: none !important;
+  z-index: 9999 !important;
+}
+
+/* Prevent any transitions during drag operations */
+.dnd-dragging .react-virtuoso-item {
+  transition: none !important;
+}
+
+/* Force hardware acceleration on all items during drag */
+.dnd-dragging [data-rbd-draggable-id] {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Prevent flicker on drop */
+.dnd-dragging [data-rbd-droppable-id],
+.dnd-updating [data-rbd-droppable-id] {
+  transition: none !important;
+}
+
+/* Critical update phase - completely freeze all animations */
+.dnd-updating .react-virtuoso-item,
+.dnd-updating [data-rbd-draggable-id],
+.dnd-updating [data-rbd-droppable-id] {
+  transition: none !important;
+  animation: none !important;
+}

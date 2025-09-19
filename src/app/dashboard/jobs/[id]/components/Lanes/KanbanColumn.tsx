@@ -3,8 +3,11 @@
 import {
   Droppable,
   Draggable,
-  DroppableProvided,
-  DraggableProvided,
+  type DroppableProvided,
+  type DraggableProvided,
+  type DraggableStateSnapshot,
+  type DroppableStateSnapshot,
+  type DraggableRubric,
 } from "@hello-pangea/dnd";
 import {
   GripVertical,
@@ -14,10 +17,8 @@ import {
 import { CandidateCard } from "../Candidate/candidate-card";
 import { Candidate } from "@/types/candidate";
 import { LaneOptionsMenu } from "./lanes-options-menu";
-import { useState, useMemo, useEffect, memo, useCallback, useRef } from "react";
+import { useState, useMemo, memo, useCallback, useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { VirtuosoScroller } from "./VirtuosoScroller";
-import { useDragToScroll } from "../../hooks/useDragToScroll";
 import { Virtuoso } from "react-virtuoso";
 import {
   Tooltip,
@@ -26,7 +27,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ILaneConfig } from "@/lib/models/JobLaneConfig";
-import { CustomScrollbar } from "@/components/ui/custom-scrollbar";
 import CustomScrollbarLane from "@/components/ui/custom-scrollbar-lane";
 
 interface PendingMove {
@@ -95,10 +95,12 @@ const KanbanColumn = memo(function KanbanColumn({
   pendingMoves = [],
   laneConfig,
 }: KanbanColumnProps) {
-  const [isLaneOptionsOpen, setIsLaneOptionsOpen] = useState(false);
+  const [isLaneOptionsOpen, setIsLaneOptionsOpen] = useState<boolean>(false);
   const [isLaneOpsOpenFor, setIsLaneOpsOpenFor] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  // Add state to temporarily suspend sorting after a drop
+  const [suspendSorting, setSuspendSorting] = useState<boolean>(false);
 
   const pathname = usePathname();
   const jobId = pathname?.split("/")[3];
@@ -110,8 +112,8 @@ const KanbanColumn = memo(function KanbanColumn({
     direction: SortDirection
   ): Candidate[] => {
     return [...candidates].sort((a, b) => {
-      let aValue: any;
-      let bValue: any;
+      let aValue: unknown;
+      let bValue: unknown;
 
       switch (field) {
         case "name":
@@ -123,12 +125,12 @@ const KanbanColumn = memo(function KanbanColumn({
           bValue = b.email?.toLowerCase() || "";
           break;
         case "ctc":
-          aValue = a.currentCTC || 0;
-          bValue = b.currentCTC || 0;
+          aValue = a.currentCTC ?? 0;
+          bValue = b.currentCTC ?? 0;
           break;
         case "expectedCtc":
-          aValue = a.expectedCTC || 0;
-          bValue = b.expectedCTC || 0;
+          aValue = a.expectedCTC ?? 0;
+          bValue = b.expectedCTC ?? 0;
           break;
         case "experience":
           aValue =
@@ -196,11 +198,11 @@ const KanbanColumn = memo(function KanbanColumn({
           return 0;
       }
 
-      if (aValue < bValue) {
-        return direction === "asc" ? 1 : -1;
-      }
-      if (aValue > bValue) {
+      if (aValue! < bValue!) {
         return direction === "asc" ? -1 : 1;
+      }
+      if (aValue! > bValue!) {
+        return direction === "asc" ? 1 : -1;
       }
       return 0;
     });
@@ -208,11 +210,14 @@ const KanbanColumn = memo(function KanbanColumn({
 
   // Memoized sorted candidates with stable reference
   const sortedCandidates = useMemo(() => {
-    if (!sortField) {
+    // Don't sort if sorting is suspended or no sort field is set
+    if (!sortField || suspendSorting) {
       return column.candidates;
     }
-    return sortCandidates(column.candidates, sortField, sortDirection);
-  }, [column.candidates, sortField, sortDirection]);
+
+    const sorted = sortCandidates(column.candidates, sortField, sortDirection);
+    return sorted;
+  }, [column.candidates, sortField, sortDirection, suspendSorting]);
 
   // Memoized filtered candidates for this job
   const filteredCandidates = useMemo(() => {
@@ -228,6 +233,32 @@ const KanbanColumn = memo(function KanbanColumn({
       return true;
     });
   }, [sortedCandidates, jobId]);
+
+  // Track candidates count to detect when a new candidate is added
+  const prevCandidatesCountRef = useRef(column.candidates.length);
+
+  // Effect to detect when a new candidate is added to this column
+  useEffect(() => {
+    const currentCount = column.candidates.length;
+    const prevCount = prevCandidatesCountRef.current;
+
+    // If a candidate was added to this column
+    if (currentCount > prevCount) {
+      // Suspend sorting temporarily
+      setSuspendSorting(true);
+
+      // Resume sorting after a delay
+      const timer = setTimeout(() => {
+        setSuspendSorting(false);
+      }, 500); // 500ms delay
+
+      // Cleanup
+      return () => clearTimeout(timer);
+    }
+
+    // Update the ref for next comparison
+    prevCandidatesCountRef.current = currentCount;
+  }, [column.candidates.length, column.id]);
 
   // Handle sort from LaneOptionsMenu - memoized to prevent re-renders
   const handleSort = useCallback(
@@ -437,18 +468,31 @@ const KanbanColumn = memo(function KanbanColumn({
                         data={filteredCandidates}
                         increaseViewportBy={{ bottom: 200, top: 100 }}
                         scrollerRef={() => scrollerRef}
+                        // Use a stable key to prevent reordering issues
+                        computeItemKey={(index, candidate) => candidate._id}
+                        // Store the candidate ID as a data attribute for drag and drop
                         itemContent={(index, candidate) => {
+                          // Store the original index of the candidate in the unsorted array
+                          const originalIndex = column.candidates.findIndex(
+                            (c) => c._id === candidate._id
+                          );
                           const isPending = pendingMoves.some(
                             (pm) =>
                               pm.candidateId === candidate._id &&
                               pm.targetLaneId === column.id
                           );
                           return (
-                            <div className="pb-2">
+                            <div
+                              className="pb-2"
+                              data-candidate-id={candidate._id}
+                              data-original-index={originalIndex}
+                            >
                               <CandidateCard
                                 key={candidate._id}
                                 candidate={candidate}
-                                index={index}
+                                index={
+                                  originalIndex
+                                } /* Use the original index for drag and drop */
                                 refetch={refetch}
                                 onViewDetails={handleViewDetails}
                                 openRemarks={openRemarksFor === candidate._id}

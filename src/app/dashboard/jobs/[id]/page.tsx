@@ -676,6 +676,10 @@ export default function JobProgressPage() {
       {/* <CandidatesPage /> */}
       <div className="flex-1 overflow-hidden px-4 pb-2 pt-2">
         <DragDropContext
+          onBeforeDragStart={() => {
+            // Add a class to the body before drag starts to apply CSS fixes
+            document.body.classList.add("dnd-dragging");
+          }}
           onDragStart={(start) => {
             setIsDndDragging(true);
           }}
@@ -683,6 +687,8 @@ export default function JobProgressPage() {
             // No prevalidation needed - using client-side validation
           }}
           onDragEnd={(result: any) => {
+            // Remove the class when drag ends
+            document.body.classList.remove("dnd-dragging");
             setIsDndDragging(false);
             onDragEnd(result);
           }}
