@@ -73,6 +73,7 @@ export interface Assignment {
   organizationId: string;
   location: string;
   experience: number;
+  relevantExperience: number;
   skills: string[];
   expectedCTC?: number;
   currentCTC?: number;
@@ -143,7 +144,7 @@ export default function DashboardPage() {
   const loadingRef = useRef(false);
 
   const role = useRoles();
-  const { candidates: sseCandidates } = useSSE(role || "", () => { }, null);
+  const { candidates: sseCandidates } = useSSE(role || "", () => {}, null);
 
   const isToday = (assignment: Assignment) => {
     const assignmentDate = new Date(
@@ -471,6 +472,7 @@ export default function DashboardPage() {
                   organizationId: sseCandidate.organizationId,
                   location: sseCandidate.location,
                   experience: sseCandidate.experience,
+                  relevantExperience: sseCandidate.relevantExperience,
                   skills: sseCandidate.skills,
                   tags: sseCandidate.tags,
                   expectedCTC: sseCandidate.expectedCTC,
@@ -607,67 +609,67 @@ export default function DashboardPage() {
         ref={scrollContainerRef}
         className="flex-1 min-h-0 px-4 pb-4 mt-4 space-y-6 overflow-y-auto"
       >
-        {
-          isLoading ? (<DashboardCardLoader />) : (
-            <>
-              <div className="grid grid-cols-1 xl:grid-cols-3 lg:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Total Interviews</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold flex justify-start">
-                      {/* {isLoading ? (
+        {isLoading ? (
+          <DashboardCardLoader />
+        ) : (
+          <>
+            <div className="grid grid-cols-1 xl:grid-cols-3 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Total Interviews</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold flex justify-start">
+                    {/* {isLoading ? (
                         <LoadingSpinner />
                       ) : ( */}
-                      {assignmentsCounts?.totalInterviews}
-                      {/* )} */}
-                      {/* {isLoading ? (
+                    {assignmentsCounts?.totalInterviews}
+                    {/* )} */}
+                    {/* {isLoading ? (
                 <LoadingSpinner />
               ) : isInterviewer ? (
                 interviewerAssignments?.length
               ) : (
                 assignments?.length
               )} */}
-                    </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </CardContent>
+              </Card>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">This Week</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold flex justify-start">
-                      {/* {isLoading ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">This Week</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold flex justify-start">
+                    {/* {isLoading ? (
                         <LoadingSpinner />
                       ) : ( */}
-                      {assignmentsCounts?.thisweeksInterviews}
-                      {/* )} */}
-                      {/* {isLoading ? <LoadingSpinner /> : thisWeekAssignments?.length} */}
-                    </div>
-                  </CardContent>
-                </Card>
+                    {assignmentsCounts?.thisweeksInterviews}
+                    {/* )} */}
+                    {/* {isLoading ? <LoadingSpinner /> : thisWeekAssignments?.length} */}
+                  </div>
+                </CardContent>
+              </Card>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Today</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold flex justify-start">
-                      {/* {isLoading ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Today</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold flex justify-start">
+                    {/* {isLoading ? (
                         <LoadingSpinner />
                       ) : ( */}
-                      {assignmentsCounts?.todaysInterviews}
-                      {/* )} */}
-                      {/* {isLoading ? <LoadingSpinner /> : todayAssignments?.length} */}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </>
-          )
-        }
+                    {assignmentsCounts?.todaysInterviews}
+                    {/* )} */}
+                    {/* {isLoading ? <LoadingSpinner /> : todayAssignments?.length} */}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </>
+        )}
 
         {shouldShowAssignments ? (
           <div>
@@ -721,8 +723,8 @@ export default function DashboardPage() {
                               })()}
                               assignments={assignments}
                               setAssignments={setAssignments}
-                              fetchAssignments={() => { }}
-                            // fetchAssignments={() => fetchAssignmentsNoReload()}
+                              fetchAssignments={() => {}}
+                              // fetchAssignments={() => fetchAssignmentsNoReload()}
                             />
                           </div>
                         ))}
@@ -784,45 +786,45 @@ export default function DashboardPage() {
                   todayAssignments={
                     sseCandidates.length > 0
                       ? ([
-                        ...sseCandidates.filter((candidate) => {
-                          // Check if the interview is scheduled for today
-                          const isToday =
-                            candidate.assignment?.time &&
-                            new Date(
-                              candidate.assignment.time
-                            ).toDateString() === new Date().toDateString();
+                          ...sseCandidates.filter((candidate) => {
+                            // Check if the interview is scheduled for today
+                            const isToday =
+                              candidate.assignment?.time &&
+                              new Date(
+                                candidate.assignment.time
+                              ).toDateString() === new Date().toDateString();
 
-                          // Keep existing conditions for interviewerId
-                          return (
-                            isToday &&
-                            candidate.assignment &&
-                            typeof candidate.assignment.interviewerId ===
-                            "object" &&
-                            "_id" in candidate.assignment.interviewerId &&
-                            candidate.assignment.interviewerId._id.toString() ===
-                            user?.id?.toString()
-                          );
-                        }),
+                            // Keep existing conditions for interviewerId
+                            return (
+                              isToday &&
+                              candidate.assignment &&
+                              typeof candidate.assignment.interviewerId ===
+                                "object" &&
+                              "_id" in candidate.assignment.interviewerId &&
+                              candidate.assignment.interviewerId._id.toString() ===
+                                user?.id?.toString()
+                            );
+                          }),
 
-                        ...todayAssignments.filter(
-                          (older) =>
-                            older.assignment &&
-                            !sseCandidates.some(
-                              (latest) => latest._id === older._id
-                            ) &&
-                            older.assignment?.time &&
-                            new Date(older.assignment.time).toDateString() ===
-                            new Date().toDateString()
-                        ),
-                      ] as (Candidate & Assignment)[])
+                          ...todayAssignments.filter(
+                            (older) =>
+                              older.assignment &&
+                              !sseCandidates.some(
+                                (latest) => latest._id === older._id
+                              ) &&
+                              older.assignment?.time &&
+                              new Date(older.assignment.time).toDateString() ===
+                                new Date().toDateString()
+                          ),
+                        ] as (Candidate & Assignment)[])
                       : todayAssignments.filter((assignment) => {
-                        return (
-                          assignment.assignment?.time &&
-                          new Date(
-                            assignment.assignment.time
-                          ).toDateString() === new Date().toDateString()
-                        );
-                      })
+                          return (
+                            assignment.assignment?.time &&
+                            new Date(
+                              assignment.assignment.time
+                            ).toDateString() === new Date().toDateString()
+                          );
+                        })
                   }
                 />
               ) : (
@@ -842,26 +844,26 @@ export default function DashboardPage() {
                     interviewerAssignments={
                       sseCandidates.length > 0
                         ? ([
-                          ...sseCandidates.filter((candidate) => {
-                            // debugger;
-                            return (
-                              candidate.assignment &&
-                              typeof candidate.assignment.interviewerId ===
-                              "object" &&
-                              "_id" in candidate.assignment.interviewerId &&
-                              candidate.assignment.interviewerId._id.toString() ===
-                              user.id?.toString()
-                            );
-                          }),
+                            ...sseCandidates.filter((candidate) => {
+                              // debugger;
+                              return (
+                                candidate.assignment &&
+                                typeof candidate.assignment.interviewerId ===
+                                  "object" &&
+                                "_id" in candidate.assignment.interviewerId &&
+                                candidate.assignment.interviewerId._id.toString() ===
+                                  user.id?.toString()
+                              );
+                            }),
 
-                          ...interviewerAssignments.filter(
-                            (older) =>
-                              older.assignment &&
-                              !sseCandidates.some(
-                                (latest) => latest._id === older._id
-                              )
-                          ),
-                        ] as (Candidate & Assignment)[])
+                            ...interviewerAssignments.filter(
+                              (older) =>
+                                older.assignment &&
+                                !sseCandidates.some(
+                                  (latest) => latest._id === older._id
+                                )
+                            ),
+                          ] as (Candidate & Assignment)[])
                         : interviewerAssignments
                     }
                   />

@@ -6,55 +6,64 @@ import { handleFileAttachments } from "@/lib/fileUtils";
 import mongoose from "mongoose";
 import { Job } from "@/lib/mongodb"; // Add import for Job model
 import { Attachment } from "../route";
-import { validateInput, VALIDATION_PATTERNS, MAX_LENGTHS, sanitizeString } from "@/lib/inputValidation";
+import {
+  validateInput,
+  VALIDATION_PATTERNS,
+  MAX_LENGTHS,
+  sanitizeString,
+} from "@/lib/inputValidation";
 import { NotificationService } from "@/lib/notifications/notificationService";
 
 export async function POST(request: NextRequest) {
   try {
     await connectToDatabase();
     const data = await request.json();
-    
+
     // SECURITY FIX: Validate guest application input
     const validation = validateInput(data, {
       jobId: {
         required: true,
-        type: 'object',
+        type: "object",
         customValidator: (value) => {
-          return value && typeof value._id === 'string' && /^[0-9a-fA-F]{24}$/.test(value._id);
-        }
+          return (
+            value &&
+            typeof value._id === "string" &&
+            /^[0-9a-fA-F]{24}$/.test(value._id)
+          );
+        },
       },
       name: {
         required: true,
-        type: 'string',
+        type: "string",
         maxLength: MAX_LENGTHS.name,
         pattern: VALIDATION_PATTERNS.safeString,
-        sanitize: true
+        sanitize: true,
       },
       email: {
         required: true,
-        type: 'email',
-        maxLength: MAX_LENGTHS.email
+        type: "email",
+        maxLength: MAX_LENGTHS.email,
       },
       contact: {
         required: true,
-        type: 'string',
+        type: "string",
         maxLength: 20,
-        pattern: VALIDATION_PATTERNS.contact
+        pattern: VALIDATION_PATTERNS.contact,
       },
       dateTime: {
-        type: 'string',
-        maxLength: 50
+        type: "string",
+        maxLength: 50,
       },
       customFields: {
-        type: 'object'
-      }
+        type: "object",
+      },
     });
 
     if (!validation.isValid) {
       return NextResponse.json(
-        { 
-          error: 'Invalid application data', 
-          details: validation.errors 
+        {
+          error: "Invalid application data",
+          details: validation.errors,
         },
         { status: 400 }
       );
@@ -63,8 +72,8 @@ export async function POST(request: NextRequest) {
     // Sanitize string inputs
     if (data.name) data.name = sanitizeString(data.name);
     if (data.customFields) {
-      Object.keys(data.customFields).forEach(key => {
-        if (typeof data.customFields[key] === 'string') {
+      Object.keys(data.customFields).forEach((key) => {
+        if (typeof data.customFields[key] === "string") {
           data.customFields[key] = sanitizeString(data.customFields[key]);
         }
       });
@@ -101,7 +110,9 @@ export async function POST(request: NextRequest) {
     }
 
     const fileStorage = "local";
-    const candidateStatus = (organizationInfo.defaultLanes || ["applied"]).includes("applied")
+    const candidateStatus = (
+      organizationInfo.defaultLanes || ["applied"]
+    ).includes("applied")
       ? "applied"
       : (organizationInfo.defaultLanes || ["applied"])[0];
 
@@ -144,6 +155,7 @@ export async function POST(request: NextRequest) {
       name: data.name,
       location: data.location,
       experience: data.experience,
+      relevantExperience: data.relevantExperience,
       skills: data.skills,
       expectedCTC: data.expectedCTC,
       currentCTC: data.currentCTC,
@@ -229,7 +241,7 @@ export async function POST(request: NextRequest) {
         candidateName: candidateData.name,
         jobTitle: job.title,
       });
-      
+
       await NotificationService.notifyCandidateApplied({
         organizationId: organizationId.toString(),
         candidateId: candidate._id.toString(),
@@ -239,7 +251,7 @@ export async function POST(request: NextRequest) {
         jobTitle: job.title || "Unknown Job",
         // No trigger user for guest applications
       });
-      
+
       console.log("✅ Guest notification sent successfully");
     } catch (notificationError) {
       console.error("❌ Failed to send guest notification:", notificationError);

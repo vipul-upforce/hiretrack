@@ -17,6 +17,7 @@ export interface ICandidate {
   location: string;
   organizationId: string;
   experience: number;
+  relevantExperience: number;
   skills: string[];
   expectedCTC: number;
   currentCTC: number;
@@ -138,6 +139,7 @@ export const candidateSchema = new Schema(
     contact: { type: String, required: false },
     location: { type: String, required: false },
     experience: { type: Number, required: false },
+    relevantExperience: { type: Number, required: true },
     skills: [{ type: String }],
     expectedCTC: { type: Number, required: false },
     currentCTC: { type: Number, required: false },

@@ -75,6 +75,7 @@ function ActionItems({
           name: assignment.candidateName || assignment.name,
           location: assignment.location,
           experience: assignment.experience,
+          relevantExperience: assignment.relevantExperience,
           skills: assignment.skills,
           expectedCTC: assignment.expectedCTC,
           contact: assignment.contact,

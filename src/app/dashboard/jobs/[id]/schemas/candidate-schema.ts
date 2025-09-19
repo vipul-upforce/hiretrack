@@ -33,6 +33,17 @@ export const candidateSchema = (customFields: Yup.Schema<unknown>) =>
     experience: Yup.number()
       .required("Experience is required")
       .min(0, "Experience cannot be negative"),
+    relevantExperience: Yup.number()
+      .required("Relevant Experience is required")
+      .min(0, "Relevant Experience cannot be negative")
+      .test(
+        "not-greater-than-experience",
+        "Relevant Experience cannot be greater than Total Experience",
+        function (value) {
+          const { experience } = this.parent;
+          return !value || !experience || value <= experience;
+        }
+      ),
     skills: Yup.array()
       .of(
         Yup.string()
@@ -147,6 +158,7 @@ export interface CandidateFormValues {
   contact: string;
   location: string;
   experience: number;
+  relevantExperience: number;
   skills: string[];
   expectedCTC: number | string;
   currentCTC: number | string;
