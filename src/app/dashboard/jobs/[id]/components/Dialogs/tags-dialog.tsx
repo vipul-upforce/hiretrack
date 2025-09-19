@@ -102,13 +102,13 @@ const TagsDialog = ({
 
   return (
     <div
-      className="p-4 w-[300px] max-h-[570px] flex flex-col"
+      className="p-4 pt-2 w-[300px] max-h-[570px] flex flex-col"
       onClick={(e) => e.stopPropagation()}
     >
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold mr-4">Assign Tags</h3>
         <Button variant="outline" size="sm" onClick={handleOpenManageTags}>
-          <Settings className="w-4 h-4" />
+          <Settings className="w-3 h-3" />
         </Button>
       </div>
       {isLoading ? (
@@ -147,6 +147,7 @@ const TagsDialog = ({
       )}
       <div className={`flex justify-end mt-4 ${isDialog ? "w-[110%]" : ""}`}>
         <Button
+          variant="primary"
           onClick={handleSave}
           disabled={isUpdating || !hasChanges}
           className="min-w-[80px]"
