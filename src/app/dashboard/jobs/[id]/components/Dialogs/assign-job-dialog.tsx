@@ -25,12 +25,11 @@ import {
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 
-
-interface AssignCandidateDialogProps {
-  candidate: Candidate;
+interface AssignJobDialogProps {
+  candidate: Candidate | Candidate[];
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onJobAssignment?: (x?: any) => void;
+  onJobAssignment?: (updatedCandidates: Candidate | Candidate[]) => void;
 }
 
 interface FormValues {
@@ -47,20 +46,26 @@ export function AssignJobDialog({
   isOpen,
   onOpenChange,
   onJobAssignment,
-}: AssignCandidateDialogProps) {
+}: AssignJobDialogProps) {
   const { data: jobs } = useFetchOpenJobsQuery();
   const [assignJob] = useAssignJobMutation();
   const [loading, setLoading] = useState(false);
+
+  // Determine if multiple candidates are being assigned
+  const isMultiple = Array.isArray(candidate);
+  const candidateCount = isMultiple ? candidate.length : 1;
 
   // Initial form values
   const initialValues: FormValues = {
     // jobId: "",
     jobId:
-      typeof candidate.jobId === "string"
-        ? candidate.jobId
-        : typeof candidate.jobId === "object"
-          ? candidate.jobId._id
-          : "",
+      !isMultiple && candidate.jobId
+        ? typeof candidate.jobId === "string"
+          ? candidate.jobId
+          : typeof candidate.jobId === "object"
+            ? candidate.jobId._id
+            : ""
+        : "",
   };
 
   const handleSubmit = async (
@@ -69,33 +74,70 @@ export function AssignJobDialog({
   ) => {
     setLoading(true);
     try {
-      if (
-        candidate.jobId === undefined ||
-        (typeof candidate.jobId === "string" &&
-          candidate.jobId !== values.jobId) ||
-        (typeof candidate.jobId === "object" &&
-          candidate.jobId._id !== values.jobId)
-      ) {
-        const resp = await assignJob({
-          jobId: values.jobId,
-          candidateId: candidate._id,
-        }).unwrap();
-        onJobAssignment?.(resp.updatedCandidate);
-        toast({
-          title: "Success",
-          description: "Candidate assigned successfully",
-        });
+      if (isMultiple) {
+        // Handle multiple candidates
+        const updatedCandidates: Candidate[] = [];
+        for (const c of candidate) {
+          const isAlreadyAssigned =
+            c.jobId &&
+            (typeof c.jobId === "string"
+              ? c.jobId === values.jobId
+              : c.jobId._id === values.jobId);
+
+          if (!isAlreadyAssigned) {
+            const resp = await assignJob({
+              jobId: values.jobId,
+              candidateId: c._id,
+            }).unwrap();
+            updatedCandidates.push(resp.updatedCandidate);
+          }
+        }
+
+        if (updatedCandidates.length > 0) {
+          onJobAssignment?.(updatedCandidates);
+          toast({
+            title: "Success",
+            description: `Successfully assigned ${updatedCandidates.length} candidate(s) to the job`,
+          });
+        } else {
+          toast({
+            title: "Warning",
+            description:
+              "All selected candidates are already assigned to this job",
+            variant: "destructive",
+          });
+        }
       } else {
-        toast({
-          title: "Error",
-          description: "Candidate is already assigned to this job",
-          variant: "destructive",
-        });
+        // Handle single candidate
+        const isAlreadyAssigned =
+          candidate.jobId &&
+          typeof candidate.jobId === "object" &&
+          (typeof candidate.jobId === "string"
+            ? candidate.jobId === values.jobId
+            : candidate.jobId._id === values.jobId);
+
+        if (!isAlreadyAssigned) {
+          const resp = await assignJob({
+            jobId: values.jobId,
+            candidateId: candidate._id,
+          }).unwrap();
+          onJobAssignment?.(resp.updatedCandidate);
+          toast({
+            title: "Success",
+            description: "Candidate assigned successfully",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: "Candidate is already assigned to this job",
+            variant: "destructive",
+          });
+        }
       }
     } catch {
       toast({
         title: "Error",
-        description: "Job assignment to the candidate failed.",
+        description: `Job assignment to ${isMultiple ? "candidates" : "candidate"} failed.`,
         variant: "destructive",
       });
     } finally {
@@ -109,7 +151,9 @@ export function AssignJobDialog({
       <DialogContent className="p-0 overflow-hidden flex flex-col justify-start">
         <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle className="flex justify-between align-center">
-            Assign Job
+            {isMultiple
+              ? `Assign Job to ${candidateCount} Candidates`
+              : "Assign Job"}
           </DialogTitle>
         </DialogHeader>
 
@@ -120,11 +164,11 @@ export function AssignJobDialog({
           enableReinitialize
         >
           {({ errors, touched, isSubmitting, setFieldValue }) => (
-            <Form className="flex-1 flex flex-col h-full overflow-y-scroll ">
+            <Form className="flex-1 flex flex-col h-full overflow-y-scroll">
               <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
                 <div className="grid gap-4 py-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="interviewerId">Assign To</Label>
+                    <Label htmlFor="jobId">Assign To</Label>
                     <Field name="jobId">
                       {({ field }: { field: { value: string } }) => (
                         <Select
@@ -158,11 +202,15 @@ export function AssignJobDialog({
               </div>
 
               <div className="flex relative bottom-0 justify-between w-full space-x-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10">
-                <Button type="submit" disabled={isSubmitting || loading} variant="primary" >
-                  {isSubmitting && (
+                <Button
+                  type="submit"
+                  disabled={isSubmitting || loading}
+                  variant="primary"
+                >
+                  {isSubmitting || loading ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
-                  {isSubmitting && loading ? "Assigning" : "Assign"}
+                  ) : null}
+                  {isSubmitting || loading ? "Assigning" : "Assign"}
                 </Button>
               </div>
             </Form>

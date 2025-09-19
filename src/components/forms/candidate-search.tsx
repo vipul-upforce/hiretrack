@@ -46,7 +46,7 @@ function CandidateSearch() {
   const [searchResults, setSearchResults] = useState<Candidate[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [currentPageLimit, setCurrentPageLimit] = useState(100);
+  const [currentPageLimit, setCurrentPageLimit] = useState(20);
   const [totalRecordsCount, setTotalRecordsCount] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [sortField, setSortField] = useState<string | null>(null);
@@ -290,6 +290,7 @@ function CandidateSearch() {
         totalPages={totalPages}
         onPageChange={onPageChange}
         onLimitChange={onLimitChange}
+        currentPageLimit={currentPageLimit}
         sortField={sortField}
         sortDirection={sortDirection}
         onSort={handleSort}
