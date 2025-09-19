@@ -81,6 +81,7 @@ const getInitialValues = (customFields: CustomFieldValues) => ({
   name: "",
   location: "",
   experience: 0,
+  relevantExperience: 0,
   skills: [],
   expectedCTC: 0,
   currentCTC: 0,
@@ -306,6 +307,9 @@ export function CreateCandidateDialog({
         currentCTC: Number(parseFloat(String(values.currentCTC)).toFixed(2)),
         expectedCTC: Number(parseFloat(String(values.expectedCTC)).toFixed(2)),
         experience: Number(parseFloat(String(values.experience)).toFixed(2)),
+        relevantExperience: Number(
+          parseFloat(String(values.relevantExperience)).toFixed(2)
+        ),
         noticePeriod: Number(
           parseFloat(String(values.noticePeriod)).toFixed(0)
         ),

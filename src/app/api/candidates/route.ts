@@ -134,6 +134,7 @@ export async function POST(request: NextRequest) {
           contact: data.contact || "",
           location: data.location,
           experience: data.experience,
+          relevantExperience: data.relevantExperience,
           skills: data.skills,
           expectedCTC: data.expectedCTC,
           currentCTC: data.currentCTC,
@@ -148,27 +149,27 @@ export async function POST(request: NextRequest) {
           // Handle assignment data
           ...(data.assignment && data.assignment.interviewerId !== "-1"
             ? {
-              assignment: {
-                interviewerId: data.assignment.interviewerId,
-                googleMeet: null,
-                assignedAt: new Date(),
-                ...(data.assignment.time && {
-                  time: new Date(data.assignment.time),
-                }),
-              },
-            }
+                assignment: {
+                  interviewerId: data.assignment.interviewerId,
+                  googleMeet: null,
+                  assignedAt: new Date(),
+                  ...(data.assignment.time && {
+                    time: new Date(data.assignment.time),
+                  }),
+                },
+              }
             : null),
           // Handle file data
           ...(data.resume
             ? {
-              resume: {
-                id: data.resume.id,
-                name: data.resume.name,
-                url: data.resume.url,
-                type: data.resume.type,
-                size: data.resume.size,
-              },
-            }
+                resume: {
+                  id: data.resume.id,
+                  name: data.resume.name,
+                  url: data.resume.url,
+                  type: data.resume.type,
+                  size: data.resume.size,
+                },
+              }
             : null),
           // Handle attachments array
           attachments: data.attachments.map((attachment: Attachment) => ({

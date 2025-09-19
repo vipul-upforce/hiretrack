@@ -23,6 +23,7 @@ export interface Candidate {
   contact: string;
   location: string;
   experience: number;
+  relevantExperience: number;
   skills: string[];
   expectedCTC?: number;
   currentCTC?: number;

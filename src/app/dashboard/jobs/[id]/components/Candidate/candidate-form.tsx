@@ -56,6 +56,8 @@ export function CandidateForm({
   const [nameField, nameMeta] = useField("name");
   const [locationField, locationMeta] = useField("location");
   const [experienceField, experienceMeta] = useField("experience");
+  const [relevantExperienceField, relevantExperienceMeta] =
+    useField("relevantExperience");
   const [skillsField, skillsMeta] = useField("skills");
   const [expectedCTCField, expectedCTCMeta] = useField("expectedCTC");
   const [currentCTCField, currentCTCMeta] = useField("currentCTC");
@@ -463,12 +465,36 @@ export function CandidateForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="experience" className="font-semibold">
+              <Label htmlFor="relevantExperience" className="font-semibold">
                 Relevant Exp in Years <span className="text-red-500">*</span>
               </Label>
               <Input
-                id="experience"
+                id="relevantExperience"
                 placeholder="Enter relevant experience in years"
+                type="number"
+                step="0.01"
+                {...relevantExperienceField}
+                className={
+                  relevantExperienceMeta.error && relevantExperienceMeta.touched
+                    ? "border-red-500"
+                    : ""
+                }
+              />
+              {relevantExperienceMeta.touched &&
+                relevantExperienceMeta.error && (
+                  <p className="text-sm text-red-500">
+                    {relevantExperienceMeta.error}
+                  </p>
+                )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="experience" className="font-semibold">
+                Total Exp in Years <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="experience"
+                placeholder="Enter total experience in years"
                 type="number"
                 step="0.01"
                 {...experienceField}
@@ -1277,18 +1303,50 @@ export function CandidateForm({
               </div>
 
               <div
-                className="space-y-2 col-span-2"
+                className="space-y-2 col-span-1"
+                data-form-field="relevantExperience"
+              >
+                <Label
+                  htmlFor="relevantExperience"
+                  className="text-sm font-semibold text-gray-900 dark:text-gray-100"
+                >
+                  Relevant Exp in Years <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="relevantExperience"
+                  placeholder="Enter relevant experience in years"
+                  type="number"
+                  step="0.1"
+                  {...relevantExperienceField}
+                  className={`h-9 px-3 transition-all duration-200 w-full max-w-xs ${
+                    relevantExperienceMeta.error &&
+                    relevantExperienceMeta.touched
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                      : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
+                  }`}
+                />
+                {relevantExperienceMeta.touched &&
+                  relevantExperienceMeta.error && (
+                    <p className="text-sm text-red-500 flex items-center gap-1">
+                      <span className="w-1 h-1 bg-red-500 rounded-full"></span>
+                      {relevantExperienceMeta.error}
+                    </p>
+                  )}
+              </div>
+
+              <div
+                className="space-y-2 col-span-1"
                 data-form-field="experience"
               >
                 <Label
                   htmlFor="experience"
                   className="text-sm font-semibold text-gray-900 dark:text-gray-100"
                 >
-                  Relevant Exp in Years <span className="text-red-500">*</span>
+                  Total Exp in Years <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="experience"
-                  placeholder="Enter relevant experience in years"
+                  placeholder="Enter total experience in years"
                   type="number"
                   step="0.1"
                   {...experienceField}
