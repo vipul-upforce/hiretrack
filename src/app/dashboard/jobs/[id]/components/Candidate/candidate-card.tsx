@@ -185,6 +185,13 @@ const CandidateCard = memo(function CandidateCard({
   const [candidateToAssignJob, setCandidateToAssignJob] =
     useState<Candidate | null>(null);
   const [isAssignJobOpen, setIsAssignJobOpen] = useState(false);
+
+  const onAddRemarkOpenChange = () => {
+    // debugger;
+    setOpenRemarksFor(null);
+    setIsAddRemarkOpen(false);
+  };
+
   // Function to handle sync attendee responses
   const handleSyncAttendeeResponses = useCallback(
     async (e: React.MouseEvent) => {

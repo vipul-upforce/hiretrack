@@ -60,13 +60,13 @@ const MenuItem = ({ icon, label, onClick, className = "" }: MenuItemProps) => (
 
 const SORT_FIELDS: SortField[] = [
   { label: "Date Created", value: "createdAt" },
+  { label: "Last Modified Date", value: "lastModified" },
   { label: "Assignment Date", value: "assignmentDate" },
   { label: "Experience", value: "experience" },
   { label: "Overall AI Score", value: "aiScore" },
   { label: "Current CTC", value: "ctc" },
   { label: "Expected CTC", value: "expectedCtc" },
   { label: "Notice Period", value: "noticePeriod" },
-  { label: "Last Modified Date", value: "lastModified" },
   { label: "Name ", value: "name" },
 ];
 
@@ -90,7 +90,6 @@ export function LaneOptionsMenu({
 
   const storageKey = `lane-sort-${laneId}`;
 
-
   // 🟢 Load saved sort preferences from localStorage
   useEffect(() => {
     const saved = localStorage.getItem(storageKey);
@@ -104,10 +103,7 @@ export function LaneOptionsMenu({
 
   // 🟢 Save sort preferences whenever they change
   const saveSortPreferences = (field: string, direction: "asc" | "desc") => {
-    localStorage.setItem(
-      storageKey,
-      JSON.stringify({ field, direction })
-    );
+    localStorage.setItem(storageKey, JSON.stringify({ field, direction }));
   };
 
   const handleSortApply = useCallback(() => {
@@ -115,19 +111,23 @@ export function LaneOptionsMenu({
     saveSortPreferences(selectedSortField, sortDirection);
   }, [selectedSortField, sortDirection, onSort]);
 
-  const handleSortFieldSelect = useCallback((field: string) => {
-    setSelectedSortField(field);
-    saveSortPreferences(field, sortDirection);
-    onSort(field, sortDirection);
-  }, [sortDirection, onSort]);
+  const handleSortFieldSelect = useCallback(
+    (field: string) => {
+      setSelectedSortField(field);
+      saveSortPreferences(field, sortDirection);
+      onSort(field, sortDirection);
+    },
+    [sortDirection, onSort]
+  );
 
-  const handleSortDirection = useCallback((direction: "asc" | "desc") => {
-    setSortDirection(direction);
-    saveSortPreferences(selectedSortField, direction);
-    onSort(selectedSortField, direction);
-  }, [selectedSortField, onSort]);
-
-
+  const handleSortDirection = useCallback(
+    (direction: "asc" | "desc") => {
+      setSortDirection(direction);
+      saveSortPreferences(selectedSortField, direction);
+      onSort(selectedSortField, direction);
+    },
+    [selectedSortField, onSort]
+  );
 
   const menuItems = [
     {
@@ -139,14 +139,18 @@ export function LaneOptionsMenu({
         setIsOpen(false);
       },
     },
-    ...(onConfigureChecklist ? [{
-      icon: <ClipboardCheck className="mr-2 h-4 w-4" />,
-      label: "Checklists",
-      onClick: () => {
-        onConfigureChecklist(laneId, laneName);
-        setIsOpen(false);
-      },
-    }] : []),
+    ...(onConfigureChecklist
+      ? [
+          {
+            icon: <ClipboardCheck className="mr-2 h-4 w-4" />,
+            label: "Checklists",
+            onClick: () => {
+              onConfigureChecklist(laneId, laneName);
+              setIsOpen(false);
+            },
+          },
+        ]
+      : []),
     {
       icon: <ArrowUpDown className="mr-2 h-4 w-4" />,
       label: "Sort",

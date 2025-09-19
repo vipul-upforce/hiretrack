@@ -356,6 +356,7 @@ export async function POST(request: NextRequest) {
                 expectedCTC: 1,
                 customFields: 1,
                 tracking: 1,
+                isDeleted: 1,
                 history: { $arrayElemAt: ["$history.history", 0] },
                 assignment: {
                   $mergeObjects: [

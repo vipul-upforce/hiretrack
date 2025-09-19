@@ -276,17 +276,72 @@ export const RenderField = ({
         </div>
       );
 
+    // case "date":
+    //   return (
+    //     <DatePicker
+    //       value={new Date(values.customFields[label] as string)}
+    //       onChange={(e) =>
+    //         setFieldValue(
+    //           "customFields." + label,
+    //           e && e instanceof Date ? e.toISOString() : ""
+    //         )
+    //       }
+    //       onClose={() => setFieldTouched("customFields." + label, true)}
+    //     />
+    //   );
+
     case "date":
+      const NewValue = values.customFields[label]
+        ? dayjs(values.customFields[label] as string)
+        : null;
+
+      const dateValue =
+        NewValue && NewValue.isValid() ? NewValue.toDate() : null;
+
       return (
         <DatePicker
-          value={new Date(values.customFields[label] as string)}
-          onChange={(e) =>
-            setFieldValue(
-              "customFields." + label,
-              e && e instanceof Date ? e.toISOString() : ""
-            )
-          }
+          value={dateValue || null} // 👈 force null explicitly
+          onChange={(e) => {
+            let selectedDate: string | null = null;
+
+            if (e && typeof e === "object" && "toDate" in e) {
+              const date = e.toDate();
+              selectedDate =
+                date && !isNaN(date.getTime())
+                  ? dayjs(date).format("MM/DD/YYYY")
+                  : null;
+            } else if (e && e instanceof Date && !isNaN(e.getTime())) {
+              selectedDate = dayjs(e).format("MM/DD/YYYY");
+            }
+
+            setFieldValue("customFields." + label, selectedDate);
+          }}
           onClose={() => setFieldTouched("customFields." + label, true)}
+          format="MM/DD/YYYY"
+          placeholder="MM/DD/YYYY"
+          showTimePicker={false}
+          showNowButton={false}
+        />
+      );
+
+    case "datetime":
+      return (
+        <DateTimePicker
+          value={
+            values.customFields[label]
+              ? dayjs(values.customFields[label] as string)
+              : null
+          }
+          onChange={(e) => {
+            if (e) {
+              const formatted = e.format("MM/DD/YYYY hh:mm A");
+              // console.log("Selected datetime:", formatted); // Debug
+              setFieldValue("customFields." + label, formatted);
+            } else {
+              setFieldValue("customFields." + label, "");
+            }
+          }}
+          onBlur={() => setFieldTouched("customFields." + label, true)}
         />
       );
 
@@ -302,25 +357,6 @@ export const RenderField = ({
           onBlur={() => setFieldTouched("customFields." + label, true)}
         />
       );
-
-    case "datetime":
-      return (
-        <DateTimePicker
-          value={
-            values.customFields[label]
-              ? dayjs(values.customFields[label] as string)
-              : null
-          }
-          onChange={(e) =>
-            setFieldValue(
-              "customFields." + label,
-              e && e instanceof Date ? e.toISOString() : ""
-            )
-          }
-          onBlur={() => setFieldTouched("customFields." + label, true)}
-        />
-      );
-
     case "radio":
       return (
         <div className="flex items-center gap-4">
