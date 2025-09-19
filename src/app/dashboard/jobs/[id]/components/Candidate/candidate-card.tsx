@@ -1291,7 +1291,7 @@ const CandidateCard = memo(function CandidateCard({
       {
         <Dialog open={isTagsOpen} onOpenChange={setIsTagsOpen}>
           <DialogTitle></DialogTitle>
-          <DialogContent className="h-[340px] w-[330px]">
+          <DialogContent className="w-[330px]">
             <div className="h-full">
               <TagsDialog
                 user={user}
