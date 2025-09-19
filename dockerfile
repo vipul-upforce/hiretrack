@@ -23,7 +23,7 @@ COPY . .
 # Increase Node.js memory limit for build
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 # Define MONGODB_URI for build (use a placeholder; override at runtime)
-ENV MONGODB_URI="mongodb://localhost:27017/hiretrack-1009"
+ENV MONGODB_URI="mongodb://vipul:ZgB%214%5E.%24f446vQp@64.227.170.154:27017/hiretrack-1609?authSource=admin"
 ENV NEXT_PUBLIC_RECAPTCHA_SITE_KEY="6Ld4V34rAAAAAAYqBoNUZYx6Xg8JYI3Ozx-ayCne"
 ENV RECAPTCHA_SECRET_KEY="6Ld4V34rAAAAADa27B4zf0Bx4BaMMD6AtO-QIRHL"
 ENV ENVIRONMENT="production"
