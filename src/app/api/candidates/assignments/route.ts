@@ -551,6 +551,7 @@ export async function GET(req: NextRequest) {
               name: "$candidates.name",
               location: "$candidates.location",
               experience: "$candidates.experience",
+              relevantExperience: "$candidates.relevantExperience",
               skills: "$candidates.skills",
               expectedCTC: {
                 $cond: [

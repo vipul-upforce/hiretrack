@@ -5,6 +5,7 @@ export interface ProcessedResumeData {
   email?: string;
   location: string;
   experience: number;
+  relevantExperience: number;
   skills: string[];
   currentCTC: number;
   expectedCTC: number;

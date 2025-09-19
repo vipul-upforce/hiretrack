@@ -43,6 +43,7 @@ export interface CandidateAssignment {
   };
   location: string;
   experience: number;
+  relevantExperience: number;
   skills: string[];
   expectedCTC?: number;
   currentCTC?: number;

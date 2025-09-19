@@ -5,9 +5,6 @@ import {
   Draggable,
   type DroppableProvided,
   type DraggableProvided,
-  type DraggableStateSnapshot,
-  type DroppableStateSnapshot,
-  type DraggableRubric,
 } from "@hello-pangea/dnd";
 import {
   GripVertical,
@@ -17,7 +14,7 @@ import {
 import { CandidateCard } from "../Candidate/candidate-card";
 import { Candidate } from "@/types/candidate";
 import { LaneOptionsMenu } from "./lanes-options-menu";
-import { useState, useMemo, memo, useCallback, useRef, useEffect } from "react";
+import { useState, useMemo, memo, useCallback, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { Virtuoso } from "react-virtuoso";
 import {
@@ -35,6 +32,12 @@ interface PendingMove {
   targetLaneId: string;
   sourceIndex: number;
   targetIndex: number;
+}
+
+interface SortConfig {
+  field: string | null;
+  direction: "asc" | "desc";
+  enabled: boolean;
 }
 
 interface KanbanColumnProps {
@@ -69,9 +72,6 @@ interface KanbanColumnProps {
   laneConfig?: ILaneConfig;
 }
 
-type SortField = string;
-type SortDirection = "asc" | "desc";
-
 const KanbanColumn = memo(function KanbanColumn({
   column,
   index,
@@ -97,179 +97,129 @@ const KanbanColumn = memo(function KanbanColumn({
 }: KanbanColumnProps) {
   const [isLaneOptionsOpen, setIsLaneOptionsOpen] = useState<boolean>(false);
   const [isLaneOpsOpenFor, setIsLaneOpsOpenFor] = useState<string | null>(null);
-  const [sortField, setSortField] = useState<SortField | null>(null);
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
-  // Add state to temporarily suspend sorting after a drop
-  const [suspendSorting, setSuspendSorting] = useState<boolean>(false);
+
+  // Simplified sort state
+  const [sortConfig, setSortConfig] = useState<SortConfig>({
+    field: null,
+    direction: "asc",
+    enabled: true,
+  });
 
   const pathname = usePathname();
   const jobId = pathname?.split("/")[3];
   const scrollerRef = useRef<HTMLDivElement | null>(null);
 
-  const sortCandidates = (
-    candidates: Candidate[],
-    field: SortField,
-    direction: SortDirection
-  ): Candidate[] => {
-    return [...candidates].sort((a, b) => {
-      let aValue: unknown;
-      let bValue: unknown;
+  // Simplified sort function
+  const sortCandidates = useCallback(
+    (
+      candidates: Candidate[],
+      field: string,
+      direction: "asc" | "desc"
+    ): Candidate[] => {
+      return [...candidates].sort((a, b) => {
+        const getValue = (candidate: Candidate, field: string): any => {
+          switch (field) {
+            case "name":
+              return candidate.name?.toLowerCase() || "";
+            case "email":
+              return candidate.email?.toLowerCase() || "";
+            case "ctc":
+              return candidate.currentCTC ?? 0;
+            case "expectedCtc":
+              return candidate.expectedCTC ?? 0;
+            case "experience":
+              return typeof candidate.experience === "number"
+                ? candidate.experience
+                : parseInt(candidate.experience as string) || 0;
+            case "skills":
+              return Array.isArray(candidate.skills)
+                ? candidate.skills.length
+                : 0;
+            case "appliedDate":
+              return candidate.appliedDate
+                ? new Date(candidate.appliedDate).getTime()
+                : 0;
+            case "assignmentDate":
+              return candidate.assignment?.time
+                ? new Date(candidate.assignment?.time).getTime()
+                : 0;
+            case "noticePeriod":
+              return candidate.noticePeriod
+                ? new Date(candidate.noticePeriod).getTime()
+                : 0;
+            case "aiScore":
+              return candidate.scores?.overall
+                ? new Date(candidate.scores.overall).getTime()
+                : 0;
+            case "followupDate":
+              return candidate?.followUp?.date
+                ? new Date(candidate?.followUp?.date).getTime()
+                : 0;
+            case "createdAt":
+              return candidate.tracking?.createdAt
+                ? new Date(candidate.tracking?.createdAt).getTime()
+                : 0;
+            case "lastModified":
+              return candidate.updatedAt
+                ? new Date(candidate.updatedAt).getTime()
+                : candidate.createdAt
+                  ? new Date(candidate.createdAt).getTime()
+                  : 0;
+            default:
+              return "";
+          }
+        };
 
-      switch (field) {
-        case "name":
-          aValue = a.name?.toLowerCase() || "";
-          bValue = b.name?.toLowerCase() || "";
-          break;
-        case "email":
-          aValue = a.email?.toLowerCase() || "";
-          bValue = b.email?.toLowerCase() || "";
-          break;
-        case "ctc":
-          aValue = a.currentCTC ?? 0;
-          bValue = b.currentCTC ?? 0;
-          break;
-        case "expectedCtc":
-          aValue = a.expectedCTC ?? 0;
-          bValue = b.expectedCTC ?? 0;
-          break;
-        case "experience":
-          aValue =
-            typeof a.experience === "number"
-              ? a.experience
-              : parseInt(a.experience as string) || 0;
-          bValue =
-            typeof b.experience === "number"
-              ? b.experience
-              : parseInt(b.experience as string) || 0;
-          break;
-        case "skills":
-          aValue = Array.isArray(a.skills) ? a.skills.length : 0;
-          bValue = Array.isArray(b.skills) ? b.skills.length : 0;
-          break;
-        case "appliedDate":
-          aValue = a.appliedDate ? new Date(a.appliedDate).getTime() : 0;
-          bValue = b.appliedDate ? new Date(b.appliedDate).getTime() : 0;
-          break;
-        case "assignmentDate":
-          aValue = a.assignment?.time
-            ? new Date(a.assignment?.time).getTime()
-            : 0;
-          bValue = b.assignment?.time
-            ? new Date(b.assignment?.time).getTime()
-            : 0;
-          break;
-        case "noticePeriod":
-          aValue = a.noticePeriod ? new Date(a.noticePeriod).getTime() : 0;
-          bValue = b.noticePeriod ? new Date(b.noticePeriod).getTime() : 0;
-          break;
-        case "aiScore":
-          aValue = a.scores?.overall ? new Date(a.scores.overall).getTime() : 0;
-          bValue = b.scores?.overall ? new Date(b.scores.overall).getTime() : 0;
-          break;
-        case "followupDate":
-          aValue = a?.followUp?.date
-            ? new Date(a?.followUp?.date).getTime()
-            : 0;
-          bValue = b?.followUp?.date
-            ? new Date(b?.followUp?.date).getTime()
-            : 0;
-          break;
-        case "createdAt":
-          aValue = a.tracking?.createdAt
-            ? new Date(a.tracking?.createdAt).getTime()
-            : 0;
-          bValue = b.tracking?.createdAt
-            ? new Date(b.tracking?.createdAt).getTime()
-            : 0;
-          break;
-        case "lastModified":
-          aValue = a.updatedAt
-            ? new Date(a.updatedAt).getTime()
-            : a.createdAt
-              ? new Date(a.createdAt).getTime()
-              : 0;
-          bValue = b.updatedAt
-            ? new Date(b.updatedAt).getTime()
-            : b.createdAt
-              ? new Date(b.createdAt).getTime()
-              : 0;
-          break;
-        default:
-          return 0;
-      }
+        const aValue = getValue(a, field);
+        const bValue = getValue(b, field);
 
-      if (aValue! < bValue!) {
-        return direction === "asc" ? -1 : 1;
-      }
-      if (aValue! > bValue!) {
-        return direction === "asc" ? 1 : -1;
-      }
-      return 0;
-    });
-  };
-
-  // Memoized sorted candidates with stable reference
-  const sortedCandidates = useMemo(() => {
-    // Don't sort if sorting is suspended or no sort field is set
-    if (!sortField || suspendSorting) {
-      return column.candidates;
-    }
-
-    const sorted = sortCandidates(column.candidates, sortField, sortDirection);
-    return sorted;
-  }, [column.candidates, sortField, sortDirection, suspendSorting]);
-
-  // Memoized filtered candidates for this job
-  const filteredCandidates = useMemo(() => {
-    return sortedCandidates.filter((candidate) => {
-      if (
-        (typeof candidate.jobId !== "string" &&
-          candidate?.jobId?._id?.toString() !== jobId?.toString()) ||
-        (typeof candidate.jobId === "string" &&
-          candidate?.jobId !== jobId?.toString())
-      ) {
-        return false;
-      }
-      return true;
-    });
-  }, [sortedCandidates, jobId]);
-
-  // Track candidates count to detect when a new candidate is added
-  const prevCandidatesCountRef = useRef(column.candidates.length);
-
-  // Effect to detect when a new candidate is added to this column
-  useEffect(() => {
-    const currentCount = column.candidates.length;
-    const prevCount = prevCandidatesCountRef.current;
-
-    // If a candidate was added to this column
-    if (currentCount > prevCount) {
-      // Suspend sorting temporarily
-      setSuspendSorting(true);
-
-      // Resume sorting after a delay
-      const timer = setTimeout(() => {
-        setSuspendSorting(false);
-      }, 500); // 500ms delay
-
-      // Cleanup
-      return () => clearTimeout(timer);
-    }
-
-    // Update the ref for next comparison
-    prevCandidatesCountRef.current = currentCount;
-  }, [column.candidates.length, column.id]);
-
-  // Handle sort from LaneOptionsMenu - memoized to prevent re-renders
-  const handleSort = useCallback(
-    (field: SortField, direction: SortDirection) => {
-      setSortField(field);
-      setSortDirection(direction);
+        if (aValue < bValue) return direction === "asc" ? -1 : 1;
+        if (aValue > bValue) return direction === "asc" ? 1 : -1;
+        return 0;
+      });
     },
     []
   );
 
-  // Memoized event handlers to prevent re-renders
+  // Single source of truth for processed candidates
+  const processedCandidates = useMemo(() => {
+    // First filter by jobId
+    const filtered = column.candidates.filter((candidate) => {
+      const candidateJobId =
+        typeof candidate.jobId === "string"
+          ? candidate.jobId
+          : candidate.jobId?._id?.toString();
+      return candidateJobId === jobId?.toString();
+    });
+
+    // Then sort if enabled and field is selected
+    if (!sortConfig.enabled || !sortConfig.field) {
+      return filtered;
+    }
+
+    return sortCandidates(filtered, sortConfig.field, sortConfig.direction);
+  }, [column.candidates, jobId, sortConfig, sortCandidates]);
+
+  // Handle sort from LaneOptionsMenu
+  const handleSort = useCallback((field: string, direction: "asc" | "desc") => {
+    setSortConfig({ field, direction, enabled: true });
+  }, []);
+
+  // Disable sorting during drag operations
+  const handleDragStart = useCallback(() => {
+    setSortConfig((prev) => ({ ...prev, enabled: false }));
+  }, []);
+
+  // Re-enable sorting after drag ends
+  // const handleDragEnd = useCallback(() => {
+  //   // Small delay to let the drag operation complete
+  //   setTimeout(() => {
+  //     debugger;
+  //     setSortConfig((prev) => ({ ...prev, enabled: true }));
+  //   }, 100);
+  // }, []);
+
+  // Memoized event handlers
   const handleViewDetails = useCallback(
     (candidate: any) => {
       setSelectedCandidate(candidate);
@@ -296,7 +246,6 @@ const KanbanColumn = memo(function KanbanColumn({
           style={{
             ...provided.draggableProps.style,
             userSelect: "none",
-            // opacity: snapshot.isDragging ? 0.8 : 1,
           }}
         >
           <div className="h-full flex flex-col bg-white/70 dark:bg-black/30 rounded-xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm p-2 min-w-0 w-full max-w-full">
@@ -307,6 +256,7 @@ const KanbanColumn = memo(function KanbanColumn({
                     {...provided.dragHandleProps}
                     onMouseDown={(e) => {
                       e.stopPropagation();
+                      handleDragStart();
                       provided.dragHandleProps?.onMouseDown?.(e);
                     }}
                     className="cursor-grab active:cursor-grabbing"
@@ -388,13 +338,7 @@ const KanbanColumn = memo(function KanbanColumn({
                     )}
                   </div>
                   <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-700 px-2 py-1 rounded-full min-w-[24px] text-center shadow-sm">
-                    {
-                      column.candidates.filter(
-                        (candidate) =>
-                          candidate?.jobId?._id?.toString() ===
-                          jobId?.toString()
-                      ).length
-                    }
+                    {processedCandidates.length}
                   </span>
                   <LaneOptionsMenu
                     laneId={column.id}
@@ -461,38 +405,27 @@ const KanbanColumn = memo(function KanbanColumn({
                     <CustomScrollbarLane
                       isDragging={isDragging}
                       className="h-full"
-                      scrollerRef={scrollerRef} // Optional: pass this if needed
+                      scrollerRef={scrollerRef}
                     >
                       <Virtuoso
                         style={{ height: "100%", scrollbarWidth: "none" }}
-                        data={filteredCandidates}
+                        data={processedCandidates}
                         increaseViewportBy={{ bottom: 200, top: 100 }}
                         scrollerRef={() => scrollerRef}
-                        // Use a stable key to prevent reordering issues
                         computeItemKey={(index, candidate) => candidate._id}
-                        // Store the candidate ID as a data attribute for drag and drop
                         itemContent={(index, candidate) => {
-                          // Store the original index of the candidate in the unsorted array
-                          const originalIndex = column.candidates.findIndex(
-                            (c) => c._id === candidate._id
-                          );
                           const isPending = pendingMoves.some(
                             (pm) =>
                               pm.candidateId === candidate._id &&
                               pm.targetLaneId === column.id
                           );
+
                           return (
-                            <div
-                              className="pb-2"
-                              data-candidate-id={candidate._id}
-                              data-original-index={originalIndex}
-                            >
+                            <div className="pb-2">
                               <CandidateCard
                                 key={candidate._id}
                                 candidate={candidate}
-                                index={
-                                  originalIndex
-                                } /* Use the original index for drag and drop */
+                                index={index}
                                 refetch={refetch}
                                 onViewDetails={handleViewDetails}
                                 openRemarks={openRemarksFor === candidate._id}

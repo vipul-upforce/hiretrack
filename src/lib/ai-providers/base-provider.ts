@@ -96,6 +96,7 @@ export abstract class BaseAIProvider implements AIProvider {
           location: "",
           contact: "",
           experience: 0,
+          relevantExperience: 0,
           skills: [],
           currentCTC: 0,
           expectedCTC: 0,

@@ -1,13 +1,15 @@
 // Node.js script to migrate candidate data and add relevantExperience field
 // Run with: node migrate-relevant-experience.js
 
-const mongoose = require('mongoose');
-require('dotenv').config(); // Load environment variables from .env file
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+dotenv.config();
+// require('dotenv').config(); // Load environment variables from .env file
 
 async function migrateRelevantExperience() {
   try {
     // Connect to MongoDB using connection string from environment variables
-    const connectionString = process.env.MONGODB_URI || 'mongodb://localhost:27017/hiretrack';
+    const connectionString = "mongodb://vipul:ZgB%214%5E.%24f446vQp@64.227.170.154:27017/hiretrack-1609?authSource=admin"
     await mongoose.connect(connectionString, {
       useNewUrlParser: true,
       useUnifiedTopology: true
