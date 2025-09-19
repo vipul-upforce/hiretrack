@@ -48,7 +48,7 @@ export function DetailsDialog({
   const dialogClassName =
     isLargeViewport && !isMaximized
       ? "!max-w-[80vw] !min-w-[950px] !h-[90vh] !left-[50%] !top-[50%] !translate-x-[-50%] !translate-y-[-50%] xl:!max-w-[50vw] overflow-hidden flex flex-col"
-      : "!max-w-none !w-screen !h-screen !min-h-screen !max-h-screen !left-0 !top-0 !translate-x-0 !translate-y-0 !min-w-0 !inset-0 !m-0 !border-0 !rounded-none overflow-hidden flex flex-col";
+      : "!max-w-none !w-screen !h-[100dvh] !min-h-screen !max-h-[100dvh] !left-0 !top-0 !translate-x-0 !translate-y-0 !min-w-0 !inset-0 !m-0 !border-0 !rounded-none overflow-hidden flex flex-col";
 
   const dialogStyle =
     !isLargeViewport || isMaximized
@@ -56,9 +56,9 @@ export function DetailsDialog({
           position: "fixed" as const,
           inset: 0,
           width: "100vw",
-          height: "100vh",
-          minHeight: "100vh",
-          maxHeight: "100vh",
+          height: "100dvh",
+          minHeight: "100dvh",
+          maxHeight: "100dvh",
           maxWidth: "none",
           transform: "none",
           left: 0,
@@ -98,7 +98,7 @@ export function DetailsDialog({
         {!isLargeViewport || isMaximized ? (
           <div
             className="h-full flex flex-col"
-            style={{ height: "100vh", minHeight: "100vh" }}
+            style={{ height: "100dvh", minHeight: "100dvh" }}
           >
             {children}
           </div>

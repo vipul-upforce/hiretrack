@@ -495,14 +495,14 @@ body {
     .dialog-lg {
       margin: var(--space-sm);
       max-width: calc(100vw - 2 * var(--space-sm));
-      max-height: calc(100vh - 2 * var(--space-sm));
+      max-height: calc(100dvh - 2 * var(--space-sm));
     }
 
     .dialog-xl,
     .dialog-2xl {
       margin: var(--space-xs);
       max-width: calc(100vw - 2 * var(--space-xs));
-      max-height: calc(100vh - 2 * var(--space-xs));
+      max-height: calc(100dvh - 2 * var(--space-xs));
     }
 
     /* Ensure dialog content is properly sized on mobile */
@@ -1156,9 +1156,9 @@ body {
     position: fixed !important;
     inset: 0 !important;
     width: 100vw !important;
-    height: 100vh !important;
-    min-height: 100vh !important;
-    max-height: 100vh !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
     max-width: none !important;
     transform: none !important;
     left: 0 !important;
@@ -1171,8 +1171,8 @@ body {
 
   /* Ensure full screen dialog children also use full height */
   [data-fullscreen="true"]>div {
-    height: 100vh !important;
-    min-height: 100vh !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
     display: flex !important;
     flex-direction: column !important;
   }

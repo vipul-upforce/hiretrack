@@ -56,7 +56,7 @@ export default function CandidateDetailsPage() {
   if (!candidate) return <div>Candidate not found.</div>;
 
   return (
-    <div className=" w-screen h-screen">
+    <div className=" w-screen h-[100dvh]">
       <CandidateDetailsDialog
         candidate={candidate}
         isOpen={true}

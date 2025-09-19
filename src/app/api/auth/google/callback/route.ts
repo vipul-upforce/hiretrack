@@ -271,7 +271,7 @@ export async function GET(req: NextRequest) {
               display: flex;
               align-items: center;
               justify-content: center;
-              height: 100vh;
+              height: 100dvh;
               margin: 0;
               background-color: #f5f5f5;
             }

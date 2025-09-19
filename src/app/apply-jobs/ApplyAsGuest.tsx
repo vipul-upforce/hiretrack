@@ -491,7 +491,7 @@ export function ApplyAsGuestDialog({
         </button>
       </DialogTrigger>
       <DialogContent
-        className={`${isSmallScreen ? "fixed inset-0 w-screen max-w-none max-h-none m-0 p-0 rounded-none border-0" : "lg:w-[85vw] lg:h-[85vh] lg:max-w-[85vw] lg:max-h-[85vh] lg:border lg:rounded-lg xl:w-[80vw] xl:h-[80vh] xl:max-w-[80vw] xl:max-h-[80vh]"} overflow-hidden flex flex-col justify-center`}
+        className={`${isSmallScreen ? "fixed inset-0 w-screen max-w-none max-h-none m-0 p-0 rounded-none border-0" : "lg:w-[85vw] lg:h-[85dvh] lg:max-w-[85vw] lg:max-h-[85dvh] lg:border lg:rounded-lg xl:w-[80vw] xl:h-[80dvh] xl:max-w-[80vw] xl:max-h-[80dvh]"} overflow-hidden flex flex-col justify-center`}
         style={
           isSmallScreen
             ? ({

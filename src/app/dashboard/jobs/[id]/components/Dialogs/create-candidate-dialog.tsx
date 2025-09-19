@@ -495,7 +495,7 @@ export function CreateCandidateDialog({
       <DialogContent
         className={
           !isLargeViewport || isMaximized
-            ? "!max-w-none !w-screen !h-screen !min-h-screen !max-h-screen !left-0 !top-0 !translate-x-0 !translate-y-0 !min-w-0 !inset-0 !m-0 !border-0 !rounded-none overflow-hidden flex flex-col p-0"
+            ? "!max-w-none !w-screen !h-[100dvh] !min-h-100dvh !max-h-[100dvh] !left-0 !top-0 !translate-x-0 !translate-y-0 !min-w-0 !inset-0 !m-0 !border-0 !rounded-none overflow-hidden flex flex-col p-0"
             : "lg:max-w-[80vw] xl:max-w-[65vw] lg:h-[90vh] lg:border lg:rounded-lg p-0 overflow-hidden flex flex-col"
         }
         style={

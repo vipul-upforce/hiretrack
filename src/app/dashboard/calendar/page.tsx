@@ -420,7 +420,7 @@ export default function CalendarPage() {
             />
           </div>
         </div>
-        <div className="flex flex-col gap-4 sticky top-6 h-[calc(100vh-140px)] overflow-auto">
+        <div className="flex flex-col gap-4 sticky top-6 h-[calc(100dvh-140px)] overflow-auto">
           {/* Unscheduled interviews */}
           {/* <Card>
             <CardHeader>
