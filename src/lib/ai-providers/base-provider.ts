@@ -44,6 +44,7 @@ export abstract class BaseAIProvider implements AIProvider {
       "location": "candidate's location/city",
       "contact": "candidate's contact number if present",
       "experience": number of years of experience (as a number),
+      "relevantExperience": number of years of relevant experience (as a number),
       "skills": ["array", "of", "technical", "and", "soft", "skills"],
       "currentCTC": current CTC as a number (in lakhs, 0 if not found),
       "expectedCTC": expected CTC as a number (in lakhs, 0 if not found),
