@@ -1,7 +1,13 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { useSelector } from 'react-redux';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from "react";
+import { useSelector } from "react-redux";
 
 export interface OnboardingStep {
   id: string;
@@ -45,19 +51,24 @@ interface OnboardingContextType {
   doNotShowAgain: () => Promise<void>;
 }
 
-const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
+const OnboardingContext = createContext<OnboardingContextType | undefined>(
+  undefined
+);
 
 interface OnboardingProviderProps {
   children: ReactNode;
 }
 
-export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children }) => {
+export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
+  children,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
 
   // Debug state changes
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [steps, setSteps] = useState<OnboardingStep[]>([]);
-  const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus | null>(null);
+  const [onboardingStatus, setOnboardingStatus] =
+    useState<OnboardingStatus | null>(null);
   const [progress, setProgress] = useState<OnboardingProgress | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -65,7 +76,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
 
   // Initialize onboarding data
   useEffect(() => {
-    if (user?.role === 'admin') {
+    if (user?.role === "admin") {
       fetchOnboardingData();
     } else {
       setIsLoading(false);
@@ -74,7 +85,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
 
   // Auto-open onboarding for new admins
   useEffect(() => {
-    if (!isLoading && onboardingStatus && user?.role === 'admin') {
+    if (!isLoading && onboardingStatus && user?.role === "admin") {
       // Show onboarding if:
       // 1. Not completed
       // 2. User hasn't chosen "do not show again"
@@ -97,7 +108,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
       setIsLoading(true);
 
       // Fetch onboarding status
-      const statusResponse = await fetch('/api/onboarding/status');
+      const statusResponse = await fetch("/api/onboarding/status");
       if (statusResponse.ok) {
         const statusData = await statusResponse.json();
         setOnboardingStatus(statusData.onboardingStatus);
@@ -106,9 +117,8 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
 
       // Fetch validation progress
       await refreshProgress();
-
     } catch (error) {
-      console.error('Error fetching onboarding data:', error);
+      console.error("Error fetching onboarding data:", error);
     } finally {
       setIsLoading(false);
     }
@@ -116,13 +126,14 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
 
   const refreshProgress = async () => {
     try {
-      const validateResponse = await fetch('/api/onboarding/validate');
+      const validateResponse = await fetch("/api/onboarding/validate");
       if (validateResponse.ok) {
         const validateData = await validateResponse.json();
         setProgress(validateData.progress);
+        console.log(validateData.progress);
 
         // Update steps with validation status
-        const updatedSteps = getDefaultSteps().map(step => ({
+        const updatedSteps = getDefaultSteps().map((step) => ({
           ...step,
           isCompleted: validateData.stepStatus[step.id] || false,
           isSkipped: onboardingStatus?.skippedSteps.includes(step.id) || false,
@@ -130,15 +141,15 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
         setSteps(updatedSteps);
       }
     } catch (error) {
-      console.error('Error refreshing progress:', error);
+      console.error("Error refreshing progress:", error);
     }
   };
 
   const updateOnboardingStatus = async (updates: Partial<OnboardingStatus>) => {
     try {
-      const response = await fetch('/api/onboarding/status', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/onboarding/status", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updates),
       });
 
@@ -148,7 +159,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
         await refreshProgress();
       }
     } catch (error) {
-      console.error('Error updating onboarding status:', error);
+      console.error("Error updating onboarding status:", error);
     }
   };
 
@@ -160,7 +171,9 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
       updatedCompletedSteps.push(stepId);
     }
 
-    const updatedSkippedSteps = onboardingStatus.skippedSteps.filter(id => id !== stepId);
+    const updatedSkippedSteps = onboardingStatus.skippedSteps.filter(
+      (id) => id !== stepId
+    );
 
     await updateOnboardingStatus({
       completedSteps: updatedCompletedSteps,
@@ -176,7 +189,9 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
       updatedSkippedSteps.push(stepId);
     }
 
-    const updatedCompletedSteps = onboardingStatus.completedSteps.filter(id => id !== stepId);
+    const updatedCompletedSteps = onboardingStatus.completedSteps.filter(
+      (id) => id !== stepId
+    );
 
     await updateOnboardingStatus({
       completedSteps: updatedCompletedSteps,
@@ -186,9 +201,9 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
 
   const validateStep = async (stepId: string): Promise<boolean> => {
     try {
-      const response = await fetch('/api/onboarding/validate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/onboarding/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ step: stepId }),
       });
 
@@ -198,7 +213,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
       }
       return false;
     } catch (error) {
-      console.error('Error validating step:', error);
+      console.error("Error validating step:", error);
       return false;
     }
   };
@@ -237,82 +252,101 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
 export const useOnboarding = () => {
   const context = useContext(OnboardingContext);
   if (context === undefined) {
-    throw new Error('useOnboarding must be used within an OnboardingProvider');
+    throw new Error("useOnboarding must be used within an OnboardingProvider");
   }
   return context;
 };
 
 // Define default steps - you can import these from a separate file
-import { Globe, Bot, Mail, Calendar, Clock, HardDrive, Users, Palette } from 'lucide-react';
+import {
+  Globe,
+  Bot,
+  Mail,
+  Calendar,
+  Clock,
+  HardDrive,
+  Users,
+  Palette,
+  ShieldCheck,
+} from "lucide-react";
 
 const getDefaultSteps = (): OnboardingStep[] => [
   {
-    id: 'portal',
-    title: 'Portal Configuration',
-    description: 'Customize your portal branding and appearance',
+    id: "portal",
+    title: "Portal Configuration",
+    description: "Customize your portal branding and appearance",
     icon: Globe,
     isCompleted: false,
     isSkipped: false,
     isRequired: false,
   },
   {
-    id: 'aiProviders',
-    title: 'AI Providers',
-    description: 'Configure AI providers for resume processing',
+    id: "captcha",
+    title: "Captcha Verification",
+    description: "Enable captcha for verifying user interactions",
+    icon: ShieldCheck,
+    isCompleted: false,
+    isSkipped: false,
+    isRequired: false,
+  },
+  {
+    id: "aiProviders",
+    title: "AI Providers",
+    description: "Configure AI providers for resume processing",
     icon: Bot,
     isCompleted: false,
     isSkipped: false,
     isRequired: false,
   },
   {
-    id: 'email',
-    title: 'Email Configuration',
-    description: 'Set up email delivery for notifications',
+    id: "email",
+    title: "Email Configuration",
+    description: "Set up email delivery for notifications",
     icon: Mail,
     isCompleted: false,
     isSkipped: false,
     isRequired: false,
   },
   {
-    id: 'calendar',
-    title: 'Google Calendar',
-    description: 'Connect Google Calendar for interview scheduling',
+    id: "calendar",
+    title: "Google Calendar",
+    description: "Connect Google Calendar for interview scheduling",
     icon: Calendar,
     isCompleted: false,
     isSkipped: false,
     isRequired: false,
   },
   {
-    id: 'timezone',
-    title: 'Timezone',
-    description: 'Set your organization timezone',
+    id: "timezone",
+    title: "Timezone",
+    description: "Set your organization timezone",
     icon: Clock,
     isCompleted: false,
     isSkipped: false,
     isRequired: false,
   },
   {
-    id: 'storage',
-    title: 'File Storage',
-    description: 'Configure cloud storage for files',
+    id: "storage",
+    title: "File Storage",
+    description: "Configure cloud storage for files",
     icon: HardDrive,
     isCompleted: false,
     isSkipped: false,
     isRequired: false,
   },
   {
-    id: 'users',
-    title: 'Add Users',
-    description: 'Invite team members to your organization',
+    id: "users",
+    title: "Add Users",
+    description: "Invite team members to your organization",
     icon: Users,
     isCompleted: false,
     isSkipped: false,
     isRequired: false,
   },
   {
-    id: 'customFields',
-    title: 'Custom Fields',
-    description: 'Create custom form fields for jobs and candidates',
+    id: "customFields",
+    title: "Custom Fields",
+    description: "Create custom form fields for jobs and candidates",
     icon: Palette,
     isCompleted: false,
     isSkipped: false,

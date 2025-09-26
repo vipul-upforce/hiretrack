@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect, { Settings } from "@/lib/mongodb";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
-import { encryptAIProviderKeys, decryptAIProviderKeys } from "@/lib/encryption";
+import { decryptProviderKeys, encryptProviderKeys } from "@/lib/encryption";
 import { getDefaultModel } from "@/lib/ai-providers/models-config";
 
 export async function GET(req: NextRequest) {
@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
     };
 
     // Decrypt API keys before sending to client
-    aiProviders = decryptAIProviderKeys(aiProviders);
+    aiProviders = decryptProviderKeys(aiProviders);
 
     return NextResponse.json({ aiProviders });
   } catch (error) {
@@ -106,7 +106,7 @@ export async function PUT(req: NextRequest) {
     const aiProvidersSetting = await req.json();
 
     // Encrypt API keys before storing in database
-    const encryptedProviders = encryptAIProviderKeys(aiProvidersSetting);
+    const encryptedProviders = encryptProviderKeys(aiProvidersSetting);
 
     const updatedUser = await Settings.findOneAndUpdate(
       {
@@ -127,7 +127,9 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    return NextResponse.json({ message: "AI providers settings updated successfully" });
+    return NextResponse.json({
+      message: "AI providers settings updated successfully",
+    });
   } catch (error) {
     return NextResponse.json(
       {

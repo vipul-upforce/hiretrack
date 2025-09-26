@@ -611,6 +611,7 @@ export function ApplyAsGuestDialog({
                   <Button
                     type={Object.keys(errors).length == 0 ? "button" : "submit"}
                     onClick={handleApply}
+                    disabled={isSubmitting}
                     className="flex-1 sm:flex-none transition-all duration-200 hover:shadow-md text-white"
                     style={{
                       backgroundColor: primaryColor,

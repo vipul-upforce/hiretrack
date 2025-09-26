@@ -17,6 +17,8 @@ import { LoginFormValues } from "@/types/login";
 import ReCAPTCHA from "react-google-recaptcha";
 import "./recaptcha-theme.css";
 import { useSelector } from "react-redux";
+import { useGetCaptchaConfigsQuery } from "@/lib/features/settings/settingsApi";
+import { getDecodedCaptcha } from "@/hooks/useSSE";
 
 // Animated Grid Pattern Component
 interface AnimatedGridPatternProps {
@@ -375,9 +377,11 @@ export default function LoginFormContent({
   const [portalName, setPortalName] = useState<string>("");
   const [primaryColor, setPrimaryColor] = useState<string>("#6366f1");
   const [secondaryColor, setSecondaryColor] = useState<string>("#8b5cf6");
-  const [captcha, setCaptcha] = useState<string>();
+  // const [captcha, setCaptcha] = useState<string>();
+  const [captcha, setCaptcha] = useState<string | null>(null); // Allow null for no CAPTCHA
   const [isLoadingPortal, setIsLoadingPortal] = useState<boolean>(true);
   const [portalError, setPortalError] = useState<boolean>(false);
+  const [decryptedSiteKey, setDecryptedSiteKey] = useState<string | null>(null);
 
   // useHandleLoginSubmit, which uses useSearchParams, is now called within this client component
   const { handleSubmit, isLoading } = useHandleLoginSubmit({
@@ -387,13 +391,35 @@ export default function LoginFormContent({
     setOrganizationDialogOpen,
     setLoginFormValues,
   });
-
+  // Fetch CAPTCHA configuration
+  const {
+    data: captchaConfig,
+    isLoading: isCaptchaLoading,
+    error: captchaError,
+  } = useGetCaptchaConfigsQuery(undefined);
   useEffect(() => {
     // debugger;
     if (user && user.id && user.role) {
       router.push("/dashboard");
     }
   }, [user]);
+  // console.log(data, "data og captcha ");
+  // console.log(captchaConfig, "config captcha");
+
+  // Decrypt siteKey when captchaConfig is available
+  useEffect(() => {
+    const decryptSiteKey = async () => {
+      if (captchaConfig?.captcha?.siteKey) {
+        const decrypted = await getDecodedCaptcha(
+          captchaConfig.captcha.siteKey
+        );
+        if (decrypted) {
+          setDecryptedSiteKey(decrypted);
+        }
+      }
+    };
+    decryptSiteKey();
+  }, [captchaConfig]);
 
   useEffect(() => {
     async function checkAllowance() {
@@ -510,7 +536,10 @@ export default function LoginFormContent({
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     handleSubmit(
-      { email: formData.email, password: formData.password },
+      {
+        email: formData.email,
+        password: formData.password,
+      },
       { setStatus: () => {} }
     );
   };
@@ -830,7 +859,7 @@ export default function LoginFormContent({
               </div>
 
               {/* Custom styled reCAPTCHA */}
-              <div className="flex justify-center">
+              {/* <div className="flex justify-center">
                 <div className="recaptcha-container">
                   <ReCAPTCHA
                     sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
@@ -840,8 +869,26 @@ export default function LoginFormContent({
                     theme={theme as "light" | "dark"}
                   />
                 </div>
-              </div>
+              </div> */}
 
+              {/* Conditionally render CAPTCHA if enabled and siteKey is available */}
+              {captchaConfig?.captcha?.enableCaptcha && decryptedSiteKey && (
+                <div className="flex justify-center">
+                  <div className="recaptcha-container">
+                    <ReCAPTCHA
+                      sitekey={decryptedSiteKey}
+                      onChange={(token) => setCaptcha(token)}
+                      theme={theme as "light" | "dark"}
+                    />
+                  </div>
+                </div>
+              )}
+              {/* Optional: Show error message if CAPTCHA config fails */}
+              {/* {captchaError && (
+                <div className="text-red-500 text-sm text-center">
+                  Failed to load CAPTCHA configuration. Please try again later.
+                </div>
+              )} */}
               <div className="flex items-center justify-between">
                 <label className="flex items-center space-x-2 cursor-pointer">
                   <input type="checkbox" className="rounded border-border" />
@@ -861,7 +908,11 @@ export default function LoginFormContent({
 
               <motion.button
                 type="submit"
-                disabled={isLoading || !captcha}
+                // disabled={isLoading || !captcha}
+                disabled={
+                  isLoading ||
+                  (captchaConfig?.captcha?.enableCaptcha && !captcha)
+                }
                 className="w-full text-white py-3 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 relative overflow-hidden group"
                 style={{
                   background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,

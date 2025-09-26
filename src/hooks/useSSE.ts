@@ -1,9 +1,28 @@
 import { CustomCalendarEvent } from "@/app/dashboard/calendar/page";
-import { verifyAndDecryptSSE } from "@/lib/auth";
+import { verifyAndDecrypCaptcha, verifyAndDecryptSSE } from "@/lib/auth";
 import { Candidate } from "@/types/candidate";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 
+export async function getDecodedSSE(encodedData: string) {
+  try {
+    const data = await verifyAndDecryptSSE(encodedData);
+    return data;
+  } catch (error) {
+    console.error("SSE decryption error:", error);
+    return null;
+  }
+}
+export async function getDecodedCaptcha(encodedData: string) {
+  try {
+    const data = await verifyAndDecrypCaptcha(encodedData);
+    // console.log(data, "verifyAndDecrypCaptcha");
+    return data;
+  } catch (error) {
+    console.error("SSE decryption error:", error);
+    return null;
+  }
+}
 export const useSSE = (
   role: string,
   setSelectedCandidate: any,
@@ -13,6 +32,8 @@ export const useSSE = (
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [clients, setClients] = useState<number>();
   const [lanes, setLanes] = useState<string[]>();
+  const [isConnected, setIsConnected] = useState(true); // Track connection status
+  const eventSourceRef = useRef<EventSource | null>(null); // Ref to access EventSource
   // const [currentCandidate, setCurrentCandidate] = useState<
   //   Candidate | CustomCalendarEvent | null
   // >(null);
@@ -39,13 +60,24 @@ export const useSSE = (
     // setCurrentCandidate(selectedCandidate);
   }, [selectedCandidate, setSelectedCandidate]);
 
-  useEffect(() => {
+  // useEffect(() => {
+  //   const eventSource = new EventSource(
+  //     `/api/sse/candidates?role=${encodeURIComponent(role)}`
+  //   );
+
+  // Function to create and set up EventSource
+  const setupEventSource = () => {
     const eventSource = new EventSource(
       `/api/sse/candidates?role=${encodeURIComponent(role)}`
     );
+    eventSourceRef.current = eventSource;
 
     eventSource.onopen = () => {
+      setIsConnected(true);
+      console.log("SSE connection opened");
     };
+
+    // eventSource.onopen = () => {};
 
     eventSource.onmessage = async (event) => {
       try {
@@ -111,8 +143,8 @@ export const useSSE = (
                 : currentEvent?.start || new Date();
               const endTime = updatedCandidate?.assignment?.time
                 ? new Date(
-                  new Date(startTime).setHours(startTime.getHours() + 1)
-                ) // Default to 1-hour duration
+                    new Date(startTime).setHours(startTime.getHours() + 1)
+                  ) // Default to 1-hour duration
                 : currentEvent?.end || new Date();
 
               const updatedEvent: CustomCalendarEvent = {
@@ -137,25 +169,25 @@ export const useSSE = (
                     jobDetails:
                       typeof updatedCandidate.jobId === "object"
                         ? {
-                          title: updatedCandidate.jobId?.title || "",
-                          description:
-                            updatedCandidate.jobId?.description || "",
-                        }
+                            title: updatedCandidate.jobId?.title || "",
+                            description:
+                              updatedCandidate.jobId?.description || "",
+                          }
                         : undefined,
                   },
                   interviewer:
                     typeof updatedCandidate?.assignment?.interviewerId ===
-                      "string"
+                    "string"
                       ? {
-                        _id: updatedCandidate?.assignment?.interviewerId,
-                        name: "Unknown",
-                        email: "Unknown",
-                      }
+                          _id: updatedCandidate?.assignment?.interviewerId,
+                          name: "Unknown",
+                          email: "Unknown",
+                        }
                       : updatedCandidate?.assignment?.interviewerId || {
-                        _id: "",
-                        name: "Unknown",
-                        email: "Unknown",
-                      },
+                          _id: "",
+                          name: "Unknown",
+                          email: "Unknown",
+                        },
                 },
               };
               setSelectedCandidateRef.current(updatedEvent);
@@ -199,25 +231,38 @@ export const useSSE = (
       }
     };
 
+    // eventSource.onerror = (error) => {
+    //   console.error("SSE error:", error);
+    //   eventSource.close();
+    // };
+
+    // return () => {
+    //   eventSource.close();
+    // };
     eventSource.onerror = (error) => {
       console.error("SSE error:", error);
-      eventSource.close();
+      setIsConnected(false);
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+      // Immediately attempt to reconnect on accidental close
+      console.log("Detected accidental close - attempting to reconnect SSE...");
+      setupEventSource();
     };
 
+    return eventSource;
+  };
+  useEffect(() => {
+    const es = setupEventSource();
+
     return () => {
-      eventSource.close();
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+      setIsConnected(false);
+      eventSourceRef.current = null;
     };
   }, [role, jobId, pathname]);
 
-  async function getDecodedSSE(encodedData: string) {
-    try {
-      const data = await verifyAndDecryptSSE(encodedData);
-      return data;
-    } catch (error) {
-      console.error("SSE decryption error:", error);
-      return null;
-    }
-  }
-
-  return { candidates, setCandidates, clients, lanes };
+  return { candidates, setCandidates, clients, lanes, isConnected };
 };
