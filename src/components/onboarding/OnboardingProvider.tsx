@@ -130,7 +130,6 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       if (validateResponse.ok) {
         const validateData = await validateResponse.json();
         setProgress(validateData.progress);
-        console.log(validateData.progress);
 
         // Update steps with validation status
         const updatedSteps = getDefaultSteps().map((step) => ({

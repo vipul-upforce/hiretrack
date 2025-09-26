@@ -47,7 +47,6 @@ export default function CaptchaSettings({ onClose }: { onClose: () => void }) {
     };
     decryptData();
   }, [data]);
-  console.log(decryptedValues, "decryptedValues");
 
   React.useEffect(() => {
     refetch();
