@@ -184,13 +184,16 @@ release_job:
       NEW_TAG="$CURRENT_VERSION"
       TAG_CHECK=$(curl -s -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/$GITHUB_REPO/git/refs/tags/$NEW_TAG | jq -r .message)
       if [ "$TAG_CHECK" != "Not Found" ]; then
-        RELEASE_CHECK=$(curl -s -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/$GITHUB_REPO/releases/tags/$NEW_TAG | jq -r .message)
-        if [ "$RELEASE_CHECK" = "Not Found" ]; then
-          echo "Tag $NEW_TAG exists but no release found. Deleting tag..."
-          curl -X DELETE -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/$GITHUB_REPO/git/refs/tags/$NEW_TAG
-        else
-          echo "WARNING: Release for tag $NEW_TAG already exists, skipping release creation"
+        # Tag exists, now check if release exists
+        RELEASE_CHECK=$(curl -s -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/$GITHUB_REPO/releases/tags/$NEW_TAG | jq -r .id)
+        if [ "$RELEASE_CHECK" != "null" ] && [ -n "$RELEASE_CHECK" ]; then
+          # Release EXISTS - skip creation
+          echo "WARNING: Release for tag $NEW_TAG already exists (ID: $RELEASE_CHECK), skipping release creation"
           exit 0
+        else
+          # Tag exists but NO release - delete the orphaned tag
+          echo "Tag $NEW_TAG exists but no release found. Deleting orphaned tag..."
+          curl -X DELETE -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/$GITHUB_REPO/git/refs/tags/$NEW_TAG
         fi
       fi
     - |
