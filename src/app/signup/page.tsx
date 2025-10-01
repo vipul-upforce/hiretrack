@@ -21,6 +21,8 @@ import { SignupSchema } from "./signupSchema";
 import { TermsAndConditionsDialog } from "./TermsAndConditionsDialog";
 import { Suspense } from "react";
 import "./recaptcha-theme.css";
+import { useGetCaptchaConfigsQuery } from "@/lib/features/settings/settingsApi";
+import { getDecodedCaptcha } from "@/hooks/useSSE";
 
 // Animated Grid Pattern Component (reused from login)
 interface AnimatedGridPatternProps {
@@ -383,7 +385,14 @@ const SignupForm = () => {
   const [secondaryColor, setSecondaryColor] = useState<string>("#8b5cf6");
   const [isLoadingPortal, setIsLoadingPortal] = useState<boolean>(true);
   const [portalError, setPortalError] = useState<boolean>(false);
+  const [decryptedSiteKey, setDecryptedSiteKey] = useState<string | null>(null);
 
+  // Fetch CAPTCHA configuration
+  const {
+    data: captchaConfig,
+    isLoading: isCaptchaLoading,
+    error: captchaError,
+  } = useGetCaptchaConfigsQuery(undefined);
   const initialValues: SignupFormValues = {
     email: "",
     password: "",
@@ -391,6 +400,20 @@ const SignupForm = () => {
     confirmPassword: "",
     termsAccepted: false,
   };
+  // Decrypt siteKey when captchaConfig is available
+  useEffect(() => {
+    const decryptSiteKey = async () => {
+      if (captchaConfig?.captcha?.siteKey) {
+        const decrypted = await getDecodedCaptcha(
+          captchaConfig.captcha.siteKey
+        );
+        if (decrypted) {
+          setDecryptedSiteKey(decrypted);
+        }
+      }
+    };
+    decryptSiteKey();
+  }, [captchaConfig]);
 
   // Extract orgName from query string
   useEffect(() => {
@@ -441,7 +464,9 @@ const SignupForm = () => {
           if (data.portalFavicon?.url) {
             setPortalFavicon(data.portalFavicon.url);
             // Set favicon
-            const favicon = document.querySelector("link[rel*='icon']") as HTMLLinkElement;
+            const favicon = document.querySelector(
+              "link[rel*='icon']"
+            ) as HTMLLinkElement;
             if (favicon) {
               favicon.href = data.portalFavicon.url;
             } else {
@@ -491,14 +516,14 @@ const SignupForm = () => {
     if (portalError || (!isLoadingPortal && !portalLogo && !portalLogoDark)) {
       return getDefaultLogo();
     }
-    
+
     // Use appropriate logo based on theme
     if (theme === "dark" && portalLogoDark) {
       return portalLogoDark;
     } else if (portalLogo) {
       return portalLogo;
     }
-    
+
     return "";
   };
 
@@ -552,8 +577,14 @@ const SignupForm = () => {
   // Apply portal colors to CSS custom properties
   useEffect(() => {
     if (!portalError && !isLoadingPortal) {
-      document.documentElement.style.setProperty('--portal-primary', primaryColor);
-      document.documentElement.style.setProperty('--portal-secondary', secondaryColor);
+      document.documentElement.style.setProperty(
+        "--portal-primary",
+        primaryColor
+      );
+      document.documentElement.style.setProperty(
+        "--portal-secondary",
+        secondaryColor
+      );
     }
   }, [primaryColor, secondaryColor, portalError, isLoadingPortal]);
 
@@ -623,16 +654,16 @@ const SignupForm = () => {
         </div>
 
         {/* Gradient Orbs */}
-        <div 
+        <div
           className="absolute top-1/4 left-1/4 w-72 h-72 rounded-full blur-3xl animate-pulse"
           style={{
-            background: `linear-gradient(135deg, ${primaryColor}20, ${secondaryColor}20)`
+            background: `linear-gradient(135deg, ${primaryColor}20, ${secondaryColor}20)`,
           }}
         />
-        <div 
+        <div
           className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl animate-pulse delay-1000"
           style={{
-            background: `linear-gradient(225deg, ${secondaryColor}15, ${primaryColor}15)`
+            background: `linear-gradient(225deg, ${secondaryColor}15, ${primaryColor}15)`,
           }}
         />
 
@@ -671,12 +702,12 @@ const SignupForm = () => {
               <h1 className="text-4xl lg:text-6xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
                 Join Our
                 <br />
-                <span 
+                <span
                   className="bg-clip-text text-transparent"
                   style={{
                     background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
-                    WebkitBackgroundClip: 'text',
-                    backgroundClip: 'text'
+                    WebkitBackgroundClip: "text",
+                    backgroundClip: "text",
                   }}
                 >
                   Talent Pool
@@ -684,7 +715,7 @@ const SignupForm = () => {
               </h1>
 
               <p className="text-lg text-muted-foreground max-w-md mx-auto lg:mx-0">
-                Create your profile to apply to all future job openings and 
+                Create your profile to apply to all future job openings and
                 track your application status in one place.
               </p>
             </div>
@@ -699,7 +730,7 @@ const SignupForm = () => {
                     transition={{ delay: 0.4 + index * 0.1 }}
                     className="flex items-center gap-2 px-3 py-1 bg-background/50 backdrop-blur-sm rounded-full border border-border/50"
                   >
-                    <Sparkles 
+                    <Sparkles
                       className="w-4 h-4"
                       style={{ color: primaryColor }}
                     />
@@ -739,7 +770,7 @@ const SignupForm = () => {
                   <div className="mt-2">
                     <span
                       className="text-lg font-medium"
-                      style={{ 
+                      style={{
                         color: primaryColor,
                         animation: orgName
                           ? "fadeInOrg 0.9s ease-in-out forwards"
@@ -788,12 +819,18 @@ const SignupForm = () => {
                                 placeholder="Enter your full name"
                                 disabled={isLoading || isSubmitting}
                                 className="w-full pl-10 pr-4 py-3 bg-background/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:border-current transition-all"
-                                style={{
-                                  '--tw-ring-color': `${primaryColor}50`,
-                                  '--tw-border-opacity': '1'
-                                } as React.CSSProperties}
-                                onFocus={(e) => e.target.style.borderColor = primaryColor}
-                                onBlur={(e) => e.target.style.borderColor = ''}
+                                style={
+                                  {
+                                    "--tw-ring-color": `${primaryColor}50`,
+                                    "--tw-border-opacity": "1",
+                                  } as React.CSSProperties
+                                }
+                                onFocus={(e) =>
+                                  (e.target.style.borderColor = primaryColor)
+                                }
+                                onBlur={(e) =>
+                                  (e.target.style.borderColor = "")
+                                }
                               />
                             )}
                           </Field>
@@ -806,7 +843,9 @@ const SignupForm = () => {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">Email Address</label>
+                        <label className="text-sm font-medium">
+                          Email Address
+                        </label>
                         <div className="relative">
                           <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                           <Field name="email">
@@ -817,12 +856,18 @@ const SignupForm = () => {
                                 placeholder="Enter your email"
                                 disabled={isLoading || isSubmitting}
                                 className="w-full pl-10 pr-4 py-3 bg-background/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:border-current transition-all"
-                                style={{
-                                  '--tw-ring-color': `${primaryColor}50`,
-                                  '--tw-border-opacity': '1'
-                                } as React.CSSProperties}
-                                onFocus={(e) => e.target.style.borderColor = primaryColor}
-                                onBlur={(e) => e.target.style.borderColor = ''}
+                                style={
+                                  {
+                                    "--tw-ring-color": `${primaryColor}50`,
+                                    "--tw-border-opacity": "1",
+                                  } as React.CSSProperties
+                                }
+                                onFocus={(e) =>
+                                  (e.target.style.borderColor = primaryColor)
+                                }
+                                onBlur={(e) =>
+                                  (e.target.style.borderColor = "")
+                                }
                               />
                             )}
                           </Field>
@@ -846,12 +891,18 @@ const SignupForm = () => {
                                 placeholder="Enter your password"
                                 disabled={isLoading || isSubmitting}
                                 className="w-full pl-10 pr-12 py-3 bg-background/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:border-current transition-all"
-                                style={{
-                                  '--tw-ring-color': `${primaryColor}50`,
-                                  '--tw-border-opacity': '1'
-                                } as React.CSSProperties}
-                                onFocus={(e) => e.target.style.borderColor = primaryColor}
-                                onBlur={(e) => e.target.style.borderColor = ''}
+                                style={
+                                  {
+                                    "--tw-ring-color": `${primaryColor}50`,
+                                    "--tw-border-opacity": "1",
+                                  } as React.CSSProperties
+                                }
+                                onFocus={(e) =>
+                                  (e.target.style.borderColor = primaryColor)
+                                }
+                                onBlur={(e) =>
+                                  (e.target.style.borderColor = "")
+                                }
                               />
                             )}
                           </Field>
@@ -875,7 +926,9 @@ const SignupForm = () => {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">Confirm Password</label>
+                        <label className="text-sm font-medium">
+                          Confirm Password
+                        </label>
                         <div className="relative">
                           <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                           <Field name="confirmPassword">
@@ -886,18 +939,26 @@ const SignupForm = () => {
                                 placeholder="Confirm your password"
                                 disabled={isLoading || isSubmitting}
                                 className="w-full pl-10 pr-12 py-3 bg-background/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:border-current transition-all"
-                                style={{
-                                  '--tw-ring-color': `${primaryColor}50`,
-                                  '--tw-border-opacity': '1'
-                                } as React.CSSProperties}
-                                onFocus={(e) => e.target.style.borderColor = primaryColor}
-                                onBlur={(e) => e.target.style.borderColor = ''}
+                                style={
+                                  {
+                                    "--tw-ring-color": `${primaryColor}50`,
+                                    "--tw-border-opacity": "1",
+                                  } as React.CSSProperties
+                                }
+                                onFocus={(e) =>
+                                  (e.target.style.borderColor = primaryColor)
+                                }
+                                onBlur={(e) =>
+                                  (e.target.style.borderColor = "")
+                                }
                               />
                             )}
                           </Field>
                           <button
                             type="button"
-                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            onClick={() =>
+                              setShowConfirmPassword(!showConfirmPassword)
+                            }
                             className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                           >
                             {showConfirmPassword ? (
@@ -906,27 +967,32 @@ const SignupForm = () => {
                               <Eye className="w-5 h-5" />
                             )}
                           </button>
-                          {errors.confirmPassword && touched.confirmPassword && (
-                            <div className="text-sm text-red-500 mt-1">
-                              {errors.confirmPassword}
-                            </div>
-                          )}
+                          {errors.confirmPassword &&
+                            touched.confirmPassword && (
+                              <div className="text-sm text-red-500 mt-1">
+                                {errors.confirmPassword}
+                              </div>
+                            )}
                         </div>
                       </div>
 
                       {/* Custom styled reCAPTCHA */}
-                      <div className="flex justify-center">
-                        <div className="recaptcha-container">
-                          <ReCAPTCHA
-                            sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
-                            onChange={(token) => {
-                              if (token) setCaptcha(token);
-                            }}
-                            theme={theme as "light" | "dark"}
-                          />
-                        </div>
-                      </div>
-
+                      {captchaConfig?.captcha?.enableCaptcha &&
+                        decryptedSiteKey && (
+                          <div className="flex justify-center">
+                            <div className="recaptcha-container">
+                              <ReCAPTCHA
+                                sitekey={
+                                  process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!
+                                }
+                                onChange={(token) => {
+                                  if (token) setCaptcha(token);
+                                }}
+                                theme={theme as "light" | "dark"}
+                              />
+                            </div>
+                          </div>
+                        )}
                       <Field name="termsAccepted">
                         {({ field, form }: FieldProps) => (
                           <div className="space-y-1">
@@ -939,7 +1005,10 @@ const SignupForm = () => {
                                   form.setFieldValue("termsAccepted", false);
                                 }}
                               />
-                              <label htmlFor="termsAccepted" className="text-sm">
+                              <label
+                                htmlFor="termsAccepted"
+                                className="text-sm"
+                              >
                                 I agree to the{" "}
                                 <button
                                   type="button"
@@ -981,13 +1050,13 @@ const SignupForm = () => {
                         type="submit"
                         disabled={
                           isLoading ||
-                          !captcha ||
                           isSubmitting ||
-                          !values?.termsAccepted
+                          !values?.termsAccepted ||
+                          (captchaConfig?.captcha?.enableCaptcha && !captcha)
                         }
                         className="w-full text-white py-3 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 relative overflow-hidden group"
                         style={{
-                          background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
+                          background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
                         }}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
@@ -1004,7 +1073,9 @@ const SignupForm = () => {
                       </motion.button>
 
                       <div className="text-center pt-4">
-                        <span className="text-muted-foreground">Already have an account? </span>
+                        <span className="text-muted-foreground">
+                          Already have an account?{" "}
+                        </span>
                         <Link
                           href="/auth/login"
                           className="font-medium hover:underline"
@@ -1037,14 +1108,16 @@ const SignupForm = () => {
 // Main page component
 export default function Signup() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen w-full bg-background relative overflow-hidden flex items-center justify-center p-4">
-        <div className="text-center">
-          <div className="w-8 h-8 border-3 border-primary/30 border-t-primary animate-spin rounded-full mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading...</p>
+    <Suspense
+      fallback={
+        <div className="min-h-screen w-full bg-background relative overflow-hidden flex items-center justify-center p-4">
+          <div className="text-center">
+            <div className="w-8 h-8 border-3 border-primary/30 border-t-primary animate-spin rounded-full mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
         </div>
-      </div>
-    }>
+      }
+    >
       <SignupForm />
     </Suspense>
   );

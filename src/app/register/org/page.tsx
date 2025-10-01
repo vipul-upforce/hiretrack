@@ -23,6 +23,8 @@ import { Eye, EyeOff } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import ReCAPTCHA from "react-google-recaptcha";
 import withAuthGuard from "@/components/withAuthGuard";
+import { useGetCaptchaConfigsQuery } from "@/lib/features/settings/settingsApi";
+import { getDecodedCaptcha } from "@/hooks/useSSE";
 
 interface OrgFormValues {
   name: string;
@@ -80,7 +82,14 @@ function OrgRegisterPage() {
   const [showPassword, setShowPassword] = React.useState(false);
   const [captcha, setCaptcha] = useState<string>();
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
+  const [decryptedSiteKey, setDecryptedSiteKey] = useState<string | null>(null);
 
+  // Fetch CAPTCHA configuration
+  const {
+    data: captchaConfig,
+    isLoading: isCaptchaLoading,
+    error: captchaError,
+  } = useGetCaptchaConfigsQuery(undefined);
   useEffect(() => {
     async function checkAllowance() {
       const data = await fetch("/api/organization");
@@ -91,6 +100,20 @@ function OrgRegisterPage() {
     }
     checkAllowance();
   }, []);
+  // Decrypt siteKey when captchaConfig is available
+  useEffect(() => {
+    const decryptSiteKey = async () => {
+      if (captchaConfig?.captcha?.siteKey) {
+        const decrypted = await getDecodedCaptcha(
+          captchaConfig.captcha.siteKey
+        );
+        if (decrypted) {
+          setDecryptedSiteKey(decrypted);
+        }
+      }
+    };
+    decryptSiteKey();
+  }, [captchaConfig]);
 
   const initialValues: OrgFormValues = {
     name: "",
@@ -349,19 +372,33 @@ function OrgRegisterPage() {
                     </div>
                   )}
                 </div>
-
+                {/* 
                 <ReCAPTCHA
                   sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
                   onChange={(token) => {
                     token && setCaptcha(token);
                   }}
-                />
-
+                /> */}
+                {/* Conditionally render CAPTCHA if enabled and siteKey is available */}
+                {captchaConfig?.captcha?.enableCaptcha && decryptedSiteKey && (
+                  <div className="flex justify-center">
+                    <div className="recaptcha-container">
+                      <ReCAPTCHA
+                        sitekey={decryptedSiteKey}
+                        onChange={(token) => setCaptcha(token)}
+                      />
+                    </div>
+                  </div>
+                )}
                 <CardFooter className="px-0 pt-6 flex-col space-y-4">
                   <Button
                     type="submit"
                     className="w-full"
-                    disabled={isSubmitting || !captcha}
+                    // disabled={isSubmitting || !captcha}
+                    disabled={
+                      isSubmitting ||
+                      (captchaConfig?.captcha?.enableCaptcha && !captcha)
+                    }
                   >
                     {isSubmitting || isOrgLoading
                       ? "Registering..."

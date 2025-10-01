@@ -155,6 +155,20 @@ HireTrack is a comprehensive, AI-powered hiring management platform designed to 
 - MongoDB 5.0+
 - npm or yarn package manager
 
+## System Requirements
+
+### Minimum Requirements:
+
+- **RAM**: 1GB
+- **CPU**:
+- **Storage**: 4GB
+
+### Recommended Requirements:
+
+- **RAM**: 4GB
+- **CPU**:
+- **Storage**: 10GB
+
 ### Installation
 
 1. **Clone the Repository**

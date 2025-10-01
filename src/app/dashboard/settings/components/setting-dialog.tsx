@@ -24,6 +24,8 @@ import twoFASettings from "./twofa-setting";
 import GoogleCalendarSettings from "./google-calendar";
 import { useSelector } from "react-redux";
 import { User } from "@/lib/features/org/orgApi";
+import CaptchaSettings from "./CaptchaSettings";
+import AutoUpdateSettings from "./AutoUpdateSettings";
 export interface SettingComponentProps {
   onClose: () => void;
   isOpen?: boolean;
@@ -46,6 +48,8 @@ const settingComponents: Record<
   logs: LogsDialog,
   tags: ManageTagsDialog,
   twoFA: twoFASettings,
+  captcha: CaptchaSettings,
+  version: AutoUpdateSettings,
 };
 
 const SettingDialog = ({
@@ -113,6 +117,7 @@ const SettingDialog = ({
           setting.key === "mail" ||
           setting.key === "multipleorgs" ||
           setting.key === "gemini" ||
+          setting.key === "captcha" ||
           setting.key === "twoFA" ? (
             <ComponentToRender onClose={onClose} isOpen={isOpen} />
           ) : setting.key === "ai-providers" ||

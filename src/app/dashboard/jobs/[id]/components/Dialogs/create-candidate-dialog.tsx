@@ -340,8 +340,8 @@ export function CreateCandidateDialog({
       };
 
       // Debug: Log the candidate data being sent
-      console.log("Candidate data being sent:", candidateData);
-      console.log("JobId value:", jobId);
+      // console.log("Candidate data being sent:", candidateData);
+      // console.log("JobId value:", jobId);
 
       // Step 1: Create the candidate
       setIsCreating(true);

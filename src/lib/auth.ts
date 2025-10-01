@@ -79,10 +79,33 @@ export async function verifyAndDecryptSSE(token: string) {
   }
 }
 // Add getCurrentUser
-export async function getCurrentUser(request?: NextRequest): Promise<User | null> {
+export async function getCurrentUser(
+  request?: NextRequest
+): Promise<User | null> {
   const authResult = await auth(request);
   if (!authResult || !authResult.user) {
     return null;
   }
   return authResult.user as User;
+}
+
+export async function verifyAndDecrypCaptcha(token: string) {
+  const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key";
+  try {
+    if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
+    if (!token) throw new Error("Token is empty");
+
+    // Assume token is an AES-encrypted string (not a JWT)
+    const bytes = CryptoJS.AES.decrypt(token, JWT_SECRET);
+    const decryptedData = bytes.toString(CryptoJS.enc.Utf8);
+
+    if (!decryptedData) {
+      throw new Error("Decryption failed: no data returned");
+    }
+
+    return decryptedData; // Return decrypted string
+  } catch (err) {
+    console.error("Decryption error:", err);
+    return null; // Return null to match getDecodedCaptcha expectation
+  }
 }

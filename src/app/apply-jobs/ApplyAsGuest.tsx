@@ -346,11 +346,11 @@ export function ApplyAsGuestDialog({
       };
 
       // Debug: Log the candidate data being sent
-      console.log("Guest candidate data being sent:", candidateData);
-      console.log("JobId value:", jobId);
-      console.log("JobId type:", typeof jobId);
-      console.log("candidateData.jobId:", candidateData.jobId);
-      console.log("candidateData.jobId._id:", candidateData.jobId._id);
+      // console.log("Guest candidate data being sent:", candidateData);
+      // console.log("JobId value:", jobId);
+      // console.log("JobId type:", typeof jobId);
+      // console.log("candidateData.jobId:", candidateData.jobId);
+      // console.log("candidateData.jobId._id:", candidateData.jobId._id);
 
       // Step 1: Create the candidate
       const createdCandidate =
@@ -611,6 +611,7 @@ export function ApplyAsGuestDialog({
                   <Button
                     type={Object.keys(errors).length == 0 ? "button" : "submit"}
                     onClick={handleApply}
+                    disabled={isSubmitting}
                     className="flex-1 sm:flex-none transition-all duration-200 hover:shadow-md text-white"
                     style={{
                       backgroundColor: primaryColor,

@@ -11,7 +11,7 @@ import { stripHtml } from "@/app/dashboard/jobs-board/schemas/job-schema";
 import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
 import { ICandidate } from "@/lib/models/candidate";
 import { AIEvaluationService } from "@/lib/ai-providers/evaluation-provider";
-import { decryptAIProviderKeys } from "@/lib/encryption";
+import { decryptProviderKeys } from "@/lib/encryption";
 
 const generateBase64 = async (url: any) => {
   // const urlParams = new URLSearchParams(url.split("files?pathName=")[1]);
@@ -136,7 +136,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Decrypt API keys from database
-    aiProviders = decryptAIProviderKeys(aiProviders);
+    aiProviders = decryptProviderKeys(aiProviders);
 
     const activeProvider = aiProviders.activeProvider;
     const apiKey = aiProviders[activeProvider]?.api_key;

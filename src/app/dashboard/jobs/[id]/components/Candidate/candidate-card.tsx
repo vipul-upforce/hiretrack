@@ -1362,8 +1362,8 @@ const CandidateCard = memo(function CandidateCard({
         isLoading={isLoading}
         loadingText="Marking as done..."
       />
-
-      {/* {(isAddRemarkOpen || openRemarks) && (
+      {/* 
+      {(isAddRemarkOpen || openRemarks) && (
         <AddRemarksDialog
           candidate={localCandidate}
           isOpen={openRemarks}
@@ -1376,6 +1376,16 @@ const CandidateCard = memo(function CandidateCard({
         />
       )} */}
 
+      {/* Render AddRemarksDialog conditionally on dashboard (using local state) */}
+      {onDashboard && isAddRemarkOpen && (
+        <AddRemarksDialog
+          candidate={localCandidate}
+          isOpen={isAddRemarkOpen}
+          onOpenChange={onAddRemarkOpenChange}
+          setOpenRemarksFor={() => {}}
+          refetch={async () => refetch()}
+        />
+      )}
       {/* Email Candidate Dialog */}
       {isEmailDialogOpen && (
         <EmailCandidateDialog

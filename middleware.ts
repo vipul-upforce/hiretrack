@@ -257,6 +257,7 @@ const apiExemptPaths = [
   "/api/organization/tags",
   "/api/auth/google/callback",
   "/api/auth/google/authorize",
+  "/api/settings/captcha",
   "/api/license-validate",
 ];
 

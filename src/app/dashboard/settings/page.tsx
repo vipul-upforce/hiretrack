@@ -35,6 +35,8 @@ import {
   Sparkles,
   ExternalLink,
   Calendar,
+  ShieldCheck,
+  ArrowUpCircle,
 } from "lucide-react";
 
 function Settings() {
@@ -102,6 +104,19 @@ function Settings() {
           key: "twoFA",
           description: "Enable 2FA for enhanced account security",
           icon: Lock,
+        },
+        {
+          title: "Captcha Verification",
+          key: "captcha",
+          description: "Configure captcha for the portal",
+          icon: ShieldCheck,
+        },
+        {
+          title: "AutoUpdate Versions",
+          key: "version",
+          description:
+            "Configure automatic updates for version control on the portal",
+          icon: ArrowUpCircle,
         },
       ],
     },

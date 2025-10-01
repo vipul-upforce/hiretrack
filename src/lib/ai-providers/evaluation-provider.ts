@@ -1,7 +1,7 @@
 import { AIProviderFactory } from "./factory";
 import { AIProviderType } from "./types";
 import { ICandidate } from "../models/candidate";
-import { decryptAIProviderKeys } from "../encryption";
+import { decryptProviderKeys } from "../encryption";
 
 interface JobForEvaluate {
   description: string;
@@ -98,7 +98,7 @@ export class AIEvaluationService {
         aiProviders.gemini.api_key.includes("U2FsdGVkX1")
       ) {
         console.log("API keys appear to be encrypted, decrypting...");
-        aiProviders = decryptAIProviderKeys(aiProviders);
+        aiProviders = decryptProviderKeys(aiProviders);
       }
 
       const activeProvider = aiProviders.activeProvider as AIProviderType;

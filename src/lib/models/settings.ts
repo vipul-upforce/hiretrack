@@ -185,6 +185,20 @@ const settingsSchema = new Schema({
       default: Date.now,
     },
   },
+  captcha: {
+    enableCaptcha: {
+      type: Boolean,
+      default: false,
+    },
+    siteKey: {
+      type: String,
+      default: "",
+    },
+    secretKey: {
+      type: String,
+      default: "",
+    },
+  },
 });
 
 export interface ISettings {
@@ -212,6 +226,7 @@ export interface ISettings {
   twoFA?: ITwoFA;
   googleCalendar?: IGoogleCalendar;
   onboardingStatus?: IOnboardingStatus;
+  captcha?: ICaptcha;
 }
 
 export interface IGemini {
@@ -289,7 +304,12 @@ export interface IOnboardingStatus {
   currentStep: number;
   lastUpdated: Date;
 }
-
+export interface ICaptcha {
+  enableCaptcha: boolean;
+  siteKey: string;
+  secretKey: string;
+  captchaProvider: string;
+}
 export interface SettingsDocument extends Document, ISettings {}
 
 export default settingsSchema;

@@ -77,6 +77,12 @@ export const settingsApi = createApi({
         method: "GET",
       }),
     }),
+    getCaptchaConfigs: builder.query({
+      query: () => ({
+        url: `/settings/captcha`,
+        method: "GET",
+      }),
+    }),
     getTimeZone: builder.query({
       query: () => ({
         url: `/settings/timezone`,
@@ -139,6 +145,14 @@ export const settingsApi = createApi({
         url: "/settings/twofa",
         method: "PUT",
         body: twoFAConfig,
+      }),
+      invalidatesTags: ["Settings"],
+    }),
+    updateCaptcha: builder.mutation({
+      query: (captchaConfig) => ({
+        url: "/settings/captcha",
+        method: "PUT",
+        body: captchaConfig,
       }),
       invalidatesTags: ["Settings"],
     }),
@@ -247,6 +261,8 @@ export const {
   useGetGoogleCalendarConfigQuery,
   useUpdateGoogleCalendarMutation,
   useDisconnectGoogleCalendarMutation,
+  useUpdateCaptchaMutation,
+  useGetCaptchaConfigsQuery,
 } = settingsApi;
 
 // Export types for use in components

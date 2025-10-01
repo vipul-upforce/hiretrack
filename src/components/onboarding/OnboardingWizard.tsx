@@ -16,6 +16,7 @@ import StorageStep from "./steps/StorageStep";
 import UsersStep from "./steps/UsersStep";
 import CustomFieldsStep from "./steps/CustomFieldsStep";
 import CompletionStep from "./steps/CompletionStep";
+import CaptchConfigStep from "./steps/CaptchaConfigStep";
 
 const OnboardingWizard: React.FC = () => {
   const {
@@ -114,6 +115,8 @@ const OnboardingWizard: React.FC = () => {
         switch (stepData.id) {
           case "portal":
             return <PortalConfigStep />;
+          case "captcha":
+            return <CaptchConfigStep />;
           case "aiProviders": //ai-providers
             return <AIProviderStep />;
           case "email": //mail
@@ -150,7 +153,7 @@ const OnboardingWizard: React.FC = () => {
             <span className="text-sm text-muted-foreground bg-background px-3 py-1 rounded-full border">
               {progress
                 ? `${progress.completed}/${progress.total} configured`
-                : "0/8 configured"}
+                : "0/9 configured"}
             </span>
           </div>
           <Progress

@@ -8,7 +8,7 @@ import connectToDatabase, {
 import { handleSingleFile } from "@/lib/fileUtils";
 import { auth } from "@/lib/auth";
 import { AIProviderFactory, ProcessedResumeData } from "@/lib/ai-providers";
-import { decryptAIProviderKeys } from "@/lib/encryption";
+import { decryptProviderKeys } from "@/lib/encryption";
 import { NotificationService } from "@/lib/notifications/notificationService";
 import { Types } from "mongoose";
 
@@ -215,7 +215,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Decrypt API keys from database - MOVED UP
-    aiProviders = decryptAIProviderKeys(aiProviders);
+    aiProviders = decryptProviderKeys(aiProviders);
 
     const activeProvider = aiProviders.activeProvider;
     const apiKey = aiProviders[activeProvider]?.api_key;

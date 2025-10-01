@@ -243,7 +243,10 @@ export function LaneOptionsMenu({
                         className="w-8 h-8 rounded-full border dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 bg-white dark:bg-gray-900 "
                         variant={"outline"}
                         size="sm"
-                        onClick={() => handleSortDirection("desc")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSortDirection("desc");
+                        }}
                         aria-pressed={sortDirection === "asc"}
                       >
                         <SortAsc />
@@ -255,7 +258,10 @@ export function LaneOptionsMenu({
                         className="w-8 h-8 rounded-full dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 bg-white dark:bg-gray-900"
                         variant={"outline"}
                         size="sm"
-                        onClick={() => handleSortDirection("asc")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSortDirection("asc");
+                        }}
                         aria-pressed={sortDirection === "desc"}
                       >
                         <SortDesc />

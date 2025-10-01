@@ -1,9 +1,12 @@
 import CryptoJS from "crypto-js";
 
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || process.env.JWT_SECRET || "your_encryption_key";
+const ENCRYPTION_KEY =
+  process.env.ENCRYPTION_KEY || process.env.JWT_SECRET || "your_encryption_key";
 
 if (!ENCRYPTION_KEY) {
-  throw new Error("ENCRYPTION_KEY or JWT_SECRET must be defined in environment variables");
+  throw new Error(
+    "ENCRYPTION_KEY or JWT_SECRET must be defined in environment variables"
+  );
 }
 
 /**
@@ -45,11 +48,11 @@ export function decryptText(encryptedText: string): string {
  * @param providers - The AI providers object with plain text API keys
  * @returns The providers object with encrypted API keys
  */
-export function encryptAIProviderKeys(providers: any): any {
+export function encryptProviderKeys(providers: any): any {
   if (!providers) return providers;
-  
+
   const encrypted = { ...providers };
-  
+
   // Encrypt each provider's API key
   if (encrypted.gemini?.api_key) {
     encrypted.gemini.api_key = encryptText(encrypted.gemini.api_key);
@@ -63,7 +66,15 @@ export function encryptAIProviderKeys(providers: any): any {
   if (encrypted.perplexity?.api_key) {
     encrypted.perplexity.api_key = encryptText(encrypted.perplexity.api_key);
   }
-  
+
+  // Encrypt CAPTCHA keys
+  if (encrypted.captcha?.siteKey) {
+    encrypted.captcha.siteKey = encryptText(encrypted.captcha.siteKey);
+  }
+  if (encrypted.captcha?.secretKey) {
+    encrypted.captcha.secretKey = encryptText(encrypted.captcha.secretKey);
+  }
+
   return encrypted;
 }
 
@@ -72,11 +83,11 @@ export function encryptAIProviderKeys(providers: any): any {
  * @param providers - The AI providers object with encrypted API keys
  * @returns The providers object with decrypted API keys
  */
-export function decryptAIProviderKeys(providers: any): any {
+export function decryptProviderKeys(providers: any): any {
   if (!providers) return providers;
-  
+
   const decrypted = { ...providers };
-  
+
   // Decrypt each provider's API key
   if (decrypted.gemini?.api_key) {
     decrypted.gemini.api_key = decryptText(decrypted.gemini.api_key);
@@ -90,6 +101,14 @@ export function decryptAIProviderKeys(providers: any): any {
   if (decrypted.perplexity?.api_key) {
     decrypted.perplexity.api_key = decryptText(decrypted.perplexity.api_key);
   }
-  
+
+  // Decrypt CAPTCHA keys
+  if (decrypted.captcha?.siteKey) {
+    decrypted.captcha.siteKey = decryptText(decrypted.captcha.siteKey);
+  }
+  if (decrypted.captcha?.secretKey) {
+    decrypted.captcha.secretKey = decryptText(decrypted.captcha.secretKey);
+  }
+
   return decrypted;
 }
