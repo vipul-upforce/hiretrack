@@ -1,15 +1,15 @@
-# Use Node.js 20 for your Next.js project
 image: node:20.17.0
 
-# Define variables
 variables:
-  VM_DEST_DIR: "/root" # Where tarball is sent and extracted
+  VM_DEST_DIR: "/root"
   VM_HOST: "$VM_HOST"
-  SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar" # Defines the location of the analysis task cache
-  GIT_DEPTH: "0" # Tells git to fetch all the branches of the project, required by the analysis task
-  NODE_OPTIONS: "--max-old-space-size=4096" # Increase heap size to 4GB
+  GITHUB_TOKEN: "$GITHUB_TOKEN"
+  SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"
+  GIT_DEPTH: "0"
+  NODE_OPTIONS: "--max-old-space-size=4096"
+  GITHUB_REPO: "rahulp162/hiretrack-release"
+  VERSION_PREFIX: "v"
 
-# Cache node_modules to speed up builds
 cache:
   paths:
     - node_modules/
@@ -17,8 +17,9 @@ cache:
 stages:
   - scan
   - build
+  - release
   - deploy
-  
+
 sonarcloud-check:
   stage: scan
   image:
@@ -41,9 +42,8 @@ sonarcloud-check:
 build:
   stage: build
   variables:
-    NODE_OPTIONS: "--max-old-space-size=4096" # Job-specific memory increase
+    NODE_OPTIONS: "--max-old-space-size=4096"
   script:
-    # Debug: Check environment and variables
     - |
       echo "Pipeline started at $(date -u) UTC"
       echo "CI_PROJECT_URL=$CI_PROJECT_URL"
@@ -57,56 +57,193 @@ build:
       echo "ALLOWED_ORIGINS=$ALLOWED_ORIGINS"
       echo "ENVIRONMENT=$ENVIRONMENT"
       echo "BASE_URL=$BASE_URL"
-    # Create .env file for build
+      echo "LICENSE_VALIDATION_URL=$LICENSE_VALIDATION_URL"
+    - |
+      # Get current versions and store them in variables
+      NODE_VERSION=$(node -v)
+      # MONGODB_VERSION=$(mongod --version | head -n 1 | awk '{print $NF}')
+    - |
+      # Get the current version from GitHub releases
+      apt-get update && apt-get install -y curl jq
+      LAST_TAG_RESPONSE=$(curl -s -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/$GITHUB_REPO/releases/latest)
+      LAST_TAG=$(echo "$LAST_TAG_RESPONSE" | jq -r .tag_name)
+      echo "Last release tag: $LAST_TAG"
+      
+      if [ "$LAST_TAG" = "null" ] || [ -z "$LAST_TAG" ]; then
+        CURRENT_VERSION="${VERSION_PREFIX}1.0.0"
+      else
+        VERSION_NUM=$(echo "$LAST_TAG" | sed "s/^${VERSION_PREFIX}//")
+        MAJOR=$(echo "$VERSION_NUM" | cut -d. -f1)
+        MINOR=$(echo "$VERSION_NUM" | cut -d. -f2)
+        PATCH=$(echo "$VERSION_NUM" | cut -d. -f3)
+        PATCH=$((PATCH + 1))
+        CURRENT_VERSION="${VERSION_PREFIX}${MAJOR}.${MINOR}.${PATCH}"
+      fi
+      
+      echo "Current version will be: $CURRENT_VERSION"
+      echo "CURRENT_VERSION=$CURRENT_VERSION" > version.env
     - |
       echo "MONGODB_URI=$MONGODB_URI" > .env
       echo "NEXT_PUBLIC_RECAPTCHA_SITE_KEY=$NEXT_PUBLIC_RECAPTCHA_SITE_KEY" >> .env
       echo "RECAPTCHA_SECRET_KEY=$RECAPTCHA_SECRET_KEY" >> .env
       echo "ENVIRONMENT=$ENVIRONMENT" >> .env
       echo "BASE_URL=$BASE_URL" >> .env
+      echo "LICENSE_VALIDATION_URL=$LICENSE_VALIDATION_URL" >> .env
       echo "ALLOWED_ORIGINS=$ALLOWED_ORIGINS" >> .env
-    # Debug: Show .env contents (remove after testing)
+      # Add Node.js and MongoDB versions to .env file
+      echo "NODE_VERSION=$NODE_VERSION" >> .env
+      # echo "MONGODB_VERSION=$MONGODB_VERSION" >> .env
     - cat .env
+    - |
+      # Update package.json version
+      source version.env
+      VERSION_WITHOUT_PREFIX=$(echo "$CURRENT_VERSION" | sed "s/^${VERSION_PREFIX}//")
+      echo "Updating package.json version to: $VERSION_WITHOUT_PREFIX"
+      
+      # Update the version in package.json
+      jq --arg version "$VERSION_WITHOUT_PREFIX" '.version = $version' package.json > package.json.tmp && mv package.json.tmp package.json
+      
+      echo "Updated package.json:"
+      cat package.json | jq '.version'
     - npm ci --legacy-peer-deps
-    # Build with explicit memory limit
+    - cat package.json
+    - echo ""
     - NODE_OPTIONS="--max-old-space-size=4096" npx next build
-    # Create tarball in a temp directory, excluding .next and server.log
-    - mkdir -p temp
-    - tar --exclude='./.git' --exclude='./temp' -czvf temp/hiretrack-v1-gl.tar.gz .
-    # Move tarball to project root and clean up
-    - mv temp/hiretrack-v1-gl.tar.gz .
-    - rm -rf temp
+    - |
+      # Source the version environment file
+      source version.env
+      TARBALL_NAME="hiretrack-${CURRENT_VERSION}.tar.gz"
+      echo "Creating tarball with name: $TARBALL_NAME"
+      
+      mkdir -p temp
+      tar -czvf temp/$TARBALL_NAME node_modules package.json package-lock.json .next .env public
+      echo "Tarball contents:"
+      tar -tzf temp/$TARBALL_NAME
+      mv temp/$TARBALL_NAME .
+      rm -rf temp
+      
+      # Store tarball name for release job
+      echo "TARBALL_NAME=$TARBALL_NAME" >> version.env
   artifacts:
     paths:
-      - hiretrack-v1-gl.tar.gz
+      - hiretrack-*.tar.gz
+      - version.env
   environment: demo
   only:
+    - master
     - main-backup
 
+release_job:
+  stage: release
+  image: node:20
+  dependencies:
+    - build
+  artifacts:
+    paths:
+      - hiretrack-*.tar.gz
+  only:
+    - master
+  script:
+    - apt-get update && apt-get install -y curl jq git
+    - |
+      # Source the version from build stage
+      source version.env
+      echo "TARBALL_NAME=$TARBALL_NAME"
+      echo "CURRENT_VERSION=$CURRENT_VERSION"
+    - echo "GITHUB_REPO=$GITHUB_REPO"
+    # - if [ -z "$GITHUB_TOKEN" ]; then echo "ERROR: GITHUB_TOKEN is empty!"; exit 1; fi
+    - echo "GITHUB_TOKEN length>>>:" ${#GITHUB_TOKEN}
+    - |
+      # Use the version determined in build stage
+      NEW_TAG=$CURRENT_VERSION
+      echo "New tag: $NEW_TAG"
+      
+      # Check if tag already exists
+      TAG_CHECK=$(curl -s -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/$GITHUB_REPO/git/refs/tags/$NEW_TAG | jq -r .message)
+      if [ "$TAG_CHECK" != "Not Found" ]; then
+        echo "ERROR: Tag $NEW_TAG already exists, please delete or update versioning logic"
+        exit 1
+      fi
+    - |
+      # Test token
+      TEST_RESPONSE=$(curl -s -w "%{http_code}" -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/user)
+      HTTP_CODE=${TEST_RESPONSE: -3}
+      echo "Token test HTTP code: $HTTP_CODE"
+      if [ "$HTTP_CODE" != "200" ]; then
+        echo "ERROR: Invalid token (HTTP $HTTP_CODE)"
+        exit 1
+      fi
+    - |
+      # Create release
+      RESPONSE=$(curl -s -w "%{http_code}" -X POST -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/json" -d "{\"tag_name\": \"$NEW_TAG\", \"name\": \"$NEW_TAG\", \"body\": \"Release created by GitLab CI.\", \"draft\": false, \"prerelease\": false}" https://api.github.com/repos/$GITHUB_REPO/releases)
+      HTTP_CODE=${RESPONSE: -3}
+      BODY=${RESPONSE%???}
+      echo "Release response body: $BODY"
+      echo "HTTP Code: $HTTP_CODE"
+      if [ "$HTTP_CODE" != "201" ]; then
+        echo "ERROR: Failed to create release (HTTP $HTTP_CODE)"
+        exit 1
+      fi
+    - |
+      # Upload tarball with versioned name
+      RELEASE_ID=$(echo "$BODY" | jq -r .id)
+      echo "Release ID: $RELEASE_ID"
+      UPLOAD_URL=$(echo "$BODY" | jq -r .upload_url | sed "s/{?name,label}//")
+      echo "Uploading tarball to: $UPLOAD_URL"
+      UPLOAD_RESPONSE=$(curl -s -w "%{http_code}" -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/gzip" --data-binary @$TARBALL_NAME "$UPLOAD_URL?name=$TARBALL_NAME")
+      UPLOAD_HTTP_CODE=${UPLOAD_RESPONSE: -3}
+      UPLOAD_BODY=${UPLOAD_RESPONSE%???}
+      echo "Upload response body: $UPLOAD_BODY"
+      echo "Upload HTTP Code: $UPLOAD_HTTP_CODE"
+      if [ "$UPLOAD_HTTP_CODE" != "201" ]; then
+        echo "ERROR: Failed to upload tarball (HTTP $UPLOAD_HTTP_CODE)"
+        exit 1
+      fi
+      echo "Tarball uploaded successfully as: $TARBALL_NAME"
+      echo "Release created successfully!"
 deploy:
   stage: deploy
   image: alpine:latest
   before_script:
     - apk add --no-cache sshpass openssh-client
+  # script:
+  #   # Transfer tarball to VM using SSHPASS environment variable
+  #   - |
+  #     echo "Transferring hiretrack-v1-gl.tar.gz to VM..."
+  #     export SSHPASS="$VM_PASSWORD"
+  #     sshpass -e scp -o StrictHostKeyChecking=no hiretrack-v1-gl.tar.gz root@$VM_HOST:$VM_DEST_DIR
+  #   # Extract and deploy on VM
+  #   - |
+  #     export SSHPASS="$VM_PASSWORD"
+  #     sshpass -e ssh -o StrictHostKeyChecking=no root@$VM_HOST << 'EOF'
+  #       cd /root
+  #       rm -rf hiretrack-latest
+  #       mkdir -p hiretrack-latest
+  #       tar -xzvf hiretrack-v1-gl.tar.gz -C hiretrack-latest
+  #       cd hiretrack-latest
+  #       pm2 kill && pm2 start npm --name "hiretrack-latest-deployed-by-gitlab" -- start
+  #       # Clean up the tarball
+  #       rm -f /root/hiretrack-v1-gl.tar.gz
+  #     EOF
   script:
-    # Transfer tarball to VM using SSHPASS environment variable
-    - |
-      echo "Transferring hiretrack-v1-gl.tar.gz to VM..."
-      export SSHPASS="$VM_PASSWORD"
-      sshpass -e scp -o StrictHostKeyChecking=no hiretrack-v1-gl.tar.gz root@$VM_HOST:$VM_DEST_DIR
-    # Extract and deploy on VM
-    - |
-      export SSHPASS="$VM_PASSWORD"
-      sshpass -e ssh -o StrictHostKeyChecking=no root@$VM_HOST << 'EOF'
-        cd /root
-        rm -rf hiretrack-latest
-        mkdir -p hiretrack-latest
-        tar -xzvf hiretrack-v1-gl.tar.gz -C hiretrack-latest
-        cd hiretrack-latest
-        pm2 kill && pm2 start npm --name "hiretrack-latest-deployed-by-gitlab" -- start
-        # Clean up the tarball
-        rm -f /root/hiretrack-v1-gl.tar.gz
-      EOF
+  - |
+    source version.env
+    echo "Transferring $TARBALL_NAME to VM..."
+    export SSHPASS="$VM_PASSWORD"
+    sshpass -e scp -o StrictHostKeyChecking=no $TARBALL_NAME root@$VM_HOST:$VM_DEST_DIR
+  - |
+    export SSHPASS="$VM_PASSWORD"
+    sshpass -e ssh -o StrictHostKeyChecking=no root@$VM_HOST << 'EOF'
+      cd /root
+      rm -rf hiretrack-latest
+      mkdir -p hiretrack-latest
+      tar -xzvf $VM_DEST_DIR/$TARBALL_NAME -C hiretrack-latest
+      cd hiretrack-latest
+      pm2 delete hiretrack-latest-deployed-by-gitlab || true
+      pm2 start npm --name "hiretrack-latest-deployed-by-gitlab" -- start
+      rm -f $VM_DEST_DIR/$TARBALL_NAME
+    EOF
   environment: production
   only:
+    - master
     - main-backup
