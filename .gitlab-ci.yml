@@ -63,25 +63,54 @@ build:
       NODE_VERSION=$(node -v)
       # MONGODB_VERSION=$(mongod --version | head -n 1 | awk '{print $NF}')
     - |
-      # Get the current version from GitHub releases
+      # Install curl and jq for API calls
       apt-get update && apt-get install -y curl jq
-      LAST_TAG_RESPONSE=$(curl -s -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/$GITHUB_REPO/releases/latest)
-      LAST_TAG=$(echo "$LAST_TAG_RESPONSE" | jq -r .tag_name)
+    - |
+      # Get latest GitHub release tag
+      LAST_TAG=$(curl -s -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/$GITHUB_REPO/releases/latest | jq -r .tag_name)
       echo "Last release tag: $LAST_TAG"
       
       if [ "$LAST_TAG" = "null" ] || [ -z "$LAST_TAG" ]; then
-        CURRENT_VERSION="${VERSION_PREFIX}1.0.0"
+        MAJOR=1
+        MINOR=0
+        PATCH=0
       else
-        VERSION_NUM=$(echo "$LAST_TAG" | sed "s/^${VERSION_PREFIX}//")
+        if ! echo "$LAST_TAG" | grep -E "^${VERSION_PREFIX}[0-9]+\.[0-9]+\.[0-9]+$"; then
+          echo "ERROR: Invalid tag format: $LAST_TAG"
+          exit 1
+        fi
+        VERSION_NUM=$(echo "$LAST_TAG" | sed "s/^$VERSION_PREFIX//")
         MAJOR=$(echo "$VERSION_NUM" | cut -d. -f1)
         MINOR=$(echo "$VERSION_NUM" | cut -d. -f2)
         PATCH=$(echo "$VERSION_NUM" | cut -d. -f3)
-        PATCH=$((PATCH + 1))
-        CURRENT_VERSION="${VERSION_PREFIX}${MAJOR}.${MINOR}.${PATCH}"
       fi
       
-      echo "Current version will be: $CURRENT_VERSION"
+      echo "Current version: ${VERSION_PREFIX}${MAJOR}.${MINOR}.${PATCH}"
+    - |
+      # Determine version bump based on last commit message
+      COMMIT_MSG=$(git log -1 --pretty=%B)
+      echo "Last commit message: $COMMIT_MSG"
+      
+      if echo "$COMMIT_MSG" | grep -q "^Major:"; then
+        echo "🚀 Major release"
+        MAJOR=$((MAJOR+1))
+        MINOR=0
+        PATCH=0
+      elif echo "$COMMIT_MSG" | grep -q "^Feat:"; then
+        echo "✨ Minor release"
+        MINOR=$((MINOR+1))
+        PATCH=0
+      else
+        echo "🐛 Patch release"
+        PATCH=$((PATCH+1))
+      fi
+      
+      CURRENT_VERSION="${VERSION_PREFIX}${MAJOR}.${MINOR}.${PATCH}"
+      VERSION_WITHOUT_PREFIX="${MAJOR}.${MINOR}.${PATCH}"
+      
+      echo "New version will be: $CURRENT_VERSION"
       echo "CURRENT_VERSION=$CURRENT_VERSION" > version.env
+      echo "VERSION_WITHOUT_PREFIX=$VERSION_WITHOUT_PREFIX" >> version.env
     - |
       echo "MONGODB_URI=$MONGODB_URI" > .env
       echo "NEXT_PUBLIC_RECAPTCHA_SITE_KEY=$NEXT_PUBLIC_RECAPTCHA_SITE_KEY" >> .env
@@ -97,7 +126,6 @@ build:
     - |
       # Update package.json version
       source version.env
-      VERSION_WITHOUT_PREFIX=$(echo "$CURRENT_VERSION" | sed "s/^${VERSION_PREFIX}//")
       echo "Updating package.json version to: $VERSION_WITHOUT_PREFIX"
       
       # Update the version in package.json
@@ -140,67 +168,61 @@ release_job:
     - build
   artifacts:
     paths:
-      - hiretrack-*.tar.gz
+      - version.env
   only:
     - master
+    - main-backup
   script:
-    - apt-get update && apt-get install -y curl jq git
+    - apt-get update && apt-get install -y curl jq
     - |
-      # Source the version from build stage
+      if [ -z "$GITHUB_TOKEN" ]; then echo "ERROR: GITHUB_TOKEN is empty!"; exit 1; fi
       source version.env
+      echo "Using version: $CURRENT_VERSION"
       echo "TARBALL_NAME=$TARBALL_NAME"
-      echo "CURRENT_VERSION=$CURRENT_VERSION"
-    - echo "GITHUB_REPO=$GITHUB_REPO"
-    # - if [ -z "$GITHUB_TOKEN" ]; then echo "ERROR: GITHUB_TOKEN is empty!"; exit 1; fi
-    - echo "GITHUB_TOKEN length>>>:" ${#GITHUB_TOKEN}
     - |
-      # Use the version determined in build stage
-      NEW_TAG=$CURRENT_VERSION
-      echo "New tag: $NEW_TAG"
-      
-      # Check if tag already exists
+      # Check if tag/release already exists
+      NEW_TAG="$CURRENT_VERSION"
       TAG_CHECK=$(curl -s -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/$GITHUB_REPO/git/refs/tags/$NEW_TAG | jq -r .message)
       if [ "$TAG_CHECK" != "Not Found" ]; then
-        echo "ERROR: Tag $NEW_TAG already exists, please delete or update versioning logic"
-        exit 1
+        RELEASE_CHECK=$(curl -s -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/$GITHUB_REPO/releases/tags/$NEW_TAG | jq -r .message)
+        if [ "$RELEASE_CHECK" = "Not Found" ]; then
+          echo "Tag $NEW_TAG exists but no release found. Deleting tag..."
+          curl -X DELETE -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/$GITHUB_REPO/git/refs/tags/$NEW_TAG
+        else
+          echo "WARNING: Release for tag $NEW_TAG already exists, skipping release creation"
+          exit 0
+        fi
       fi
     - |
-      # Test token
-      TEST_RESPONSE=$(curl -s -w "%{http_code}" -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/user)
-      HTTP_CODE=${TEST_RESPONSE: -3}
-      echo "Token test HTTP code: $HTTP_CODE"
-      if [ "$HTTP_CODE" != "200" ]; then
-        echo "ERROR: Invalid token (HTTP $HTTP_CODE)"
-        exit 1
-      fi
-    - |
-      # Create release
-      RESPONSE=$(curl -s -w "%{http_code}" -X POST -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/json" -d "{\"tag_name\": \"$NEW_TAG\", \"name\": \"$NEW_TAG\", \"body\": \"Release created by GitLab CI.\", \"draft\": false, \"prerelease\": false}" https://api.github.com/repos/$GITHUB_REPO/releases)
+      # Create GitHub release
+      RESPONSE=$(curl -s -w "%{http_code}" -X POST \
+        -H "Authorization: token $GITHUB_TOKEN" \
+        -H "Content-Type: application/json" \
+        -d "{\"tag_name\": \"$CURRENT_VERSION\", \"name\": \"$CURRENT_VERSION\", \"body\": \"Release created from GitLab pipeline.\", \"draft\": false, \"prerelease\": false}" \
+        https://api.github.com/repos/$GITHUB_REPO/releases)
       HTTP_CODE=${RESPONSE: -3}
-      BODY=${RESPONSE%???}
-      echo "Release response body: $BODY"
-      echo "HTTP Code: $HTTP_CODE"
       if [ "$HTTP_CODE" != "201" ]; then
         echo "ERROR: Failed to create release (HTTP $HTTP_CODE)"
         exit 1
       fi
+      RELEASE_ID=$(echo "${RESPONSE%???}" | jq -r .id)
+      echo "GitHub release ID: $RELEASE_ID"
     - |
-      # Upload tarball with versioned name
-      RELEASE_ID=$(echo "$BODY" | jq -r .id)
-      echo "Release ID: $RELEASE_ID"
-      UPLOAD_URL=$(echo "$BODY" | jq -r .upload_url | sed "s/{?name,label}//")
-      echo "Uploading tarball to: $UPLOAD_URL"
-      UPLOAD_RESPONSE=$(curl -s -w "%{http_code}" -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/gzip" --data-binary @$TARBALL_NAME "$UPLOAD_URL?name=$TARBALL_NAME")
+      # Upload tarball
+      UPLOAD_URL=$(curl -s -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/$GITHUB_REPO/releases/$RELEASE_ID | jq -r .upload_url | sed "s/{?name,label}//")
+      UPLOAD_RESPONSE=$(curl -s -w "%{http_code}" -X POST \
+        -H "Authorization: token $GITHUB_TOKEN" \
+        -H "Content-Type: application/gzip" \
+        --data-binary @$TARBALL_NAME \
+        "$UPLOAD_URL?name=$TARBALL_NAME")
       UPLOAD_HTTP_CODE=${UPLOAD_RESPONSE: -3}
-      UPLOAD_BODY=${UPLOAD_RESPONSE%???}
-      echo "Upload response body: $UPLOAD_BODY"
-      echo "Upload HTTP Code: $UPLOAD_HTTP_CODE"
       if [ "$UPLOAD_HTTP_CODE" != "201" ]; then
         echo "ERROR: Failed to upload tarball (HTTP $UPLOAD_HTTP_CODE)"
         exit 1
       fi
       echo "Tarball uploaded successfully as: $TARBALL_NAME"
       echo "Release created successfully!"
+      
 deploy:
   stage: deploy
   image: alpine:latest
