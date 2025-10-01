@@ -4,7 +4,7 @@ import path from "path";
 import crypto from "crypto";
 import { licenseValidateRateLimiter } from "@/lib/rateLimiter";
 
-// Common variable for license.json path (in project root)
+// Common variable for license.json path (in project root).,
 const LICENSE_PATH = path.join(process.cwd(), "..", "license.json");
 
 // Common variable for package.json path (parent of parent of current project root)
