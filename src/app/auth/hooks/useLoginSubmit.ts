@@ -78,6 +78,29 @@ export const useHandleLoginSubmit = ({
     ) => {
       // debugger
       setLoginFormValues(values);
+      //firstly check the license
+      try {
+        const response = await fetch("/api/license-validate", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        const data = await response.json();
+        if (!data.valid) {
+          throw new Error(data.error);
+        }
+      } catch (e: unknown) {
+        toast({
+          title: "Error",
+          description:
+            e instanceof Error
+              ? e.message
+              : "License not verified. Please contact support or try re-installing the platform.",
+          variant: "destructive",
+        });
+        return;
+      }
       try {
         const response = await login({
           ...values,
@@ -203,9 +226,9 @@ export const useHandleLoginSubmit = ({
         console.log(err);
         const errorMessage =
           err &&
-            typeof err === "object" &&
-            "data" in err &&
-            (err.data as { error: string }).error
+          typeof err === "object" &&
+          "data" in err &&
+          (err.data as { error: string }).error
             ? (err.data as { error: string }).error
             : "An unknown error occurred";
         setStatus(errorMessage);

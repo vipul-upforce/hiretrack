@@ -410,6 +410,11 @@ export function createEmailLoginRateLimiter() {
 }
 
 export const emailLoginRateLimiter = createEmailLoginRateLimiter();
+export const licenseValidateRateLimiter = createRateLimiter({
+  windowMs: 60 * 1000, //  1 minute
+  maxRequests: 7, // 7 requests per minute
+  message: "License validation rate limit exceeded",
+});
 
 // Email-based rate limiting for login attempts
 export const loginRateLimiter = emailLoginRateLimiter;

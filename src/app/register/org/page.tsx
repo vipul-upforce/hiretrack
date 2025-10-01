@@ -112,6 +112,29 @@ function OrgRegisterPage() {
         variant: "default",
       });
     }
+    //firstly check the license
+    try {
+      const response = await fetch("/api/license-validate", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await response.json();
+      if (!data.valid) {
+        throw new Error(data.error);
+      }
+    } catch (e: unknown) {
+      toast({
+        title: "Error",
+        description:
+          e instanceof Error
+            ? e.message
+            : "License not verified. Please contact support or try re-installing the platform.",
+        variant: "destructive",
+      });
+      return;
+    }
     try {
       const { name, email, fullName, password, role } = values;
       const adminData = { email, name: fullName, password, role };
