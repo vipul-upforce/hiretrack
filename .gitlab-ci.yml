@@ -175,17 +175,35 @@ release_job:
   script:
     - apt-get update && apt-get install -y curl jq
     - |
-      if [ -z "$GITHUB_TOKEN" ]; then echo "ERROR: GITHUB_TOKEN is empty!"; exit 1; fi
+      if [ -z "$GITHUB_TOKEN" ]; then 
+        echo "ERROR: GITHUB_TOKEN is empty!"
+        exit 1
+      fi
       source version.env
       echo "Using version: $CURRENT_VERSION"
       echo "TARBALL_NAME=$TARBALL_NAME"
     - |
+      # Test GitHub token validity
+      echo "Testing GitHub token..."
+      TOKEN_TEST=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/user | jq -r .message)
+      if [ "$TOKEN_TEST" = "Bad credentials" ]; then
+        echo "ERROR: GitHub token is invalid or expired!"
+        echo "Please check your GITHUB_TOKEN variable in GitLab CI/CD settings"
+        exit 1
+      fi
+      echo "GitHub token is valid"
+    - |
       # Check if tag/release already exists
       NEW_TAG="$CURRENT_VERSION"
-      TAG_CHECK=$(curl -s -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/$GITHUB_REPO/git/refs/tags/$NEW_TAG | jq -r .message)
+      TAG_RESPONSE=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/repos/$GITHUB_REPO/git/refs/tags/$NEW_TAG)
+      TAG_CHECK=$(echo "$TAG_RESPONSE" | jq -r .message)
+      
       if [ "$TAG_CHECK" != "Not Found" ]; then
+        echo "Tag $NEW_TAG already exists, checking for release..."
         # Tag exists, now check if release exists
-        RELEASE_CHECK=$(curl -s -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/$GITHUB_REPO/releases/tags/$NEW_TAG | jq -r .id)
+        RELEASE_RESPONSE=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/repos/$GITHUB_REPO/releases/tags/$NEW_TAG)
+        RELEASE_CHECK=$(echo "$RELEASE_RESPONSE" | jq -r .id)
+        
         if [ "$RELEASE_CHECK" != "null" ] && [ -n "$RELEASE_CHECK" ]; then
           # Release EXISTS - skip creation
           echo "WARNING: Release for tag $NEW_TAG already exists (ID: $RELEASE_CHECK), skipping release creation"
@@ -193,38 +211,57 @@ release_job:
         else
           # Tag exists but NO release - delete the orphaned tag
           echo "Tag $NEW_TAG exists but no release found. Deleting orphaned tag..."
-          curl -X DELETE -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/$GITHUB_REPO/git/refs/tags/$NEW_TAG
+          DELETE_RESPONSE=$(curl -s -w "\n%{http_code}" -X DELETE -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/repos/$GITHUB_REPO/git/refs/tags/$NEW_TAG)
+          DELETE_CODE=$(echo "$DELETE_RESPONSE" | tail -n1)
+          if [ "$DELETE_CODE" != "204" ]; then
+            echo "WARNING: Failed to delete tag (HTTP $DELETE_CODE), but continuing..."
+          else
+            echo "Tag deleted successfully"
+          fi
         fi
       fi
     - |
       # Create GitHub release
-      RESPONSE=$(curl -s -w "%{http_code}" -X POST \
-        -H "Authorization: token $GITHUB_TOKEN" \
+      echo "Creating GitHub release for $CURRENT_VERSION..."
+      RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+        -H "Authorization: Bearer $GITHUB_TOKEN" \
         -H "Content-Type: application/json" \
         -d "{\"tag_name\": \"$CURRENT_VERSION\", \"name\": \"$CURRENT_VERSION\", \"body\": \"Release created from GitLab pipeline.\", \"draft\": false, \"prerelease\": false}" \
         https://api.github.com/repos/$GITHUB_REPO/releases)
-      HTTP_CODE=${RESPONSE: -3}
+      
+      HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+      BODY=$(echo "$RESPONSE" | sed '$d')
+      
       if [ "$HTTP_CODE" != "201" ]; then
         echo "ERROR: Failed to create release (HTTP $HTTP_CODE)"
+        echo "Response: $BODY"
         exit 1
       fi
-      RELEASE_ID=$(echo "${RESPONSE%???}" | jq -r .id)
-      echo "GitHub release ID: $RELEASE_ID"
+      
+      RELEASE_ID=$(echo "$BODY" | jq -r .id)
+      echo "GitHub release created successfully! ID: $RELEASE_ID"
     - |
       # Upload tarball
-      UPLOAD_URL=$(curl -s -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/$GITHUB_REPO/releases/$RELEASE_ID | jq -r .upload_url | sed "s/{?name,label}//")
-      UPLOAD_RESPONSE=$(curl -s -w "%{http_code}" -X POST \
-        -H "Authorization: token $GITHUB_TOKEN" \
+      echo "Uploading tarball $TARBALL_NAME..."
+      UPLOAD_URL=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/repos/$GITHUB_REPO/releases/$RELEASE_ID | jq -r .upload_url | sed "s/{?name,label}//")
+      
+      UPLOAD_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+        -H "Authorization: Bearer $GITHUB_TOKEN" \
         -H "Content-Type: application/gzip" \
         --data-binary @$TARBALL_NAME \
         "$UPLOAD_URL?name=$TARBALL_NAME")
-      UPLOAD_HTTP_CODE=${UPLOAD_RESPONSE: -3}
+      
+      UPLOAD_HTTP_CODE=$(echo "$UPLOAD_RESPONSE" | tail -n1)
+      UPLOAD_BODY=$(echo "$UPLOAD_RESPONSE" | sed '$d')
+      
       if [ "$UPLOAD_HTTP_CODE" != "201" ]; then
         echo "ERROR: Failed to upload tarball (HTTP $UPLOAD_HTTP_CODE)"
+        echo "Response: $UPLOAD_BODY"
         exit 1
       fi
+      
       echo "Tarball uploaded successfully as: $TARBALL_NAME"
-      echo "Release created successfully!"
+      echo "✅ Release $CURRENT_VERSION created successfully!"
       
 deploy:
   stage: deploy
