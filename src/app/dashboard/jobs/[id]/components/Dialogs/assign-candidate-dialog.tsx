@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Formik, Form, Field, FieldProps } from "formik";
+import { Formik, Form, Field, FieldProps, FormikHelpers } from "formik";
 import {
   Dialog,
   DialogContent,
@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { useFetchInterviewersQuery } from "@/lib/features/user/userApi";
 import { DateTimePicker } from "@/components/ui/DateTimePicker";
 import { FileUpload } from "@/components/ui/file-upload";
-import { Textarea } from "@/components/ui/textarea";
+import { MentionTextarea } from "@/components/ui/mention-textarea";
 import { Rating } from "@mui/material";
 import Cookies from "js-cookie";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
@@ -47,7 +47,6 @@ import { Badge } from "@/components/ui/badge";
 import { useGetGoogleCalendarConfigQuery } from "@/lib/features/settings/settingsApi";
 import { handleFileSelect, handleSetter } from "../../hooks/fileUploadUtils";
 import { useToast } from "@/hooks/use-toast";
-import { FormikHelpers } from "formik";
 import {
   validationSchema,
   FormValues,
@@ -58,6 +57,7 @@ import { useAssignCandidate } from "../../hooks/useAssignCandidate";
 import dayjs from "dayjs";
 import { useSanitizeFiles } from "@/hooks/useSanitizeFiles";
 import { useSelector } from "react-redux";
+import { Textarea } from "@/components/ui/textarea";
 
 export function AssignCandidateDialog({
   candidate,
@@ -188,6 +188,22 @@ export function AssignCandidateDialog({
     additionalGuests: [],
   };
 
+  // Helper to wrap handleFormSubmit so we can pass formikHelpers to onKeyDown handlers
+  function getOnAltEnterSubmit(
+    values: FormValues,
+    formikHelpers: FormikHelpers<FormValues>,
+    isSubmitting: boolean
+  ) {
+    return (fieldValue: string) => (e: React.KeyboardEvent) => {
+      if (e.altKey && e.key === "Enter") {
+        e.preventDefault();
+        if (fieldValue?.trim() && !isSubmitting) {
+          handleFormSubmit(values, formikHelpers);
+        }
+      }
+    };
+  }
+
   const handleFormSubmit = async (
     values: FormValues,
     formikHelpers: FormikHelpers<FormValues>
@@ -251,26 +267,26 @@ export function AssignCandidateDialog({
 
         const requestBody = isUpdating
           ? {
-            eventId: candidate.assignment?.googleMeet.eventId,
-            candidateId: candidate._id,
-            scheduledTime: values.time?.toISOString(),
-            duration: values.meetDuration || 30,
-            guests: allGuests,
-          }
+              eventId: candidate.assignment?.googleMeet.eventId,
+              candidateId: candidate._id,
+              scheduledTime: values.time?.toISOString(),
+              duration: values.meetDuration || 30,
+              guests: allGuests,
+            }
           : {
-            candidateId: candidate._id,
-            candidateName: candidate.name,
-            candidateEmail: candidate.email,
-            interviewerId: selectedInterviewer._id,
-            interviewerName: selectedInterviewer.name,
-            scheduledTime: values.time?.toISOString(),
-            duration: values.meetDuration || 30,
-            guests: allGuests,
-            jobTitle: candidate.jobId?.title || "Position",
-            organizationName: user?.organizationInfo?.name || "Company",
-            meetingNotes: values.meetingNotes || "",
-            meetingAttachments: processedMeetingAttachments,
-          };
+              candidateId: candidate._id,
+              candidateName: candidate.name,
+              candidateEmail: candidate.email,
+              interviewerId: selectedInterviewer._id,
+              interviewerName: selectedInterviewer.name,
+              scheduledTime: values.time?.toISOString(),
+              duration: values.meetDuration || 30,
+              guests: allGuests,
+              jobTitle: candidate.jobId?.title || "Position",
+              organizationName: user?.organizationInfo?.name || "Company",
+              meetingNotes: values.meetingNotes || "",
+              meetingAttachments: processedMeetingAttachments,
+            };
 
         const response = await fetch(apiUrl, {
           method,
@@ -331,7 +347,6 @@ export function AssignCandidateDialog({
     } else {
       // Proceed without Google Meet
       await handleSubmit(values, formikHelpers, user, interviewers);
-
     }
   };
 
@@ -352,159 +367,169 @@ export function AssignCandidateDialog({
             onSubmit={handleFormSubmit}
             enableReinitialize
           >
-            {({ values, errors, touched, isSubmitting, setFieldValue }) => (
-              <Form className="flex-1 flex flex-col h-full overflow-hidden">
-
-                {/* <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6"> */}
-                <div className={`flex-1 px-6 py-4 space-y-6 ${!candidate.assignment?.googleMeet?.eventId && !values.scheduleGoogleMeet
-                  ? ""
-                  : "overflow-y-auto"
-                  }`}>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="interviewerId">Assign To</Label>
-                      <Field name="interviewerId">
-                        {({ field }: FieldProps) => (
-                          <Select
-                            value={field.value}
-                            onValueChange={(value) =>
-                              setFieldValue("interviewerId", value)
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select interviewer" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {interviewers?.map((interviewer) => (
-                                <SelectItem
-                                  key={interviewer._id}
-                                  value={interviewer._id}
-                                >
-                                  {interviewer.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      </Field>
-                      {errors.interviewerId && touched.interviewerId && (
-                        <div className="text-red-500 text-sm">
-                          {errors.interviewerId}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="grid gap-2">
-                      <Label htmlFor="time">Time</Label>
-                      <Field name="time">
-                        {({ field }: FieldProps) => (
-                          <DateTimePicker
-                            value={field.value}
-                            onChange={(date) => setFieldValue("time", date)}
-                          />
-                        )}
-                      </Field>
-                      {typeof errors.time === "string" && touched.time && (
-                        <div className="text-red-500 text-sm">
-                          {errors.time}
-                        </div>
-                      )}
-                    </div>
-
-                    {googleCalendarData?.googleCalendar?.isConnected && (
-                      <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
-                        {/* Show existing Google Meet info if present */}
-                        {candidate.assignment?.googleMeet?.eventId &&
-                          !values.scheduleGoogleMeet && (
-                            <div className="space-y-3">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <Video className="h-4 w-4 text-blue-500" />
-                                  <span className="font-medium text-sm">
-                                    Google Meet Scheduled
-                                  </span>
-                                </div>
-                                <div className="flex gap-2">
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                      setFieldValue("scheduleGoogleMeet", true);
-                                    }}
-                                    className="h-7 text-xs"
+            {(formikProps) => {
+              const { values, errors, touched, isSubmitting, setFieldValue } =
+                formikProps;
+              // Now formikProps is available everywhere, including for onKeyDown
+              return (
+                <Form className="flex-1 flex flex-col h-full overflow-hidden">
+                  {/* <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6"> */}
+                  <div
+                    className={`flex-1 px-6 py-4 space-y-6 ${
+                      !candidate.assignment?.googleMeet?.eventId &&
+                      !values.scheduleGoogleMeet
+                        ? ""
+                        : "overflow-y-auto"
+                    }`}
+                  >
+                    <div className="grid gap-4 py-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="interviewerId">Assign To</Label>
+                        <Field name="interviewerId">
+                          {({ field }: FieldProps) => (
+                            <Select
+                              value={field.value}
+                              onValueChange={(value) =>
+                                setFieldValue("interviewerId", value)
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select interviewer" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {interviewers?.map((interviewer) => (
+                                  <SelectItem
+                                    key={interviewer._id}
+                                    value={interviewer._id}
                                   >
-                                    <Edit className="h-3 w-3 mr-1" />
-                                    Edit
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                      setShowCancelMeetDialog(true);
-                                    }}
-                                    className="h-7 text-xs text-red-600 hover:text-red-700"
-                                  >
-                                    <Trash2 className="h-3 w-3 mr-1" />
-                                    Cancel Meet
-                                  </Button>
-                                </div>
-                              </div>
-                              <div className="p-3 bg-blue-50 dark:bg-black border border-blue-200 dark:border-gray-800 rounded-md space-y-2">
-                                <div className="text-sm text-blue-900 dark:text-blue-500">
-                                  <p className="font-medium">
-                                    {candidate.assignment?.googleMeet.summary}
-                                  </p>
-                                  <p className="text-xs text-blue-700 dark:text-blue-600 mt-1">
-                                    {
-                                      candidate.assignment?.googleMeet.description?.split(
-                                        "\n"
-                                      )[0]
-                                    }
-                                  </p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <a
-                                    href={
-                                      candidate.assignment?.googleMeet
-                                        .meetingLink
-                                    }
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-xs text-blue-600 dark:text-blue-200 hover:text-blue-700 underline flex items-center gap-1"
-                                  >
-                                    <ExternalLink className="h-3 w-3" />
-                                    Join Meeting
-                                  </a>
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                      navigator.clipboard.writeText(
-                                        candidate.assignment?.googleMeet
-                                          ?.meetingLink
-                                      );
-                                      toast({
-                                        title: "Copied!",
-                                        description:
-                                          "Meeting link copied to clipboard",
-                                        duration: 2000,
-                                      });
-                                    }}
-                                    className="h-6 text-xs"
-                                  >
-                                    <Copy className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
+                                    {interviewer.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           )}
+                        </Field>
+                        {errors.interviewerId && touched.interviewerId && (
+                          <div className="text-red-500 text-sm">
+                            {errors.interviewerId}
+                          </div>
+                        )}
+                      </div>
 
-                        {/* Show checkbox only if no existing meet or in edit mode */}
-                        {(!candidate.assignment?.googleMeet?.eventId ||
-                          values.scheduleGoogleMeet) && (
+                      <div className="grid gap-2">
+                        <Label htmlFor="time">Time</Label>
+                        <Field name="time">
+                          {({ field }: FieldProps) => (
+                            <DateTimePicker
+                              value={field.value}
+                              onChange={(date) => setFieldValue("time", date)}
+                            />
+                          )}
+                        </Field>
+                        {typeof errors.time === "string" && touched.time && (
+                          <div className="text-red-500 text-sm">
+                            {errors.time}
+                          </div>
+                        )}
+                      </div>
+
+                      {googleCalendarData?.googleCalendar?.isConnected && (
+                        <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
+                          {/* Show existing Google Meet info if present */}
+                          {candidate.assignment?.googleMeet?.eventId &&
+                            !values.scheduleGoogleMeet && (
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <Video className="h-4 w-4 text-blue-500" />
+                                    <span className="font-medium text-sm">
+                                      Google Meet Scheduled
+                                    </span>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        setFieldValue(
+                                          "scheduleGoogleMeet",
+                                          true
+                                        );
+                                      }}
+                                      className="h-7 text-xs"
+                                    >
+                                      <Edit className="h-3 w-3 mr-1" />
+                                      Edit
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        setShowCancelMeetDialog(true);
+                                      }}
+                                      className="h-7 text-xs text-red-600 hover:text-red-700"
+                                    >
+                                      <Trash2 className="h-3 w-3 mr-1" />
+                                      Cancel Meet
+                                    </Button>
+                                  </div>
+                                </div>
+                                <div className="p-3 bg-blue-50 dark:bg-black border border-blue-200 dark:border-gray-800 rounded-md space-y-2">
+                                  <div className="text-sm text-blue-900 dark:text-blue-500">
+                                    <p className="font-medium">
+                                      {candidate.assignment?.googleMeet.summary}
+                                    </p>
+                                    <p className="text-xs text-blue-700 dark:text-blue-600 mt-1">
+                                      {
+                                        candidate.assignment?.googleMeet.description?.split(
+                                          "\n"
+                                        )[0]
+                                      }
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <a
+                                      href={
+                                        candidate.assignment?.googleMeet
+                                          .meetingLink
+                                      }
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-xs text-blue-600 dark:text-blue-200 hover:text-blue-700 underline flex items-center gap-1"
+                                    >
+                                      <ExternalLink className="h-3 w-3" />
+                                      Join Meeting
+                                    </a>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(
+                                          candidate.assignment?.googleMeet
+                                            ?.meetingLink
+                                        );
+                                        toast({
+                                          title: "Copied!",
+                                          description:
+                                            "Meeting link copied to clipboard",
+                                          duration: 2000,
+                                        });
+                                      }}
+                                      className="h-6 text-xs"
+                                    >
+                                      <Copy className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                          {/* Show checkbox only if no existing meet or in edit mode */}
+                          {(!candidate.assignment?.googleMeet?.eventId ||
+                            values.scheduleGoogleMeet) && (
                             <div className="flex items-center space-x-2">
                               <Field name="scheduleGoogleMeet">
                                 {({ field }: FieldProps) => (
@@ -512,7 +537,10 @@ export function AssignCandidateDialog({
                                     id="scheduleGoogleMeet"
                                     checked={field.value}
                                     onCheckedChange={(checked) =>
-                                      setFieldValue("scheduleGoogleMeet", checked)
+                                      setFieldValue(
+                                        "scheduleGoogleMeet",
+                                        checked
+                                      )
                                     }
                                   />
                                 )}
@@ -529,510 +557,546 @@ export function AssignCandidateDialog({
                             </div>
                           )}
 
-                        {values.scheduleGoogleMeet && (
-                          <div className="ml-6 space-y-3">
-                            {/* Meeting Date/Time Display */}
-                            {values.time && (
-                              <div className="p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 rounded-md">
-                                <div className="flex items-center gap-2 text-blue-800 dark:text-blue-300 text-sm">
-                                  <Calendar className="h-3 w-3" />
-                                  <span className="font-medium">
-                                    {values.time.format("dddd, MMMM D, YYYY")}{" "}
-                                    at {values.time.format("h:mm A")}
-                                  </span>
+                          {values.scheduleGoogleMeet && (
+                            <div className="ml-6 space-y-3">
+                              {/* Meeting Date/Time Display */}
+                              {values.time && (
+                                <div className="p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 rounded-md">
+                                  <div className="flex items-center gap-2 text-blue-800 dark:text-blue-300 text-sm">
+                                    <Calendar className="h-3 w-3" />
+                                    <span className="font-medium">
+                                      {values.time.format("dddd, MMMM D, YYYY")}{" "}
+                                      at {values.time.format("h:mm A")}
+                                    </span>
+                                  </div>
                                 </div>
+                              )}
+
+                              {/* Meeting Duration */}
+                              <div className="flex items-center gap-3">
+                                <Label
+                                  htmlFor="meetDuration"
+                                  className="text-sm font-medium"
+                                >
+                                  Duration:
+                                </Label>
+                                <Field name="meetDuration">
+                                  {({ field }: FieldProps) => (
+                                    <Select
+                                      value={String(field.value)}
+                                      onValueChange={(value) =>
+                                        setFieldValue(
+                                          "meetDuration",
+                                          Number(value)
+                                        )
+                                      }
+                                    >
+                                      <SelectTrigger className="w-24 h-8">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="15">
+                                          15 min
+                                        </SelectItem>
+                                        <SelectItem value="30">
+                                          30 min
+                                        </SelectItem>
+                                        <SelectItem value="45">
+                                          45 min
+                                        </SelectItem>
+                                        <SelectItem value="60">
+                                          60 min
+                                        </SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  )}
+                                </Field>
                               </div>
-                            )}
 
-                            {/* Meeting Duration */}
-                            <div className="flex items-center gap-3">
-                              <Label
-                                htmlFor="meetDuration"
-                                className="text-sm font-medium"
-                              >
-                                Duration:
-                              </Label>
-                              <Field name="meetDuration">
-                                {({ field }: FieldProps) => (
-                                  <Select
-                                    value={String(field.value)}
-                                    onValueChange={(value) =>
-                                      setFieldValue(
-                                        "meetDuration",
-                                        Number(value)
-                                      )
-                                    }
-                                  >
-                                    <SelectTrigger className="w-24 h-8">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="15">15 min</SelectItem>
-                                      <SelectItem value="30">30 min</SelectItem>
-                                      <SelectItem value="45">45 min</SelectItem>
-                                      <SelectItem value="60">60 min</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                )}
-                              </Field>
-                            </div>
-
-                            {/* Meeting Notes */}
-                            <div className="space-y-1">
-                              <Label htmlFor="meetingNotes" className="text-sm">
-                                Meeting Notes (Optional)
-                              </Label>
-                              <Field name="meetingNotes">
-                                {({ field }: FieldProps) => (
-                                  <Textarea
-                                    {...field}
-                                    placeholder="Add notes to include in the meeting description..."
-                                    rows={2}
-                                    className="text-sm"
-                                  />
-                                )}
-                              </Field>
-                            </div>
-
-                            {/* Default Participants */}
-                            <div className="space-y-1">
-                              <Label className="text-sm font-medium">
-                                Default Participants
-                              </Label>
+                              {/* Meeting Notes */}
                               <div className="space-y-1">
-                                {(() => {
-                                  const selectedInterviewer =
-                                    interviewers?.find(
-                                      (i) => i._id === values.interviewerId
-                                    );
-                                  const defaultGuests =
-                                    getDefaultGuests(selectedInterviewer);
-
-                                  return defaultGuests.map((email) => {
-                                    let role = "";
-                                    let roleColor =
-                                      "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
-                                    if (email === candidate.email) {
-                                      role = "Candidate";
-                                      roleColor =
-                                        "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400";
-                                    } else if (
-                                      email === selectedInterviewer?.email
-                                    ) {
-                                      role = "Interviewer";
-                                      roleColor =
-                                        "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400";
-                                    } else if (email === user?.email) {
-                                      role = "HR";
-                                      roleColor =
-                                        "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-400";
-                                    }
-
-                                    return (
-                                      <div
-                                        key={email}
-                                        className="flex items-center gap-2 p-1.5 rounded border border-gray-200 dark:border-gray-700 bg-background text-xs"
-                                      >
-                                        <Mail className="h-3 w-3 text-gray-500 dark:text-gray-400" />
-                                        <span className="text-gray-700 dark:text-gray-300 truncate flex-1">
-                                          {email}
-                                        </span>
-                                        {role && (
-                                          <Badge
-                                            variant="secondary"
-                                            className={`text-xs px-1 py-0 ${roleColor} border-0`}
-                                          >
-                                            {role}
-                                          </Badge>
-                                        )}
-                                      </div>
-                                    );
-                                  });
-                                })()}
+                                <Label
+                                  htmlFor="meetingNotes"
+                                  className="text-sm"
+                                >
+                                  Meeting Notes (Optional)
+                                </Label>
+                                <Field name="meetingNotes">
+                                  {({ field }: FieldProps) => (
+                                    <MentionTextarea
+                                      value={field.value || ""}
+                                      onChange={field.onChange}
+                                      placeholder="Add notes to include in the meeting description... (Alt+Enter to submit)"
+                                      rows={2}
+                                      className="text-sm"
+                                      onKeyDown={getOnAltEnterSubmit(
+                                        values,
+                                        formikProps,
+                                        isSubmitting
+                                      )(field.value)}
+                                      organizationId={
+                                        user?.organizationInfo?._id || ""
+                                      }
+                                      currentUserRole={user?.role || ""}
+                                    />
+                                  )}
+                                </Field>
                               </div>
-                            </div>
 
-                            {/* Additional Guests */}
-                            <div className="space-y-1">
-                              <Label className="text-sm font-medium">
-                                Additional Guests
-                              </Label>
+                              {/* Default Participants */}
+                              <div className="space-y-1">
+                                <Label className="text-sm font-medium">
+                                  Default Participants
+                                </Label>
+                                <div className="space-y-1">
+                                  {(() => {
+                                    const selectedInterviewer =
+                                      interviewers?.find(
+                                        (i) => i._id === values.interviewerId
+                                      );
+                                    const defaultGuests =
+                                      getDefaultGuests(selectedInterviewer);
 
-                              {/* Existing Additional Guests */}
-                              {values.additionalGuests &&
-                                values.additionalGuests.length > 0 && (
-                                  <div className="space-y-1">
-                                    {values.additionalGuests.map(
-                                      (email, index) => (
+                                    return defaultGuests.map((email) => {
+                                      let role = "";
+                                      let roleColor =
+                                        "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
+                                      if (email === candidate.email) {
+                                        role = "Candidate";
+                                        roleColor =
+                                          "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400";
+                                      } else if (
+                                        email === selectedInterviewer?.email
+                                      ) {
+                                        role = "Interviewer";
+                                        roleColor =
+                                          "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400";
+                                      } else if (email === user?.email) {
+                                        role = "HR";
+                                        roleColor =
+                                          "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-400";
+                                      }
+
+                                      return (
                                         <div
-                                          key={index}
-                                          className="flex items-center gap-2 p-1.5 rounded border border-gray-200 bg-white text-xs"
+                                          key={email}
+                                          className="flex items-center gap-2 p-1.5 rounded border border-gray-200 dark:border-gray-700 bg-background text-xs"
                                         >
-                                          <Mail className="h-3 w-3 text-gray-500" />
-                                          <span className="text-gray-900 truncate flex-1">
+                                          <Mail className="h-3 w-3 text-gray-500 dark:text-gray-400" />
+                                          <span className="text-gray-700 dark:text-gray-300 truncate flex-1">
                                             {email}
                                           </span>
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() =>
-                                              handleRemoveGuest(
-                                                email,
-                                                setFieldValue,
-                                                values.additionalGuests || []
-                                              )
-                                            }
-                                            className="text-gray-400 hover:text-red-500 h-5 w-5 p-0"
-                                          >
-                                            <X className="h-2.5 w-2.5" />
-                                          </Button>
+                                          {role && (
+                                            <Badge
+                                              variant="secondary"
+                                              className={`text-xs px-1 py-0 ${roleColor} border-0`}
+                                            >
+                                              {role}
+                                            </Badge>
+                                          )}
                                         </div>
-                                      )
-                                    )}
-                                  </div>
-                                )}
+                                      );
+                                    });
+                                  })()}
+                                </div>
+                              </div>
 
-                              {/* Add Guest Input */}
+                              {/* Additional Guests */}
                               <div className="space-y-1">
-                                <div className="flex gap-2">
-                                  <Input
-                                    type="email"
-                                    placeholder="Enter email address"
-                                    value={newGuest}
-                                    onChange={(e) => {
-                                      setNewGuest(e.target.value);
-                                      setEmailError("");
-                                    }}
-                                    onKeyPress={(e) => {
-                                      if (e.key === "Enter") {
-                                        e.preventDefault();
+                                <Label className="text-sm font-medium">
+                                  Additional Guests
+                                </Label>
+
+                                {/* Existing Additional Guests */}
+                                {values.additionalGuests &&
+                                  values.additionalGuests.length > 0 && (
+                                    <div className="space-y-1">
+                                      {values.additionalGuests.map(
+                                        (email, index) => (
+                                          <div
+                                            key={index}
+                                            className="flex items-center gap-2 p-1.5 rounded border border-gray-200 bg-white text-xs"
+                                          >
+                                            <Mail className="h-3 w-3 text-gray-500" />
+                                            <span className="text-gray-900 truncate flex-1">
+                                              {email}
+                                            </span>
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              onClick={() =>
+                                                handleRemoveGuest(
+                                                  email,
+                                                  setFieldValue,
+                                                  values.additionalGuests || []
+                                                )
+                                              }
+                                              className="text-gray-400 hover:text-red-500 h-5 w-5 p-0"
+                                            >
+                                              <X className="h-2.5 w-2.5" />
+                                            </Button>
+                                          </div>
+                                        )
+                                      )}
+                                    </div>
+                                  )}
+
+                                {/* Add Guest Input */}
+                                <div className="space-y-1">
+                                  <div className="flex gap-2">
+                                    <Input
+                                      type="email"
+                                      placeholder="Enter email address"
+                                      value={newGuest}
+                                      onChange={(e) => {
+                                        setNewGuest(e.target.value);
+                                        setEmailError("");
+                                      }}
+                                      onKeyPress={(e) => {
+                                        if (e.key === "Enter") {
+                                          e.preventDefault();
+                                          handleAddGuest(
+                                            setFieldValue,
+                                            values.additionalGuests || []
+                                          );
+                                        }
+                                      }}
+                                      className={`flex-1 text-sm h-8 ${emailError ? "border-red-500" : "border-gray-300"}`}
+                                    />
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      onClick={() =>
                                         handleAddGuest(
                                           setFieldValue,
                                           values.additionalGuests || []
-                                        );
+                                        )
                                       }
-                                    }}
-                                    className={`flex-1 text-sm h-8 ${emailError ? "border-red-500" : "border-gray-300"}`}
-                                  />
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() =>
-                                      handleAddGuest(
-                                        setFieldValue,
-                                        values.additionalGuests || []
-                                      )
-                                    }
-                                    className="h-8 w-8 p-0"
-                                    size="sm"
-                                  >
-                                    <UserPlus className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                                {emailError && (
-                                  <p className="text-xs text-red-500">
-                                    {emailError}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Meeting Attachments */}
-                            <div className="space-y-1">
-                              <Label className="text-sm">
-                                Meeting Attachments (Optional)
-                              </Label>
-                              <div className="space-y-2">
-                                {(() => {
-                                  const formAttachments =
-                                    values.meetingAttachments;
-                                  // const candidateAttachments =
-                                  //   candidate?.assignment?.googleMeet
-                                  //     ?.meetingAttachments || [];
-
-                                  // Display candidateAttachments if formAttachments is undefined
-                                  const displayAttachments =
-                                    formAttachments !== undefined &&
-                                      formAttachments.length > 0
-                                      ? [...formAttachments]
-                                      : [];
-                                  return (
-                                    <div className="space-y-2">
-                                      {/* Add Files Button */}
-                                      <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        className="flex items-center gap-2 h-8"
-                                        onClick={() => {
-                                          const input =
-                                            document.createElement("input");
-                                          input.type = "file";
-                                          input.multiple = true;
-                                          input.onchange = (e) => {
-                                            const files = (
-                                              e.target as HTMLInputElement
-                                            ).files;
-                                            if (files && files.length > 0) {
-                                              // Ensure arrays are defined before spreading
-                                              const currentFormFiles =
-                                                Array.isArray(formAttachments)
-                                                  ? formAttachments
-                                                  : [];
-                                              // const currentCandidateFiles =
-                                              //   Array.isArray(
-                                              //     candidateAttachments
-                                              //   )
-                                              //     ? candidateAttachments
-                                              //     : [];
-
-                                              // Combine existing files (form + candidate if form is undefined)
-                                              const allFiles =
-                                                formAttachments !== undefined
-                                                  ? currentFormFiles
-                                                  : [
-                                                    ...currentFormFiles,
-                                                    // ...currentCandidateFiles,
-                                                  ];
-
-                                              // Sanitize new files
-                                              const sanitizedFiles =
-                                                sanitizeFiles(
-                                                  Array.from(files)
-                                                );
-
-                                              // Ensure we don't exceed 10 files total
-                                              const availableSlots = Math.max(
-                                                0,
-                                                10 - allFiles.length
-                                              );
-                                              const updatedFiles = [
-                                                ...allFiles,
-                                                ...sanitizedFiles.slice(
-                                                  0,
-                                                  availableSlots
-                                                ),
-                                              ];
-
-                                              setFieldValue(
-                                                "meetingAttachments",
-                                                updatedFiles
-                                              );
-                                            }
-                                          };
-                                          input.click();
-                                        }}
-                                      >
-                                        <Paperclip className="w-3 h-3" />
-                                        Add Files
-                                      </Button>
-
-                                      {/* File List Display */}
-                                      {displayAttachments.length > 0 ? (
-                                        <ul className="space-y-2">
-                                          {displayAttachments.map(
-                                            (file: any, index: number) => (
-                                              <li
-                                                key={`${file.name}-${index}`}
-                                                className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
-                                                role="listitem"
-                                              >
-                                                <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                  <FileIcon className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
-                                                  <span
-                                                    className="text-sm text-gray-900 dark:text-gray-100 truncate max-w-[200px]"
-                                                    title={file.name}
-                                                  >
-                                                    {file.name}
-                                                  </span>
-                                                  {file.size && (
-                                                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                                                      (
-                                                      {(
-                                                        file.size / 1024
-                                                      ).toFixed(1)}{" "}
-                                                      KB)
-                                                    </span>
-                                                  )}
-                                                </div>
-                                                <Button
-                                                  type="button"
-                                                  variant="ghost"
-                                                  size="sm"
-                                                  onClick={() => {
-                                                    // Filter out the file at the current index from displayAttachments
-                                                    const updatedFiles =
-                                                      displayAttachments.filter(
-                                                        (_: any, i: number) =>
-                                                          i !== index
-                                                      );
-                                                    // Update the form's meetingAttachments field
-                                                    setFieldValue(
-                                                      "meetingAttachments",
-                                                      updatedFiles
-                                                    );
-                                                  }}
-                                                  className="p-1 text-gray-400 hover:text-red-500 focus:ring-2 focus:ring-red-500 focus:outline-none"
-                                                  aria-label={`Remove ${file.name}`}
-                                                >
-                                                  <X className="w-4 h-4" />
-                                                </Button>
-                                              </li>
-                                            )
-                                          )}
-                                        </ul>
-                                      ) : null}
-                                    </div>
-                                  );
-                                })()}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    <div className="space-y-4">
-                      <Field name="remark">
-                        {({ field }: FieldProps) => (
-                          <Textarea placeholder="Add a remark..." {...field} />
-                        )}
-                      </Field>
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                          <Label htmlFor="rating">Rating:</Label>
-                          <Field name="rating">
-                            {({ field }: { field: { value: number } }) => (
-                              <Rating
-                                name="rating"
-                                value={field.value}
-                                onChange={(e, value) =>
-                                  setFieldValue("rating", value)
-                                }
-                                precision={0.5}
-                              />
-                            )}
-                          </Field>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Attachments</Label>
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="flex items-center gap-2 h-8"
-                            onClick={() => {
-                              const input = document.createElement("input");
-                              input.type = "file";
-                              input.multiple = true;
-                              input.onchange = (e) => {
-                                const files = (e.target as HTMLInputElement)
-                                  .files;
-                                if (files && files.length > 0) {
-                                  const sanitizedFiles = sanitizeFiles(
-                                    Array.from(files)
-                                  );
-                                  handleFileSelect({
-                                    files: sanitizedFiles,
-                                    existingAttachments: candidate.attachments,
-                                    currentFormAttachments: values.attachments,
-                                    setFieldValue,
-                                  });
-                                }
-                              };
-                              input.click();
-                            }}
-                          >
-                            <Paperclip className="w-3 h-3" />
-                            Add Files
-                          </Button>
-                          <span className="text-xs text-muted-foreground">
-                            Max 30 files
-                          </span>
-                        </div>
-
-                        {values.attachments &&
-                          values.attachments.length > 0 && (
-                            <div className="space-y-1">
-                              {values.attachments.map(
-                                (att: any, index: number) => (
-                                  <div
-                                    key={index}
-                                    className="flex items-center justify-between p-1.5 bg-white dark:bg-black border border-gray-200 rounded text-xs"
-                                  >
-                                    <div className="flex items-center gap-1">
-                                      <FileIcon className="w-3 h-3 text-gray-500" />
-                                      <span className="truncate">
-                                        {att.name}
-                                      </span>
-                                    </div>
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
+                                      className="h-8 w-8 p-0"
                                       size="sm"
-                                      onClick={() => {
-                                        const updatedFiles =
-                                          values.attachments?.filter(
-                                            (_: any, i: number) => i !== index
-                                          );
-                                        setFieldValue(
-                                          "attachments",
-                                          updatedFiles
-                                        );
-                                      }}
-                                      className="h-4 w-4 p-0 text-gray-400 hover:text-red-500"
                                     >
-                                      <X className="w-2.5 h-2.5" />
+                                      <UserPlus className="h-3 w-3" />
                                     </Button>
                                   </div>
-                                )
-                              )}
+                                  {emailError && (
+                                    <p className="text-xs text-red-500">
+                                      {emailError}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Meeting Attachments */}
+                              <div className="space-y-1">
+                                <Label className="text-sm">
+                                  Meeting Attachments (Optional)
+                                </Label>
+                                <div className="space-y-2">
+                                  {(() => {
+                                    const formAttachments =
+                                      values.meetingAttachments;
+                                    // const candidateAttachments =
+                                    //   candidate?.assignment?.googleMeet
+                                    //     ?.meetingAttachments || [];
+
+                                    // Display candidateAttachments if formAttachments is undefined
+                                    const displayAttachments =
+                                      formAttachments !== undefined &&
+                                      formAttachments.length > 0
+                                        ? [...formAttachments]
+                                        : [];
+                                    return (
+                                      <div className="space-y-2">
+                                        {/* Add Files Button */}
+                                        <Button
+                                          type="button"
+                                          variant="outline"
+                                          size="sm"
+                                          className="flex items-center gap-2 h-8"
+                                          onClick={() => {
+                                            const input =
+                                              document.createElement("input");
+                                            input.type = "file";
+                                            input.multiple = true;
+                                            input.onchange = (e) => {
+                                              const files = (
+                                                e.target as HTMLInputElement
+                                              ).files;
+                                              if (files && files.length > 0) {
+                                                // Ensure arrays are defined before spreading
+                                                const currentFormFiles =
+                                                  Array.isArray(formAttachments)
+                                                    ? formAttachments
+                                                    : [];
+                                                // const currentCandidateFiles =
+                                                //   Array.isArray(
+                                                //     candidateAttachments
+                                                //   )
+                                                //     ? candidateAttachments
+                                                //     : [];
+
+                                                // Combine existing files (form + candidate if form is undefined)
+                                                const allFiles =
+                                                  formAttachments !== undefined
+                                                    ? currentFormFiles
+                                                    : [
+                                                        ...currentFormFiles,
+                                                        // ...currentCandidateFiles,
+                                                      ];
+
+                                                // Sanitize new files
+                                                const sanitizedFiles =
+                                                  sanitizeFiles(
+                                                    Array.from(files)
+                                                  );
+
+                                                // Ensure we don't exceed 10 files total
+                                                const availableSlots = Math.max(
+                                                  0,
+                                                  10 - allFiles.length
+                                                );
+                                                const updatedFiles = [
+                                                  ...allFiles,
+                                                  ...sanitizedFiles.slice(
+                                                    0,
+                                                    availableSlots
+                                                  ),
+                                                ];
+
+                                                setFieldValue(
+                                                  "meetingAttachments",
+                                                  updatedFiles
+                                                );
+                                              }
+                                            };
+                                            input.click();
+                                          }}
+                                        >
+                                          <Paperclip className="w-3 h-3" />
+                                          Add Files
+                                        </Button>
+
+                                        {/* File List Display */}
+                                        {displayAttachments.length > 0 ? (
+                                          <ul className="space-y-2">
+                                            {displayAttachments.map(
+                                              (file: any, index: number) => (
+                                                <li
+                                                  key={`${file.name}-${index}`}
+                                                  className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
+                                                  role="listitem"
+                                                >
+                                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                    <FileIcon className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                                                    <span
+                                                      className="text-sm text-gray-900 dark:text-gray-100 truncate max-w-[200px]"
+                                                      title={file.name}
+                                                    >
+                                                      {file.name}
+                                                    </span>
+                                                    {file.size && (
+                                                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                                                        (
+                                                        {(
+                                                          file.size / 1024
+                                                        ).toFixed(1)}{" "}
+                                                        KB)
+                                                      </span>
+                                                    )}
+                                                  </div>
+                                                  <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                      // Filter out the file at the current index from displayAttachments
+                                                      const updatedFiles =
+                                                        displayAttachments.filter(
+                                                          (_: any, i: number) =>
+                                                            i !== index
+                                                        );
+                                                      // Update the form's meetingAttachments field
+                                                      setFieldValue(
+                                                        "meetingAttachments",
+                                                        updatedFiles
+                                                      );
+                                                    }}
+                                                    className="p-1 text-gray-400 hover:text-red-500 focus:ring-2 focus:ring-red-500 focus:outline-none"
+                                                    aria-label={`Remove ${file.name}`}
+                                                  >
+                                                    <X className="w-4 h-4" />
+                                                  </Button>
+                                                </li>
+                                              )
+                                            )}
+                                          </ul>
+                                        ) : null}
+                                      </div>
+                                    );
+                                  })()}
+                                </div>
+                              </div>
                             </div>
                           )}
+                        </div>
+                      )}
+
+                      <div className="space-y-4">
+                        <Field name="remark">
+                          {({ field }: FieldProps) => (
+                            <MentionTextarea
+                              placeholder="Add a remark... (Alt+Enter to submit)"
+                              value={field.value || ""}
+                              onChange={field.onChange}
+                              onKeyDown={getOnAltEnterSubmit(
+                                values,
+                                formikProps,
+                                isSubmitting
+                              )(field.value)}
+                              organizationId={user?.organizationInfo?._id || ""}
+                              currentUserRole={user?.role || ""}
+                              rows={3}
+                            />
+                          )}
+                        </Field>
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-2">
+                            <Label htmlFor="rating">Rating:</Label>
+                            <Field name="rating">
+                              {({ field }: { field: { value: number } }) => (
+                                <Rating
+                                  name="rating"
+                                  value={field.value}
+                                  onChange={(e, value) =>
+                                    setFieldValue("rating", value)
+                                  }
+                                  precision={0.5}
+                                />
+                              )}
+                            </Field>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Attachments</Label>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="flex items-center gap-2 h-8"
+                              onClick={() => {
+                                const input = document.createElement("input");
+                                input.type = "file";
+                                input.multiple = true;
+                                input.onchange = (e) => {
+                                  const files = (e.target as HTMLInputElement)
+                                    .files;
+                                  if (files && files.length > 0) {
+                                    const sanitizedFiles = sanitizeFiles(
+                                      Array.from(files)
+                                    );
+                                    handleFileSelect({
+                                      files: sanitizedFiles,
+                                      existingAttachments:
+                                        candidate.attachments,
+                                      currentFormAttachments:
+                                        values.attachments,
+                                      setFieldValue,
+                                    });
+                                  }
+                                };
+                                input.click();
+                              }}
+                            >
+                              <Paperclip className="w-3 h-3" />
+                              Add Files
+                            </Button>
+                            <span className="text-xs text-muted-foreground">
+                              Max 30 files
+                            </span>
+                          </div>
+
+                          {values.attachments &&
+                            values.attachments.length > 0 && (
+                              <div className="space-y-1">
+                                {values.attachments.map(
+                                  (att: any, index: number) => (
+                                    <div
+                                      key={index}
+                                      className="flex items-center justify-between p-1.5 bg-white dark:bg-black border border-gray-200 rounded text-xs"
+                                    >
+                                      <div className="flex items-center gap-1">
+                                        <FileIcon className="w-3 h-3 text-gray-500" />
+                                        <span className="truncate">
+                                          {att.name}
+                                        </span>
+                                      </div>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                          const updatedFiles =
+                                            values.attachments?.filter(
+                                              (_: any, i: number) => i !== index
+                                            );
+                                          setFieldValue(
+                                            "attachments",
+                                            updatedFiles
+                                          );
+                                        }}
+                                        className="h-4 w-4 p-0 text-gray-400 hover:text-red-500"
+                                      >
+                                        <X className="w-2.5 h-2.5" />
+                                      </Button>
+                                    </div>
+                                  )
+                                )}
+                              </div>
+                            )}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex justify-between w-full space-x-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10">
-                  <div>
-                    {candidate.assignment && (
+                  <div className="flex justify-between w-full space-x-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10">
+                    <div>
+                      {candidate.assignment && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleUnassign}
+                        >
+                          Mark As Done
+                        </Button>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
                       <Button
                         type="button"
                         variant="outline"
-                        onClick={handleUnassign}
+                        onClick={() => onOpenChange(false)}
                       >
-                        Mark As Done
+                        Cancel
                       </Button>
-                    )}
+                      <Button
+                        type="submit"
+                        disabled={isSubmitting}
+                        variant="info"
+                      >
+                        {isSubmitting && (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        )}
+                        {isSubmitting ? "Assigning..." : "Assign"}
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => onOpenChange(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={isSubmitting}
-                      variant="info"
-                    >
-                      {isSubmitting && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      )}
-                      {isSubmitting ? "Assigning..." : "Assign"}
-                    </Button>
-                  </div>
-                </div>
-              </Form>
-            )}
+                </Form>
+              );
+            }}
           </Formik>
 
           <ConfirmationDialog

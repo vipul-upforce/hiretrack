@@ -41,6 +41,7 @@ import { useEffect } from "react";
 import AttachmentsPopover from "../../jobs/[id]/components/Remarks/attachments-popover";
 import { useSelector } from "react-redux";
 import { User } from "@/lib/features/org/orgApi";
+import { Mail } from "lucide-react";
 
 interface JobCardProps {
   job: Job;
@@ -50,6 +51,7 @@ interface JobCardProps {
   setIsEditMode: (editMode: boolean) => void;
   handleDeleteClick: (jobId: string) => void;
   setDuplicate: (x: boolean) => void;
+  onEmailSettingsClick?: (job: Job) => void;
 }
 
 const JobCard = ({
@@ -60,6 +62,7 @@ const JobCard = ({
   setIsEditMode,
   handleDeleteClick,
   setDuplicate,
+  onEmailSettingsClick,
 }: JobCardProps) => {
   const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
@@ -232,6 +235,17 @@ const JobCard = ({
                       <Info className="h-4 w-4 mr-2" />
                       View Details
                     </DropdownMenuItem>
+                    {onEmailSettingsClick && (
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEmailSettingsClick(job);
+                        }}
+                      >
+                        <Mail className="h-4 w-4 mr-2" />
+                        Email Settings
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem
                       onClick={(e) => {
                         e.stopPropagation();

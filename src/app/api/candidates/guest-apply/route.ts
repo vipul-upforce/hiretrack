@@ -13,6 +13,8 @@ import {
   sanitizeString,
 } from "@/lib/inputValidation";
 import { NotificationService } from "@/lib/notifications/notificationService";
+import { sendSmartNotificationEmail } from "@/lib/unifiedEmailService";
+import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
 
 export async function POST(request: NextRequest) {
   try {
@@ -251,6 +253,53 @@ export async function POST(request: NextRequest) {
         jobTitle: job.title || "Unknown Job",
         // No trigger user for guest applications
       });
+
+      // Send email notification to admin and HR users
+      try {
+        const { emailContent, emailSubject } = await getMappedEmailTemplate(
+          "job-application-hr",
+          {
+            jobTitle: job.title || "Unknown Job",
+            candidateName: candidateData.name,
+            candidateEmail: candidateData.email,
+            candidatePhone: candidateData.contact || "N/A",
+            applicationDate: new Date().toLocaleDateString(),
+            dashboardLink: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/jobs/${jobId._id}?candidateId=${candidate._id}`,
+          },
+          organizationId.toString()
+        );
+
+        // Get admin and HR user IDs for email notification
+        const adminHrIds = await NotificationService.getUsersByRole(
+          organizationId.toString(),
+          ["admin", "hr"]
+        );
+
+        if (adminHrIds.length > 0) {
+          await sendSmartNotificationEmail(
+            organizationId.toString(),
+            "newApplications",
+            {
+              jobId: jobId._id,
+              candidateId: candidate._id.toString(),
+              eventType: "job_application",
+              templateUsed: "job-application-hr",
+            },
+            {
+              subject: emailSubject,
+              html: emailContent,
+            },
+            adminHrIds
+          );
+          console.log("✅ Guest email notification sent successfully");
+        }
+      } catch (emailError) {
+        console.error(
+          "❌ Failed to send guest email notification:",
+          emailError
+        );
+        // Don't fail the API call if email notification fails
+      }
 
       console.log("✅ Guest notification sent successfully");
     } catch (notificationError) {

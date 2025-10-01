@@ -25,6 +25,7 @@ import { ResetPasswordDialog } from "./components/passworResetDialog";
 import ConfirmationDialog from "../jobs/[id]/components/Dialogs/ConfirmationDialog";
 import { EditUserDialog } from "./components/Edit-user-dialog";
 import { UserTableRow } from "./components/User-Table-Row";
+import { EmailNotificationSettingsDialog } from "@/components/dialogs/EmailNotificationSettingsDialog";
 
 function UsersPage() {
   const router = useRouter();
@@ -33,6 +34,7 @@ function UsersPage() {
   const [deleteUser, { isLoading: isDeleting }] = useDeleteUserMutation();
   const [isOpen, setIsOpen] = useState(false);
   const [isPasswordOpen, setIsPasswordOpen] = useState(false);
+  const [isEmailSettingsOpen, setIsEmailSettingsOpen] = useState(false);
   interface SelectedUser {
     id?: string;
     name: string;
@@ -44,6 +46,12 @@ function UsersPage() {
   const [selectedPasswordUser, setSelectedPasswordUser] = useState<{
     candidateId: string;
     name: string;
+  } | null>(null);
+  const [selectedEmailSettingsUser, setSelectedEmailSettingsUser] = useState<{
+    _id: string;
+    name: string;
+    email: string;
+    role: string;
   } | null>(null);
   useEffect(() => {
     refetch();
@@ -62,11 +70,11 @@ function UsersPage() {
         description:
           "Error: " +
           (typeof error === "object" &&
-            error !== null &&
-            "data" in error &&
-            typeof error.data === "object" &&
-            error.data &&
-            "error" in error.data
+          error !== null &&
+          "data" in error &&
+          typeof error.data === "object" &&
+          error.data &&
+          "error" in error.data
             ? (error.data as { error: string }).error
             : "Unknown error"),
         title: "Failed to delete user",
@@ -98,6 +106,16 @@ function UsersPage() {
       name,
     });
     setIsPasswordOpen(true);
+  };
+
+  const handleEmailSettingsClick = (user: {
+    _id: string;
+    name: string;
+    email: string;
+    role: string;
+  }) => {
+    setSelectedEmailSettingsUser(user);
+    setIsEmailSettingsOpen(true);
   };
 
   if (isLoading) {
@@ -205,6 +223,7 @@ function UsersPage() {
                       }}
                       onEditClick={handleEditClick}
                       onPasswordClick={handlePasswordClick}
+                      onEmailSettingsClick={handleEmailSettingsClick}
                     />
                   ))}
               </TableBody>
@@ -248,6 +267,18 @@ function UsersPage() {
             }}
             candidateId={selectedPasswordUser.candidateId}
             name={selectedPasswordUser.name}
+          />
+        )}
+        {selectedEmailSettingsUser && (
+          <EmailNotificationSettingsDialog
+            isOpen={isEmailSettingsOpen}
+            onOpenChange={(open) => {
+              setIsEmailSettingsOpen(open);
+              if (!open) setSelectedEmailSettingsUser(null);
+            }}
+            userId={selectedEmailSettingsUser._id}
+            userName={selectedEmailSettingsUser.name}
+            userRole={selectedEmailSettingsUser.role}
           />
         )}
       </div>

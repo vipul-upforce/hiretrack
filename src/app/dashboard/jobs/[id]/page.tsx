@@ -48,6 +48,7 @@ import {
   MoreHorizontal,
   Plus,
   Edit,
+  Mail,
   Trash,
 } from "lucide-react";
 import {
@@ -62,6 +63,7 @@ import CustomFieldForm from "@/Custom_Fields/Components/Form/CustomFieldForm";
 import { useContext } from "react";
 import { Badge } from "@/components/ui/badge";
 import { JobAnalyticsModal } from "../../jobs-board/components/JobAnalyticsModal";
+import { JobEmailNotificationSettingsDialog } from "@/components/dialogs/JobEmailNotificationSettingsDialog";
 import ChecklistRemarksDialog from "./components/Dialogs/checklist-remarks-dialog";
 import { LaneChecklistConfigDialog } from "./components/Dialogs/lane-checklist-config-dialog";
 import { useSelector } from "react-redux";
@@ -187,6 +189,7 @@ export default function JobProgressPage() {
   const [isFileOver, setIsFileOver] = useState(false);
   const [isCustomFieldsOpen, setIsCustomFieldsOpen] = useState(false);
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
+  const [isEmailSettingsOpen, setIsEmailSettingsOpen] = useState(false);
   const [isPromptConfirmOpen, setIsPromptConfirmOpen] = useState(false);
   const [pendingPromptValue, setPendingPromptValue] = useState(false);
 
@@ -651,6 +654,14 @@ export default function JobProgressPage() {
                       Analytics
                     </Button>
                   )}
+                  <Button
+                    variant="ghost"
+                    onClick={() => setIsEmailSettingsOpen(true)}
+                    className="w-full justify-start gap-2"
+                  >
+                    <Mail className="h-4 w-4" />
+                    Email Settings
+                  </Button>
                 </div>
               </PopoverContent>
             </Popover>
@@ -848,6 +859,16 @@ export default function JobProgressPage() {
           onClose={() => setIsAnalyticsOpen(false)}
           job={job}
           organizationId={user?.organizationId || ""}
+        />
+      )}
+
+      {/* Job Email Notification Settings Dialog */}
+      {job && (
+        <JobEmailNotificationSettingsDialog
+          isOpen={isEmailSettingsOpen}
+          onOpenChange={setIsEmailSettingsOpen}
+          jobId={job._id}
+          jobTitle={job.title}
         />
       )}
 

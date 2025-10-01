@@ -14,6 +14,27 @@ export interface Organization {
   defaultLanes?: string[];
 }
 
+export interface EmailNotificationSettings {
+  global: {
+    newApplications: boolean;
+    interviewAssignments: boolean;
+    statusUpdates: boolean;
+    newRemarks: boolean;
+    stepCompleted: boolean;
+    mentions: boolean;
+  };
+  jobLevel: {
+    [jobId: string]: {
+      newApplications?: boolean;
+      interviewAssignments?: boolean;
+      statusUpdates?: boolean;
+      newRemarks?: boolean;
+      stepCompleted?: boolean;
+      mentions?: boolean;
+    };
+  };
+}
+
 export interface IUser {
   _id: string;
   organizationId: Organization | string;
@@ -29,6 +50,7 @@ export interface IUser {
   isDeleted?: boolean;
   otpExpires?: Date;
   otp?: number;
+  emailNotificationSettings?: EmailNotificationSettings;
 }
 
 export const userSchema = new Schema<IUser>(
@@ -74,6 +96,46 @@ export const userSchema = new Schema<IUser>(
     },
     otpExpires: {
       type: Date,
+    },
+    emailNotificationSettings: {
+      global: {
+        newApplications: {
+          type: Boolean,
+          default: true,
+        },
+        interviewAssignments: {
+          type: Boolean,
+          default: true,
+        },
+        statusUpdates: {
+          type: Boolean,
+          default: true,
+        },
+        newRemarks: {
+          type: Boolean,
+          default: true,
+        },
+        stepCompleted: {
+          type: Boolean,
+          default: true,
+        },
+        mentions: {
+          type: Boolean,
+          default: true,
+        },
+      },
+      jobLevel: {
+        type: Map,
+        of: {
+          newApplications: { type: Boolean },
+          interviewAssignments: { type: Boolean },
+          statusUpdates: { type: Boolean },
+          newRemarks: { type: Boolean },
+          stepCompleted: { type: Boolean },
+          mentions: { type: Boolean },
+        },
+        default: new Map(),
+      },
     },
   },
   {

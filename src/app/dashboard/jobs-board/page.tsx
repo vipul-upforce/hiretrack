@@ -39,6 +39,8 @@ import CustomFieldDialog from "@/Custom_Fields/Components/Common/CustomFieldDial
 import Stepper from "@/Custom_Fields/Components/Stepper";
 import DefaultLanesButton from "./components/DefaultLanesButton";
 import { useSelector } from "react-redux";
+import { useGetUsersQuery } from "@/lib/features/users/usersApi";
+import { JobEmailNotificationSettingsDialog } from "@/components/dialogs/JobEmailNotificationSettingsDialog";
 interface User {
   role: string;
   organizationId: string;
@@ -148,6 +150,7 @@ function KanbanPage() {
   } = useFetchJobsQuery(undefined, {
     skip: !user,
   });
+  const { data: users } = useGetUsersQuery();
   // const router = useRouter();
   const [updateJobStatus] = useUpdateJobStatusMutation();
   const [deleteJob] = useDeleteJobMutation();
@@ -156,6 +159,9 @@ function KanbanPage() {
   const [isCreatingJob, setIsCreatingJob] = useState(false);
   const [duplicate, setDuplicate] = useState(false);
   const [isCustomFieldsOpen, setIsCustomFieldsOpen] = useState(false);
+  const [isEmailSettingsOpen, setIsEmailSettingsOpen] = useState(false);
+  const [selectedJobForEmailSettings, setSelectedJobForEmailSettings] =
+    useState<Job | null>(null);
   // useEffect(() => {
   //   (async () => {
   //     const token = Cookies.get("token");
@@ -225,6 +231,11 @@ function KanbanPage() {
     } finally {
       setIsCreatingJob(false);
     }
+  };
+
+  const handleEmailSettingsClick = (job: Job) => {
+    setSelectedJobForEmailSettings(job);
+    setIsEmailSettingsOpen(true);
   };
 
   const onDragEnd = async (result: any) => {
@@ -418,6 +429,7 @@ function KanbanPage() {
                   setIsEditMode={setIsEditMode}
                   handleDeleteClick={handleDeleteClick}
                   setDuplicate={setDuplicate}
+                  onEmailSettingsClick={handleEmailSettingsClick}
                 />
               ))}
             </div>
@@ -473,6 +485,16 @@ function KanbanPage() {
         isOpen={isCustomFieldsOpen}
         onClose={() => setIsCustomFieldsOpen(false)}
       />
+
+      {/* Job Email Notification Settings Dialog */}
+      {selectedJobForEmailSettings && (
+        <JobEmailNotificationSettingsDialog
+          isOpen={isEmailSettingsOpen}
+          onOpenChange={setIsEmailSettingsOpen}
+          jobId={selectedJobForEmailSettings._id}
+          jobTitle={selectedJobForEmailSettings.title}
+        />
+      )}
     </div>
   );
 }

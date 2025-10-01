@@ -360,14 +360,37 @@ async function sendQueuedEmail(
     organizationId
   );
 
-  // Use the legacy sendMail function which properly handles BCC
-  const emailStatus = await sendMail(
+  // Use the unified email service with notification filtering
+  const systemUser = await User.findOneAndUpdate(
+    { email: fromEmail, organizationId },
+    {
+      $setOnInsert: {
+        name: "HireTrack System",
+        email: fromEmail,
+        role: "system",
+        organizationId,
+      },
+    },
+    { upsert: true, new: true }
+  );
+
+  const emailStatus = await sendEventEmailWithHistory(
     organizationId,
     [email, ...emailList],
     emailSubject,
     emailContent,
-    undefined, // bcc parameter
-    senderEmail || undefined // triggerer's email to exclude
+    {
+      sentBy: sentBy || systemUser._id.toString(),
+      sentByEmail: sentByEmail || systemUser.email,
+      sentByName: sentByName || systemUser.name,
+      metadata: {
+        candidateId,
+        jobId,
+        templateUsed: "interview-assignment",
+        eventType: "interview_assignment",
+      },
+    },
+    senderEmail || sentByEmail // Pass the triggerer's email to exclude from recipients
   );
 
   // If we have existing history IDs (from pending), update them
@@ -381,19 +404,6 @@ async function sendQueuedEmail(
   } else {
     // Fallback: create new history records if none exist (shouldn't happen in normal flow)
     console.warn("No existing history IDs found, creating new history records");
-
-    const systemUser = await User.findOneAndUpdate(
-      { email: fromEmail, organizationId },
-      {
-        $setOnInsert: {
-          name: "HireTrack System",
-          email: fromEmail,
-          role: "system",
-          organizationId,
-        },
-      },
-      { upsert: true, new: true }
-    );
 
     const sentById =
       sentBy && sentBy !== "system" ? sentBy : systemUser._id.toString();
