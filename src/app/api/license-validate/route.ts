@@ -81,7 +81,7 @@ async function validateLicenseWithAPI(
     }
     console.log("licenseValidationUrl: ", licenseValidationUrl);
     console.log("licenseKey: ", licenseKey);
-    console.log("machineCode: ", machineCode);
+    // console.log("machineCode: ", machineCode);
     const response = await fetch(
       `${licenseValidationUrl}/api/license/validate`,
       {
@@ -140,25 +140,25 @@ async function handleLicenseValidation(request: NextRequest) {
     console.log("currentMachineCode: ", currentMachineCode);
     console.log("licenseData.machineCode: ", licenseData.machineCode);
     console.log("licenseData: ", licenseData);
-    console.log(
-      "licenseData.machineCode != currentMachineCode: ",
-      licenseData.machineCode != currentMachineCode
-    );
+    // console.log(
+    //   "licenseData.machineCode != currentMachineCode: ",
+    //   licenseData.machineCode != currentMachineCode
+    // );
     // Check if machine code matches
-    if (licenseData.machineCode != currentMachineCode) {
-      return NextResponse.json({
-        valid: false,
-        error:
-          "Machine code mismatch. This license is not valid for this machine.",
-        hasLicenseFile: true,
-        machineCodeMismatch: true,
-      });
-    }
+    // if (licenseData.machineCode != currentMachineCode) {
+    //   return NextResponse.json({
+    //     valid: false,
+    //     error:
+    //       "Machine code mismatch. This license is not valid for this machine.",
+    //     hasLicenseFile: true,
+    //     machineCodeMismatch: true,
+    //   });
+    // }
 
     // Validate with external API
     const validationResult = await validateLicenseWithAPI(
       licenseData.licenseKey,
-      licenseData.machineCode
+      currentMachineCode
       // licenseData.version
     );
 
