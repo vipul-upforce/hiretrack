@@ -470,6 +470,7 @@ const CustomFieldForm = memo(
                       }
                       placeholder="Type an option and press Enter..."
                       suggestions={[]}
+                      showAddButton={true}
                       // className="text-lg"
                     />
                     {errors.options && touched.options && (
@@ -791,6 +792,7 @@ const CustomFieldForm = memo(
                                 .map((option) => option.trim())
                                 .filter((option) => option !== "") || []
                             }
+                            showAddButton={true}
                           />
                         ) : (
                           <Select

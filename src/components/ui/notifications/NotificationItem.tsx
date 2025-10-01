@@ -15,7 +15,7 @@ import {
   CheckCircle,
   Clock,
   FileText,
-  Check
+  Check,
 } from "lucide-react";
 import { INotification, NotificationType } from "@/lib/models/notification";
 
@@ -60,27 +60,27 @@ const getNotificationIcon = (type: NotificationType) => {
 
 const getPriorityColor = (priority: string) => {
   switch (priority) {
-    case 'high':
-      return 'text-red-500';
-    case 'medium':
-      return 'text-yellow-500';
-    case 'low':
-      return 'text-blue-500';
+    case "high":
+      return "text-red-500";
+    case "medium":
+      return "text-yellow-500";
+    case "low":
+      return "text-blue-500";
     default:
-      return 'text-gray-500';
+      return "text-gray-500";
   }
 };
 
 const getPriorityBadgeVariant = (priority: string) => {
   switch (priority) {
-    case 'high':
-      return 'destructive' as const;
-    case 'medium':
-      return 'secondary' as const;
-    case 'low':
-      return 'outline' as const;
+    case "high":
+      return "destructive" as const;
+    case "medium":
+      return "secondary" as const;
+    case "low":
+      return "outline" as const;
     default:
-      return 'outline' as const;
+      return "outline" as const;
   }
 };
 
@@ -88,7 +88,7 @@ export function NotificationItem({
   notification,
   onMarkAsRead,
   onClick,
-  className
+  className,
 }: NotificationItemProps) {
   const handleClick = () => {
     // Only perform the action, don't mark as read automatically
@@ -104,7 +104,9 @@ export function NotificationItem({
     }
   };
 
-  const timeAgo = formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true });
+  const timeAgo = formatDistanceToNow(new Date(notification.createdAt), {
+    addSuffix: true,
+  });
 
   return (
     <div
@@ -118,24 +120,28 @@ export function NotificationItem({
       onClick={handleClick}
     >
       {/* Icon */}
-      <div className={cn(
-        "flex-shrink-0 mt-0.5",
-        getPriorityColor(notification.priority)
-      )}>
+      <div
+        className={cn(
+          "flex-shrink-0 mt-0.5",
+          getPriorityColor(notification.priority)
+        )}
+      >
         {getNotificationIcon(notification.type)}
       </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0 space-y-1">
         <div className="flex items-start justify-between gap-2">
-          <h4 className={cn(
-            "text-sm font-medium leading-tight",
-            notification.isRead ? "text-muted-foreground" : "text-foreground"
-          )}>
+          <h4
+            className={cn(
+              "text-sm font-medium leading-tight",
+              notification.isRead ? "text-muted-foreground" : "text-foreground"
+            )}
+          >
             {notification.title}
           </h4>
           <div className="flex items-center gap-1 flex-shrink-0">
-            {notification.priority !== 'medium' && (
+            {notification.priority !== "medium" && (
               <Badge
                 variant={getPriorityBadgeVariant(notification.priority)}
                 className="text-xs px-1.5 py-0.5"
@@ -160,10 +166,12 @@ export function NotificationItem({
           </div>
         </div>
 
-        <p className={cn(
-          "text-sm leading-relaxed",
-          notification.isRead ? "text-muted-foreground" : "text-foreground"
-        )}>
+        <p
+          className={cn(
+            "text-sm leading-relaxed",
+            notification.isRead ? "text-muted-foreground" : "text-foreground"
+          )}
+        >
           {notification.message}
         </p>
 
@@ -174,9 +182,7 @@ export function NotificationItem({
           </p>
         )}
 
-        <span className="text-xs text-muted-foreground">
-          {timeAgo}
-        </span>
+        <span className="text-xs text-muted-foreground">{timeAgo}</span>
       </div>
     </div>
   );

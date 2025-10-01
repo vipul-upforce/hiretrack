@@ -346,11 +346,11 @@ export function ApplyAsGuestDialog({
       };
 
       // Debug: Log the candidate data being sent
-      console.log("Guest candidate data being sent:", candidateData);
-      console.log("JobId value:", jobId);
-      console.log("JobId type:", typeof jobId);
-      console.log("candidateData.jobId:", candidateData.jobId);
-      console.log("candidateData.jobId._id:", candidateData.jobId._id);
+      // console.log("Guest candidate data being sent:", candidateData);
+      // console.log("JobId value:", jobId);
+      // console.log("JobId type:", typeof jobId);
+      // console.log("candidateData.jobId:", candidateData.jobId);
+      // console.log("candidateData.jobId._id:", candidateData.jobId._id);
 
       // Step 1: Create the candidate
       const createdCandidate =

@@ -153,8 +153,10 @@ export default function DashboardLayout({
 
     // For interviewers, handle candidate-related and meeting notifications by opening dialog
     if (
-      userData?.role === "interviewer" &&
+      // userData?.role === "interviewer" &&
       (notification.relatedEntity === "candidate" ||
+        notification.relatedEntity === "followup" ||
+        notification.relatedEntity === "checklist" ||
         notification.relatedEntity === "meeting") &&
       notification.relatedId
     ) {
@@ -174,11 +176,10 @@ export default function DashboardLayout({
         });
       }
     }
-
     // For admin/hr or non-candidate notifications, navigate to the page
     if (notification.actionUrl) {
-      window.location.href = notification.actionUrl;
-      // router.push(notification.actionUrl);
+      // window.location.href = notification.actionUrl;
+      router.push(notification.actionUrl);
       // router.refresh();
       // window.location.reload();
     }

@@ -25,6 +25,7 @@ import GoogleCalendarSettings from "./google-calendar";
 import { useSelector } from "react-redux";
 import { User } from "@/lib/features/org/orgApi";
 import CaptchaSettings from "./CaptchaSettings";
+import AutoUpdateSettings from "./AutoUpdateSettings";
 export interface SettingComponentProps {
   onClose: () => void;
   isOpen?: boolean;
@@ -48,6 +49,7 @@ const settingComponents: Record<
   tags: ManageTagsDialog,
   twoFA: twoFASettings,
   captcha: CaptchaSettings,
+  version: AutoUpdateSettings,
 };
 
 const SettingDialog = ({
