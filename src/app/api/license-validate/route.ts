@@ -4,6 +4,8 @@ import path from "path";
 import crypto from "crypto";
 import { licenseValidateRateLimiter } from "@/lib/rateLimiter";
 import { machineIdSync, machineId } from "node-machine-id";
+import { execSync } from "child_process";
+
 // const fs ("fs");
 // const crypto = require("crypto");
 import { hostname } from "os";
@@ -75,9 +77,31 @@ interface LicenseValidationResponse {
 //   }
 // }
 
-function generateMachineCode() {
-  const id = machineIdSync(); // returns a unique machine ID
-  return id;
+// function generateMachineCode() {
+//   const id = machineIdSync(); // returns a unique machine ID
+//   return id;
+// }
+
+export function generateMachineCode(): string {
+  try {
+    const osType = process.platform; // 'darwin' or 'linux'
+    let id: string;
+
+    if (osType === "linux") {
+      id = execSync("cat /etc/machine-id").toString().trim();
+    } else if (osType === "darwin") {
+      id = execSync("hostname | shasum -a 256 | awk '{print $1}'")
+        .toString()
+        .trim();
+    } else {
+      throw new Error(`Unsupported OS: ${osType}`);
+    }
+
+    return id;
+  } catch (err) {
+    console.error("Failed to get machine ID:", err);
+    return "unknown-machine-id";
+  }
 }
 
 // Read license data from license.json file
