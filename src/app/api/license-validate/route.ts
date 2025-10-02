@@ -3,7 +3,10 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import { licenseValidateRateLimiter } from "@/lib/rateLimiter";
-
+import { machineIdSync, machineId } from "node-machine-id";
+// const fs ("fs");
+// const crypto = require("crypto");
+import { hostname } from "os";
 // Common variable for license.json path (in project root).,
 const LICENSE_PATH = path.join(process.cwd(), "..", "license.json");
 
@@ -25,26 +28,56 @@ interface LicenseValidationResponse {
   error?: string;
 }
 
+// get_machine_code() {                                                          local OS_TYPE
+//   OS_TYPE=$(uname | tr '[:upper:]' '[:lower:]')
+//   if [[ "$OS_TYPE" == "linux" ]]; then
+//       if [ -f /etc/machine-id ]; then
+//           cat /etc/machine-id                                                   else                                                                          hostname | sha256sum | awk '{print $1}'
+//       fi                                                                    elif [[ "$OS_TYPE" == "darwin" ]]; then
+//       hostname | shasum -a 256 | awk '{print $1}'
+//   else                                                                          echo "�~]~L Unsupported OS: $OS_TYPE"
+//       exit 1
+//   fi
+// }
+
 // Generate machine code based on system characteristics
-function generateMachineCode(): string {
-  const os = process.platform;
-  const arch = process.arch;
-  const hostname = require("os").hostname();
-  const networkInterfaces = require("os").networkInterfaces();
+/**
+ * Returns the machine code using the same logic as the shell get_machine_code function.
+ * - On Linux: returns the contents of /etc/machine-id if it exists, otherwise the sha256 of the hostname.
+ * - On macOS (darwin): returns the sha256 of the hostname.
+ * - On other OS: throws an error.
+ * This ensures compatibility with installation scripts and other usages.
+ */
+// function generateMachineCode(): string {
+//   const os = process.platform;
 
-  // Get MAC address from first network interface
-  const allInterfaces = Object.values(networkInterfaces).flat() as any[];
-  const macAddress =
-    allInterfaces.find(
-      (iface) => !iface.internal && iface.mac !== "00:00:00:00:00:00"
-    )?.mac || "unknown";
+//   if (os === "linux") {
+//     const machineIdPath = "/etc/machine-id";
+//     if (fs.existsSync(machineIdPath)) {
+//       // Read /etc/machine-id and trim whitespace
+//       return fs.readFileSync(machineIdPath, "utf8").trim();
+//     } else {
+//       console.log("hostname: ", hostname);
+//       // Fallback: sha256sum of hostname
+//       return crypto.createHash("sha256").update(hostname()).digest("hex");
+//     }
+//   } else if (os === "darwin") {
+//     console.log("hostname: ", hostname);
+//     // macOS: sha256 of hostname
+//     return crypto.createHash("sha256").update(hostname()).digest("hex");
+//   } else if (os === "win32") {
+//     console.log("hostname: ", hostname);
+//     // Windows: sha256 of hostname
+//     return crypto.createHash("sha256").update(hostname()).digest("hex");
+//   } else {
+//     // Unsupported OS
+//     throw new Error(`Unsupported OS for machine code: ${os}`);
+//   }
+// }
 
-  const machineString = `${os}-${arch}-${hostname}-${macAddress}`;
-  return crypto
-    .createHash("sha256")
-    .update(machineString)
-    .digest("hex")
-    .substring(0, 16);
+function generateMachineCode() {
+  const id = machineIdSync(); // returns a unique machine ID
+  return id;
 }
 
 // Read license data from license.json file
