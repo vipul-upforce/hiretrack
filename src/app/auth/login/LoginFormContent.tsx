@@ -19,6 +19,7 @@ import "./recaptcha-theme.css";
 import { useSelector } from "react-redux";
 import { useGetCaptchaConfigsQuery } from "@/lib/features/settings/settingsApi";
 import { getDecodedCaptcha } from "@/hooks/useSSE";
+import packageJson from "../../../../package.json";
 
 // Animated Grid Pattern Component
 interface AnimatedGridPatternProps {
@@ -603,6 +604,8 @@ export default function LoginFormContent({
     );
   }
 
+  const appVersion = packageJson.version;
+
   return (
     <div className="min-h-screen w-full bg-background relative overflow-hidden flex items-center justify-center p-4">
       {/* Animated Background */}
@@ -948,6 +951,13 @@ export default function LoginFormContent({
           setSelectedOrgId={(orgId: string) => setSelectedOrg(orgId)}
         />
       )}
+      {/* App version in bottom right corner */}
+      <div
+        className="fixed bottom-2 right-4 text-xs text-gray-400 select-none pointer-events-none z-50"
+        aria-label="App Version"
+      >
+        v{appVersion}
+      </div>
     </div>
   );
 }
