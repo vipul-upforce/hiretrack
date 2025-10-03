@@ -168,6 +168,18 @@ export const orgApi = createApi({
         body: data,
       }),
     }),
+    getOrganizationAllowance: builder.query<{ allow: boolean }, void>({
+      query: () => ({
+        url: "/organization",
+        method: "GET",
+      }),
+    }),
+    checkOrg: builder.query<{ exists: boolean }, string>({
+      query: (organizationId) => ({
+        url: `/checkorg?organizationId=${organizationId}`,
+        method: "GET",
+      }),
+    }),
     // New endpoint to fetch batches
     fetchBatches: builder.query<Batch[], string>({
       query: (organizationId) => `/process-cv?organizationId=${organizationId}`,
@@ -222,5 +234,7 @@ export const {
   usePostBatchMutation, // Hook for posting a batch,,
   useFetchOrgTagsQuery,
   useUpdateOrgTagsMutation,
+  useGetOrganizationAllowanceQuery,
+  useCheckOrgQuery
 } = orgApi;
 // export const { useCreateAdminMutation } = orgApi;

@@ -48,6 +48,7 @@ import { Candidate } from "@/types/candidate";
 import { OnboardingProvider } from "@/components/onboarding/OnboardingProvider";
 import OnboardingModal from "@/components/onboarding/OnboardingModal";
 import OnboardingSidebar from "@/components/onboarding/OnboardingSidebar";
+import { useCheckOrgQuery, useGetOrganizationAllowanceQuery } from "@/lib/features/org/orgApi";
 
 interface SidebarItem {
   title: string;
@@ -122,6 +123,11 @@ export default function DashboardLayout({
     refetch,
   } = useGetPortalConfigsQuery(undefined);
   const { setUserLoggedIn } = useCustomFields();
+  const {
+    data: allowanceData,
+    isLoading: allowanceLoading,
+    error: allowanceError
+  } = useGetOrganizationAllowanceQuery();
   const [hasMultipleOrgs, seHasMultipleOrgs] = useState(false);
 
   // Notification hooks
@@ -210,6 +216,11 @@ export default function DashboardLayout({
     }
   };
   const { user } = useSelector((state: any) => state.auth || {});
+  const {
+    data: orgCheckData,
+    error: orgCheckError,
+    isLoading: orgCheckLoading,
+  } = useCheckOrgQuery(user?.organizationId, { skip: !user });
 
   const dispatch = useDispatch();
   const allowMultipleOrgs = useSelector(
@@ -217,53 +228,27 @@ export default function DashboardLayout({
   );
 
   useEffect(() => {
-    async function checkAllowance() {
-      const data = await fetch("/api/organization");
-      const allowance = await data?.json();
-      seHasMultipleOrgs(allowance.allow);
-      dispatch(setAllowMultipleOrgs(allowance.allow));
+    if (allowanceData) {
+      seHasMultipleOrgs(allowanceData.allow);
+      dispatch(setAllowMultipleOrgs(allowanceData.allow));
     }
-    checkAllowance();
-  }, [dispatch, allowMultipleOrgs]);
+  }, [allowanceData, dispatch]);
 
   useEffect(() => {
-    (async () => {
-      if (user) {
-        setUserLoggedIn(true);
-        // const decryptedResponse = await verifyAndDecryptJWTToken(String(user));
-        // if (decryptedResponse.success && decryptedResponse.user) {
-        setUserData(user);
-        setUserLoggedIn(true);
-        refetch();
+    if (orgCheckData && !orgCheckData.exists) {
+      Cookies.remove("token");
+      dispatch(logout());
+      fetch("/api/auth/logout");
+      window.location.href = "/auth/login";
+    }
+  }, [orgCheckData, dispatch]);
 
-        try {
-          if (user.organizationInfo.name === "") {
-            return;
-          }
-          const response = await fetch(
-            "/api/checkorg?organizationId=" + user.organizationId
-          );
-          const resp = await response.json();
-          if (!resp.exists) {
-            Cookies.remove("token");
-            dispatch(logout());
-            await fetch("/api/auth/logout");
-
-            // debugger;
-            window.location.href = "/auth/login";
-            return;
-          }
-        } catch (error) {
-          console.error("Error checking organization:", error);
-          Cookies.remove("token");
-          dispatch(logout());
-          await fetch("/api/auth/logout");
-
-          window.location.href = "/auth/login";
-        }
-        // }
-      }
-    })();
+  useEffect(() => {
+    if (user) {
+      setUserLoggedIn(true);
+      setUserData(user);
+      refetch();
+    }
   }, [user]);
 
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -458,10 +443,10 @@ export default function DashboardLayout({
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result
       ? {
-          r: parseInt(result[1], 16),
-          g: parseInt(result[2], 16),
-          b: parseInt(result[3], 16),
-        }
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16),
+      }
       : null;
   };
 
@@ -492,6 +477,7 @@ export default function DashboardLayout({
     const result = ((r << 16) + (g << 8) + b).toString(16).padStart(6, "0");
     return `#${result}`;
   };
+
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       <div
@@ -586,10 +572,10 @@ export default function DashboardLayout({
                   style={
                     isActive
                       ? {
-                          backgroundColor: `rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)`,
-                          color: `var(--portal-primary, #6366f1)`,
-                          borderLeft: `3px solid var(--portal-primary, #6366f1)`,
-                        }
+                        backgroundColor: `rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)`,
+                        color: `var(--portal-primary, #6366f1)`,
+                        borderLeft: `3px solid var(--portal-primary, #6366f1)`,
+                      }
                       : {}
                   }
                 >
@@ -691,6 +677,18 @@ export default function DashboardLayout({
       </div>
     </div>
   );
+
+  if (allowanceError || orgCheckError) {
+    return (
+      <div className="p-6 text-center text-red-600">
+        Failed to load organization data. Please refresh or contact support.
+      </div>
+    );
+  }
+
+  if (allowanceLoading || orgCheckLoading) {
+    return <div className="p-6 text-center">Loading...</div>;
+  }
 
   return (
     <OnboardingProvider>

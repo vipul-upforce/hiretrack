@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { IUser } from "@/lib/models/user";
+import { useGetPortalConfigsQuery } from "@/lib/features/settings/settingsApi";
 
 import { useSelector } from "react-redux";
 
@@ -8,10 +8,13 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
   const { user } = useSelector((state: any) => state.auth || {});
   const [uriOrgName, setOrgName] = useState<string>();
   const [isHydrated, setIsHydrated] = useState(false);
-  const [portalSettings, setPortalSettings] = useState<{
-    portalName?: string;
-    portalFavicon?: { url: string };
-  } | null>(null);
+
+  const {
+    data: portalSettings,
+    isLoading,
+    isError,
+    error
+  } = useGetPortalConfigsQuery(undefined, { skip: !isHydrated });
 
   // Handle hydration completion
   useEffect(() => {
@@ -29,74 +32,26 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isHydrated) return;
 
-    async function fetchPortalSettings() {
-      try {
-        const response = await fetch("/api/settings/portal");
-        if (response.ok) {
-          const data = await response.json();
-          setPortalSettings(data);
+    const title =
+      portalSettings?.portalName ||
+      uriOrgName ||
+      user?.organizationInfo?.name ||
+      "HireTrack";
+    document.title = title;
 
-          // Update document title
-          const title =
-            data.portalName ||
-            uriOrgName ||
-            user?.organizationInfo?.name ||
-            "HireTrack";
-          document.title = title;
+    const faviconUrl = portalSettings?.portalFavicon?.url || "/favicon.png";
+    let favicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
 
-          // Update favicon using portal settings
-          if (data.portalFavicon?.url) {
-            const favicon = document.querySelector(
-              'link[rel="icon"]'
-            ) as HTMLLinkElement;
-            if (favicon) {
-              favicon.href = data.portalFavicon.url;
-            } else {
-              // Create favicon link if it doesn't exist
-              const newFavicon = document.createElement("link");
-              newFavicon.rel = "icon";
-              newFavicon.href = data.portalFavicon.url;
-              document.head.appendChild(newFavicon);
-            }
-          } else {
-            // Fallback to default favicon if no portal favicon is set
-            const favicon = document.querySelector(
-              'link[rel="icon"]'
-            ) as HTMLLinkElement;
-            if (favicon) {
-              favicon.href = "/favicon.png";
-            }
-          }
-        } else {
-          // API call failed, use fallback title and favicon
-          const title =
-            uriOrgName || user?.organizationInfo?.name || "HireTrack";
-          document.title = title;
-
-          const favicon = document.querySelector(
-            'link[rel="icon"]'
-          ) as HTMLLinkElement;
-          if (favicon) {
-            favicon.href = "/favicon.png";
-          }
-        }
-      } catch (error) {
-        console.error("Failed to fetch portal settings:", error);
-        // Use fallback title and favicon on error
-        const title = uriOrgName || user?.organizationInfo?.name || "HireTrack";
-        document.title = title;
-
-        const favicon = document.querySelector(
-          'link[rel="icon"]'
-        ) as HTMLLinkElement;
-        if (favicon) {
-          favicon.href = "/favicon.png";
-        }
-      }
+    if (favicon) {
+      favicon.href = faviconUrl;
+    } else {
+      // create a new favicon if it doesn't exist
+      const newFavicon = document.createElement("link");
+      newFavicon.rel = "icon";
+      newFavicon.href = faviconUrl;
+      document.head.appendChild(newFavicon);
     }
-
-    fetchPortalSettings();
-  }, [user, uriOrgName, isHydrated]);
+  }, [portalSettings, uriOrgName, user, isHydrated]);
 
   // Handle browser extension interference
   useEffect(() => {
@@ -125,10 +80,25 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
     });
   }, [isHydrated]);
 
-  // Don't render children until hydration is complete to prevent mismatches
-  if (!isHydrated) {
+  // Don't render children until hydration is complete to prevent mismatches or the data is loading
+  if (!isHydrated || isLoading) {
     return <div suppressHydrationWarning />;
   }
+
+  // if there is an error then fallback to default info.
+  if (isError) {
+
+    console.log("Failed to fetch portal settings : ", error)
+
+    document.title = uriOrgName || user?.organizationInfo?.name || "HireTrack";
+    const favicon = document.querySelector(
+      'link[rel="icon"]'
+    ) as HTMLLinkElement;
+    if (favicon) {
+      favicon.href = "/favicon.png";
+    }
+  }
+
 
   return <div suppressHydrationWarning>{children}</div>;
 }

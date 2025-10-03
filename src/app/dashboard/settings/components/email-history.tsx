@@ -45,58 +45,58 @@ import {
   FileText,
 } from "lucide-react";
 import { format } from "date-fns";
-import { toast } from "sonner";
-import { EmailHistoryRecord } from "../../email-history/page";
+
+export type EmailHistoryRecord = {
+  _id: string;
+  recipientName?: string;
+  recipientEmail?: string;
+  cc?: string[];
+  bcc?: string[];
+  subject?: string;
+  sentByName?: string;
+  sentByEmail?: string;
+  sentBy?: string;
+  provider?: string;
+  updatedAt?: string;
+  createdAt: string;
+  status: string;
+  attachments?: {
+    fileName: string;
+    fileSize: number;
+    shareUrl: string;
+  }[];
+  body?: string;
+};
+import { useGetEmailHistoryQuery } from "@/lib/features/settings/settingsApi";
 // import  EmailHistoryRecord  from "../../email-history/page";
 
 export function EmailHistory() {
-  const [emails, setEmails] = useState<EmailHistoryRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [selectedEmail, setSelectedEmail] = useState<EmailHistoryRecord | null>(
     null
   );
   const [refreshing, setRefreshing] = useState(false);
+  const {
+    data,
+    error,
+    isLoading,
+    isFetching,
+    refetch,
+  } = useGetEmailHistoryQuery({
+    page,
+    limit: pageSize,
+    search,
+    status: statusFilter,
+  });
 
-  const fetchEmailHistory = async (isRefresh = false) => {
-    try {
-      if (isRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
+  const emails = data?.emails ?? [];
+  const totalPages = data?.pagination?.total ?? 1;
 
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: pageSize.toString(),
-        ...(search && { search }),
-        ...(statusFilter !== "all" && statusFilter && { status: statusFilter }),
-      });
-
-      const response = await fetch(`/api/email-history?${params}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch email history");
-      }
-
-      const data = await response.json();
-      setEmails(data.emails);
-      setTotalPages(data.pagination.total);
-      setPageSize(20);
-    } catch (error) {
-      toast.error("Failed to load email history");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchEmailHistory();
-  }, [page, search, statusFilter]);
+  const loading = isLoading || isFetching;
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "sent":
@@ -153,7 +153,7 @@ export function EmailHistory() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => fetchEmailHistory(true)}
+          onClick={() => refetch()}
           disabled={refreshing}
         >
           {refreshing ? (
@@ -240,20 +240,20 @@ export function EmailHistory() {
                       </span>
                       {((email.cc && email.cc.length > 0) ||
                         (email.bcc && email.bcc.length > 0)) && (
-                        <span className="text-xs text-muted-foreground">
-                          {email.cc &&
-                            email.cc.length > 0 &&
-                            `CC: ${email.cc.length}`}
-                          {email.cc &&
-                            email.cc.length > 0 &&
-                            email.bcc &&
-                            email.bcc.length > 0 &&
-                            ", "}
-                          {email.bcc &&
-                            email.bcc.length > 0 &&
-                            `BCC: ${email.bcc.length}`}
-                        </span>
-                      )}
+                          <span className="text-xs text-muted-foreground">
+                            {email.cc &&
+                              email.cc.length > 0 &&
+                              `CC: ${email.cc.length}`}
+                            {email.cc &&
+                              email.cc.length > 0 &&
+                              email.bcc &&
+                              email.bcc.length > 0 &&
+                              ", "}
+                            {email.bcc &&
+                              email.bcc.length > 0 &&
+                              `BCC: ${email.bcc.length}`}
+                          </span>
+                        )}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -410,19 +410,19 @@ export function EmailHistory() {
                         {((selectedEmail.cc && selectedEmail.cc.length > 0) ||
                           (selectedEmail.bcc &&
                             selectedEmail.bcc.length > 0)) && (
-                          <span className="ml-2">
-                            {selectedEmail.cc &&
-                              selectedEmail.cc.length > 0 && (
-                                <span>cc: {selectedEmail.cc.join(", ")}</span>
-                              )}
-                            {selectedEmail.bcc &&
-                              selectedEmail.bcc.length > 0 && (
-                                <span className="ml-2">
-                                  bcc: {selectedEmail.bcc.join(", ")}
-                                </span>
-                              )}
-                          </span>
-                        )}
+                            <span className="ml-2">
+                              {selectedEmail.cc &&
+                                selectedEmail.cc.length > 0 && (
+                                  <span>cc: {selectedEmail.cc.join(", ")}</span>
+                                )}
+                              {selectedEmail.bcc &&
+                                selectedEmail.bcc.length > 0 && (
+                                  <span className="ml-2">
+                                    bcc: {selectedEmail.bcc.join(", ")}
+                                  </span>
+                                )}
+                            </span>
+                          )}
                       </div>
                     </div>
                   </div>
@@ -435,7 +435,7 @@ export function EmailHistory() {
                     {selectedEmail.body ? (
                       // Check if content is HTML by looking for HTML tags
                       selectedEmail.body.includes("<") &&
-                      selectedEmail.body.includes(">") ? (
+                        selectedEmail.body.includes(">") ? (
                         <div
                           className="leading-relaxed"
                           dangerouslySetInnerHTML={{

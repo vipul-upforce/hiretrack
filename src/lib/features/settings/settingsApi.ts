@@ -1,6 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-// Add interface for test connection request
+// Interface for test connection request
 interface TestConnectionRequest {
   storageType: "cloudinary" | "s3" | "smtp" | "resend";
   credentials: {
@@ -15,10 +15,42 @@ interface TestConnectionRequest {
   };
 }
 
-// Add interface for test connection response
+// Interface for test connection response
 interface TestConnectionResponse {
   success: boolean;
   message: string;
+}
+
+// Interface for LogEntry
+export interface LogEntry {
+  candidateId: string;
+  jobId: string;
+  candidateData: any;
+  jobData: any;
+  dateTime: string;
+  assignmentBy: any[];
+  currentInterviewer: { _id: string; name: string; email: string; role: string }[];
+  remark: any;
+  previousInterviewer: { _id: string; name: string; email: string; role: string }[];
+  title: string;
+  note: { description: string; date: string; rating: number; userId: string[] };
+  attachments: any[];
+}
+
+// Interface for EmailHistoryRecord
+export interface EmailHistoryRecord {
+  _id: string;
+  recipientName?: string;
+  recipientEmail: string;
+  subject?: string;
+  sentByName?: string;
+  sentByEmail: string;
+  createdAt: string;
+  status: "sent" | "failed" | "pending";
+  body?: string;
+  cc?: string[];
+  bcc?: string[];
+  attachments?: { fileName: string; fileSize: number; shareUrl: string }[];
 }
 
 export const settingsApi = createApi({
@@ -26,7 +58,7 @@ export const settingsApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: "/api",
   }),
-  tagTypes: ["Settings", "Backups"],
+  tagTypes: ["Settings", "Backups", "NginxLogs", "ServerLogs", "EmailHistory"],
   endpoints: (builder) => ({
     getBackups: builder.query<any, void>({
       query: () => "/backups",
@@ -172,10 +204,7 @@ export const settingsApi = createApi({
       }),
       invalidatesTags: ["Settings"],
     }),
-    testConnection: builder.mutation<
-      TestConnectionResponse,
-      TestConnectionRequest
-    >({
+    testConnection: builder.mutation<TestConnectionResponse, TestConnectionRequest>({
       query: (body) => ({
         url: "/test-connection",
         method: "POST",
@@ -183,13 +212,11 @@ export const settingsApi = createApi({
       }),
     }),
     updateFSConfigs: builder.mutation({
-      query: (fsConfig) => {
-        return {
-          url: "/settings/fs",
-          method: "PUT",
-          body: fsConfig,
-        };
-      },
+      query: (fsConfig) => ({
+        url: "/settings/fs",
+        method: "PUT",
+        body: fsConfig,
+      }),
       invalidatesTags: ["Settings"],
     }),
     getPortalConfigs: builder.query({
@@ -200,13 +227,11 @@ export const settingsApi = createApi({
       providesTags: ["Settings"],
     }),
     updatePortalConfigs: builder.mutation({
-      query: (portalConfigs) => {
-        return {
-          url: "/settings/portal",
-          method: "PUT",
-          body: portalConfigs,
-        };
-      },
+      query: (portalConfigs) => ({
+        url: "/settings/portal",
+        method: "PUT",
+        body: portalConfigs,
+      }),
       invalidatesTags: ["Settings"],
     }),
     updateGoogleCalendar: builder.mutation({
@@ -230,6 +255,58 @@ export const settingsApi = createApi({
         method: "POST",
         body: { email, selectedOrgId },
       }),
+    }),
+    getNginxLogFiles: builder.query<{ files: string[] }, void>({
+      query: () => "/nginx-logs",
+      providesTags: ["NginxLogs"],
+      transformResponse: (response: { files: string[] }) => ({
+        files: response.files || [],
+      }),
+      keepUnusedDataFor: 300,
+    }),
+    getServerLogs: builder.query<
+      { logs: LogEntry[]; offset: number; totalLines: number },
+      { offset: number; limit: number; query?: string }
+    >({
+      query: ({ offset, limit, query = "" }) => {
+        const params = new URLSearchParams({
+          offset: offset.toString(),
+          limit: limit.toString(),
+          query,
+        });
+        return `/logs?${params.toString()}`;
+      },
+      keepUnusedDataFor: 300,
+    }),
+    getNginxFileContent: builder.query<
+      { content: string[]; offset: number; totalLines: number },
+      { file: string; offset: number; limit: number; query?: string }
+    >({
+      query: ({ file, offset, limit, query = "" }) => {
+        const params = new URLSearchParams({
+          offset: offset.toString(),
+          limit: limit.toString(),
+          query,
+        });
+        return `/nginx-logs/${file}?${params.toString()}`;
+      },
+      keepUnusedDataFor: 300,
+    }),
+
+    getEmailHistory: builder.query<
+      { emails: EmailHistoryRecord[]; pagination: { total: number } },
+      { page: number; limit: number; search?: string; status?: string }
+    >({
+      query: ({ page, limit, search = "", status = "" }) => {
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: limit.toString(),
+          ...(search && { search }),
+          ...(status && status !== "all" && { status }),
+        });
+        return `/email-history?${params.toString()}`;
+      },
+      providesTags: ["EmailHistory"],
     }),
   }),
 });
@@ -263,7 +340,12 @@ export const {
   useDisconnectGoogleCalendarMutation,
   useUpdateCaptchaMutation,
   useGetCaptchaConfigsQuery,
+  useLazyGetServerLogsQuery,
+  useLazyGetNginxFileContentQuery,
+  useGetNginxLogFilesQuery,
+  useGetServerLogsQuery,
+  useGetNginxFileContentQuery,
+  useGetEmailHistoryQuery,
 } = settingsApi;
 
-// Export types for use in components
 export type { TestConnectionRequest, TestConnectionResponse };
