@@ -19,7 +19,7 @@ import "./recaptcha-theme.css";
 import { useSelector } from "react-redux";
 import { useGetCaptchaConfigsQuery } from "@/lib/features/settings/settingsApi";
 import { getDecodedCaptcha } from "@/hooks/useSSE";
-import packageJson from "../../../../package.json";
+import packageJson from "@/../package.json";
 
 // Animated Grid Pattern Component
 interface AnimatedGridPatternProps {

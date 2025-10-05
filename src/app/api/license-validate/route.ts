@@ -93,6 +93,15 @@ export function generateMachineCode(): string {
       id = execSync("hostname | shasum -a 256 | awk '{print $1}'")
         .toString()
         .trim();
+    } else if (osType === "win32") {
+      id = execSync(
+        'powershell -Command "(Get-CimInstance -ClassName Win32_ComputerSystemProduct).UUID"'
+      )
+        .toString()
+        .trim();
+      if (!id || id === "Not Available") {
+        throw new Error("Machine UUID not available");
+      }
     } else {
       throw new Error(`Unsupported OS: ${osType}`);
     }

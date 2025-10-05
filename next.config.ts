@@ -1,4 +1,10 @@
 import type { NextConfig } from "next";
+import type { Configuration as WebpackConfiguration } from "webpack";
+
+// webpack-obfuscator doesn't ship types; cast to any
+const WebpackObfuscator = require("webpack-obfuscator") as any;
+
+const isProd = process.env.NODE_ENV === "production";
 
 const nextConfig: NextConfig = {
   // Enable experimental features for better performance
@@ -30,7 +36,14 @@ const nextConfig: NextConfig = {
   // Disable React Strict Mode for faster development
   reactStrictMode: false,
   // Optimize webpack configuration
-  webpack: (config, { dev, isServer }) => {
+  webpack: (
+    config: WebpackConfiguration,
+    {
+      dev,
+      isServer,
+      webpack,
+    }: { dev: boolean; isServer: boolean; webpack: any }
+  ): WebpackConfiguration => {
     // Optimize for development
     if (dev) {
       config.watchOptions = {
@@ -43,6 +56,7 @@ const nextConfig: NextConfig = {
     }
 
     // Optimize resolve
+    config.resolve = config.resolve || {};
     config.resolve.alias = {
       ...config.resolve.alias,
       canvas: false,
@@ -67,7 +81,7 @@ const nextConfig: NextConfig = {
 
       // Ensure PDF.js worker can be found on server
       config.externals = config.externals || [];
-      config.externals.push({
+      (config.externals as any[]).push({
         canvas: "canvas",
       });
     } else {
@@ -81,6 +95,8 @@ const nextConfig: NextConfig = {
     }
 
     // Handle PDF.js worker files
+    config.module = config.module || {};
+    config.module.rules = config.module.rules || [];
     config.module.rules.push({
       test: /\.node$/,
       use: "node-loader",
@@ -100,6 +116,36 @@ const nextConfig: NextConfig = {
       test: /node_modules[\/\\]pdfjs-dist[\/\\].*\.js$/,
       type: "javascript/auto",
     });
+
+    // Add obfuscation for client bundles in production
+    if (isProd && !isServer) {
+      const obfuscatorOptions = {
+        compact: true,
+        controlFlowFlattening: false,
+        controlFlowFlatteningThreshold: 0.75,
+        deadCodeInjection: false,
+        debugProtection: false,
+        disableConsoleOutput: true,
+        stringArray: true,
+        stringArrayThreshold: 0.75,
+        rotateStringArray: true,
+        simplify: true,
+      };
+
+      const excludePatterns = [
+        "**/node_modules/**",
+        "**/_next/static/**",
+        "**/*.map",
+        "**/react-refresh/**",
+        "**/runtime-main.*.js",
+      ];
+
+      // Ensure plugins array exists
+      if (!config.plugins) config.plugins = [];
+      config.plugins.push(
+        new WebpackObfuscator(obfuscatorOptions, excludePatterns)
+      );
+    }
 
     return config;
   },
@@ -129,9 +175,9 @@ const nextConfig: NextConfig = {
           // Remove X-Frame-Options to allow embedding
           { key: "X-Frame-Options", value: "ALLOWALL" },
           // Set Content Security Policy to allow framing from any origin
-          { 
-            key: "Content-Security-Policy", 
-            value: "frame-ancestors *;" 
+          {
+            key: "Content-Security-Policy",
+            value: "frame-ancestors *;",
           },
           // Additional CORS headers for embedded content
           { key: "Access-Control-Allow-Origin", value: "*" },
