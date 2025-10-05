@@ -95,10 +95,14 @@ export async function verifyAndDecrypCaptcha(token: string) {
     if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
     if (!token) throw new Error("Token is empty");
 
-    // Assume token is an AES-encrypted string (not a JWT)
-    const bytes = CryptoJS.AES.decrypt(token, JWT_SECRET);
-    const decryptedData = bytes.toString(CryptoJS.enc.Utf8);
+    console.log(token, "token");
+    console.log(JWT_SECRET, "JWT_SECRET");
 
+    // Assume token is an AES-encrypted string (not a JWT)
+    const bytes = await CryptoJS.AES.decrypt(token, JWT_SECRET);
+    console.log(bytes, "bytes");
+    const decryptedData = await bytes.toString(CryptoJS.enc.Utf8);
+    console.log(decryptedData, "decryptedData");
     if (!decryptedData) {
       throw new Error("Decryption failed: no data returned");
     }
