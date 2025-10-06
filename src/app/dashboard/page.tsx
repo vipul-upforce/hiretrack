@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Cookies from "js-cookie";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ import { useSSE } from "@/hooks/useSSE";
 import { Candidate } from "@/types/candidate";
 import { ITag } from "@/lib/models/organization";
 import { useSelector } from "react-redux";
+import { useFetchAssignmentsQuery } from "@/lib/features/candidate/candidateApi";
 import DashboardCardLoader from "./components/DashboardCardLoader";
 // import useRoles from "@/hooks/useRoles";
 interface User {
@@ -132,19 +133,54 @@ export default function DashboardPage() {
   });
   const { user } = useSelector((state: any) => state.auth || {});
 
-  const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [filterText, setFilterText] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMoreData, setHasMoreData] = useState(true);
   const shouldShowAssignments = user?.role === "admin" || user?.role === "hr";
   const isInterviewer = user?.role === "interviewer";
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef(false);
-
   const role = useRoles();
-  const { candidates: sseCandidates } = useSSE(role || "", () => {}, null);
+  const { candidates: sseCandidates } = useSSE(role || "", () => { }, null);
+  const queryParams = useMemo(
+    () => ({
+      isPagination: true,
+      page: currentPage,
+      limit: itemsPerPage,
+      filterValue: filterText,
+      assignedTo: selectedAssignedTo,
+    }),
+    [currentPage, itemsPerPage, filterText, selectedAssignedTo]
+  );
+
+  const {
+    data,
+    isFetching,
+  } = useFetchAssignmentsQuery(queryParams, {
+    refetchOnMountOrArgChange: false,
+    refetchOnReconnect: false,
+    refetchOnFocus: false,
+  });
+
+  useEffect(() => {
+
+    console.log("isFetching changed:", isFetching);
+    if (!isFetching) {
+      setIsLoading(false);
+      return;
+    }
+
+    if ((currentPage !== 1) || assignments.length > 0) {
+      setIsLoading(false);
+    } else {
+      console.log("Setting isLoading to true");
+      setIsLoading(true);
+    }
+  }, [isFetching])
+
 
   const isToday = (assignment: Assignment) => {
     const assignmentDate = new Date(
@@ -171,147 +207,76 @@ export default function DashboardPage() {
     endOfWeek.setHours(23, 59, 59, 999);
     return assignmentDate >= startOfWeek && assignmentDate <= endOfWeek;
   };
-  // const role = useRoles();
-  // const { candidates: sseCandidates } = useSSE(
-  //   role || "",
-  //   setSelectedEvent,
-  //   selectedEvent
-  // );
 
-  // const fetchAssignmentsNoReload = useCallback(
-  //   async (page = currentPage, isAppend = false) => {
-  //     if (loadingRef.current) return;
 
-  //     loadingRef.current = true;
-  //     // if (!isAppend) {
-  //     //   setIsLoading(true);
-  //     // } else {
-  //     //   setIsLoadingMore(true);
-  //     // }
+  useEffect(() => {
+    setAssignments([]);
+    setCurrentPage(1);
+    setHasMoreData(true);
+  }, [selectedAssignedTo]);
 
-  //     try {
-  //       const params = new URLSearchParams({
-  //         isPagination: "true",
-  //         page: page.toString(),
-  //         limit: itemsPerPage.toString(),
-  //         filterValue: filterText.toString(),
-  //         assignedTo: selectedAssignedTo,
-  //       });
 
-  //       const response = await fetch(
-  //         `/api/candidates/assignments?${params.toString()}`
-  //       );
-  //       if (!response.ok) {
-  //         const errorData = await response.json();
-  //         throw new Error(errorData.error || "Failed to fetch assignments");
-  //       }
+  useEffect(() => {
+    setIsLoadingMore(false);
 
-  //       const data = await response.json();
-  //       const newAssignments = data[0]?.data || [];
-  //       setAssignmentsCounts({
-  //         totalInterviews: data[0]?.totalInterviews || 0,
-  //         todaysInterviews: data[0]?.todaysInterviews || 0,
-  //         thisweeksInterviews: data[0]?.thisweeksInterviews || 0,
-  //       });
-  //       setAssignedInterviewers([...(data[0]?.assignmentCount || [])]);
-
-  //       // Update assignments state
-  //       if (isAppend) {
-  //         setAssignments((prev) => [...prev, ...newAssignments]);
-  //       } else {
-  //         setAssignments(newAssignments);
-  //       }
-
-  //       // Update pagination state
-  //       if (newAssignments.length < itemsPerPage) {
-  //         setHasMoreData(false);
-  //       } else {
-  //         setHasMoreData(true);
-  //       }
-  //     } catch (error) {
-  //       console.error("Error fetching assignments:", error);
-  //     } finally {
-  //       setIsLoading(false);
-  //       setIsLoadingMore(false);
-  //       loadingRef.current = false;
-  //     }
-  //   },
-  //   [filterText, selectedAssignedTo, itemsPerPage, currentPage]
-  // );
-
-  const fetchAssignments = useCallback(
-    async (page = 1, isAppend = false) => {
-      if (loadingRef.current) return;
-
-      loadingRef.current = true;
-
-      if (!isAppend) {
-        setIsLoading(true);
-      } else {
-        setIsLoadingMore(true);
-      }
-
-      try {
-        const params = new URLSearchParams({
-          isPagination: "true",
-          page: page.toString(),
-          limit: itemsPerPage.toString(),
-          filterValue: filterText.toString(),
-          assignedTo: selectedAssignedTo,
-        });
-
-        const response = await fetch(
-          `/api/candidates/assignments?${params.toString()}`
+    if (data && Array.isArray(data) && data[0]?.data) {
+      setAssignments((prev) => {
+        const newData = data[0].data.filter(
+          (item) => !prev.some((p) => p._id === item._id)
         );
-        const data = await response.json();
-        setAssignmentsCounts((prev) => ({
-          ...prev,
-          totalInterviews: data[0]?.totalInterviews || 0,
-          todaysInterviews: data[0]?.todaysInterviews || 0,
-          thisweeksInterviews: data[0]?.thisweeksInterviews || 0,
-        }));
-        setAssignedInterviewers([...data[0].assignmentCount]);
-        if (isAppend) {
-          setAssignments((prev) => [...prev, ...data[0].data]);
-        } else {
-          setAssignments(data[0]?.data);
-        }
-        // debugger;
-        if (data[0]?.data?.length < itemsPerPage) {
-          setHasMoreData(false);
-        } else {
-          setHasMoreData(true);
-        }
-      } catch (error) {
-        console.error("Error fetching assignments:", error);
-      } finally {
-        setIsLoading(false);
-        setIsLoadingMore(false);
-        loadingRef.current = false;
+        return currentPage === 1 ? newData : [...prev, ...newData];
+      });
+
+      setAssignmentsCounts({
+        totalInterviews: data[0]?.totalInterviews || 0,
+        todaysInterviews: data[0]?.todaysInterviews || 0,
+        thisweeksInterviews: data[0]?.thisweeksInterviews || 0,
+      });
+
+      setAssignedInterviewers(data[0]?.assignmentCount || []);
+
+      if (data[0].data.length < itemsPerPage) {
+        setHasMoreData(false);
+      } else {
+        setHasMoreData(true);
       }
-    },
-    [filterText, selectedAssignedTo, itemsPerPage]
-  );
+      loadingRef.current = false;
+      setIsLoadingMore(false);
+    }
+  }, [data]);
 
   const loadMoreData = useCallback(() => {
-    if (!hasMoreData || isLoadingMore || loadingRef.current) return;
+    if (loadingRef.current) return;
+    if (!hasMoreData || isLoadingMore) return;
 
-    const nextPage = currentPage + 1;
-    setCurrentPage(nextPage);
-    fetchAssignments(nextPage, true);
-  }, [currentPage, hasMoreData, isLoadingMore, fetchAssignments]);
+    loadingRef.current = true;
+    setIsLoadingMore(true);
 
-  const handleScroll = useCallback(() => {
-    if (!scrollContainerRef.current) return;
+    setCurrentPage((prev) => prev + 1);
+  }, [hasMoreData, isLoadingMore]);
 
-    const { scrollTop, scrollHeight, clientHeight } =
-      scrollContainerRef.current;
-    const scrollPercentage = (scrollTop + clientHeight) / scrollHeight;
+  const debounce = (fn: any, delay: number) => {
+    let timeout: any;
+    return (...args) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => fn(...args), delay);
+    };
+  };
 
-    if (scrollPercentage > 0.9 && hasMoreData && !isLoadingMore) {
-      loadMoreData();
-    }
-  }, [loadMoreData, hasMoreData, isLoadingMore]);
+  const handleScroll = useCallback(
+    debounce(() => {
+      const container = scrollContainerRef.current;
+      if (!container || isFetching || isLoadingMore || !hasMoreData) return;
+
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      if (scrollTop + clientHeight >= scrollHeight - 200) {
+        setIsLoadingMore(true);
+        setCurrentPage((prev) => prev + 1);
+      }
+    }, 400),
+    [isFetching, isLoadingMore, hasMoreData]
+  );
+
 
   const observerRef = useRef<IntersectionObserver>(null);
   const lastElementRef = useCallback(
@@ -337,27 +302,6 @@ export default function DashboardPage() {
     [isLoadingMore, hasMoreData, loadMoreData]
   );
 
-  // const checkUser = async () => {
-
-  //   if (user) {
-  //     const decryptedResponse = await verifyAndDecryptJWTToken(String(user));
-  //     if (decryptedResponse.success && decryptedResponse.user) {
-  //       setUser(decryptedResponse.user);
-  //     }
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   checkUser();
-  // }, []);
-
-  useEffect(() => {
-    // debugger;
-    setCurrentPage(1);
-    setHasMoreData(true);
-    setAssignments([]);
-    fetchAssignments(1, false);
-  }, [selectedAssignedTo, filterText]);
 
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -387,49 +331,6 @@ export default function DashboardPage() {
     );
   });
 
-  // useEffect(() => {
-  //   if (sseCandidates && sseCandidates.length > 0) {
-  //     setAssignments((prevAssignments) => {
-  //       let updatedAssignments: Candidate[] | Assignment[] = [
-  //         ...prevAssignments,
-  //       ];
-  //       (sseCandidates as Candidate[] | Assignment[]).forEach(
-  //         (sseCandidate) => {
-  //           // debugger;
-  //           const candidateId = sseCandidate._id;
-  //           const existingIndex = updatedAssignments.findIndex(
-  //             (assignment) => (assignment._id || assignment.id) === candidateId
-  //           );
-
-  //           if (!sseCandidate.assignment) {
-  //             if (existingIndex !== -1) {
-  //               updatedAssignments = updatedAssignments.filter(
-  //                 (_, index) => index !== existingIndex
-  //               );
-  //             }
-  //           } else {
-  //             if (existingIndex !== -1) {
-  //               updatedAssignments[existingIndex] = {
-  //                 ...updatedAssignments[existingIndex],
-  //                 ...sseCandidate,
-  //               };
-  //             } else {
-  //               updatedAssignments.push(sseCandidate);
-  //             }
-  //           }
-  //         }
-  //       );
-
-  //       setAssignmentsCounts({
-  //         totalInterviews: updatedAssignments.length,
-  //         todaysInterviews: updatedAssignments.filter(isToday).length,
-  //         thisweeksInterviews: updatedAssignments.filter(isThisWeek).length,
-  //       });
-
-  //       return updatedAssignments;
-  //     });
-  //   }
-  // }, [sseCandidates]);
 
   useEffect(() => {
     if (sseCandidates && sseCandidates.length > 0) {
@@ -723,8 +624,8 @@ export default function DashboardPage() {
                               })()}
                               assignments={assignments}
                               setAssignments={setAssignments}
-                              fetchAssignments={() => {}}
-                              // fetchAssignments={() => fetchAssignmentsNoReload()}
+                              fetchAssignments={() => { }}
+                            // fetchAssignments={() => fetchAssignmentsNoReload()}
                             />
                           </div>
                         ))}
@@ -786,45 +687,45 @@ export default function DashboardPage() {
                   todayAssignments={
                     sseCandidates.length > 0
                       ? ([
-                          ...sseCandidates.filter((candidate) => {
-                            // Check if the interview is scheduled for today
-                            const isToday =
-                              candidate.assignment?.time &&
-                              new Date(
-                                candidate.assignment.time
-                              ).toDateString() === new Date().toDateString();
-
-                            // Keep existing conditions for interviewerId
-                            return (
-                              isToday &&
-                              candidate.assignment &&
-                              typeof candidate.assignment.interviewerId ===
-                                "object" &&
-                              "_id" in candidate.assignment.interviewerId &&
-                              candidate.assignment.interviewerId._id.toString() ===
-                                user?.id?.toString()
-                            );
-                          }),
-
-                          ...todayAssignments.filter(
-                            (older) =>
-                              older.assignment &&
-                              !sseCandidates.some(
-                                (latest) => latest._id === older._id
-                              ) &&
-                              older.assignment?.time &&
-                              new Date(older.assignment.time).toDateString() ===
-                                new Date().toDateString()
-                          ),
-                        ] as (Candidate & Assignment)[])
-                      : todayAssignments.filter((assignment) => {
-                          return (
-                            assignment.assignment?.time &&
+                        ...sseCandidates.filter((candidate) => {
+                          // Check if the interview is scheduled for today
+                          const isToday =
+                            candidate.assignment?.time &&
                             new Date(
-                              assignment.assignment.time
-                            ).toDateString() === new Date().toDateString()
+                              candidate.assignment.time
+                            ).toDateString() === new Date().toDateString();
+
+                          // Keep existing conditions for interviewerId
+                          return (
+                            isToday &&
+                            candidate.assignment &&
+                            typeof candidate.assignment.interviewerId ===
+                            "object" &&
+                            "_id" in candidate.assignment.interviewerId &&
+                            candidate.assignment.interviewerId._id.toString() ===
+                            user?.id?.toString()
                           );
-                        })
+                        }),
+
+                        ...todayAssignments.filter(
+                          (older) =>
+                            older.assignment &&
+                            !sseCandidates.some(
+                              (latest) => latest._id === older._id
+                            ) &&
+                            older.assignment?.time &&
+                            new Date(older.assignment.time).toDateString() ===
+                            new Date().toDateString()
+                        ),
+                      ] as (Candidate & Assignment)[])
+                      : todayAssignments.filter((assignment) => {
+                        return (
+                          assignment.assignment?.time &&
+                          new Date(
+                            assignment.assignment.time
+                          ).toDateString() === new Date().toDateString()
+                        );
+                      })
                   }
                 />
               ) : (
@@ -844,26 +745,26 @@ export default function DashboardPage() {
                     interviewerAssignments={
                       sseCandidates.length > 0
                         ? ([
-                            ...sseCandidates.filter((candidate) => {
-                              // debugger;
-                              return (
-                                candidate.assignment &&
-                                typeof candidate.assignment.interviewerId ===
-                                  "object" &&
-                                "_id" in candidate.assignment.interviewerId &&
-                                candidate.assignment.interviewerId._id.toString() ===
-                                  user.id?.toString()
-                              );
-                            }),
+                          ...sseCandidates.filter((candidate) => {
+                            // debugger;
+                            return (
+                              candidate.assignment &&
+                              typeof candidate.assignment.interviewerId ===
+                              "object" &&
+                              "_id" in candidate.assignment.interviewerId &&
+                              candidate.assignment.interviewerId._id.toString() ===
+                              user.id?.toString()
+                            );
+                          }),
 
-                            ...interviewerAssignments.filter(
-                              (older) =>
-                                older.assignment &&
-                                !sseCandidates.some(
-                                  (latest) => latest._id === older._id
-                                )
-                            ),
-                          ] as (Candidate & Assignment)[])
+                          ...interviewerAssignments.filter(
+                            (older) =>
+                              older.assignment &&
+                              !sseCandidates.some(
+                                (latest) => latest._id === older._id
+                              )
+                          ),
+                        ] as (Candidate & Assignment)[])
                         : interviewerAssignments
                     }
                   />

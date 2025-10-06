@@ -6,7 +6,7 @@ import { authApi } from "./features/auth/authApi";
 import { jobApi } from "./features/job/jobApi";
 import { candidateApi } from "./features/candidate/candidateApi";
 import { userApi } from "./features/user/userApi";
-import { laneApi } from "./features/lane/laneApi";
+import { defaultLanesApi, laneApi } from "./features/lane/laneApi";
 import { apiSlice } from "./features/api/apiSlice";
 import { orgApi } from "./features/org/orgApi";
 import { settingsApi } from "./features/settings/settingsApi";
@@ -38,9 +38,10 @@ const rootReducer = combineReducers({
   [candidateApi.reducerPath]: candidateApi.reducer,
   [userApi.reducerPath]: userApi.reducer,
   [laneApi.reducerPath]: laneApi.reducer,
+  [defaultLanesApi.reducerPath]: defaultLanesApi.reducer,
   [apiSlice.reducerPath]: apiSlice.reducer,
-    [checklistApi.reducerPath]: checklistApi.reducer,
-    [notificationsApi.reducerPath]: notificationsApi.reducer,
+  [checklistApi.reducerPath]: checklistApi.reducer,
+  [notificationsApi.reducerPath]: notificationsApi.reducer,
 });
 
 export const store = configureStore({
@@ -60,7 +61,8 @@ export const store = configureStore({
       laneApi.middleware,
       apiSlice.middleware,
       checklistApi.middleware,
-      notificationsApi.middleware
+      notificationsApi.middleware,
+      defaultLanesApi.middleware,
     ),
 });
 

@@ -29,6 +29,7 @@ import {
   Edit,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useGetMailTemplatesQuery, useUpdateMailTemplatesMutation } from "@/lib/features/settings/settingsApi";
 import {
   Dialog,
   DialogContent,
@@ -536,7 +537,7 @@ const defaultTemplates: EmailTemplate[] = [
 export default function EmailTemplatesPage() {
   const { theme } = useTheme();
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [templates, setTemplates] = useState<EmailTemplate[]>([
     ...defaultTemplates,
@@ -545,7 +546,8 @@ export default function EmailTemplatesPage() {
     useState<string>("job-application-hr");
   const [previewMode, setPreviewMode] = useState(false);
   const [loadingTemplate, setLoadingTemplate] = useState(false);
-
+  const { data: templateData, isLoading, error } = useGetMailTemplatesQuery(undefined);
+  const [updateMailTemplates] = useUpdateMailTemplatesMutation();
   // Custom template management
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -562,75 +564,16 @@ export default function EmailTemplatesPage() {
 </div>`,
   });
 
-  useEffect(() => {
-    fetchTemplates();
-  }, []);
-  const fetchTemplates = async () => {
-    try {
-      const response = await fetch("/api/settings/templates");
-      if (response.ok) {
-        // debugger;
-        const data = await response.json();
-        if (data.templates && Object.keys(data.templates).length > 0) {
-          // Convert API response back to our template format
-          const loadedTemplates = Object.values(data.templates).map(
-            (template: any) => ({
-              id: template.templateId,
-              name: template.templateName,
-              subject: template.subject,
-              content: template.html,
-              variables: template.variables || defaultTemplates.find(
-                (t) => t.id === template.templateId
-              )?.variables || templateVariables,
-              isCustom: !defaultTemplates.find(
-                (t) => t.id === template.templateId
-              ),
-              isDefault: defaultTemplates.find(
-                (t) => t.id === template.templateId
-              )
-                ? true
-                : false,
-            })
-          );
-
-          // Merge with default templates (in case some defaults aren't saved yet)
-          const mergedTemplates = [...defaultTemplates];
-          loadedTemplates.forEach((loaded: EmailTemplate) => {
-            const existingIndex = mergedTemplates.findIndex(
-              (t) => t.id === loaded.id
-            );
-            if (existingIndex >= 0) {
-              mergedTemplates[existingIndex] = loaded;
-            } else {
-              mergedTemplates.push(loaded);
-            }
-          });
-
-          setTemplates(mergedTemplates);
-        } else {
-          setTemplates([...defaultTemplates]);
-        }
-      }
-    } catch (error) {
-      console.error("Failed to load email templates:", error);
-      setTemplates([...defaultTemplates]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSave = async () => {
     setSaving(true);
     try {
       for (const template of templates) {
         if (!template.subject.trim() || !template.content.trim()) {
-          toast.error(
-            `Template "${template.name}" has empty subject or content`
-          );
+          toast.error(`Template "${template.name}" has empty subject or content`);
+          setSaving(false);
           return;
         }
       }
-      // Transform templates to match API expected format
       const templatesPayload = {};
       templates.forEach((template, index) => {
         templatesPayload[template.id] = {
@@ -638,21 +581,14 @@ export default function EmailTemplatesPage() {
           templateName: template.name,
           subject: template.subject,
           html: template.content,
-          variables: template.variables, // Include variables
+          variables: template.variables,
         };
       });
 
-      const response = await fetch("/api/settings/templates", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(templatesPayload),
-      });
-
-      if (response.ok) {
+      try {
+        const result = await updateMailTemplates(templatesPayload).unwrap();
         toast.success("Email templates saved successfully");
-        // Refresh templates to get updated data
-        await fetchTemplates();
-      } else {
+      } catch (error) {
         toast.error("Failed to save email templates");
       }
     } catch (error) {
@@ -734,24 +670,13 @@ export default function EmailTemplatesPage() {
     toast.success(`Variable {{${variable}}} inserted`);
   };
 
-  const addCustomTemplate = () => {
+  const addCustomTemplate = async () => {
     setLoading(true);
     if (!newTemplate.name.trim() || !newTemplate.subject.trim()) {
       toast.error("Please fill in template name and subject");
+      setLoading(false);
       return;
     }
-    // Validate variables in content
-    // const usedVariables =
-    //   newTemplate.content.match(/{{(\w+)}}/g)?.map((v) => v.slice(2, -2)) || [];
-    // const invalidVariables = usedVariables.filter(
-    //   (v) => !templateVariables.includes(v)
-    // );
-    // if (invalidVariables.length > 0) {
-    //   toast.error(
-    //     `Invalid variables used: ${invalidVariables.join(", ")}. Only ${templateVariables.join(", ")} are allowed.`
-    //   );
-    //   return;
-    // }
     const templateId = `custom-${Date.now()}`;
     const customTemplate: EmailTemplate = {
       id: templateId,
@@ -760,10 +685,11 @@ export default function EmailTemplatesPage() {
       content: newTemplate.content,
       variables: templateVariables,
       isCustom: true,
-      isDefault: true,
+      isDefault: false, // Custom templates are not default
     };
 
-    setTemplates((prev) => [...prev, customTemplate]);
+    const updatedTemplates = [...templates, customTemplate];
+    setTemplates(updatedTemplates);
     setSelectedTemplate(templateId);
     setNewTemplate({
       name: "",
@@ -777,11 +703,32 @@ export default function EmailTemplatesPage() {
     setNewTemplatePreviewMode(false);
     setNewTemplateEditor(null);
     setShowAddDialog(false);
-    toast.success("Custom template added successfully");
+
+    // Save the updated templates to the server
+    const templatesPayload = {};
+    updatedTemplates.forEach((template) => {
+      templatesPayload[template.id] = {
+        templateId: template.id,
+        templateName: template.name,
+        subject: template.subject,
+        html: template.content,
+        variables: template.variables,
+      };
+    });
+
+    try {
+      await updateMailTemplates(templatesPayload).unwrap();
+      toast.success("Custom template added and saved successfully");
+    } catch (error) {
+      toast.error("Failed to save custom template");
+      // Optionally revert the template addition if saving fails
+      setTemplates((prev) => prev.filter((t) => t.id !== templateId));
+      setSelectedTemplate(templates[0]?.id || "job-application-hr");
+    }
     setLoading(false);
   };
 
-  const deleteCustomTemplate = () => {
+  const deleteCustomTemplate = async () => {
     if (!templateToDelete) return;
 
     const template = templates.find((t) => t.id === templateToDelete);
@@ -790,20 +737,38 @@ export default function EmailTemplatesPage() {
       return;
     }
 
-    setTemplates((prev) => prev.filter((t) => t.id !== templateToDelete));
+    const updatedTemplates = templates.filter((t) => t.id !== templateToDelete);
+    setTemplates(updatedTemplates);
 
     // If we're deleting the currently selected template, switch to the first one
     if (selectedTemplate === templateToDelete) {
-      const remainingTemplates = templates.filter(
-        (t) => t.id !== templateToDelete
-      );
-      setSelectedTemplate(remainingTemplates[0]?.id || "job-application-hr");
+      setSelectedTemplate(updatedTemplates[0]?.id || "job-application-hr");
+    }
+
+    // Save the updated templates to the server
+    const templatesPayload = {};
+    updatedTemplates.forEach((template) => {
+      templatesPayload[template.id] = {
+        templateId: template.id,
+        templateName: template.name,
+        subject: template.subject,
+        html: template.content,
+        variables: template.variables,
+      };
+    });
+
+    try {
+      await updateMailTemplates(templatesPayload).unwrap();
+      toast.success("Custom template deleted successfully");
+    } catch (error) {
+      toast.error("Failed to delete custom template");
+      // Optionally revert the deletion if saving fails
+      setTemplates(templates);
+      setSelectedTemplate(templateToDelete);
     }
 
     setTemplateToDelete(null);
     setShowDeleteDialog(false);
-    toast.success("Custom template deleted successfully");
-
   };
 
   const getCurrentTemplate = () => {
@@ -815,6 +780,40 @@ export default function EmailTemplatesPage() {
     return current || defaultTemplates[0];
 
   };
+
+  useEffect(() => {
+    if (templateData && templateData.templates && Object.keys(templateData.templates).length > 0) {
+      const loadedTemplates = Object.values(templateData.templates).map((template: any) => ({
+        id: template.templateId,
+        name: template.templateName,
+        subject: template.subject,
+        content: template.html,
+        variables: template.variables || defaultTemplates.find((t) => t.id === template.templateId)?.variables || templateVariables,
+        isCustom: !defaultTemplates.find((t) => t.id === template.templateId),
+        isDefault: !!defaultTemplates.find((t) => t.id === template.templateId),
+      }));
+
+      const mergedTemplates = [...defaultTemplates];
+      loadedTemplates.forEach((loaded: EmailTemplate) => {
+        const existingIndex = mergedTemplates.findIndex((t) => t.id === loaded.id);
+        if (existingIndex >= 0) {
+          mergedTemplates[existingIndex] = loaded;
+        } else {
+          mergedTemplates.push(loaded);
+        }
+      });
+
+      setTemplates(mergedTemplates);
+    } else {
+      setTemplates([...defaultTemplates]);
+    }
+
+    if (error) {
+      console.error("Failed to load email templates:", error);
+      toast.error("Failed to load email templates");
+      setTemplates([...defaultTemplates]);
+    }
+  }, [templateData, error]);
 
   const renderPreview = (content: string, variables: string[]) => {
     // Replace variables with sample data for preview
@@ -882,7 +881,7 @@ export default function EmailTemplatesPage() {
     return previewContent;
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-4">
@@ -1480,3 +1479,4 @@ export default function EmailTemplatesPage() {
     </div>
   );
 }
+

@@ -58,7 +58,7 @@ export const settingsApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: "/api",
   }),
-  tagTypes: ["Settings", "Backups", "NginxLogs", "ServerLogs", "EmailHistory"],
+  tagTypes: ["Settings", "Backups", "NginxLogs", "ServerLogs", "EmailHistory", "Assets"],
   endpoints: (builder) => ({
     getBackups: builder.query<any, void>({
       query: () => "/backups",
@@ -147,6 +147,14 @@ export const settingsApi = createApi({
         body: mailConfig,
       }),
       invalidatesTags: ["Settings"],
+    }),
+    fetchAssetsMetadata: builder.query({
+      query: () => ({
+        url: "/download/assets",
+        method: "POST",
+        body: {},
+      }),
+      providesTags: ["Assets"],
     }),
     updateMailTemplates: builder.mutation({
       query: (mailTemplates) => ({
@@ -315,6 +323,7 @@ export const {
   useGetBackupsQuery,
   useTakeSnapshotMutation,
   useDeleteBackupMutation,
+  useFetchAssetsMetadataQuery,
   useGetSMTPConfigsQuery,
   useUpdateSMTPConfigsMutation,
   useGetFSConfigsQuery,

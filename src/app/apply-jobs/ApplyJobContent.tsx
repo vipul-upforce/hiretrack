@@ -29,6 +29,8 @@ import CustomFieldBadge from "../dashboard/jobs/[id]/components/Candidate/Custom
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "@/lib/redux/authSlice";
 import { useIsIframe } from "./IframeDetector";
+import { useFetchOrgQuery } from "@/lib/features/org/orgApi";
+import { useGetPortalConfigsQuery } from "@/lib/features/settings/settingsApi";
 
 interface Job {
   _id: string;
@@ -62,6 +64,18 @@ export default function ApplyJobsContent({
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isModalOpen, setIsJobModalOpen] = useState(false);
   const [appliedApplications, setAppliedApplications] = useState<string[]>([]);
+  const {
+    data: orgResponse,
+    isLoading: isOrgLoading,
+    error: orgError,
+  } = useFetchOrgQuery(undefined);
+
+  const {
+    data: portalResponse,
+    isLoading: isPortalLoading,
+    error: portalError,
+  } = useGetPortalConfigsQuery(undefined);
+
 
   // Check query parameters for header/footer visibility
   const hideHeaderParam = searchParams.get('hideHeader');
@@ -128,150 +142,85 @@ export default function ApplyJobsContent({
   async function checkAllowance() {
     const urlOrgName = searchParams?.get("o") || orgName;
 
+    if (!orgResponse || !orgResponse.data) return;
+
     try {
-      // Fetch both organization data and portal settings
-      const [orgResponse, portalResponse] = await Promise.all([
-        fetch("/api/organization"),
-        fetch("/api/settings/portal"),
-      ]);
-
-      if (!orgResponse.ok) {
-        return;
-      }
-
-      const allowance = await orgResponse.json();
-      let portalData = null;
-
-      if (portalResponse.ok) {
-        portalData = await portalResponse.json();
-      }
+      const allowance = orgResponse;
+      const portalData = portalResponse || null;
 
       if (urlOrgName) {
         setInvalidPage(false);
+
         const config = allowance?.data?.find(
           (org: ISettings) => org?.portalConfigs?.portalName === urlOrgName
-        ).portalConfigs;
+        )?.portalConfigs;
 
-        // Set portal colors and branding from organization config
-        if (config?.primaryColor) {
-          setPrimaryColor(config.primaryColor);
-        }
-        if (config?.secondaryColor) {
-          setSecondaryColor(config.secondaryColor);
-        }
-        if (config?.portalLogo?.url) {
-          setLogoUrl(config.portalLogo.url);
-        }
-        if (config?.portalName) {
-          setPortalName(config.portalName);
-        }
+        // Apply org config
+        if (config?.primaryColor) setPrimaryColor(config.primaryColor);
+        if (config?.secondaryColor) setSecondaryColor(config.secondaryColor);
+        if (config?.portalLogo?.url) setLogoUrl(config.portalLogo.url);
+        if (config?.portalName) setPortalName(config.portalName);
 
-        // Override with portal settings if available (more up-to-date)
+        // Override with portal config
         if (portalData) {
-          if (portalData.primaryColor) {
-            setPrimaryColor(portalData.primaryColor);
-          }
-          if (portalData.secondaryColor) {
+          if (portalData.primaryColor) setPrimaryColor(portalData.primaryColor);
+          if (portalData.secondaryColor)
             setSecondaryColor(portalData.secondaryColor);
-          }
           if (portalData.portalLogo) {
             const logoUrl =
               typeof portalData.portalLogo === "string"
                 ? portalData.portalLogo
                 : portalData.portalLogo?.url;
-            if (logoUrl) {
-              setLogoUrl(logoUrl);
-            }
+            if (logoUrl) setLogoUrl(logoUrl);
           }
-          if (portalData.portalName) {
-            setPortalName(portalData.portalName);
-          }
+          if (portalData.portalName) setPortalName(portalData.portalName);
         }
 
+        // Load Header/Footer HTML
         if (config?.portalHeader?.url && config?.portalFooter?.url) {
           try {
             const [headerRes, footerRes] = await Promise.all([
               fetch(config.portalHeader.url),
               fetch(config.portalFooter.url),
             ]);
-
-            // Check if responses are OK
-            if (!headerRes.ok) {
-              throw new Error(
-                `Header fetch failed with status ${headerRes.status}`
-              );
-            }
-            if (!footerRes.ok) {
-              throw new Error(
-                `Footer fetch failed with status ${footerRes.status}`
-              );
-            }
-
             const [headerHTML, footerHTML] = await Promise.all([
               headerRes.text(),
               footerRes.text(),
             ]);
-
-            // Optional: Validate the response content (e.g., ensure it's not empty or malformed)
-            if (!headerHTML || !footerHTML) {
-              throw new Error("Empty or invalid HTML content received");
-            }
-
-            setLayoutState({
-              headerHTML,
-              footerHTML,
-            });
-          } catch (error) {
-            console.error("Failed to fetch header or footer:", error);
-            // Fallback behavior: Set default or empty state to avoid breaking the UI
-            setLayoutState({
-              headerHTML: "",
-              footerHTML: "",
-            });
+            setLayoutState({ headerHTML, footerHTML });
+          } catch (err) {
+            console.error("Failed to fetch header/footer:", err);
+            setLayoutState({ headerHTML: "", footerHTML: "" });
           }
         }
+
         return;
       }
 
+      // Default org case
       if (allowance.allow) {
         setInvalidPage(true);
       }
+
       const config = allowance?.data?.[0]?.portalConfigs;
 
-      // Set portal colors and branding for default org
-      if (config?.primaryColor) {
-        setPrimaryColor(config.primaryColor);
-      }
-      if (config?.secondaryColor) {
-        setSecondaryColor(config.secondaryColor);
-      }
-      if (config?.portalLogo?.url) {
-        setLogoUrl(config.portalLogo.url);
-      }
-      if (config?.portalName) {
-        setPortalName(config.portalName);
-      }
+      if (config?.primaryColor) setPrimaryColor(config.primaryColor);
+      if (config?.secondaryColor) setSecondaryColor(config.secondaryColor);
+      if (config?.portalLogo?.url) setLogoUrl(config.portalLogo.url);
+      if (config?.portalName) setPortalName(config.portalName);
 
-      // Override with portal settings if available (more up-to-date)
       if (portalData) {
-        if (portalData.primaryColor) {
-          setPrimaryColor(portalData.primaryColor);
-        }
-        if (portalData.secondaryColor) {
+        if (portalData.primaryColor) setPrimaryColor(portalData.primaryColor);
+        if (portalData.secondaryColor)
           setSecondaryColor(portalData.secondaryColor);
-        }
         if (portalData.portalLogo) {
           const logoUrl =
             typeof portalData.portalLogo === "string"
               ? portalData.portalLogo
               : portalData.portalLogo?.url;
-          if (logoUrl) {
-            setLogoUrl(logoUrl);
-          }
+          if (logoUrl) setLogoUrl(logoUrl);
         }
-        if (portalData.portalName) {
-          setPortalName(portalData.portalName);
-        }
+        if (portalData.portalName) setPortalName(portalData.portalName);
       }
 
       if (config?.portalHeader?.url && config?.portalFooter?.url) {
@@ -283,16 +232,13 @@ export default function ApplyJobsContent({
           headerRes.text(),
           footerRes.text(),
         ]);
-
-        setLayoutState({
-          headerHTML,
-          footerHTML,
-        });
+        setLayoutState({ headerHTML, footerHTML });
       }
     } catch (error) {
-      console.error("Error fetching portal settings:", error);
+      console.error("Error processing portal settings:", error);
     }
   }
+
 
   useEffect(() => {
     checkAllowance();
@@ -317,6 +263,13 @@ export default function ApplyJobsContent({
       `"${portalName || "Your Portal Name"}"`
     );
   }, [primaryColor, secondaryColor, logoUrl, portalName]);
+
+  useEffect(() => {
+    if (!isOrgLoading && !isPortalLoading && orgResponse) {
+      checkAllowance();
+    }
+  }, [orgResponse, portalResponse, searchParams, orgName]);
+
 
   const pageInit = async () => {
     // debugger;

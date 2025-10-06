@@ -125,6 +125,12 @@ export const orgApi = createApi({
         body: data,
       }),
     }),
+    fetchOrg: builder.query({
+      query: () => ({
+        url: "/organization",
+        method: "GET",
+      }),
+    }),
     updateCustomFields: builder.mutation({
       query: (data) => ({
         url: "/organization/cs",
@@ -223,6 +229,7 @@ export const {
   useCreateAdminMutation,
   useSendMailMutation,
   useSendStatusMailMutation,
+  useFetchOrgQuery,
   useSendUnassignMailMutation,
   useCreateOrgMutation,
   useUpdateAdminMutation,

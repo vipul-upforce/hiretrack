@@ -1,3 +1,5 @@
+"use client";
+
 import { CreateCandidateDialog } from "../dashboard/jobs/[id]/components/Dialogs/create-candidate-dialog";
 import { Button } from "@/components/ui/button";
 import useRoles from "@/hooks/useRoles";
@@ -5,7 +7,9 @@ import { Dialog } from "@headlessui/react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ApplyAsGuestDialog } from "./ApplyAsGuest";
-import { X, UserPlus, LogIn, User } from "lucide-react";
+import { X, UserPlus, LogIn } from "lucide-react";
+import { useGetPortalConfigsQuery } from "@/lib/features/settings/settingsApi";
+import { useFetchOrgQuery } from "@/lib/features/org/orgApi";
 
 // Define a type for the job object
 interface Job {
@@ -13,14 +17,12 @@ interface Job {
   description: string;
   skills: string[];
   experience: number;
-  customFields?: {
-    [index: string]: string;
-  };
+  customFields?: Record<string, string>;
   _id?: string;
 }
 
 interface JobModalProps {
-  job: Job | null; // Allow job to be null
+  job: Job | null;
   isOptionsOpen: boolean;
   onClose: () => void;
   orgName: string;
@@ -37,55 +39,40 @@ export default function ApplyOptions({
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [primaryColor, setPrimaryColor] = useState<string>("#6366f1");
   const [secondaryColor, setSecondaryColor] = useState<string>("#8b5cf6");
+
   const roles = useRoles();
   const router = useRouter();
 
-  // Fetch portal colors
-  useEffect(() => {
-    const fetchPortalColors = async () => {
-      try {
-        const response = await fetch("/api/settings/portal");
-        if (response.ok) {
-          const data = await response.json();
-          if (data.primaryColor) {
-            setPrimaryColor(data.primaryColor);
-          }
-          if (data.secondaryColor) {
-            setSecondaryColor(data.secondaryColor);
-          }
-        }
-      } catch (error) {
-        console.error("Failed to fetch portal colors:", error);
-      }
-    };
+  const {
+    data: portalData,
+    isLoading: isPortalLoading,
+    error: portalError,
+  } = useGetPortalConfigsQuery(undefined, { skip: !isOptionsOpen });
 
-    if (isOptionsOpen) {
-      fetchPortalColors();
+  const {
+    data: orgResponse,
+    isLoading: isOrgLoading,
+    error: orgError,
+  } = useFetchOrgQuery(undefined, { skip: !isOptionsOpen });
+
+  useEffect(() => {
+    if (portalData) {
+      if (portalData.primaryColor) setPrimaryColor(portalData.primaryColor);
+      if (portalData.secondaryColor) setSecondaryColor(portalData.secondaryColor);
     }
-  }, [isOptionsOpen]);
+  }, [portalData]);
 
   if (!job) return null;
 
-  const handleSignupRedirect = async () => {
-    const data = await fetch("/api/organization");
-    if (!data.ok) {
+  const handleSignupRedirect = () => {
+    if (orgResponse && orgResponse.allow === false) {
+      router.push("/signup");
       return;
     }
-    const allowance = await data.json();
-    if (!allowance.allow) {
-      return router.push("/signup");
-    }
-    router.push("/signup?o=" + orgName);
+    router.push(`/signup?o=${orgName}`);
   };
-  const handleLoginRedirect = async () => {
-    // const data = await fetch("/api/organization");
-    // if (!data.ok) {
-    //   return;
-    // }
-    // const allowance = await data.json();
-    // if (!allowance.allow) {
-    //   return router.push("/signup");
-    // }
+
+  const handleLoginRedirect = () => {
     router.push("/auth/login");
   };
 
@@ -108,9 +95,7 @@ export default function ApplyOptions({
           <div className="flex items-center gap-3 mb-4">
             <div
               className="w-10 h-10 rounded-full flex items-center justify-center"
-              style={{
-                backgroundColor: `${primaryColor}15`,
-              }}
+              style={{ backgroundColor: `${primaryColor}15` }}
             >
               <svg
                 className="w-5 h-5"
@@ -136,7 +121,7 @@ export default function ApplyOptions({
           </div>
 
           <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed mb-6">
-            You're not currently logged in. Please choose how you'd like to
+            You’re not currently logged in. Please choose how you’d like to
             continue with your application.
           </p>
 
@@ -144,6 +129,7 @@ export default function ApplyOptions({
             {roles === "" ? (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Sign Up Button */}
                   <Button
                     onClick={handleSignupRedirect}
                     variant="outline"
@@ -166,6 +152,8 @@ export default function ApplyOptions({
                     <UserPlus className="w-4 h-4 mr-2" />
                     Sign Up
                   </Button>
+
+                  {/* Login Button */}
                   <Button
                     onClick={handleLoginRedirect}
                     variant="outline"
@@ -189,6 +177,8 @@ export default function ApplyOptions({
                     Login
                   </Button>
                 </div>
+
+                {/* Divider */}
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
                     <span className="w-full border-t border-gray-200 dark:border-gray-700" />
@@ -198,7 +188,6 @@ export default function ApplyOptions({
                       className="bg-white dark:bg-black px-3 py-1 rounded-full text-xs font-medium"
                       style={{
                         color: `${primaryColor}90`,
-                        // backgroundColor: `${primaryColor}100`,
                         border: `1px solid ${primaryColor}70`,
                       }}
                     >
@@ -206,6 +195,8 @@ export default function ApplyOptions({
                     </span>
                   </div>
                 </div>
+
+                {/* Guest Apply */}
                 <div className="w-full flex justify-center">
                   <ApplyAsGuestDialog
                     jobId={job._id as string}

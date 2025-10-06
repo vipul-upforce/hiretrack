@@ -17,8 +17,12 @@ import { LoginFormValues } from "@/types/login";
 import ReCAPTCHA from "react-google-recaptcha";
 import "./recaptcha-theme.css";
 import { useSelector } from "react-redux";
-import { useGetCaptchaConfigsQuery } from "@/lib/features/settings/settingsApi";
+import {
+  useGetCaptchaConfigsQuery,
+  useGetPortalConfigsQuery
+} from "@/lib/features/settings/settingsApi";
 import { getDecodedCaptcha } from "@/hooks/useSSE";
+import { useFetchOrgQuery } from "@/lib/features/org/orgApi";
 
 // Animated Grid Pattern Component
 interface AnimatedGridPatternProps {
@@ -71,9 +75,9 @@ function AnimatedGridPattern({
       currentSquares.map((sq) =>
         sq.id === id
           ? {
-              ...sq,
-              pos: getPos(),
-            }
+            ...sq,
+            pos: getPos(),
+          }
           : sq
       )
     );
@@ -379,7 +383,6 @@ export default function LoginFormContent({
   const [secondaryColor, setSecondaryColor] = useState<string>("#8b5cf6");
   // const [captcha, setCaptcha] = useState<string>();
   const [captcha, setCaptcha] = useState<string | null>(null); // Allow null for no CAPTCHA
-  const [isLoadingPortal, setIsLoadingPortal] = useState<boolean>(true);
   const [portalError, setPortalError] = useState<boolean>(false);
   const [decryptedSiteKey, setDecryptedSiteKey] = useState<string | null>(null);
 
@@ -397,6 +400,19 @@ export default function LoginFormContent({
     isLoading: isCaptchaLoading,
     error: captchaError,
   } = useGetCaptchaConfigsQuery(undefined);
+
+  const {
+    data: portalConfig,
+    isLoading: isLoadingPortal,
+    error: portalConfigError,
+  } = useGetPortalConfigsQuery(undefined);
+
+  const {
+    data: orgResponse,
+    isLoading: isOrgLoading,
+    error: orgError,
+  } = useFetchOrgQuery(undefined);
+
   useEffect(() => {
     // debugger;
     if (user && user.id && user.role) {
@@ -422,18 +438,10 @@ export default function LoginFormContent({
   }, [captchaConfig]);
 
   useEffect(() => {
-    async function checkAllowance() {
-      const data = await fetch("/api/orgs");
-      if (data.ok) {
-        const response = await data.json();
-        // If there are multiple portals, allow selection
-        if (response.portals && response.portals.length > 1) {
-          setIsMultiple(true);
-        }
-      }
+    if (orgResponse?.portals?.length > 1) {
+      setIsMultiple(true);
     }
-    checkAllowance();
-  }, []);
+  }, [orgResponse]);
 
   // Set initial loading title
   useEffect(() => {
@@ -442,66 +450,41 @@ export default function LoginFormContent({
 
   // Fetch portal settings for logo and name
   useEffect(() => {
-    async function fetchPortalSettings() {
-      setIsLoadingPortal(true);
-      setPortalError(false);
+    if (!portalConfig) return;
 
-      try {
-        const response = await fetch("/api/settings/portal");
-        if (response.ok) {
-          const data = await response.json();
-
-          // Update portal settings if data exists
-          if (data.portalLogo?.url) {
-            setPortalLogo(data.portalLogo.url);
-          }
-          if (data.portalLogoDark?.url) {
-            setPortalLogoDark(data.portalLogoDark.url);
-          }
-          if (data.portalFavicon?.url) {
-            setPortalFavicon(data.portalFavicon.url);
-            // Set favicon
-            const favicon = document.querySelector(
-              "link[rel*='icon']"
-            ) as HTMLLinkElement;
-            // debugger;
-            if (favicon) {
-              favicon.href = data.portalFavicon.url;
-            } else {
-              const newFavicon = document.createElement("link");
-              newFavicon.rel = "icon";
-              newFavicon.href = data.portalFavicon.url;
-              document.head.appendChild(newFavicon);
-            }
-          }
-          if (data.primaryColor) {
-            setPrimaryColor(data.primaryColor);
-          }
-          if (data.secondaryColor) {
-            setSecondaryColor(data.secondaryColor);
-          }
-          if (data.portalName) {
-            setPortalName(data.portalName);
-            document.title = data.portalName;
-          } else {
-            // Use default title if no portal name
-            document.title = "HireTrack";
-          }
+    try {
+      if (portalConfig.portalLogo?.url) setPortalLogo(portalConfig.portalLogo.url);
+      if (portalConfig.portalLogoDark?.url)
+        setPortalLogoDark(portalConfig.portalLogoDark.url);
+      if (portalConfig.portalFavicon?.url) {
+        setPortalFavicon(portalConfig.portalFavicon.url);
+        const favicon = document.querySelector(
+          "link[rel*='icon']"
+        ) as HTMLLinkElement;
+        if (favicon) {
+          favicon.href = portalConfig.portalFavicon.url;
         } else {
-          // API call failed
-          setPortalError(true);
-          document.title = "HireTrack";
+          const newFavicon = document.createElement("link");
+          newFavicon.rel = "icon";
+          newFavicon.href = portalConfig.portalFavicon.url;
+          document.head.appendChild(newFavicon);
         }
-      } catch (error) {
-        console.error("Failed to fetch portal settings:", error);
-        setPortalError(true);
-        document.title = "HireTrack";
-      } finally {
-        setIsLoadingPortal(false);
       }
+      if (portalConfig.primaryColor) setPrimaryColor(portalConfig.primaryColor);
+      if (portalConfig.secondaryColor)
+        setSecondaryColor(portalConfig.secondaryColor);
+      if (portalConfig.portalName) {
+        setPortalName(portalConfig.portalName);
+        document.title = portalConfig.portalName;
+      } else {
+        document.title = "HireTrack";
+      }
+    } catch (error) {
+      console.error("Error applying portal settings:", error);
+      setPortalError(true);
+      document.title = "HireTrack";
     }
-    fetchPortalSettings();
-  }, []);
+  }, [portalConfig]);
 
   // Get default logo based on theme
   const getDefaultLogo = () => {
@@ -540,7 +523,7 @@ export default function LoginFormContent({
         email: formData.email,
         password: formData.password,
       },
-      { setStatus: () => {} }
+      { setStatus: () => { } }
     );
   };
 

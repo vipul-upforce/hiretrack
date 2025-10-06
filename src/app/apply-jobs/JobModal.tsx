@@ -14,28 +14,25 @@ import {
   CheckCircle,
   Plus,
 } from "lucide-react";
+import { useGetPortalConfigsQuery } from "@/lib/features/settings/settingsApi";
 
-// Define a type for the job object
 interface Job {
   title: string;
   description: string;
   skills: string[];
   experience: number;
-  customFields?: {
-    [index: string]: string;
-  };
+  customFields?: Record<string, string>;
   _id?: string;
 }
 
 interface JobModalProps {
-  job: Job | null; // Allow job to be null
+  job: Job | null;
   isOpen: boolean;
   onClose: () => void;
   orgName: string;
   readOnly: boolean;
 }
 
-// Add salary interface to job
 interface JobWithSalary extends Job {
   salary?: {
     min: number;
@@ -56,35 +53,26 @@ export default function JobModal({
   const [isPendingOptionsOpen, setIsPendingOptionsOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [alreadyApplied, setAlreadyApplied] = useState(false);
-  const [primaryColor, setPrimaryColor] = useState<string>("#6366f1");
-  const [secondaryColor, setSecondaryColor] = useState<string>("#8b5cf6");
+  const [primaryColor, setPrimaryColor] = useState("#6366f1");
+  const [secondaryColor, setSecondaryColor] = useState("#8b5cf6");
 
   const roles = useRoles();
 
-  // Fetch portal colors
+  const {
+    data: portalData,
+    isLoading: isPortalLoading,
+    error: portalError,
+  } = useGetPortalConfigsQuery(undefined, { skip: !isOpen });
+
+  // Apply portal colors when fetched
   useEffect(() => {
-    const fetchPortalColors = async () => {
-      try {
-        const response = await fetch("/api/settings/portal");
-        if (response.ok) {
-          const data = await response.json();
-          if (data.primaryColor) {
-            setPrimaryColor(data.primaryColor);
-          }
-          if (data.secondaryColor) {
-            setSecondaryColor(data.secondaryColor);
-          }
-        }
-      } catch (error) {
-        console.error("Failed to fetch portal colors:", error);
-      }
-    };
-
-    if (isOpen) {
-      fetchPortalColors();
+    if (portalData) {
+      if (portalData.primaryColor) setPrimaryColor(portalData.primaryColor);
+      if (portalData.secondaryColor) setSecondaryColor(portalData.secondaryColor);
     }
-  }, [isOpen]);
+  }, [portalData]);
 
+  // Handle modal transition between ApplyOptions and JobModal
   useEffect(() => {
     if (isPendingOptionsOpen && !isOpen) {
       setIsModalOpen(true);
@@ -92,15 +80,12 @@ export default function JobModal({
     }
   }, [isOpen, isPendingOptionsOpen]);
 
+  // Check if user already applied (as guest)
   useEffect(() => {
-    const checkApplicationStatus = () => {
-      if (job && job._id) {
-        const applied = hasAppliedAsGuest(job._id);
-        setAlreadyApplied(applied);
-      }
-    };
-
-    checkApplicationStatus();
+    if (job?._id) {
+      const applied = hasAppliedAsGuest(job._id);
+      setAlreadyApplied(applied);
+    }
   }, [job]);
 
   if (!job) return null;
@@ -324,17 +309,16 @@ export default function JobModal({
                     <button
                       onClick={handleContinue}
                       disabled={alreadyApplied || readOnly}
-                      className={`flex items-center justify-center w-full sm:w-auto px-6 lg:px-8 py-2 lg:py-3 text-sm font-semibold rounded-lg focus:outline-none focus:ring-2 transition-colors ${
-                        alreadyApplied || readOnly
-                          ? "bg-gray-100 dark:bg-black text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 cursor-not-allowed"
-                          : "text-white"
-                      }`}
+                      className={`flex items-center justify-center w-full sm:w-auto px-6 lg:px-8 py-2 lg:py-3 text-sm font-semibold rounded-lg focus:outline-none focus:ring-2 transition-colors ${alreadyApplied || readOnly
+                        ? "bg-gray-100 dark:bg-black text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 cursor-not-allowed"
+                        : "text-white"
+                        }`}
                       style={
                         alreadyApplied || readOnly
                           ? {}
                           : ({
-                              backgroundColor: primaryColor,
-                            } as React.CSSProperties)
+                            backgroundColor: primaryColor,
+                          } as React.CSSProperties)
                       }
                       onMouseEnter={(e) => {
                         if (!alreadyApplied && !readOnly) {
