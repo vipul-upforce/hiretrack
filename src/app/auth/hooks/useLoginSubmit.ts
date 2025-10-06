@@ -74,6 +74,7 @@ export const useHandleLoginSubmit = ({
   const handleSubmit = useCallback(
     async (
       values: LoginFormValues,
+      setIsSubmitting: (isSubmitting: boolean) => void,
       { setStatus }: { setStatus: (message: string) => void }
     ) => {
       // debugger
@@ -90,6 +91,7 @@ export const useHandleLoginSubmit = ({
         if (!data.valid) {
           throw new Error(data.error);
         }
+        setIsSubmitting(false);
       } catch (e: unknown) {
         toast({
           title: "Error",
@@ -99,6 +101,7 @@ export const useHandleLoginSubmit = ({
               : "License not verified. Please contact support or try re-installing the platform.",
           variant: "destructive",
         });
+        setIsSubmitting(false);
         return;
       }
       try {

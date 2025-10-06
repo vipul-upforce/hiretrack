@@ -360,6 +360,7 @@ export default function LoginFormContent({
     password: "",
     companyName: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
@@ -535,12 +536,14 @@ export default function LoginFormContent({
   };
 
   const handleFormSubmit = (e: React.FormEvent) => {
+    setIsSubmitting(true);
     e.preventDefault();
     handleSubmit(
       {
         email: formData.email,
         password: formData.password,
       },
+      setIsSubmitting,
       { setStatus: () => {} }
     );
   };
@@ -914,6 +917,7 @@ export default function LoginFormContent({
                 // disabled={isLoading || !captcha}
                 disabled={
                   isLoading ||
+                  isSubmitting ||
                   (captchaConfig?.captcha?.enableCaptcha && !captcha)
                 }
                 className="w-full text-white py-3 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 relative overflow-hidden group"
@@ -924,7 +928,7 @@ export default function LoginFormContent({
                 whileTap={{ scale: 0.98 }}
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-                {isLoading ? (
+                {isLoading || isSubmitting ? (
                   <div className="flex items-center justify-center gap-2">
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     Signing in...

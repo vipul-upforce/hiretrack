@@ -115,6 +115,7 @@ export function generateMachineCode(): string {
 
 // Read license data from license.json file
 function readLicenseData(): LicenseData | null {
+  console.log("LICENSE_PATH: ", LICENSE_PATH);
   try {
     if (!fs.existsSync(LICENSE_PATH)) {
       return null;
@@ -147,7 +148,7 @@ async function validateLicenseWithAPI(
     }
     console.log("licenseValidationUrl: ", licenseValidationUrl);
     console.log("licenseKey: ", licenseKey);
-    // console.log("machineCode: ", machineCode);
+    console.log("machineCode: ", machineCode);
     const response = await fetch(
       `${licenseValidationUrl}/api/license/validate`,
       {
@@ -156,8 +157,8 @@ async function validateLicenseWithAPI(
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          licenseKey,
-          machineCode,
+          licenseKey: licenseKey.trim(),
+          machineCode: machineCode.trim(),
           // installedVersion:
           //   version || process.env.npm_package_version || "1.0.0",
         }),
@@ -173,6 +174,7 @@ async function validateLicenseWithAPI(
     }
 
     const data = await response.json();
+    console.log("data: ", data);
     return {
       valid: data.valid || false,
       asset: data.asset,

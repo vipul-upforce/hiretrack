@@ -138,7 +138,9 @@ export default function CalendarPage() {
   ).map((assignment: CandidateAssignment) => {
     const sseCandidate = sseCandidates.find((c: CandidateAssignment) =>
       role === "interviewer"
-        ? c._id === assignment?._id && c.assignment?.interviewerId === user._id
+        ? (c._id === assignment?._id &&
+            c.assignment?.interviewerId === user.id) ||
+          user.id
         : c._id === assignment._id
     );
     return sseCandidate || assignment;
@@ -156,6 +158,18 @@ export default function CalendarPage() {
 
   const filteredAssignments = mergedAssignments.filter(
     (assignment: CandidateAssignment) => {
+      // If the current role is interviewer, only include assignments assigned to the current interviewer
+      if (role === "interviewer") {
+        const interviewerId =
+          typeof assignment.assignment?.interviewerId === "object"
+            ? assignment.assignment?.interviewerId?._id
+            : assignment.assignment?.interviewerId;
+        console.log("interviewerId: ", interviewerId);
+        if (!assignment.assignment || interviewerId !== user.id) {
+          return false;
+        }
+      }
+
       if (!filterText) return true;
       const searchRegex = new RegExp(filterText, "i");
 
