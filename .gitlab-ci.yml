@@ -266,49 +266,49 @@ release_job:
       echo "Tarball uploaded successfully as: $TARBALL_NAME"
       echo "✅ Release $CURRENT_VERSION created successfully!"
       
-deploy:
-  stage: deploy
-  image: alpine:latest
-  before_script:
-    - apk add --no-cache sshpass openssh-client
-  # script:
-  #   # Transfer tarball to VM using SSHPASS environment variable
-  #   - |
-  #     echo "Transferring hiretrack-v1-gl.tar.gz to VM..."
-  #     export SSHPASS="$VM_PASSWORD"
-  #     sshpass -e scp -o StrictHostKeyChecking=no hiretrack-v1-gl.tar.gz root@$VM_HOST:$VM_DEST_DIR
-  #   # Extract and deploy on VM
-  #   - |
-  #     export SSHPASS="$VM_PASSWORD"
-  #     sshpass -e ssh -o StrictHostKeyChecking=no root@$VM_HOST << 'EOF'
-  #       cd /root
-  #       rm -rf hiretrack-latest
-  #       mkdir -p hiretrack-latest
-  #       tar -xzvf hiretrack-v1-gl.tar.gz -C hiretrack-latest
-  #       cd hiretrack-latest
-  #       pm2 kill && pm2 start npm --name "hiretrack-latest-deployed-by-gitlab" -- start
-  #       # Clean up the tarball
-  #       rm -f /root/hiretrack-v1-gl.tar.gz
-  #     EOF
-  script:
-  - |
-    source version.env
-    echo "Transferring $TARBALL_NAME to VM..."
-    export SSHPASS="$VM_PASSWORD"
-    sshpass -e scp -o StrictHostKeyChecking=no $TARBALL_NAME root@$VM_HOST:$VM_DEST_DIR
-  - |
-    export SSHPASS="$VM_PASSWORD"
-    sshpass -e ssh -o StrictHostKeyChecking=no root@$VM_HOST << 'EOF'
-      cd /root
-      rm -rf hiretrack-latest
-      mkdir -p hiretrack-latest
-      tar -xzvf $VM_DEST_DIR/$TARBALL_NAME -C hiretrack-latest
-      cd hiretrack-latest
-      pm2 delete hiretrack-latest-deployed-by-gitlab || true
-      pm2 start npm --name "hiretrack-latest-deployed-by-gitlab" -- start
-      rm -f $VM_DEST_DIR/$TARBALL_NAME
-    EOF
-  environment: production
-  only:
-    - master
-    - main-backup
+# deploy:
+#   stage: deploy
+#   image: alpine:latest
+#   before_script:
+#     - apk add --no-cache sshpass openssh-client
+#   # script:
+#   #   # Transfer tarball to VM using SSHPASS environment variable
+#   #   - |
+#   #     echo "Transferring hiretrack-v1-gl.tar.gz to VM..."
+#   #     export SSHPASS="$VM_PASSWORD"
+#   #     sshpass -e scp -o StrictHostKeyChecking=no hiretrack-v1-gl.tar.gz root@$VM_HOST:$VM_DEST_DIR
+#   #   # Extract and deploy on VM
+#   #   - |
+#   #     export SSHPASS="$VM_PASSWORD"
+#   #     sshpass -e ssh -o StrictHostKeyChecking=no root@$VM_HOST << 'EOF'
+#   #       cd /root
+#   #       rm -rf hiretrack-latest
+#   #       mkdir -p hiretrack-latest
+#   #       tar -xzvf hiretrack-v1-gl.tar.gz -C hiretrack-latest
+#   #       cd hiretrack-latest
+#   #       pm2 kill && pm2 start npm --name "hiretrack-latest-deployed-by-gitlab" -- start
+#   #       # Clean up the tarball
+#   #       rm -f /root/hiretrack-v1-gl.tar.gz
+#   #     EOF
+#   script:
+#   - |
+#     source version.env
+#     echo "Transferring $TARBALL_NAME to VM..."
+#     export SSHPASS="$VM_PASSWORD"
+#     sshpass -e scp -o StrictHostKeyChecking=no $TARBALL_NAME root@$VM_HOST:$VM_DEST_DIR
+#   - |
+#     export SSHPASS="$VM_PASSWORD"
+#     sshpass -e ssh -o StrictHostKeyChecking=no root@$VM_HOST << 'EOF'
+#       cd /root
+#       rm -rf hiretrack-latest
+#       mkdir -p hiretrack-latest
+#       tar -xzvf $VM_DEST_DIR/$TARBALL_NAME -C hiretrack-latest
+#       cd hiretrack-latest
+#       pm2 delete hiretrack-latest-deployed-by-gitlab || true
+#       pm2 start npm --name "hiretrack-latest-deployed-by-gitlab" -- start
+#       rm -f $VM_DEST_DIR/$TARBALL_NAME
+#     EOF
+#   environment: production
+#   only:
+#     - master
+#     - main-backup
