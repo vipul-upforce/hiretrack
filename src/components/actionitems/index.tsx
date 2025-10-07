@@ -4,7 +4,10 @@ import { CandidateDetailsDialog } from "@/app/dashboard/jobs/[id]/components/Dia
 import { Assignment } from "@/app/dashboard/page";
 import { Candidate, CandidateStatus, Remark } from "@/types/candidate";
 import { toast } from "@/hooks/use-toast";
-import { useFetchCandidateByIdQuery, useRefetchCandidateMutation } from "@/lib/features/candidate/candidateApi";
+import {
+  useFetchCandidateByIdQuery,
+  useRefetchCandidateMutation,
+} from "@/lib/features/candidate/candidateApi";
 
 function ActionItems({
   assignment,
@@ -37,14 +40,18 @@ function ActionItems({
   const refetchCandidate = async () => {
     if (!candidate?._id) return;
     try {
-      const updatedCandidate = await triggerRefetchCandidate(candidate._id).unwrap();
+      const updatedCandidate = await triggerRefetchCandidate(
+        candidate._id
+      ).unwrap();
       setCandidate(updatedCandidate);
       const updatedAssignments = assignments.map((assignment) =>
         assignment._id === updatedCandidate._id
           ? { ...assignment, ...updatedCandidate }
           : assignment
       );
-      setAssignments(updatedAssignments);
+
+
+      // setAssignments(updatedAssignments);
       toast({
         title: "Success",
         description: "Candidate data refreshed successfully",
@@ -53,9 +60,12 @@ function ActionItems({
       toast({
         title: "Error",
         description:
-          (typeof err === "object" && err !== null && "data" in err && typeof (err as any).data?.message === "string"
+          typeof err === "object" &&
+          err !== null &&
+          "data" in err &&
+          typeof (err as any).data?.message === "string"
             ? (err as any).data.message
-            : "Failed to refresh candidate data. Please try again."),
+            : "Failed to refresh candidate data. Please try again.",
         variant: "destructive",
       });
     }
