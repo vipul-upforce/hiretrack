@@ -19,7 +19,7 @@ stages:
   - scan
   - build
   - release
-  - deploy
+  # - deploy
 
 sonarcloud-check:
   stage: scan
@@ -136,7 +136,7 @@ build:
       
       echo "Updated package.json:"
       cat package.json | jq '.version'
-    - npm ci --legacy-peer-deps
+    # - npm ci --legacy-peer-deps
     - cat package.json
     - echo ""
     - NODE_OPTIONS="--max-old-space-size=4096" npx next build
@@ -147,7 +147,7 @@ build:
       echo "Creating tarball with name: $TARBALL_NAME"
       
       mkdir -p temp
-      tar -czvf temp/$TARBALL_NAME node_modules package.json package-lock.json .next .env public
+      tar -czvf temp/$TARBALL_NAME package.json package-lock.json .next .env public
       echo "Tarball contents:"
       tar -tzf temp/$TARBALL_NAME
       mv temp/$TARBALL_NAME .
