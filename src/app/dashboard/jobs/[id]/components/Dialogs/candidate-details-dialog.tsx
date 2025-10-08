@@ -91,6 +91,59 @@ export function CandidateDetailsDialog({
     candidate
   );
   const [activeTab, setActiveTab] = useState("overview");
+
+  // History loading state
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  const [candidateHistory, setCandidateHistory] = useState<any[]>([]);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+
+  // fetch candidate history when history tab is opened
+  const fetchCandidateHistory = async () => {
+    if (historyLoaded || isHistoryLoading || !localCandidate?._id) return;
+
+    setIsHistoryLoading(true);
+    try {
+      const response = await fetch(
+        `/api/candidates/${localCandidate._id}/history`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setCandidateHistory(data.history || []);
+        setHistoryLoaded(true);
+      } else {
+        console.error("Failed to fetch candidate history");
+        toast({
+          title: "Error",
+          description: "Failed to load candidate history",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching candidate history:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load candidate history",
+        variant: "destructive",
+      });
+    } finally {
+      setIsHistoryLoading(false);
+    }
+  };
+
+  // Load history when history tab is activated
+  useEffect(() => {
+    if (activeTab === "history" || (activeTab === "logs" && !historyLoaded)) {
+      fetchCandidateHistory();
+    }
+  }, [activeTab, historyLoaded, localCandidate?._id]);
+
+  // Reset history state when candidate changes
+  useEffect(() => {
+    setCandidateHistory([]);
+    setHistoryLoaded(false);
+    setIsHistoryLoading(false);
+  }, [localCandidate?._id]);
+
   const refetch = async () => {
     const result = await refetchCandidate(
       (id as string) || candidate?.jobId._id || ""
@@ -265,8 +318,8 @@ export function CandidateDetailsDialog({
     //   }
     // }
     const currentCandidate = localCandidate;
-    setTimeLineItems(currentCandidate?.history || []);
-  }, [candidateData, localCandidate]);
+    setTimeLineItems(currentCandidate?.history || candidateHistory || []);
+  }, [candidateData, candidateHistory, localCandidate]);
 
   useEffect(() => {
     if (isAddingFollowUp) {
@@ -448,7 +501,8 @@ export function CandidateDetailsDialog({
             </div>
 
             {/* Follow-up Section */}
-        {(localCandidate?.followUp?.date || localCandidate?.followUp?.note) && 
+            {(localCandidate?.followUp?.date ||
+              localCandidate?.followUp?.note) &&
               user?.role !== "interviewer" && (
                 <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4 border-l-4 border-amber-400 dark:border-amber-500">
                   <div className="flex items-start justify-between gap-3">
@@ -812,26 +866,41 @@ export function CandidateDetailsDialog({
 
           <TabsContent value="history" className="space-y-6 mt-0">
             {/* Candidate History */}
-            {localCandidate.history &&
-              localCandidate.history.length > 0 &&
-              user?.role !== "candidate" && (
-                <div className="space-y-4 focus-visible:outline-none">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    Candidate History
-                  </h3>
-                  {candidateDetailsFields
+            {user?.role !== "candidate" && (
+              <div className="space-y-4 focus-visible:outline-none">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  Candidate History
+                </h3>
+                {isHistoryLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                    <span className="ml-2 text-sm text-muted-foreground">
+                      Loading history...
+                    </span>
+                  </div>
+                ) : candidateHistory && candidateHistory.length > 0 ? (
+                  candidateDetailsFields
                     .find((field) => field.id === "candidate-history")
                     ?.render(
-                      localCandidate,
+                      { ...localCandidate, history: candidateHistory },
                       user,
                       validTimeLineItems,
                       handleRemarkUpdate,
                       setEditingRemark,
                       setIsEditRemarkDialogOpen,
                       false // showHeader = false
-                    )}
-                </div>
-              )}
+                    )
+                ) : (
+                  <div className="text-center py-8">
+                    <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold">No history found</h3>
+                    <p className="text-muted-foreground">
+                      No history entries found for this candidate.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Status History */}
             <div className="space-y-4">
@@ -856,17 +925,27 @@ export function CandidateDetailsDialog({
 
           <TabsContent value="logs" className="space-y-6 mt-0">
             {/* Show Logs Table - Direct content without button */}
-            {user?.role !== "interviewer" && user?.role !== "candidate" && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  Update Logs
-                </h3>
-                <LogsTable
-                  candidate={localCandidate}
-                  user={user}
-                  timeLineItems={validTimeLineItems}
-                />
+            {isHistoryLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                <span className="ml-2 text-sm text-muted-foreground">
+                  Loading Logs...
+                </span>
               </div>
+            ) : (
+              user?.role !== "interviewer" &&
+              user?.role !== "candidate" && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    Update Logs
+                  </h3>
+                  <LogsTable
+                    candidate={localCandidate}
+                    user={user}
+                    timeLineItems={validTimeLineItems}
+                  />
+                </div>
+              )
             )}
           </TabsContent>
         </div>
@@ -921,7 +1000,8 @@ export function CandidateDetailsDialog({
                     variant="outline"
                   >
                     {/* {localCandidate?.followUp */}
-                     {localCandidate?.followUp?.note || localCandidate?.followUp?.date
+                    {localCandidate?.followUp?.note ||
+                    localCandidate?.followUp?.date
                       ? "Edit Follow Up"
                       : "Add A Follow Up"}
                   </Button>

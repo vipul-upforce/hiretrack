@@ -40,7 +40,6 @@ export const HistoryAndLogTable: React.FC<{
   showHeader = true,
 }) => {
   const [showLogTable, setShowLogTable] = useState(false);
-
   const tableRows = timeLineItems
     .sort(
       (a, b) =>

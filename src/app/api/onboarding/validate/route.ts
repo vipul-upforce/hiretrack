@@ -253,7 +253,7 @@ export async function GET(req: NextRequest) {
     const completedCount = Object.values(stepStatus).filter(Boolean).length;
     const progressPercentage = Math.round((completedCount / totalSteps) * 100);
 
-    console.log("Onboarding validation results:", stepStatus);
+    // console.log("Onboarding validation results:", stepStatus);
 
     return NextResponse.json({
       stepStatus,

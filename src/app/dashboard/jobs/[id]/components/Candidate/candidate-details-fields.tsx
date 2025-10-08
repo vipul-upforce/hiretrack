@@ -126,17 +126,20 @@ export const candidateDetailsFields: FieldConfig[] = [
       >,
       setIsEditRemarkDialogOpen: React.Dispatch<React.SetStateAction<boolean>>,
       showHeader?: boolean
-    ) => (
-      <HistoryAndLogTable
-        candidate={candidate}
-        user={user}
-        timeLineItems={timeLineItems}
-        handleRemarkUpdate={handleRemarkUpdate}
-        setEditingRemark={setEditingRemark}
-        setIsEditRemarkDialogOpen={setIsEditRemarkDialogOpen}
-        showHeader={showHeader}
-      />
-    ),
+    ) => {
+      // debugger;
+      return (
+        <HistoryAndLogTable
+          candidate={candidate}
+          user={user}
+          timeLineItems={timeLineItems}
+          handleRemarkUpdate={handleRemarkUpdate}
+          setEditingRemark={setEditingRemark}
+          setIsEditRemarkDialogOpen={setIsEditRemarkDialogOpen}
+          showHeader={showHeader}
+        />
+      );
+    },
     shouldRender: (candidate) =>
       candidate.history?.length && candidate.history?.length > 0 ? true : false,
   },
