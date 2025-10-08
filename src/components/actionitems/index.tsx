@@ -39,12 +39,12 @@ function ActionItems({
 
       const updatedCandidate: Candidate = await response.json();
       setCandidate(updatedCandidate);
-      const updatedAssignments = assignments.map((assignment) =>
-        assignment._id === updatedCandidate._id
-          ? { ...assignment, ...updatedCandidate } // merge updated data
-          : assignment
-      );
-      setAssignments(updatedAssignments);
+      // const updatedAssignments = assignments.map((assignment) =>
+      //   assignment._id === updatedCandidate._id
+      //     ? { ...assignment, ...updatedCandidate } // merge updated data
+      //     : assignment
+      // );
+      // setAssignments(updatedAssignments);
       toast({
         title: "Success",
         description: "Candidate data refreshed successfully",

@@ -115,8 +115,14 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
         setCurrentStepIndex(statusData.onboardingStatus.currentStep || 0);
       }
 
+      // debugger;
+      if (onboardingStatus) {
+        if (onboardingStatus.isCompleted) {
+          return;
+        }
+        await refreshProgress();
+      }
       // Fetch validation progress
-      await refreshProgress();
     } catch (error) {
       console.error("Error fetching onboarding data:", error);
     } finally {

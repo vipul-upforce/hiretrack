@@ -99,9 +99,9 @@ export async function verifyAndDecrypCaptcha(token: string) {
     console.log(JWT_SECRET, "JWT_SECRET");
 
     // Assume token is an AES-encrypted string (not a JWT)
-    const bytes = await CryptoJS.AES.decrypt(token, JWT_SECRET);
+    const bytes = CryptoJS.AES.decrypt(token, JWT_SECRET);
     console.log(bytes, "bytes");
-    const decryptedData = await bytes.toString(CryptoJS.enc.Utf8);
+    const decryptedData = bytes.toString(CryptoJS.enc.Utf8);
     console.log(decryptedData, "decryptedData");
     if (!decryptedData) {
       throw new Error("Decryption failed: no data returned");
