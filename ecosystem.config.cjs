@@ -1,12 +1,12 @@
-const { version: VERSION } = require('./package.json');
-import path from 'path';
+const { version : VERSION } = require('./package.json');
+const path = require('path');
 
-const LOG_DIR = path.resolve(`../.myapp/logs`);
+const LOG_DIR = path.resolve('../.myapp/logs');
 
 module.exports = {
   apps: [
     {
-      name: `hiretrack-${VERSION}`,
+      name: "hiretrack-" +VERSION,
       script: "node_modules/next/dist/bin/next",
       args: "start -p 3000",
       cwd: "./",
@@ -14,7 +14,7 @@ module.exports = {
       instances: 1,
       autorestart: true,
       watch: false,
-      max_memory_restart: "3.5G",
+      max_memory_restart: "3500M",
       env: {
         NODE_ENV: "production",
       },
@@ -27,4 +27,3 @@ module.exports = {
     },
   ],
 };
-
