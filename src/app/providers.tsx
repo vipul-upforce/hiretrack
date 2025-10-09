@@ -7,18 +7,22 @@ import { Toaster } from "@/components/ui/toaster";
 import { CustomFieldsProvider } from "@/Custom_Fields/Context/CustomFieldsContext";
 import { ThemeProvider } from "@/components/theme-provider";
 import { PersistGate } from "redux-persist/integration/react";
+import LoadingScreen from "./loading-screen";
+import { Suspense } from "react";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <ThemeProvider defaultTheme="light" storageKey="hiretrack-theme">
-      <LocalizationProvider dateAdapter={AdapterDayjs}>
-        <Provider store={store}>
-          <PersistGate loading={<div>Loading...</div>} persistor={persistor}>
-            <CustomFieldsProvider>{children}</CustomFieldsProvider>
-          </PersistGate>
-        </Provider>
-      </LocalizationProvider>
-      <Toaster />
-    </ThemeProvider>
+    <Suspense fallback={<LoadingScreen />}>
+      <ThemeProvider defaultTheme="light" storageKey="hiretrack-theme">
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <Provider store={store}>
+            <PersistGate loading={null} persistor={persistor}>
+              <CustomFieldsProvider>{children}</CustomFieldsProvider>
+            </PersistGate>
+          </Provider>
+        </LocalizationProvider>
+        <Toaster />
+      </ThemeProvider>
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,7 +48,11 @@ import { Candidate } from "@/types/candidate";
 import { OnboardingProvider } from "@/components/onboarding/OnboardingProvider";
 import OnboardingModal from "@/components/onboarding/OnboardingModal";
 import OnboardingSidebar from "@/components/onboarding/OnboardingSidebar";
-import { useCheckOrgQuery, useGetOrganizationAllowanceQuery } from "@/lib/features/org/orgApi";
+import {
+  useCheckOrgQuery,
+  useGetOrganizationAllowanceQuery,
+} from "@/lib/features/org/orgApi";
+import LoadingScreen from "../loading-screen";
 
 interface SidebarItem {
   title: string;
@@ -126,7 +130,7 @@ export default function DashboardLayout({
   const {
     data: allowanceData,
     isLoading: allowanceLoading,
-    error: allowanceError
+    error: allowanceError,
   } = useGetOrganizationAllowanceQuery();
   const [hasMultipleOrgs, seHasMultipleOrgs] = useState(false);
 
@@ -443,10 +447,10 @@ export default function DashboardLayout({
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result
       ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16),
-      }
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16),
+        }
       : null;
   };
 
@@ -572,10 +576,10 @@ export default function DashboardLayout({
                   style={
                     isActive
                       ? {
-                        backgroundColor: `rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)`,
-                        color: `var(--portal-primary, #6366f1)`,
-                        borderLeft: `3px solid var(--portal-primary, #6366f1)`,
-                      }
+                          backgroundColor: `rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)`,
+                          color: `var(--portal-primary, #6366f1)`,
+                          borderLeft: `3px solid var(--portal-primary, #6366f1)`,
+                        }
                       : {}
                   }
                 >
@@ -687,59 +691,61 @@ export default function DashboardLayout({
   }
 
   if (allowanceLoading || orgCheckLoading) {
-    return <div className="p-6 text-center">Loading...</div>;
+    return <LoadingScreen />;
   }
 
   return (
-    <OnboardingProvider>
-      <div className="w-full max-w-full flex" style={{ overflowX: "hidden" }}>
-        <PortalHead isLoading={true} />
-        <aside
-          className={cn(
-            "hidden h-screen border-r bg-background md:block transition-all duration-300",
-            isCollapsed ? "w-[70px]" : "w-[240px]"
-          )}
-        >
-          <SidebarContent />
-        </aside>
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden fixed left-4 top-4 z-40"
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-[240px] p-0">
+    <Suspense fallback={<LoadingScreen />}>
+      <OnboardingProvider>
+        <div className="w-full max-w-full flex" style={{ overflowX: "hidden" }}>
+          <PortalHead isLoading={true} />
+          <aside
+            className={cn(
+              "hidden h-screen border-r bg-background md:block transition-all duration-300",
+              isCollapsed ? "w-[70px]" : "w-[240px]"
+            )}
+          >
             <SidebarContent />
-          </SheetContent>
-        </Sheet>
-        <main className="w-full overflow-x-hidden overflow-y-hidden h-[100dvh]">
-          <div className="max-w-[100%] mx-auto overflow-x-hidden overflow-y-hidden">
-            {children}
-          </div>
-        </main>
+          </aside>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden fixed left-4 top-4 z-40"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[240px] p-0">
+              <SidebarContent />
+            </SheetContent>
+          </Sheet>
+          <main className="w-full overflow-x-hidden overflow-y-hidden h-[100dvh]">
+            <div className="max-w-[100%] mx-auto overflow-x-hidden overflow-y-hidden">
+              {children}
+            </div>
+          </main>
 
-        {/* Candidate Details Dialog for Interviewers */}
-        <CandidateDetailsDialog
-          candidate={selectedCandidate}
-          isOpen={isCandidateDialogOpen}
-          onOpenChange={setIsCandidateDialogOpen}
-          onUpdate={() => {
-            // Optionally refresh candidate data
-            if (selectedCandidate) {
-              fetchCandidateById(selectedCandidate._id);
-            }
-          }}
-          hideEditButton={userData?.role === "interviewer"}
-          hideCloseButtons={false}
-        />
+          {/* Candidate Details Dialog for Interviewers */}
+          <CandidateDetailsDialog
+            candidate={selectedCandidate}
+            isOpen={isCandidateDialogOpen}
+            onOpenChange={setIsCandidateDialogOpen}
+            onUpdate={() => {
+              // Optionally refresh candidate data
+              if (selectedCandidate) {
+                fetchCandidateById(selectedCandidate._id);
+              }
+            }}
+            hideEditButton={userData?.role === "interviewer"}
+            hideCloseButtons={false}
+          />
 
-        {/* Onboarding Modal */}
-        <OnboardingModal />
-      </div>
-    </OnboardingProvider>
+          {/* Onboarding Modal */}
+          <OnboardingModal />
+        </div>
+      </OnboardingProvider>
+    </Suspense>
   );
 }

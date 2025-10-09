@@ -19,10 +19,11 @@ import "./recaptcha-theme.css";
 import { useSelector } from "react-redux";
 import {
   useGetCaptchaConfigsQuery,
-  useGetPortalConfigsQuery
+  useGetPortalConfigsQuery,
 } from "@/lib/features/settings/settingsApi";
 import { getDecodedCaptcha } from "@/hooks/useSSE";
 import { useFetchOrgQuery } from "@/lib/features/org/orgApi";
+import LoadingScreen from "@/app/loading-screen";
 
 // Animated Grid Pattern Component
 interface AnimatedGridPatternProps {
@@ -38,7 +39,7 @@ interface AnimatedGridPatternProps {
   repeatDelay?: number;
 }
 
-function AnimatedGridPattern({
+export function AnimatedGridPattern({
   width = 40,
   height = 40,
   x = -1,
@@ -75,9 +76,9 @@ function AnimatedGridPattern({
       currentSquares.map((sq) =>
         sq.id === id
           ? {
-            ...sq,
-            pos: getPos(),
-          }
+              ...sq,
+              pos: getPos(),
+            }
           : sq
       )
     );
@@ -175,7 +176,7 @@ interface FlickeringGridProps {
   maxOpacity?: number;
 }
 
-const FlickeringGrid: React.FC<FlickeringGridProps> = ({
+export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
   squareSize = 4,
   gridGap = 6,
   flickerChance = 0.3,
@@ -453,7 +454,8 @@ export default function LoginFormContent({
     if (!portalConfig) return;
 
     try {
-      if (portalConfig.portalLogo?.url) setPortalLogo(portalConfig.portalLogo.url);
+      if (portalConfig.portalLogo?.url)
+        setPortalLogo(portalConfig.portalLogo.url);
       if (portalConfig.portalLogoDark?.url)
         setPortalLogoDark(portalConfig.portalLogoDark.url);
       if (portalConfig.portalFavicon?.url) {
@@ -523,7 +525,7 @@ export default function LoginFormContent({
         email: formData.email,
         password: formData.password,
       },
-      { setStatus: () => { } }
+      { setStatus: () => {} }
     );
   };
 
@@ -546,44 +548,8 @@ export default function LoginFormContent({
   }, [primaryColor, secondaryColor, portalError, isLoadingPortal]);
 
   // Show loading indicator while fetching portal settings
-  if (isLoadingPortal) {
-    return (
-      <div className="min-h-screen w-full bg-background relative overflow-hidden flex items-center justify-center p-4">
-        {/* Animated Background for loading state */}
-        <div className="absolute inset-0">
-          <AnimatedGridPattern
-            numSquares={30}
-            maxOpacity={0.05}
-            duration={3}
-            repeatDelay={1}
-            className={cx(
-              "[mask-image:radial-gradient(500px_circle_at_center,white,transparent)]",
-              "inset-x-0 inset-y-[-30%] h-[200%] skew-y-12"
-            )}
-          />
-        </div>
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="relative z-10 flex flex-col items-center gap-6"
-        >
-          <div className="relative">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-primary/20 to-primary/5 animate-pulse" />
-            <div className="absolute inset-2">
-              <div className="w-full h-full rounded-full border-3 border-primary/30 border-t-primary animate-spin" />
-            </div>
-          </div>
-          <div className="text-center space-y-2">
-            {/* <p className="text-lg font-medium text-foreground">Loading Portal Settings</p> */}
-            <p className="text-sm text-muted-foreground animate-pulse">
-              Please wait...
-            </p>
-          </div>
-        </motion.div>
-      </div>
-    );
+  if (isLoadingPortal || isOrgLoading || isCaptchaLoading) {
+    return <LoadingScreen />;
   }
 
   return (
