@@ -7,9 +7,9 @@ import { EmailNotificationType } from "@/components/ui/email-notification-toggle
 export interface EmailNotificationSettings {
   global: Record<EmailNotificationType, { enabled: boolean; source: string }>;
   jobLevel?: Record<
-    EmailNotificationType,
-    { enabled: boolean; source: string }
-  >;
+    string,
+    Record<EmailNotificationType, { enabled: boolean; source: string }>
+  >; // ✅ Nested for per-job (jobId -> types)
 }
 
 export interface UserEmailSettings {
@@ -21,7 +21,7 @@ export interface JobEmailSettings {
   [userId: string]: Record<EmailNotificationType, boolean>;
 }
 
-// Hook for getting user's effective email notification settings
+// ... (rest of hooks unchanged, but add safety to fetchSettings in useUserEmailNotificationSettings)
 export function useUserEmailNotificationSettings(
   userId: string,
   jobId?: string
@@ -51,7 +51,14 @@ export function useUserEmailNotificationSettings(
       }
 
       const data = await response.json();
-      setSettings(data.settings);
+
+      // ✅ Normalize response: Ensure global exists (fallback to empty if missing)
+      const normalizedSettings: EmailNotificationSettings = {
+        global: data.settings?.global || {},
+        jobLevel: data.settings?.jobLevel || {},
+      };
+
+      setSettings(normalizedSettings);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Unknown error";
       setError(errorMessage);
@@ -71,6 +78,8 @@ export function useUserEmailNotificationSettings(
 
   return { settings, loading, error, refetch: fetchSettings };
 }
+
+// ... (other hooks unchanged)
 
 // Hook for updating user's email notification settings
 export function useUpdateUserEmailNotificationSettings() {

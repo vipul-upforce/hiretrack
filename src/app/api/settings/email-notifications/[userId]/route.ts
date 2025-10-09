@@ -140,12 +140,29 @@ export async function PUT(
     // Validate global settings
     if (global) {
       const validKeys = [
-        "newApplications",
-        "interviewAssignments",
-        "statusUpdates",
-        "newRemarks",
-        "stepCompleted",
         "mentions",
+        "newApplications",
+        "statusUpdates",
+        "detailsUpdated",
+        "interviewAssignments",
+        "stepCompleted",
+        "newRemarks",
+        "meetingScheduled",
+        "meetingUpdated",
+        "meetingCancelled",
+        "meetingInviteAccepted",
+        "meetingInviteDeclined",
+        "meetingInviteTentative",
+        "followupAdded",
+        "followupUpdated",
+        "followupRemoved",
+        "checklistCompleted",
+        "jobCreated",
+        "jobUpdated",
+        "userAdded",
+        "bulkImportCompleted",
+        "candidateRejected",
+        "interviewCompleted",
       ];
       for (const key of validKeys) {
         if (global[key] !== undefined && typeof global[key] !== "boolean") {
@@ -169,12 +186,29 @@ export async function PUT(
 
         if (jobSettings && typeof jobSettings === "object") {
           const validKeys = [
-            "newApplications",
-            "interviewAssignments",
-            "statusUpdates",
-            "newRemarks",
-            "stepCompleted",
             "mentions",
+            "newApplications",
+            "statusUpdates",
+            "detailsUpdated",
+            "interviewAssignments",
+            "stepCompleted",
+            "newRemarks",
+            "meetingScheduled",
+            "meetingUpdated",
+            "meetingCancelled",
+            "meetingInviteAccepted",
+            "meetingInviteDeclined",
+            "meetingInviteTentative",
+            "followupAdded",
+            "followupUpdated",
+            "followupRemoved",
+            "checklistCompleted",
+            "jobCreated",
+            "jobUpdated",
+            "userAdded",
+            "bulkImportCompleted",
+            "candidateRejected",
+            "interviewCompleted",
           ];
           for (const key of validKeys) {
             if (

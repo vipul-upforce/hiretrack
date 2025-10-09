@@ -22,7 +22,7 @@ import {
   UserEmailSettings,
 } from "@/hooks/useEmailNotificationSettings";
 
-// ✅ Generate default settings automatically for all notification types
+// Generate default settings automatically for all notification types
 const createDefaultNotificationSettings = (): Record<
   EmailNotificationType,
   boolean
@@ -83,7 +83,7 @@ export function EmailNotificationSettingsDialog({
   const { updateSettings, loading: updating } =
     useUpdateUserEmailNotificationSettings();
 
-  // ✅ Initialize local settings when data loads
+  // Initialize local settings when data loads
   useEffect(() => {
     if (settings) {
       const newLocalSettings: UserEmailSettings = {
@@ -91,15 +91,17 @@ export function EmailNotificationSettingsDialog({
         jobLevel: {},
       };
 
-      // Apply actual global settings
-      Object.entries(settings.global).forEach(([key, value]) => {
-        newLocalSettings.global[key as EmailNotificationType] = value.enabled;
-      });
+      // Apply global settings
+      if (settings.global) {
+        Object.entries(settings.global).forEach(([key, value]) => {
+          newLocalSettings.global[key as EmailNotificationType] = value.enabled;
+        });
+      }
 
       // Apply job-level overrides if any
-      if (settings.jobLevel && jobId) {
+      if (jobId && settings.jobLevel?.[jobId]) {
         const jobSettings = createDefaultNotificationSettings();
-        Object.entries(settings.jobLevel).forEach(([key, value]) => {
+        Object.entries(settings.jobLevel[jobId]).forEach(([key, value]) => {
           jobSettings[key as EmailNotificationType] = value.enabled;
         });
         newLocalSettings.jobLevel[jobId] = jobSettings;
@@ -147,37 +149,38 @@ export function EmailNotificationSettingsDialog({
   };
 
   const handleReset = () => {
+    const resetSettings: UserEmailSettings = {
+      global: createDefaultNotificationSettings(),
+      jobLevel: {},
+    };
+
     if (settings) {
-      const resetSettings: UserEmailSettings = {
-        global: createDefaultNotificationSettings(),
-        jobLevel: {},
-      };
+      // Reset global
+      if (settings.global) {
+        Object.entries(settings.global).forEach(([key, value]) => {
+          resetSettings.global[key as EmailNotificationType] = value.enabled;
+        });
+      }
 
-      Object.entries(settings.global).forEach(([key, value]) => {
-        resetSettings.global[key as EmailNotificationType] = value.enabled;
-      });
-
-      if (settings.jobLevel && jobId) {
+      // Reset job-level
+      if (jobId && settings.jobLevel?.[jobId]) {
         const jobSettings = createDefaultNotificationSettings();
-        Object.entries(settings.jobLevel).forEach(([key, value]) => {
+        Object.entries(settings.jobLevel[jobId]).forEach(([key, value]) => {
           jobSettings[key as EmailNotificationType] = value.enabled;
         });
         resetSettings.jobLevel[jobId] = jobSettings;
       }
 
       setLocalSettings(resetSettings);
-    } else {
-      setLocalSettings({
-        global: createDefaultNotificationSettings(),
-        jobLevel: {},
-      });
     }
   };
 
-  const getCurrentSettings = () =>
-    jobId && localSettings.jobLevel[jobId]
-      ? localSettings.jobLevel[jobId]
-      : localSettings.global;
+  const getCurrentSettings = () => {
+    const jobSettings = jobId ? localSettings.jobLevel[jobId] : undefined;
+    return (
+      jobSettings || localSettings.global || createDefaultNotificationSettings()
+    );
+  };
 
   const notificationTypes = Object.keys(
     createDefaultNotificationSettings()
@@ -189,12 +192,19 @@ export function EmailNotificationSettingsDialog({
 
     return notificationTypes.some((type) => {
       const currentValue = currentSettings[type];
-      const originalValue =
-        jobId && settings.jobLevel
-          ? (settings.jobLevel[type]?.enabled ??
-            settings.global[type]?.enabled ??
-            true)
-          : (settings.global[type]?.enabled ?? true);
+      let originalValue: boolean;
+
+      if (jobId && settings.jobLevel?.[jobId]) {
+        // Job-specific settings take precedence
+        originalValue =
+          settings.jobLevel[jobId][type]?.enabled ??
+          settings.global?.[type]?.enabled ??
+          true;
+      } else {
+        // Fallback to global settings
+        originalValue = settings.global?.[type]?.enabled ?? true;
+      }
+
       return currentValue !== originalValue;
     });
   };
@@ -250,7 +260,6 @@ export function EmailNotificationSettingsDialog({
         </DialogHeader>
 
         <div className="flex flex-col h-full">
-          {/* ✅ Scrollable content with max height */}
           <div className="space-y-4 flex-1 overflow-y-auto px-6 py-4 max-h-[70vh] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
             <div className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
@@ -270,13 +279,12 @@ export function EmailNotificationSettingsDialog({
                   source="global-user"
                   onToggle={handleToggle}
                   disabled={updating}
-                  showSource={false}
+                  showSource={true}
                 />
               ))}
             </div>
           </div>
 
-          {/* Footer */}
           <div className="flex justify-between items-center border-t bg-background px-6 py-4 sticky bottom-0 z-10 gap-4">
             <Button
               variant="outline"

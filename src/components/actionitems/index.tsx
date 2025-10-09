@@ -72,7 +72,10 @@ function ActionItems({
           : assignment
       );
 
-      console.log("Updated assignments with merging prev data with SSE: " , updatedAssignments);
+      console.log(
+        "Updated assignments with merging prev data with SSE: ",
+        updatedAssignments
+      );
 
       setAssignments(updatedAssignments);
       toast({

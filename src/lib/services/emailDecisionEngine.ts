@@ -469,6 +469,10 @@ export async function getUserEffectiveNotificationSettings(
       email: Record<NotificationType, { enabled: boolean; source: string }>;
       inApp: Record<NotificationType, { enabled: boolean; source: string }>;
     } = { email: {} as any, inApp: {} as any };
+    const global: {
+      email: Record<NotificationType, { enabled: boolean; source: string }>;
+      inApp: Record<NotificationType, { enabled: boolean; source: string }>;
+    } = { email: {} as any, inApp: {} as any };
 
     for (const type of notificationTypes) {
       // Email settings
