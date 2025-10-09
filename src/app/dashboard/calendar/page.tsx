@@ -484,7 +484,7 @@ export default function CalendarPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="flex-shrink-0 px-6 pt-6">
+      <div className="flex-shrink-0 px-6 pt-6 pb-6">
         <StatsCards
           todayCount={todayCount}
           thisWeekCount={thisWeekCount}
@@ -554,17 +554,17 @@ export default function CalendarPage() {
                   ) {
                     // Time grid view
                     return (
-                      <div className="px-2 py-1 overflow-hidden">
-                        <div className="font-semibold text-xs truncate">
+                      <div className="w-full h-full overflow-hidden px-2 py-1 break-words">
+                        <div className="font-semibold text-xs truncate overflow-hidden max-w-full">
                           {candidate.name}
                         </div>
                         {jobTitle && (
-                          <div className="text-[10px] opacity-80 truncate capitalize">
+                          <div className="text-[10px] opacity-80 truncate capitalize overflow-hidden max-w-full">
                             {jobTitle}
                           </div>
                         )}
                         {interviewer.name && interviewer.name !== "Unknown" && (
-                          <div className="text-[10px] opacity-75 truncate capitalize">
+                          <div className="text-[10px] opacity-75 truncate capitalize overflow-hidden max-w-full">
                             {interviewer.name}
                           </div>
                         )}
@@ -574,24 +574,24 @@ export default function CalendarPage() {
 
                   // Month view
                   return (
-                    <div className="px-1.5 py-0.5 overflow-hidden w-full">
-                      <div className="flex items-center gap-1 mb-0.5">
-                        <div className="font-medium text-[11px] truncate flex-1">
+                    <div className="w-full h-full overflow-hidden px-1.5 py-0.5 break-words">
+                      <div className="flex items-center gap-1 mb-0.5 overflow-hidden max-w-full">
+                        <div className="font-medium text-[11px] truncate flex-1 overflow-hidden min-w-0">
                           {candidate.name}
                         </div>
                         {arg.event.start && (
-                          <span className="text-[10px] opacity-80 shrink-0">
+                          <span className="text-[10px] opacity-80 shrink-0 whitespace-nowrap">
                             {formatTime(arg.event.start)}
                           </span>
                         )}
                       </div>
                       {jobTitle && (
-                        <div className="text-[9px] opacity-75 truncate capitalize">
+                        <div className="text-[9px] opacity-75 truncate capitalize overflow-hidden max-w-full">
                           {jobTitle}
                         </div>
                       )}
                       {interviewer.name && interviewer.name !== "Unknown" && (
-                        <div className="text-[9px] opacity-70 truncate capitalize">
+                        <div className="text-[9px] opacity-70 truncate capitalize overflow-hidden max-w-full">
                           {interviewer.name}
                         </div>
                       )}

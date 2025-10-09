@@ -285,7 +285,7 @@ function CandidateSearch() {
       <SearchResults
         results={sortedResults}
         totalResultsCount={totalRecordsCount}
-        isLoading={isLoading || isFetching}
+        isLoading={isQueryLoading || isFetching}
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={onPageChange}

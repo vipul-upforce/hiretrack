@@ -50,6 +50,8 @@ import OnboardingModal from "@/components/onboarding/OnboardingModal";
 import OnboardingSidebar from "@/components/onboarding/OnboardingSidebar";
 import SidebarLogo from "@/components/layouts/SidebarLogo";
 import SidebarContent from "@/components/layouts/SidebarContent";
+import { useGetOrganizationAllowanceQuery } from "@/lib/features/org/orgApi";
+import { useCheckOrgQuery } from "@/lib/features/org/orgApi";
 
 interface SidebarItem {
   title: string;
@@ -509,34 +511,10 @@ export default function DashboardLayout({
         <PortalHead isLoading={true} />
         <aside
           className={cn(
-            "flex justify-start items-center gap-2 mb-2",
-            isCollapsed ? "flex-col" : "flex-row"
             "hidden h-screen border-r bg-background md:block transition-all duration-300",
             isCollapsed ? "w-[70px]" : "w-[240px]"
           )}
         >
-          {userData && (
-            <NotificationButton
-              notifications={notificationsData?.notifications || []}
-              unreadCount={notificationCountData?.unreadCount || 0}
-              totalCount={notificationCountData?.totalCount || 0}
-              currentPage={notificationsData?.pagination?.currentPage || 1}
-              totalPages={notificationsData?.pagination?.totalPages || 1}
-              isLoading={notificationsLoading}
-              onMarkAsRead={handleMarkAsRead}
-              fetchNotifications={fetchNotifications}
-              onMarkAllAsRead={handleMarkAllAsRead}
-              onNotificationClick={handleNotificationClick}
-              onPageChange={setNotificationPage}
-              isOpen={isNotificationDropdownOpen}
-              onOpenChange={setIsNotificationDropdownOpen}
-              className="mr-1"
-            />
-          )}
-          <ThemeToggle
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 rounded-full"
           <SidebarContent
             isCollapsed={isCollapsed}
             onToggleCollapse={handleToggleCollapse}
@@ -558,44 +536,14 @@ export default function DashboardLayout({
             onGenerateShareOrg={generate_share_org}
             onLogout={handleLogout}
           />
-        </div>
-        <div className="mt-auto space-y-2">
-          <div
-            className={cn(
-              "flex items-center gap-3 bg-card rounded-lg p-2 transition-all border border-border",
-              isCollapsed ? "flex-col justify-center" : "justify-start"
-            )}
-          >
-            <div className="flex-shrink-0">
-              <div
-                className={`flex items-center justify-center bg-muted text-muted-foreground font-semibold h-8 w-8 rounded-full ${isCollapsed ? "aspect-ratio-square h-6 w-6" : "ring-2 ring-border"}`}
-              >
-                {getUserInitials(userData?.name)}
-              </div>
-            </div>
-            {!isCollapsed && (
-              <div className="flex flex-col min-w-0 flex-1">
-                <p className="text-sm font-semibold truncate text-foreground">
-                  {userData?.name}
-                </p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {userData?.email}
-                </p>
-              </div>
-            )}
         </aside>
         <Sheet>
           <SheetTrigger asChild>
             <Button
               variant="ghost"
               size="icon"
-              className={`h-8 w-8 rounded-full ${isCollapsed ? "ml-0" : "ml-auto"}`}
-              onClick={generate_share_org}
-              title="Copy Portal URL"
               className="md:hidden fixed left-4 top-4 z-40"
             >
-              <Link2Icon className="h-4 w-4" />
-              <span className="sr-only">Copy Portal URL</span>
               <Menu className="h-5 w-5" />
             </Button>
           </SheetTrigger>
@@ -627,26 +575,6 @@ export default function DashboardLayout({
           <div className="max-w-[100%] mx-auto overflow-x-hidden overflow-y-hidden">
             {children}
           </div>
-        </div>
-        <Button
-          variant="ghost"
-          className={cn(
-            "w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:text-destructive hover:bg-destructive/10 text-destructive",
-            isCollapsed ? "justify-center" : "justify-start"
-          )}
-          onClick={handleLogout}
-        >
-          <LogOut className="h-5 w-5" />
-          <span className={cn("", isCollapsed && "hidden")}>Logout</span>
-        </Button>
-      </div>
-    </div>
-  );
-
-  if (allowanceError || orgCheckError) {
-    return (
-      <div className="p-6 text-center text-red-600">
-        Failed to load organization data. Please refresh or contact support.
         </main>
 
         {/* Candidate Details Dialog for Interviewers */}
@@ -667,65 +595,6 @@ export default function DashboardLayout({
         {/* Onboarding Modal */}
         <OnboardingModal />
       </div>
-    );
-  }
-
-  if (allowanceLoading || orgCheckLoading) {
-    return <LoadingScreen />;
-  }
-
-  return (
-    <Suspense fallback={<LoadingScreen />}>
-      <OnboardingProvider>
-        <div className="w-full max-w-full flex" style={{ overflowX: "hidden" }}>
-          <PortalHead isLoading={true} />
-          <aside
-            className={cn(
-              "hidden h-screen border-r bg-background md:block transition-all duration-300",
-              isCollapsed ? "w-[70px]" : "w-[240px]"
-            )}
-          >
-            <SidebarContent />
-          </aside>
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="md:hidden fixed left-4 top-4 z-40"
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-[240px] p-0">
-              <SidebarContent />
-            </SheetContent>
-          </Sheet>
-          <main className="w-full overflow-x-hidden overflow-y-hidden h-[100dvh]">
-            <div className="max-w-[100%] mx-auto overflow-x-hidden overflow-y-hidden">
-              {children}
-            </div>
-          </main>
-
-          {/* Candidate Details Dialog for Interviewers */}
-          <CandidateDetailsDialog
-            candidate={selectedCandidate}
-            isOpen={isCandidateDialogOpen}
-            onOpenChange={setIsCandidateDialogOpen}
-            onUpdate={() => {
-              // Optionally refresh candidate data
-              if (selectedCandidate) {
-                fetchCandidateById(selectedCandidate._id);
-              }
-            }}
-            hideEditButton={userData?.role === "interviewer"}
-            hideCloseButtons={false}
-          />
-
-          {/* Onboarding Modal */}
-          <OnboardingModal />
-        </div>
-      </OnboardingProvider>
-    </Suspense>
+    </OnboardingProvider>
   );
 }

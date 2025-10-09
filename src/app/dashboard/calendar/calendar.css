@@ -104,6 +104,8 @@
   font-size: 0.813rem;
   border-width: 1px;
   transition: transform 0.2s, box-shadow 0.2s;
+  overflow: hidden;
+  word-break: break-word;
 }
 
 .fc-event:hover {
@@ -113,6 +115,44 @@
 
 .dark .fc-event:hover {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Event content wrapper - prevent overflow */
+.fc-event-main {
+  overflow: hidden;
+  max-width: 100%;
+}
+
+.fc-event-main-frame {
+  overflow: hidden;
+  max-width: 100%;
+}
+
+.fc-event-title-container,
+.fc-event-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+/* Daygrid event content */
+.fc-daygrid-event-harness {
+  overflow: hidden;
+}
+
+.fc-daygrid-event {
+  overflow: hidden;
+  white-space: normal;
+}
+
+/* Timegrid event content */
+.fc-timegrid-event-harness {
+  overflow: hidden;
+}
+
+.fc-timegrid-event {
+  overflow: hidden;
 }
 
 /* Time grid view styling */

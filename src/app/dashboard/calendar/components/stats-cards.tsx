@@ -18,52 +18,56 @@ export function StatsCards({
 }: StatsCardsProps) {
   const stats = [
     {
-      title: "Today's Events",
-      value: todayCount,
+      title: "Total Interviews",
+      value: totalInterviews,
       icon: Calendar,
-      color: "text-blue-600 dark:text-blue-400",
-      bgColor: "bg-blue-50 dark:bg-blue-950/30",
+      iconColor: "text-primary",
+      iconBg: "bg-primary/10",
+      borderColor: "border-l-primary",
     },
     {
-      title: "This Week",
+      title: "Interviews This Week",
       value: thisWeekCount,
       icon: TrendingUp,
-      color: "text-green-600 dark:text-green-400",
-      bgColor: "bg-green-50 dark:bg-green-950/30",
+      iconColor: "text-blue-500",
+      iconBg: "bg-blue-500/10",
+      borderColor: "border-l-blue-500",
     },
     {
-      title: "Interviews",
-      value: totalInterviews,
-      icon: Users,
-      color: "text-amber-600 dark:text-amber-400",
-      bgColor: "bg-amber-50 dark:bg-amber-950/30",
-    },
-    {
-      title: "Upcoming",
-      value: upcomingCount,
+      title: "Interviews Today",
+      value: todayCount,
       icon: Clock,
-      color: "text-purple-600 dark:text-purple-400",
-      bgColor: "bg-purple-50 dark:bg-purple-950/30",
+      iconColor: "text-green-500",
+      iconBg: "bg-green-500/10",
+      borderColor: "border-l-green-500",
+    },
+    {
+      title: "Upcoming Events",
+      value: upcomingCount,
+      icon: Users,
+      iconColor: "text-purple-500",
+      iconBg: "bg-purple-500/10",
+      borderColor: "border-l-purple-500",
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
       {stats.map((stat, index) => (
         <Card
           key={index}
-          className="border-border/50 hover:border-border transition-colors"
+          className={`relative overflow-hidden border-l-4 ${stat.borderColor} hover:shadow-md transition-shadow`}
         >
-          <CardContent className="p-6">
+          <CardContent className="p-4 relative">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
+              <div className="flex-1">
+                <p className="text-xs font-medium text-muted-foreground mb-1">
                   {stat.title}
                 </p>
-                <p className="text-3xl font-bold mt-2">{stat.value}</p>
+                <p className="text-2xl font-bold tracking-tight">{stat.value}</p>
               </div>
-              <div className={`p-3 rounded-lg ${stat.bgColor}`}>
-                <stat.icon className={`h-6 w-6 ${stat.color}`} />
+              <div className={`p-2 ${stat.iconBg} rounded-lg`}>
+                <stat.icon className={`h-5 w-5 ${stat.iconColor}`} />
               </div>
             </div>
           </CardContent>
