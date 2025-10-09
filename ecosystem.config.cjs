@@ -1,4 +1,4 @@
-import { version as VERSION } from './package.json';
+const { version: VERSION } = require('./package.json');
 import path from 'path';
 
 const LOG_DIR = path.resolve(`../.myapp/logs`);
