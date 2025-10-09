@@ -240,9 +240,9 @@ export default function ApplyJobsContent({
   }
 
 
-  useEffect(() => {
-    checkAllowance();
-  }, [searchParams, orgName]);
+  // useEffect(() => {
+  //   checkAllowance();
+  // }, [searchParams, orgName]);
 
   // Set CSS variables for dynamic theming
   useEffect(() => {
