@@ -9,11 +9,12 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
+import { MentionTextarea } from "@/components/ui/mention-textarea";
 import { Button } from "@/components/ui/button";
 import { DateTimePicker } from "@/components/ui/DateTimePicker";
 import dayjs, { Dayjs } from "dayjs";
 import { Loader2 } from "lucide-react";
+import { useSelector } from "react-redux";
 // import { sentRemarkMail } from "@/lib/utils";
 
 const AddFollowUpDialog = ({
@@ -45,6 +46,8 @@ const AddFollowUpDialog = ({
   handleRemoveFollowUp: () => void;
   isLoading: boolean;
 }) => {
+  const { user } = useSelector((state: any) => state.auth || {});
+
   //   const [newFollowUp, setNewFollowUP] = useState("");
   //   const [isSubRemarkPrivate, setIsSubRemarkPrivate] = useState(true);
 
@@ -61,15 +64,33 @@ const AddFollowUpDialog = ({
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 px-6 py-4 space-y-4">
-          <Textarea
-            placeholder="Add the note..."
+          <MentionTextarea
+            placeholder="Add the note... (Alt+Enter to submit)"
             className="max-h-80 overflow-y-auto"
             value={newFollowUp}
-            onChange={(e) => setNewFollowUp(e.target.value)}
+            onChange={setNewFollowUp}
+            onKeyDown={(e) => {
+              if (e.altKey && e.key === "Enter") {
+                e.preventDefault();
+                if (newFollowUp.trim() && !isLoading) {
+                  handleAddFollowUp();
+                  onAddingFollowup();
+                }
+              }
+            }}
+            organizationId={user?.organizationId || ""}
+            currentUserRole={user?.role || ""}
+            rows={4}
           />
           <div className="relative" style={{ zIndex: 100 }}>
             <DateTimePicker
-              value={newFollowUpDate !== undefined ? newFollowUpDate : (candidate?.followUp?.date ? dayjs(candidate.followUp.date) : null)}
+              value={
+                newFollowUpDate !== undefined
+                  ? newFollowUpDate
+                  : candidate?.followUp?.date
+                    ? dayjs(candidate.followUp.date)
+                    : null
+              }
               onChange={(date) => setNewFollowUpDate(date)}
             />
           </div>
@@ -77,22 +98,20 @@ const AddFollowUpDialog = ({
         <DialogFooter className="flex justify-between items-center border-t bg-background px-6 py-4 sticky bottom-0 z-10">
           <div className="flex-1">
             {(candidate?.followUp?.date || candidate?.followUp?.note) && (
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    setNewFollowUpDate(null);
-                    handleRemoveFollowUp();
-                    onAddingFollowup();
-                  }}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20"
-                  disabled={isLoading}
-                >
-                  {isLoading && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
-                  Remove Followup
-                </Button>
-              )}
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setNewFollowUpDate(null);
+                  handleRemoveFollowUp();
+                  onAddingFollowup();
+                }}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20"
+                disabled={isLoading}
+              >
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Remove Followup
+              </Button>
+            )}
           </div>
           <div className="flex gap-2">
             <Button
@@ -108,11 +127,9 @@ const AddFollowUpDialog = ({
                 onAddingFollowup();
               }}
               variant="info"
-              disabled={isLoading}
+              disabled={isLoading || !newFollowUp.trim()}
             >
-              {isLoading && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {candidate?.followUp?.note || candidate?.followUp?.date
                 ? "Update Followup"
                 : "Create Followup"}

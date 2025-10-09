@@ -5,10 +5,10 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
+import { MentionTextarea } from "@/components/ui/mention-textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-// import { useState } from "react";
+import { useSelector } from "react-redux";
 import Rating from "@mui/material/Rating";
 import { IEditRemark } from "../../schemas/EditRemarkDialog";
 
@@ -25,7 +25,7 @@ const EditRemarkDialog = ({
   isEditRemarkDialogOpen: boolean;
   setIsEditRemarkDialogOpen: (x: boolean) => void;
   editingRemark: IEditRemark | null;
-  setEditingRemark: ({ }: IEditRemark) => void;
+  setEditingRemark: ({}: IEditRemark) => void;
   handleRemarkUpdate: (
     id: string,
     description: string,
@@ -35,6 +35,8 @@ const EditRemarkDialog = ({
   setRemarkRating: (x: number | null) => void;
   setRemarkRatingHistory: (x: number | null) => void;
 }) => {
+  const { user } = useSelector((state: any) => state.auth || {});
+
   // const [remarkRating, setRemarkRating] = useState(editingRemark?.rating || 0);
   // const [remarkRatingHistory, setRemarkRatingHistory] = useState(
   //   editingRemark?.rating || 0
@@ -50,12 +52,11 @@ const EditRemarkDialog = ({
           <DialogTitle className="p-0">Edit Remark</DialogTitle>
         </DialogHeader>
         <div className="p-6">
-          <Textarea
+          <MentionTextarea
             className="min-h-[120px] resize-none focus-visible:ring-offset-1"
-            placeholder="Enter your remark here..."
+            placeholder="Enter your remark here... (Alt+Enter to save)"
             value={editingRemark?.description || ""}
-            onChange={(e) => {
-              const input = e.target.value;
+            onChange={(input) => {
               const trimmed = input.trim();
 
               // Disallow null/empty/whitespace-only input
@@ -68,6 +69,22 @@ const EditRemarkDialog = ({
                 description: input, // store original input, not trimmed
               });
             }}
+            onKeyDown={(e) => {
+              if (e.altKey && e.key === "Enter") {
+                e.preventDefault();
+                if (editingRemark?.description?.trim() && !isLoading) {
+                  handleRemarkUpdate(
+                    editingRemark?.id || "",
+                    editingRemark?.description || "",
+                    editingRemark?.isPrivate
+                  );
+                  setIsEditRemarkDialogOpen(false);
+                }
+              }
+            }}
+            organizationId={user?.organizationId || ""}
+            currentUserRole={user?.role || ""}
+            rows={5}
           />
           <div className="flex items-center gap-2 mt-2">
             <Label htmlFor="rating">Rating:</Label>

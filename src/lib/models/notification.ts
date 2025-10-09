@@ -2,28 +2,29 @@ import mongoose, { Schema } from "mongoose";
 
 export enum NotificationType {
   // Admin/HR notifications
-  CANDIDATE_APPLIED = 'candidate_applied',
-  CANDIDATE_STATUS_UPDATED = 'candidate_status_updated',
-  CANDIDATE_DETAILS_UPDATED = 'candidate_details_updated',
-  CANDIDATE_ASSIGNED = 'candidate_assigned',
-  CANDIDATE_UNASSIGNED = 'candidate_unassigned',
-  REMARK_ADDED = 'remark_added',
-  MEETING_SCHEDULED = 'meeting_scheduled',
-  MEETING_UPDATED = 'meeting_updated',
-  MEETING_CANCELLED = 'meeting_cancelled',
-  MEETING_INVITE_ACCEPTED = 'meeting_invite_accepted',
-  MEETING_INVITE_DECLINED = 'meeting_invite_declined',
-  MEETING_INVITE_TENTATIVE = 'meeting_invite_tentative',
-  FOLLOWUP_ADDED = 'followup_added',
-  FOLLOWUP_UPDATED = 'followup_updated',
-  FOLLOWUP_REMOVED = 'followup_removed',
-  CHECKLIST_COMPLETED = 'checklist_completed',
-  JOB_CREATED = 'job_created',
-  JOB_UPDATED = 'job_updated',
-  USER_ADDED = 'user_added',
-  BULK_IMPORT_COMPLETED = 'bulk_import_completed',
-  CANDIDATE_REJECTED = 'candidate_rejected',
-  INTERVIEW_COMPLETED = 'interview_completed',
+  NEW_APPLICATIONS = "newApplications",
+  INTERVIEW_ASSIGNMENTS = "interviewAssignments",
+  STATUS_UPDATES = "statusUpdates",
+  NEW_REMARKS = "newRemarks",
+  STEP_COMPLETED = "stepCompleted",
+  MENTIONS = "mentions",
+  CANDIDATE_DETAILS_UPDATED = "detailsUpdated",
+  MEETING_SCHEDULED = "meetingScheduled",
+  MEETING_UPDATED = "meetingUpdated",
+  MEETING_CANCELLED = "meetingCancelled",
+  MEETING_INVITE_ACCEPTED = "meetingInviteAccepted",
+  MEETING_INVITE_DECLINED = "meetingInviteDeclined",
+  MEETING_INVITE_TENTATIVE = "meetingInviteTentative",
+  FOLLOWUP_ADDED = "followupAdded",
+  FOLLOWUP_UPDATED = "followupUpdated",
+  FOLLOWUP_REMOVED = "followupRemoved",
+  CHECKLIST_COMPLETED = "checklistCompleted",
+  JOB_CREATED = "jobCreated",
+  JOB_UPDATED = "jobUpdated",
+  USER_ADDED = "userAdded",
+  BULK_IMPORT_COMPLETED = "bulkImportCompleted",
+  CANDIDATE_REJECTED = "candidateRejected",
+  INTERVIEW_COMPLETED = "interviewCompleted",
 
   // System notifications
   // DEADLINE_REMINDER = 'deadline_reminder',
@@ -33,7 +34,15 @@ export enum NotificationType {
   // REPORT_GENERATED = 'report_generated',
 }
 
-export type RelatedEntityType = 'candidate' | 'job' | 'user' | 'meeting' | 'followup' | 'checklist' | 'system' | 'cvBatch';
+export type RelatedEntityType =
+  | "candidate"
+  | "job"
+  | "user"
+  | "meeting"
+  | "followup"
+  | "checklist"
+  | "system"
+  | "cvBatch";
 
 export interface INotification {
   _id: string;
@@ -43,7 +52,7 @@ export interface INotification {
   title: string; // Display title
   message: string; // Description text
   isRead: boolean;
-  priority: 'high' | 'medium' | 'low';
+  priority: "high" | "medium" | "low";
 
   // Related entity information
   relatedEntity: RelatedEntityType;
@@ -111,13 +120,22 @@ export const notificationSchema = new Schema<INotification>(
     },
     priority: {
       type: String,
-      enum: ['high', 'medium', 'low'],
-      default: 'medium',
+      enum: ["high", "medium", "low"],
+      default: "medium",
       index: true,
     },
     relatedEntity: {
       type: String,
-      enum: ['candidate', 'job', 'user', 'meeting', 'followup', 'checklist', 'system', 'cvBatch'],
+      enum: [
+        "candidate",
+        "job",
+        "user",
+        "meeting",
+        "followup",
+        "checklist",
+        "system",
+        "cvBatch",
+      ],
       required: true,
       index: true,
     },

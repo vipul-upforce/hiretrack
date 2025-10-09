@@ -18,7 +18,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
+import { MentionTextarea } from "@/components/ui/mention-textarea";
 import { Rating } from "@mui/material";
 import { Button } from "@/components/ui/button";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
@@ -278,7 +278,7 @@ const ChecklistFieldRenderer: React.FC<{
             name={fieldId}
             value={value || ""}
             onChange={(time) => onChange(time)}
-            onBlur={() => { }}
+            onBlur={() => {}}
           />
         );
 
@@ -416,21 +416,21 @@ const ChecklistForm: React.FC<{
   errors = {},
   touched = {},
 }) => {
-    return (
-      <div className="space-y-4">
-        {checklist.fields.map((field) => (
-          <ChecklistFieldRenderer
-            key={field.id}
-            field={field}
-            value={responses[field.id]?.value}
-            onChange={(value) => onResponseChange(field.id, value)}
-            error={errors[field.id]}
-            touched={touched[field.id]}
-          />
-        ))}
-      </div>
-    );
-  };
+  return (
+    <div className="space-y-4">
+      {checklist.fields.map((field) => (
+        <ChecklistFieldRenderer
+          key={field.id}
+          field={field}
+          value={responses[field.id]?.value}
+          onChange={(value) => onResponseChange(field.id, value)}
+          error={errors[field.id]}
+          touched={touched[field.id]}
+        />
+      ))}
+    </div>
+  );
+};
 
 const ChecklistRemarksDialog = ({
   candidate,
@@ -495,8 +495,7 @@ const ChecklistRemarksDialog = ({
           value: field.type === "checkbox" ? false : "",
           fieldLabel: field.label,
           fieldType: field.type,
-          visibleInHistory: field.visibleInHistory
-
+          visibleInHistory: field.visibleInHistory,
         };
       });
 
@@ -607,11 +606,10 @@ const ChecklistRemarksDialog = ({
         fieldType:
           parsedChecklistInfo?.checklist?.fields.find((f) => f.id === fieldId)
             ?.type || "text",
-        visibleInHistory: parsedChecklistInfo?.checklist?.fields.find((f) => f.id === fieldId)
-          ?.visibleInHistory || [],
-
+        visibleInHistory:
+          parsedChecklistInfo?.checklist?.fields.find((f) => f.id === fieldId)
+            ?.visibleInHistory || [],
       },
-
     }));
 
     // Clear field error when user provides any value (more aggressive clearing)
@@ -786,10 +784,10 @@ const ChecklistRemarksDialog = ({
             responses: checklistResponses,
             remark: newRemark.trim()
               ? {
-                description: newRemark.trim(),
-                isPrivate: isSubRemarkPrivate,
-                rating: remarkRating || undefined,
-              }
+                  description: newRemark.trim(),
+                  isPrivate: isSubRemarkPrivate,
+                  rating: remarkRating || undefined,
+                }
               : undefined,
           },
         }).unwrap();
@@ -910,10 +908,7 @@ const ChecklistRemarksDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent
-        size="2xl"
-        className="p-0 overflow-hidden flex flex-col max-h-[90vh]"
-      >
+      <DialogContent size="2xl" className="p-0  flex flex-col max-h-[90vh]">
         <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle className="flex items-center gap-2">
             {hasChecklist && <ClipboardCheck className="h-5 w-5" />}
@@ -924,7 +919,7 @@ const ChecklistRemarksDialog = ({
           <DialogDescription>
             {hasChecklist
               ? parsedChecklistInfo?.checklist?.description ||
-              "Please complete the checklist before proceeding."
+                "Please complete the checklist before proceeding."
               : "Add your observations and feedback for this candidate."}
           </DialogDescription>
         </DialogHeader>
@@ -958,11 +953,22 @@ const ChecklistRemarksDialog = ({
             {/* Remarks Section */}
             <div className="space-y-4">
               <h3 className="text-sm font-semibold">Remarks (Optional)</h3>
-              <Textarea
-                placeholder="Add a remark..."
+              <MentionTextarea
+                placeholder="Add a remark... (Alt+Enter to submit)"
                 className="min-h-[100px]"
                 value={newRemark}
-                onChange={(e) => setNewRemark(e.target.value)}
+                onChange={setNewRemark}
+                onKeyDown={(e) => {
+                  if (e.altKey && e.key === "Enter") {
+                    e.preventDefault();
+                    if (!isSubmitting && user?.id) {
+                      handleSubmit();
+                    }
+                  }
+                }}
+                organizationId={user?.organizationId || ""}
+                currentUserRole={user?.role || ""}
+                rows={4}
               />
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">

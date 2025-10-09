@@ -183,13 +183,13 @@ export default function NotificationsPage() {
       // HR sees candidate, job, user, and system related notifications
       return allTypes.filter(
         (type) =>
-          type === NotificationType.CANDIDATE_APPLIED ||
-          type === NotificationType.CANDIDATE_STATUS_UPDATED ||
+          type === NotificationType.NEW_APPLICATIONS ||
+          type === NotificationType.STATUS_UPDATES ||
           type === NotificationType.CANDIDATE_DETAILS_UPDATED ||
-          type === NotificationType.CANDIDATE_ASSIGNED ||
-          type === NotificationType.CANDIDATE_UNASSIGNED ||
+          type === NotificationType.INTERVIEW_ASSIGNMENTS ||
+          type === NotificationType.STEP_COMPLETED ||
           type === NotificationType.CANDIDATE_REJECTED ||
-          type === NotificationType.REMARK_ADDED ||
+          type === NotificationType.NEW_REMARKS ||
           type === NotificationType.MEETING_SCHEDULED ||
           type === NotificationType.MEETING_UPDATED ||
           type === NotificationType.MEETING_CANCELLED ||
@@ -210,12 +210,12 @@ export default function NotificationsPage() {
       // Interviewers see only candidate and meeting related notifications
       return allTypes.filter(
         (type) =>
-          type === NotificationType.CANDIDATE_ASSIGNED ||
-          type === NotificationType.CANDIDATE_UNASSIGNED ||
+          type === NotificationType.INTERVIEW_ASSIGNMENTS ||
+          type === NotificationType.STEP_COMPLETED ||
           type === NotificationType.MEETING_SCHEDULED ||
           type === NotificationType.MEETING_UPDATED ||
           type === NotificationType.MEETING_CANCELLED ||
-          type === NotificationType.REMARK_ADDED
+          type === NotificationType.NEW_REMARKS
         // type === NotificationType.FOLLOWUP_ADDED ||
         // type === NotificationType.FOLLOWUP_UPDATED ||
         // type === NotificationType.FOLLOWUP_REMOVED ||

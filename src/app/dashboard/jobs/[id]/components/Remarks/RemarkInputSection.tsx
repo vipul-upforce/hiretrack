@@ -1,4 +1,4 @@
-import { Textarea } from "@/components/ui/textarea";
+import { MentionTextarea } from "@/components/ui/mention-textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -56,10 +56,21 @@ export default function RemarkInputSection({
   return (
     <div className="space-y-4 border-t pt-4">
       <div className="space-y-4">
-        <Textarea
-          placeholder="Add a remark..."
+        <MentionTextarea
+          placeholder="Add a remark... (Alt+Enter to submit)"
           value={newRemark}
-          onChange={(e) => setNewRemark(e.target.value)}
+          onChange={setNewRemark}
+          onKeyDown={(e) => {
+            if (e.altKey && e.key === "Enter") {
+              e.preventDefault();
+              if (newRemark.trim() && !isRemarkSubmitting) {
+                handleAddRemark();
+              }
+            }
+          }}
+          organizationId={String(user?.organizationId) || ""}
+          currentUserRole={user?.role || ""}
+          rows={3}
         />
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
@@ -132,7 +143,6 @@ export default function RemarkInputSection({
                   </div>
                   <Switch
                     id="privacy-toggle-submit"
-
                     checked={isSubRemarkPrivate}
                     onCheckedChange={() =>
                       setIsSubRemarkPrivate(!isSubRemarkPrivate)

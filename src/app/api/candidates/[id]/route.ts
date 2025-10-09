@@ -418,37 +418,30 @@ export async function PUT(
                 : "";
 
             if (emailList.length > 0 && remark !== "") {
-              const { emailContent, emailSubject } =
-                await getMappedEmailTemplate(
-                  "new-remark",
-                  {
-                    reviewerName: remark_adder,
-                    candidateName: remark_for,
-                    rating,
-                    jobTitle: data?.jobId?.title,
-                    remarkDate: remarkDate,
-                    remarkText: remark,
-                    candidateProfileLink: candidateDetails,
-                    organizationName: organizationName,
-                    recipientName: emailList[0] || "",
-                  },
-                  organizationId
-                );
+              // Use sendRemarkNotificationWithMentions for proper mention detection
+              const { sendRemarkNotificationWithMentions } = await import(
+                "@/lib/unifiedEmailService"
+              );
 
-              sendEventEmailWithHistory(
+              await sendRemarkNotificationWithMentions(
                 organizationId,
-                emailList as string[],
-                emailSubject,
-                emailContent,
+                remark,
                 {
-                  sentBy: userData.id.toString(),
-                  sentByEmail: userData.email,
-                  sentByName: userData.name,
-                  metadata: {
-                    templateUsed: "new-remark",
-                    eventType: "new-remark",
-                  },
-                }
+                  triggererUserId: userData.id.toString(),
+                  triggererEmail: userData.email,
+                  triggererName: userData.name,
+                  jobId: data?.jobId?._id?.toString(),
+                  candidateId: data._id.toString(),
+                  candidateName: remark_for,
+                  jobTitle: data?.jobId?.title || "Unknown Position", // Assuming jobId has a title field
+                  reviewerName: remark_adder,
+                  remarkDate: remarkDate,
+                  rating: rating,
+                  candidateProfileLink: candidateDetails,
+                  organizationName: organizationName,
+                  recipientName: emailList[0] || "", // Placeholder; see notes for dynamic handling
+                },
+                emailList as string[]
               );
             }
           }
@@ -456,6 +449,21 @@ export async function PUT(
       }
     }
 
+    // const { emailContent, emailSubject } = await getMappedEmailTemplate(
+    //   "new-remark",
+    //   {
+    //     reviewerName: remark_adder,
+    //     candidateName: remark_for,
+    //     rating,
+    //     jobTitle: data?.jobId?.title,
+    //     remarkDate: remarkDate,
+    //     remarkText: remark,
+    //     candidateProfileLink: candidateDetails,
+    //     organizationName: organizationName,
+    //     recipientName: emailList[0] || "",
+    //   },
+    //   organizationId
+    // );
     fieldsToTrack.forEach((key) => {
       if (
         key in data &&

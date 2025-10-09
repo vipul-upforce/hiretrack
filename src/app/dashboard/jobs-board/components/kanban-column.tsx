@@ -21,6 +21,7 @@ interface KanbanColumnProps {
   setIsEditMode: (editMode: boolean) => void;
   handleDeleteClick: (jobId: string) => void;
   setDuplicate: (x: boolean) => void;
+  onEmailSettingsClick?: (job: Job) => void;
 }
 
 const KanbanColumn = ({
@@ -31,6 +32,7 @@ const KanbanColumn = ({
   setIsEditMode,
   handleDeleteClick,
   setDuplicate,
+  onEmailSettingsClick,
 }: KanbanColumnProps) => {
   //   const router = useRouter();
 
@@ -133,6 +135,7 @@ const KanbanColumn = ({
                       setIsEditMode={setIsEditMode}
                       handleDeleteClick={handleDeleteClick}
                       setDuplicate={setDuplicate}
+                      onEmailSettingsClick={onEmailSettingsClick}
                     />
                   ))}
                   {provided.placeholder}

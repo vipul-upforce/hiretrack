@@ -78,8 +78,12 @@ function CandidateSearch() {
   const [currentFilters, setCurrentFilters] =
     useState<SearchFilter>(initialValues);
 
-  const { data: filteredCandidates, refetch: filterCandidates } =
-    useFilterCandidatesQuery(currentFilters);
+  const {
+    data: filteredCandidates,
+    refetch: filterCandidates,
+    isLoading,
+    isFetching,
+  } = useFilterCandidatesQuery(currentFilters);
 
   // FIX 1: Move the setSearchResults call inside useEffect
   useEffect(() => {
@@ -285,7 +289,7 @@ function CandidateSearch() {
       <SearchResults
         results={sortedResults}
         totalResultsCount={totalRecordsCount}
-        isLoading={isSearching}
+        isLoading={isLoading || isFetching}
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={onPageChange}

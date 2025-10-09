@@ -199,7 +199,68 @@ const settingsSchema = new Schema({
       default: "",
     },
   },
+  organizationEmailNotifications: {
+    defaultSettings: {
+      newApplications: {
+        type: Boolean,
+        default: true,
+      },
+      interviewAssignments: {
+        type: Boolean,
+        default: true,
+      },
+      statusUpdates: {
+        type: Boolean,
+        default: true,
+      },
+      newRemarks: {
+        type: Boolean,
+        default: true,
+      },
+      stepCompleted: {
+        type: Boolean,
+        default: true,
+      },
+      mentions: {
+        type: Boolean,
+        default: true,
+      },
+    },
+    adminOverrides: {
+      type: Map,
+      of: {
+        newApplications: { type: Boolean },
+        interviewAssignments: { type: Boolean },
+        statusUpdates: { type: Boolean },
+        newRemarks: { type: Boolean },
+        stepCompleted: { type: Boolean },
+        mentions: { type: Boolean },
+      },
+      default: new Map(),
+    },
+  },
 });
+
+export interface OrganizationEmailNotifications {
+  defaultSettings: {
+    newApplications: boolean;
+    interviewAssignments: boolean;
+    statusUpdates: boolean;
+    newRemarks: boolean;
+    stepCompleted: boolean;
+    mentions: boolean;
+  };
+  adminOverrides: {
+    [userId: string]: {
+      newApplications?: boolean;
+      interviewAssignments?: boolean;
+      statusUpdates?: boolean;
+      newRemarks?: boolean;
+      stepCompleted?: boolean;
+      mentions?: boolean;
+    };
+  };
+}
 
 export interface ISettings {
   organizationId: string;
@@ -226,6 +287,7 @@ export interface ISettings {
   twoFA?: ITwoFA;
   googleCalendar?: IGoogleCalendar;
   onboardingStatus?: IOnboardingStatus;
+  organizationEmailNotifications?: OrganizationEmailNotifications;
   captcha?: ICaptcha;
 }
 

@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sendEventEmailWithHistory } from "@/lib/unifiedEmailService";
+import { sendSmartNotification } from "@/lib/unifiedEmailService";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
 import connectToDatabase, { Settings, User, EmailHistory } from "@/lib/mongodb";
 import mongoose from "mongoose";
 import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
 import { Organization } from "@/lib/models/user";
+import { NotificationType } from "@/lib/services/emailDecisionEngine";
 
 // Email queue to track pending emails
 const emailQueue = new Map<
@@ -311,23 +312,25 @@ async function sendQueuedEmail(
     { upsert: true, new: true }
   );
 
-  const emailStatus = await sendEventEmailWithHistory(
+  const emailStatus = await sendSmartNotification(
     organizationId,
-    emailList,
-    emailSubject,
-    emailContent,
+    // "statusUpdates",
+    NotificationType.STATUS_UPDATES,
+
     {
-      sentBy: sentBy || systemUser._id.toString(),
-      sentByEmail: sentByEmail || systemUser.email,
-      sentByName: sentByName || systemUser.name,
-      metadata: {
-        candidateId,
-        jobId,
-        templateUsed: "status-update",
-        eventType: "status_change",
-      },
+      triggererUserId: sentBy || systemUser._id.toString(),
+      triggererEmail: sentByEmail || systemUser.email,
+      triggererName: sentByName || systemUser.name,
+      jobId: jobId,
+      candidateId: candidateId,
+      eventType: "status_change",
+      templateUsed: "status-update",
     },
-    senderEmail || sentByEmail // Pass the triggerer's email to exclude from recipients
+    {
+      subject: emailSubject,
+      html: emailContent,
+    },
+    emailList
   );
 
   // If we have existing history IDs (from pending), update them
@@ -340,7 +343,7 @@ async function sendQueuedEmail(
     );
   } else {
     console.warn(
-      "No existing history IDs found for status update email, new records should have been created by sendEventEmailWithHistory"
+      "No existing history IDs found for status update email, relying on smart notification to create history"
     );
   }
 
@@ -352,6 +355,7 @@ export async function POST(req: NextRequest) {
     await connectToDatabase();
     const {
       jobName,
+      jobId,
       eventTitle,
       candidateName,
       status,
@@ -448,7 +452,7 @@ export async function POST(req: NextRequest) {
       prev_status,
       candidateDetails,
       candidateId: id, // The candidate ID from the request
-      jobId: undefined, // Would need to be passed in the request if available
+      jobId: jobId, // Would need to be passed in the request if available
       sentBy: decryptedResponse?.user._id,
       sentByEmail: decryptedResponse?.user.email,
       sentByName: decryptedResponse?.user.name,

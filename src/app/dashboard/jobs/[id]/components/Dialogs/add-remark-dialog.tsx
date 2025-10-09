@@ -15,7 +15,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
+import { MentionTextarea } from "@/components/ui/mention-textarea";
 import { Label } from "@/components/ui/label";
 import { Rating } from "@mui/material";
 import { Button } from "@/components/ui/button";
@@ -189,7 +189,7 @@ const AddRemarksDialog = ({
       <DialogTrigger asChild>
         <div></div>
       </DialogTrigger>
-      <DialogContent size="lg" className="p-0 overflow-hidden flex flex-col">
+      <DialogContent size="lg" className="p-0  flex flex-col">
         <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle>Add Remarks for {candidate.name}</DialogTitle>
           <DialogDescription>
@@ -197,12 +197,23 @@ const AddRemarksDialog = ({
             include a rating and set privacy preferences.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-          <Textarea
-            placeholder="Add a remark..."
+        <div className="flex-1  px-6 py-4 space-y-4">
+          <MentionTextarea
+            placeholder="Add a remark... (Alt+Enter to submit)"
             className="max-h-80 overflow-y-auto"
             value={newRemark}
-            onChange={(e) => setNewRemark(e.target.value)}
+            onChange={setNewRemark}
+            onKeyDown={(e) => {
+              if (e.altKey && e.key === "Enter") {
+                e.preventDefault();
+                if (newRemark.trim() && !isSubmitting) {
+                  handleAddRemark();
+                }
+              }
+            }}
+            organizationId={user?.organizationId || ""}
+            currentUserRole={user?.role || ""}
+            rows={4}
           />
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">

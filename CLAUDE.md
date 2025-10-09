@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Core Development Commands
 - `npm run dev` - Start development server with Turbopack on port 3000
-- `npm run dev:fast` - Same as dev (alias)  
+- `npm run dev:fast` - Same as dev (alias)
 - `npm run dev:debug` - Start dev server with Node.js inspector for debugging
 - `npm run build` - Build production application
 - `npm run build:analyze` - Build with bundle analysis (ANALYZE=true)
@@ -133,3 +133,8 @@ Core models are defined in `src/lib/models/`:
 - Validate and sanitize all user inputs
 - Use proper authentication middleware for protected routes
 - Implement proper CORS and security headers
+
+## Important Project Rules
+
+### Code Reusability
+Check for any existing reusable component or logic in the project. If it exists and is exported or can be easily exported, use that instead of writing new code for the same logic. This rule applies to all TypeScript/JavaScript files.

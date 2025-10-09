@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { EditIcon, ShieldQuestion, Trash2 } from "lucide-react";
+import { EditIcon, ShieldQuestion, Trash2, Mail } from "lucide-react";
 import { User } from "@/lib/features/users/usersApi";
 import { format } from "date-fns";
 
@@ -18,6 +18,12 @@ interface UserTableRowProps {
     isDeleted?: boolean;
   }) => void;
   onPasswordClick: (candidateId: string, name: string) => void;
+  onEmailSettingsClick: (user: {
+    _id: string;
+    name: string;
+    email: string;
+    role: string;
+  }) => void;
 }
 
 export function UserTableRow({
@@ -27,6 +33,7 @@ export function UserTableRow({
   onDeleteClick,
   onEditClick,
   onPasswordClick,
+  onEmailSettingsClick,
 }: UserTableRowProps) {
   return (
     <TableRow key={user._id}>
@@ -39,9 +46,9 @@ export function UserTableRow({
       <TableCell>{user.email}</TableCell>
       <TableCell className="capitalize">{user.role}</TableCell>
       <TableCell>{format(new Date(user.createdAt), "MMM d, yyyy")}</TableCell>
-      <TableCell className="flex flex-row justify-between items-center">
+      <TableCell className="flex flex-row justify-between items-center gap-2">
         {user.role !== "system" && (
-          <>
+          <div className="flex flex-row items-center gap-2">
             <Button
               variant="destructive"
               size="icon"
@@ -63,7 +70,41 @@ export function UserTableRow({
             >
               <ShieldQuestion className="h-4 w-4 text-gray-700 dark:text-gray-300" />
             </Button>
-          </>
+            {/* Email Settings Button - Show for all roles but disable for interviewers */}
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => {
+                if (user.role !== "interviewer") {
+                  onEmailSettingsClick({
+                    _id: user._id,
+                    name: user.name,
+                    email: user.email,
+                    role: user.role,
+                  });
+                }
+              }}
+              disabled={isUpdating || user.role === "interviewer"}
+              className={`bg-white dark:bg-black border-gray-200 dark:border-gray-600 ${
+                user.role === "interviewer"
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-gray-100 dark:hover:bg-gray-700"
+              }`}
+              title={
+                user.role === "interviewer"
+                  ? "Email notifications are always enabled for interviewers"
+                  : "Email Notification Settings"
+              }
+            >
+              <Mail
+                className={`h-4 w-4 ${
+                  user.role === "interviewer"
+                    ? "text-gray-400 dark:text-gray-500"
+                    : "text-gray-700 dark:text-gray-300"
+                }`}
+              />
+            </Button>
+          </div>
         )}
         <Button
           variant="outline"

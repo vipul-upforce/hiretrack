@@ -8,6 +8,9 @@ import { verifyAndDecryptToken } from "@/app/actions/auth";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
 import { NotificationService } from "@/lib/notifications/notificationService";
+import { sendSmartNotification } from "@/lib/unifiedEmailService";
+import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
+import { NotificationType } from "@/lib/services/emailDecisionEngine";
 // import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
 
 export interface Attachment {
@@ -272,6 +275,64 @@ export async function POST(request: NextRequest) {
               triggerUserId: userData.id,
               triggerUserName: userData.name,
             });
+
+            // Send email notification to admin and HR users
+            try {
+              const { emailContent, emailSubject } =
+                await getMappedEmailTemplate(
+                  "job-application-hr",
+                  {
+                    jobTitle: job.title || "Unknown Job",
+                    candidateName: candidateData.name,
+                    candidateEmail: candidateData.email,
+                    candidatePhone: candidateData.contact || "N/A",
+                    applicationDate: new Date().toLocaleDateString(),
+                    dashboardLink: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/jobs/${data.jobId}?candidateId=${candidate._id}`,
+                  },
+                  organizationId
+                );
+
+              // Get admin and HR user IDs for email notification
+              const adminHrIds = await NotificationService.getUsersByRole(
+                organizationId,
+                ["admin", "hr"]
+              );
+              const filteredAdminHrIds = adminHrIds.filter(
+                (id) => id !== userData.id
+              );
+
+              if (filteredAdminHrIds.length > 0) {
+                await sendSmartNotification(
+                  organizationId,
+                  // "newApplications",
+                  NotificationType.NEW_APPLICATIONS,
+                  {
+                    triggererUserId: userData.id,
+                    triggererEmail: userData.email,
+                    triggererName: userData.name,
+                    jobId:
+                      typeof data.jobId === "string"
+                        ? data.jobId
+                        : data.jobId._id.toString(),
+                    candidateId: candidate._id.toString(),
+                    eventType: "job_application",
+                    templateUsed: "job-application-hr",
+                  },
+                  {
+                    subject: emailSubject,
+                    html: emailContent,
+                  },
+                  filteredAdminHrIds
+                );
+                console.log("✅ Email notification sent successfully");
+              }
+            } catch (emailError) {
+              console.error(
+                "❌ Failed to send email notification:",
+                emailError
+              );
+              // Don't fail the API call if email notification fails
+            }
 
             console.log("✅ Notification sent successfully");
           } catch (notificationError) {

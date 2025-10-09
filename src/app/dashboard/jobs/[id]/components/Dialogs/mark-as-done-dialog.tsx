@@ -6,10 +6,11 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
+import { MentionTextarea } from "@/components/ui/mention-textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
 import Rating from "@mui/material/Rating";
 
 const ConfirmAndRemarkDialog = ({
@@ -33,6 +34,8 @@ const ConfirmAndRemarkDialog = ({
   onAddHistoryEntry?: (historyEntry: any) => void;
   message?: string;
 }) => {
+  const { user } = useSelector((state: any) => state.auth || {});
+
   // Local state for the form
   const [remarkDescription, setRemarkDescription] = useState("");
   const [remarkRating, setRemarkRating] = useState<number | null>(null);
@@ -70,12 +73,21 @@ const ConfirmAndRemarkDialog = ({
         <div className="flex-1 overflow-y-auto px-6 py-4">
           <div className="mb-6">
             <Label htmlFor="remark-textarea">Remark</Label>
-            <Textarea
-              id="remark-textarea"
+            <MentionTextarea
+              // id="remark-textarea"
               className="min-h-[120px] resize-none focus-visible:ring-offset-1 mt-2"
-              placeholder="Enter your remark here..."
+              placeholder="Enter your remark here... (Alt+Enter to confirm)"
               value={remarkDescription}
-              onChange={(e) => setRemarkDescription(e.target.value)}
+              onChange={setRemarkDescription}
+              onKeyDown={(e) => {
+                if (e.altKey && e.key === "Enter") {
+                  e.preventDefault();
+                  handleConfirm();
+                }
+              }}
+              organizationId={user?.organizationId || ""}
+              currentUserRole={user?.role || ""}
+              rows={5}
             />
           </div>
           <div className="flex items-center gap-2">
@@ -97,11 +109,7 @@ const ConfirmAndRemarkDialog = ({
           >
             Cancel
           </Button>
-          <Button
-            disabled={isLoading}
-            onClick={handleConfirm}
-            variant="info"
-          >
+          <Button disabled={isLoading} onClick={handleConfirm} variant="info">
             {isLoading ? loadingText : "Mark as done"}
           </Button>
         </DialogFooter>
