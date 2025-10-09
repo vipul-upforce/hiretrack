@@ -33,7 +33,7 @@ import { verifyAndDecryptJWTToken } from "@/lib/auth";
 // import { NextPage } from "next";
 import KanbanColumn from "./components/kanban-column";
 import { Button } from "@/components/ui/button";
-import { Settings2 } from "lucide-react";
+import { Mail, Settings2 } from "lucide-react";
 import { CustomFieldsContext } from "@/Custom_Fields/Context";
 import CustomFieldDialog from "@/Custom_Fields/Components/Common/CustomFieldDialog";
 import Stepper from "@/Custom_Fields/Components/Stepper";
@@ -41,6 +41,9 @@ import DefaultLanesButton from "./components/DefaultLanesButton";
 import { useSelector } from "react-redux";
 import { useGetUsersQuery } from "@/lib/features/users/usersApi";
 import { JobEmailNotificationSettingsDialog } from "@/components/dialogs/JobEmailNotificationSettingsDialog";
+import { GlobalEmailNotificationSettingsDialog } from "@/components/dialogs/GlobalEmailNotificationSettingsDialog";
+// import { GlobalEmailNotificationSettingsDialog } from "@/components/ui/GlobalEmailNotificationSettingsDialog"; // Import the new dialog
+
 interface User {
   role: string;
   organizationId: string;
@@ -160,6 +163,8 @@ function KanbanPage() {
   const [duplicate, setDuplicate] = useState(false);
   const [isCustomFieldsOpen, setIsCustomFieldsOpen] = useState(false);
   const [isEmailSettingsOpen, setIsEmailSettingsOpen] = useState(false);
+  const [isGlobalEmailSettingsOpen, setIsGlobalEmailSettingsOpen] =
+    useState(false); // New state for global settings dialog
   const [selectedJobForEmailSettings, setSelectedJobForEmailSettings] =
     useState<Job | null>(null);
   // useEffect(() => {
@@ -395,6 +400,14 @@ function KanbanPage() {
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsGlobalEmailSettingsOpen(true)} // Open global settings dialog
+                  className="flex items-center gap-2"
+                >
+                  <Mail className="h-4 w-4" />
+                  Global Notification Setting
+                </Button>
                 <DefaultLanesButton userRole={user?.role} />
                 <Button
                   variant="outline"
@@ -418,7 +431,7 @@ function KanbanPage() {
       <div className="flex-1 overflow-hidden px-4 pb-4 mt-4">
         <DragDropContext onDragEnd={onDragEnd}>
           <div className="h-full overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 hover:scrollbar-thumb-gray-400 dark:hover:scrollbar-thumb-gray-500">
-            <div className="h-full flex gap-1  min-w-full">
+            <div className="h-full flex gap-1 min-w-full">
               {columns.map((column) => (
                 <KanbanColumn
                   key={column.id}
@@ -495,6 +508,12 @@ function KanbanPage() {
           jobTitle={selectedJobForEmailSettings.title}
         />
       )}
+
+      {/* Global Email Notification Settings Dialog */}
+      <GlobalEmailNotificationSettingsDialog
+        isOpen={isGlobalEmailSettingsOpen}
+        onOpenChange={setIsGlobalEmailSettingsOpen}
+      />
     </div>
   );
 }
