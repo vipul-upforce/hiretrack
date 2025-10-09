@@ -145,7 +145,6 @@ export default function DashboardPage() {
 
   const role = useRoles();
   const { candidates: sseCandidates } = useSSE(role || "", () => {}, null);
-
   const isToday = (assignment: Assignment) => {
     const assignmentDate = new Date(
       assignment.assignment?.time || assignment.interviewDate
@@ -512,7 +511,7 @@ export default function DashboardPage() {
                     ...assignment,
                   };
                 } else {
-                  if (filterText) updatedAssignments.push(assignment);
+                  updatedAssignments.push(assignment);
                 }
               }
             } else {
@@ -539,7 +538,7 @@ export default function DashboardPage() {
           thisweeksInterviews: updatedAssignments.filter(isThisWeek).length,
         });
 
-        return updatedAssignments;
+        return [...updatedAssignments];
       });
     }
   }, [sseCandidates, filterText]);
