@@ -105,9 +105,11 @@ export default function NotificationsPage() {
 
     // For interviewers, handle candidate-related and meeting notifications by opening dialog
     if (
-      user?.role === "interviewer" &&
+      // user?.role === "interviewer" &&
       (notification.relatedEntity === "candidate" ||
-        notification.relatedEntity === "meeting") &&
+        notification.relatedEntity === "meeting" ||
+        notification.relatedEntity === "checklist" ||
+        notification.relatedEntity === "followup") &&
       notification.relatedId
     ) {
       try {
@@ -128,9 +130,9 @@ export default function NotificationsPage() {
     }
 
     // For admin/hr or non-candidate notifications, navigate to the page
-    if (notification.actionUrl) {
-      router.push(notification.actionUrl);
-    }
+    // if (notification.actionUrl) {
+    //   router.push(notification.actionUrl);
+    // }
   };
 
   const handleMarkAsRead = async (id: string) => {
@@ -252,7 +254,11 @@ export default function NotificationsPage() {
                   Refresh
                 </Button>
                 {unreadCount > 0 && (
-                  <Button size="sm" onClick={handleMarkAllAsRead} variant="primary">
+                  <Button
+                    size="sm"
+                    onClick={handleMarkAllAsRead}
+                    variant="primary"
+                  >
                     <Check className="h-4 w-4 mr-2" />
                     Mark all read
                   </Button>
@@ -319,21 +325,21 @@ export default function NotificationsPage() {
           {(filterType !== "all" ||
             filterRead !== "all" ||
             filterPriority !== "all") && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setFilterType("all");
-                  setFilterRead("all");
-                  setFilterPriority("all");
-                  setCurrentPage(1);
-                }}
-                className="h-9"
-              >
-                <Filter className="h-4 w-4 mr-2" />
-                Clear filters
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setFilterType("all");
+                setFilterRead("all");
+                setFilterPriority("all");
+                setCurrentPage(1);
+              }}
+              className="h-9"
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              Clear filters
+            </Button>
+          )}
         </div>
       </div>
 
@@ -376,8 +382,8 @@ export default function NotificationsPage() {
                 </h3>
                 <p className="text-muted-foreground max-w-md">
                   {filterType !== "all" ||
-                    filterRead !== "all" ||
-                    filterPriority !== "all"
+                  filterRead !== "all" ||
+                  filterPriority !== "all"
                     ? "No notifications match your current filters. Try adjusting your filters to see more notifications."
                     : "You're all caught up! New notifications will appear here when there's activity."}
                 </p>

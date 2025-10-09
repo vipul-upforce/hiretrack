@@ -23,7 +23,8 @@ interface OnboardingSidebarProps {
 const OnboardingSidebar: React.FC<OnboardingSidebarProps> = ({
   isCollapsed,
 }) => {
-  const { setIsOpen, progress, doNotShowAgain, onboardingStatus, isLoading } = useOnboarding();
+  const { setIsOpen, progress, doNotShowAgain, onboardingStatus, isLoading } =
+    useOnboarding();
 
   const [showDismissDialog, setShowDismissDialog] = useState(false);
 
@@ -31,7 +32,6 @@ const OnboardingSidebar: React.FC<OnboardingSidebarProps> = ({
   if (isLoading || onboardingStatus?.doNotShowAgain) {
     return null;
   }
-
 
   // const handleDismiss = (e: React.MouseEvent) => {
   //   e.stopPropagation();
@@ -44,14 +44,20 @@ const OnboardingSidebar: React.FC<OnboardingSidebarProps> = ({
     e.stopPropagation();
     setShowDismissDialog(true); // Show the confirmation dialog
   };
-  if (isLoading || onboardingStatus?.isCompleted && progress?.percentage === 100 || onboardingStatus?.doNotShowAgain) {
+  // debugger;
+  if (
+    isLoading ||
+    (onboardingStatus?.isCompleted && progress
+      ? progress?.percentage === 100
+      : true) ||
+    onboardingStatus?.doNotShowAgain
+  ) {
     return null;
   }
 
   const handleOpenOnboarding = () => {
     setIsOpen(true);
   };
-
 
   const progressPercentage = progress?.percentage || 0;
   const isComplete = progressPercentage === 100;
