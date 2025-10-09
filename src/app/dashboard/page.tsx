@@ -432,6 +432,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (sseCandidates && sseCandidates.length > 0) {
+      console.log("sseCandidates changed: ", sseCandidates);
       setAssignments((prevAssignments) => {
         let updatedAssignments: Assignment[] = [...prevAssignments];
 
@@ -516,6 +517,7 @@ export default function DashboardPage() {
               }
             } else {
               if (!sseCandidate.assignment) {
+                console.log("No SSE assignment found");
                 // Remove if assignment is null/undefined
                 const candidateId = sseCandidate._id;
                 const existingIndex = updatedAssignments.findIndex(

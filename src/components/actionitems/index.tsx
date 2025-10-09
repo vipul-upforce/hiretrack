@@ -38,21 +38,29 @@ function ActionItems({
   const [triggerRefetchCandidate] = useRefetchCandidateMutation();
 
   const refetchCandidate = async () => {
-    if (!candidate?._id) return;
+    console.log("Refetching candidate data in Action items...");
+    if (!candidate?._id) {
+      console.log("No candidate id");
+      return;
+    }
     try {
       const updatedCandidate = await triggerRefetchCandidate(
         candidate._id
       ).unwrap();
       setCandidate(updatedCandidate);
-      console.log("Updated candidate:", updatedCandidate.history);
+      console.log("Updated candidate details:", updatedCandidate);
 
       if (updatedCandidate.history && updatedCandidate.history.length > 0) {
+        console.log(
+          "Unassigned candidate if condition in action itesms is working..."
+        );
         const latestHistory =
           updatedCandidate.history[updatedCandidate.history.length - 1];
         if (latestHistory.title === "Unassigned") {
           const filteredAssignments = assignments.filter(
             (a) => a._id !== updatedCandidate._id
           );
+          console.log("Filtered assignments by removing unassigned candidate");
           setAssignments(filteredAssignments);
           return;
         }
@@ -64,12 +72,15 @@ function ActionItems({
           : assignment
       );
 
+      console.log("Updated assignments with merging prev data with SSE: " , updatedAssignments);
+
       setAssignments(updatedAssignments);
       toast({
         title: "Success",
         description: "Candidate data refreshed successfully",
       });
     } catch (err) {
+      console.error("Error refreshing candidate data:", err);
       toast({
         title: "Error",
         description:
