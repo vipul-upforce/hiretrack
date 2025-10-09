@@ -9,7 +9,7 @@ import DashboardLoader from "./components/dashboard-loader";
 import ActionItems from "@/components/actionitems";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
+import { Search, Bell, Calendar, TrendingUp, Clock } from "lucide-react";
 import { RenderTodaysInterviews } from "./components/RenderTodaysInterviews";
 import { RenderInterviewerAssignments } from "./components/RenderInterviewerAssignments";
 import { MultiSelect } from "@/components/ui/multi-select";
@@ -19,6 +19,15 @@ import { Candidate } from "@/types/candidate";
 import { ITag } from "@/lib/models/organization";
 import { useSelector } from "react-redux";
 import DashboardCardLoader from "./components/DashboardCardLoader";
+import RecentActivities from "./components/RecentActivities";
+import {
+  useGetNotificationsQuery,
+  useMarkNotificationAsReadMutation,
+} from "@/lib/features/notifications/notificationsApi";
+import { useLazyFetchCandidateByIdQuery } from "@/lib/features/candidate/candidateApi";
+import { CandidateDetailsDialog } from "./jobs/[id]/components/Dialogs/candidate-details-dialog";
+import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 // import useRoles from "@/hooks/useRoles";
 interface User {
   name: string;
@@ -109,16 +118,11 @@ interface Interviewer {
 }
 
 export default function DashboardPage() {
-  // const {
-  //   data: userData,
-  //   // isLoading: isUserLoading,
-  //   // error,
-  //   // refetch,
-  // } = useGetUsersQuery();
+  const router = useRouter();
+  const { toast } = useToast();
   const itemsPerPage = 48;
   const [open, setOpen] = useState(false);
   const [selectedAssignedTo, setSelectedAssignedTo] = useState("");
-  // const [user, setUser] = useState<User | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [assignedInterviewers, setAssignedInterviewers] = useState<
     Interviewer[]
@@ -131,6 +135,20 @@ export default function DashboardPage() {
     today: 0,
   });
   const { user } = useSelector((state: any) => state.auth || {});
+  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(
+    null
+  );
+  const [isCandidateDialogOpen, setIsCandidateDialogOpen] = useState(false);
+  const [markAsRead] = useMarkNotificationAsReadMutation();
+  const [fetchCandidateById] = useLazyFetchCandidateByIdQuery();
+  const [isActivitiesSidebarOpen, setIsActivitiesSidebarOpen] = useState(() => {
+    // Load preference from localStorage on initial render
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("dashboard-notifications-sidebar");
+      return stored === null ? true : stored === "open";
+    }
+    return true;
+  });
 
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -554,6 +572,59 @@ export default function DashboardPage() {
       value: usr.interviewerId,
     }))
     ?.sort((a) => (a.label === "Me" ? -1 : 1));
+
+  // Fetch notifications for admin and HR
+  const showRecentActivities = user?.role === "admin" || user?.role === "hr";
+  const { data: notificationsData, isLoading: notificationsLoading } =
+    useGetNotificationsQuery(
+      { page: 1, limit: 10 },
+      {
+        skip: !showRecentActivities,
+        pollingInterval: 30000, // Poll every 30 seconds for real-time updates
+      }
+    );
+
+  // Save sidebar preference to localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(
+        "dashboard-notifications-sidebar",
+        isActivitiesSidebarOpen ? "open" : "closed"
+      );
+    }
+  }, [isActivitiesSidebarOpen]);
+
+  // Notification handlers
+  const handleNotificationClick = async (notification: any) => {
+    // For candidate-related and meeting notifications, open dialog
+    if (
+      (notification.relatedEntity === "candidate" ||
+        notification.relatedEntity === "meeting") &&
+      notification.relatedId
+    ) {
+      try {
+        const result = await fetchCandidateById(notification.relatedId);
+        if (result.data) {
+          setSelectedCandidate(result.data);
+          setIsCandidateDialogOpen(true);
+          return;
+        }
+      } catch (error) {
+        console.error("Failed to fetch candidate:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load candidate details",
+          variant: "destructive",
+        });
+      }
+    }
+
+    // For other notifications, navigate to the page
+    if (notification.actionUrl) {
+      router.push(notification.actionUrl);
+    }
+  };
+
   return (
     <div className="h-screen flex flex-col overflow-hidden w-full">
       {/* Header section with improved design */}
@@ -600,106 +671,105 @@ export default function DashboardPage() {
                     options={options}
                   />
                 )}
+                {showRecentActivities && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setIsActivitiesSidebarOpen(!isActivitiesSidebarOpen)
+                    }
+                    className="ml-2"
+                    title={
+                      isActivitiesSidebarOpen
+                        ? "Hide notifications"
+                        : "Show notifications"
+                    }
+                  >
+                    <Bell className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </div>
           </CardHeader>
         </Card>
       </div>
 
-      <div
-        ref={scrollContainerRef}
-        className="flex-1 min-h-0 px-4 pb-4 mt-4 space-y-6 overflow-y-auto"
-      >
-        {isLoading ? (
-          <DashboardCardLoader />
-        ) : (
-          <>
-            <div className="grid grid-cols-1 xl:grid-cols-3 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Total Interviews</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold flex justify-start">
-                    {/* {isLoading ? (
-                        <LoadingSpinner />
-                      ) : ( */}
-                    {assignmentsCounts?.totalInterviews}
-                    {/* )} */}
-                    {/* {isLoading ? (
-                <LoadingSpinner />
-              ) : isInterviewer ? (
-                interviewerAssignments?.length
-              ) : (
-                assignments?.length
-              )} */}
-                  </div>
-                </CardContent>
-              </Card>
+      <div className="flex-1 min-h-0 flex gap-4 px-4 pb-4 mt-4 overflow-hidden">
+        {/* Main Content Area */}
+        <div
+          ref={scrollContainerRef}
+          className={`space-y-6 overflow-y-auto ${
+            showRecentActivities && isActivitiesSidebarOpen
+              ? "flex-1"
+              : "w-full"
+          }`}
+        >
+          {isLoading ? (
+            <DashboardLoader />
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                {/* Total Interviews */}
+                <Card className="relative overflow-hidden border-l-4 border-l-primary hover:shadow-md transition-shadow">
+                  <CardContent className="p-4 relative">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <p className="text-xs font-medium text-muted-foreground mb-1">
+                          Total Interviews
+                        </p>
+                        <p className="text-2xl font-bold tracking-tight">
+                          {assignmentsCounts?.totalInterviews || 0}
+                        </p>
+                      </div>
+                      <div className="p-2 bg-primary/10 rounded-lg">
+                        <Calendar className="h-5 w-5 text-primary" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">This Week</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold flex justify-start">
-                    {/* {isLoading ? (
-                        <LoadingSpinner />
-                      ) : ( */}
-                    {assignmentsCounts?.thisweeksInterviews}
-                    {/* )} */}
-                    {/* {isLoading ? <LoadingSpinner /> : thisWeekAssignments?.length} */}
-                  </div>
-                </CardContent>
-              </Card>
+                {/* This Week */}
+                <Card className="relative overflow-hidden border-l-4 border-l-blue-500 hover:shadow-md transition-shadow">
+                  <CardContent className="p-4 relative">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <p className="text-xs font-medium text-muted-foreground mb-1">
+                          Interviews This Week
+                        </p>
+                        <p className="text-2xl font-bold tracking-tight">
+                          {assignmentsCounts?.thisweeksInterviews || 0}
+                        </p>
+                      </div>
+                      <div className="p-2 bg-blue-500/10 rounded-lg">
+                        <TrendingUp className="h-5 w-5 text-blue-500" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Today</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold flex justify-start">
-                    {/* {isLoading ? (
-                        <LoadingSpinner />
-                      ) : ( */}
-                    {assignmentsCounts?.todaysInterviews}
-                    {/* )} */}
-                    {/* {isLoading ? <LoadingSpinner /> : todayAssignments?.length} */}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </>
-        )}
+                {/* Today */}
+                <Card className="relative overflow-hidden border-l-4 border-l-green-500 hover:shadow-md transition-shadow">
+                  <CardContent className="p-4 relative">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <p className="text-xs font-medium text-muted-foreground mb-1">
+                          Interviews Today
+                        </p>
+                        <p className="text-2xl font-bold tracking-tight">
+                          {assignmentsCounts?.todaysInterviews || 0}
+                        </p>
+                      </div>
+                      <div className="p-2 bg-green-500/10 rounded-lg">
+                        <Clock className="h-5 w-5 text-green-500" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
 
-        {shouldShowAssignments ? (
-          <div>
-            {isLoading ? (
-              <DashboardLoader />
-            ) : (
-              <>
-                {
-                  // sseCandidates?.length > 0 ? (
-                  //   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  //     {sseCandidates.map((assignment, index) => (
-                  //       <div
-                  //         key={assignment.id || assignment._id}
-                  //         ref={
-                  //           index === sseCandidates.length - 1
-                  //             ? lastElementRef
-                  //             : null
-                  //         }
-                  //       >
-                  //         <ActionItems
-                  //           assignment={assignment}
-                  //           fetchAssignments={() => fetchAssignments(1, false)}
-                  //         />
-                  //       </div>
-                  //     ))}
-                  //   </div>
-                  // ) :
-
-                  assignments?.length > 0 ? (
+              {shouldShowAssignments ? (
+                <div>
+                  {assignments?.length > 0 ? (
                     <div className="flex flex-wrap gap-6 justify-start ">
                       {assignments
                         .filter((assignment) => {
@@ -725,7 +795,6 @@ export default function DashboardPage() {
                               assignments={assignments}
                               setAssignments={setAssignments}
                               fetchAssignments={() => {}}
-                              // fetchAssignments={() => fetchAssignmentsNoReload()}
                             />
                           </div>
                         ))}
@@ -734,150 +803,180 @@ export default function DashboardPage() {
                     <p className="text-lg font-semibold text-gray-500 text-center py-10 w-full flex justify-center items-center">
                       No assignments found.
                     </p>
-                  )
-                }
+                  )}
 
-                {/* Loading indicator for infinite scroll */}
-                {isLoadingMore && (
-                  <div className="flex justify-center items-center py-8">
-                    <LoadingSpinner />
-                    <span className="ml-2 text-gray-500">
-                      Loading more assignments...
-                    </span>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        ) : (
-          <div className="mt-6 space-y-8">
-            <div>
-              <h2 className="text-2xl font-bold mb-4">Today's Interviews</h2>
-              {isLoading ? (
-                <DashboardLoader />
-              ) : todayAssignments?.length > 0 ? (
-                // <RenderTodaysInterviews
-                //   todayAssignments={
-                //     sseCandidates.length > 0
-                //       ? ([
-                //           ...sseCandidates.filter((candidate) => {
-                //             // debugger;
-                //             return (
-                //               candidate.assignment &&
-                //               typeof candidate.assignment.interviewerId ===
-                //                 "object" &&
-                //               "_id" in candidate.assignment.interviewerId &&
-                //               candidate.assignment.interviewerId._id.toString() ===
-                //                 user?.id?.toString()
-                //             );
-                //           }),
-
-                //           ...todayAssignments.filter(
-                //             (older) =>
-                //               older.assignment &&
-                //               !sseCandidates.some(
-                //                 (latest) => latest._id === older._id
-                //               )
-                //           ),
-                //         ] as (Candidate & Assignment)[])
-                //       : todayAssignments
-                //   }
-                // />
-                <RenderTodaysInterviews
-                  todayAssignments={
-                    sseCandidates.length > 0
-                      ? ([
-                          ...sseCandidates.filter((candidate) => {
-                            // Check if the interview is scheduled for today
-                            const isToday =
-                              candidate.assignment?.time &&
-                              new Date(
-                                candidate.assignment.time
-                              ).toDateString() === new Date().toDateString();
-
-                            // Keep existing conditions for interviewerId
-                            return (
-                              isToday &&
-                              candidate.assignment &&
-                              typeof candidate.assignment.interviewerId ===
-                                "object" &&
-                              "_id" in candidate.assignment.interviewerId &&
-                              candidate.assignment.interviewerId._id.toString() ===
-                                user?.id?.toString()
-                            );
-                          }),
-
-                          ...todayAssignments.filter(
-                            (older) =>
-                              older.assignment &&
-                              !sseCandidates.some(
-                                (latest) => latest._id === older._id
-                              ) &&
-                              older.assignment?.time &&
-                              new Date(older.assignment.time).toDateString() ===
-                                new Date().toDateString()
-                          ),
-                        ] as (Candidate & Assignment)[])
-                      : todayAssignments.filter((assignment) => {
-                          return (
-                            assignment.assignment?.time &&
-                            new Date(
-                              assignment.assignment.time
-                            ).toDateString() === new Date().toDateString()
-                          );
-                        })
-                  }
-                />
+                  {/* Loading indicator for infinite scroll */}
+                  {isLoadingMore && (
+                    <div className="flex justify-center items-center py-8">
+                      <LoadingSpinner />
+                      <span className="ml-2 text-gray-500">
+                        Loading more assignments...
+                      </span>
+                    </div>
+                  )}
+                </div>
               ) : (
-                <p className="text-lg font-semibold text-gray-500 text-center py-10 w-full flex justify-center items-center">
-                  No interviews scheduled for today.
-                </p>
+                <div className="mt-6 space-y-8">
+                  <div>
+                    <h2 className="text-2xl font-bold mb-4">
+                      Today's Interviews
+                    </h2>
+                    {todayAssignments?.length > 0 ? (
+                      // <RenderTodaysInterviews
+                      //   todayAssignments={
+                      //     sseCandidates.length > 0
+                      //       ? ([
+                      //           ...sseCandidates.filter((candidate) => {
+                      //             // debugger;
+                      //             return (
+                      //               candidate.assignment &&
+                      //               typeof candidate.assignment.interviewerId ===
+                      //                 "object" &&
+                      //               "_id" in candidate.assignment.interviewerId &&
+                      //               candidate.assignment.interviewerId._id.toString() ===
+                      //                 user?.id?.toString()
+                      //             );
+                      //           }),
+
+                      //           ...todayAssignments.filter(
+                      //             (older) =>
+                      //               older.assignment &&
+                      //               !sseCandidates.some(
+                      //                 (latest) => latest._id === older._id
+                      //               )
+                      //           ),
+                      //         ] as (Candidate & Assignment)[])
+                      //       : todayAssignments
+                      //   }
+                      // />
+                      <RenderTodaysInterviews
+                        todayAssignments={
+                          sseCandidates.length > 0
+                            ? ([
+                                ...sseCandidates.filter((candidate) => {
+                                  // Check if the interview is scheduled for today
+                                  const isToday =
+                                    candidate.assignment?.time &&
+                                    new Date(
+                                      candidate.assignment.time
+                                    ).toDateString() ===
+                                      new Date().toDateString();
+
+                                  // Keep existing conditions for interviewerId
+                                  return (
+                                    isToday &&
+                                    candidate.assignment &&
+                                    typeof candidate.assignment
+                                      .interviewerId === "object" &&
+                                    "_id" in
+                                      candidate.assignment.interviewerId &&
+                                    candidate.assignment.interviewerId._id.toString() ===
+                                      user?.id?.toString()
+                                  );
+                                }),
+
+                                ...todayAssignments.filter(
+                                  (older) =>
+                                    older.assignment &&
+                                    !sseCandidates.some(
+                                      (latest) => latest._id === older._id
+                                    ) &&
+                                    older.assignment?.time &&
+                                    new Date(
+                                      older.assignment.time
+                                    ).toDateString() ===
+                                      new Date().toDateString()
+                                ),
+                              ] as (Candidate & Assignment)[])
+                            : todayAssignments.filter((assignment) => {
+                                return (
+                                  assignment.assignment?.time &&
+                                  new Date(
+                                    assignment.assignment.time
+                                  ).toDateString() === new Date().toDateString()
+                                );
+                              })
+                        }
+                      />
+                    ) : (
+                      <p className="text-lg font-semibold text-gray-500 text-center py-10 w-full flex justify-center items-center">
+                        No interviews scheduled for today.
+                      </p>
+                    )}
+                  </div>
+
+                  {isInterviewer && (
+                    <div>
+                      <h2 className="text-2xl font-bold mb-4">
+                        All My Assignments
+                      </h2>
+                      {interviewerAssignments?.length > 0 ? (
+                        <RenderInterviewerAssignments
+                          interviewerAssignments={
+                            sseCandidates.length > 0
+                              ? ([
+                                  ...sseCandidates.filter((candidate) => {
+                                    // debugger;
+                                    return (
+                                      candidate.assignment &&
+                                      typeof candidate.assignment
+                                        .interviewerId === "object" &&
+                                      "_id" in
+                                        candidate.assignment.interviewerId &&
+                                      candidate.assignment.interviewerId._id.toString() ===
+                                        user.id?.toString()
+                                    );
+                                  }),
+
+                                  ...interviewerAssignments.filter(
+                                    (older) =>
+                                      older.assignment &&
+                                      !sseCandidates.some(
+                                        (latest) => latest._id === older._id
+                                      )
+                                  ),
+                                ] as (Candidate & Assignment)[])
+                              : interviewerAssignments
+                          }
+                        />
+                      ) : (
+                        <p className="text-lg font-semibold text-gray-500 text-center py-10 w-full flex justify-center items-center">
+                          No assignments found.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
-            </div>
+            </>
+          )}
+        </div>
 
-            {isInterviewer && (
-              <div>
-                <h2 className="text-2xl font-bold mb-4">All My Assignments</h2>
-                {isLoading ? (
-                  <DashboardLoader />
-                ) : interviewerAssignments?.length > 0 ? (
-                  <RenderInterviewerAssignments
-                    interviewerAssignments={
-                      sseCandidates.length > 0
-                        ? ([
-                            ...sseCandidates.filter((candidate) => {
-                              // debugger;
-                              return (
-                                candidate.assignment &&
-                                typeof candidate.assignment.interviewerId ===
-                                  "object" &&
-                                "_id" in candidate.assignment.interviewerId &&
-                                candidate.assignment.interviewerId._id.toString() ===
-                                  user.id?.toString()
-                              );
-                            }),
-
-                            ...interviewerAssignments.filter(
-                              (older) =>
-                                older.assignment &&
-                                !sseCandidates.some(
-                                  (latest) => latest._id === older._id
-                                )
-                            ),
-                          ] as (Candidate & Assignment)[])
-                        : interviewerAssignments
-                    }
-                  />
-                ) : (
-                  <p className="text-lg font-semibold text-gray-500 text-center py-10 w-full flex justify-center items-center">
-                    No assignments found.
-                  </p>
-                )}
-              </div>
-            )}
+        {/* Recent Notifications Sidebar - Only for Admin and HR */}
+        {showRecentActivities && isActivitiesSidebarOpen && (
+          <div className="w-96 flex-shrink-0 overflow-y-auto">
+            <RecentActivities
+              notifications={notificationsData?.notifications || []}
+              isLoading={notificationsLoading}
+              onNotificationClick={handleNotificationClick}
+            />
           </div>
         )}
       </div>
+
+      {/* Candidate Details Dialog */}
+      <CandidateDetailsDialog
+        candidate={selectedCandidate}
+        isOpen={isCandidateDialogOpen}
+        onOpenChange={setIsCandidateDialogOpen}
+        onUpdate={() => {
+          if (selectedCandidate) {
+            fetchCandidateById(selectedCandidate._id);
+          }
+        }}
+        hideEditButton={user?.role === "interviewer"}
+        hideCloseButtons={false}
+      />
     </div>
   );
 }
