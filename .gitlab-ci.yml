@@ -225,12 +225,28 @@ release_job:
         fi
       fi
     - |
-      # Create GitHub release
+      # Create GitHub release using commit message as body
       echo "Creating GitHub release for $CURRENT_VERSION..."
+      RELEASE_BODY="$CI_COMMIT_MESSAGE"
+      echo "Using commit message as release notes: $RELEASE_BODY"
+      
+      # Build JSON payload with jq for safe escaping
+      PAYLOAD=$(jq -n \
+        --arg tag "$CURRENT_VERSION" \
+        --arg name "$CURRENT_VERSION" \
+        --arg body "$RELEASE_BODY" \
+        '{
+          tag_name: $tag,
+          name: $name,
+          body: $body,
+          draft: false,
+          prerelease: false
+        }')
+      
       RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
         -H "Authorization: Bearer $GITHUB_TOKEN" \
         -H "Content-Type: application/json" \
-        -d "{\"tag_name\": \"$CURRENT_VERSION\", \"name\": \"$CURRENT_VERSION\", \"body\": \"Release created from GitLab pipeline.\", \"draft\": false, \"prerelease\": false}" \
+        -d "$PAYLOAD" \
         https://api.github.com/repos/$GITHUB_REPO/releases)
       
       HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
@@ -266,7 +282,7 @@ release_job:
       
       echo "Tarball uploaded successfully as: $TARBALL_NAME"
       echo "✅ Release $CURRENT_VERSION created successfully!"
-      
+
 # deploy:
 #   stage: deploy
 #   image: alpine:latest
