@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,6 +48,11 @@ import { Candidate } from "@/types/candidate";
 import { OnboardingProvider } from "@/components/onboarding/OnboardingProvider";
 import OnboardingModal from "@/components/onboarding/OnboardingModal";
 import OnboardingSidebar from "@/components/onboarding/OnboardingSidebar";
+import {
+  useCheckOrgQuery,
+  useGetOrganizationAllowanceQuery,
+} from "@/lib/features/org/orgApi";
+import LoadingScreen from "../loading-screen";
 
 interface SidebarItem {
   title: string;
@@ -122,6 +127,11 @@ export default function DashboardLayout({
     refetch,
   } = useGetPortalConfigsQuery(undefined);
   const { setUserLoggedIn } = useCustomFields();
+  const {
+    data: allowanceData,
+    isLoading: allowanceLoading,
+    error: allowanceError,
+  } = useGetOrganizationAllowanceQuery();
   const [hasMultipleOrgs, seHasMultipleOrgs] = useState(false);
 
   // Notification hooks
@@ -210,6 +220,11 @@ export default function DashboardLayout({
     }
   };
   const { user } = useSelector((state: any) => state.auth || {});
+  const {
+    data: orgCheckData,
+    error: orgCheckError,
+    isLoading: orgCheckLoading,
+  } = useCheckOrgQuery(user?.organizationId, { skip: !user });
 
   const dispatch = useDispatch();
   const allowMultipleOrgs = useSelector(
@@ -217,53 +232,27 @@ export default function DashboardLayout({
   );
 
   useEffect(() => {
-    async function checkAllowance() {
-      const data = await fetch("/api/organization");
-      const allowance = await data?.json();
-      seHasMultipleOrgs(allowance.allow);
-      dispatch(setAllowMultipleOrgs(allowance.allow));
+    if (allowanceData) {
+      seHasMultipleOrgs(allowanceData.allow);
+      dispatch(setAllowMultipleOrgs(allowanceData.allow));
     }
-    checkAllowance();
-  }, [dispatch, allowMultipleOrgs]);
+  }, [allowanceData, dispatch]);
 
   useEffect(() => {
-    (async () => {
-      if (user) {
-        setUserLoggedIn(true);
-        // const decryptedResponse = await verifyAndDecryptJWTToken(String(user));
-        // if (decryptedResponse.success && decryptedResponse.user) {
-        setUserData(user);
-        setUserLoggedIn(true);
-        refetch();
+    if (orgCheckData && !orgCheckData.exists) {
+      Cookies.remove("token");
+      dispatch(logout());
+      fetch("/api/auth/logout");
+      window.location.href = "/auth/login";
+    }
+  }, [orgCheckData, dispatch]);
 
-        try {
-          if (user.organizationInfo.name === "") {
-            return;
-          }
-          const response = await fetch(
-            "/api/checkorg?organizationId=" + user.organizationId
-          );
-          const resp = await response.json();
-          if (!resp.exists) {
-            Cookies.remove("token");
-            dispatch(logout());
-            await fetch("/api/auth/logout");
-
-            // debugger;
-            window.location.href = "/auth/login";
-            return;
-          }
-        } catch (error) {
-          console.error("Error checking organization:", error);
-          Cookies.remove("token");
-          dispatch(logout());
-          await fetch("/api/auth/logout");
-
-          window.location.href = "/auth/login";
-        }
-        // }
-      }
-    })();
+  useEffect(() => {
+    if (user) {
+      setUserLoggedIn(true);
+      setUserData(user);
+      refetch();
+    }
   }, [user]);
 
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -492,6 +481,7 @@ export default function DashboardLayout({
     const result = ((r << 16) + (g << 8) + b).toString(16).padStart(6, "0");
     return `#${result}`;
   };
+
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       <div
@@ -692,56 +682,70 @@ export default function DashboardLayout({
     </div>
   );
 
-  return (
-    <OnboardingProvider>
-      <div className="w-full max-w-full flex" style={{ overflowX: "hidden" }}>
-        <PortalHead isLoading={true} />
-        <aside
-          className={cn(
-            "hidden h-screen border-r bg-background md:block transition-all duration-300",
-            isCollapsed ? "w-[70px]" : "w-[240px]"
-          )}
-        >
-          <SidebarContent />
-        </aside>
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden fixed left-4 top-4 z-40"
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-[240px] p-0">
-            <SidebarContent />
-          </SheetContent>
-        </Sheet>
-        <main className="w-full overflow-x-hidden overflow-y-hidden h-[100dvh]">
-          <div className="max-w-[100%] mx-auto overflow-x-hidden overflow-y-hidden">
-            {children}
-          </div>
-        </main>
-
-        {/* Candidate Details Dialog for Interviewers */}
-        <CandidateDetailsDialog
-          candidate={selectedCandidate}
-          isOpen={isCandidateDialogOpen}
-          onOpenChange={setIsCandidateDialogOpen}
-          onUpdate={() => {
-            // Optionally refresh candidate data
-            if (selectedCandidate) {
-              fetchCandidateById(selectedCandidate._id);
-            }
-          }}
-          hideEditButton={userData?.role === "interviewer"}
-          hideCloseButtons={false}
-        />
-
-        {/* Onboarding Modal */}
-        <OnboardingModal />
+  if (allowanceError || orgCheckError) {
+    return (
+      <div className="p-6 text-center text-red-600">
+        Failed to load organization data. Please refresh or contact support.
       </div>
-    </OnboardingProvider>
+    );
+  }
+
+  if (allowanceLoading || orgCheckLoading) {
+    return <LoadingScreen />;
+  }
+
+  return (
+    <Suspense fallback={<LoadingScreen />}>
+      <OnboardingProvider>
+        <div className="w-full max-w-full flex" style={{ overflowX: "hidden" }}>
+          <PortalHead isLoading={true} />
+          <aside
+            className={cn(
+              "hidden h-screen border-r bg-background md:block transition-all duration-300",
+              isCollapsed ? "w-[70px]" : "w-[240px]"
+            )}
+          >
+            <SidebarContent />
+          </aside>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden fixed left-4 top-4 z-40"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[240px] p-0">
+              <SidebarContent />
+            </SheetContent>
+          </Sheet>
+          <main className="w-full overflow-x-hidden overflow-y-hidden h-[100dvh]">
+            <div className="max-w-[100%] mx-auto overflow-x-hidden overflow-y-hidden">
+              {children}
+            </div>
+          </main>
+
+          {/* Candidate Details Dialog for Interviewers */}
+          <CandidateDetailsDialog
+            candidate={selectedCandidate}
+            isOpen={isCandidateDialogOpen}
+            onOpenChange={setIsCandidateDialogOpen}
+            onUpdate={() => {
+              // Optionally refresh candidate data
+              if (selectedCandidate) {
+                fetchCandidateById(selectedCandidate._id);
+              }
+            }}
+            hideEditButton={userData?.role === "interviewer"}
+            hideCloseButtons={false}
+          />
+
+          {/* Onboarding Modal */}
+          <OnboardingModal />
+        </div>
+      </OnboardingProvider>
+    </Suspense>
   );
 }

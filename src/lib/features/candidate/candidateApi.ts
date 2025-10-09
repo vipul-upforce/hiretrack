@@ -4,6 +4,7 @@ import { ICandidateHistory } from "@/lib/models/history";
 import { OneOfMulOrganization } from "@/components/auth/OrganizationDialog";
 import { OrgInfo } from "@/lib/models/user";
 import { NextResponse } from "next/server";
+import { Assignment } from "@/app/dashboard/page";
 
 interface AuthRequest {
   email: string;
@@ -42,6 +43,29 @@ export const candidateApi = createApi({
     fetchCandidateById: builder.query<Candidate, string>({
       query: (candidateId) => `/candidates/${candidateId}`,
       providesTags: ["Candidate"],
+    }),
+    fetchAssignments: builder.query<
+      any,
+      { isPagination?: boolean; page?: number; limit?: number; filterValue?: string; assignedTo?: string }
+    >({
+      query: ({ isPagination = true, page = 1, limit = 48, filterValue = "", assignedTo = "" }) => {
+        const params = new URLSearchParams({
+          isPagination: String(isPagination),
+          page: String(page),
+          limit: String(limit),
+          filterValue,
+          assignedTo,
+        });
+        return `/candidates/assignments?${params.toString()}`;
+      },
+      providesTags: ["Candidate"],
+    }),
+    refetchCandidate: builder.mutation<Candidate, string>({
+      query: (candidateId) => ({
+        url: `/candidates/${candidateId}`,
+        method: "GET",
+      }),
+      invalidatesTags: (result, error, id) => [{ type: "Candidate", id }],
     }),
     createCandidate: builder.mutation<Candidate, Partial<Candidate>>({
       query: (newCandidate) => ({
@@ -177,6 +201,7 @@ export const candidateApi = createApi({
 export const {
   useFetchCandidatesQuery,
   useFetchCandidateByIdQuery,
+  useFetchAssignmentsQuery,
   useLazyFetchCandidateByIdQuery,
   useCreateCandidateMutation,
   useCreateGuestCandidateMutation,
@@ -190,6 +215,7 @@ export const {
   useDeleteCandidateMutation,
   useFilterCandidatesQuery,
   useLazyFetchCandidatesQuery,
+  useRefetchCandidateMutation,
   useCandidateSignupMutation,
   useApplicationEventMailMutation,
 } = candidateApi;

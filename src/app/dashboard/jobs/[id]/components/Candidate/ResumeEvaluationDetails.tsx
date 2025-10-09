@@ -24,6 +24,15 @@ export default function ResumeEvaluationDetails({
   const role = useRoles();
   if (!localCandidate.scores) return null;
 
+  if (
+    !localCandidate.scores.strengths?.length &&
+    !localCandidate.scores.notes &&
+    !localCandidate.scores.areas_for_improvement?.length &&
+    !localCandidate.scores.recommendation
+  ) {
+    return null;
+  }
+
   return (
     <>
       <div className="space-y-2">

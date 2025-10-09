@@ -3,6 +3,8 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { ClientLayout } from "./client-layout";
 import AuthInitializer from "@/components/AuthInitializer";
+import { Suspense } from "react";
+import LoadingScreen from "./loading-screen";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -20,13 +22,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <title>Loading...</title>
-        <link rel="icon" href="/favicon.png" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
+    <Suspense fallback={<LoadingScreen />}>
+      <html lang="en" suppressHydrationWarning>
+        <head>
+          <title>Loading...</title>
+          <link rel="icon" href="/favicon.png" />
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
               (function() {
                 try {
                   var theme = localStorage.getItem('hiretrack-theme') || 'light';
@@ -39,18 +42,19 @@ export default function RootLayout({
                 }
               })();
             `,
-          }}
-        />
-      </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        suppressHydrationWarning
-      >
-        <Providers>
-          <AuthInitializer />
-          <ClientLayout>{children}</ClientLayout>
-        </Providers>
-      </body>
-    </html>
+            }}
+          />
+        </head>
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+          suppressHydrationWarning
+        >
+          <Providers>
+            <AuthInitializer />
+            <ClientLayout>{children}</ClientLayout>
+          </Providers>
+        </body>
+      </html>
+    </Suspense>
   );
 }

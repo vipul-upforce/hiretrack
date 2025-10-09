@@ -46,6 +46,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  useGetDefaultLanesQuery,
+  useUpdateDefaultLanesMutation,
+  useAddDefaultLaneMutation,
+  useDeleteDefaultLaneMutation,
+} from "@/lib/features/lane/laneApi";
 
 interface DefaultLanesButtonProps {
   userRole?: string;
@@ -71,6 +77,12 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
     null
   );
 
+  // RTK query hooks and states
+  const { data, isLoading, isError, error } = useGetDefaultLanesQuery(undefined);
+  const [updateDefaultLanes, { isLoading: isSaving }] = useUpdateDefaultLanesMutation();
+  const [addDefaultLane] = useAddDefaultLaneMutation();
+  const [deleteDefaultLane] = useDeleteDefaultLaneMutation();
+
   // Editing state
   const [editingLane, setEditingLane] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
@@ -94,77 +106,49 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
   }, []);
 
   // Fetch default lanes when dialog opens
+  // useEffect(() => {
+  // if (isOpen && canManage) {
+  //   fetchDefaultLanes();
+  // }
+  // }, [isOpen, canManage]);
+
   useEffect(() => {
-    if (isOpen && canManage) {
-      fetchDefaultLanes();
-    }
-  }, [isOpen, canManage]);
-
-  const fetchDefaultLanes = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch("/api/organizations/default-lanes");
-      if (response.ok) {
-        const data = await response.json();
-        setDefaultLanes(data.defaultLanes || []);
-        setLaneRestrictions(
-          data.laneRestrictions || {
-            nonEditable: ["applied", "accepted", "rejected"],
-            nonDeletable: ["applied", "accepted", "rejected"],
-          }
-        );
-      } else {
-        throw new Error("Failed to fetch default lanes");
-      }
-    } catch (error) {
-      console.error("Error fetching default lanes:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load default lanes",
-        variant: "destructive",
+    if (data) {
+      setDefaultLanes(data.defaultLanes || []);
+      setLaneRestrictions(data.laneRestrictions || {
+        nonEditable: ["applied", "accepted", "rejected"],
+        nonDeletable: ["applied", "accepted", "rejected"],
       });
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [data]);
 
-  const saveDefaultLanes = async () => {
-    setSaving(true);
-    try {
-      const response = await fetch("/api/organizations/default-lanes", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          defaultLanes,
-        }),
-      });
-
-      if (response.ok) {
-        toast({
-          title: "Success",
-          description: "Default lanes updated successfully",
-        });
-        setIsOpen(false);
-      } else {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to update default lanes");
-      }
-    } catch (error) {
-      console.error("Error saving default lanes:", error);
-      toast({
-        title: "Error",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Failed to save default lanes",
-        variant: "destructive",
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
+  // const fetchDefaultLanes = async () => {
+  //   setLoading(true);
+  //   try {
+  //     const response = await fetch("/api/organizations/default-lanes");
+  //     if (response.ok) {
+  //       const data = await response.json();
+  //       setDefaultLanes(data.defaultLanes || []);
+  //       setLaneRestrictions(
+  //         data.laneRestrictions || {
+  //           nonEditable: ["applied", "accepted", "rejected"],
+  //           nonDeletable: ["applied", "accepted", "rejected"],
+  //         }
+  //       );
+  //     } else {
+  //       throw new Error("Failed to fetch default lanes");
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching default lanes:", error);
+  //     toast({
+  //       title: "Error",
+  //       description: "Failed to load default lanes",
+  //       variant: "destructive",
+  //     });
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
@@ -224,60 +208,6 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
     setEditValue("");
   };
 
-  const addNewLane = async () => {
-    if (!newLaneName.trim()) {
-      toast({
-        title: "Invalid Name",
-        description: "Lane name cannot be empty",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (defaultLanes.includes(newLaneName.trim())) {
-      toast({
-        title: "Duplicate Name",
-        description: "A lane with this name already exists",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const response = await fetch("/api/organizations/default-lanes", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          laneName: newLaneName.trim(),
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setDefaultLanes(data.defaultLanes);
-        setNewLaneName("");
-        setShowAddForm(false);
-        toast({
-          title: "Success",
-          description: "Lane added successfully",
-        });
-      } else {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to add lane");
-      }
-    } catch (error) {
-      console.error("Error adding lane:", error);
-      toast({
-        title: "Error",
-        description:
-          error instanceof Error ? error.message : "Failed to add lane",
-        variant: "destructive",
-      });
-    }
-  };
-
   const confirmDelete = (lane: string) => {
     if (laneRestrictions.nonDeletable.includes(lane)) {
       toast({
@@ -290,36 +220,53 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
     setDeleteConfirm({ lane, show: true });
   };
 
-  const deleteLane = async () => {
+  const saveDefaultLanes = async () => {
     try {
-      const response = await fetch("/api/organizations/default-lanes", {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          laneName: deleteConfirm.lane,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setDefaultLanes(data.defaultLanes);
-        setDeleteConfirm({ lane: "", show: false });
-        toast({
-          title: "Success",
-          description: "Lane removed successfully",
-        });
-      } else {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to delete lane");
-      }
-    } catch (error) {
-      console.error("Error deleting lane:", error);
+      await updateDefaultLanes(defaultLanes).unwrap();
+      toast({ title: "Success", description: "Default lanes updated successfully" });
+      setIsOpen(false);
+    } catch (err) {
       toast({
         title: "Error",
         description:
-          error instanceof Error ? error.message : "Failed to delete lane",
+          typeof err === "object" && err !== null && "data" in err && typeof (err as any).data?.message === "string"
+            ? (err as any).data.message
+            : "Failed to save default lanes",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // --- Replace add and delete functions similarly ---
+  const addNewLane = async () => {
+    try {
+      await addDefaultLane(newLaneName.trim()).unwrap();
+      setNewLaneName("");
+      toast({ title: "Success", description: "Lane added successfully" });
+    } catch (err) {
+      toast({
+        title: "Error",
+        description:
+          typeof err === "object" && err !== null && "data" in err && typeof (err as any).data?.message === "string"
+            ? (err as any).data.message
+            : "Failed to add lane",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteLane = async () => {
+    try {
+      await deleteDefaultLane(deleteConfirm.lane).unwrap();
+      toast({ title: "Success", description: "Lane removed successfully" });
+      setDeleteConfirm({ lane: "", show: false });
+    } catch (err) {
+      toast({
+        title: "Error",
+        description:
+          typeof err === "object" && err !== null && "data" in err && typeof (err as any).data?.message === "string"
+            ? (err as any).data.message
+            : "Failed to delete lane",
         variant: "destructive",
       });
     }
@@ -382,11 +329,10 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
                       <div
                         {...provided.droppableProps}
                         ref={provided.innerRef}
-                        className={`space-y-2 px-2 ${
-                          snapshot.isDraggingOver
-                            ? "bg-muted/20 rounded-lg p-2"
-                            : ""
-                        }`}
+                        className={`space-y-2 px-2 ${snapshot.isDraggingOver
+                          ? "bg-muted/20 rounded-lg p-2"
+                          : ""
+                          }`}
                       >
                         {defaultLanes.map((lane, index) => (
                           <Draggable
@@ -412,11 +358,10 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
                                   }}
                                 >
                                   <div
-                                    className={`bg-card border rounded-none transition-all ${
-                                      snapshot.isDragging
-                                        ? "shadow-2xl bg-white dark:bg-black border-2 border-primary opacity-95 scale-105"
-                                        : "shadow-sm hover:shadow-md"
-                                    }`}
+                                    className={`bg-card border rounded-none transition-all ${snapshot.isDragging
+                                      ? "shadow-2xl bg-white dark:bg-black border-2 border-primary opacity-95 scale-105"
+                                      : "shadow-sm hover:shadow-md"
+                                      }`}
                                     style={{
                                       ...(snapshot.isDragging && {
                                         width: "320px",
@@ -475,11 +420,10 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
                                           ) : (
                                             <div className="flex items-center gap-2">
                                               <span
-                                                className={`capitalize font-medium text-foreground select-none ${
-                                                  !isRestricted(lane, "edit")
-                                                    ? "cursor-pointer"
-                                                    : "cursor-default"
-                                                }`}
+                                                className={`capitalize font-medium text-foreground select-none ${!isRestricted(lane, "edit")
+                                                  ? "cursor-pointer"
+                                                  : "cursor-default"
+                                                  }`}
                                                 onDoubleClick={() =>
                                                   !isRestricted(lane, "edit") &&
                                                   startEdit(lane)

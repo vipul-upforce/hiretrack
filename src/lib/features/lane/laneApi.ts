@@ -81,6 +81,51 @@ export const laneApi = createApi({
   }),
 });
 
+// Default Lanes
+export const defaultLanesApi = createApi({
+  reducerPath: "defaultLanesApi",
+  baseQuery: fetchBaseQuery({ baseUrl: "/api/organizations" }),
+  tagTypes: ["DefaultLanes"],
+  endpoints: (builder) => ({
+    getDefaultLanes: builder.query({
+      query: () => `default-lanes`,
+      providesTags: ["DefaultLanes"],
+    }),
+    updateDefaultLanes: builder.mutation({
+      query: (defaultLanes) => ({
+        url: `default-lanes`,
+        method: "PUT",
+        body: { defaultLanes },
+      }),
+      invalidatesTags: ["DefaultLanes"],
+    }),
+    addDefaultLane: builder.mutation({
+      query: (laneName) => ({
+        url: `default-lanes`,
+        method: "POST",
+        body: { laneName },
+      }),
+      invalidatesTags: ["DefaultLanes"],
+    }),
+    deleteDefaultLane: builder.mutation({
+      query: (laneName) => ({
+        url: `default-lanes`,
+        method: "DELETE",
+        body: { laneName },
+      }),
+      invalidatesTags: ["DefaultLanes"],
+    }),
+  }),
+});
+
+export const {
+  useGetDefaultLanesQuery,
+  useUpdateDefaultLanesMutation,
+  useAddDefaultLaneMutation,
+  useDeleteDefaultLaneMutation,
+} = defaultLanesApi;
+
+
 export const {
   useGetLanesQuery,
   useGetJobLanesQuery,

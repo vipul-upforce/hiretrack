@@ -71,17 +71,17 @@ export default function DetailsDialogHeader({
             <div className="flex gap-2 items-center">
               <span className="text-2xl font-semibold">{candidate.name}</span>
               <Button
-                    variant="ghost"
-                    size="icon"
-                    className="ml-1 h-5 w-5"
-                    onClick={() =>
-                      handleCandidateInfoCopy(candidate.name || "")
-                    }
-                    title="Copy Email"
-                  >
-                    <Copy size={12} />
-                    <span className="sr-only">Copy Name</span>
-                  </Button>
+                variant="ghost"
+                size="icon"
+                className="ml-1 h-5 w-5"
+                onClick={() =>
+                  handleCandidateInfoCopy(candidate.name || "")
+                }
+                title="Copy Name"
+              >
+                <Copy size={12} />
+                <span className="sr-only">Copy Name</span>
+              </Button>
               {candidate.isDeleted ? (
                 <Badge className={`bg-red-500`}>Archived</Badge>
               ) : null}

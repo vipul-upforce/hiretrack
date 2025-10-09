@@ -57,6 +57,7 @@ import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import { Organization } from "@/lib/mongodb";
 import { User } from "../../jobs/[id]/schemas/AssignCandidateSchema";
+import { useGetOrganizationAllowanceQuery } from "@/lib/features/org/orgApi";
 
 interface FileUpload {
   id: string;
@@ -153,6 +154,7 @@ export default function PortalConfigurationPage() {
     isLoading: loading,
     refetch,
   } = useGetPortalConfigsQuery(undefined);
+  const { data: allowanceData } = useGetOrganizationAllowanceQuery();
   const [updatePortalConfigs, { isLoading: saving }] =
     useUpdatePortalConfigsMutation();
   const { user } = useSelector((state: any) => state.auth || {});
@@ -187,17 +189,10 @@ export default function PortalConfigurationPage() {
   }, [portalData]);
 
   useEffect(() => {
-    async function checkAllowance() {
-      try {
-        const data = await fetch("/api/organization");
-        const allowance = await data?.json();
-        setHasMultipleOrgs(allowance.allow);
-      } catch (error) {
-        console.error("Error checking organization allowance:", error);
-      }
+    if (allowanceData) {
+      setHasMultipleOrgs(allowanceData.allow);
     }
-    checkAllowance();
-  }, []);
+  }, [allowanceData]);
 
   // Helper function to generate the correct portal URL (similar to generate_share_org)
   const generatePortalUrl = (additionalParams: string[] = []) => {
@@ -560,8 +555,8 @@ export default function PortalConfigurationPage() {
                         id="portalName"
                         value={
                           settings.portalName &&
-                          settings.portalName !== "" &&
-                          settings.portalName.length > 0
+                            settings.portalName !== "" &&
+                            settings.portalName.length > 0
                             ? settings.portalName
                             : user.organizationInfo.name
                         }
@@ -629,7 +624,7 @@ export default function PortalConfigurationPage() {
                               ? "border-primary ring-2 ring-primary ring-offset-2"
                               : "border-border hover:border-primary/50",
                             combo.isDefault &&
-                              "bg-gradient-to-br from-primary/5 to-secondary/5"
+                            "bg-gradient-to-br from-primary/5 to-secondary/5"
                           )}
                           onClick={() =>
                             setSettings((prev) => ({
@@ -1326,19 +1321,19 @@ export default function PortalConfigurationPage() {
                             {(previewTheme === "dark"
                               ? settings.portalLogoDark
                               : settings.portalLogo) && (
-                              <div className="h-10 w-32 relative bg-white/10 rounded">
-                                <Image
-                                  src={
-                                    previewTheme === "dark"
-                                      ? settings.portalLogoDark?.url || ""
-                                      : settings.portalLogo?.url || ""
-                                  }
-                                  alt="Logo"
-                                  fill
-                                  className="object-contain p-2"
-                                />
-                              </div>
-                            )}
+                                <div className="h-10 w-32 relative bg-white/10 rounded">
+                                  <Image
+                                    src={
+                                      previewTheme === "dark"
+                                        ? settings.portalLogoDark?.url || ""
+                                        : settings.portalLogo?.url || ""
+                                    }
+                                    alt="Logo"
+                                    fill
+                                    className="object-contain p-2"
+                                  />
+                                </div>
+                              )}
                             <h3 className="text-white font-semibold">
                               {settings.portalName || "Portal Name"}
                             </h3>

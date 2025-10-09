@@ -1,6 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, useRef, ComponentType } from "react";
+import {
+  useGetNginxLogFilesQuery,
+  useLazyGetServerLogsQuery,
+  useLazyGetNginxFileContentQuery,
+  useGetNginxFileContentQuery,
+} from "@/lib/features/settings/settingsApi";
 import type { SettingComponentProps } from "./setting-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
@@ -55,12 +61,71 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
   const [isNginxAvailable, setIsNginxAvailable] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showLn, setShowLn] = useState(false);
-  const [searchClick, setSearchClick] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState<string | null>(null);
   const linesPerLoad = 100;
   const logContainerRef = useRef<HTMLDivElement>(null);
 
+  // Fetch Nginx log files
+  const { data: nginxFilesData, isLoading: isNginxLoading, error: nginxError } = useGetNginxLogFilesQuery(undefined, {
+    skip: !isOpen || activeTab !== "nginx" || !!searchQuery,
+    refetchOnMountOrArgChange: false,
+    refetchOnFocus: false,
+  });
+
+  // Lazy queries for server logs and more pages
+  const [triggerServerLogs, { data: serverLogsData, isLoading: isServerLogsLoading, error: serverLogsError }] = useLazyGetServerLogsQuery();
+
+  // Fetch Nginx file content (initial)
+  const { data: nginxFileContentData, isLoading: isNginxFileLoading, error: nginxFileError } = useGetNginxFileContentQuery(
+    { file: selectedFile!, offset: 0, limit: linesPerLoad, query: searchQuery },
+    {
+      skip: !isOpen || activeTab !== "nginx" || !selectedFile,
+      refetchOnMountOrArgChange: false,
+      refetchOnFocus: false,
+    }
+  );
+
+  // Lazy for more Nginx content
+  const [triggerNginxFileContent] = useLazyGetNginxFileContentQuery();
+
+  // Handle Nginx log files data
+  useEffect(() => {
+    if (nginxFilesData) {
+      setIsNginxAvailable(nginxFilesData.files && nginxFilesData.files.length > 0);
+      setNginxFiles(nginxFilesData.files || []);
+    }
+    if (nginxError) {
+      setError("Error fetching nginx logs: " + (nginxError as any).message);
+      setIsNginxAvailable(false);
+    }
+  }, [nginxFilesData, nginxError]);
+
+  // Handle server logs data
+  useEffect(() => {
+    if (serverLogsData) {
+      setLogs(serverLogsData.logs || []);
+      setOffset((serverLogsData.offset || 0) + (serverLogsData.logs?.length || 0));
+      setTotalLines(serverLogsData.totalLines || 0);
+    }
+    if (serverLogsError) {
+      setError("Error fetching history logs: " + (serverLogsError as any).message);
+    }
+  }, [serverLogsData, serverLogsError]);
+
+  // Handle Nginx file content data
+  useEffect(() => {
+    if (nginxFileContentData) {
+      setFileContent(nginxFileContentData.content || []);
+      setOffset((nginxFileContentData.offset || 0) + (nginxFileContentData.content?.length || 0));
+      setTotalLines(nginxFileContentData.totalLines || 0);
+    }
+    if (nginxFileError) {
+      setError("Error fetching file content: " + (nginxFileError as any).message);
+    }
+  }, [nginxFileContentData, nginxFileError]);
+
+  // Reset state when dialog is closed
   useEffect(() => {
     if (!isOpen) {
       setNginxFiles([]);
@@ -74,45 +139,18 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
       setError(null);
       return;
     }
+    setIsLoading(isNginxLoading || isServerLogsLoading || isNginxFileLoading);
+  }, [isOpen, isNginxLoading, isServerLogsLoading, isNginxFileLoading]);
 
-    setIsLoading(true);
-    setError(null);
-
-    if (activeTab === "nginx") {
-      if (searchQuery) {
-        setIsLoading(false);
-        return;
-      }
-      fetch("/api/nginx-logs")
-        .then((res) => {
-
-          if (!res.ok) throw new Error("Failed to fetch nginx logs");
-          return res.json();
-        })
-        .then((data) => {
-          setIsNginxAvailable(data.files && data.files.length > 0);
-          setNginxFiles(data.files || []);
-        })
-        .catch((err) => {
-          setError("Error fetching nginx logs: " + err.message);
-
-          setIsNginxAvailable(false);
-        })
-        .finally(() => setIsLoading(false));
-    } else if (activeTab === "server") {
-      const queryParam = searchQuery
-        ? `&query=${encodeURIComponent(searchQuery)}`
-        : "";
-      if (!searchClick) {
-        setIsLoading(false);
-        return;
-      }
-      setSearchClick(false);
-      fetch(`/api/logs?offset=${offset}&limit=${linesPerLoad}${queryParam}`)
-        .then((res) => {
-          if (!res.ok) throw new Error("Failed to fetch history logs");
-          return res.json();
-        })
+  // Fetch initial server logs when switching to server tab
+  useEffect(() => {
+    if (activeTab === "server" && isOpen) {
+      setIsLoading(true);
+      setError(null);
+      setLogs([]);
+      setOffset(0);
+      triggerServerLogs({ offset: 0, limit: linesPerLoad, query: searchQuery })
+        .unwrap()
         .then((data) => {
           setLogs(data.logs || []);
           setOffset((data.offset || 0) + (data.logs?.length || 0));
@@ -123,37 +161,11 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
         })
         .finally(() => setIsLoading(false));
     }
-  }, [isOpen, activeTab, searchQuery, searchClick]);
+  }, [activeTab, isOpen, triggerServerLogs]);
+
+  // Infinite scroll for loading more logs
   useEffect(() => {
-    if (activeTab !== "server") return;
-
-    setIsLoading(true);
-    setError(null);
-    setLogs([]);
-    setOffset(0);
-
-    const queryParam = searchQuery
-      ? `&query=${encodeURIComponent(searchQuery)}`
-      : "";
-    fetch(`/api/logs?offset=0&limit=${linesPerLoad}${queryParam}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch history logs");
-        return res.json();
-      })
-      .then((data) => {
-        setLogs(data.logs || []);
-        setOffset((data.offset || 0) + (data.logs?.length || 0));
-        setTotalLines(data.totalLines || 0);
-      })
-      .catch((err) => {
-        setError("Error fetching history logs: " + err.message);
-      })
-      .finally(() => setIsLoading(false));
-  }, [activeTab]);
-
-  useEffect(() => {
-    if (!isOpen || (offset >= totalLines && totalLines !== 0) || isLoading)
-      return;
+    if (!isOpen || (offset >= totalLines && totalLines !== 0) || isLoading) return;
 
     const scrollToBottom = () => {
       if (logContainerRef.current) {
@@ -161,24 +173,14 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
         container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
       }
     };
-    // debugger;
+
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && !isLoading) {
           setIsLoading(true);
-          const queryParam = searchQuery
-            ? `&query=${encodeURIComponent(searchQuery)}`
-            : "";
-          const url =
-            activeTab === "nginx"
-              ? `/api/nginx-logs/${selectedFile}?offset=${offset}&limit=${linesPerLoad}${queryParam}`
-              : `/api/logs?offset=${offset}&limit=${linesPerLoad}${queryParam}`;
-
-          fetch(url)
-            .then((res) => {
-              if (!res.ok) throw new Error("Failed to fetch more logs");
-              return res.json();
-            })
+          const trigger = activeTab === "nginx" ? triggerNginxFileContent({ file: selectedFile!, offset, limit: linesPerLoad, query: searchQuery }) : triggerServerLogs({ offset, limit: linesPerLoad, query: searchQuery });
+          trigger
+            .unwrap()
             .then((data) => {
               if (activeTab === "nginx") {
                 setFileContent((prev) => [...prev, ...(data.content || [])]);
@@ -207,37 +209,7 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
     return () => {
       if (sentinel) observer.unobserve(sentinel);
     };
-  }, [activeTab, selectedFile, offset, totalLines, isLoading, searchQuery]);
-
-  useEffect(() => {
-    if (!isOpen || !selectedFile || activeTab !== "nginx") return;
-
-    setIsLoading(true);
-    setSearchClick(false);
-    setError(null);
-    setFileContent([]);
-    setOffset(0);
-
-    const queryParam = searchQuery
-      ? `&query=${encodeURIComponent(searchQuery)}`
-      : "";
-    fetch(
-      `/api/nginx-logs/${selectedFile}?offset=0&limit=${linesPerLoad}${queryParam}`
-    )
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch file content");
-        return res.json();
-      })
-      .then((data) => {
-        setFileContent(data.content || []);
-        setOffset((data.offset || 0) + (data.content?.length || 0));
-        setTotalLines(data.totalLines || 0);
-      })
-      .catch((err) => {
-        setError("Error fetching file content: " + err.message);
-      })
-      .finally(() => setIsLoading(false));
-  }, [isOpen, activeTab, selectedFile, searchQuery]);
+  }, [activeTab, selectedFile, offset, totalLines, isLoading, searchQuery, triggerServerLogs, triggerNginxFileContent]);
 
   const renderEntryTitle = (log: LogEntry) => {
     const assignmentBy = log.assignmentBy[0]?.name || "";
@@ -270,7 +242,7 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
               <p>{log.candidateData?.name} applied from portal</p>
             ) : log.title?.includes("Updated") ? (
               <p>{log.title}</p>
-            ) : log.title === "Aarhived" ? (
+            ) : log.title === "Archived" ? (
               <p>{log.candidateData?.name} was Archived</p>
             ) : log.title === "Unarchived" ? (
               <p>{log.candidateData?.name} was Unarchived</p>
@@ -313,6 +285,24 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
     }
   };
 
+  const handleSearchClick = () => {
+    setIsLoading(true);
+    setError(null);
+    setLogs([]);
+    setOffset(0);
+    triggerServerLogs({ offset: 0, limit: linesPerLoad, query: searchQuery })
+      .unwrap()
+      .then((data) => {
+        setLogs(data.logs || []);
+        setOffset((data.offset || 0) + (data.logs?.length || 0));
+        setTotalLines(data.totalLines || 0);
+      })
+      .catch((err) => {
+        setError("Error fetching history logs: " + err.message);
+      })
+      .finally(() => setIsLoading(false));
+  };
+
   return (
     <div className="flex-1 overflow-y-auto px-6 py-4 flex flex-col font-sans">
       {/* Tabs */}
@@ -320,8 +310,8 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
         <div className="flex space-x-2">
           <button
             className={`py-2 px-4 text-sm font-medium rounded-t-md transition-colors ${activeTab === "nginx"
-                ? "border-b-2 border-blue-500 text-blue-600"
-                : "text-gray-600 hover:bg-gray-100"
+              ? "border-b-2 border-blue-500 text-blue-600"
+              : "text-gray-600 hover:bg-gray-100"
               }`}
             onClick={() => {
               setActiveTab("nginx");
@@ -336,8 +326,8 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
           </button>
           <button
             className={`py-2 px-4 text-sm font-medium rounded-t-md transition-colors ${activeTab === "server"
-                ? "border-b-2 border-blue-500 text-blue-600"
-                : "text-gray-600 hover:bg-gray-100"
+              ? "border-b-2 border-blue-500 text-blue-600"
+              : "text-gray-600 hover:bg-gray-100"
               }`}
             onClick={() => {
               setActiveTab("server");
@@ -351,9 +341,9 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
             History Logs
           </button>
         </div>
-        {error && (
+        {(nginxError || serverLogsError || nginxFileError) && (
           <div className="text-red-500 px-4 flex items-center text-sm">
-            {error}
+            {(nginxError as any)?.message || (serverLogsError as any)?.message || (nginxFileError as any)?.message}
           </div>
         )}
       </div>
@@ -376,8 +366,8 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
                         <li
                           key={file}
                           className={`cursor-pointer p-2 text-sm rounded ${selectedFile === file
-                              ? "bg-blue-100 text-blue-700"
-                              : "hover:bg-gray-100"
+                            ? "bg-blue-100 text-blue-700"
+                            : "hover:bg-gray-100"
                             }`}
                           onClick={() => {
                             setSelectedFile(file);
@@ -441,14 +431,17 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
                       </div>
                     </div>
                     <div
-                      className={`bg-muted p-4 rounded-md flex-1 overflow-y-auto min-h-0 ${isLoading && "border-b-red-500"}`}
+                      className={`bg-muted p-4 rounded-md flex-1 overflow-y-auto min-h-0 ${isLoading && "border-b-red-500"
+                        }`}
                       ref={logContainerRef}
                     >
                       {fileContent.length > 0 ? (
                         <pre className="whitespace-pre-wrap text-sm">
                           {fileContent.map((line, index) => {
                             const parts = searchQuery
-                              ? line.split(new RegExp(`(${searchQuery})`, "gi"))
+                              ? line.split(
+                                new RegExp(`(${searchQuery})`, "gi")
+                              )
                               : [line];
                             return (
                               <div
@@ -523,11 +516,10 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
                   setSearchQuery(e.target.value);
                   setOffset(0);
                   setTotalLines(0);
-                  // setLogs([]);
                 }}
                 className="w-full max-w-md border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <Button className="ml-2" onClick={() => setSearchClick(true)}>
+              <Button className="ml-2" onClick={handleSearchClick}>
                 Search
               </Button>
             </div>
@@ -645,28 +637,13 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
                               <span className="font-medium">Status:</span>{" "}
                               <span
                                 className={`capitalize ${log.candidateData?.status === "rejected"
-                                    ? "text-red-500"
-                                    : "text-green-500"
+                                  ? "text-red-500"
+                                  : "text-green-500"
                                   }`}
                               >
                                 {log.candidateData?.status || "N/A"}
                               </span>
                             </p>
-                            {/* <p>
-                              <span className="font-medium">Remarks:</span>{" "}
-                              {log?.candidateData?.remarks &&
-                              log?.candidateData?.remarks?.length > 0
-                                ? log.candidateData.remarks.map((r, i) => (
-                                    <div key={i}>
-                                      <span key={r.date} className="block">
-                                        {r.description} (
-                                        {new Date(r.date).toLocaleString()})
-                                      </span>
-                                      <div>Remark by: {r.userId}</div>
-                                    </div>
-                                  ))
-                                : "None"}
-                            </p> */}
                             <a
                               target="_blank"
                               href={`/candidate/${log.candidateData._id}`}
@@ -695,8 +672,8 @@ const LogsDialog: ComponentType<SettingComponentProps> = ({
                               <span className="font-medium">Status:</span>{" "}
                               <span
                                 className={`capitalize ${log.jobData?.status === "open"
-                                    ? "text-green-500"
-                                    : "text-gray-500"
+                                  ? "text-green-500"
+                                  : "text-gray-500"
                                   }`}
                               >
                                 {log.jobData?.status || "N/A"}

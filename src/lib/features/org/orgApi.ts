@@ -125,6 +125,12 @@ export const orgApi = createApi({
         body: data,
       }),
     }),
+    fetchOrg: builder.query({
+      query: () => ({
+        url: "/organization",
+        method: "GET",
+      }),
+    }),
     updateCustomFields: builder.mutation({
       query: (data) => ({
         url: "/organization/cs",
@@ -166,6 +172,18 @@ export const orgApi = createApi({
         url: `/event-mail`,
         method: "PUT",
         body: data,
+      }),
+    }),
+    getOrganizationAllowance: builder.query<{ allow: boolean }, void>({
+      query: () => ({
+        url: "/organization",
+        method: "GET",
+      }),
+    }),
+    checkOrg: builder.query<{ exists: boolean }, string>({
+      query: (organizationId) => ({
+        url: `/checkorg?organizationId=${organizationId}`,
+        method: "GET",
       }),
     }),
     // New endpoint to fetch batches
@@ -211,6 +229,7 @@ export const {
   useCreateAdminMutation,
   useSendMailMutation,
   useSendStatusMailMutation,
+  useFetchOrgQuery,
   useSendUnassignMailMutation,
   useCreateOrgMutation,
   useUpdateAdminMutation,
@@ -222,5 +241,7 @@ export const {
   usePostBatchMutation, // Hook for posting a batch,,
   useFetchOrgTagsQuery,
   useUpdateOrgTagsMutation,
+  useGetOrganizationAllowanceQuery,
+  useCheckOrgQuery
 } = orgApi;
 // export const { useCreateAdminMutation } = orgApi;

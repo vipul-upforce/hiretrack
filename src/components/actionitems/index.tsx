@@ -4,6 +4,10 @@ import { CandidateDetailsDialog } from "@/app/dashboard/jobs/[id]/components/Dia
 import { Assignment } from "@/app/dashboard/page";
 import { Candidate, CandidateStatus, Remark } from "@/types/candidate";
 import { toast } from "@/hooks/use-toast";
+import {
+  useFetchCandidateByIdQuery,
+  useRefetchCandidateMutation,
+} from "@/lib/features/candidate/candidateApi";
 
 function ActionItems({
   assignment,
@@ -20,24 +24,25 @@ function ActionItems({
   const [openRemarksFor, setOpenRemarksFor] = useState<string | null>(null);
   const [candidate, setCandidate] = useState<Candidate | null>(null);
 
+  const {
+    data: fetchedCandidate,
+    isFetching,
+    isError,
+    error,
+    refetch,
+  } = useFetchCandidateByIdQuery(candidate?._id || "", {
+    skip: !candidate?._id, // don't run if no candidate ID
+  });
+
   // Candidate-specific refetch function
+  const [triggerRefetchCandidate] = useRefetchCandidateMutation();
+
   const refetchCandidate = async () => {
     if (!candidate?._id) return;
-
     try {
-      const response = await fetch(`/api/candidates/${candidate._id}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to fetch candidate");
-      }
-
-      const updatedCandidate: Candidate = await response.json();
+      const updatedCandidate = await triggerRefetchCandidate(
+        candidate._id
+      ).unwrap();
       setCandidate(updatedCandidate);
       // const updatedAssignments = assignments.map((assignment) =>
       //   assignment._id === updatedCandidate._id
@@ -49,11 +54,16 @@ function ActionItems({
         title: "Success",
         description: "Candidate data refreshed successfully",
       });
-    } catch (error) {
-      console.error("Failed to refetch candidate:", error);
+    } catch (err) {
       toast({
         title: "Error",
-        description: "Failed to refresh candidate data. Please try again.",
+        description:
+          typeof err === "object" &&
+          err !== null &&
+          "data" in err &&
+          typeof (err as any).data?.message === "string"
+            ? (err as any).data.message
+            : "Failed to refresh candidate data. Please try again.",
         variant: "destructive",
       });
     }

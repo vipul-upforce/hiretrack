@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { formatFileSize } from "@/components/ui/file-upload";
 import { toast } from "@/hooks/use-toast";
 import { FolderIcon, Loader, LucideDownload } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useFetchAssetsMetadataQuery } from "@/lib/features/settings/settingsApi"; // adjust path
+import { useState } from "react";
 
 interface AssetMetadata {
   name: string;
@@ -15,47 +16,16 @@ interface AssetMetadata {
 }
 
 export default function AssetsDialog() {
-  const [assetsMetadata, setAssetsMetadata] = useState<AssetMetadata | null>(
-    null
-  );
-  const [loading, setLoading] = useState(false);
+  const { data, isLoading, isFetching, isError, error, refetch } =
+    useFetchAssetsMetadataQuery(undefined);
+
   const [downLoading, setDownloading] = useState(false);
-
-  const fetchAssetsMetadata = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/download/assets", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}), // Empty body as per the POST endpoint
-      });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to fetch assets metadata");
-      }
-      const data = await res.json();
-      setAssetsMetadata(data.data);
-    } catch (err) {
-      console.error("Failed to load assets metadata:", err);
-      //   toast({
-      //     title: "Error",
-      //     description: `Failed to load assets metadata`,
-      //     variant: "destructive",
-      //   });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchAssetsMetadata();
-  }, []);
+  const assetsMetadata: AssetMetadata | null = data?.data || null;
 
   const archiveAssets = async () => {
     setDownloading(true);
     try {
       const res = await fetch("/api/download/assets");
-      setDownloading(false);
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || "Failed to create assets archive");
@@ -83,7 +53,9 @@ export default function AssetsDialog() {
         title: "Assets archived successfully",
         description: "Assets archive has been downloaded.",
       });
-      await fetchAssetsMetadata();
+
+      // refetch metadata after successful download
+      refetch();
     } catch (err) {
       console.error("Failed to archive assets:", err);
       toast({
@@ -96,48 +68,59 @@ export default function AssetsDialog() {
     }
   };
 
+  if (isLoading || isFetching) {
+    return (
+      <div className="flex justify-center items-center py-8">
+        <Loader className="h-6 w-6 animate-spin text-primary" />
+        <p className="ml-2 text-sm text-muted-foreground">Loading assets...</p>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="text-center text-red-500 py-6">
+        Failed to load assets metadata:{" "}
+        {(error as any)?.data?.message || "Unknown error"}
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 overflow-y-auto px-6 py-4">
-      {loading ? (
-        <p>Loading...</p>
-      ) : (
-        <>
-          {assetsMetadata ? (
-            <div className="mb-4">
-              <div className="flex items-center space-x-2">
-                <FolderIcon className="h-4 w-4" />
-                <div className="w-full flex items-center justify-between pr-4">
-                  <div className="flex flex-col">
-                    <span className="text-sm">{assetsMetadata.name}</span>
-                    <span className="text-xs text-gray-500">
-                      Size: {formatFileSize(assetsMetadata.size)}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      Last Archived:{" "}
-                      {assetsMetadata.lastArchivedAt
-                        ? assetsMetadata.lastArchivedAt
-                        : "Never"}
-                    </span>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    onClick={() => archiveAssets()}
-                    className="text-xs text-blue-500 hover:underline"
-                    disabled={downLoading}
-                  >
-                    {downLoading ? (
-                      <Loader className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <LucideDownload className="w-4 h-4" />
-                    )}
-                  </Button>
-                </div>
+      {assetsMetadata ? (
+        <div className="mb-4">
+          <div className="flex items-center space-x-2">
+            <FolderIcon className="h-4 w-4" />
+            <div className="w-full flex items-center justify-between pr-4">
+              <div className="flex flex-col">
+                <span className="text-sm">{assetsMetadata.name}</span>
+                <span className="text-xs text-gray-500">
+                  Size: {formatFileSize(assetsMetadata.size)}
+                </span>
+                <span className="text-xs text-gray-500">
+                  Last Archived:{" "}
+                  {assetsMetadata.lastArchivedAt ?? "Never"}
+                </span>
               </div>
+
+              <Button
+                variant="ghost"
+                onClick={archiveAssets}
+                className="text-xs text-blue-500 hover:underline"
+                disabled={downLoading}
+              >
+                {downLoading ? (
+                  <Loader className="w-4 h-4 animate-spin" />
+                ) : (
+                  <LucideDownload className="w-4 h-4" />
+                )}
+              </Button>
             </div>
-          ) : (
-            <p>No assets metadata available.</p>
-          )}
-        </>
+          </div>
+        </div>
+      ) : (
+        <p>No assets metadata available.</p>
       )}
     </div>
   );

@@ -17,8 +17,13 @@ import { LoginFormValues } from "@/types/login";
 import ReCAPTCHA from "react-google-recaptcha";
 import "./recaptcha-theme.css";
 import { useSelector } from "react-redux";
-import { useGetCaptchaConfigsQuery } from "@/lib/features/settings/settingsApi";
+import {
+  useGetCaptchaConfigsQuery,
+  useGetPortalConfigsQuery,
+} from "@/lib/features/settings/settingsApi";
 import { getDecodedCaptcha } from "@/hooks/useSSE";
+import { useFetchOrgQuery } from "@/lib/features/org/orgApi";
+import LoadingScreen from "@/app/loading-screen";
 import packageJson from "@/../package.json";
 
 // Animated Grid Pattern Component
@@ -35,7 +40,7 @@ interface AnimatedGridPatternProps {
   repeatDelay?: number;
 }
 
-function AnimatedGridPattern({
+export function AnimatedGridPattern({
   width = 40,
   height = 40,
   x = -1,
@@ -172,7 +177,7 @@ interface FlickeringGridProps {
   maxOpacity?: number;
 }
 
-const FlickeringGrid: React.FC<FlickeringGridProps> = ({
+export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
   squareSize = 4,
   gridGap = 6,
   flickerChance = 0.3,
@@ -381,7 +386,6 @@ export default function LoginFormContent({
   const [secondaryColor, setSecondaryColor] = useState<string>("#8b5cf6");
   // const [captcha, setCaptcha] = useState<string>();
   const [captcha, setCaptcha] = useState<string | null>(null); // Allow null for no CAPTCHA
-  const [isLoadingPortal, setIsLoadingPortal] = useState<boolean>(true);
   const [portalError, setPortalError] = useState<boolean>(false);
   const [decryptedSiteKey, setDecryptedSiteKey] = useState<string | null>(null);
 
@@ -399,6 +403,19 @@ export default function LoginFormContent({
     isLoading: isCaptchaLoading,
     error: captchaError,
   } = useGetCaptchaConfigsQuery(undefined);
+
+  const {
+    data: portalConfig,
+    isLoading: isLoadingPortal,
+    error: portalConfigError,
+  } = useGetPortalConfigsQuery(undefined);
+
+  const {
+    data: orgResponse,
+    isLoading: isOrgLoading,
+    error: orgError,
+  } = useFetchOrgQuery(undefined);
+
   useEffect(() => {
     // debugger;
     if (user && user.id && user.role) {
@@ -424,18 +441,10 @@ export default function LoginFormContent({
   }, [captchaConfig]);
 
   useEffect(() => {
-    async function checkAllowance() {
-      const data = await fetch("/api/orgs");
-      if (data.ok) {
-        const response = await data.json();
-        // If there are multiple portals, allow selection
-        if (response.portals && response.portals.length > 1) {
-          setIsMultiple(true);
-        }
-      }
+    if (orgResponse?.portals?.length > 1) {
+      setIsMultiple(true);
     }
-    checkAllowance();
-  }, []);
+  }, [orgResponse]);
 
   // Set initial loading title
   useEffect(() => {
@@ -444,66 +453,42 @@ export default function LoginFormContent({
 
   // Fetch portal settings for logo and name
   useEffect(() => {
-    async function fetchPortalSettings() {
-      setIsLoadingPortal(true);
-      setPortalError(false);
+    if (!portalConfig) return;
 
-      try {
-        const response = await fetch("/api/settings/portal");
-        if (response.ok) {
-          const data = await response.json();
-
-          // Update portal settings if data exists
-          if (data.portalLogo?.url) {
-            setPortalLogo(data.portalLogo.url);
-          }
-          if (data.portalLogoDark?.url) {
-            setPortalLogoDark(data.portalLogoDark.url);
-          }
-          if (data.portalFavicon?.url) {
-            setPortalFavicon(data.portalFavicon.url);
-            // Set favicon
-            const favicon = document.querySelector(
-              "link[rel*='icon']"
-            ) as HTMLLinkElement;
-            // debugger;
-            if (favicon) {
-              favicon.href = data.portalFavicon.url;
-            } else {
-              const newFavicon = document.createElement("link");
-              newFavicon.rel = "icon";
-              newFavicon.href = data.portalFavicon.url;
-              document.head.appendChild(newFavicon);
-            }
-          }
-          if (data.primaryColor) {
-            setPrimaryColor(data.primaryColor);
-          }
-          if (data.secondaryColor) {
-            setSecondaryColor(data.secondaryColor);
-          }
-          if (data.portalName) {
-            setPortalName(data.portalName);
-            document.title = data.portalName;
-          } else {
-            // Use default title if no portal name
-            document.title = "HireTrack";
-          }
+    try {
+      if (portalConfig.portalLogo?.url)
+        setPortalLogo(portalConfig.portalLogo.url);
+      if (portalConfig.portalLogoDark?.url)
+        setPortalLogoDark(portalConfig.portalLogoDark.url);
+      if (portalConfig.portalFavicon?.url) {
+        setPortalFavicon(portalConfig.portalFavicon.url);
+        const favicon = document.querySelector(
+          "link[rel*='icon']"
+        ) as HTMLLinkElement;
+        if (favicon) {
+          favicon.href = portalConfig.portalFavicon.url;
         } else {
-          // API call failed
-          setPortalError(true);
-          document.title = "HireTrack";
+          const newFavicon = document.createElement("link");
+          newFavicon.rel = "icon";
+          newFavicon.href = portalConfig.portalFavicon.url;
+          document.head.appendChild(newFavicon);
         }
-      } catch (error) {
-        console.error("Failed to fetch portal settings:", error);
-        setPortalError(true);
-        document.title = "HireTrack";
-      } finally {
-        setIsLoadingPortal(false);
       }
+      if (portalConfig.primaryColor) setPrimaryColor(portalConfig.primaryColor);
+      if (portalConfig.secondaryColor)
+        setSecondaryColor(portalConfig.secondaryColor);
+      if (portalConfig.portalName) {
+        setPortalName(portalConfig.portalName);
+        document.title = portalConfig.portalName;
+      } else {
+        document.title = "HireTrack";
+      }
+    } catch (error) {
+      console.error("Error applying portal settings:", error);
+      setPortalError(true);
+      document.title = "HireTrack";
     }
-    fetchPortalSettings();
-  }, []);
+  }, [portalConfig]);
 
   // Get default logo based on theme
   const getDefaultLogo = () => {
@@ -567,44 +552,8 @@ export default function LoginFormContent({
   }, [primaryColor, secondaryColor, portalError, isLoadingPortal]);
 
   // Show loading indicator while fetching portal settings
-  if (isLoadingPortal) {
-    return (
-      <div className="min-h-screen w-full bg-background relative overflow-hidden flex items-center justify-center p-4">
-        {/* Animated Background for loading state */}
-        <div className="absolute inset-0">
-          <AnimatedGridPattern
-            numSquares={30}
-            maxOpacity={0.05}
-            duration={3}
-            repeatDelay={1}
-            className={cx(
-              "[mask-image:radial-gradient(500px_circle_at_center,white,transparent)]",
-              "inset-x-0 inset-y-[-30%] h-[200%] skew-y-12"
-            )}
-          />
-        </div>
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="relative z-10 flex flex-col items-center gap-6"
-        >
-          <div className="relative">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-primary/20 to-primary/5 animate-pulse" />
-            <div className="absolute inset-2">
-              <div className="w-full h-full rounded-full border-3 border-primary/30 border-t-primary animate-spin" />
-            </div>
-          </div>
-          <div className="text-center space-y-2">
-            {/* <p className="text-lg font-medium text-foreground">Loading Portal Settings</p> */}
-            <p className="text-sm text-muted-foreground animate-pulse">
-              Please wait...
-            </p>
-          </div>
-        </motion.div>
-      </div>
-    );
+  if (isLoadingPortal || isOrgLoading || isCaptchaLoading) {
+    return <LoadingScreen />;
   }
 
   const appVersion = packageJson.version;

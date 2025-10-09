@@ -363,8 +363,8 @@ export function CandidateForm({
                 }
                 setTimeout(() => {
                   setTouched({
-                    name: true,
-                    location: true,
+                    name: false,
+                    location: false,
                     experience: true,
                     relevantExperience: true,
                     skills: true,
@@ -372,7 +372,7 @@ export function CandidateForm({
                     currentCTC: true,
                     noticePeriod: true,
                     // resume: true,
-                    email: true,
+                    email: false,
                   });
                 }, 100);
               }}
@@ -1168,8 +1168,8 @@ export function CandidateForm({
                 }
                 setTimeout(() => {
                   setTouched({
-                    name: true,
-                    location: true,
+                    name: false,
+                    location: false,
                     experience: true,
                     relevantExperience: true,
                     skills: true,
@@ -1177,7 +1177,7 @@ export function CandidateForm({
                     currentCTC: true,
                     noticePeriod: true,
                     // resume: true,
-                    email: true,
+                    email: false,
                   });
                 }, 100);
               }}
