@@ -22,6 +22,40 @@ import {
   UserEmailSettings,
 } from "@/hooks/useEmailNotificationSettings";
 
+// ✅ Generate default settings automatically for all notification types
+const createDefaultNotificationSettings = (): Record<
+  EmailNotificationType,
+  boolean
+> =>
+  Object.fromEntries(
+    (
+      [
+        "newApplications",
+        "interviewAssignments",
+        "statusUpdates",
+        "newRemarks",
+        "stepCompleted",
+        "mentions",
+        "detailsUpdated",
+        "meetingScheduled",
+        "meetingUpdated",
+        "meetingCancelled",
+        "meetingInviteAccepted",
+        "meetingInviteDeclined",
+        "meetingInviteTentative",
+        "interviewCompleted",
+        "followupAdded",
+        "followupUpdated",
+        "followupRemoved",
+        "checklistCompleted",
+        "jobCreated",
+        "jobUpdated",
+        "userAdded",
+        "bulkImportCompleted",
+      ] satisfies EmailNotificationType[]
+    ).map((type) => [type, true])
+  ) as Record<EmailNotificationType, boolean>;
+
 interface EmailNotificationSettingsDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
@@ -40,14 +74,7 @@ export function EmailNotificationSettingsDialog({
   jobId,
 }: EmailNotificationSettingsDialogProps) {
   const [localSettings, setLocalSettings] = useState<UserEmailSettings>({
-    global: {
-      newApplications: true,
-      interviewAssignments: true,
-      statusUpdates: true,
-      newRemarks: true,
-      stepCompleted: true,
-      mentions: true,
-    },
+    global: createDefaultNotificationSettings(),
     jobLevel: {},
   });
 
@@ -56,31 +83,26 @@ export function EmailNotificationSettingsDialog({
   const { updateSettings, loading: updating } =
     useUpdateUserEmailNotificationSettings();
 
-  // Initialize local settings when data loads
+  // ✅ Initialize local settings when data loads
   useEffect(() => {
     if (settings) {
       const newLocalSettings: UserEmailSettings = {
-        global: {
-          newApplications: settings.global.newApplications.enabled,
-          interviewAssignments: settings.global.interviewAssignments.enabled,
-          statusUpdates: settings.global.statusUpdates.enabled,
-          newRemarks: settings.global.newRemarks.enabled,
-          stepCompleted: settings.global.stepCompleted.enabled,
-          mentions: settings.global.mentions.enabled,
-        },
+        global: createDefaultNotificationSettings(),
         jobLevel: {},
       };
 
-      // If job-specific settings exist, populate them
+      // Apply actual global settings
+      Object.entries(settings.global).forEach(([key, value]) => {
+        newLocalSettings.global[key as EmailNotificationType] = value.enabled;
+      });
+
+      // Apply job-level overrides if any
       if (settings.jobLevel && jobId) {
-        newLocalSettings.jobLevel[jobId] = {
-          newApplications: settings.jobLevel.newApplications.enabled,
-          interviewAssignments: settings.jobLevel.interviewAssignments.enabled,
-          statusUpdates: settings.jobLevel.statusUpdates.enabled,
-          newRemarks: settings.jobLevel.newRemarks.enabled,
-          stepCompleted: settings.jobLevel.stepCompleted.enabled,
-          mentions: settings.jobLevel.mentions.enabled,
-        };
+        const jobSettings = createDefaultNotificationSettings();
+        Object.entries(settings.jobLevel).forEach(([key, value]) => {
+          jobSettings[key as EmailNotificationType] = value.enabled;
+        });
+        newLocalSettings.jobLevel[jobId] = jobSettings;
       }
 
       setLocalSettings(newLocalSettings);
@@ -90,18 +112,14 @@ export function EmailNotificationSettingsDialog({
   const handleToggle = (type: EmailNotificationType, enabled: boolean) => {
     setLocalSettings((prev) => {
       const newSettings = { ...prev };
-
       if (jobId) {
-        // Update job-specific setting
         if (!newSettings.jobLevel[jobId]) {
           newSettings.jobLevel[jobId] = { ...newSettings.global };
         }
         newSettings.jobLevel[jobId][type] = enabled;
       } else {
-        // Update global setting
         newSettings.global[type] = enabled;
       }
-
       return newSettings;
     });
   };
@@ -114,131 +132,69 @@ export function EmailNotificationSettingsDialog({
       } = {};
 
       if (jobId) {
-        // Save job-specific settings
         updates.jobLevel = {
           [jobId]: localSettings.jobLevel[jobId] || localSettings.global,
         };
       } else {
-        // Save global settings
         updates.global = localSettings.global;
       }
 
       await updateSettings(userId, updates);
       await refetch();
     } catch {
-      // Error handling is done by the hook
+      // handled by hook
     }
   };
 
   const handleReset = () => {
     if (settings) {
-      const newLocalSettings: UserEmailSettings = {
-        global: {
-          newApplications: settings.global.newApplications.enabled,
-          interviewAssignments: settings.global.interviewAssignments.enabled,
-          statusUpdates: settings.global.statusUpdates.enabled,
-          newRemarks: settings.global.newRemarks.enabled,
-          stepCompleted: settings.global.stepCompleted.enabled,
-          mentions: settings.global.mentions.enabled,
-        },
+      const resetSettings: UserEmailSettings = {
+        global: createDefaultNotificationSettings(),
         jobLevel: {},
       };
 
+      Object.entries(settings.global).forEach(([key, value]) => {
+        resetSettings.global[key as EmailNotificationType] = value.enabled;
+      });
+
       if (settings.jobLevel && jobId) {
-        newLocalSettings.jobLevel[jobId] = {
-          newApplications: settings.jobLevel.newApplications.enabled,
-          interviewAssignments: settings.jobLevel.interviewAssignments.enabled,
-          statusUpdates: settings.jobLevel.statusUpdates.enabled,
-          newRemarks: settings.jobLevel.newRemarks.enabled,
-          stepCompleted: settings.jobLevel.stepCompleted.enabled,
-          mentions: settings.jobLevel.mentions.enabled,
-        };
+        const jobSettings = createDefaultNotificationSettings();
+        Object.entries(settings.jobLevel).forEach(([key, value]) => {
+          jobSettings[key as EmailNotificationType] = value.enabled;
+        });
+        resetSettings.jobLevel[jobId] = jobSettings;
       }
 
-      setLocalSettings(newLocalSettings);
+      setLocalSettings(resetSettings);
     } else {
-      // Reset to default values if no settings loaded
       setLocalSettings({
-        global: {
-          newApplications: true,
-          interviewAssignments: true,
-          statusUpdates: true,
-          newRemarks: true,
-          stepCompleted: true,
-          mentions: true,
-        },
+        global: createDefaultNotificationSettings(),
         jobLevel: {},
       });
     }
   };
 
-  const getCurrentSettings = () => {
-    if (jobId && localSettings.jobLevel[jobId]) {
-      return localSettings.jobLevel[jobId];
-    }
-    return localSettings.global;
-  };
+  const getCurrentSettings = () =>
+    jobId && localSettings.jobLevel[jobId]
+      ? localSettings.jobLevel[jobId]
+      : localSettings.global;
 
-  const getEffectiveToggleState = (type: EmailNotificationType) => {
-    const currentSettings = getCurrentSettings();
-
-    // Always use the current local settings if they exist
-    if (currentSettings[type] !== undefined) {
-      return currentSettings[type];
-    }
-
-    // If no local settings, fall back to the original settings from API
-    if (settings) {
-      if (jobId && settings.jobLevel) {
-        return settings.jobLevel[type]?.enabled ?? true;
-      }
-      return settings.global[type]?.enabled ?? true;
-    }
-
-    // Default to true if no settings at all
-    return true;
-  };
-
-  const getCurrentSource = (type: EmailNotificationType) => {
-    if (!settings) return "org-default";
-
-    if (jobId && settings.jobLevel) {
-      return settings.jobLevel[type]?.source || "org-default";
-    }
-
-    // When configuring for another user, show "global-user" instead of the actual source
-    // to indicate these are the user's global settings being configured
-    return "global-user";
-  };
-
-  const notificationTypes: EmailNotificationType[] = [
-    "newApplications",
-    "interviewAssignments",
-    "statusUpdates",
-    "newRemarks",
-    "stepCompleted",
-    "mentions",
-  ];
+  const notificationTypes = Object.keys(
+    createDefaultNotificationSettings()
+  ) as EmailNotificationType[];
 
   const hasChanges = () => {
     if (!settings) return false;
-
     const currentSettings = getCurrentSettings();
-
-    if (jobId && settings.jobLevel) {
-      return notificationTypes.some((type) => {
-        const currentValue = currentSettings[type];
-        const originalValue =
-          settings.jobLevel[type]?.enabled ??
-          settings.global[type]?.enabled ??
-          true;
-        return currentValue !== originalValue;
-      });
-    }
 
     return notificationTypes.some((type) => {
       const currentValue = currentSettings[type];
-      const originalValue = settings.global[type]?.enabled ?? true;
+      const originalValue =
+        jobId && settings.jobLevel
+          ? (settings.jobLevel[type]?.enabled ??
+            settings.global[type]?.enabled ??
+            true)
+          : (settings.global[type]?.enabled ?? true);
       return currentValue !== originalValue;
     });
   };
@@ -294,8 +250,8 @@ export function EmailNotificationSettingsDialog({
         </DialogHeader>
 
         <div className="flex flex-col h-full">
-          <div className="space-y-4 flex-1 overflow-y-auto px-6 py-4">
-            {/* Settings Type Badge */}
+          {/* ✅ Scrollable content with max height */}
+          <div className="space-y-4 flex-1 overflow-y-auto px-6 py-4 max-h-[70vh] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
             <div className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               <Badge variant="outline">
@@ -305,29 +261,22 @@ export function EmailNotificationSettingsDialog({
 
             <Separator />
 
-            {/* Notification Toggles */}
             <div className="space-y-0">
               {notificationTypes.map((type) => (
                 <EmailNotificationToggle
                   key={type}
                   type={type}
-                  enabled={getEffectiveToggleState(type)}
-                  source={
-                    getCurrentSource(type) as
-                      | "job-level"
-                      | "global-user"
-                      | "admin-override"
-                      | "org-default"
-                  }
+                  enabled={getCurrentSettings()[type]}
+                  source="global-user"
                   onToggle={handleToggle}
                   disabled={updating}
-                  showSource={false} // Don't show source badges - header is clear enough
+                  showSource={false}
                 />
               ))}
             </div>
           </div>
 
-          {/* Action Buttons */}
+          {/* Footer */}
           <div className="flex justify-between items-center border-t bg-background px-6 py-4 sticky bottom-0 z-10 gap-4">
             <Button
               variant="outline"

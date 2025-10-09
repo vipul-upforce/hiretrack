@@ -908,10 +908,7 @@ const ChecklistRemarksDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent
-        size="2xl"
-        className="p-0 overflow-hidden flex flex-col max-h-[90vh]"
-      >
+      <DialogContent size="2xl" className="p-0  flex flex-col max-h-[90vh]">
         <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle className="flex items-center gap-2">
             {hasChecklist && <ClipboardCheck className="h-5 w-5" />}

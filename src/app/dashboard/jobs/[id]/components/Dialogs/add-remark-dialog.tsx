@@ -189,7 +189,7 @@ const AddRemarksDialog = ({
       <DialogTrigger asChild>
         <div></div>
       </DialogTrigger>
-      <DialogContent size="lg" className="p-0 overflow-hidden flex flex-col">
+      <DialogContent size="lg" className="p-0  flex flex-col">
         <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle>Add Remarks for {candidate.name}</DialogTitle>
           <DialogDescription>
@@ -197,7 +197,7 @@ const AddRemarksDialog = ({
             include a rating and set privacy preferences.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+        <div className="flex-1  px-6 py-4 space-y-4">
           <MentionTextarea
             placeholder="Add a remark... (Alt+Enter to submit)"
             className="max-h-80 overflow-y-auto"

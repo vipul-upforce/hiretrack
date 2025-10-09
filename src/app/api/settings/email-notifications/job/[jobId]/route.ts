@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import dbConnect, { User, Job } from "@/lib/mongodb";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
 import mongoose from "mongoose";
-import { getUserEffectiveEmailSettings } from "@/lib/services/emailDecisionEngine";
+import { getUserEffectiveNotificationSettings } from "@/lib/services/emailDecisionEngine";
 
 /**
  * GET /api/settings/email-notifications/job/[jobId]
@@ -72,7 +72,7 @@ export async function GET(
 
     // Get effective settings (resolved through priority chain)
 
-    const effectiveSettings = await getUserEffectiveEmailSettings(
+    const effectiveSettings = await getUserEffectiveNotificationSettings(
       userId.toString(),
       organizationId.toString(),
       jobId
@@ -156,13 +156,38 @@ export async function PUT(
       );
     }
 
+    // const validKeys = [
+    //   "newApplications",
+    //   "interviewAssignments",
+    //   "statusUpdates",
+    //   "newRemarks",
+    //   "stepCompleted",
+    //   "mentions",
+    // ];
     const validKeys = [
-      "newApplications",
-      "interviewAssignments",
-      "statusUpdates",
-      "newRemarks",
-      "stepCompleted",
       "mentions",
+      "newApplications",
+      "statusUpdates",
+      "detailsUpdated",
+      "interviewAssignments",
+      "stepCompleted",
+      "newRemarks",
+      "meetingScheduled",
+      "meetingUpdated",
+      "meetingCancelled",
+      "meetingInviteAccepted",
+      "meetingInviteDeclined",
+      "meetingInviteTentative",
+      "followupAdded",
+      "followupUpdated",
+      "followupRemoved",
+      "checklistCompleted",
+      "jobCreated",
+      "jobUpdated",
+      "userAdded",
+      "bulkImportCompleted",
+      "candidateRejected",
+      "interviewCompleted",
     ];
     for (const key of validKeys) {
       if (settings[key] !== undefined && typeof settings[key] !== "boolean") {
@@ -190,8 +215,8 @@ export async function PUT(
     }
 
     // Get updated effective settings
-    const effectiveSettings = await getUserEffectiveEmailSettings(
-      currentUser._id,
+    const effectiveSettings = await getUserEffectiveNotificationSettings(
+      currentUser.id,
       currentUser.organizationId,
       jobId
     );
@@ -266,7 +291,7 @@ export async function DELETE(
     });
 
     // Get updated effective settings
-    const effectiveSettings = await getUserEffectiveEmailSettings(
+    const effectiveSettings = await getUserEffectiveNotificationSettings(
       userId.toString(),
       organizationId.toString(),
       jobId

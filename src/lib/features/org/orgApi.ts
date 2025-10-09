@@ -48,6 +48,7 @@ export interface IScheduledMailRequest {
   interviewerName: string;
   candidateName: string;
   status: string;
+  jobId?: string;
   // remark?: string;
   // rating?: number;
 }
@@ -62,6 +63,7 @@ export interface IScheduledStatusMailRequest {
   jobName?: string;
   startTime?: string;
   endTime?: string;
+  jobId?: string;
 }
 
 export interface CreateOrgResponse {

@@ -13,8 +13,10 @@ import {
   sanitizeString,
 } from "@/lib/inputValidation";
 import { NotificationService } from "@/lib/notifications/notificationService";
-import { sendSmartNotificationEmail } from "@/lib/unifiedEmailService";
+// import { sendSmartNotification } from "@/lib/unifiedEmailService";
 import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
+import { NotificationType } from "@/lib/services/emailDecisionEngine";
+import { sendSmartNotification } from "@/lib/unifiedEmailService";
 
 export async function POST(request: NextRequest) {
   try {
@@ -91,6 +93,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    console.log(data, "data,application");
 
     const job = await Job.findById(new mongoose.Types.ObjectId(jobId._id));
 
@@ -276,9 +279,10 @@ export async function POST(request: NextRequest) {
         );
 
         if (adminHrIds.length > 0) {
-          await sendSmartNotificationEmail(
+          await sendSmartNotification(
             organizationId.toString(),
-            "newApplications",
+            // "newApplications",
+            NotificationType.NEW_APPLICATIONS,
             {
               jobId: jobId._id,
               candidateId: candidate._id.toString(),

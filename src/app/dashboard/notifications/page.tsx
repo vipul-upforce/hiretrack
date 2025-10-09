@@ -181,13 +181,13 @@ export default function NotificationsPage() {
       // HR sees candidate, job, user, and system related notifications
       return allTypes.filter(
         (type) =>
-          type === NotificationType.CANDIDATE_APPLIED ||
-          type === NotificationType.CANDIDATE_STATUS_UPDATED ||
+          type === NotificationType.NEW_APPLICATIONS ||
+          type === NotificationType.STATUS_UPDATES ||
           type === NotificationType.CANDIDATE_DETAILS_UPDATED ||
-          type === NotificationType.CANDIDATE_ASSIGNED ||
-          type === NotificationType.CANDIDATE_UNASSIGNED ||
+          type === NotificationType.INTERVIEW_ASSIGNMENTS ||
+          type === NotificationType.STEP_COMPLETED ||
           type === NotificationType.CANDIDATE_REJECTED ||
-          type === NotificationType.REMARK_ADDED ||
+          type === NotificationType.NEW_REMARKS ||
           type === NotificationType.MEETING_SCHEDULED ||
           type === NotificationType.MEETING_UPDATED ||
           type === NotificationType.MEETING_CANCELLED ||
@@ -208,12 +208,12 @@ export default function NotificationsPage() {
       // Interviewers see only candidate and meeting related notifications
       return allTypes.filter(
         (type) =>
-          type === NotificationType.CANDIDATE_ASSIGNED ||
-          type === NotificationType.CANDIDATE_UNASSIGNED ||
+          type === NotificationType.INTERVIEW_ASSIGNMENTS ||
+          type === NotificationType.STEP_COMPLETED ||
           type === NotificationType.MEETING_SCHEDULED ||
           type === NotificationType.MEETING_UPDATED ||
           type === NotificationType.MEETING_CANCELLED ||
-          type === NotificationType.REMARK_ADDED
+          type === NotificationType.NEW_REMARKS
         // type === NotificationType.FOLLOWUP_ADDED ||
         // type === NotificationType.FOLLOWUP_UPDATED ||
         // type === NotificationType.FOLLOWUP_REMOVED ||
@@ -252,7 +252,11 @@ export default function NotificationsPage() {
                   Refresh
                 </Button>
                 {unreadCount > 0 && (
-                  <Button size="sm" onClick={handleMarkAllAsRead} variant="primary">
+                  <Button
+                    size="sm"
+                    onClick={handleMarkAllAsRead}
+                    variant="primary"
+                  >
                     <Check className="h-4 w-4 mr-2" />
                     Mark all read
                   </Button>
@@ -319,21 +323,21 @@ export default function NotificationsPage() {
           {(filterType !== "all" ||
             filterRead !== "all" ||
             filterPriority !== "all") && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setFilterType("all");
-                  setFilterRead("all");
-                  setFilterPriority("all");
-                  setCurrentPage(1);
-                }}
-                className="h-9"
-              >
-                <Filter className="h-4 w-4 mr-2" />
-                Clear filters
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setFilterType("all");
+                setFilterRead("all");
+                setFilterPriority("all");
+                setCurrentPage(1);
+              }}
+              className="h-9"
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              Clear filters
+            </Button>
+          )}
         </div>
       </div>
 
@@ -376,8 +380,8 @@ export default function NotificationsPage() {
                 </h3>
                 <p className="text-muted-foreground max-w-md">
                   {filterType !== "all" ||
-                    filterRead !== "all" ||
-                    filterPriority !== "all"
+                  filterRead !== "all" ||
+                  filterPriority !== "all"
                     ? "No notifications match your current filters. Try adjusting your filters to see more notifications."
                     : "You're all caught up! New notifications will appear here when there's activity."}
                 </p>

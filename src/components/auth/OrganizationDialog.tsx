@@ -64,15 +64,22 @@ const OrganizationDialog: React.FC<OrganizationDialogProps> = ({
               {data.organizations.map((org) => (
                 <div
                   key={org.orgId}
-                  className="flex items-center space-x-3 p-3 border rounded-md hover:bg-gray-100  dark:hover:bg-gray-900 transition-colors"
+                  onClick={() => setSelectedOrgIdLocal(org.orgId)}
+                  className={`flex items-center space-x-3 p-3 border rounded-md cursor-pointer 
+                              hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors 
+                              ${selectedOrgId === org.orgId ? "border-primary" : ""}`}
                 >
                   <RadioGroupItem
                     value={org.orgId}
                     id={org.orgId}
                     disabled={loadingOrg === org.orgId}
+                    className="pointer-events-none"
                   />
                   <div className="flex flex-col">
-                    <Label htmlFor={org.orgId} className="font-medium">
+                    <Label
+                      htmlFor={org.orgId}
+                      className="font-medium cursor-pointer"
+                    >
                       {org.name}
                     </Label>
                     <span className="text-xs text-gray-500">

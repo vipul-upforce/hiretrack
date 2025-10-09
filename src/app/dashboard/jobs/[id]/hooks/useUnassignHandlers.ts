@@ -80,7 +80,7 @@ export const useUnassignHandlers = (
         sendUnassignEmail({
           name: result.name,
           candidateId: updatedCandidate._id || "",
-          jobId: localCandidate?.jobId.title || localCandidate?.jobId || "",
+          jobId: localCandidate?.jobId._id || localCandidate?.jobId || "",
           title: localCandidate?.jobId.title || localCandidate?.jobId || "",
           dateTime: new Date().toISOString(),
           status: localCandidate?.status,

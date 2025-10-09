@@ -129,9 +129,9 @@ const nextConfig: NextConfig = {
           // Remove X-Frame-Options to allow embedding
           { key: "X-Frame-Options", value: "ALLOWALL" },
           // Set Content Security Policy to allow framing from any origin
-          { 
-            key: "Content-Security-Policy", 
-            value: "frame-ancestors *;" 
+          {
+            key: "Content-Security-Policy",
+            value: "frame-ancestors *;",
           },
           // Additional CORS headers for embedded content
           { key: "Access-Control-Allow-Origin", value: "*" },
@@ -157,11 +157,11 @@ const nextConfig: NextConfig = {
     ];
   },
   // Optimize TypeScript compilation
-  typescript: {
-    // Disable TypeScript checking during build for faster builds
-    ignoreBuildErrors: false,
-  },
-  // Optimize ESLint
+  // typescript: {
+  //   // Disable TypeScript checking during build for faster builds
+  //   ignoreBuildErrors: false,
+  // },
+  // // Optimize ESLint
   eslint: {
     // Disable ESLint during builds for faster builds
     ignoreDuringBuilds: true,

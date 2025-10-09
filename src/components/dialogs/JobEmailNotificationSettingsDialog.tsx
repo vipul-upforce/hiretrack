@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -32,44 +32,67 @@ export function JobEmailNotificationSettingsDialog({
   jobId,
   jobTitle,
 }: JobEmailNotificationSettingsDialogProps) {
+  // Dynamically list all notification types from the toggle definition
+  const allNotificationTypes: EmailNotificationType[] = useMemo(
+    () => [
+      "mentions",
+      "newRemarks",
+      "newApplications",
+      "statusUpdates",
+      "detailsUpdated",
+      "interviewAssignments",
+      "stepCompleted",
+      "meetingScheduled",
+      "meetingUpdated",
+      "meetingCancelled",
+      "meetingInviteAccepted",
+      "meetingInviteDeclined",
+      "meetingInviteTentative",
+      "followupAdded",
+      "followupUpdated",
+      "followupRemoved",
+      "checklistCompleted",
+      "jobCreated",
+      "jobUpdated",
+      "candidateRejected",
+      "interviewCompleted",
+    ],
+    []
+  );
+
   const [localSettings, setLocalSettings] = useState<
     Record<EmailNotificationType, boolean>
-  >({
-    newApplications: true,
-    interviewAssignments: true,
-    statusUpdates: true,
-    newRemarks: true,
-    stepCompleted: true,
-    mentions: true,
-  });
+  >(
+    () =>
+      Object.fromEntries(
+        allNotificationTypes.map((type) => [type, true])
+      ) as Record<EmailNotificationType, boolean>
+  );
 
   const { settings, loading, error, refetch } =
     useJobEmailNotificationSettings(jobId);
   const { updateSettings, loading: updating } =
     useUpdateJobEmailNotificationSettings();
 
-  // Initialize local settings when data loads
+  // Initialize or refresh local settings
   useEffect(() => {
     if (settings?.currentJobSettings) {
+      // Use saved per-job settings
       setLocalSettings(settings.currentJobSettings);
     } else if (settings?.effectiveSettings) {
-      // Use effective settings as fallback
-      const effectiveSettings: Record<EmailNotificationType, boolean> = {
-        newApplications: true,
-        interviewAssignments: true,
-        statusUpdates: true,
-        newRemarks: true,
-        stepCompleted: true,
-        mentions: true,
-      };
+      // Build from effective settings
+      const effective: Record<EmailNotificationType, boolean> = {
+        ...Object.fromEntries(allNotificationTypes.map((t) => [t, true])),
+      } as Record<EmailNotificationType, boolean>;
+
       Object.entries(settings.effectiveSettings).forEach(([key, value]) => {
-        if (key in effectiveSettings) {
-          effectiveSettings[key as EmailNotificationType] = value.enabled;
+        if (key in effective) {
+          effective[key as EmailNotificationType] = value.enabled;
         }
       });
-      setLocalSettings(effectiveSettings);
+      setLocalSettings(effective);
     }
-  }, [settings]);
+  }, [settings, allNotificationTypes]);
 
   const handleToggle = (type: EmailNotificationType, enabled: boolean) => {
     setLocalSettings((prev) => ({
@@ -83,7 +106,7 @@ export function JobEmailNotificationSettingsDialog({
       await updateSettings(jobId, localSettings);
       await refetch();
     } catch {
-      // Error handling is done by the hook
+      // error handled by hook
     }
   };
 
@@ -91,58 +114,36 @@ export function JobEmailNotificationSettingsDialog({
     if (settings?.currentJobSettings) {
       setLocalSettings(settings.currentJobSettings);
     } else if (settings?.effectiveSettings) {
-      // Reset to effective settings
-      const effectiveSettings: Record<EmailNotificationType, boolean> = {
-        newApplications: true,
-        interviewAssignments: true,
-        statusUpdates: true,
-        newRemarks: true,
-        stepCompleted: true,
-        mentions: true,
-      };
+      const effective = {
+        ...Object.fromEntries(allNotificationTypes.map((t) => [t, true])),
+      } as Record<EmailNotificationType, boolean>;
+
       Object.entries(settings.effectiveSettings).forEach(([key, value]) => {
-        if (key in effectiveSettings) {
-          effectiveSettings[key as EmailNotificationType] = value.enabled;
+        if (key in effective) {
+          effective[key as EmailNotificationType] = value.enabled;
         }
       });
-      setLocalSettings(effectiveSettings);
+      setLocalSettings(effective);
     } else {
-      // Reset to default settings
-      setLocalSettings({
-        newApplications: true,
-        interviewAssignments: true,
-        statusUpdates: true,
-        newRemarks: true,
-        stepCompleted: true,
-        mentions: true,
-      });
+      // Default to all enabled
+      setLocalSettings(
+        Object.fromEntries(
+          allNotificationTypes.map((t) => [t, true])
+        ) as Record<EmailNotificationType, boolean>
+      );
     }
   };
 
-  const notificationTypes: EmailNotificationType[] = [
-    "newApplications",
-    "interviewAssignments",
-    "statusUpdates",
-    "newRemarks",
-    "stepCompleted",
-    "mentions",
-  ];
-
   const hasChanges = () => {
     if (!settings) return false;
+    const original = settings.currentJobSettings || {};
+    const effective = settings.effectiveSettings || {};
+    const compareSource =
+      Object.keys(original).length > 0 ? original : effective;
 
-    const originalSettings = settings.currentJobSettings || {};
-    const effectiveSettings = settings.effectiveSettings || {};
-
-    // Compare with current job settings if they exist, otherwise compare with effective settings
-    const compareSettings =
-      Object.keys(originalSettings).length > 0
-        ? originalSettings
-        : effectiveSettings;
-
-    return Object.keys(localSettings).some((key) => {
-      const currentValue = localSettings[key as EmailNotificationType];
-      const originalValue = compareSettings[key]?.enabled ?? true;
+    return allNotificationTypes.some((key) => {
+      const currentValue = localSettings[key];
+      const originalValue = compareSource[key]?.enabled ?? true;
       return currentValue !== originalValue;
     });
   };
@@ -203,22 +204,19 @@ export function JobEmailNotificationSettingsDialog({
         </DialogHeader>
 
         <div className="flex flex-col h-full">
-          <div className="space-y-4 flex-1 overflow-y-auto px-6 py-4">
-            <div className="space-y-4">
-              {notificationTypes.map((type) => (
-                <EmailNotificationToggle
-                  key={type}
-                  type={type}
-                  enabled={localSettings[type] || false}
-                  source="job-level"
-                  onToggle={handleToggle}
-                  showSource={false} // Don't show source badges - header is clear enough
-                />
-              ))}
-            </div>
+          <div className="space-y-4 flex-1 overflow-y-auto px-6 py-4 max-h-[400px]">
+            {allNotificationTypes.map((type) => (
+              <EmailNotificationToggle
+                key={type}
+                type={type}
+                enabled={localSettings[type]}
+                source="job-level"
+                onToggle={handleToggle}
+                showSource={true}
+              />
+            ))}
           </div>
 
-          {/* Action Buttons */}
           <div className="flex justify-between items-center border-t bg-background px-6 py-4 sticky bottom-0 z-10 gap-4">
             <Button
               variant="outline"

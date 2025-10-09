@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sendMail } from ".";
-import { sendEventEmailWithHistory } from "@/lib/unifiedEmailService";
+import { sendSmartNotification } from "@/lib/unifiedEmailService";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
 import { Settings, User, EmailHistory } from "@/lib/mongodb";
 import mongoose from "mongoose";
 import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
 import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
 import { Organization } from "@/lib/models/user";
+import { NotificationType } from "@/lib/services/emailDecisionEngine";
 
 // Email queue to track pending emails
 const emailQueue = new Map<
@@ -19,6 +19,64 @@ const emailQueue = new Map<
     senderEmail?: string; // Store the sender's email to exclude from recipients
   }
 >();
+
+// Helper function to resolve sentBy to a valid ObjectId (creates system user if needed)
+async function resolveSentByToObjectId(
+  sentBy: string | any,
+  sentByEmail: string,
+  sentByName: string,
+  organizationId: string,
+  fromEmail: string
+): Promise<string> {
+  let sentById: string;
+
+  if (typeof sentBy === "object" && sentBy?._id) {
+    sentById = sentBy._id.toString();
+  } else if (
+    typeof sentBy === "string" &&
+    mongoose.Types.ObjectId.isValid(sentBy)
+  ) {
+    sentById = sentBy;
+  } else if (sentBy === "system") {
+    // Create or get system user
+    const systemUser = await User.findOneAndUpdate(
+      {
+        email: fromEmail,
+        organizationId: new mongoose.Types.ObjectId(organizationId),
+      },
+      {
+        $setOnInsert: {
+          name: "HireTrack System",
+          email: fromEmail,
+          role: "system",
+          organizationId: new mongoose.Types.ObjectId(organizationId),
+        },
+      },
+      { upsert: true, new: true }
+    );
+    sentById = systemUser._id.toString();
+  } else {
+    // Fallback to system user
+    const systemUser = await User.findOneAndUpdate(
+      {
+        email: fromEmail,
+        organizationId: new mongoose.Types.ObjectId(organizationId),
+      },
+      {
+        $setOnInsert: {
+          name: "HireTrack System",
+          email: fromEmail,
+          role: "system",
+          organizationId: new mongoose.Types.ObjectId(organizationId),
+        },
+      },
+      { upsert: true, new: true }
+    );
+    sentById = systemUser._id.toString();
+  }
+
+  return sentById;
+}
 
 // Create pending email history entries
 async function createPendingEmailHistory(data: any, organizationId: string) {
@@ -38,10 +96,25 @@ async function createPendingEmailHistory(data: any, organizationId: string) {
     organizationId: new mongoose.Types.ObjectId(organizationId),
   }).lean();
 
+  const fromEmail =
+    settings?.mailConfig?.resend_from ||
+    settings?.mailConfig?.brevo_from ||
+    settings?.mailConfig?.smtp_from ||
+    "system@hiretrack.com";
+
   const provider = settings?.mailConfig?.mailProvider || "unknown";
   const historyIds: string[] = [];
 
   try {
+    // Resolve sentBy to valid ObjectId
+    const resolvedSentById = await resolveSentByToObjectId(
+      sentBy,
+      sentByEmail,
+      sentByName,
+      organizationId,
+      fromEmail
+    );
+
     // Get email content for history (this might be expensive, consider caching)
     const { emailContent, emailSubject } = await getMappedEmailTemplate(
       "interview-assignment",
@@ -64,7 +137,7 @@ async function createPendingEmailHistory(data: any, organizationId: string) {
     // Create history record for interviewer (primary recipient) - PENDING
     const interviewerHistory = await EmailHistory.create({
       organizationId: new mongoose.Types.ObjectId(organizationId),
-      sentBy: new mongoose.Types.ObjectId(sentBy._id),
+      sentBy: new mongoose.Types.ObjectId(resolvedSentById),
       sentByEmail: sentByEmail,
       sentByName: sentByName,
       recipientType: "user",
@@ -104,14 +177,7 @@ async function createPendingEmailHistory(data: any, organizationId: string) {
 
         const hrHistory = await EmailHistory.create({
           organizationId: new mongoose.Types.ObjectId(organizationId),
-          sentBy:
-            typeof sentBy === "object" && sentBy._id
-              ? sentBy._id
-              : typeof sentBy === "string"
-                ? new mongoose.Types.ObjectId(sentBy)
-                : sentBy.id || null,
-          // ? sentBy.id
-          // : new mongoose.Types.ObjectId(sentBy),
+          sentBy: new mongoose.Types.ObjectId(resolvedSentById),
           sentByEmail: sentByEmail,
           sentByName: sentByName,
           recipientType: "user",
@@ -284,6 +350,15 @@ async function sendQueuedEmail(
     settings.mailConfig.smtp_from ||
     "system@hiretrack.com";
 
+  // Resolve sentBy to valid ObjectId
+  const resolvedSentById = await resolveSentByToObjectId(
+    sentBy,
+    sentByEmail,
+    sentByName,
+    organizationId,
+    fromEmail
+  );
+
   const startDateString = startTime
     ? ((await getFormattedDate(req, new Date(startTime))) as string) +
       " " +
@@ -360,37 +435,25 @@ async function sendQueuedEmail(
     organizationId
   );
 
-  // Use the unified email service with notification filtering
-  const systemUser = await User.findOneAndUpdate(
-    { email: fromEmail, organizationId },
-    {
-      $setOnInsert: {
-        name: "HireTrack System",
-        email: fromEmail,
-        role: "system",
-        organizationId,
-      },
-    },
-    { upsert: true, new: true }
-  );
-
-  const emailStatus = await sendEventEmailWithHistory(
+  // Use sendSmartNotificationEmail for interview assignments
+  const emailStatus = await sendSmartNotification(
     organizationId,
-    [email, ...emailList],
-    emailSubject,
-    emailContent,
+    // "interviewAssignments",
+    NotificationType.INTERVIEW_ASSIGNMENTS,
     {
-      sentBy: sentBy || systemUser._id.toString(),
-      sentByEmail: sentByEmail || systemUser.email,
-      sentByName: sentByName || systemUser.name,
-      metadata: {
-        candidateId,
-        jobId,
-        templateUsed: "interview-assignment",
-        eventType: "interview_assignment",
-      },
+      triggererUserId: resolvedSentById, // Use resolved ObjectId
+      triggererEmail: sentByEmail,
+      triggererName: sentByName,
+      jobId: jobId,
+      candidateId: candidateId,
+      eventType: "interview_assignment",
+      templateUsed: "interview-assignment",
     },
-    senderEmail || sentByEmail // Pass the triggerer's email to exclude from recipients
+    {
+      subject: emailSubject,
+      html: emailContent,
+    },
+    [email, ...emailList] // Combine primary recipient (interviewer) and BCC recipients (HR/Admins)
   );
 
   // If we have existing history IDs (from pending), update them
@@ -402,94 +465,9 @@ async function sendQueuedEmail(
       { subject: emailSubject, body: emailContent }
     );
   } else {
-    // Fallback: create new history records if none exist (shouldn't happen in normal flow)
-    console.warn("No existing history IDs found, creating new history records");
-
-    const sentById =
-      sentBy && sentBy !== "system" ? sentBy : systemUser._id.toString();
-    const sentByEmailValue =
-      sentByEmail && sentByEmail !== fromEmail ? sentByEmail : systemUser.email;
-    const sentByNameValue =
-      sentByName && sentByName !== "HireTrack System"
-        ? sentByName
-        : systemUser.name;
-
-    // Create new history records (existing code)
-    const historyPromises = [];
-    const provider = settings?.mailConfig?.mailProvider || "unknown";
-
-    historyPromises.push(
-      EmailHistory.create({
-        organizationId: new mongoose.Types.ObjectId(organizationId),
-        sentBy: new mongoose.Types.ObjectId(sentById),
-        sentByEmail: sentByEmailValue,
-        sentByName: sentByNameValue,
-        recipientType: "user",
-        recipientId: new mongoose.Types.ObjectId(),
-        recipientEmail: email,
-        recipientName: interviewerName,
-        subject: emailSubject,
-        body: emailContent,
-        cc: [],
-        bcc: emailList,
-        replyTo: sentByEmailValue,
-        attachments: [],
-        status: emailStatus.status === 200 ? "sent" : "failed",
-        sentAt: emailStatus.status === 200 ? new Date() : undefined,
-        error: emailStatus.status !== 200 ? emailStatus.message : undefined,
-        provider,
-        metadata: {
-          candidateId: new mongoose.Types.ObjectId(candidateId),
-          jobId: jobId ? new mongoose.Types.ObjectId(jobId) : undefined,
-          templateUsed: "interview-assignment",
-          eventType: "interview_assignment",
-        },
-      })
+    console.warn(
+      "No existing history IDs found, relying on sendSmartNotificationEmail to handle history"
     );
-
-    const hrHistoryPromises = emailList.map(async (hrEmail: string) => {
-      try {
-        const hrUser = await User.findOne({
-          email: hrEmail,
-          organizationId: new mongoose.Types.ObjectId(organizationId),
-        })
-          .select("_id name")
-          .lean();
-
-        return await EmailHistory.create({
-          organizationId: new mongoose.Types.ObjectId(organizationId),
-          sentBy: new mongoose.Types.ObjectId(sentById),
-          sentByEmail: sentByEmailValue,
-          sentByName: sentByNameValue,
-          recipientType: "user",
-          recipientId: hrUser?._id || new mongoose.Types.ObjectId(),
-          recipientEmail: hrEmail,
-          recipientName: hrUser?.name || hrEmail,
-          subject: emailSubject,
-          body: emailContent,
-          cc: [],
-          bcc: [],
-          replyTo: sentByEmailValue,
-          attachments: [],
-          status: emailStatus.status === 200 ? "sent" : "failed",
-          sentAt: emailStatus.status === 200 ? new Date() : undefined,
-          error: emailStatus.status !== 200 ? emailStatus.message : undefined,
-          provider,
-          metadata: {
-            candidateId: new mongoose.Types.ObjectId(candidateId),
-            jobId: jobId ? new mongoose.Types.ObjectId(jobId) : undefined,
-            templateUsed: "interview-assignment",
-            eventType: "interview_assignment",
-          },
-        });
-      } catch (error) {
-        console.error(`Failed to create history for ${hrEmail}:`, error);
-        return null;
-      }
-    });
-
-    historyPromises.push(...hrHistoryPromises);
-    await Promise.all(historyPromises);
   }
 
   return emailStatus;
@@ -508,6 +486,7 @@ export async function PUT(req: NextRequest) {
         organizationId = userData.organizationId || "";
       }
     }
+    console.log(data, "data,-- stap cmpleted");
 
     if (!organizationId) {
       return NextResponse.json(
@@ -543,7 +522,6 @@ export async function PUT(req: NextRequest) {
         Array.isArray(obj.defaultLanes)
       );
     };
-    // console.log(latestRemark, "org---dhbd ds stap-comp-==--=--");
 
     const nextSteps =
       organization &&
@@ -553,9 +531,7 @@ export async function PUT(req: NextRequest) {
             organization.organizationId.defaultLanes.indexOf(data.status) + 1
           ] || "N/A"
         : "N/A";
-    // console.log(nextSteps, "nextSteps");
     const candidateDetails = `${req.headers.get("Origin")}/candidate/${data.candidateId}`;
-    // console.log("Detaielsss-------sssss", candidateDetails);
 
     const { emailContent, emailSubject } = await getMappedEmailTemplate(
       "step-completed",
@@ -599,36 +575,37 @@ export async function PUT(req: NextRequest) {
       .select("email")
       .lean();
 
-    const systemUser = await User.findOneAndUpdate(
-      { email: fromEmail, organizationId },
-      {
-        $setOnInsert: {
-          name: "HireTrack System",
-          email: fromEmail,
-          role: "system",
-          organizationId,
-        },
-      },
-      { upsert: true, new: true }
+    // Resolve sentBy to valid ObjectId
+    const resolvedSentById = await resolveSentByToObjectId(
+      decryptedResponse?.user?._id || "system",
+      decryptedResponse?.user?.email || fromEmail,
+      decryptedResponse?.user?.name || "HireTrack System",
+      organizationId,
+      fromEmail
     );
+    console.log(resolvedSentById, "resolvedSentById");
 
     const emailList = users.map((user) => user.email);
-    const emailStatus = await sendEventEmailWithHistory(
+    const emailStatus = await sendSmartNotification(
       organizationId,
-      emailList,
-      emailSubject,
-      emailContent,
+      // "stepCompleted",
+      NotificationType.STEP_COMPLETED,
       {
-        sentBy: decryptedResponse?.user._id || systemUser._id.toString(),
-        sentByEmail: decryptedResponse?.user.email || systemUser.email,
-        sentByName: decryptedResponse?.user.name || systemUser.name,
-        metadata: {
-          candidateId: data.id,
-          templateUsed: "marked-as-done",
-          eventType: "task_completion",
-        },
-      }
+        triggererUserId: resolvedSentById, // Use resolved ObjectId
+        triggererEmail: decryptedResponse?.user?.email || fromEmail,
+        triggererName: decryptedResponse?.user?.name || "HireTrack System",
+        candidateId: data.candidateId,
+        jobId: data.jobId,
+        templateUsed: "step-completed",
+        eventType: "step_completed",
+      },
+      {
+        subject: emailSubject,
+        html: emailContent,
+      },
+      emailList
     );
+
     if (emailStatus.status === 200) {
       return NextResponse.json({ message: "Email sent successfully." });
     } else {
@@ -657,6 +634,7 @@ export async function POST(req: NextRequest) {
       eventTitle,
       startTime,
       endTime,
+      jobId,
       jobName,
       interviewerName,
       candidateName,
@@ -734,7 +712,16 @@ export async function POST(req: NextRequest) {
     const emailList = users.map((user) => user.email);
     const emailKey = id;
 
-    // Queue data for the email
+    // Resolve sentBy to valid ObjectId before queuing
+    const resolvedSentById = await resolveSentByToObjectId(
+      decryptedResponse?.user?._id || "system",
+      decryptedResponse?.user?.email || fromEmail,
+      decryptedResponse?.user?.name || "HireTrack System",
+      organizationId,
+      fromEmail
+    );
+
+    // Queue data for the email (use resolved ObjectId)
     const queueData = {
       organizationId,
       email,
@@ -747,11 +734,11 @@ export async function POST(req: NextRequest) {
       status,
       emailList,
       candidateDetailsPage,
-      sentBy: decryptedResponse?.user._id || "system",
-      sentByEmail: decryptedResponse?.user.email || fromEmail,
-      sentByName: decryptedResponse?.user.name || "HireTrack System",
+      sentBy: resolvedSentById, // Use resolved ObjectId (string)
+      sentByEmail: decryptedResponse?.user?.email || fromEmail,
+      sentByName: decryptedResponse?.user?.name || "HireTrack System",
       candidateId: id,
-      jobId: undefined,
+      jobId: jobId,
       dashboardLink,
     };
 

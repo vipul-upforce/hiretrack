@@ -10,21 +10,27 @@ export async function GET(req: NextRequest) {
   try {
     const session = await auth(req);
 
-    if (!session || session.user.role !== "admin") {
+    if (
+      !session
+      // session.user.role !== "admin" ||
+    ) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     await dbConnect();
-    
+
     // Give models a moment to initialize if they haven't already
     let retries = 0;
     while (!User && retries < 5) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
       retries++;
     }
-    
+
     if (!User) {
-      return NextResponse.json({ error: "Database models not initialized" }, { status: 500 });
+      return NextResponse.json(
+        { error: "Database models not initialized" },
+        { status: 500 }
+      );
     }
 
     const users = await User.find(
@@ -51,11 +57,11 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: Request) {
   await dbConnect();
-  
+
   // Give models a moment to initialize if they haven't already
   let retries = 0;
   while ((!User || !Organization) && retries < 5) {
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
     retries++;
   }
 
@@ -132,5 +138,3 @@ export async function PUT(req: Request) {
     );
   }
 }
-
-

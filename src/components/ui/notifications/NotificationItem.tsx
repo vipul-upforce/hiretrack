@@ -28,10 +28,10 @@ interface NotificationItemProps {
 
 const getNotificationIcon = (type: NotificationType) => {
   switch (type) {
-    case NotificationType.CANDIDATE_APPLIED:
-    case NotificationType.CANDIDATE_ASSIGNED:
-    case NotificationType.CANDIDATE_UNASSIGNED:
-    case NotificationType.CANDIDATE_STATUS_UPDATED:
+    case NotificationType.NEW_APPLICATIONS:
+    case NotificationType.INTERVIEW_ASSIGNMENTS:
+    case NotificationType.STEP_COMPLETED:
+    case NotificationType.STATUS_UPDATES:
     case NotificationType.CANDIDATE_DETAILS_UPDATED:
       return <User className="h-4 w-4" />;
     case NotificationType.JOB_CREATED:
@@ -41,7 +41,7 @@ const getNotificationIcon = (type: NotificationType) => {
     case NotificationType.MEETING_UPDATED:
     case NotificationType.MEETING_CANCELLED:
       return <Calendar className="h-4 w-4" />;
-    case NotificationType.REMARK_ADDED:
+    case NotificationType.NEW_REMARKS:
       return <MessageSquare className="h-4 w-4" />;
     case NotificationType.USER_ADDED:
       return <UserPlus className="h-4 w-4" />;

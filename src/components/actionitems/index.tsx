@@ -44,7 +44,7 @@ function ActionItems({
           ? { ...assignment, ...updatedCandidate } // merge updated data
           : assignment
       );
-      setAssignments(updatedAssignments);
+      // setAssignments(updatedAssignments);
       toast({
         title: "Success",
         description: "Candidate data refreshed successfully",

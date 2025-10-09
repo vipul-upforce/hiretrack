@@ -12,13 +12,31 @@ import {
 } from "@/components/ui/tooltip";
 import { Info } from "lucide-react";
 
+// ✅ Full notification type list (same as NotificationType enum)
 export type EmailNotificationType =
+  | "mentions"
   | "newApplications"
-  | "interviewAssignments"
   | "statusUpdates"
-  | "newRemarks"
+  | "detailsUpdated"
+  | "interviewAssignments"
   | "stepCompleted"
-  | "mentions";
+  | "newRemarks"
+  | "meetingScheduled"
+  | "meetingUpdated"
+  | "meetingCancelled"
+  | "meetingInviteAccepted"
+  | "meetingInviteDeclined"
+  | "meetingInviteTentative"
+  | "followupAdded"
+  | "followupUpdated"
+  | "followupRemoved"
+  | "checklistCompleted"
+  | "jobCreated"
+  | "jobUpdated"
+  | "userAdded"
+  | "bulkImportCompleted"
+  | "candidateRejected"
+  | "interviewCompleted";
 
 export interface EmailNotificationToggleProps {
   type: EmailNotificationType;
@@ -29,33 +47,102 @@ export interface EmailNotificationToggleProps {
   showSource?: boolean;
 }
 
+// ✅ Updated labels & descriptions for all notification types
 const notificationLabels: Record<
   EmailNotificationType,
   { label: string; description: string }
 > = {
+  mentions: {
+    label: "Mentions",
+    description: "Get notified when mentioned in remarks or comments",
+  },
   newApplications: {
     label: "New Applications",
     description: "Get notified when new candidates apply to jobs",
   },
-  interviewAssignments: {
-    label: "Interview Assignments",
-    description: "Get notified when assigned to conduct interviews",
-  },
   statusUpdates: {
     label: "Status Updates",
-    description: "Get notified when candidate status changes",
+    description: "Get notified when a candidate’s status changes",
   },
-  newRemarks: {
-    label: "New Remarks",
-    description: "Get notified when new remarks are added to candidates",
+  detailsUpdated: {
+    label: "Candidate Details Updated",
+    description: "Get notified when candidate profile details are updated",
+  },
+  interviewAssignments: {
+    label: "Interview Assignments",
+    description: "Get notified when assigned to conduct an interview",
   },
   stepCompleted: {
     label: "Step Completed",
     description: "Get notified when interview steps are completed",
   },
-  mentions: {
-    label: "Mentions",
-    description: "Get notified when mentioned in remarks or comments",
+  newRemarks: {
+    label: "New Remarks",
+    description: "Get notified when new remarks are added to candidates",
+  },
+  meetingScheduled: {
+    label: "Meeting Scheduled",
+    description: "Get notified when meetings are scheduled",
+  },
+  meetingUpdated: {
+    label: "Meeting Updated",
+    description: "Get notified when meeting details are updated",
+  },
+  meetingCancelled: {
+    label: "Meeting Cancelled",
+    description: "Get notified when a meeting is cancelled",
+  },
+  meetingInviteAccepted: {
+    label: "Meeting Invite Accepted",
+    description: "Get notified when meeting invites are accepted",
+  },
+  meetingInviteDeclined: {
+    label: "Meeting Invite Declined",
+    description: "Get notified when meeting invites are declined",
+  },
+  meetingInviteTentative: {
+    label: "Meeting Invite Tentative",
+    description: "Get notified when meeting invites are marked as tentative",
+  },
+  followupAdded: {
+    label: "Follow-Up Added",
+    description: "Get notified when a follow-up task is created",
+  },
+  followupUpdated: {
+    label: "Follow-Up Updated",
+    description: "Get notified when a follow-up task is updated",
+  },
+  followupRemoved: {
+    label: "Follow-Up Removed",
+    description: "Get notified when a follow-up task is deleted",
+  },
+  checklistCompleted: {
+    label: "Checklist Completed",
+    description: "Get notified when a checklist is completed",
+  },
+  jobCreated: {
+    label: "Job Created",
+    description: "Get notified when a new job is created",
+  },
+  jobUpdated: {
+    label: "Job Updated",
+    description: "Get notified when job details are updated",
+  },
+  userAdded: {
+    label: "User Added",
+    description: "Get notified when new users are added to your organization",
+  },
+  bulkImportCompleted: {
+    label: "Bulk Import Completed",
+    description: "Get notified when bulk import processes are completed",
+  },
+  candidateRejected: {
+    label: "Candidate Rejected",
+    description: "Get notified when candidates are rejected",
+  },
+  interviewCompleted: {
+    label: "Interview Completed",
+    description: "Get notified when interviews are completed",
   },
 };
 
@@ -85,6 +172,8 @@ export function EmailNotificationToggle({
   showSource = true,
 }: EmailNotificationToggleProps) {
   const config = notificationLabels[type];
+
+  if (!config) return null; // Safety guard in case of missing type
 
   return (
     <TooltipProvider>

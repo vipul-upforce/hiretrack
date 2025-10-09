@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sendMail } from "@/app/api/event-mail";
+import { sendSmartNotification } from "@/lib/unifiedEmailService"; // Import sendSmartNotificationEmail
 import {
   Candidate,
   Organization,
@@ -12,6 +12,8 @@ import mongoose from "mongoose";
 import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
 import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { NotificationService } from "@/lib/notifications/notificationService"; // Import if needed
+import { NotificationType } from "@/lib/services/emailDecisionEngine";
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,6 +21,8 @@ export async function POST(req: NextRequest) {
 
     // Get user information from token
     let senderEmail;
+    let senderUserId;
+    let senderName;
     const token = req.cookies.get("auth_token");
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
@@ -26,6 +30,8 @@ export async function POST(req: NextRequest) {
       );
       if (decryptedResponse.success && decryptedResponse.user) {
         senderEmail = decryptedResponse.user.email;
+        senderUserId = decryptedResponse.user.id;
+        senderName = decryptedResponse.user.name;
       }
     }
     if (!Candidate || !User) {
@@ -107,13 +113,11 @@ export async function POST(req: NextRequest) {
       role: { $in: ["hr", "admin"] },
       $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
     })
-      .select("email")
+      .select("_id name email")
       .lean();
 
-    const hrEmails: string[] = [];
-    hrUsers?.map((user) => {
-      hrEmails.push(user.email);
-    });
+    const hrEmails: string[] = hrUsers.map((user) => user.email);
+    const hrUserIds: string[] = hrUsers.map((user) => user._id.toString());
 
     const applicationDate = (await getFormattedDate(
       req,
@@ -138,7 +142,7 @@ export async function POST(req: NextRequest) {
         candidateName,
         jobTitle: jobName,
         applicationDate,
-        candidatePhone: contact,
+        candidatePhone: contact || "N/A",
         dashboardLink: `${req.headers.get("Origin")}/candidate/${candidateId}`,
       },
       organizationId
@@ -199,15 +203,9 @@ export async function POST(req: NextRequest) {
     });
 
     // Create history records for BCC recipients (HR/Admins)
-    const hrHistoryPromises = hrEmails.map(async (hrEmail) => {
+    const hrHistoryPromises = hrEmails.map(async (hrEmail, index) => {
       try {
-        const hrUser = await User.findOne({
-          email: hrEmail,
-          organizationId: new mongoose.Types.ObjectId(organizationId),
-        })
-          .select("_id name")
-          .lean();
-
+        const hrUser = hrUsers.find((user) => user.email === hrEmail);
         return await EmailHistory.create({
           organizationId: new mongoose.Types.ObjectId(organizationId),
           sentBy: systemUser._id,
@@ -239,30 +237,90 @@ export async function POST(req: NextRequest) {
 
     const hrHistoryRecords = await Promise.all(hrHistoryPromises);
     const validHrHistory = hrHistoryRecords.filter((record) => record !== null);
+    // console.log(candidateData.jobId._id.toString(), "candidateData==77b");
 
-    // Use the legacy sendMail function which properly handles BCC
-    // First email in array becomes TO, rest become BCC
-    const candidateEmailStatus = await sendMail(
-      organizationId,
-      [email, ...hrEmails], // First email is TO, rest are BCC
-      candidateEmailSubject,
-      candidateEmailContent,
-      undefined, // bcc parameter
-      senderEmail // triggerer's email to exclude
-    );
+    // Send email using sendSmartNotificationEmail
+    let emailStatus;
+    // try {
+    //   emailStatus = await sendSmartNotificationEmail(
+    //     organizationId,
+    //     "newApplications",
+    //     {
+    //       triggererUserId: senderUserId,
+    //       triggererEmail: senderEmail,
+    //       triggererName: senderName,
+    //       jobId: candidateData.jobId._id.toString() || "",
+    //       candidateId: candidateId,
+    //       eventType: "job_application",
+    //       templateUsed: "job-application-hr",
+    //     },
+    //     {
+    //       subject: candidateEmailSubject,
+    //       html: candidateEmailContent,
+    //     },
+    //     [...hrUserIds, candidateId] // Include candidate and HR/admin user IDs
+    //   );
+    //   console.log("✅ Email notification sent successfully");
+    // } catch (emailError) {
+    //   console.error("❌ Failed to send email notification:", emailError);
+    //   emailStatus = {
+    //     status: 500,
+    //     message:
+    //       emailError instanceof Error
+    //         ? emailError.message
+    //         : "Failed to send email",
+    //   };
+    // }
 
     // Update all history records based on the result
+
+    // Inside the try block where sendSmartNotificationEmail is called
+    try {
+      const jobId =
+        (
+          candidateData.jobId as {
+            _id: string;
+            title: string;
+            description: string;
+          }
+        )._id.toString() || "";
+      emailStatus = await sendSmartNotification(
+        organizationId,
+        NotificationType.NEW_APPLICATIONS,
+        {
+          triggererUserId: senderUserId || candidateId,
+          triggererEmail: senderEmail,
+          triggererName: senderName,
+          jobId,
+          candidateId: candidateId,
+          eventType: "job_application",
+          templateUsed: "job-application-hr",
+        },
+        {
+          subject: candidateEmailSubject,
+          html: candidateEmailContent,
+        },
+        [...hrUserIds, candidateId]
+      );
+      console.log("✅ Email notification sent successfully");
+    } catch (emailError) {
+      console.error("❌ Failed to send email notification:", emailError);
+      emailStatus = {
+        status: 500,
+        message:
+          emailError instanceof Error
+            ? emailError.message
+            : "Failed to send email",
+      };
+    }
     const updatePromises = [];
 
     // Update candidate history
     updatePromises.push(
       EmailHistory.findByIdAndUpdate(candidateHistory._id, {
-        status: candidateEmailStatus.status === 200 ? "sent" : "failed",
-        sentAt: candidateEmailStatus.status === 200 ? new Date() : undefined,
-        error:
-          candidateEmailStatus.status !== 200
-            ? candidateEmailStatus.message
-            : undefined,
+        status: emailStatus.status === 200 ? "sent" : "failed",
+        sentAt: emailStatus.status === 200 ? new Date() : undefined,
+        error: emailStatus.status !== 200 ? emailStatus.message : undefined,
       })
     );
 
@@ -271,30 +329,26 @@ export async function POST(req: NextRequest) {
       ...validHrHistory.map(async (historyRecord) => {
         if (historyRecord) {
           return EmailHistory.findByIdAndUpdate(historyRecord._id, {
-            status: candidateEmailStatus.status === 200 ? "sent" : "failed",
-            sentAt:
-              candidateEmailStatus.status === 200 ? new Date() : undefined,
-            error:
-              candidateEmailStatus.status !== 200
-                ? candidateEmailStatus.message
-                : undefined,
+            status: emailStatus.status === 200 ? "sent" : "failed",
+            sentAt: emailStatus.status === 200 ? new Date() : undefined,
+            error: emailStatus.status !== 200 ? emailStatus.message : undefined,
           });
         }
       })
     );
 
     await Promise.all(updatePromises);
-    console.log("candidateEmailStatus", candidateEmailStatus);
+    console.log("Email Status:", emailStatus);
 
     // Prepare response
-    if (candidateEmailStatus.status === 200) {
+    if (emailStatus.status === 200) {
       return NextResponse.json({ message: "Email sent successfully" });
     } else {
       return NextResponse.json(
         {
-          error: candidateEmailStatus.message || "Failed to send email",
+          error: emailStatus.message || "Failed to send email",
         },
-        { status: candidateEmailStatus.status }
+        { status: emailStatus.status }
       );
     }
   } catch (error: unknown) {

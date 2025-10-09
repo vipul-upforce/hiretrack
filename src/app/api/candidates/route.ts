@@ -8,8 +8,9 @@ import { verifyAndDecryptToken } from "@/app/actions/auth";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
 import { NotificationService } from "@/lib/notifications/notificationService";
-import { sendSmartNotificationEmail } from "@/lib/unifiedEmailService";
+import { sendSmartNotification } from "@/lib/unifiedEmailService";
 import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
+import { NotificationType } from "@/lib/services/emailDecisionEngine";
 // import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
 
 export interface Attachment {
@@ -301,9 +302,10 @@ export async function POST(request: NextRequest) {
               );
 
               if (filteredAdminHrIds.length > 0) {
-                await sendSmartNotificationEmail(
+                await sendSmartNotification(
                   organizationId,
-                  "newApplications",
+                  // "newApplications",
+                  NotificationType.NEW_APPLICATIONS,
                   {
                     triggererUserId: userData.id,
                     triggererEmail: userData.email,

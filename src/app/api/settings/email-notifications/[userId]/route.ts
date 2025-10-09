@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import dbConnect, { User } from "@/lib/mongodb";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
 import mongoose from "mongoose";
-import { getUserEffectiveEmailSettings } from "@/lib/services/emailDecisionEngine";
+import { getUserEffectiveNotificationSettings } from "@/lib/services/emailDecisionEngine";
+// import { getUserEffectiveEmailSettings } from "@/lib/services/emailDecisionEngine";
 
 /**
  * GET /api/settings/email-notifications/[userId]
@@ -70,7 +71,7 @@ export async function GET(
       );
     }
 
-    const effectiveSettings = await getUserEffectiveEmailSettings(
+    const effectiveSettings = await getUserEffectiveNotificationSettings(
       userId,
       organizationId.toString(),
       jobId || undefined

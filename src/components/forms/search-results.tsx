@@ -441,8 +441,9 @@ export function SearchResults({
     return (
       <Card className="p-6">
         <div className="text-center py-8">
-          <Skeleton className="h-[400px] w-full mb-4" />
-          <p>No results found. Try adjusting your search criteria.</p>
+          <p className="text-lg font-bold">
+            No results found. Try adjusting your search criteria.
+          </p>
         </div>
       </Card>
     );
@@ -610,15 +611,15 @@ export function SearchResults({
                     }
                   >
                     {key === "jobAssignment"
-                      ? "Job Assignment"
+                      ? "JOB ASSIGNMENT"
                       : key === "overallScore"
-                        ? "Overall Score"
+                        ? "OVERALL SCORE"
                         : key === "actions"
-                          ? "Actions"
+                          ? "ACTIONS"
                           : key === "select"
-                            ? "Select"
+                            ? "SELECT"
                             : key === "archived"
-                              ? "Archived"
+                              ? "ARCHIVE"
                               : key.toLocaleUpperCase()}
                   </DropdownMenuCheckboxItem>
                 ))}
@@ -846,7 +847,7 @@ export function SearchResults({
                       </TableCell>
                     )}
                     {visibleColumns.skills && (
-                      <TableCell className="w-[30%]">
+                      <TableCell>
                         <div className="flex flex-wrap gap-1">
                           {candidate.skills.slice(0, 5).map((skill: string) => (
                             <Badge

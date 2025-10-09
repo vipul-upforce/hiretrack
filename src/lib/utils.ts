@@ -53,6 +53,7 @@ export const sentAssignmentMail = async (
           : "Interview for Unknown Position",
       startTime: result.assignment?.time,
       endTime: result.assignment?.time,
+      jobId: result.jobId._id,
       jobName:
         result.jobId &&
         typeof result.jobId !== "string" &&
@@ -85,16 +86,20 @@ export const sentStatusMailHandler = async (
       ? result.remarks[result.remarks.length - 1]
       : null;
   // console.log("#$$$$$$$$$$$ ", result.prev_status);
+  // console.log(result, "result");
+
   const reqBody: IScheduledStatusMailRequest = {
     id: result._id,
     // email:
     //   typeof result.assignment?.interviewerId === "object"
     //     ? result.assignment.interviewerId.email
     //     : "",
+
     eventTitle: "Status Updated for " + result.name,
     prev_status: result.prev_status || "",
     startTime: new Date().toISOString(),
     endTime: new Date().toISOString(),
+    jobId: result.jobId._id,
     jobName:
       result.jobId &&
       typeof result.jobId !== "string" &&
@@ -105,11 +110,13 @@ export const sentStatusMailHandler = async (
     //   latestRemark && typeof latestRemark.userId === "object"
     //     ? latestRemark.userId.name
     //     : "",
+
     candidateName: result.name,
     status: result.status,
     remark: latestRemark?.description || "No Remark",
     rating: latestRemark?.rating?.toString() || "No rating",
   };
+
   // console.log("#$$$$$$$$$$$ ", reqBody);
 
   const { error } = await sendStatusMail(reqBody);
