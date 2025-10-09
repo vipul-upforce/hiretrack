@@ -148,7 +148,7 @@ build:
       echo "Creating tarball with name: $TARBALL_NAME"
       
       mkdir -p temp
-      tar -czvf temp/$TARBALL_NAME package.json package-lock.json .next .env public
+      tar -czvf temp/$TARBALL_NAME package.json package-lock.json ecosystem.config.cjs .next .env public
       echo "Tarball contents:"
       tar -tzf temp/$TARBALL_NAME
       mv temp/$TARBALL_NAME .
