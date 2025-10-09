@@ -78,7 +78,7 @@ function CandidateSearch() {
   const [currentFilters, setCurrentFilters] =
     useState<SearchFilter>(initialValues);
 
-  const { data: filteredCandidates, refetch: filterCandidates } =
+  const { data: filteredCandidates, refetch: filterCandidates, isFetching, isLoading: isQueryLoading } =
     useFilterCandidatesQuery(currentFilters);
 
   // FIX 1: Move the setSearchResults call inside useEffect
@@ -92,6 +92,7 @@ function CandidateSearch() {
         setTotalPages(filteredCandidates.pagination.totalPages || 0);
         setTotalRecordsCount(filteredCandidates.pagination.total || 0);
       }
+      setIsSearching(false);
     }
   }, [filteredCandidates]);
 
@@ -138,7 +139,6 @@ function CandidateSearch() {
       };
 
       setCurrentFilters(updatedFilters);
-      setIsSearching(false);
     },
     [OrgID]
   );

@@ -24,6 +24,7 @@ interface NotificationItemProps {
   onMarkAsRead?: (id: string) => void;
   onClick?: (notification: INotification) => void;
   className?: string;
+  disableReadStyling?: boolean;
 }
 
 const getNotificationIcon = (type: NotificationType) => {
@@ -89,6 +90,7 @@ export function NotificationItem({
   onMarkAsRead,
   onClick,
   className,
+  disableReadStyling = false,
 }: NotificationItemProps) {
   const handleClick = () => {
     // Only perform the action, don't mark as read automatically
@@ -135,7 +137,7 @@ export function NotificationItem({
           <h4
             className={cn(
               "text-sm font-medium leading-tight",
-              notification.isRead ? "text-muted-foreground" : "text-foreground"
+              !disableReadStyling && notification.isRead ? "text-muted-foreground" : "text-foreground"
             )}
           >
             {notification.title}
@@ -169,7 +171,7 @@ export function NotificationItem({
         <p
           className={cn(
             "text-sm leading-relaxed",
-            notification.isRead ? "text-muted-foreground" : "text-foreground"
+            !disableReadStyling && notification.isRead ? "text-muted-foreground" : "text-foreground"
           )}
         >
           {notification.message}

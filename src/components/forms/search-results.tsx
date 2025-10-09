@@ -62,10 +62,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { Skeleton } from "../ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 import { useDeleteCandidateMutation } from "@/lib/features/candidate/candidateApi";
+import { GridLoader } from "../ui/grid-loader";
 
 interface SearchResultsProps {
   results: Candidate[];
@@ -422,11 +422,7 @@ export function SearchResults({
   };
 
   if (isLoading) {
-    return (
-      <Card className="p-4">
-        <Skeleton className="h-[600px] w-full" />
-      </Card>
-    );
+    return <GridLoader />;
   }
   // if (results.length === 0) {
   //   return (
@@ -441,7 +437,6 @@ export function SearchResults({
     return (
       <Card className="p-6">
         <div className="text-center py-8">
-          <Skeleton className="h-[400px] w-full mb-4" />
           <p>No results found. Try adjusting your search criteria.</p>
         </div>
       </Card>
