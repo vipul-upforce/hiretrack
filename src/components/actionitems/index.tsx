@@ -44,12 +44,27 @@ function ActionItems({
         candidate._id
       ).unwrap();
       setCandidate(updatedCandidate);
-      // const updatedAssignments = assignments.map((assignment) =>
-      //   assignment._id === updatedCandidate._id
-      //     ? { ...assignment, ...updatedCandidate } // merge updated data
-      //     : assignment
-      // );
-      // setAssignments(updatedAssignments);
+      console.log("Updated candidate:", updatedCandidate.history);
+
+      if (updatedCandidate.history && updatedCandidate.history.length > 0) {
+        const latestHistory =
+          updatedCandidate.history[updatedCandidate.history.length - 1];
+        if (latestHistory.title === "Unassigned") {
+          const filteredAssignments = assignments.filter(
+            (a) => a._id !== updatedCandidate._id
+          );
+          setAssignments(filteredAssignments);
+          return;
+        }
+      }
+
+      const updatedAssignments = assignments.map((assignment) =>
+        assignment._id === updatedCandidate._id
+          ? { ...assignment, ...updatedCandidate }
+          : assignment
+      );
+
+      setAssignments(updatedAssignments);
       toast({
         title: "Success",
         description: "Candidate data refreshed successfully",
