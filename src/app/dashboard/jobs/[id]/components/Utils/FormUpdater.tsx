@@ -102,21 +102,21 @@ const FormUpdater = ({
     if (parsedResumeData && parsedResumeData.profile) {
       const { profile } = parsedResumeData;
       if (!values.name && profile.name) {
-        setFieldValue("name", profile.name);
-        setTouched({ name: true });
+        setFieldValue("name", undefined);
+        setTouched({ name: false });
       }
       if (!values.email && profile.email) {
-        setFieldValue("email", profile.email);
-        setTouched({ email: true });
+        setFieldValue("email", undefined);
+        setTouched({ email: false });
       }
       if (!values.contact && profile.contact) {
-        setFieldValue("contact", profile.contact);
-        setTouched({ contact: true });
+        setFieldValue("contact", undefined);
+        setTouched({ contact: false });
       }
 
       if (!values.location && profile.location) {
-        setFieldValue("location", profile.location);
-        setTouched({ location: true });
+        setFieldValue("location", undefined);
+        setTouched({ location: false });
       }
 
       if (
