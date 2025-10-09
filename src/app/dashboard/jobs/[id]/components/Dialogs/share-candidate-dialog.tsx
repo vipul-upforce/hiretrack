@@ -13,10 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Candidate } from "@/types/candidate";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import {
-  Share2,
   Download,
   Loader2,
   FileText,
@@ -25,10 +22,8 @@ import {
   Brain,
   Settings,
   CheckCircle2,
-  Info,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
@@ -345,24 +340,18 @@ export function ShareCandidateDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] p-0">
-        <DialogHeader className="px-6 pt-6 pb-4">
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Share2 className="h-5 w-5 text-primary" />
-            </div>
-            <div className="flex-1">
-              <DialogTitle className="text-xl">Download Candidate Profile</DialogTitle>
-              <DialogDescription className="mt-1">
-                Customize and export <strong>{candidate.name}</strong>'s profile as a PDF
-              </DialogDescription>
-            </div>
-          </div>
+      <DialogContent
+        size="lg"
+        className="overflow-hidden flex flex-col justify-start"
+      >
+        <DialogHeader>
+          <DialogTitle>Download Candidate Profile - {candidate.name}</DialogTitle>
+          <DialogDescription>
+            Customize and export the profile as a PDF
+          </DialogDescription>
         </DialogHeader>
 
-        <Separator />
-
-        <div className="px-6 py-4">
+        <div className="flex-1 overflow-y-auto px-6 py-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="gap-1">
@@ -378,7 +367,7 @@ export function ShareCandidateDialog({
             </div>
           </div>
 
-          <ScrollArea className="h-[450px] pr-4">
+          <div className="space-y-4">
             <div className="space-y-4">
               {/* Basic Information */}
               <CategoryCard
@@ -603,12 +592,10 @@ export function ShareCandidateDialog({
                 </Card>
               )}
             </div>
-          </ScrollArea>
+          </div>
         </div>
 
-        <Separator />
-
-        <DialogFooter className="px-6 py-4">
+        <div className="flex justify-end w-full gap-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
@@ -629,7 +616,7 @@ export function ShareCandidateDialog({
               </>
             )}
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
