@@ -115,7 +115,7 @@ build:
       echo "VERSION_WITHOUT_PREFIX=$VERSION_WITHOUT_PREFIX" >> version.env
     - |
       echo "MONGODB_URI=$MONGODB_URI" > .env
-      JWT_SECRET=$(openssl rand -base64 32)
+      JWT_SECRET=$(openssl rand -base64 32 | tr '$' 'A')
       echo "JWT_SECRET=$JWT_SECRET" > .env
       echo "NEXT_PUBLIC_RECAPTCHA_SITE_KEY=$NEXT_PUBLIC_RECAPTCHA_SITE_KEY" >> .env
       echo "RECAPTCHA_SECRET_KEY=$RECAPTCHA_SECRET_KEY" >> .env
