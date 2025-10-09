@@ -54,7 +54,6 @@ export async function sendUnifiedMail(
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
     await dbConnect();
-    console.log(options, "options for the bcc send");
 
     // Get organization settings for mail configuration
     const settings = (await Settings.findOne({
