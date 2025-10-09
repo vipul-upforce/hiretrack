@@ -15,6 +15,7 @@ import {
   User,
   Phone,
   Mail,
+  FileDown,
 } from "lucide-react";
 import { CandidateStatusBadge } from "../Utils/candidate-status-badge";
 import { Candidate } from "@/types/candidate";
@@ -22,7 +23,8 @@ import { formatDate, formatTime } from "../../hooks/dateTimeFormatting";
 import { User as UserType } from "@/lib/features/users/usersApi";
 import TagsDialog from "../Dialogs/tags-dialog";
 import TagsList from "@/components/ui/tagsList";
-import { useRef } from "react";
+import { useRef, useState } from "react";
+import { ShareCandidateDialog } from "../Dialogs/share-candidate-dialog";
 
 interface DetailsDialogHeaderProps {
   candidate: Candidate;
@@ -40,6 +42,7 @@ export default function DetailsDialogHeader({
   onAssignClick,
 }: DetailsDialogHeaderProps) {
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const [isDownloadDialogOpen, setIsDownloadDialogOpen] = useState(false);
 
   const handlePopoverContentClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -164,6 +167,18 @@ export default function DetailsDialogHeader({
                       <span className="sr-only">Download CV</span>
                     </Button>
                   )}
+                  {(user?.role === "admin" || user?.role === "hr") && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-5 w-5"
+                      onClick={() => setIsDownloadDialogOpen(true)}
+                      title="Download Profile"
+                    >
+                      <FileDown size={12} />
+                      <span className="sr-only">Download Profile</span>
+                    </Button>
+                  )}
                 </div>
               </div>
             )}
@@ -240,6 +255,13 @@ export default function DetailsDialogHeader({
           </div>
         </div>
       </div>
+
+      {/* Download Profile Dialog */}
+      <ShareCandidateDialog
+        open={isDownloadDialogOpen}
+        onOpenChange={setIsDownloadDialogOpen}
+        candidate={candidate}
+      />
     </div>
   );
 }
