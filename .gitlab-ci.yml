@@ -1,4 +1,4 @@
-image: node:20.17.0-slim
+image: node:20.17.0
 
 variables:
   VM_DEST_DIR: "/root"
