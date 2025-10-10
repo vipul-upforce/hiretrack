@@ -45,7 +45,7 @@ build:
   variables:
     NODE_OPTIONS: "--max-old-space-size=4096"
   tags:
-    - rootlicense
+    - my-runner
   script:
     - |
       echo "Pipeline started at $(date -u) UTC"
@@ -179,7 +179,7 @@ release_job:
     - master
     - main-backup
   tags:
-    - rootlicense
+    - my-runner
   script:
     - apt-get update && apt-get install -y curl jq
     - |
