@@ -16,6 +16,13 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 // import { DatePicker } from "@/components/ui/date-picker";
 import { LinkIcon } from "lucide-react";
 import RichTextEditor from "@/components/ui/rte/RichTextEditor";
@@ -116,6 +123,28 @@ export function JobForm(props: JobFormProps) {
         />
         {touched.title && errors.title && (
           <p className="text-sm text-red-500">{errors.title}</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="status" className="font-semibold">
+          Status <span className="text-red-500">*</span>
+        </Label>
+        <Select
+          value={values.status}
+          onValueChange={(value) => setFieldValue("status", value)}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="draft">Draft</SelectItem>
+            <SelectItem value="open">Open</SelectItem>
+            <SelectItem value="closed">Closed</SelectItem>
+          </SelectContent>
+        </Select>
+        {touched.status && errors.status && (
+          <p className="text-sm text-red-500">{errors.status}</p>
         )}
       </div>
 
