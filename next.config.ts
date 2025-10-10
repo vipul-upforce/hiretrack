@@ -130,6 +130,35 @@ const nextConfig: NextConfig = {
         stringArrayThreshold: 0.75,
         rotateStringArray: true,
         simplify: true,
+        // Preserve SSE-related identifiers
+        renameGlobals: false,
+        reservedNames: [
+          // SSE and EventSource related
+          "EventSource",
+          "onopen",
+          "onmessage",
+          "onerror",
+          "close",
+          "addEventListener",
+          "removeEventListener",
+          "JSON",
+          "parse",
+          "stringify",
+          // SSE event types
+          "candidateUpdate",
+          "clients",
+          "lanesUpdate",
+          "multipleCandidateUpdate",
+          "connected",
+          "heartbeat",
+          // SSE functions
+          "getDecodedSSE",
+          "verifyAndDecryptSSE",
+          "setupEventSource",
+          "eventSourceRef",
+          "isConnected",
+          "setIsConnected",
+        ],
       };
 
       const excludePatterns = [
@@ -138,6 +167,11 @@ const nextConfig: NextConfig = {
         "**/*.map",
         "**/react-refresh/**",
         "**/runtime-main.*.js",
+        // Exclude SSE-related client-side code
+        "**/useSSE*",
+        "**/sse/**",
+        "**/EventSource*",
+        "**/event-source*",
       ];
 
       // Ensure plugins array exists
