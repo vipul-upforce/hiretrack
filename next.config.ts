@@ -118,68 +118,34 @@ const nextConfig: NextConfig = {
     });
 
     // Add obfuscation for client bundles in production
-    // if (isProd) {
-    //   const obfuscatorOptions = {
-    //     compact: true,
-    //     controlFlowFlattening: false,
-    //     controlFlowFlatteningThreshold: 0.75,
-    //     deadCodeInjection: false,
-    //     debugProtection: false,
-    //     disableConsoleOutput: true,
-    //     stringArray: true,
-    //     stringArrayThreshold: 0.75,
-    //     rotateStringArray: true,
-    //     simplify: true,
-    //     // Preserve SSE-related identifiers
-    //     renameGlobals: false,
-    //     reservedNames: [
-    //       // SSE and EventSource related
-    //       "EventSource",
-    //       "onopen",
-    //       "onmessage",
-    //       "onerror",
-    //       "close",
-    //       "addEventListener",
-    //       "removeEventListener",
-    //       "JSON",
-    //       "parse",
-    //       "stringify",
-    //       // SSE event types
-    //       "candidateUpdate",
-    //       "clients",
-    //       "lanesUpdate",
-    //       "multipleCandidateUpdate",
-    //       "connected",
-    //       "heartbeat",
-    //       // SSE functions
-    //       "getDecodedSSE",
-    //       "verifyAndDecryptSSE",
-    //       "setupEventSource",
-    //       "eventSourceRef",
-    //       "isConnected",
-    //       "setIsConnected",
-    //     ],
-    //   };
+    if (isProd && !isServer) {
+      const obfuscatorOptions = {
+        compact: true,
+        controlFlowFlattening: false,
+        controlFlowFlatteningThreshold: 0.75,
+        deadCodeInjection: false,
+        debugProtection: false,
+        disableConsoleOutput: true,
+        stringArray: true,
+        stringArrayThreshold: 0.75,
+        rotateStringArray: true,
+        simplify: true,
+      };
 
-    //   const excludePatterns = [
-    //     "**/node_modules/**",
-    //     "**/_next/static/**",
-    //     "**/*.map",
-    //     "**/react-refresh/**",
-    //     "**/runtime-main.*.js",
-    //     // Exclude SSE-related client-side code
-    //     "**/useSSE*",
-    //     "**/sse/**",
-    //     "**/EventSource*",
-    //     "**/event-source*",
-    //   ];
+      const excludePatterns = [
+        "**/node_modules/**",
+        "**/_next/static/**",
+        "**/*.map",
+        "**/react-refresh/**",
+        "**/runtime-main.*.js",
+      ];
 
-    //   // Ensure plugins array exists
-    //   if (!config.plugins) config.plugins = [];
-    //   config.plugins.push(
-    //     new WebpackObfuscator(obfuscatorOptions, excludePatterns)
-    //   );
-    // }
+      // Ensure plugins array exists
+      if (!config.plugins) config.plugins = [];
+      config.plugins.push(
+        new WebpackObfuscator(obfuscatorOptions, excludePatterns)
+      );
+    }
 
     return config;
   },
