@@ -112,10 +112,9 @@ function Settings() {
           icon: ShieldCheck,
         },
         {
-          title: "AutoUpdate Versions",
+          title: "About",
           key: "version",
-          description:
-            "Configure automatic updates for version control on the portal",
+          description: "View application information and manage updates",
           icon: ArrowUpCircle,
         },
       ],
