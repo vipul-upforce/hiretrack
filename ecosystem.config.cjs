@@ -1,7 +1,7 @@
 const { version : VERSION } = require('./package.json');
 const path = require('path');
 
-const LOG_DIR = path.resolve('../.myapp/logs');
+const LOG_DIR = path.resolve('../../.myapp/logs');
 
 module.exports = {
   apps: [
