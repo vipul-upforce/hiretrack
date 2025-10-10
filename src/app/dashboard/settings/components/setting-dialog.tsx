@@ -99,7 +99,7 @@ const SettingDialog = ({
             ? "max-w-7xl w-[90vw] min-h-[95vh] overflow-hidden flex flex-col"
             : setting.key === "ai-providers"
               ? "max-h-[90vh] p-0 overflow-hidden flex flex-col"
-              : setting.key === "google-calendar"
+              : setting.key === "google-calendar" || setting.key === "version"
                 ? "max-h-[90vh] p-0 overflow-hidden flex flex-col"
                 : setting.key === "timezone"
                   ? "max-w-2xl w-[90vw] overflow-visible"
@@ -123,6 +123,10 @@ const SettingDialog = ({
           ) : setting.key === "ai-providers" ||
             setting.key === "google-calendar" ? (
             <div className="flex-1 overflow-hidden px-6 py-0 overflow-y-auto">
+              <ComponentToRender onClose={onClose} isOpen={isOpen} />
+            </div>
+          ) : setting.key === "version" ? (
+            <div className="flex-1 overflow-hidden px-2 py-0 overflow-y-auto">
               <ComponentToRender onClose={onClose} isOpen={isOpen} />
             </div>
           ) : (

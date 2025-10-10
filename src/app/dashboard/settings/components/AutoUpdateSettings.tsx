@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Info,
   Download,
@@ -24,6 +24,14 @@ import {
   AlertTriangle,
   Loader2,
 } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export interface AboutValues {
   enableAutoUpdate: boolean;
@@ -113,6 +121,7 @@ export default function AboutDialog({
   const [versionList, setVersionList] = useState<VersionListResponse | null>(
     null
   );
+  const [latestVersion, setLatestVersion] = useState<string | null>(null);
   const [checkingUpdates, setCheckingUpdates] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [updateAvailable, setUpdateAvailable] = useState(false);
@@ -147,6 +156,8 @@ export default function AboutDialog({
       if (versionData) {
         setVersionList(versionData);
         const latestVersion = versionData.latestVerson;
+        setLatestVersion(latestVersion);
+        debugger;
 
         if (latestVersion !== currentVersion) {
           setUpdateAvailable(true);
@@ -308,106 +319,177 @@ export default function AboutDialog({
       >
         {({ values, setFieldValue, handleSubmit, isSubmitting }) => (
           <Form onSubmit={handleSubmit} className="flex flex-col h-full">
-            <div className="px-6 py-4 space-y-6">
+            <div className="  ">
               {/* Version Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+              {/* <Card className="border-none shadow-none p-0"> */}
+              {/* <CardHeader className="pt-0 pb-3">
+                  <CardTitle className="flex items-center gap-2 text-balance">
                     <Info className="h-5 w-5" />
                     About HireTrack
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-pretty">
                     Application version and update information
                   </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Current Version</span>
-                    <Badge variant="secondary">{currentVersion}</Badge>
+                </CardHeader> */}
+              {/* <CardContent> */}
+              {/* </CardContent> */}
+              {/* </Card> */}
+              <div className="flex flex-row gap-3 px-5">
+                <div
+                  className={`flex items-center justify-between rounded-md border bg-background p-3 ${latestVersion ? "w-[50%]" : "w-full"}`}
+                >
+                  <span className="text-sm text-muted-foreground">
+                    Current Version
+                  </span>
+                  <Badge variant="secondary">{currentVersion}</Badge>
+                </div>
+                {latestVersion && (
+                  <div className="flex items-center justify-between rounded-md border bg-background p-3 w-[50%]">
+                    <span className="text-sm text-muted-foreground">
+                      Latest Version
+                    </span>
+                    <Badge
+                      variant={updateAvailable ? "destructive" : "default"}
+                    >
+                      {latestVersion}
+                    </Badge>
                   </div>
-
-                  {versionList && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">
-                        Latest Version
-                      </span>
-                      <Badge
-                        variant={updateAvailable ? "destructive" : "default"}
-                      >
-                        {versionList.latestVerson}
-                      </Badge>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Auto Update Settings */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Update Settings</CardTitle>
-                  <CardDescription>
-                    Configure automatic update preferences
+                )}
+              </div>
+              {/* Update Settings */}
+              <Card className="border-none shadow-none p-0">
+                {/* <CardHeader className="pb-3">
+                  <CardTitle className="text-balance">
+                    Update Settings
+                  </CardTitle>
+                  <CardDescription className="text-pretty">
+                    Automatically download and install updates when available
                   </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="enableAutoUpdate"
-                      checked={values.enableAutoUpdate}
-                      onCheckedChange={(checked) =>
-                        setFieldValue("enableAutoUpdate", Boolean(checked))
-                      }
-                      disabled={isSubmitting}
-                    />
-                    <Label htmlFor="enableAutoUpdate">Enable Auto-Update</Label>
+                </CardHeader> */}
+                <CardContent className="space-y-3 py-0 pt-6">
+                  <div className="flex flex-row justify-between items-start gap-3 p-0">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="enableAutoUpdate"
+                        checked={values.enableAutoUpdate}
+                        onCheckedChange={(checked) =>
+                          setFieldValue("enableAutoUpdate", Boolean(checked))
+                        }
+                        disabled={isSubmitting}
+                      />
+                      <Label htmlFor="enableAutoUpdate">
+                        Enable Auto-Update
+                      </Label>
+                    </div>
+                    <Button
+                      type="submit"
+                      // size="icon"
+                      disabled={isSubmitting || updating}
+                      variant="primary"
+                      className="h-[24px] text-xs"
+                    >
+                      {isSubmitting ? "Saving..." : "Save Settings"}
+                    </Button>
                   </div>
-                  <ErrorMessage
+                  {/* <div className="space-y-1.5 pt-0 ml-8">
+                    <p className="text-sm text-muted-foreground">
+                      Automatically download and install updates when available.
+                    </p>
+                  </div> */}
+                  {/* <ErrorMessage
                     name="enableAutoUpdate"
                     component="div"
-                    className="text-red-500 text-sm mt-2"
-                  />
+                    className="text-sm text-destructive"
+                  /> */}
+                  {/* <div className="flex justify-end gap-2 border-t border-border/10 px-6 py-4 mt-auto"> */}
+                  {/* <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => onClose()}
+                      disabled={isSubmitting || updating}
+                    >
+                      Close
+                    </Button> */}
+                  {/* <Button
+                      type="submit"
+                      disabled={isSubmitting || updating}
+                      variant="primary"
+                    >
+                      {isSubmitting ? "Saving..." : "Save Settings"}
+                    </Button> */}
+                  {/* </div> */}
                 </CardContent>
               </Card>
-
               {/* Check for Updates */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Check for Updates</CardTitle>
-                  <CardDescription>
+              <Card className="border-none shadow-none p-0 ">
+                {/* <CardHeader className="pb-3">
+                  <CardTitle className="text-balance">
+                    Check for Updates
+                  </CardTitle>
+                  <CardDescription className="text-pretty">
                     Manually check for available updates
                   </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleCheckForUpdates}
-                    disabled={checkingUpdates}
-                    className="w-full"
-                  >
-                    {checkingUpdates ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Checking for Updates...
-                      </>
-                    ) : (
-                      <>
-                        <Download className="mr-2 h-4 w-4" />
-                        Check for Updates
-                      </>
-                    )}
-                  </Button>
-
-                  {updateAvailable && (
-                    <Alert>
-                      <AlertTriangle className="h-4 w-4" />
-                      <AlertDescription>
-                        An update is available! Review the changelog below and
-                        click "Update Now" to proceed.
-                      </AlertDescription>
-                    </Alert>
+                </CardHeader> */}
+                <CardContent className="space-y-4 pt-6">
+                  {!updateAvailable && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleCheckForUpdates}
+                      disabled={checkingUpdates}
+                      className="w-full bg-transparent"
+                    >
+                      {checkingUpdates ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Checking for updates...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="mr-2 h-4 w-4" />
+                          Check for updates
+                        </>
+                      )}
+                    </Button>
                   )}
 
+                  {/* Keep concise status messages */}
+                  {updateAvailable && (
+                    <Alert
+                      variant={updateAvailable ? "destructive" : "default"}
+                      className="border-dashed"
+                    >
+                      <div className="flex items-start gap-3">
+                        {updateAvailable ? (
+                          <AlertTriangle className="h-4 w-4 mt-0.5" />
+                        ) : (
+                          <CheckCircle className="h-4 w-4 mt-0.5" />
+                        )}
+                        <div className="space-y-1">
+                          <AlertTitle className="text-sm">
+                            {updateAvailable
+                              ? "Update available"
+                              : "You’re up to date"}
+                          </AlertTitle>
+                          <AlertDescription className="text-sm text-muted-foreground">
+                            Current:{" "}
+                            <Badge variant="secondary">{currentVersion}</Badge>
+                            <span className="px-2 text-muted-foreground">
+                              •
+                            </span>
+                            Latest:{" "}
+                            <Badge
+                              variant={
+                                updateAvailable ? "destructive" : "default"
+                              }
+                            >
+                              {latestVersion}
+                            </Badge>
+                          </AlertDescription>
+                        </div>
+                      </div>
+                    </Alert>
+                  )}
                   {!updateAvailable && versionList && (
                     <Alert>
                       <CheckCircle className="h-4 w-4" />
@@ -418,97 +500,163 @@ export default function AboutDialog({
                   )}
                 </CardContent>
               </Card>
-
               {/* Changelog */}
               {changelogVersions.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>What's New</CardTitle>
-                    <CardDescription>
-                      Changes from version {currentVersion} to{" "}
-                      {versionList?.latestVerson}
+                <Card className="border-none shadow-none p-0">
+                  <CardHeader className="pb-3 pt-0">
+                    <CardTitle className="text-balance">What's New</CardTitle>
+                    <CardDescription className="text-pretty">
+                      Changes from version {currentVersion} to {latestVersion}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    {changelogVersions
-                      .sort(
-                        (a, b) =>
-                          new Date(b.publishedAt).getTime() -
-                          new Date(a.publishedAt).getTime()
-                      )
-                      .map((version, index) => (
-                        <div key={version.version} className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline">{version.version}</Badge>
-                              {version.isPrerelease && (
-                                <Badge variant="secondary" className="text-xs">
-                                  Pre-release
+                  <CardContent>
+                    <div className="space-y-4 mb-6">
+                      {changelogVersions
+                        .sort(
+                          (a, b) =>
+                            new Date(b.publishedAt).getTime() -
+                            new Date(a.publishedAt).getTime()
+                        )
+                        .map((version) => (
+                          <div key={version.version} className="space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline">
+                                  {version.version}
                                 </Badge>
-                              )}
+                                {version.isPrerelease && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs"
+                                  >
+                                    Pre-release
+                                  </Badge>
+                                )}
+                              </div>
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(
+                                  version.publishedAt
+                                ).toLocaleDateString()}
+                              </span>
                             </div>
-                            <span className="text-xs text-muted-foreground">
-                              {new Date(
-                                version.publishedAt
-                              ).toLocaleDateString()}
-                            </span>
+                            <div className="rounded-md border bg-muted/30 p-3 text-sm">
+                              <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                components={{
+                                  h1: ({ node, ...props }) => (
+                                    <h3
+                                      className="text-base font-semibold"
+                                      {...props}
+                                    />
+                                  ),
+                                  h2: ({ node, ...props }) => (
+                                    <h4
+                                      className="text-sm font-semibold"
+                                      {...props}
+                                    />
+                                  ),
+                                  p: (props) => (
+                                    <p
+                                      className="leading-relaxed mb-2 last:mb-0"
+                                      {...props}
+                                    />
+                                  ),
+                                  ul: (props) => (
+                                    <ul
+                                      className="list-disc pl-5 space-y-1"
+                                      {...props}
+                                    />
+                                  ),
+                                  ol: (props) => (
+                                    <ol
+                                      className="list-decimal pl-5 space-y-1"
+                                      {...props}
+                                    />
+                                  ),
+                                  code: ({ className, children, ...props }) => (
+                                    <code
+                                      className="block overflow-x-auto rounded-md bg-muted p-3 font-mono text-[0.85em]"
+                                      {...props}
+                                    >
+                                      {children}
+                                    </code>
+                                  ),
+                                  a: (props) => (
+                                    <a
+                                      className="underline hover:no-underline"
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      {...props}
+                                    />
+                                  ),
+                                  table: (props) => (
+                                    <div className="overflow-x-auto">
+                                      <table
+                                        className="w-full text-sm"
+                                        {...props}
+                                      />
+                                    </div>
+                                  ),
+                                  th: (props) => (
+                                    <th
+                                      className="border-b px-2 py-1 text-left font-medium"
+                                      {...props}
+                                    />
+                                  ),
+                                  td: (props) => (
+                                    <td
+                                      className="border-b px-2 py-1 align-top"
+                                      {...props}
+                                    />
+                                  ),
+                                }}
+                              >
+                                {version.releaseNotes}
+                              </ReactMarkdown>
+                            </div>
+                            {version !==
+                              changelogVersions[
+                                changelogVersions.length - 1
+                              ] && <Separator className="my-3" />}
                           </div>
-                          <div className="text-sm whitespace-pre-wrap bg-muted p-3 rounded-md">
-                            {version.releaseNotes}
-                          </div>
-                          {index < changelogVersions.length - 1 && (
-                            <Separator />
-                          )}
-                        </div>
-                      ))}
+                        ))}
+                    </div>
                   </CardContent>
                 </Card>
               )}
-
+              {/* {updateAvailable && (
+                <div className="bottom-0 left-0 w-full h-[20px]"></div>
+              )} */}
               {/* Update Button */}
               {updateAvailable && (
-                <Card>
-                  <CardContent className="pt-6">
-                    <Button
-                      type="button"
-                      onClick={handleUpdate}
-                      disabled={updating}
-                      className="w-full"
-                      variant="default"
-                    >
-                      {updating ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Updating...
-                        </>
-                      ) : (
-                        <>
-                          <Download className="mr-2 h-4 w-4" />
-                          Update Now
-                        </>
-                      )}
-                    </Button>
-                  </CardContent>
-                </Card>
+                // <Card>
+                // <CardContent className="pt-6">
+                <Button
+                  type="button"
+                  onClick={handleUpdate}
+                  disabled={updating}
+                  style={{
+                    backgroundColor: "var(--portal-primary)",
+                    // color: "var(--portal-secondary)",
+                  }}
+                  className="w-full absolute bottom-0 left-0"
+                  variant="default"
+                >
+                  {updating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="mr-2 h-4 w-4" />
+                      Update now
+                    </>
+                  )}
+                </Button>
+                // </CardContent>
+                // </Card>
               )}
-            </div>
-
-            <div className="flex justify-end gap-2 border-t border-border/10 px-6 py-4 mt-auto">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onClose()}
-                disabled={isSubmitting || updating}
-              >
-                Close
-              </Button>
-              <Button
-                type="submit"
-                disabled={isSubmitting || updating}
-                variant="primary"
-              >
-                {isSubmitting ? "Saving..." : "Save Settings"}
-              </Button>
             </div>
           </Form>
         )}
