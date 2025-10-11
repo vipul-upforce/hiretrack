@@ -1,0 +1,62 @@
+import { Metadata } from "next";
+import { getPortalMetadata } from "@/lib/getPortalMetadata";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const portalData = await getPortalMetadata();
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3030";
+
+  // Construct absolute URLs for images
+  const logoUrl = portalData.portalLogo?.url
+    ? `${baseUrl}${portalData.portalLogo.url}`
+    : undefined;
+  const faviconUrl = portalData.portalFavicon?.url
+    ? `${baseUrl}${portalData.portalFavicon.url}`
+    : undefined;
+
+  const title = `Login - ${portalData.portalName}`;
+  const description = `Sign in to ${portalData.portalName} to access your recruitment dashboard and manage your hiring process.`;
+
+  return {
+    title: "Login",
+    description,
+    openGraph: {
+      title,
+      description,
+      siteName: portalData.portalName,
+      locale: "en_US",
+      type: "website",
+      ...(logoUrl && {
+        images: [
+          {
+            url: logoUrl,
+            width: 1200,
+            height: 630,
+            alt: `${portalData.portalName} Logo`,
+          },
+        ],
+      }),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      ...(logoUrl && {
+        images: [logoUrl],
+      }),
+    },
+    ...(faviconUrl && {
+      icons: {
+        icon: faviconUrl,
+        apple: faviconUrl,
+      },
+    }),
+  };
+}
+
+export default function LoginLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return <>{children}</>;
+}
