@@ -57,6 +57,12 @@ interface Job {
     updatedAt: Date;
   };
   customFields: CustomFieldValues;
+  evaluationWeights?: {
+    skills: number;
+    experience: number;
+    affordability: number;
+    overall: number;
+  };
 }
 
 interface EditJobFormProps {
@@ -164,6 +170,12 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
     removedFiles: [],
     removedImages: [],
     customFields: { ...getDefaultValues(job.customFields || {}) },
+    evaluationWeights: job.evaluationWeights || {
+      skills: 25,
+      experience: 25,
+      affordability: 25,
+      overall: 25,
+    },
   };
 
   const {

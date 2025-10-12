@@ -35,6 +35,7 @@ import { candidateDetailsFields } from "../Candidate/candidate-details-fields";
 import AddFollowUpDialog from "./add-followup-dialog";
 import ConfirmAndRemarkDialog from "./mark-as-done-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { QuickTooltip } from "@/components/ui/tooltip";
 import {
   User as UserIcon,
   FileText,
@@ -46,6 +47,8 @@ import {
   Edit,
   Trash2,
   Copy,
+  HelpCircle,
+  Trophy,
 } from "lucide-react";
 import { HistoryAndLogTable, LogsTable } from "../Candidate/HisotryAndLogTable";
 import ResumeEvaluationDetails from "../Candidate/ResumeEvaluationDetails";
@@ -55,6 +58,16 @@ import { useSelector } from "react-redux";
 import { EvaluationResult } from "@/lib/ai-providers/evaluation-provider";
 
 const labelClass = "font-semibold text-base";
+
+// Helper function to get ordinal suffix
+const getOrdinalSuffix = (num: number): string => {
+  const j = num % 10;
+  const k = num % 100;
+  if (j === 1 && k !== 11) return num + "st";
+  if (j === 2 && k !== 12) return num + "nd";
+  if (j === 3 && k !== 13) return num + "rd";
+  return num + "th";
+};
 
 export function CandidateDetailsDialog({
   candidate,
@@ -378,7 +391,11 @@ export function CandidateDetailsDialog({
         className="w-full flex flex-col h-full"
       >
         <TabsList
-          className={`grid w-full ${user?.role === "interviewer" ? "grid-cols-3" : "grid-cols-4"} bg-transparent border-b border-gray-200 dark:border-gray-700 rounded-none h-12`}
+          className={`grid w-full ${
+            user?.role === "interviewer"
+              ? localCandidate.scores?.interviewQuestions?.length ? "grid-cols-3" : "grid-cols-2"
+              : localCandidate.scores?.interviewQuestions?.length ? "grid-cols-4" : "grid-cols-3"
+          } bg-transparent border-b border-gray-200 dark:border-gray-700 rounded-none h-12`}
         >
           <TabsTrigger
             value="overview"
@@ -387,13 +404,15 @@ export function CandidateDetailsDialog({
             <UserIcon className="h-4 w-4" />
             Overview
           </TabsTrigger>
-          <TabsTrigger
-            value="documents"
-            className="flex items-center gap-2 data-[state=active]:bg-transparent data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 dark:data-[state=active]:border-blue-400 rounded-none h-full"
-          >
-            <FileText className="h-4 w-4" />
-            CV & Documents
-          </TabsTrigger>
+          {localCandidate.scores?.interviewQuestions && localCandidate.scores.interviewQuestions.length > 0 && (
+            <TabsTrigger
+              value="questions"
+              className="flex items-center gap-2 data-[state=active]:bg-transparent data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 dark:data-[state=active]:border-blue-400 rounded-none h-full"
+            >
+              <HelpCircle className="h-4 w-4" />
+              Questions ({localCandidate.scores.interviewQuestions.length})
+            </TabsTrigger>
+          )}
           <TabsTrigger
             value="history"
             className="flex items-center gap-2 data-[state=active]:bg-transparent data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 dark:data-[state=active]:border-blue-400 rounded-none h-full"
@@ -415,26 +434,22 @@ export function CandidateDetailsDialog({
         <div className="flex-1 overflow-y-auto px-4 py-3 lg:px-6 lg:py-4">
           <TabsContent value="overview" className="space-y-6 mt-0">
             {/* Contact Information Section */}
-            <div className="bg-white dark:bg-black/50 rounded-lg p-4 space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
-                Contact Information
-              </h3>
-              <div className="flex flex-wrap gap-x-8 gap-y-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <UserIcon className="h-5 w-5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+            <div className="bg-white dark:bg-black/50 rounded-lg p-3 space-y-2">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <UserIcon className="h-4 w-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
                   <div className="min-w-0">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                    <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">
                       Name
                     </span>
-
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                         {localCandidate.name}
                       </span>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0"
+                        className="h-5 w-5 p-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0"
                         onClick={() =>
                           handleCandidateInfoCopy(localCandidate.name || "")
                         }
@@ -445,20 +460,20 @@ export function CandidateDetailsDialog({
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 min-w-0">
-                  <Mail className="h-5 w-5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                <div className="flex items-center gap-2 min-w-0">
+                  <Mail className="h-4 w-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
                   <div className="min-w-0">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                    <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">
                       Email
                     </span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                         {localCandidate.email}
                       </span>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0"
+                        className="h-5 w-5 p-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0"
                         onClick={() =>
                           handleCandidateInfoCopy(localCandidate.email || "")
                         }
@@ -470,20 +485,20 @@ export function CandidateDetailsDialog({
                   </div>
                 </div>
                 {localCandidate.contact && (
-                  <div className="flex items-center gap-3 min-w-0">
-                    <Phone className="h-5 w-5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Phone className="h-4 w-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
                     <div className="min-w-0">
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                      <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">
                         Contact
                       </span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                           {localCandidate.contact}
                         </span>
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0"
+                          className="h-5 w-5 p-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0"
                           onClick={() =>
                             handleCandidateInfoCopy(
                               localCandidate.contact || ""
@@ -498,6 +513,13 @@ export function CandidateDetailsDialog({
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* Basic Candidate Information */}
+            <div className="bg-white dark:bg-black/50 rounded-lg p-3 space-y-2">
+              {candidateDetailsFields
+                .find((field) => field.id === "candidate-info")
+                ?.render(localCandidate, user)}
             </div>
 
             {/* Follow-up Section */}
@@ -573,6 +595,53 @@ export function CandidateDetailsDialog({
                 </div>
               )}
 
+            {/* Skills */}
+            {localCandidate.skills && localCandidate.skills.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  Skills
+                </h3>
+                {candidateDetailsFields
+                  .find((field) => field.id === "skills")
+                  ?.render(localCandidate, user)}
+              </div>
+            )}
+
+            {/* Custom Fields */}
+            {localCandidate.customFields &&
+              Object.keys(localCandidate.customFields).length > 0 && (
+                <div className="space-y-4">
+                  {/* <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    Meta Fields
+                  </h3> */}
+                  {candidateDetailsFields
+                    .find((field) => field.id === "metafields")
+                    ?.render(localCandidate, user)}
+                </div>
+              )}
+
+            {/* Resume Section */}
+            {localCandidate.resume && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  Resume
+                </h3>
+                {candidateDetailsFields
+                  .find((field) => field.id === "resume")
+                  ?.render(localCandidate, user)}
+              </div>
+            )}
+
+            {/* Attachments Section */}
+            {localCandidate.attachments &&
+              localCandidate.attachments.length > 0 && (
+                <div className="space-y-4">
+                  {candidateDetailsFields
+                    .find((field) => field.id === "attachments")
+                    ?.render(localCandidate, user)}
+                </div>
+              )}
+
             {/* AI Assessment Scores Section */}
             <div className="space-y-4">
               {localCandidate.scores?.overall !== undefined && (
@@ -580,7 +649,7 @@ export function CandidateDetailsDialog({
                   AI Assessment Scores
                 </h3>
               )}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 {localCandidate.scores?.overall !== undefined &&
                   (() => {
                     const normalizedScore = Math.max(
@@ -784,6 +853,59 @@ export function CandidateDetailsDialog({
                       </div>
                     );
                   })()}
+
+                {/* Comparative Ranking Card */}
+                {localCandidate.scores?.comparativeRanking &&
+                  localCandidate.scores.comparativeRanking.overallRank !== undefined &&
+                  (() => {
+                    const ranking = localCandidate.scores.comparativeRanking;
+                    const rankDisplay = getOrdinalSuffix(ranking.overallRank);
+
+                    // Convert percentile to score (0-100 percentile to 1-10 score)
+                    const percentileScore = Math.max(1, Math.min(10, Math.round(ranking.percentile / 10)));
+                    const scoreColor = scoreColors[percentileScore];
+
+                    const tooltipContent = (
+                      <div className="space-y-2 p-1">
+                        <div className="font-semibold text-xs mb-2">Ranking Breakdown</div>
+                        <div className="space-y-1.5">
+                          <div className="flex justify-between gap-4">
+                            <span className="text-gray-300">Skills:</span>
+                            <span className="font-semibold">{ranking.skillsPercentile} percentile</span>
+                          </div>
+                          <div className="flex justify-between gap-4">
+                            <span className="text-gray-300">Experience:</span>
+                            <span className="font-semibold">{ranking.experiencePercentile} percentile</span>
+                          </div>
+                          <div className="flex justify-between gap-4">
+                            <span className="text-gray-300">Affordability:</span>
+                            <span className="font-semibold">{ranking.affordabilityPercentile} percentile</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+
+                    return (
+                      <QuickTooltip content={tooltipContent} side="top">
+                        <div className={`${scoreColor.border} border-2 bg-transparent rounded-lg p-4 relative cursor-help`}>
+                          <div className="absolute top-3 right-3">
+                            <Trophy className={`w-5 h-5 ${scoreColor.text}`} style={{ color: scoreColor.text }} />
+                          </div>
+                          <div className="text-center">
+                            <div className={`text-2xl font-bold ${scoreColor.text}`} style={{ color: scoreColor.text }}>
+                              {rankDisplay}
+                            </div>
+                            <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mt-1">
+                              Candidate Rank
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              {ranking.percentile} percentile • {ranking.totalCandidates} total
+                            </div>
+                          </div>
+                        </div>
+                      </QuickTooltip>
+                    );
+                  })()}
               </div>
             </div>
 
@@ -800,68 +922,91 @@ export function CandidateDetailsDialog({
                 onReEvaluate={() => setConfirmReEvaluateOpen(true)}
               />
             </div>
-
-            {/* Basic Candidate Information */}
-            <div className="space-y-4">
-              {/* <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                Basic Information
-              </h3> */}
-              {candidateDetailsFields
-                .find((field) => field.id === "candidate-info")
-                ?.render(localCandidate, user)}
-            </div>
-
-            {/* Skills */}
-            {localCandidate.skills && localCandidate.skills.length > 0 && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  Skills
-                </h3>
-                {candidateDetailsFields
-                  .find((field) => field.id === "skills")
-                  ?.render(localCandidate, user)}
-              </div>
-            )}
-
-            {/* Custom Fields */}
-            {localCandidate.customFields &&
-              Object.keys(localCandidate.customFields).length > 0 && (
-                <div className="space-y-4">
-                  {/* <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    Meta Fields
-                  </h3> */}
-                  {candidateDetailsFields
-                    .find((field) => field.id === "metafields")
-                    ?.render(localCandidate, user)}
-                </div>
-              )}
           </TabsContent>
 
-          <TabsContent value="documents" className="space-y-6 mt-0">
-            {/* Resume */}
-            {localCandidate.resume && (
-              <div className="space-y-4">
+          {/* Interview Questions Tab */}
+          <TabsContent value="questions" className="space-y-6 mt-0">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  Resume
+                  AI-Generated Interview Questions
                 </h3>
-                {candidateDetailsFields
-                  .find((field) => field.id === "resume")
-                  ?.render(localCandidate, user)}
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  {localCandidate.scores?.interviewQuestions?.length || 0} questions
+                </span>
               </div>
-            )}
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                These questions have been automatically generated based on the candidate's resume analysis to help guide your interview.
+              </p>
 
-            {/* Attachments */}
-            {localCandidate.attachments &&
-              localCandidate.attachments.length > 0 && (
+              {localCandidate.scores?.interviewQuestions && localCandidate.scores.interviewQuestions.length > 0 ? (
                 <div className="space-y-4">
-                  {/* <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    Attachments
-                  </h3> */}
-                  {candidateDetailsFields
-                    .find((field) => field.id === "attachments")
-                    ?.render(localCandidate, user)}
+                  {localCandidate.scores.interviewQuestions.map((question, index) => (
+                    <div
+                      key={index}
+                      className={`border rounded-lg p-4 ${
+                        question.priority === 'high'
+                          ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900'
+                          : question.priority === 'medium'
+                          ? 'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-900'
+                          : 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 mt-1">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
+                            question.priority === 'high'
+                              ? 'bg-red-200 dark:bg-red-900 text-red-800 dark:text-red-200'
+                              : question.priority === 'medium'
+                              ? 'bg-orange-200 dark:bg-orange-900 text-orange-800 dark:text-orange-200'
+                              : 'bg-blue-200 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
+                          }`}>
+                            {index + 1}
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className={`text-xs font-semibold uppercase px-2 py-0.5 rounded ${
+                              question.priority === 'high'
+                                ? 'bg-red-200 dark:bg-red-900 text-red-800 dark:text-red-200'
+                                : question.priority === 'medium'
+                                ? 'bg-orange-200 dark:bg-orange-900 text-orange-800 dark:text-orange-200'
+                                : 'bg-blue-200 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
+                            }`}>
+                              {question.priority} Priority
+                            </span>
+                            <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                              {question.category}
+                            </span>
+                          </div>
+                          <h4 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                            {question.question}
+                          </h4>
+                          <div className="text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-700 mb-2">
+                            <span className="font-medium text-gray-600 dark:text-gray-400">Why ask this:</span>
+                            <p className="mt-1">{question.reason}</p>
+                          </div>
+                          {question.suggestedAnswer && (
+                            <div className="text-sm text-gray-700 dark:text-gray-300 bg-green-50 dark:bg-green-950/20 p-3 rounded border border-green-200 dark:border-green-900">
+                              <span className="font-medium text-green-700 dark:text-green-400">Suggested Answer Guide:</span>
+                              <p className="mt-1 text-gray-700 dark:text-gray-300">{question.suggestedAnswer}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <HelpCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold">No questions generated</h3>
+                  <p className="text-muted-foreground">
+                    Interview questions will appear here after AI evaluation.
+                  </p>
                 </div>
               )}
+            </div>
           </TabsContent>
 
           <TabsContent value="history" className="space-y-6 mt-0">

@@ -35,6 +35,133 @@ interface JobForEvaluate {
   experience?: number;
 }
 
+// Calculate comparative ranking for a candidate within their job's candidate pool
+async function calculateComparativeRanking(
+  candidateId: any,
+  jobId: any,
+  currentScores: any
+) {
+  try {
+    // Get all candidates for this job with scores
+    const candidates = await Candidate.find({
+      jobId: typeof jobId === "object" && "_id" in jobId ? jobId._id : jobId,
+      scores: { $exists: true },
+      isDeleted: { $ne: true },
+    }).select("scores");
+
+    if (!candidates || candidates.length === 0) {
+      return {
+        overallRank: 1,
+        totalCandidates: 1,
+        percentile: 100,
+        skillsPercentile: 100,
+        experiencePercentile: 100,
+        affordabilityPercentile: 100,
+        hasTie: false,
+        tiedWithCount: 0,
+        rankingBasedOn: 'overall' as const,
+      };
+    }
+
+    const totalCandidates = candidates.length;
+
+    // Determine which score to use for ranking (weighted score if available, otherwise overall)
+    const useWeightedScore = currentScores.weightedScore != null;
+    const rankingBasedOn: 'overall' | 'weighted' = useWeightedScore ? 'weighted' : 'overall';
+    const currentRankingScore = useWeightedScore ? currentScores.weightedScore : currentScores.overall;
+
+    // Calculate percentiles for each dimension (including ties)
+    const calculatePercentile = (value: number, allValues: number[]) => {
+      const sorted = allValues.filter((v) => v != null).sort((a, b) => a - b);
+      const countBelow = sorted.filter((v) => v < value).length;
+      const countEqual = sorted.filter((v) => v === value).length;
+      // Use midpoint method for ties: add half of tied values
+      const adjustedCount = countBelow + (countEqual - 1) / 2;
+      return Math.round((adjustedCount / sorted.length) * 100);
+    };
+
+    // Extract scores for all candidates
+    const allOverallScores = candidates
+      .map((c) => c.scores?.overall)
+      .filter((s) => s != null);
+    const allSkillsScores = candidates
+      .map((c) => c.scores?.skills)
+      .filter((s) => s != null);
+    const allExperienceScores = candidates
+      .map((c) => c.scores?.experience)
+      .filter((s) => s != null);
+    const allAffordabilityScores = candidates
+      .map((c) => c.scores?.affordability)
+      .filter((s) => s != null);
+
+    // Sort candidates by ranking score (weighted if available, otherwise overall)
+    const sortedCandidates = candidates
+      .filter((c) => {
+        if (useWeightedScore) {
+          return c.scores?.weightedScore != null;
+        }
+        return c.scores?.overall != null;
+      })
+      .sort((a, b) => {
+        const scoreA = useWeightedScore ? (a.scores?.weightedScore || 0) : (a.scores?.overall || 0);
+        const scoreB = useWeightedScore ? (b.scores?.weightedScore || 0) : (b.scores?.overall || 0);
+        return scoreB - scoreA; // Highest first
+      });
+
+    const currentCandidateRank =
+      sortedCandidates.findIndex(
+        (c) => c._id.toString() === candidateId.toString()
+      ) + 1;
+
+    // Check for ties at the same ranking score
+    const candidatesWithSameScore = sortedCandidates.filter((c) => {
+      const score = useWeightedScore ? c.scores?.weightedScore : c.scores?.overall;
+      return score === currentRankingScore;
+    });
+    const hasTie = candidatesWithSameScore.length > 1;
+    const tiedWithCount = candidatesWithSameScore.length - 1; // Excluding current candidate
+
+    // Get all ranking scores for percentile calculation
+    const allRankingScores = sortedCandidates.map((c) =>
+      useWeightedScore ? (c.scores?.weightedScore || 0) : (c.scores?.overall || 0)
+    );
+
+    return {
+      overallRank: currentCandidateRank || 1,
+      totalCandidates,
+      percentile: calculatePercentile(currentRankingScore, allRankingScores),
+      skillsPercentile: calculatePercentile(
+        currentScores.skills,
+        allSkillsScores
+      ),
+      experiencePercentile: calculatePercentile(
+        currentScores.experience,
+        allExperienceScores
+      ),
+      affordabilityPercentile: calculatePercentile(
+        currentScores.affordability || 0,
+        allAffordabilityScores
+      ),
+      hasTie,
+      tiedWithCount,
+      rankingBasedOn,
+    };
+  } catch (error) {
+    console.error("Error calculating comparative ranking:", error);
+    return {
+      overallRank: 1,
+      totalCandidates: 1,
+      percentile: 0,
+      skillsPercentile: 0,
+      experiencePercentile: 0,
+      affordabilityPercentile: 0,
+      hasTie: false,
+      tiedWithCount: 0,
+      rankingBasedOn: 'overall' as const,
+    };
+  }
+}
+
 // This function is now replaced by AIEvaluationService
 // Kept for backward compatibility if needed
 
@@ -282,6 +409,30 @@ export async function PUT(request: NextRequest) {
       jobData,
       candidate
     );
+
+    // Calculate weighted score if job has custom weights
+    if (job?.evaluationWeights) {
+      const weightedScore = AIEvaluationService.calculateWeightedScore(
+        {
+          overall: scores.overall,
+          skills: scores.skills,
+          experience: scores.experience,
+          affordability: scores.affordability || 0,
+        },
+        job.evaluationWeights
+      );
+      scores.weightedScore = weightedScore;
+    }
+
+    // Calculate comparative ranking if enabled
+    if (evaluationConfig.enableComparativeRanking) {
+      const comparativeRanking = await calculateComparativeRanking(
+        candidate._id,
+        candidate.jobId,
+        scores
+      );
+      scores.comparativeRanking = comparativeRanking;
+    }
 
     candidate.scores = scores;
     candidate.contact = candidate.contact;

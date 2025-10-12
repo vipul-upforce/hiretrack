@@ -259,6 +259,26 @@ const settingsSchema = new Schema({
       default: 4,
       min: 0,
     },
+    enableComparativeRanking: {
+      type: Boolean,
+      default: false,
+    },
+    enableInterviewQuestions: {
+      type: Boolean,
+      default: false,
+    },
+    enableConfidenceScores: {
+      type: Boolean,
+      default: true,
+    },
+    enableRedFlagsDetection: {
+      type: Boolean,
+      default: true,
+    },
+    enableSkillsMatrix: {
+      type: Boolean,
+      default: true,
+    },
   },
 });
 
@@ -400,6 +420,11 @@ export interface IEvaluationConfig {
   customPrompt: string | null;
   autoEvaluateAllCandidates: boolean;
   maxPdfPages: number;
+  enableComparativeRanking?: boolean;
+  enableInterviewQuestions?: boolean;
+  enableConfidenceScores?: boolean;
+  enableRedFlagsDetection?: boolean;
+  enableSkillsMatrix?: boolean;
 }
 
 export interface SettingsDocument extends Document, ISettings {}

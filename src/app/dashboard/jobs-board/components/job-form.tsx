@@ -24,11 +24,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 // import { DatePicker } from "@/components/ui/date-picker";
-import { LinkIcon } from "lucide-react";
+import { LinkIcon, ChevronDown, ChevronUp, Info } from "lucide-react";
 import RichTextEditor from "@/components/ui/rte/RichTextEditor";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useSanitizeFiles } from "@/hooks/useSanitizeFiles";
 import useRoles from "@/hooks/useRoles";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 // import { Checkbox } from "@mui/material";
 // import { Checkbox } from "@mui/material";
 
@@ -83,6 +89,7 @@ export function JobForm(props: JobFormProps) {
   } = useFormikContext<JobFormValues>();
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
   const [newLink, setNewLink] = useState("");
+  const [showWeights, setShowWeights] = useState(false);
   const { sanitizeFiles } = useSanitizeFiles();
   const role = useRoles();
 
@@ -417,6 +424,137 @@ export function JobForm(props: JobFormProps) {
               Prompt for reason when changing candidate status
             </Label>
           </div>
+        </div>
+      )}
+
+      {role === "admin" && (
+        <div className="space-y-2 border-t pt-4">
+          <Collapsible open={showWeights} onOpenChange={setShowWeights}>
+            <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
+              <div className="flex items-center gap-2">
+                <Label className="font-semibold cursor-pointer">
+                  AI Evaluation - Weighted Scoring (Optional)
+                </Label>
+              </div>
+              {showWeights ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-4 space-y-4">
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  Customize how much each evaluation dimension contributes to the final candidate score.
+                  Values will be automatically normalized. Leave all at default (25) for equal weighting.
+                </AlertDescription>
+              </Alert>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="evaluationWeights.skills">
+                    Skills Weight (%)
+                  </Label>
+                  <Input
+                    id="evaluationWeights.skills"
+                    name="evaluationWeights.skills"
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={values.evaluationWeights?.skills ?? 25}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 0;
+                      setFieldValue("evaluationWeights.skills", value);
+                    }}
+                    onBlur={handleBlur}
+                    placeholder="25"
+                  />
+                  {touched.evaluationWeights?.skills && errors.evaluationWeights?.skills && (
+                    <p className="text-sm text-red-500">{errors.evaluationWeights.skills}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="evaluationWeights.experience">
+                    Experience Weight (%)
+                  </Label>
+                  <Input
+                    id="evaluationWeights.experience"
+                    name="evaluationWeights.experience"
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={values.evaluationWeights?.experience ?? 25}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 0;
+                      setFieldValue("evaluationWeights.experience", value);
+                    }}
+                    onBlur={handleBlur}
+                    placeholder="25"
+                  />
+                  {touched.evaluationWeights?.experience && errors.evaluationWeights?.experience && (
+                    <p className="text-sm text-red-500">{errors.evaluationWeights.experience}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="evaluationWeights.affordability">
+                    Affordability Weight (%)
+                  </Label>
+                  <Input
+                    id="evaluationWeights.affordability"
+                    name="evaluationWeights.affordability"
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={values.evaluationWeights?.affordability ?? 25}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 0;
+                      setFieldValue("evaluationWeights.affordability", value);
+                    }}
+                    onBlur={handleBlur}
+                    placeholder="25"
+                  />
+                  {touched.evaluationWeights?.affordability && errors.evaluationWeights?.affordability && (
+                    <p className="text-sm text-red-500">{errors.evaluationWeights.affordability}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="evaluationWeights.overall">
+                    Overall Impression Weight (%)
+                  </Label>
+                  <Input
+                    id="evaluationWeights.overall"
+                    name="evaluationWeights.overall"
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={values.evaluationWeights?.overall ?? 25}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 0;
+                      setFieldValue("evaluationWeights.overall", value);
+                    }}
+                    onBlur={handleBlur}
+                    placeholder="25"
+                  />
+                  {touched.evaluationWeights?.overall && errors.evaluationWeights?.overall && (
+                    <p className="text-sm text-red-500">{errors.evaluationWeights.overall}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="text-sm text-muted-foreground">
+                Total: {
+                  (values.evaluationWeights?.skills ?? 25) +
+                  (values.evaluationWeights?.experience ?? 25) +
+                  (values.evaluationWeights?.affordability ?? 25) +
+                  (values.evaluationWeights?.overall ?? 25)
+                }% (will be normalized to 100%)
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         </div>
       )}
     </div>

@@ -26,6 +26,13 @@ export function EvaluationSettings({ isOpen, onClose }: EvaluationSettingsProps)
   const [maxPdfPages, setMaxPdfPages] = useState(4);
   const [useCustomPrompt, setUseCustomPrompt] = useState(false);
 
+  // Enhanced evaluation feature toggles
+  const [enableConfidenceScores, setEnableConfidenceScores] = useState(true);
+  const [enableRedFlagsDetection, setEnableRedFlagsDetection] = useState(true);
+  const [enableSkillsMatrix, setEnableSkillsMatrix] = useState(true);
+  const [enableComparativeRanking, setEnableComparativeRanking] = useState(false);
+  const [enableInterviewQuestions, setEnableInterviewQuestions] = useState(false);
+
   const DEFAULT_PROMPT = `As a seasoned senior technology leader with expertise in talent acquisition, you are conducting a rigorous evaluation of a candidate.
 
 Job Details:
@@ -110,6 +117,13 @@ Available placeholders:
         setAutoEvaluateAll(config.autoEvaluateAllCandidates || false);
         setMaxPdfPages(config.maxPdfPages || 4);
         setUseCustomPrompt(!!config.customPrompt);
+
+        // Load enhanced feature toggles
+        setEnableConfidenceScores(config.enableConfidenceScores !== false); // default true
+        setEnableRedFlagsDetection(config.enableRedFlagsDetection !== false); // default true
+        setEnableSkillsMatrix(config.enableSkillsMatrix !== false); // default true
+        setEnableComparativeRanking(config.enableComparativeRanking || false); // default false
+        setEnableInterviewQuestions(config.enableInterviewQuestions || false); // default false
       }
     } catch (error) {
       console.error("Failed to fetch evaluation settings:", error);
@@ -127,6 +141,11 @@ Available placeholders:
           customPrompt: useCustomPrompt ? customPrompt : null,
           autoEvaluateAllCandidates: autoEvaluateAll,
           maxPdfPages,
+          enableConfidenceScores,
+          enableRedFlagsDetection,
+          enableSkillsMatrix,
+          enableComparativeRanking,
+          enableInterviewQuestions,
         }),
       });
 
@@ -161,6 +180,11 @@ Available placeholders:
     setAutoEvaluateAll(false);
     setMaxPdfPages(4);
     setUseCustomPrompt(false);
+    setEnableConfidenceScores(true);
+    setEnableRedFlagsDetection(true);
+    setEnableSkillsMatrix(true);
+    setEnableComparativeRanking(false);
+    setEnableInterviewQuestions(false);
   };
 
   return (
@@ -235,6 +259,91 @@ Available placeholders:
               </p>
             </div>
           )}
+
+          {/* Enhanced Evaluation Features */}
+          <div className="border-t pt-4 space-y-4">
+            <div>
+              <h3 className="text-sm font-semibold">Enhanced Evaluation Features</h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                Enable additional AI-powered insights for better candidate assessment
+              </p>
+            </div>
+
+            {/* Confidence Scores */}
+            <div className="flex items-center justify-between space-x-2">
+              <div className="space-y-0.5">
+                <Label htmlFor="enableConfidence">Confidence Scores & Evidence Links</Label>
+                <p className="text-sm text-muted-foreground">
+                  AI provides confidence levels and specific resume sections for each score
+                </p>
+              </div>
+              <Switch
+                id="enableConfidence"
+                checked={enableConfidenceScores}
+                onCheckedChange={setEnableConfidenceScores}
+              />
+            </div>
+
+            {/* Red Flags Detection */}
+            <div className="flex items-center justify-between space-x-2">
+              <div className="space-y-0.5">
+                <Label htmlFor="enableRedFlags">Red Flags Detection</Label>
+                <p className="text-sm text-muted-foreground">
+                  Automatically detect potential concerns (gaps, job hopping, salary mismatch)
+                </p>
+              </div>
+              <Switch
+                id="enableRedFlags"
+                checked={enableRedFlagsDetection}
+                onCheckedChange={setEnableRedFlagsDetection}
+              />
+            </div>
+
+            {/* Skills Matrix */}
+            <div className="flex items-center justify-between space-x-2">
+              <div className="space-y-0.5">
+                <Label htmlFor="enableSkills">Skills Verification Matrix</Label>
+                <p className="text-sm text-muted-foreground">
+                  Detailed breakdown of required vs. present skills with evidence
+                </p>
+              </div>
+              <Switch
+                id="enableSkills"
+                checked={enableSkillsMatrix}
+                onCheckedChange={setEnableSkillsMatrix}
+              />
+            </div>
+
+            {/* Comparative Ranking - Admin Only */}
+            <div className="flex items-center justify-between space-x-2">
+              <div className="space-y-0.5">
+                <Label htmlFor="enableRanking">Comparative Ranking (Admin Only)</Label>
+                <p className="text-sm text-muted-foreground">
+                  Show candidate rank and percentile within job applicant pool
+                </p>
+              </div>
+              <Switch
+                id="enableRanking"
+                checked={enableComparativeRanking}
+                onCheckedChange={setEnableComparativeRanking}
+              />
+            </div>
+
+            {/* Interview Questions - Admin Controls */}
+            <div className="flex items-center justify-between space-x-2">
+              <div className="space-y-0.5">
+                <Label htmlFor="enableQuestions">Interview Question Generation (Admin Controls)</Label>
+                <p className="text-sm text-muted-foreground">
+                  AI generates targeted interview questions based on resume analysis
+                </p>
+              </div>
+              <Switch
+                id="enableQuestions"
+                checked={enableInterviewQuestions}
+                onCheckedChange={setEnableInterviewQuestions}
+              />
+            </div>
+          </div>
 
           {/* Custom Prompt Toggle */}
           <div className="flex items-center justify-between space-x-2 border-t pt-4">

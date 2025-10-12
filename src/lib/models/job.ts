@@ -68,6 +68,32 @@ export const jobSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  evaluationWeights: {
+    skills: {
+      type: Number,
+      default: 25,
+      min: 0,
+      max: 100,
+    },
+    experience: {
+      type: Number,
+      default: 25,
+      min: 0,
+      max: 100,
+    },
+    affordability: {
+      type: Number,
+      default: 25,
+      min: 0,
+      max: 100,
+    },
+    overall: {
+      type: Number,
+      default: 25,
+      min: 0,
+      max: 100,
+    },
+  },
 });
 
 export interface IJob extends Document<mongoose.Types.ObjectId> {
@@ -115,6 +141,12 @@ export interface IJob extends Document<mongoose.Types.ObjectId> {
   useCustomLanes: boolean;
   isDeleted?: boolean;
   promptForStatusChangeReason?: boolean;
+  evaluationWeights?: {
+    skills: number;
+    experience: number;
+    affordability: number;
+    overall: number;
+  };
 }
 
 // export const Job = mongoose.model('Job', jobSchema);

@@ -25,6 +25,55 @@ export interface EvaluationResult {
   recommendation: string;
   notes: string;
   failure?: string;
+  // New enhanced evaluation fields
+  confidenceScores?: {
+    overall: number;
+    skills: number;
+    experience: number;
+    affordability: number;
+  };
+  evidenceLinks?: {
+    overall: string;
+    skills: string;
+    experience: string;
+    affordability: string;
+  };
+  redFlags?: Array<{
+    type: string;
+    severity: 'low' | 'medium' | 'high';
+    description: string;
+    evidence: string;
+  }>;
+  interviewQuestions?: Array<{
+    category: string;
+    question: string;
+    reason: string;
+    priority: 'high' | 'medium' | 'low';
+    suggestedAnswer?: string;
+  }>;
+  skillsMatrix?: {
+    requiredAndPresent: Array<{
+      skill: string;
+      yearsOfExperience?: number;
+      proficiencyLevel?: string;
+      evidence: string;
+    }>;
+    requiredButMissing: string[];
+    presentButNotRequired: string[];
+  };
+  // Fields calculated after AI evaluation
+  weightedScore?: number;
+  comparativeRanking?: {
+    overallRank: number;
+    totalCandidates: number;
+    percentile: number;
+    skillsPercentile: number;
+    experiencePercentile: number;
+    affordabilityPercentile: number;
+    hasTie: boolean;
+    tiedWithCount: number;
+    rankingBasedOn: 'overall' | 'weighted';
+  };
 }
 
 export class AIEvaluationService {
@@ -156,7 +205,13 @@ export class AIEvaluationService {
         evaluationConfig.temperature
       );
 
-      const evaluationResult = this.parseEvaluationResponse(response);
+      let evaluationResult = this.parseEvaluationResponse(response);
+
+      // Filter response based on enabled features
+      evaluationResult = this.filterEvaluationBySettings(
+        evaluationResult,
+        evaluationConfig
+      );
 
       // Add evaluation metadata
       const evaluationMetadata = await this.getEvaluationMetadata(
@@ -356,7 +411,7 @@ export class AIEvaluationService {
 
   private static parseEvaluationResponse(response: string): EvaluationResult {
     try {
-      // console.log("Raw evaluation response:", response);
+      console.log("Raw evaluation response:", response);
 
       // Clean the response - handle multiple formats
       let jsonString = response
@@ -372,7 +427,32 @@ export class AIEvaluationService {
 
       console.log("Cleaned JSON string:", jsonString);
 
-      const parsedObject = JSON.parse(jsonString);
+      let parsedObject;
+      try {
+        parsedObject = JSON.parse(jsonString);
+      } catch (parseError) {
+        console.error("JSON Parse Error:", parseError);
+        console.error("Failed JSON string (first 1000 chars):", jsonString.substring(0, 1000));
+        console.error("Failed JSON string (last 500 chars):", jsonString.substring(Math.max(0, jsonString.length - 500)));
+        throw parseError;
+      }
+
+      // Normalize interview questions priority and red flags severity to lowercase
+      let interviewQuestions = parsedObject.interviewQuestions;
+      if (interviewQuestions && Array.isArray(interviewQuestions)) {
+        interviewQuestions = interviewQuestions.map((q: any) => ({
+          ...q,
+          priority: q.priority ? q.priority.toLowerCase() : q.priority,
+        }));
+      }
+
+      let redFlags = parsedObject.redFlags;
+      if (redFlags && Array.isArray(redFlags)) {
+        redFlags = redFlags.map((flag: any) => ({
+          ...flag,
+          severity: flag.severity ? flag.severity.toLowerCase() : flag.severity,
+        }));
+      }
 
       // Ensure all required fields exist with defaults
       const result: EvaluationResult = {
@@ -389,6 +469,12 @@ export class AIEvaluationService {
         notes: parsedObject.notes || "",
         // Handle different field names that AI might use
         affordability: parsedObject.affordability || parsedObject.salary || 0,
+        // Enhanced evaluation fields
+        confidenceScores: parsedObject.confidenceScores,
+        evidenceLinks: parsedObject.evidenceLinks,
+        redFlags: redFlags,
+        skillsMatrix: parsedObject.skillsMatrix,
+        interviewQuestions: interviewQuestions,
       };
 
       return result;
@@ -444,7 +530,29 @@ export class AIEvaluationService {
     4. Experience score should ONLY consider relevant work history duration and domain match
     5. After normalization, compare candidate's expected CTC with job salary
     6. Make sure the notes does not reveal the salary indicators or salary amount in response. We will use salary info and normalization only in evaluation and calculating affordability score.
-    7. Provide specific evidence from the CV to justify each score
+    7. **MANDATORY INTERVIEW QUESTIONS WITH SUGGESTED ANSWERS:**
+       - Generate 3-5 relevant interview questions based on the candidate's profile
+       - EVERY question MUST include a "suggestedAnswer" field
+       - The suggestedAnswer should guide the interviewer on what to listen for in a strong response
+       - Include specific technical details, metrics, or evidence the interviewer should expect
+    8. **MANDATORY EVIDENCE LINKS - BE SPECIFIC & CONVINCING:**
+       - DO NOT write "Resume Section: X" or "Found in Y section"
+       - DO write detailed evidence with actual facts: company names, years, specific skills, numbers
+       - Example: Instead of "Skills in resume", write "Lists React (5 yrs), Node.js (4 yrs) in Skills section; built e-commerce platform using React/Redux at TechCorp (2020-2024)"
+       - Each evidence should convince an interviewer WHY your score is justified
+
+    **EVIDENCE ATTRIBUTION IS MANDATORY - MUST BE CONVINCING:**
+    - You MUST provide DETAILED, SPECIFIC evidence that JUSTIFIES each score
+    - NEVER use generic phrases like "Resume Section: Skills" or "Found in Work Experience"
+    - Include specific facts: company names, years, skills with experience duration, projects
+    - Each evidenceLink must be 1-2 sentences with concrete details
+    - IMPORTANT: Ensure all text in JSON values is properly escaped (use simple quotes, avoid special characters)
+    - Example formats:
+      ✓ Skills: "Lists React (5yrs), Node.js (4yrs), TypeScript (3yrs). Built payment gateway at FinTech Corp using React. Matches 8/10 required skills"
+      ✓ Experience: "8 years total - 5 years at TechCorp as Senior Dev in fintech, 3 years at StartupXYZ in e-commerce. Domain relevant"
+      ✓ Affordability: "Current 12 LPA, expects 15 LPA. Budget 12-18 LPA. Fits mid-range with 25% standard increment"
+
+    CRITICAL: Return ONLY valid JSON, no additional text before or after. Ensure all strings are properly formatted.
 
     Return your evaluation in this JSON format:
     {
@@ -457,6 +565,49 @@ export class AIEvaluationService {
       "areas_for_improvement": // Maximum 4 bullet points of specific gaps or weaknesses
       "recommendation": // One of: "Strongly Recommend", "Recommend", "Consider with Reservations", "Not Recommended"
       "notes": // One liner notes Specific evidence from CV that influenced your scoring.
+      "confidenceScores": { // Your confidence level (0-1) for each score
+        "overall": 0.85, // How confident you are in the overall score
+        "skills": 0.90, // Confidence in skills assessment
+        "experience": 0.80, // Confidence in experience evaluation
+        "affordability": 0.75 // Confidence in affordability calculation
+      },
+      "evidenceLinks": { // REQUIRED: 1-2 sentences with specific facts - companies, years, skills, numbers
+        "overall": "Senior Developer at TechCorp (2019-2024) with React and Node.js matching our stack. Led 3 teams and 20+ projects. Expected 15 LPA fits budget range",
+        "skills": "Lists React (5yrs), Node.js (5yrs), TypeScript (3yrs), AWS (2yrs) - matches 8/10 required. Built e-commerce platform and microservices API. Missing: Kubernetes, GraphQL",
+        "experience": "8 years total - TechCorp (2019-2024, 5yrs) Senior Dev in fintech domain, StartupXYZ (2016-2019, 3yrs) in e-commerce. Shows clear progression",
+        "affordability": "Current 12 LPA, expects 15 LPA (25% hike). Job budget 12-18 LPA. Fits mid-range with standard increment"
+      },
+      "redFlags": [ // Array of potential concerns (if any)
+        {
+          "type": "employment_gap", // Type: employment_gap, job_hopping, overqualification, salary_mismatch, missing_info, resume_quality
+          "severity": "medium", // low, medium, high
+          "description": "6-month gap between jobs in 2022",
+          "evidence": "Employment timeline shows gap from Jan-Jun 2022"
+        }
+      ],
+      "skillsMatrix": { // Detailed skills breakdown
+        "requiredAndPresent": [
+          {
+            "skill": "React",
+            "yearsOfExperience": 5,
+            "proficiencyLevel": "Expert",
+            "evidence": "Led React migration project, built component library"
+          }
+        ],
+        "requiredButMissing": ["TypeScript", "AWS Lambda"], // Skills required but not in CV
+        "presentButNotRequired": ["Python", "Docker"] // Additional skills candidate has
+      },
+      "interviewQuestions": [ // REQUIRED: 3-5 questions with suggested answer guide for EACH question
+        {
+          "category": "Technical Skills", // Category of the question
+          "question": "Can you walk me through your most complex React project?", // The actual interview question
+          "reason": "Resume mentions React but lacks specific project details", // Why this question is important
+          "priority": "high", // high, medium, low based on importance
+          "suggestedAnswer": "Look for: discussion of component architecture, state management approach (Redux/Context), performance optimization, team collaboration. Strong answer includes specific metrics (load time improvements, user count) and technical challenges overcome." // REQUIRED: What to look for in a good answer
+        }
+      ]
+
+      IMPORTANT: Every question MUST include a "suggestedAnswer" field that guides the interviewer on what to listen for in a strong response.
     }
 
     SALARY NORMALIZATION EXAMPLES:
@@ -504,8 +655,37 @@ export class AIEvaluationService {
       "strengths": array of strings (max 4),
       "areas_for_improvement": array of strings (max 4),
       "recommendation": string,
-      "notes": string
-    }`;
+      "notes": string,
+      "confidenceScores": {
+        "overall": number (0-1),
+        "skills": number (0-1),
+        "experience": number (0-1),
+        "affordability": number (0-1)
+      },
+      "evidenceLinks": {
+        "overall": "DETAILED evidence with facts - NOT just 'Resume Section: X'. Include companies, years, specific achievements that justify the score",
+        "skills": "List SPECIFIC skills found, years of experience, projects. E.g., 'React (5yrs), Node.js (4yrs) listed; built payment gateway using React at FinTech Corp'",
+        "experience": "Mention SPECIFIC companies, roles, years, domain relevance. E.g., '8 years: TechCorp (5yrs, fintech), StartupXYZ (3yrs, e-commerce)'",
+        "affordability": "Show CALCULATION: 'Current 12 LPA, Expected 15 LPA (25% jump), Budget 12-18 LPA - fits mid-range'"
+      },
+      "redFlags": array of objects [{type, severity, description, evidence}],
+      "skillsMatrix": {
+        "requiredAndPresent": array of objects [{skill, yearsOfExperience, proficiencyLevel, evidence}],
+        "requiredButMissing": array of strings,
+        "presentButNotRequired": array of strings
+      },
+      "interviewQuestions": [
+        {
+          "category": "string",
+          "question": "string",
+          "reason": "string",
+          "priority": "high|medium|low",
+          "suggestedAnswer": "REQUIRED - Guide for what to listen for in a strong answer"
+        }
+      ]
+    }
+
+    CRITICAL: Every interview question MUST include the suggestedAnswer field. Do not omit it.`;
     }
 
     return prompt;
@@ -544,6 +724,71 @@ export class AIEvaluationService {
     const providerName = providerNames[provider] || provider;
 
     return `\n\nEvaluated by ${providerName} ${this.modelUsed ? `using ${this.modelUsed}` : ""} on ${dateStr} at ${timeStr}`;
+  }
+
+  private static filterEvaluationBySettings(
+    evaluation: EvaluationResult,
+    config: any
+  ): EvaluationResult {
+    // Remove fields that are disabled in settings
+    if (config.enableConfidenceScores === false) {
+      delete evaluation.confidenceScores;
+      delete evaluation.evidenceLinks;
+    }
+    if (config.enableRedFlagsDetection === false) {
+      delete evaluation.redFlags;
+    }
+    if (config.enableSkillsMatrix === false) {
+      delete evaluation.skillsMatrix;
+    }
+    if (config.enableInterviewQuestions === false) {
+      delete evaluation.interviewQuestions;
+    }
+
+    return evaluation;
+  }
+
+  static calculateWeightedScore(
+    scores: {
+      overall: number;
+      skills: number;
+      experience: number;
+      affordability: number;
+    },
+    weights: {
+      overall: number;
+      skills: number;
+      experience: number;
+      affordability: number;
+    }
+  ): number {
+    // Normalize weights to sum to 100
+    const totalWeight =
+      weights.overall + weights.skills + weights.experience + weights.affordability;
+
+    if (totalWeight === 0) {
+      // If no weights set, return simple average
+      return (
+        (scores.overall + scores.skills + scores.experience + (scores.affordability || 0)) /
+        4
+      );
+    }
+
+    const normalizedWeights = {
+      overall: weights.overall / totalWeight,
+      skills: weights.skills / totalWeight,
+      experience: weights.experience / totalWeight,
+      affordability: weights.affordability / totalWeight,
+    };
+
+    // Calculate weighted score
+    const weightedScore =
+      scores.overall * normalizedWeights.overall +
+      scores.skills * normalizedWeights.skills +
+      scores.experience * normalizedWeights.experience +
+      (scores.affordability || 0) * normalizedWeights.affordability;
+
+    return Math.round(weightedScore * 100) / 100; // Round to 2 decimal places
   }
 
   //   private static parseEvaluationResponse(response: string): EvaluationResult {
