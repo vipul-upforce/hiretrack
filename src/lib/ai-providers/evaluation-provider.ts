@@ -8,6 +8,7 @@ interface JobForEvaluate {
   title: string;
   skills: string[];
   salary?: string;
+  experience?: number;
 }
 
 export interface EvaluationResult {
@@ -122,7 +123,22 @@ export class AIEvaluationService {
         );
       }
 
-      const prompt = this.getEvaluationPrompt(jobData, candidate);
+      // Get evaluation configuration with defaults
+      const evaluationConfig = settings.evaluationConfig || {
+        temperature: 0.1,
+        customPrompt: null,
+        autoEvaluateAllCandidates: false,
+        maxPdfPages: 4,
+      };
+
+      // Use custom prompt if available, otherwise use default
+      const prompt = evaluationConfig.customPrompt
+        ? this.buildPromptWithCustomTemplate(
+            evaluationConfig.customPrompt,
+            jobData,
+            candidate
+          )
+        : this.getEvaluationPrompt(jobData, candidate);
 
       // Get the appropriate AI provider
       const provider = AIProviderFactory.getProvider(activeProvider);
@@ -136,7 +152,8 @@ export class AIEvaluationService {
         resumeBase64,
         apiKey,
         prompt,
-        selectedModel
+        selectedModel,
+        evaluationConfig.temperature
       );
 
       const evaluationResult = this.parseEvaluationResponse(response);
@@ -449,6 +466,49 @@ export class AIEvaluationService {
 
     Below is the CV content for evaluation:
     `;
+  }
+
+  private static buildPromptWithCustomTemplate(
+    customPrompt: string,
+    jobData: JobForEvaluate,
+    candidate: ICandidate
+  ): string {
+    const jobDescription = jobData.description.replace(/<[^>]*>/g, ""); // Strip HTML
+    const jobTitle = jobData.title;
+    const jobSkills = jobData.skills.join(", ");
+    const ctcRange = jobData.salary || "Not specified";
+    const experience = jobData.experience ? `${jobData.experience} years` : "Not specified";
+
+    // Replace placeholders with actual values
+    let prompt = customPrompt
+      .replace(/\{\{JOB_TITLE\}\}/g, jobTitle)
+      .replace(/\{\{JOB_DESCRIPTION\}\}/g, jobDescription)
+      .replace(/\{\{JOB_SALARY\}\}/g, ctcRange)
+      .replace(/\{\{CTC_RANGE\}\}/g, ctcRange)
+      .replace(/\{\{EXPERIENCE\}\}/g, experience)
+      .replace(/\{\{REQUIRED_SKILLS\}\}/g, jobSkills)
+      .replace(/\{\{CANDIDATE_CURRENT_CTC\}\}/g, String(candidate.currentCTC))
+      .replace(/\{\{CANDIDATE_EXPECTED_CTC\}\}/g, String(candidate.expectedCTC));
+
+    // Ensure the JSON format instruction is always present at the end if not in custom prompt
+    if (!prompt.includes("Return your evaluation in this JSON format")) {
+      prompt += `
+
+    IMPORTANT: Return your evaluation in this exact JSON format:
+    {
+      "overall": number (1-10),
+      "skills": number (1-10),
+      "experience": number (1-10),
+      "contact": string,
+      "affordability": number (1-10),
+      "strengths": array of strings (max 4),
+      "areas_for_improvement": array of strings (max 4),
+      "recommendation": string,
+      "notes": string
+    }`;
+    }
+
+    return prompt;
   }
 
   private static async getEvaluationMetadata(

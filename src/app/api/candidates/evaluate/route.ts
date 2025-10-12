@@ -32,6 +32,7 @@ interface JobForEvaluate {
   title: string;
   skills: string[];
   salary?: string;
+  experience?: number;
 }
 
 // This function is now replaced by AIEvaluationService
@@ -202,6 +203,39 @@ export async function PUT(request: NextRequest) {
       base64Resume = resumeBuffer.toString("base64");
     }
 
+    // Check PDF page count if autoEvaluateAllCandidates is false
+    const evaluationConfig = settingsData.evaluationConfig || {
+      autoEvaluateAllCandidates: false,
+      maxPdfPages: 4,
+      temperature: 0.1,
+      customPrompt: null,
+    };
+
+    if (!evaluationConfig.autoEvaluateAllCandidates) {
+      // Check page count
+      try {
+        const pdfBuffer = Buffer.from(base64Resume, "base64");
+        const pdfjs = await import("pdfjs-dist/legacy/build/pdf.js");
+        const pdf = await pdfjs.getDocument({ data: pdfBuffer }).promise;
+        const pageCount = pdf.numPages;
+
+        if (
+          evaluationConfig.maxPdfPages > 0 &&
+          pageCount > evaluationConfig.maxPdfPages
+        ) {
+          return NextResponse.json(
+            {
+              error: `Resume has ${pageCount} pages. Auto-evaluation is limited to ${evaluationConfig.maxPdfPages} pages. Please evaluate manually or update settings.`,
+            },
+            { status: 400 }
+          );
+        }
+      } catch (pdfError) {
+        console.warn("PDF page count check failed:", pdfError);
+        // Continue with evaluation if page check fails
+      }
+    }
+
     const jobDescription =
       candidate.jobId &&
       typeof candidate.jobId === "object" &&
@@ -219,6 +253,7 @@ export async function PUT(request: NextRequest) {
         typeof candidate.jobId === "object" && "skills" in candidate.jobId
           ? (candidate.jobId.skills as string[])
           : [],
+      experience: job?.experience,
     };
     // Log what we're passing to the evaluation service
     console.log(

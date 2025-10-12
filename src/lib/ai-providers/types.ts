@@ -34,7 +34,8 @@ export interface AIProvider {
     resumeBase64: string,
     apiKey: string,
     prompt: string,
-    model?: string
+    model?: string,
+    temperature?: number
   ): Promise<string>;
   validateApiKey(
     apiKey: string,

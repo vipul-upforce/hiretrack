@@ -360,18 +360,16 @@ export function ApplyAsGuestDialog({
       // Store application status in localStorage
       storeGuestApplication(jobId, candidateId);
 
+      // Always attempt evaluation if resume is PDF - server will check page limits
       if (values.resume && values.resume.type === "application/pdf") {
         try {
-          const pageCount = await checkPdfPageCount(values.resume);
-          if (pageCount <= 4) {
-            evaluateCandidate(candidateId, evaluateCandidateMutation);
-          }
-        } catch (pdfError) {
+          evaluateCandidate(candidateId, evaluateCandidateMutation);
+        } catch (evalError) {
           console.warn(
-            "PDF page count check failed, skipping AI evaluation:",
-            pdfError
+            "AI evaluation failed or was skipped by server:",
+            evalError
           );
-          // Continue with submission even if PDF check fails
+          // Continue with submission even if evaluation fails
         }
       }
 

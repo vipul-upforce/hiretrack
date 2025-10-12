@@ -55,7 +55,8 @@ ${resumeText}`;
     resumeBase64: string,
     apiKey: string,
     prompt: string,
-    modelName?: string
+    modelName?: string,
+    temperature?: number
   ): Promise<string> {
     const anthropic = new Anthropic({ apiKey });
 
@@ -70,7 +71,7 @@ ${resumeText}`;
     const response = await anthropic.messages.create({
       model: selectedModel,
       max_tokens: 2000,
-      temperature: 0.1,
+      temperature: temperature !== undefined ? temperature : 0.1,
       messages: [
         {
           role: "user",

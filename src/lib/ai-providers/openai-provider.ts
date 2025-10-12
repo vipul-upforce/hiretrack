@@ -58,7 +58,8 @@ export class OpenAIProvider extends BaseAIProvider {
     resumeBase64: string,
     apiKey: string,
     prompt: string,
-    modelName?: string
+    modelName?: string,
+    temperature?: number
   ): Promise<string> {
     const openai = new OpenAI({ apiKey });
 
@@ -85,7 +86,7 @@ ${resumeText}`;
         },
       ],
       max_tokens: 2000,
-      temperature: 0.1,
+      temperature: temperature !== undefined ? temperature : 0.1,
       response_format: { type: "json_object" },
     });
 

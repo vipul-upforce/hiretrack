@@ -64,8 +64,38 @@ if (!cached) {
   cached = global.mongoose = { conn: null, promise: null };
 }
 
+// Helper function to register/re-register all models
+function registerModels(mongooseInstance: typeof mongoose) {
+  try {
+    // Use existing models if already registered, otherwise create new ones
+    Organization = mongooseInstance.models.Organization || mongooseInstance.model<IOrganization>("Organization", organizationSchema);
+    User = mongooseInstance.models.User || mongooseInstance.model<IUser>("User", userSchema);
+    Lane = mongooseInstance.models.Lane || mongooseInstance.model<ILane>("Lane", laneSchema);
+    Job = mongooseInstance.models.Job || mongooseInstance.model<IJob>("Job", jobSchema);
+    Candidate = mongooseInstance.models.Candidate || mongooseInstance.model<ICandidate>("Candidate", candidateSchema);
+    Settings = mongooseInstance.models.Settings || mongooseInstance.model<ISettings>("Settings", settingsSchema);
+    History = mongooseInstance.models.History || mongooseInstance.model<IHistory>("History", historySchema);
+    CandidateAccount = mongooseInstance.models.CandidateAccount || mongooseInstance.model<IUCandidateAccount>("CandidateAccount", candidateAccountSchema);
+    cvBatch = mongooseInstance.models.CVBatch || mongooseInstance.model<ICVBatch>("CVBatch", cvBatchSchema);
+    JobLaneConfig = mongooseInstance.models.JobLaneConfig || mongooseInstance.model<IJobLaneConfig>("JobLaneConfig", jobLaneConfigSchema);
+    ChecklistTemplate = mongooseInstance.models.ChecklistTemplate || mongooseInstance.model<IChecklistTemplate>("ChecklistTemplate", checklistTemplateSchema);
+    FileShare = mongooseInstance.models.FileShare || mongooseInstance.model<IFileShare>("FileShare", fileShareSchema);
+    EmailHistory = mongooseInstance.models.EmailHistory || mongooseInstance.model<IEmailHistory>("EmailHistory", emailHistorySchema);
+    Notification = mongooseInstance.models.Notification || mongooseInstance.model<INotification>("Notification", notificationSchema);
+    WebhookSubscription = mongooseInstance.models.WebhookSubscription || mongooseInstance.model<IWebhookSubscription>("WebhookSubscription", webhookSubscriptionSchema);
+    FileUrlMapping = mongooseInstance.models.FileUrlMapping || mongooseInstance.model<IFileUrlMapping>("FileUrlMapping", FileUrlMappingSchema);
+  } catch (error) {
+    console.error("Error during model registration:", error);
+    throw error;
+  }
+}
+
 export default async function connectToDatabase() {
   if (cached!.conn) {
+    // Connection exists, but check if models need re-registration (hot reload scenario)
+    if (!Settings || !Organization || !User) {
+      registerModels(cached!.conn);
+    }
     return cached!.conn;
   }
 
@@ -74,31 +104,9 @@ export default async function connectToDatabase() {
       bufferCommands: false,
     };
 
-    cached!.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      Organization = mongoose.model<IOrganization>(
-        "Organization",
-        organizationSchema
-      );
-      User = mongoose.model<IUser>("User", userSchema);
-      Lane = mongoose.model<ILane>("Lane", laneSchema);
-      Job = mongoose.model<IJob>("Job", jobSchema);
-      Candidate = mongoose.model<ICandidate>("Candidate", candidateSchema);
-      Settings = mongoose.model<ISettings>("Settings", settingsSchema);
-      History = mongoose.model<IHistory>("History", historySchema);
-      CandidateAccount = mongoose.model<IUCandidateAccount>(
-        "CandidateAccount",
-        candidateAccountSchema
-      );
-      cvBatch = mongoose.model<ICVBatch>("CVBatch", cvBatchSchema);
-      JobLaneConfig = mongoose.model<IJobLaneConfig>("JobLaneConfig", jobLaneConfigSchema);
-      ChecklistTemplate = mongoose.model<IChecklistTemplate>("ChecklistTemplate", checklistTemplateSchema);
-      FileShare = mongoose.model<IFileShare>("FileShare", fileShareSchema);
-      EmailHistory = mongoose.model<IEmailHistory>("EmailHistory", emailHistorySchema);
-      Notification = mongoose.model<INotification>("Notification", notificationSchema);
-      WebhookSubscription = mongoose.model<IWebhookSubscription>("WebhookSubscription", webhookSubscriptionSchema);
-      FileUrlMapping = mongoose.model<IFileUrlMapping>("FileUrlMapping", FileUrlMappingSchema);
-      console.log("Models registered");
-      return mongoose;
+    cached!.promise = mongoose.connect(MONGODB_URI, opts).then((mongooseInstance) => {
+      registerModels(mongooseInstance);
+      return mongooseInstance;
     });
   }
 
