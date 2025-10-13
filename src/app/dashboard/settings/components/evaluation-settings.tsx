@@ -329,12 +329,12 @@ Available placeholders:
               />
             </div>
 
-            {/* Interview Questions - Admin Controls */}
+            {/* Screening Questions - Admin Controls */}
             <div className="flex items-center justify-between space-x-2">
               <div className="space-y-0.5">
-                <Label htmlFor="enableQuestions">Interview Question Generation (Admin Controls)</Label>
+                <Label htmlFor="enableQuestions">Screening Question Generation (Admin Controls)</Label>
                 <p className="text-sm text-muted-foreground">
-                  AI generates targeted interview questions based on resume analysis
+                  AI generates 5-6 targeted screening questions including client communication assessment
                 </p>
               </div>
               <Switch

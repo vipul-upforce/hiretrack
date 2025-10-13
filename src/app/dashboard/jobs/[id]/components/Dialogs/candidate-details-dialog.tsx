@@ -38,15 +38,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { QuickTooltip } from "@/components/ui/tooltip";
 import {
   User as UserIcon,
-  FileText,
   MessageSquare,
   Clock,
-  Mail,
-  Phone,
   Bell,
   Edit,
   Trash2,
-  Copy,
   HelpCircle,
   Trophy,
 } from "lucide-react";
@@ -433,95 +429,6 @@ export function CandidateDetailsDialog({
 
         <div className="flex-1 overflow-y-auto px-4 py-3 lg:px-6 lg:py-4">
           <TabsContent value="overview" className="space-y-6 mt-0">
-            {/* Contact Information Section */}
-            <div className="bg-white dark:bg-black/50 rounded-lg p-3 space-y-2">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <UserIcon className="h-4 w-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
-                  <div className="min-w-0">
-                    <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">
-                      Name
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                        {localCandidate.name}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-5 w-5 p-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0"
-                        onClick={() =>
-                          handleCandidateInfoCopy(localCandidate.name || "")
-                        }
-                        title="Copy name"
-                      >
-                        <Copy className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 min-w-0">
-                  <Mail className="h-4 w-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
-                  <div className="min-w-0">
-                    <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">
-                      Email
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                        {localCandidate.email}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-5 w-5 p-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0"
-                        onClick={() =>
-                          handleCandidateInfoCopy(localCandidate.email || "")
-                        }
-                        title="Copy email"
-                      >
-                        <Copy className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-                {localCandidate.contact && (
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Phone className="h-4 w-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
-                    <div className="min-w-0">
-                      <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">
-                        Contact
-                      </span>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                          {localCandidate.contact}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-5 w-5 p-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0"
-                          onClick={() =>
-                            handleCandidateInfoCopy(
-                              localCandidate.contact || ""
-                            )
-                          }
-                          title="Copy contact"
-                        >
-                          <Copy className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Basic Candidate Information */}
-            <div className="bg-white dark:bg-black/50 rounded-lg p-3 space-y-2">
-              {candidateDetailsFields
-                .find((field) => field.id === "candidate-info")
-                ?.render(localCandidate, user)}
-            </div>
-
             {/* Follow-up Section */}
             {(localCandidate?.followUp?.date ||
               localCandidate?.followUp?.note) &&
@@ -649,7 +556,11 @@ export function CandidateDetailsDialog({
                   AI Assessment Scores
                 </h3>
               )}
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div className={`grid grid-cols-2 gap-4 ${
+                localCandidate.scores?.comparativeRanking?.overallRank !== undefined
+                  ? 'md:grid-cols-5'
+                  : 'md:grid-cols-4'
+              }`}>
                 {localCandidate.scores?.overall !== undefined &&
                   (() => {
                     const normalizedScore = Math.max(
@@ -662,7 +573,7 @@ export function CandidateDetailsDialog({
 
                     return (
                       <div
-                        className={`${scoreColor.border} border-2 bg-transparent rounded-lg p-4 relative`}
+                        className={`${scoreColor.border} border-2 bg-transparent rounded-lg p-4 relative h-36 flex items-center justify-center`}
                       >
                         <div className="absolute top-3 right-3">
                           <svg
@@ -713,7 +624,7 @@ export function CandidateDetailsDialog({
 
                     return (
                       <div
-                        className={`${scoreColor.border} border-2 bg-transparent rounded-lg p-4 relative`}
+                        className={`${scoreColor.border} border-2 bg-transparent rounded-lg p-4 relative h-36 flex items-center justify-center`}
                       >
                         <div className="absolute top-3 right-3">
                           <svg
@@ -764,7 +675,7 @@ export function CandidateDetailsDialog({
 
                     return (
                       <div
-                        className={`${scoreColor.border} border-2 bg-transparent rounded-lg p-4 relative`}
+                        className={`${scoreColor.border} border-2 bg-transparent rounded-lg p-4 relative h-36 flex items-center justify-center`}
                       >
                         <div className="absolute top-3 right-3">
                           <svg
@@ -814,7 +725,7 @@ export function CandidateDetailsDialog({
 
                     return (
                       <div
-                        className={`${scoreColor.border} border-2 bg-transparent rounded-lg p-4 relative`}
+                        className={`${scoreColor.border} border-2 bg-transparent rounded-lg p-4 relative h-36 flex items-center justify-center`}
                       >
                         <div className="absolute top-3 right-3">
                           <svg
@@ -887,7 +798,7 @@ export function CandidateDetailsDialog({
 
                     return (
                       <QuickTooltip content={tooltipContent} side="top">
-                        <div className={`${scoreColor.border} border-2 bg-transparent rounded-lg p-4 relative cursor-help`}>
+                        <div className={`${scoreColor.border} border-2 bg-transparent rounded-lg p-4 relative cursor-help h-36 flex items-center justify-center`}>
                           <div className="absolute top-3 right-3">
                             <Trophy className={`w-5 h-5 ${scoreColor.text}`} style={{ color: scoreColor.text }} />
                           </div>
@@ -924,19 +835,19 @@ export function CandidateDetailsDialog({
             </div>
           </TabsContent>
 
-          {/* Interview Questions Tab */}
+          {/* Screening Questions Tab */}
           <TabsContent value="questions" className="space-y-6 mt-0">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  AI-Generated Interview Questions
+                  AI-Generated Screening Questions
                 </h3>
                 <span className="text-sm text-gray-600 dark:text-gray-400">
                   {localCandidate.scores?.interviewQuestions?.length || 0} questions
                 </span>
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                These questions have been automatically generated based on the candidate's resume analysis to help guide your interview.
+                These screening questions have been automatically generated based on the candidate's resume analysis to help you evaluate key aspects during initial screening.
               </p>
 
               {localCandidate.scores?.interviewQuestions && localCandidate.scores.interviewQuestions.length > 0 ? (
@@ -944,52 +855,38 @@ export function CandidateDetailsDialog({
                   {localCandidate.scores.interviewQuestions.map((question, index) => (
                     <div
                       key={index}
-                      className={`border rounded-lg p-4 ${
-                        question.priority === 'high'
-                          ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900'
-                          : question.priority === 'medium'
-                          ? 'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-900'
-                          : 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900'
-                      }`}
+                      className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-900/50"
                     >
-                      <div className="flex items-start gap-3">
-                        <div className="flex-shrink-0 mt-1">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
-                            question.priority === 'high'
-                              ? 'bg-red-200 dark:bg-red-900 text-red-800 dark:text-red-200'
-                              : question.priority === 'medium'
-                              ? 'bg-orange-200 dark:bg-orange-900 text-orange-800 dark:text-orange-200'
-                              : 'bg-blue-200 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
-                          }`}>
-                            {index + 1}
+                      <div className="space-y-3">
+                        <div className="flex items-start gap-3">
+                          <span className="flex-shrink-0 text-sm font-semibold text-gray-500 dark:text-gray-400">
+                            Q{index + 1}.
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                                {question.category}
+                              </span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                • {question.priority} priority
+                              </span>
+                            </div>
+                            <h4 className="text-base font-medium text-gray-900 dark:text-gray-100">
+                              {question.question}
+                            </h4>
                           </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className={`text-xs font-semibold uppercase px-2 py-0.5 rounded ${
-                              question.priority === 'high'
-                                ? 'bg-red-200 dark:bg-red-900 text-red-800 dark:text-red-200'
-                                : question.priority === 'medium'
-                                ? 'bg-orange-200 dark:bg-orange-900 text-orange-800 dark:text-orange-200'
-                                : 'bg-blue-200 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
-                            }`}>
-                              {question.priority} Priority
-                            </span>
-                            <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                              {question.category}
-                            </span>
+
+                        <div className="ml-9 space-y-3">
+                          <div className="text-sm">
+                            <span className="text-gray-600 dark:text-gray-400 italic">Why ask this: </span>
+                            <span className="text-gray-700 dark:text-gray-300">{question.reason}</span>
                           </div>
-                          <h4 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                            {question.question}
-                          </h4>
-                          <div className="text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-700 mb-2">
-                            <span className="font-medium text-gray-600 dark:text-gray-400">Why ask this:</span>
-                            <p className="mt-1">{question.reason}</p>
-                          </div>
+
                           {question.suggestedAnswer && (
-                            <div className="text-sm text-gray-700 dark:text-gray-300 bg-green-50 dark:bg-green-950/20 p-3 rounded border border-green-200 dark:border-green-900">
-                              <span className="font-medium text-green-700 dark:text-green-400">Suggested Answer Guide:</span>
-                              <p className="mt-1 text-gray-700 dark:text-gray-300">{question.suggestedAnswer}</p>
+                            <div className="text-sm border-l-2 border-gray-300 dark:border-gray-600 pl-3">
+                              <span className="text-gray-600 dark:text-gray-400 italic">What to look for: </span>
+                              <span className="text-gray-700 dark:text-gray-300">{question.suggestedAnswer}</span>
                             </div>
                           )}
                         </div>
@@ -1002,7 +899,7 @@ export function CandidateDetailsDialog({
                   <HelpCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-semibold">No questions generated</h3>
                   <p className="text-muted-foreground">
-                    Interview questions will appear here after AI evaluation.
+                    Screening questions will appear here after AI evaluation.
                   </p>
                 </div>
               )}

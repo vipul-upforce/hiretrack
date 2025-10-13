@@ -408,14 +408,14 @@ export const candidateSchema = new Schema(
       },
       interviewQuestions: [
         {
-          category: String,
-          question: String,
-          reason: String,
+          category: { type: String },
+          question: { type: String },
+          reason: { type: String },
           priority: {
             type: String,
             enum: ['high', 'medium', 'low'],
           },
-          suggestedAnswer: String,
+          suggestedAnswer: { type: String },
         },
       ],
       skillsMatrix: {

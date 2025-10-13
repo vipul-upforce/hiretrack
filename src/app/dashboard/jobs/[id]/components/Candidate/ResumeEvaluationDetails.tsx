@@ -97,9 +97,9 @@ export default function ResumeEvaluationDetails({
         localCandidate.scores.evidenceLinks.experience &&
         localCandidate.scores.evidenceLinks.experience !== 'N/A' &&
         localCandidate.scores.evidenceLinks.experience.toLowerCase() !== 'n/a' ||
-        localCandidate.scores.evidenceLinks.affordability &&
+        (role !== "interviewer" && localCandidate.scores.evidenceLinks.affordability &&
         localCandidate.scores.evidenceLinks.affordability !== 'N/A' &&
-        localCandidate.scores.evidenceLinks.affordability.toLowerCase() !== 'n/a') && (
+        localCandidate.scores.evidenceLinks.affordability.toLowerCase() !== 'n/a')) && (
         <div className="border rounded-lg p-3 bg-gray-50 dark:bg-gray-900/50">
           <div className="flex items-center gap-2 mb-2">
             <Award className="h-4 w-4 text-gray-600 dark:text-gray-400" />
@@ -153,8 +153,9 @@ export default function ResumeEvaluationDetails({
               </div>
             )}
 
-            {/* Affordability */}
-            {localCandidate.scores.evidenceLinks.affordability &&
+            {/* Affordability - Hidden from interviewers */}
+            {role !== "interviewer" &&
+             localCandidate.scores.evidenceLinks.affordability &&
              localCandidate.scores.evidenceLinks.affordability !== 'N/A' &&
              localCandidate.scores.evidenceLinks.affordability.toLowerCase() !== 'n/a' && (
               <div className="bg-white dark:bg-transparent p-2 rounded border border-gray-200 dark:border-gray-700">

@@ -430,6 +430,9 @@ export class AIEvaluationService {
       let parsedObject;
       try {
         parsedObject = JSON.parse(jsonString);
+
+        // Debug: Log raw interview questions from AI
+        console.log("🔍 Raw interviewQuestions from AI:", JSON.stringify(parsedObject.interviewQuestions, null, 2));
       } catch (parseError) {
         console.error("JSON Parse Error:", parseError);
         console.error("Failed JSON string (first 1000 chars):", jsonString.substring(0, 1000));
@@ -440,10 +443,20 @@ export class AIEvaluationService {
       // Normalize interview questions priority and red flags severity to lowercase
       let interviewQuestions = parsedObject.interviewQuestions;
       if (interviewQuestions && Array.isArray(interviewQuestions)) {
-        interviewQuestions = interviewQuestions.map((q: any) => ({
-          ...q,
-          priority: q.priority ? q.priority.toLowerCase() : q.priority,
-        }));
+        interviewQuestions = interviewQuestions.map((q: any) => {
+          // Normalize field names (handle different casing from AI)
+          const suggestedAnswer = q.suggestedAnswer || q.suggested_answer || q.SuggestedAnswer || q.suggestedanswer;
+          console.log("🔍 Processing interview question:", {
+            hasQuestion: !!q.question,
+            hasSuggestedAnswer: !!suggestedAnswer,
+            originalKeys: Object.keys(q)
+          });
+          return {
+            ...q,
+            priority: q.priority ? q.priority.toLowerCase() : q.priority,
+            suggestedAnswer: suggestedAnswer, // Ensure it's in camelCase
+          };
+        });
       }
 
       let redFlags = parsedObject.redFlags;
@@ -530,11 +543,18 @@ export class AIEvaluationService {
     4. Experience score should ONLY consider relevant work history duration and domain match
     5. After normalization, compare candidate's expected CTC with job salary
     6. Make sure the notes does not reveal the salary indicators or salary amount in response. We will use salary info and normalization only in evaluation and calculating affordability score.
-    7. **MANDATORY INTERVIEW QUESTIONS WITH SUGGESTED ANSWERS:**
-       - Generate 3-5 relevant interview questions based on the candidate's profile
+    7. **MANDATORY SCREENING QUESTIONS WITH SUGGESTED ANSWERS:**
+       - Generate EXACTLY 5-6 relevant screening questions based on the candidate's profile
+       - MINIMUM 5 QUESTIONS REQUIRED - DO NOT generate fewer than 5 questions
        - EVERY question MUST include a "suggestedAnswer" field
        - The suggestedAnswer should guide the interviewer on what to listen for in a strong response
        - Include specific technical details, metrics, or evidence the interviewer should expect
+       - MUST include these question categories (minimum 5 total):
+         * REQUIRED: 1 question about client communication experience (especially foreign/international clients)
+         * REQUIRED: 1-2 technical skills questions based on the role
+         * REQUIRED: 1 problem-solving or debugging question
+         * REQUIRED: 1-2 behavioral or soft skills questions
+         * Questions should be practical and help screen candidates effectively during initial rounds
     8. **MANDATORY EVIDENCE LINKS - BE SPECIFIC & CONVINCING:**
        - DO NOT write "Resume Section: X" or "Found in Y section"
        - DO write detailed evidence with actual facts: company names, years, specific skills, numbers
@@ -597,18 +617,51 @@ export class AIEvaluationService {
         "requiredButMissing": ["TypeScript", "AWS Lambda"], // Skills required but not in CV
         "presentButNotRequired": ["Python", "Docker"] // Additional skills candidate has
       },
-      "interviewQuestions": [ // REQUIRED: 3-5 questions with suggested answer guide for EACH question
+      "interviewQuestions": [
         {
-          "category": "Technical Skills", // Category of the question
-          "question": "Can you walk me through your most complex React project?", // The actual interview question
-          "reason": "Resume mentions React but lacks specific project details", // Why this question is important
-          "priority": "high", // high, medium, low based on importance
-          "suggestedAnswer": "Look for: discussion of component architecture, state management approach (Redux/Context), performance optimization, team collaboration. Strong answer includes specific metrics (load time improvements, user count) and technical challenges overcome." // REQUIRED: What to look for in a good answer
+          "category": "Client Communication",
+          "question": "Have you worked directly with foreign or international clients? Can you describe your experience?",
+          "reason": "To assess international client communication skills and cross-cultural collaboration",
+          "priority": "high",
+          "suggestedAnswer": "Look for: specific examples of working with clients from different countries/time zones, communication methods used (email, calls, video conferences), handling of language barriers or cultural differences, ability to understand and document client requirements clearly. Strong answer includes: client names/regions, project outcomes, communication frequency, and how they managed expectations."
+        },
+        {
+          "category": "Technical Skills",
+          "question": "Can you walk me through your most complex React project?",
+          "reason": "Resume mentions React but lacks specific project details",
+          "priority": "high",
+          "suggestedAnswer": "Look for: discussion of component architecture, state management approach (Redux/Context), performance optimization, team collaboration. Strong answer includes specific metrics (load time improvements, user count) and technical challenges overcome."
+        },
+        {
+          "category": "Problem Solving",
+          "question": "Describe a challenging bug you fixed recently",
+          "reason": "To assess debugging and problem-solving skills",
+          "priority": "high",
+          "suggestedAnswer": "Strong answer includes: systematic debugging approach, root cause analysis, technical details of the fix, preventive measures implemented. Look for mention of tools used and collaboration with team."
+        },
+        {
+          "category": "Technical Skills",
+          "question": "How do you approach performance optimization in your applications?",
+          "reason": "To evaluate understanding of performance best practices",
+          "priority": "medium",
+          "suggestedAnswer": "Look for: specific optimization techniques used (code splitting, lazy loading, caching), performance monitoring tools, measurable improvements achieved. Strong answer includes real examples with metrics (load time reduced from X to Y)."
+        },
+        {
+          "category": "Behavioral",
+          "question": "Tell me about a time when you had to learn a new technology quickly for a project",
+          "reason": "To assess adaptability and learning agility",
+          "priority": "medium",
+          "suggestedAnswer": "Look for: learning approach (documentation, tutorials, practice projects), time frame, how they applied the new knowledge, outcome of the project. Strong answer shows structured learning process and successful application."
         }
       ]
-
-      IMPORTANT: Every question MUST include a "suggestedAnswer" field that guides the interviewer on what to listen for in a strong response.
     }
+
+    **CRITICAL - SCREENING QUESTIONS REQUIREMENTS:**
+    1. MINIMUM 5 QUESTIONS REQUIRED - Generate at least 5 questions, preferably 5-6
+    2. Every single question MUST have the "suggestedAnswer" field - DO NOT omit this field
+    3. MUST include at least ONE question about client communication (especially foreign/international clients)
+    4. Cover multiple categories: Client Communication, Technical Skills, Problem Solving, Behavioral
+    5. Each suggestedAnswer should guide the interviewer on what to listen for in a strong response
 
     SALARY NORMALIZATION EXAMPLES:
     - Candidate says "34000 expected": 34000 ÷ 1000 × 12 = 4.08 LPA
@@ -676,16 +729,22 @@ export class AIEvaluationService {
       },
       "interviewQuestions": [
         {
-          "category": "string",
+          "category": "string (e.g., 'Client Communication', 'Technical Skills', 'Problem Solving', 'Behavioral')",
           "question": "string",
           "reason": "string",
           "priority": "high|medium|low",
           "suggestedAnswer": "REQUIRED - Guide for what to listen for in a strong answer"
         }
+        // MINIMUM 5 questions required, preferably 5-6
+        // At least one MUST be about client communication (foreign/international clients)
       ]
     }
 
-    CRITICAL: Every interview question MUST include the suggestedAnswer field. Do not omit it.`;
+    CRITICAL REQUIREMENTS:
+    1. Generate MINIMUM 5 QUESTIONS - do not generate fewer than 5
+    2. Every screening question MUST include the suggestedAnswer field
+    3. At least ONE question MUST be about client communication (especially foreign/international clients)
+    4. Cover categories: Client Communication, Technical Skills (1-2), Problem Solving (1), Behavioral (1-2)`;
     }
 
     return prompt;
