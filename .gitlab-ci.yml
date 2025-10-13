@@ -142,8 +142,8 @@ build:
     # - npm ci --legacy-peer-deps
     - cat package.json
     - echo ""
-    # - NODE_OPTIONS="--max-old-space-size=3072" npx next build
-    - npx next build
+    - NODE_OPTIONS="--max-old-space-size=2560" npx next build
+    # - npx next build
     - |
       # Source the version environment file
       source version.env
