@@ -73,7 +73,11 @@ export async function GET(
     const filteredHistory = history.history
       ? history.history
           .filter((entry) =>
-            role === "admin" || role === "hr" ? true : !entry.remark?.isPrivate
+            role === "admin" || role === "hr"
+              ? true
+              : entry.remark
+                ? !entry.remark?.isPrivate
+                : true
           )
           .map((entry: any) => {
             // If this entry has checklist data, filter the responses based on user role
