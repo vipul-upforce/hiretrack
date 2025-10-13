@@ -43,7 +43,7 @@ sonarcloud-check:
 build:
   stage: build
   variables:
-    NODE_OPTIONS: "--max-old-space-size=4096"
+    NODE_OPTIONS: "--max-old-space-size=1024"
   tags:
     - my-runner
   script:
@@ -142,7 +142,8 @@ build:
     # - npm ci --legacy-peer-deps
     - cat package.json
     - echo ""
-    - NODE_OPTIONS="--max-old-space-size=4096" npx next build
+    - NODE_OPTIONS="--max-old-space-size=2560" npx next build
+    # - npx next build
     - |
       # Source the version environment file
       source version.env
