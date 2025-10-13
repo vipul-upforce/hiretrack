@@ -203,10 +203,10 @@ const nextConfig: NextConfig = {
     ];
   },
   // Optimize TypeScript compilation
-  // typescript: {
-  //   // Disable TypeScript checking during build for faster builds
-  //   ignoreBuildErrors: false,
-  // },
+  typescript: {
+    // Disable TypeScript checking during build for faster builds
+    ignoreBuildErrors: false,
+  },
   // Optimize ESLint
   eslint: {
     // Disable ESLint during builds for faster builds
