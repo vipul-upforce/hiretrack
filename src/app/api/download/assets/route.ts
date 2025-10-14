@@ -120,7 +120,7 @@ export async function GET(req: NextRequest) {
     await fs.rm(tempDir, { recursive: true, force: true });
 
     // Send the archive in the response
-    return new NextResponse(archiveBuffer, {
+    return new NextResponse(new Blob([archiveBuffer]), {
       status: 200,
       headers: {
         "Content-Type": "application/gzip",
