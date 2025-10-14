@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     console.log("Starting system update process...");
 
     // Execute the installer script with the --update "manually" parameter
-    const command = '~/installer.sh --update "manually"';
+    const command = '../installer.sh --update "manually"';
 
     try {
       // Execute the command asynchronously
