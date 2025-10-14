@@ -75,7 +75,7 @@ export async function GET(
           .filter((entry) =>
             role === "admin" || role === "hr"
               ? true
-              : entry.remark
+              : entry.remark.id
                 ? !entry.remark?.isPrivate
                 : true
           )

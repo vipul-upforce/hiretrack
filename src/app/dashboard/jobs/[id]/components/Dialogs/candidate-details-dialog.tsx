@@ -96,12 +96,22 @@ export function CandidateDetailsDialog({
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [candidateHistory, setCandidateHistory] = useState<any[]>([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [isRefetching, setIsRefetching] = useState(false);
 
   // fetch candidate history when history tab is opened
   const fetchCandidateHistory = async () => {
-    if (historyLoaded || isHistoryLoading || !localCandidate?._id) return;
+    if (
+      (!isRefetching && historyLoaded) ||
+      !localCandidate?._id ||
+      (isRefetching && isHistoryLoading)
+    )
+      return;
 
-    setIsHistoryLoading(true);
+    // Only show loading indicator for initial fetch, not for refetches
+    // if (!isRefetching) {
+    //   setIsHistoryLoading(true);
+    // }
+
     try {
       const response = await fetch(
         `/api/candidates/${localCandidate._id}/history`
@@ -112,58 +122,68 @@ export function CandidateDetailsDialog({
         setHistoryLoaded(true);
       } else {
         console.error("Failed to fetch candidate history");
+        if (!isRefetching) {
+          toast({
+            title: "Error",
+            description: "Failed to load candidate history",
+            variant: "destructive",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching candidate history:", error);
+      if (!isRefetching) {
         toast({
           title: "Error",
           description: "Failed to load candidate history",
           variant: "destructive",
         });
       }
-    } catch (error) {
-      console.error("Error fetching candidate history:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load candidate history",
-        variant: "destructive",
-      });
     } finally {
-      setIsHistoryLoading(false);
+      if (!isRefetching) {
+        setIsHistoryLoading(false);
+      }
     }
   };
 
   // Load history when history tab is activated
   useEffect(() => {
-    if (activeTab === "history" || (activeTab === "logs" && !historyLoaded)) {
+    if ((activeTab === "history" || activeTab === "logs") && !historyLoaded) {
       fetchCandidateHistory();
     }
   }, [activeTab, historyLoaded, localCandidate?._id]);
 
   // Reset history state when candidate changes
   useEffect(() => {
-    setCandidateHistory([]);
-    setHistoryLoaded(false);
-    setIsHistoryLoading(false);
-  }, [localCandidate?._id]);
+    if (candidate?._id !== localCandidate?._id) {
+      setHistoryLoaded(false);
+      setIsHistoryLoading(false);
+    }
+  }, [localCandidate?._id, candidate?._id]);
 
   const refetch = async () => {
+    setIsRefetching(true);
     const result = await refetchCandidate(
       (id as string) || candidate?.jobId._id || ""
     );
     const updatedCandidate = result.data!.find((c) => {
       return c._id === localCandidate?._id;
     });
-    setLocalCandidate(updatedCandidate!);
+
+    // Fetch updated history silently if already loaded
+    if (historyLoaded) {
+      await fetchCandidateHistory();
+    }
+
+    // Update local candidate with the new data
+    if (updatedCandidate) {
+      setLocalCandidate({
+        ...updatedCandidate,
+        history: candidateHistory || [],
+      });
+    }
+    setIsRefetching(false);
   };
-  // useEffect(() => {
-  //   (async () => {
-  //     const token = Cookies.get("token");
-  //     if (token) {
-  //       const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-  //       if (decryptedResponse.success && decryptedResponse.user) {
-  //         setuser(decryptedResponse.user);
-  //       }
-  //     }
-  //   })();
-  // }, []);
 
   const {
     newRemark,
@@ -181,7 +201,6 @@ export function CandidateDetailsDialog({
     setNewFollowUpDate,
     newFollowUp,
     newFollowUpDate,
-
     handleRemoveFollowUp,
   } = useRemarkHandlers(
     localCandidate,
@@ -208,27 +227,11 @@ export function CandidateDetailsDialog({
     onOpenChange
   );
 
-  // const {
-  //   handleFollowUp,
-  //   setConfirmUnassignOpen,
-  //   isLoading,
-  //   handleUnassign,
-  //   confirmUnassign,
-  // } = useUnassignHandlers(
-  //   localCandidate,
-  //   user,
-  //   refetch,
-  //   setLocalCandidate,
-  //   onUpdate,
-  //   refetchAssignment,
-  //   onOpenChange
-  // );
   const handleEditClick = () => {
     setIsEditing(true);
   };
 
   const handleReEvaluationClick = () => {
-    // debugger;
     // Check if candidate already has AI scores (indicating previous evaluation)
     const hasExistingScores =
       localCandidate?.scores &&
@@ -247,14 +250,12 @@ export function CandidateDetailsDialog({
   };
 
   const handleReEvaluation = async () => {
-    // debugger;
     setConfirmReEvaluateOpen(false);
     try {
       setIsReEvaluating(true);
       setIsEvaluatingFor(localCandidate?._id as string);
       const result: {
         candidate?: EvaluationResult;
-        // error?: string;
       } = await evaluateCandidate(
         localCandidate?._id as string,
         evaluateCandidateMutation
@@ -280,11 +281,6 @@ export function CandidateDetailsDialog({
       });
     } finally {
       setIsReEvaluating(false);
-      // if (pathname !== "/dashboard" && pathname !== "/dashboard/calendar") {
-      //   await refetch();
-      // } else {
-      //   await refetchAssignment?.();
-      // }
     }
   };
 
@@ -297,29 +293,10 @@ export function CandidateDetailsDialog({
   }, []);
 
   useEffect(() => {
-    // if (candidateData || localCandidate) {
-    //   console.log("🛴🛴🛴 ", localCandidate?.history);
-    //   console.log(
-    //     "🛹🛹🛹 ",
-    //     candidateData?.find((c) => c._id === localCandidate?._id)?.history
-    //   );
-    //   if (!candidateData && localCandidate) {
-    //     const currentCandidate = localCandidate;
-    //     if (currentCandidate && currentCandidate.history) {
-    //       setTimeLineItems(currentCandidate.history || []);
-    //     }
-    //   } else if (candidateData && localCandidate) {
-    //     const currentCandidate = candidateData.find(
-    //       (c) => c._id === localCandidate._id
-    //     );
-    //     if (currentCandidate && currentCandidate.history) {
-    //       setTimeLineItems(currentCandidate.history || []);
-    //     }
-    //   }
-    // }
-    const currentCandidate = localCandidate;
-    setTimeLineItems(currentCandidate?.history || candidateHistory || []);
-  }, [candidateData, candidateHistory, localCandidate]);
+    // Update timeLineItems with the latest candidateHistory
+    // This ensures the UI shows the most recent history data
+    setTimeLineItems(candidateHistory || []);
+  }, [candidateHistory]);
 
   useEffect(() => {
     if (isAddingFollowUp) {
@@ -335,6 +312,8 @@ export function CandidateDetailsDialog({
   useEffect(() => {
     if (candidate) {
       setLocalCandidate(candidate);
+      // Reset history state when candidate changes
+      setHistoryLoaded(false);
     }
   }, [candidate, id]);
 
@@ -346,7 +325,7 @@ export function CandidateDetailsDialog({
   }, [isOpen, candidate?._id]);
 
   if (!localCandidate) return null;
-  // console.log("TimeLine Items: ", timeLineItems);
+
   const validTimeLineItems = timeLineItems.filter((item) => item.title !== "");
   const header = (
     <DialogHeader className="px-3 pt-3 pr-8 lg:px-4 lg:pt-4 lg:pr-10">
@@ -871,7 +850,7 @@ export function CandidateDetailsDialog({
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                   Candidate History
                 </h3>
-                {isHistoryLoading ? (
+                {isHistoryLoading && !isRemarkSubmitting ? (
                   <div className="flex items-center justify-center py-8">
                     <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
                     <span className="ml-2 text-sm text-muted-foreground">
@@ -890,6 +869,13 @@ export function CandidateDetailsDialog({
                       setIsEditRemarkDialogOpen,
                       false // showHeader = false
                     )
+                ) : candidateHistory && candidateHistory.length === 0 ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                    <span className="ml-2 text-sm text-muted-foreground">
+                      Loading history...
+                    </span>
+                  </div>
                 ) : (
                   <div className="text-center py-8">
                     <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />

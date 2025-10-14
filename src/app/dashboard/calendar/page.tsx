@@ -132,6 +132,8 @@ export default function CalendarPage() {
     setFilterText(searchText.trim());
   };
 
+  // debugger;
+
   // Merge assignments with sseCandidates, prioritizing sseCandidates for updates
   const mergedAssignments = (
     assignments && assignments[0]?.data ? [...assignments[0].data] : []
@@ -139,8 +141,10 @@ export default function CalendarPage() {
     const sseCandidate = sseCandidates.find((c: CandidateAssignment) =>
       role === "interviewer"
         ? (c._id === assignment?._id &&
-            c.assignment?.interviewerId === user.id) ||
-          user.id
+            typeof c.assignment?.interviewerId === "object" &&
+            c.assignment?.interviewerId?._id === user.id) ||
+          (typeof c.assignment?.interviewerId === "string" &&
+            c.assignment?.interviewerId === user.id)
         : c._id === assignment._id
     );
     return sseCandidate || assignment;
@@ -160,12 +164,17 @@ export default function CalendarPage() {
     (assignment: CandidateAssignment) => {
       // If the current role is interviewer, only include assignments assigned to the current interviewer
       if (role === "interviewer") {
+        // debugger;
         const interviewerId =
           typeof assignment.assignment?.interviewerId === "object"
             ? assignment.assignment?.interviewerId?._id
             : assignment.assignment?.interviewerId;
-        // console.log("interviewerId: ", interviewerId);
-        if (!assignment.assignment || interviewerId !== user.id) {
+        console.log("interviewerId: ", interviewerId);
+        if (
+          !assignment.assignment ||
+          interviewerId !== user.id ||
+          !interviewerId
+        ) {
           return false;
         }
       }

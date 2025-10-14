@@ -4,10 +4,6 @@ import { CandidateDetailsDialog } from "@/app/dashboard/jobs/[id]/components/Dia
 import { Assignment } from "@/app/dashboard/page";
 import { Candidate, CandidateStatus, Remark } from "@/types/candidate";
 import { toast } from "@/hooks/use-toast";
-import {
-  useFetchCandidateByIdQuery,
-  useRefetchCandidateMutation,
-} from "@/lib/features/candidate/candidateApi";
 
 function ActionItems({
   assignment,
@@ -24,75 +20,40 @@ function ActionItems({
   const [openRemarksFor, setOpenRemarksFor] = useState<string | null>(null);
   const [candidate, setCandidate] = useState<Candidate | null>(null);
 
-  const {
-    data: fetchedCandidate,
-    isFetching,
-    isError,
-    error,
-    refetch,
-  } = useFetchCandidateByIdQuery(candidate?._id || "", {
-    skip: !candidate?._id, // don't run if no candidate ID
-  });
-
   // Candidate-specific refetch function
-  const [triggerRefetchCandidate] = useRefetchCandidateMutation();
-
   const refetchCandidate = async () => {
-    console.log("Refetching candidate data in Action items...");
-    if (!candidate?._id) {
-      console.log("No candidate id");
-      return;
-    }
-    try {
-      const updatedCandidate = await triggerRefetchCandidate(
-        candidate._id
-      ).unwrap();
-      setCandidate(updatedCandidate);
-      console.log("Updated candidate details:", updatedCandidate);
+    if (!candidate?._id) return;
 
-      if (updatedCandidate.history && updatedCandidate.history.length > 0) {
-        console.log(
-          "Unassigned candidate if condition in action itesms is working..."
-        );
-        const latestHistory =
-          updatedCandidate.history[updatedCandidate.history.length - 1];
-        if (latestHistory.title === "Unassigned") {
-          const filteredAssignments = assignments.filter(
-            (a) => a._id !== updatedCandidate._id
-          );
-          console.log("Filtered assignments by removing unassigned candidate");
-          setAssignments(filteredAssignments);
-          return;
-        }
+    try {
+      const response = await fetch(`/api/candidates/${candidate._id}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to fetch candidate");
       }
 
+      const updatedCandidate: Candidate = await response.json();
+      setCandidate(updatedCandidate);
       const updatedAssignments = assignments.map((assignment) =>
         assignment._id === updatedCandidate._id
-          ? { ...assignment, ...updatedCandidate }
+          ? { ...assignment, ...updatedCandidate } // merge updated data
           : assignment
       );
-
-      console.log(
-        "Updated assignments with merging prev data with SSE: ",
-        updatedAssignments
-      );
-
       setAssignments(updatedAssignments);
       toast({
         title: "Success",
         description: "Candidate data refreshed successfully",
       });
-    } catch (err) {
-      console.error("Error refreshing candidate data:", err);
+    } catch (error) {
+      console.error("Failed to refetch candidate:", error);
       toast({
         title: "Error",
-        description:
-          typeof err === "object" &&
-          err !== null &&
-          "data" in err &&
-          typeof (err as any).data?.message === "string"
-            ? (err as any).data.message
-            : "Failed to refresh candidate data. Please try again.",
+        description: "Failed to refresh candidate data. Please try again.",
         variant: "destructive",
       });
     }

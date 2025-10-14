@@ -703,6 +703,7 @@ export default function DashboardPage() {
                     <div className="flex flex-wrap gap-6 justify-start ">
                       {assignments
                         .filter((assignment) => {
+                          console.log("assignment: ", assignment);
                           return !assignment.isDeleted;
                         })
                         .map((assignment, index) => (

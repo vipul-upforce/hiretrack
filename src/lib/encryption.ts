@@ -37,6 +37,7 @@ export function decryptText(encryptedText: string): string {
   if (!encryptedText) return "";
   try {
     const bytes = CryptoJS.AES.decrypt(encryptedText, ENCRYPTION_KEY);
+    console.log("ENCRYPTION_KEY: ", ENCRYPTION_KEY);
     const decrypted = bytes.toString(CryptoJS.enc.Utf8);
     return decrypted;
   } catch (error) {
