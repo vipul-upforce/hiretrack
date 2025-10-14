@@ -88,9 +88,11 @@ const SettingDialog = ({
         size={
           setting.key === "ai-providers" || setting.key === "google-calendar"
             ? "2xl"
-            : setting.key === "backups"
-              ? "lg"
-              : undefined
+            : setting.key === "version"
+              ? "xl"
+              : setting.key === "backups"
+                ? "lg"
+                : undefined
         }
         className={`${
           setting.key === "portal" ||
@@ -99,11 +101,13 @@ const SettingDialog = ({
             ? "max-w-7xl w-[90vw] min-h-[95vh] overflow-hidden flex flex-col"
             : setting.key === "ai-providers"
               ? "max-h-[90vh] p-0 overflow-hidden flex flex-col"
-              : setting.key === "google-calendar" || setting.key === "version"
+              : setting.key === "google-calendar"
                 ? "max-h-[90vh] p-0 overflow-hidden flex flex-col"
                 : setting.key === "timezone"
                   ? "max-w-2xl w-[90vw] overflow-visible"
-                  : "overflow-hidden"
+                  : setting.key === "version"
+                    ? "max-h-[90vh] w-[100vw] p-0 overflow-hidden flex flex-col"
+                    : "overflow-hidden"
         }`}
       >
         <DialogHeader className="px-6 py-4 pr-12">

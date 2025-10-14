@@ -51,7 +51,7 @@ interface VersionInfo {
 
 interface VersionListResponse {
   totalVersions: number;
-  latestVerson: string;
+  latestVersion: string;
   versions: VersionInfo[];
 }
 
@@ -155,7 +155,7 @@ export default function AboutDialog({
       const versionData = await fetchVersionList();
       if (versionData) {
         setVersionList(versionData);
-        const latestVersion = versionData.latestVerson;
+        const latestVersion = versionData.latestVersion;
         setLatestVersion(latestVersion);
         debugger;
 
