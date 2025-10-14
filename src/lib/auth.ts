@@ -32,7 +32,11 @@ export async function auth(request: NextRequest) {
 }
 
 export async function verifyAndDecryptJWTToken(token: string) {
-  const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key";
+  const JWT_SECRET =
+    process.env.JWT_SECRET ||
+    process.env.NEXT_PUBLIC_JWT_SECRET ||
+    "your_jwt_secret_key";
+  console.log(JWT_SECRET, "JWT_SECRET-5");
   try {
     if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
 
@@ -59,7 +63,11 @@ export async function verifyAndDecryptJWTToken(token: string) {
   }
 }
 export async function verifyAndDecryptSSE(token: string) {
-  const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key";
+  const JWT_SECRET =
+    process.env.JWT_SECRET ||
+    process.env.NEXT_PUBLIC_JWT_SECRET ||
+    "your_jwt_secret_key";
+  console.log(JWT_SECRET, "JWT_SECRET-6");
   try {
     if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
 
@@ -90,13 +98,16 @@ export async function getCurrentUser(
 }
 
 export async function verifyAndDecrypCaptcha(token: string) {
-  const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key";
+  const JWT_SECRET =
+    process.env.JWT_SECRET ||
+    process.env.NEXT_PUBLIC_JWT_SECRET ||
+    "your_jwt_secret_key";
   try {
     if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
     if (!token) throw new Error("Token is empty");
 
     console.log(token, "token");
-    console.log(JWT_SECRET, "JWT_SECRET");
+    console.log(JWT_SECRET, "JWT_SECRET-7");
 
     // Assume token is an AES-encrypted string (not a JWT)
     const bytes = CryptoJS.AES.decrypt(token, JWT_SECRET);

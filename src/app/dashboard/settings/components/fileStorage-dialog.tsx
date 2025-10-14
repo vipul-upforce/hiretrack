@@ -67,7 +67,11 @@ export default function FileStorageOptions({
     useUpdateFSConfigsMutation();
 
   const signToken = async (payload: unknown) => {
-    const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key";
+    const JWT_SECRET =
+      process.env.JWT_SECRET ||
+      process.env.NEXT_PUBLIC_JWT_SECRET ||
+      "your_jwt_secret_key";
+    console.log(JWT_SECRET, "JWT_SECRET-4");
     try {
       // Parse the payload as JSON
       const parsedPayload = payload;

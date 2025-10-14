@@ -1,7 +1,10 @@
 import CryptoJS from "crypto-js";
 
 const ENCRYPTION_KEY =
-  process.env.ENCRYPTION_KEY || process.env.JWT_SECRET || "your_encryption_key";
+  process.env.ENCRYPTION_KEY ||
+  process.env.JWT_SECRET ||
+  process.env.NEXT_PUBLIC_JWT_SECRET ||
+  "your_encryption_key";
 
 if (!ENCRYPTION_KEY) {
   throw new Error(

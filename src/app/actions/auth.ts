@@ -3,9 +3,14 @@
 import jwt from "jsonwebtoken";
 import CryptoJS from "crypto-js";
 
-const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key";
+const JWT_SECRET =
+  process.env.JWT_SECRET ||
+  process.env.NEXT_PUBLIC_JWT_SECRET ||
+  "your_jwt_secret_key";
 export async function verifyAndDecryptToken(token: string) {
   try {
+    console.log(JWT_SECRET, "JWT_SECRET-2");
+
     if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
 
     const decoded = jwt.verify(token, JWT_SECRET);

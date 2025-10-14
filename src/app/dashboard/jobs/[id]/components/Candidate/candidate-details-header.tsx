@@ -57,6 +57,9 @@ export default function DetailsDialogHeader({
   };
 
   const handleInterviewerClick = () => {
+    if (user?.role == "interviewer") {
+      return; // Prevent action for interviewer users
+    }
     if (onAssignClick) {
       onAssignClick();
     }
@@ -74,9 +77,7 @@ export default function DetailsDialogHeader({
                 variant="ghost"
                 size="icon"
                 className="ml-1 h-5 w-5"
-                onClick={() =>
-                  handleCandidateInfoCopy(candidate.name || "")
-                }
+                onClick={() => handleCandidateInfoCopy(candidate.name || "")}
                 title="Copy Name"
               >
                 <Copy size={12} />

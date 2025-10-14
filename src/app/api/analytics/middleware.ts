@@ -46,8 +46,9 @@ export async function authenticateAnalyticsRequest(
 
     // Use the same JWT verification as main middleware
     const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key";
+    console.log(JWT_SECRET, "JWT_SECRET-3");
     if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
-    
+
     const secretKey = new TextEncoder().encode(JWT_SECRET);
     const { payload } = await jwtVerify(token, secretKey);
 
@@ -58,11 +59,14 @@ export async function authenticateAnalyticsRequest(
     // Decrypt the user data using CryptoJS (same as main middleware)
     const bytes = CryptoJS.AES.decrypt(payload.user as string, JWT_SECRET);
     const decryptedData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
-    
+
     return {
       id: decryptedData._id || decryptedData.id,
       email: decryptedData.email,
-      organizationId: typeof decryptedData.organizationId === 'string' ? decryptedData.organizationId : decryptedData.organizationId.toString(),
+      organizationId:
+        typeof decryptedData.organizationId === "string"
+          ? decryptedData.organizationId
+          : decryptedData.organizationId.toString(),
       role: decryptedData.role,
       name: decryptedData.name,
     };
@@ -73,7 +77,7 @@ export async function authenticateAnalyticsRequest(
 }
 
 export function createAnalyticsResponse<T>(
-  data: T, 
+  data: T,
   organizationId: string,
   metadata?: Partial<AnalyticsApiResponse<T>["metadata"]>
 ): AnalyticsApiResponse<T> {
@@ -89,7 +93,7 @@ export function createAnalyticsResponse<T>(
 }
 
 export function createAnalyticsErrorResponse(
-  error: string, 
+  error: string,
   status: number = 400
 ): NextResponse {
   return NextResponse.json(
@@ -103,12 +107,12 @@ export function createAnalyticsErrorResponse(
 }
 
 export function validateAnalyticsPermissions(
-  user: AuthenticatedUser, 
+  user: AuthenticatedUser,
   requestedOrgId?: string
 ): boolean {
   // Check if user has permission to access analytics
   const allowedRoles = ["admin", "hr"]; // Use lowercase to match the actual role values
-  
+
   if (!allowedRoles.includes(user.role.toLowerCase())) {
     return false;
   }
@@ -121,90 +125,122 @@ export function validateAnalyticsPermissions(
   return true;
 }
 
-function checkRateLimit(identifier: string): { allowed: boolean; remainingRequests?: number } {
+function checkRateLimit(identifier: string): {
+  allowed: boolean;
+  remainingRequests?: number;
+} {
   const now = Date.now();
   const windowMs = 15 * 60 * 1000; // 15 minutes
   const maxRequests = 100; // 100 requests per window
   const key = `analytics:${identifier}`;
-  
+
   let rateLimitData = rateLimitStore.get(key);
-  
+
   // Initialize or reset if window expired
   if (!rateLimitData || now > rateLimitData.resetTime) {
     rateLimitData = {
       count: 1,
-      resetTime: now + windowMs
+      resetTime: now + windowMs,
     };
     rateLimitStore.set(key, rateLimitData);
     return { allowed: true, remainingRequests: maxRequests - 1 };
   }
-  
+
   // Check if limit exceeded
   if (rateLimitData.count >= maxRequests) {
     return { allowed: false, remainingRequests: 0 };
   }
-  
+
   // Increment counter
   rateLimitData.count++;
   rateLimitStore.set(key, rateLimitData);
-  
-  return { allowed: true, remainingRequests: maxRequests - rateLimitData.count };
+
+  return {
+    allowed: true,
+    remainingRequests: maxRequests - rateLimitData.count,
+  };
 }
 
 export async function withAnalyticsAuth<T>(
   request: NextRequest,
-  handler: (user: AuthenticatedUser, request: NextRequest) => Promise<NextResponse>
+  handler: (
+    user: AuthenticatedUser,
+    request: NextRequest
+  ) => Promise<NextResponse>
 ): Promise<NextResponse> {
   try {
     // Rate limiting check
-    const clientIp = request.headers.get('x-forwarded-for') || 
-                    request.headers.get('x-real-ip') || 
-                    'unknown';
-    
+    const clientIp =
+      request.headers.get("x-forwarded-for") ||
+      request.headers.get("x-real-ip") ||
+      "unknown";
+
     const rateLimitResult = checkRateLimit(clientIp);
     if (!rateLimitResult.allowed) {
-      const response = createAnalyticsErrorResponse("Too many requests. Please try again later.", 429);
-      response.headers.set('X-RateLimit-Limit', '100');
-      response.headers.set('X-RateLimit-Remaining', '0');
+      const response = createAnalyticsErrorResponse(
+        "Too many requests. Please try again later.",
+        429
+      );
+      response.headers.set("X-RateLimit-Limit", "100");
+      response.headers.set("X-RateLimit-Remaining", "0");
       return response;
     }
 
     // Authenticate user
     const user = await authenticateAnalyticsRequest(request);
-    
+
     if (!user) {
       return createAnalyticsErrorResponse("Authentication required", 401);
     }
 
     // Get requested organization ID from query params
     const url = new URL(request.url);
-    const requestedOrgId = url.searchParams.get("organizationId") || user.organizationId;
+    const requestedOrgId =
+      url.searchParams.get("organizationId") || user.organizationId;
 
     // Validate permissions
     if (!validateAnalyticsPermissions(user, requestedOrgId)) {
-      return createAnalyticsErrorResponse("Insufficient permissions for analytics access", 403);
+      return createAnalyticsErrorResponse(
+        "Insufficient permissions for analytics access",
+        403
+      );
     }
 
     // Call the handler with authenticated user
     const response = await handler(user, request);
-    
+
     // Add rate limit headers to successful responses
-    response.headers.set('X-RateLimit-Limit', '100');
-    response.headers.set('X-RateLimit-Remaining', rateLimitResult.remainingRequests?.toString() || '0');
-    
+    response.headers.set("X-RateLimit-Limit", "100");
+    response.headers.set(
+      "X-RateLimit-Remaining",
+      rateLimitResult.remainingRequests?.toString() || "0"
+    );
+
     return response;
-  } catch (error:any) {
+  } catch (error: any) {
     console.error("Analytics middleware error:", error);
-    
+
     // Handle specific error types
-    if (error.message?.includes('timeout') || error.message?.includes('maxTimeMS')) {
-      return createAnalyticsErrorResponse("Query timeout - please try a smaller date range or add more filters", 408);
+    if (
+      error.message?.includes("timeout") ||
+      error.message?.includes("maxTimeMS")
+    ) {
+      return createAnalyticsErrorResponse(
+        "Query timeout - please try a smaller date range or add more filters",
+        408
+      );
     }
-    
-    if (error.message?.includes('memory') || error.message?.includes('allowDiskUse')) {
-      return createAnalyticsErrorResponse("Query too large - please add more filters to reduce data size", 413);
+
+    if (
+      error.message?.includes("memory") ||
+      error.message?.includes("allowDiskUse")
+    ) {
+      return createAnalyticsErrorResponse(
+        "Query too large - please add more filters to reduce data size",
+        413
+      );
     }
-    
+
     return createAnalyticsErrorResponse("Internal server error", 500);
   }
 }

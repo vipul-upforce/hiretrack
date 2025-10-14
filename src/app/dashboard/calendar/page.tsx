@@ -164,7 +164,7 @@ export default function CalendarPage() {
           typeof assignment.assignment?.interviewerId === "object"
             ? assignment.assignment?.interviewerId?._id
             : assignment.assignment?.interviewerId;
-        console.log("interviewerId: ", interviewerId);
+        // console.log("interviewerId: ", interviewerId);
         if (!assignment.assignment || interviewerId !== user.id) {
           return false;
         }
