@@ -118,34 +118,34 @@ const nextConfig: NextConfig = {
     });
 
     // Add obfuscation for client bundles in production
-    if (isProd && !isServer) {
-      const obfuscatorOptions = {
-        compact: true,
-        controlFlowFlattening: false,
-        controlFlowFlatteningThreshold: 0.75,
-        deadCodeInjection: false,
-        debugProtection: false,
-        disableConsoleOutput: true,
-        stringArray: true,
-        stringArrayThreshold: 0.75,
-        rotateStringArray: true,
-        simplify: true,
-      };
+    // if (isProd && !isServer) {
+    //   const obfuscatorOptions = {
+    //     compact: true,
+    //     controlFlowFlattening: false,
+    //     controlFlowFlatteningThreshold: 0.75,
+    //     deadCodeInjection: false,
+    //     debugProtection: false,
+    //     disableConsoleOutput: true,
+    //     stringArray: true,
+    //     stringArrayThreshold: 0.75,
+    //     rotateStringArray: true,
+    //     simplify: true,
+    //   };
 
-      const excludePatterns = [
-        "**/node_modules/**",
-        "**/_next/static/**",
-        "**/*.map",
-        "**/react-refresh/**",
-        "**/runtime-main.*.js",
-      ];
+    //   const excludePatterns = [
+    //     "**/node_modules/**",
+    //     "**/_next/static/**",
+    //     "**/*.map",
+    //     "**/react-refresh/**",
+    //     "**/runtime-main.*.js",
+    //   ];
 
-      // Ensure plugins array exists
-      if (!config.plugins) config.plugins = [];
-      config.plugins.push(
-        new WebpackObfuscator(obfuscatorOptions, excludePatterns)
-      );
-    }
+    //   // Ensure plugins array exists
+    //   if (!config.plugins) config.plugins = [];
+    //   config.plugins.push(
+    //     new WebpackObfuscator(obfuscatorOptions, excludePatterns)
+    //   );
+    // }
 
     return config;
   },
