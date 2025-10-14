@@ -96,20 +96,20 @@ export function CandidateDetailsDialog({
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [candidateHistory, setCandidateHistory] = useState<any[]>([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [isRefetching, setIsRefetching] = useState(false);
 
   // fetch candidate history when history tab is opened
-  const fetchCandidateHistory = async (isRefetching = false) => {
+  const fetchCandidateHistory = async () => {
     if (
       (!isRefetching && historyLoaded) ||
-      isHistoryLoading ||
-      !localCandidate?._id
+      !localCandidate?._id ||
+      (isRefetching && isHistoryLoading)
     )
       return;
 
-    // debugger;
     // Only show loading indicator for initial fetch, not for refetches
-    // if (!isRefetching && !isRemarkSubmitting) {
-    setIsHistoryLoading(true);
+    // if (!isRefetching) {
+    //   setIsHistoryLoading(true);
     // }
 
     try {
@@ -122,21 +122,27 @@ export function CandidateDetailsDialog({
         setHistoryLoaded(true);
       } else {
         console.error("Failed to fetch candidate history");
+        if (!isRefetching) {
+          toast({
+            title: "Error",
+            description: "Failed to load candidate history",
+            variant: "destructive",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching candidate history:", error);
+      if (!isRefetching) {
         toast({
           title: "Error",
           description: "Failed to load candidate history",
           variant: "destructive",
         });
       }
-    } catch (error) {
-      console.error("Error fetching candidate history:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load candidate history",
-        variant: "destructive",
-      });
     } finally {
-      setIsHistoryLoading(false);
+      if (!isRefetching) {
+        setIsHistoryLoading(false);
+      }
     }
   };
 
@@ -149,12 +155,14 @@ export function CandidateDetailsDialog({
 
   // Reset history state when candidate changes
   useEffect(() => {
-    // setCandidateHistory([]);
-    setHistoryLoaded(false);
-    setIsHistoryLoading(false);
-  }, [localCandidate?._id]);
+    if (candidate?._id !== localCandidate?._id) {
+      setHistoryLoaded(false);
+      setIsHistoryLoading(false);
+    }
+  }, [localCandidate?._id, candidate?._id]);
 
   const refetch = async () => {
+    setIsRefetching(true);
     const result = await refetchCandidate(
       (id as string) || candidate?.jobId._id || ""
     );
@@ -162,32 +170,20 @@ export function CandidateDetailsDialog({
       return c._id === localCandidate?._id;
     });
 
-    // Reset history state before fetching new history
-    // setHistoryLoaded(false);
-    // setCandidateHistory([]);
+    // Fetch updated history silently if already loaded
+    if (historyLoaded) {
+      await fetchCandidateHistory();
+    }
 
-    // Fetch updated history with isRefetching=true to avoid showing loading indicator
-    await fetchCandidateHistory(true);
-
-    // Update local candidate with the new data and history
+    // Update local candidate with the new data
     if (updatedCandidate) {
       setLocalCandidate({
         ...updatedCandidate,
         history: candidateHistory || [],
       });
     }
+    setIsRefetching(false);
   };
-  // useEffect(() => {
-  //   (async () => {
-  //     const token = Cookies.get("token");
-  //     if (token) {
-  //       const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-  //       if (decryptedResponse.success && decryptedResponse.user) {
-  //         setuser(decryptedResponse.user);
-  //       }
-  //     }
-  //   })();
-  // }, []);
 
   const {
     newRemark,
@@ -205,7 +201,6 @@ export function CandidateDetailsDialog({
     setNewFollowUpDate,
     newFollowUp,
     newFollowUpDate,
-
     handleRemoveFollowUp,
   } = useRemarkHandlers(
     localCandidate,
@@ -232,21 +227,6 @@ export function CandidateDetailsDialog({
     onOpenChange
   );
 
-  // const {
-  //   handleFollowUp,
-  //   setConfirmUnassignOpen,
-  //   isLoading,
-  //   handleUnassign,
-  //   confirmUnassign,
-  // } = useUnassignHandlers(
-  //   localCandidate,
-  //   user,
-  //   refetch,
-  //   setLocalCandidate,
-  //   onUpdate,
-  //   refetchAssignment,
-  //   onOpenChange
-  // );
   const handleEditClick = () => {
     setIsEditing(true);
   };
@@ -276,7 +256,6 @@ export function CandidateDetailsDialog({
       setIsEvaluatingFor(localCandidate?._id as string);
       const result: {
         candidate?: EvaluationResult;
-        // error?: string;
       } = await evaluateCandidate(
         localCandidate?._id as string,
         evaluateCandidateMutation
@@ -302,11 +281,6 @@ export function CandidateDetailsDialog({
       });
     } finally {
       setIsReEvaluating(false);
-      // if (pathname !== "/dashboard" && pathname !== "/dashboard/calendar") {
-      //   await refetch();
-      // } else {
-      //   await refetchAssignment?.();
-      // }
     }
   };
 
@@ -339,7 +313,6 @@ export function CandidateDetailsDialog({
     if (candidate) {
       setLocalCandidate(candidate);
       // Reset history state when candidate changes
-      // setCandidateHistory([]);
       setHistoryLoaded(false);
     }
   }, [candidate, id]);
@@ -877,37 +850,41 @@ export function CandidateDetailsDialog({
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                   Candidate History
                 </h3>
-                {
-                  isHistoryLoading && !isRemarkSubmitting ? (
-                    <div className="flex items-center justify-center py-8">
-                      <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
-                      <span className="ml-2 text-sm text-muted-foreground">
-                        Loading history...
-                      </span>
-                    </div>
-                  ) : candidateHistory && candidateHistory.length > 0 ? (
-                    candidateDetailsFields
-                      .find((field) => field.id === "candidate-history")
-                      ?.render(
-                        { ...localCandidate, history: candidateHistory },
-                        user,
-                        validTimeLineItems,
-                        handleRemarkUpdate,
-                        setEditingRemark,
-                        setIsEditRemarkDialogOpen,
-                        false // showHeader = false
-                      )
-                  ) : null
-                  // : (
-                  //   <div className="text-center py-8">
-                  //     <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  //     <h3 className="text-lg font-semibold">No history found</h3>
-                  //     <p className="text-muted-foreground">
-                  //       No history entries found for this candidate.
-                  //     </p>
-                  //   </div>
-                  // )
-                }
+                {isHistoryLoading && !isRemarkSubmitting ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                    <span className="ml-2 text-sm text-muted-foreground">
+                      Loading history...
+                    </span>
+                  </div>
+                ) : candidateHistory && candidateHistory.length > 0 ? (
+                  candidateDetailsFields
+                    .find((field) => field.id === "candidate-history")
+                    ?.render(
+                      { ...localCandidate, history: candidateHistory },
+                      user,
+                      validTimeLineItems,
+                      handleRemarkUpdate,
+                      setEditingRemark,
+                      setIsEditRemarkDialogOpen,
+                      false // showHeader = false
+                    )
+                ) : candidateHistory && candidateHistory.length === 0 ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                    <span className="ml-2 text-sm text-muted-foreground">
+                      Loading history...
+                    </span>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold">No history found</h3>
+                    <p className="text-muted-foreground">
+                      No history entries found for this candidate.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 

@@ -164,12 +164,17 @@ export default function CalendarPage() {
     (assignment: CandidateAssignment) => {
       // If the current role is interviewer, only include assignments assigned to the current interviewer
       if (role === "interviewer") {
+        // debugger;
         const interviewerId =
           typeof assignment.assignment?.interviewerId === "object"
             ? assignment.assignment?.interviewerId?._id
             : assignment.assignment?.interviewerId;
         console.log("interviewerId: ", interviewerId);
-        if (!assignment.assignment || interviewerId !== user.id) {
+        if (
+          !assignment.assignment ||
+          interviewerId !== user.id ||
+          !interviewerId
+        ) {
           return false;
         }
       }
