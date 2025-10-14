@@ -4,7 +4,7 @@ const ENCRYPTION_KEY =
   process.env.ENCRYPTION_KEY ||
   process.env.JWT_SECRET ||
   process.env.NEXT_PUBLIC_JWT_SECRET ||
-  "your_encryption_key";
+  "your_jwt_secrete_key";
 
 if (!ENCRYPTION_KEY) {
   throw new Error(
