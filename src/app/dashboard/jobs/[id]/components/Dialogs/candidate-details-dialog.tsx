@@ -98,10 +98,20 @@ export function CandidateDetailsDialog({
   const [historyLoaded, setHistoryLoaded] = useState(false);
 
   // fetch candidate history when history tab is opened
-  const fetchCandidateHistory = async () => {
-    if (historyLoaded || isHistoryLoading || !localCandidate?._id) return;
+  const fetchCandidateHistory = async (isRefetching = false) => {
+    if (
+      (!isRefetching && historyLoaded) ||
+      isHistoryLoading ||
+      !localCandidate?._id
+    )
+      return;
 
+    // debugger;
+    // Only show loading indicator for initial fetch, not for refetches
+    // if (!isRefetching && !isRemarkSubmitting) {
     setIsHistoryLoading(true);
+    // }
+
     try {
       const response = await fetch(
         `/api/candidates/${localCandidate._id}/history`
@@ -132,14 +142,14 @@ export function CandidateDetailsDialog({
 
   // Load history when history tab is activated
   useEffect(() => {
-    if (activeTab === "history" || (activeTab === "logs" && !historyLoaded)) {
+    if ((activeTab === "history" || activeTab === "logs") && !historyLoaded) {
       fetchCandidateHistory();
     }
   }, [activeTab, historyLoaded, localCandidate?._id]);
 
   // Reset history state when candidate changes
   useEffect(() => {
-    setCandidateHistory([]);
+    // setCandidateHistory([]);
     setHistoryLoaded(false);
     setIsHistoryLoading(false);
   }, [localCandidate?._id]);
@@ -151,7 +161,21 @@ export function CandidateDetailsDialog({
     const updatedCandidate = result.data!.find((c) => {
       return c._id === localCandidate?._id;
     });
-    setLocalCandidate(updatedCandidate!);
+
+    // Reset history state before fetching new history
+    // setHistoryLoaded(false);
+    // setCandidateHistory([]);
+
+    // Fetch updated history with isRefetching=true to avoid showing loading indicator
+    await fetchCandidateHistory(true);
+
+    // Update local candidate with the new data and history
+    if (updatedCandidate) {
+      setLocalCandidate({
+        ...updatedCandidate,
+        history: candidateHistory || [],
+      });
+    }
   };
   // useEffect(() => {
   //   (async () => {
@@ -228,7 +252,6 @@ export function CandidateDetailsDialog({
   };
 
   const handleReEvaluationClick = () => {
-    // debugger;
     // Check if candidate already has AI scores (indicating previous evaluation)
     const hasExistingScores =
       localCandidate?.scores &&
@@ -247,7 +270,6 @@ export function CandidateDetailsDialog({
   };
 
   const handleReEvaluation = async () => {
-    // debugger;
     setConfirmReEvaluateOpen(false);
     try {
       setIsReEvaluating(true);
@@ -297,29 +319,10 @@ export function CandidateDetailsDialog({
   }, []);
 
   useEffect(() => {
-    // if (candidateData || localCandidate) {
-    //   console.log("🛴🛴🛴 ", localCandidate?.history);
-    //   console.log(
-    //     "🛹🛹🛹 ",
-    //     candidateData?.find((c) => c._id === localCandidate?._id)?.history
-    //   );
-    //   if (!candidateData && localCandidate) {
-    //     const currentCandidate = localCandidate;
-    //     if (currentCandidate && currentCandidate.history) {
-    //       setTimeLineItems(currentCandidate.history || []);
-    //     }
-    //   } else if (candidateData && localCandidate) {
-    //     const currentCandidate = candidateData.find(
-    //       (c) => c._id === localCandidate._id
-    //     );
-    //     if (currentCandidate && currentCandidate.history) {
-    //       setTimeLineItems(currentCandidate.history || []);
-    //     }
-    //   }
-    // }
-    const currentCandidate = localCandidate;
-    setTimeLineItems(currentCandidate?.history || candidateHistory || []);
-  }, [candidateData, candidateHistory, localCandidate]);
+    // Update timeLineItems with the latest candidateHistory
+    // This ensures the UI shows the most recent history data
+    setTimeLineItems(candidateHistory || []);
+  }, [candidateHistory]);
 
   useEffect(() => {
     if (isAddingFollowUp) {
@@ -335,6 +338,9 @@ export function CandidateDetailsDialog({
   useEffect(() => {
     if (candidate) {
       setLocalCandidate(candidate);
+      // Reset history state when candidate changes
+      // setCandidateHistory([]);
+      setHistoryLoaded(false);
     }
   }, [candidate, id]);
 
@@ -346,7 +352,7 @@ export function CandidateDetailsDialog({
   }, [isOpen, candidate?._id]);
 
   if (!localCandidate) return null;
-  // console.log("TimeLine Items: ", timeLineItems);
+
   const validTimeLineItems = timeLineItems.filter((item) => item.title !== "");
   const header = (
     <DialogHeader className="px-3 pt-3 pr-8 lg:px-4 lg:pt-4 lg:pr-10">
@@ -871,34 +877,37 @@ export function CandidateDetailsDialog({
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                   Candidate History
                 </h3>
-                {isHistoryLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
-                    <span className="ml-2 text-sm text-muted-foreground">
-                      Loading history...
-                    </span>
-                  </div>
-                ) : candidateHistory && candidateHistory.length > 0 ? (
-                  candidateDetailsFields
-                    .find((field) => field.id === "candidate-history")
-                    ?.render(
-                      { ...localCandidate, history: candidateHistory },
-                      user,
-                      validTimeLineItems,
-                      handleRemarkUpdate,
-                      setEditingRemark,
-                      setIsEditRemarkDialogOpen,
-                      false // showHeader = false
-                    )
-                ) : (
-                  <div className="text-center py-8">
-                    <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold">No history found</h3>
-                    <p className="text-muted-foreground">
-                      No history entries found for this candidate.
-                    </p>
-                  </div>
-                )}
+                {
+                  isHistoryLoading && !isRemarkSubmitting ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                      <span className="ml-2 text-sm text-muted-foreground">
+                        Loading history...
+                      </span>
+                    </div>
+                  ) : candidateHistory && candidateHistory.length > 0 ? (
+                    candidateDetailsFields
+                      .find((field) => field.id === "candidate-history")
+                      ?.render(
+                        { ...localCandidate, history: candidateHistory },
+                        user,
+                        validTimeLineItems,
+                        handleRemarkUpdate,
+                        setEditingRemark,
+                        setIsEditRemarkDialogOpen,
+                        false // showHeader = false
+                      )
+                  ) : null
+                  // : (
+                  //   <div className="text-center py-8">
+                  //     <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  //     <h3 className="text-lg font-semibold">No history found</h3>
+                  //     <p className="text-muted-foreground">
+                  //       No history entries found for this candidate.
+                  //     </p>
+                  //   </div>
+                  // )
+                }
               </div>
             )}
 

@@ -1,7 +1,6 @@
 import CryptoJS from "crypto-js";
 
-const ENCRYPTION_KEY =
-  process.env.ENCRYPTION_KEY || process.env.JWT_SECRET || "your_encryption_key";
+const ENCRYPTION_KEY = process.env.JWT_SECRET || "your_jwt_secret_key";
 
 if (!ENCRYPTION_KEY) {
   throw new Error(
@@ -34,6 +33,7 @@ export function decryptText(encryptedText: string): string {
   if (!encryptedText) return "";
   try {
     const bytes = CryptoJS.AES.decrypt(encryptedText, ENCRYPTION_KEY);
+    console.log("ENCRYPTION_KEY: ", ENCRYPTION_KEY);
     const decrypted = bytes.toString(CryptoJS.enc.Utf8);
     return decrypted;
   } catch (error) {
