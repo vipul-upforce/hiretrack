@@ -1,4 +1,4 @@
-import { signToken } from "../jwt";
+import { signToken } from "@/app/actions/auth";
 import { ICandidate } from "../models/candidate";
 import { ICandidateHistory } from "../models/history";
 // import { auth } from "../auth";

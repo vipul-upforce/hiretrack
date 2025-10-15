@@ -258,7 +258,7 @@ const testBrevoConnection = async (credentials: {
         success: false,
         message: errorMessage,
         error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+          process.env.ENVIRONMENT === "development" ? error.message : undefined,
       },
       { status: statusCode }
     );

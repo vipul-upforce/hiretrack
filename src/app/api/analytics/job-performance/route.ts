@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { Job, Candidate } from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
-import { 
-  withAnalyticsAuth, 
-  createAnalyticsResponse, 
-  createAnalyticsErrorResponse 
+import {
+  withAnalyticsAuth,
+  createAnalyticsResponse,
+  createAnalyticsErrorResponse,
 } from "../middleware";
 import { parseAnalyticsRequest, calculateDaysFromDate } from "../utils";
 import { JobPerformanceData } from "../types";
@@ -29,20 +29,20 @@ export async function GET(request: NextRequest) {
         // If conversion fails, use string (fallback)
         jobsOrgId = user.organizationId;
       }
-      
+
       const orgIdQuery = {
         organizationId: jobsOrgId, // Jobs collection uses ObjectId
         isDeleted: { $ne: true },
       };
-      
+
       const jobCount = await Job.countDocuments(orgIdQuery);
-      
+
       // Minimal logging for production
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.ENVIRONMENT === "development") {
         console.log("Job Performance - Job count for org:", jobCount);
         console.log("Job Performance - User org ID:", user.organizationId);
       }
-      
+
       if (jobCount === 0) {
         // Return empty data if no jobs
         const response = createAnalyticsResponse(
@@ -140,7 +140,7 @@ export async function GET(request: NextRequest) {
               $size: {
                 $filter: {
                   input: "$candidates",
-                  cond: { 
+                  cond: {
                     $and: [
                       { $ne: ["$$this.status", "accepted"] },
                       { $ne: ["$$this.status", "rejected"] },
@@ -229,14 +229,19 @@ export async function GET(request: NextRequest) {
         },
       ];
 
-      const results = await Job.collection.aggregate(pipeline, {
-        maxTimeMS: 15000, // 15 second timeout
-        allowDiskUse: false // Use memory only for better performance
-      }).toArray();
-      
+      const results = await Job.collection
+        .aggregate(pipeline, {
+          maxTimeMS: 15000, // 15 second timeout
+          allowDiskUse: false, // Use memory only for better performance
+        })
+        .toArray();
+
       // Development logging only
-      if (process.env.NODE_ENV === 'development') {
-        console.log("Job Performance - Aggregation results count:", results.length);
+      if (process.env.ENVIRONMENT === "development") {
+        console.log(
+          "Job Performance - Aggregation results count:",
+          results.length
+        );
       }
 
       // Process results to create job performance data
@@ -253,63 +258,86 @@ export async function GET(request: NextRequest) {
         createdAt: job.createdAt,
         closedAt: job.closedAt,
         jobDuration: Math.round(job.jobDurationDays),
-        salaryRange: job.salary ? {
-          min: job.salary.min,
-          max: job.salary.max,
-          inText: job.salary.inText,
-        } : null,
+        salaryRange: job.salary
+          ? {
+              min: job.salary.min,
+              max: job.salary.max,
+              inText: job.salary.inText,
+            }
+          : null,
         requiredExperience: job.experience,
         skillsRequired: job.skills?.length || 0,
       }));
 
       // Calculate overall performance metrics
       const totalJobs = jobPerformanceData.length;
-      const totalApplications = jobPerformanceData.reduce((sum, job) => sum + job.applications, 0);
-      const totalAccepted = jobPerformanceData.reduce((sum, job) => sum + job.accepted, 0);
-      const totalRejected = jobPerformanceData.reduce((sum, job) => sum + job.rejected, 0);
-      
-      const avgApplicationsPerJob = totalJobs > 0 ? Math.round(totalApplications / totalJobs) : 0;
-      const overallSuccessRate = totalApplications > 0 
-        ? Math.round((totalAccepted / totalApplications) * 100 * 100) / 100 
-        : 0;
-      
-      const avgTimeToFill = jobPerformanceData.length > 0
-        ? Math.round(jobPerformanceData.reduce((sum, job) => sum + job.timeToFill, 0) / jobPerformanceData.length)
-        : 0;
+      const totalApplications = jobPerformanceData.reduce(
+        (sum, job) => sum + job.applications,
+        0
+      );
+      const totalAccepted = jobPerformanceData.reduce(
+        (sum, job) => sum + job.accepted,
+        0
+      );
+      const totalRejected = jobPerformanceData.reduce(
+        (sum, job) => sum + job.rejected,
+        0
+      );
+
+      const avgApplicationsPerJob =
+        totalJobs > 0 ? Math.round(totalApplications / totalJobs) : 0;
+      const overallSuccessRate =
+        totalApplications > 0
+          ? Math.round((totalAccepted / totalApplications) * 100 * 100) / 100
+          : 0;
+
+      const avgTimeToFill =
+        jobPerformanceData.length > 0
+          ? Math.round(
+              jobPerformanceData.reduce((sum, job) => sum + job.timeToFill, 0) /
+                jobPerformanceData.length
+            )
+          : 0;
 
       // Calculate job status breakdown
-      const openJobs = jobPerformanceData.filter(job => job.status === 'open').length;
-      const closedJobs = jobPerformanceData.filter(job => job.status === 'closed').length;
-      const draftJobs = jobPerformanceData.filter(job => job.status === 'draft').length;
-      
+      const openJobs = jobPerformanceData.filter(
+        (job) => job.status === "open"
+      ).length;
+      const closedJobs = jobPerformanceData.filter(
+        (job) => job.status === "closed"
+      ).length;
+      const draftJobs = jobPerformanceData.filter(
+        (job) => job.status === "draft"
+      ).length;
+
       // For published/unpublished breakdown, we need to query the database again
       const publishedJobs = await Job.countDocuments({
         organizationId: jobsOrgId,
-        status: 'open',
+        status: "open",
         isPublished: true,
         isDeleted: { $ne: true },
       });
-      
+
       const unpublishedJobs = await Job.countDocuments({
         organizationId: jobsOrgId,
-        status: 'open',
-        $or: [
-          { isPublished: false },
-          { isPublished: { $exists: false } }
-        ],
+        status: "open",
+        $or: [{ isPublished: false }, { isPublished: { $exists: false } }],
         isDeleted: { $ne: true },
       });
 
       // Top performing jobs (by success rate)
       const topPerformingJobs = [...jobPerformanceData]
-        .filter(job => job.applications >= 1) // Only jobs with at least 1 application
+        .filter((job) => job.applications >= 1) // Only jobs with at least 1 application
         .sort((a, b) => b.successRate - a.successRate)
         .slice(0, 5);
 
       // Underperforming jobs (low application count relative to duration)
       const underperformingJobs = [...jobPerformanceData]
-        .filter(job => job.jobDuration >= 7) // Jobs open for at least a week
-        .sort((a, b) => (a.applications / a.jobDuration) - (b.applications / b.jobDuration))
+        .filter((job) => job.jobDuration >= 7) // Jobs open for at least a week
+        .sort(
+          (a, b) =>
+            a.applications / a.jobDuration - b.applications / b.jobDuration
+        )
         .slice(0, 5);
 
       const response = createAnalyticsResponse(
@@ -336,9 +364,15 @@ export async function GET(request: NextRequest) {
           insights: {
             topPerformingJobs,
             underperformingJobs,
-            avgJobDuration: jobPerformanceData.length > 0
-              ? Math.round(jobPerformanceData.reduce((sum, job) => sum + job.jobDuration, 0) / jobPerformanceData.length)
-              : 0,
+            avgJobDuration:
+              jobPerformanceData.length > 0
+                ? Math.round(
+                    jobPerformanceData.reduce(
+                      (sum, job) => sum + job.jobDuration,
+                      0
+                    ) / jobPerformanceData.length
+                  )
+                : 0,
           },
         },
         user.organizationId,
@@ -349,25 +383,27 @@ export async function GET(request: NextRequest) {
       );
 
       return NextResponse.json(response);
-
-    } catch (error:any) {
+    } catch (error: any) {
       console.error("Job performance analytics error:", error);
-      
+
       // Handle specific error types with better messages
-      if (error.message?.includes('timeout') || error.message?.includes('maxTimeMS')) {
+      if (
+        error.message?.includes("timeout") ||
+        error.message?.includes("maxTimeMS")
+      ) {
         return createAnalyticsErrorResponse(
           "Query timeout - please try a smaller date range or reduce filters",
           408
         );
       }
-      
-      if (error.message?.includes('memory')) {
+
+      if (error.message?.includes("memory")) {
         return createAnalyticsErrorResponse(
-          "Dataset too large - please add filters to reduce data size", 
+          "Dataset too large - please add filters to reduce data size",
           413
         );
       }
-      
+
       return createAnalyticsErrorResponse(
         "Failed to generate job performance analytics",
         500

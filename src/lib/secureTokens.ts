@@ -31,7 +31,7 @@ export function setSecureAuthTokens(
   expirationDate.setDate(expirationDate.getDate() + expires);
 
   // Common security flags
-  const isProduction = process.env.NODE_ENV === "production";
+  const isProduction = process.env.ENVIRONMENT === "production";
   const secureFlag = isProduction; // Only use secure in production (requires HTTPS)
 
   // Set readable token for client-side (maintaining existing functionality)
@@ -72,7 +72,7 @@ export function setSecureAuthTokens(
 export function clearAuthTokens(response: NextResponse) {
   const cookieOptions = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: process.env.ENVIRONMENT === "production",
     sameSite: "strict" as const,
     maxAge: 0,
     expires: new Date(0),
