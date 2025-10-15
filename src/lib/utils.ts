@@ -15,7 +15,8 @@ import CryptoJS from "crypto-js";
 export const verifyAndDecryptToken = (token: string) => {
   try {
     const JWT_SECRET =
-      process.env.NEXT_PUBLIC_JWT_SECRET || "your_jwt_secret_key";
+      process.env.NEXT_PUBLIC_JWT_SECRET ||
+      "hgerguhurhg_egosh_eohe_egjhagbqyuqwertyuiop";
     // console.log(JWT_SECRET, "JWT_SECRET-9");
     if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
 

@@ -12,7 +12,7 @@ export async function verifyAndDecryptToken(token: string) {
   const JWT_SECRET =
     process.env.JWT_SECRET ||
     process.env.NEXT_PUBLIC_JWT_SECRET ||
-    "your_jwt_secret_key";
+    "hgerguhurhg_egosh_eohe_egjhagbqyuqwertyuiop";
   // console.log(JWT_SECRET, "JWT_SECRET-10");
 
   try {
