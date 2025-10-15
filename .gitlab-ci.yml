@@ -165,7 +165,7 @@ build:
       - version.env
   environment: demo
   only:
-    - master
+    # - master
     - main-backup
 
 release_job:
@@ -177,7 +177,7 @@ release_job:
     paths:
       - version.env
   only:
-    - master
+    # - master
     - main-backup
   tags:
     - my-runner
