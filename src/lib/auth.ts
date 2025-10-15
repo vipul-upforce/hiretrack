@@ -36,7 +36,7 @@ export async function verifyAndDecryptJWTToken(token: string) {
     process.env.JWT_SECRET ||
     process.env.NEXT_PUBLIC_JWT_SECRET ||
     "your_jwt_secret_key";
-  console.log(JWT_SECRET, "JWT_SECRET-5");
+  // console.log(JWT_SECRET, "JWT_SECRET-5");
   try {
     if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
 
@@ -67,7 +67,7 @@ export async function verifyAndDecryptSSE(token: string) {
     process.env.JWT_SECRET ||
     process.env.NEXT_PUBLIC_JWT_SECRET ||
     "your_jwt_secret_key";
-  console.log(JWT_SECRET, "JWT_SECRET-6");
+  // console.log(JWT_SECRET, "JWT_SECRET-6");
   try {
     if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
 
@@ -107,7 +107,7 @@ export async function verifyAndDecrypCaptcha(token: string) {
     if (!token) throw new Error("Token is empty");
 
     console.log(token, "token");
-    console.log(JWT_SECRET, "JWT_SECRET-7");
+    // console.log(JWT_SECRET, "JWT_SECRET-7");
 
     // Assume token is an AES-encrypted string (not a JWT)
     const bytes = CryptoJS.AES.decrypt(token, JWT_SECRET);

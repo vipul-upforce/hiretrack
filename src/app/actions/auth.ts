@@ -9,7 +9,7 @@ const JWT_SECRET =
   "your_jwt_secret_key";
 export async function verifyAndDecryptToken(token: string) {
   try {
-    console.log(JWT_SECRET, "JWT_SECRET-2");
+    // console.log(JWT_SECRET, "JWT_SECRET-2");
 
     if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
 

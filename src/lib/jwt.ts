@@ -5,7 +5,7 @@ const JWT_SECRET =
   process.env.JWT_SECRET ||
   process.env.NEXT_PUBLIC_JWT_SECRET ||
   "your_jwt_secret_key";
-console.log(JWT_SECRET, "JWT_SECRET-8");
+// console.log(JWT_SECRET, "JWT_SECRET-8");
 
 export const signToken = (payload: any) => {
   const encryptedPayload = CryptoJS.AES.encrypt(

@@ -46,7 +46,7 @@ export async function authenticateAnalyticsRequest(
 
     // Use the same JWT verification as main middleware
     const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key";
-    console.log(JWT_SECRET, "JWT_SECRET-3");
+    // console.log(JWT_SECRET, "JWT_SECRET-3");
     if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
 
     const secretKey = new TextEncoder().encode(JWT_SECRET);

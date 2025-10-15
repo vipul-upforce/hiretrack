@@ -22,7 +22,7 @@
     "@emotion/styled": "^11.14.0",
     "@fullcalendar/core": "^6.1.15",
     "@fullcalendar/daygrid": "^6.1.15",
-    "@fullcalendar/interaction": "^6.1.15",
+    "@fullcalendar/interaction": "^6.1.19",
     "@fullcalendar/react": "^6.1.15",
     "@getbrevo/brevo": "^1.0.1",
     "@google/generative-ai": "^0.24.0",

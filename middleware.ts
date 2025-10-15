@@ -13,7 +13,7 @@ export async function verifyAndDecryptToken(token: string) {
     process.env.JWT_SECRET ||
     process.env.NEXT_PUBLIC_JWT_SECRET ||
     "your_jwt_secret_key";
-  console.log(JWT_SECRET, "JWT_SECRET-10");
+  // console.log(JWT_SECRET, "JWT_SECRET-10");
 
   try {
     if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");

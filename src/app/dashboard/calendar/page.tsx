@@ -19,6 +19,7 @@ import { RenderEvent } from "./components/renderCalendarEvent";
 import { useSSE } from "@/hooks/useSSE";
 import useRoles from "@/hooks/useRoles";
 import { useSelector } from "react-redux";
+import interactionPlugin from "@fullcalendar/interaction";
 
 interface Interviewer {
   _id: string;
@@ -399,7 +400,7 @@ export default function CalendarPage() {
           <div className="p-0 h-full">
             <FullCalendar
               ref={calendarRef}
-              plugins={[dayGridPlugin]}
+              plugins={[dayGridPlugin, interactionPlugin]}
               initialView="dayGridMonth"
               events={events}
               eventClick={handleEventClick}
