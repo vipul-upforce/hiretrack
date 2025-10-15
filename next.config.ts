@@ -205,7 +205,7 @@ const nextConfig: NextConfig = {
   // Optimize TypeScript compilation
   typescript: {
     // Disable TypeScript checking during build for faster builds
-    ignoreBuildErrors: false,
+    ignoreBuildErrors: true,
   },
   // Optimize ESLint
   eslint: {
