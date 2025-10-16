@@ -4,8 +4,8 @@ import jwt from "jsonwebtoken";
 import CryptoJS from "crypto-js";
 
 const JWT_SECRET =
-  process.env.JWT_SECRET ||
-  process.env.NEXT_PUBLIC_JWT_SECRET ||
+  // process.env.JWT_SECRET ||
+  // process.env.NEXT_PUBLIC_JWT_SECRET ||
   "hgerguhurhg_egosh_eohe_egjhagbqyuqwertyuiop";
 export async function verifyAndDecryptToken(token: string) {
   try {
@@ -30,9 +30,15 @@ export async function verifyAndDecryptToken(token: string) {
 }
 
 export const signToken = async (payload: unknown) => {
+  console.log(JWT_SECRET, "JWT_SECRET-7");
   const encryptedPayload = CryptoJS.AES.encrypt(
     JSON.stringify(payload),
-    JWT_SECRET
+    String(JWT_SECRET)
   ).toString();
-  return jwt.sign({ user: encryptedPayload }, JWT_SECRET, { expiresIn: "30d" });
+  console.log("type of encryptedPayload", typeof encryptedPayload);
+  const signedToken = jwt.sign({ user: encryptedPayload }, String(JWT_SECRET), {
+    expiresIn: "30d",
+  });
+  console.log("signedToken", signedToken);
+  return signedToken;
 };

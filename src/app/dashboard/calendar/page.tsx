@@ -139,6 +139,7 @@ export default function CalendarPage() {
   const mergedAssignments = (
     assignments && assignments[0]?.data ? [...assignments[0].data] : []
   ).map((assignment: CandidateAssignment) => {
+    // debugger;
     const sseCandidate = sseCandidates.find((c: CandidateAssignment) =>
       role === "interviewer"
         ? (c._id === assignment?._id &&

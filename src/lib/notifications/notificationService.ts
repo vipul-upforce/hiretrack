@@ -94,7 +94,7 @@ export class NotificationService {
         metadata: baseParams.metadata || {},
         isRead: false,
       }));
-      console.log(notifications, "notifications- fotr bulkkkkk");
+      // console.log(notifications, "notifications- fotr bulkkkkk");
 
       const createdNotifications = await Notification.insertMany(notifications);
       console.log(createdNotifications, "createdNotifications");

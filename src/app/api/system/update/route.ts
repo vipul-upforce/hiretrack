@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     try {
       // Execute the command asynchronously
       const { stdout, stderr } = await execAsync(command, {
-        timeout: 30000, // 30 second timeout for the command execution
+        timeout: 8000000, // 30 second timeout for the command execution
         cwd: process.env.HOME || "/root", // Set working directory to home
       });
 

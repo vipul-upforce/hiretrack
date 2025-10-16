@@ -64,19 +64,23 @@ export async function verifyAndDecryptJWTToken(token: string) {
 }
 export async function verifyAndDecryptSSE(token: string) {
   const JWT_SECRET =
-    process.env.JWT_SECRET ||
-    process.env.NEXT_PUBLIC_JWT_SECRET ||
+    // process.env.JWT_SECRET ||
+    // process.env.NEXT_PUBLIC_JWT_SECRET ||
     "hgerguhurhg_egosh_eohe_egjhagbqyuqwertyuiop";
   // console.log(JWT_SECRET, "JWT_SECRET-6");
   try {
+    console.log(JWT_SECRET, "JWT_SECRET-6");
     if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
-
+    console.log("type of JWT_SECRET", typeof JWT_SECRET);
+    console.log("type of token", typeof token);
+    console.log("token", token);
     const decoded = jwtDecode<JWTPayload>(token);
+    console.log(decoded, "decoded");
     if (!decoded || typeof decoded !== "object" || !decoded.user) {
       throw new Error("Invalid token structure");
     }
-
-    const bytes = CryptoJS.AES.decrypt(decoded.user, JWT_SECRET);
+    console.log("type of JWT_SECRET", typeof JWT_SECRET);
+    const bytes = CryptoJS.AES.decrypt(decoded.user, String(JWT_SECRET));
     const decryptedData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
     return { ...decryptedData };
   } catch (err) {
