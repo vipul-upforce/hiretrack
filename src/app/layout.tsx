@@ -29,7 +29,6 @@ export default function RootLayout({
     <Suspense fallback={<LoadingScreen />}>
       <html lang="en" suppressHydrationWarning>
         <head>
-          <link rel="icon" href="/favicon.png" />
           <script
             dangerouslySetInnerHTML={{
               __html: `

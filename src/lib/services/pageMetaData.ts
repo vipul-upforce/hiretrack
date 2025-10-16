@@ -12,14 +12,21 @@ export const pageMetaData = async () => {
 
     const title = org?.portalConfigs?.portalName ||"HireTrack"  ;
     
+   const faviconUrl = org?.portalConfigs?.portalFavicon?.url || "/favicon.png";
     return {
       title,
+      icons: {
+        icon: faviconUrl,
+      },
     };
   } catch (error) {
-    // console.error("Error fetching metadata:", error);
+    // console.log("Error fetching metadata:", error);
 
     return {
       title: "HireTrack",
+      icons: {
+        icon: "/favicon.png",
+      },
     };
   }
 };
