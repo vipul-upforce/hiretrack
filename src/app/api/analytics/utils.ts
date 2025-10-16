@@ -64,7 +64,8 @@ export function getStageColor(stage: string): string {
     final: "#10B981",        // emerald
     offered: "#06B6D4",      // cyan
     accepted: "#22C55E",     // green
-    rejected: "#6B7280",     // gray
+    shortlisted: "#f0ec0a",  // yellow
+    rejected: "#fc0019",     // red
     withdrawn: "#9CA3AF",    // light gray
   };
   

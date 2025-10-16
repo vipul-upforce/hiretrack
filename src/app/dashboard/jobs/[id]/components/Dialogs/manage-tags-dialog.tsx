@@ -82,6 +82,15 @@ const ManageTagsDialog = ({
       });
       return;
     }
+
+    if(orgTags.some((tag) => tag.color === newTagColor)){
+       toast({
+        title: "Error",
+        description: "Tag color already exists.",
+        variant: "destructive",
+      });
+      return;
+    }
     const newTag: ITag = { title: newTagTitle.trim(), color: newTagColor };
     setOrgTags((prev) => [...prev, newTag]);
     setNewTagTitle("");
@@ -231,7 +240,7 @@ const ManageTagsDialog = ({
                 </Button>
               </div>
               <h4 className="text-sm font-medium">Current Tags</h4>
-              <div className="flex flex-col gap-2 mb-[11%] overflow-y-auto">
+              <div className="flex flex-col gap-2 overflow-y-auto">
                 {!orgTags.length ? (
                   <p className="text-gray-500">No Tags available.</p>
                 ) : (
