@@ -15,6 +15,7 @@ import {
   VALIDATION_PATTERNS,
   MAX_LENGTHS,
 } from "@/lib/inputValidation";
+import { apiRateLimiter } from "@/lib/rateLimiter";
 
 const streamPipeline = promisify(pipeline);
 
@@ -148,7 +149,7 @@ async function saveFavicon(
   }
 }
 
-export async function GET(req: NextRequest) {
+const handleGetPortalData = async (req: NextRequest) => {
   try {
     // SECURITY FIX: Validate query parameters
     const validation = validateQueryParams(req.nextUrl.searchParams, {
@@ -279,6 +280,10 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
+};
+
+export async function GET(req: NextRequest) {
+  return apiRateLimiter(req as NextRequest, handleGetPortalData);
 }
 
 export async function PUT(req: NextRequest) {

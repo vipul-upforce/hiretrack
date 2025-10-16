@@ -8,9 +8,10 @@ import {
   VALIDATION_PATTERNS,
 } from "@/lib/inputValidation";
 import connectToDatabase from "@/lib/mongodb";
+import { apiRateLimiter } from "@/lib/rateLimiter";
 
-export async function GET(req: NextRequest) {
-  try {
+const handleGetCaptcha = async(req: NextRequest) => {
+    try {
     // // SECURITY FIX: Validate query parameters
     const validation = validateQueryParams(req.nextUrl.searchParams, {
       org: {
@@ -122,6 +123,10 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+export async function GET(req: NextRequest) {
+  return apiRateLimiter(req as NextRequest, handleGetCaptcha);
 }
 
 export async function PUT(req: NextRequest) {
