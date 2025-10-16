@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { exec } from "child_process";
-import { promisify } from "util";
+// import { promisify } from "util";
 
-const execAsync = promisify(exec);
+// const execAsync = promisify(exec);
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,64 +12,36 @@ export async function POST(request: NextRequest) {
     console.log("Starting system update process...");
 
     // Execute the installer script with the --update "manually" parameter
-    const command = '../installer.sh --update "manually"';
+    const command = '~/.myapp/installer.sh --update "manually"';
 
-    try {
-      // Execute the command asynchronously
-      const { stdout, stderr } = await execAsync(command, {
-        timeout: 8000000, // 30 second timeout for the command execution
-        cwd: process.env.HOME || "/root", // Set working directory to home
-      });
+    // Execute the command without waiting for it to complete
+    const childProcess = exec(command, {
+      cwd: process.env.HOME || "/root", // Set working directory to home
+    });
 
-      console.log("Update command executed successfully");
-      console.log("STDOUT:", stdout);
+    // Log process ID for reference
+    console.log(`Update process initiated with PID: ${childProcess.pid}`);
 
-      if (stderr) {
-        console.log("STDERR:", stderr);
-      }
+    // Set up non-blocking error logging
+    childProcess.on("error", (error) => {
+      console.error("Error in background update process:", error);
+    });
 
-      return NextResponse.json({
-        success: true,
-        message: "Update process initiated successfully",
-        output: stdout,
-        error: stderr || null,
-      });
-    } catch (execError: any) {
-      console.error("Error executing update command:", execError);
+    // Optional: Set up stdout/stderr logging if needed
+    childProcess.stdout?.on("data", (data) => {
+      console.log(`Update stdout: ${data}`);
+    });
 
-      // Check if it's a timeout error
-      if (execError.code === "TIMEOUT") {
-        return NextResponse.json(
-          {
-            success: false,
-            error:
-              "Update command timed out. The update may still be running in the background.",
-          },
-          { status: 408 }
-        );
-      }
+    childProcess.stderr?.on("data", (data) => {
+      console.log(`Update stderr: ${data}`);
+    });
 
-      // Check if the script doesn't exist
-      if (execError.code === "ENOENT") {
-        return NextResponse.json(
-          {
-            success: false,
-            error: "Installer script not found at ~/installer.sh",
-          },
-          { status: 404 }
-        );
-      }
-
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Update command failed: ${execError.message}`,
-          output: execError.stdout || null,
-          stderr: execError.stderr || null,
-        },
-        { status: 500 }
-      );
-    }
+    // Return immediately without waiting for process completion
+    return NextResponse.json({
+      success: true,
+      message: "Update process initiated successfully",
+      pid: childProcess.pid,
+    });
   } catch (error: any) {
     console.error("Error in update endpoint:", error);
 

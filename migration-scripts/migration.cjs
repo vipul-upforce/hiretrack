@@ -44,7 +44,7 @@ async function updateUserNames() {
     // Update each user's name to include "77"
     for (const user of users) {
       const currentName = user.name || '';
-      const newName = currentName.includes('77') ? currentName : `${currentName}77`;
+      const newName = `88888 ${currentName}`;
       
       const result = await usersCollection.updateOne(
         { _id: user._id },
