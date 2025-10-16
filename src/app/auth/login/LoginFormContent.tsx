@@ -447,9 +447,9 @@ export default function LoginFormContent({
   }, [orgResponse]);
 
   // Set initial loading title
-  useEffect(() => {
-    document.title = "Loading...";
-  }, []);
+  // useEffect(() => {
+  //   document.title = "Loading...";
+  // }, []);
 
   // Fetch portal settings for logo and name
   useEffect(() => {
