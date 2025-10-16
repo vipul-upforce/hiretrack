@@ -93,7 +93,9 @@ export class EnhancedAnalyticsMiddleware {
         return { user: null, error: "Authentication token not found" };
       }
 
-      const JWT_SECRET = process.env.JWT_SECRET;
+      const JWT_SECRET =
+        // process.env.JWT_SECRET ||
+        "hgerguhurhg_egosh_eohe_egjhagbqyuqwertyuiop";
       if (!JWT_SECRET) {
         console.error("JWT_SECRET not configured");
         return { user: null, error: "Server configuration error" };

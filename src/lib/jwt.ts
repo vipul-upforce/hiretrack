@@ -2,8 +2,8 @@ import jwt from "jsonwebtoken";
 import CryptoJS from "crypto-js";
 
 const JWT_SECRET =
-  process.env.JWT_SECRET ||
-  process.env.NEXT_PUBLIC_JWT_SECRET ||
+  // process.env.JWT_SECRET ||
+  // process.env.NEXT_PUBLIC_JWT_SECRET ||
   "hgerguhurhg_egosh_eohe_egjhagbqyuqwertyuiop";
 // console.log(JWT_SECRET, "JWT_SECRET-8");
 
