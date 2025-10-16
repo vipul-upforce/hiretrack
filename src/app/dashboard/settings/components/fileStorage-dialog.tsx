@@ -68,8 +68,8 @@ export default function FileStorageOptions({
 
   const signToken = async (payload: unknown) => {
     const JWT_SECRET =
-      process.env.JWT_SECRET ||
-      process.env.NEXT_PUBLIC_JWT_SECRET ||
+      // process.env.JWT_SECRET ||
+      // process.env.NEXT_PUBLIC_JWT_SECRET ||
       "hgerguhurhg_egosh_eohe_egjhagbqyuqwertyuiop";
     // console.log(JWT_SECRET, "JWT_SECRET-4");
     try {
