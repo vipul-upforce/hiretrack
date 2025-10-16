@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, useEffect, useState, useMemo, useCallback } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import {
@@ -114,61 +114,6 @@ const sidebarItems: SidebarItem[] = [
   //   role: "admin",
   // },
 ];
-interface NotificationWrapperProps {
-  userData: IUser | null;
-  isCollapsed: boolean;
-  onNotificationClick: (notification: any) => void;
-  onMarkAsRead: (id: string) => void;
-  onMarkAllAsRead: () => void;
-}
-
-const NotificationWrapper = React.memo(
-  ({
-    userData,
-    isCollapsed,
-    onNotificationClick,
-    onMarkAsRead,
-    onMarkAllAsRead,
-  }: NotificationWrapperProps) => {
-    const [notificationPage, setNotificationPage] = useState(1);
-    const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] =
-      useState(false);
-    const {
-      data: notificationsData,
-      isLoading: notificationsLoading,
-      refetch: fetchNotifications,
-    } = useGetNotificationsQuery(
-      { page: notificationPage, limit: 10 },
-      { skip: !userData }
-    );
-    const { data: notificationCountData } = useGetNotificationCountQuery(
-      undefined,
-      {
-        skip: !userData,
-        pollingInterval: 30000,
-      }
-    );
-
-    return (
-      <NotificationButton
-        notifications={notificationsData?.notifications || []}
-        unreadCount={notificationCountData?.unreadCount || 0}
-        totalCount={notificationCountData?.totalCount || 0}
-        currentPage={notificationsData?.pagination?.currentPage || 1}
-        totalPages={notificationsData?.pagination?.totalPages || 1}
-        isLoading={notificationsLoading}
-        onMarkAsRead={onMarkAsRead}
-        fetchNotifications={fetchNotifications}
-        onMarkAllAsRead={onMarkAllAsRead}
-        onNotificationClick={onNotificationClick}
-        onPageChange={setNotificationPage}
-        isOpen={isNotificationDropdownOpen}
-        onOpenChange={setIsNotificationDropdownOpen}
-        className="mr-1"
-      />
-    );
-  }
-);
 
 export default function DashboardLayout({
   children,
@@ -180,23 +125,100 @@ export default function DashboardLayout({
     data: portalConfigData,
     isLoading,
     refetch,
-  } = useGetPortalConfigsQuery(undefined, {
-    refetchOnMountOrArgChange: false,
-  });
+  } = useGetPortalConfigsQuery(undefined);
   const { setUserLoggedIn } = useCustomFields();
   const {
     data: allowanceData,
     isLoading: allowanceLoading,
     error: allowanceError,
-  } = useGetOrganizationAllowanceQuery(undefined, {
-    refetchOnMountOrArgChange: false,
-  });
-  const [hasMultipleOrgs, setHasMultipleOrgs] = useState(false);
+  } = useGetOrganizationAllowanceQuery();
+  const [hasMultipleOrgs, seHasMultipleOrgs] = useState(false);
 
+  // Notification hooks
+  const [notificationPage, setNotificationPage] = useState(1);
+  const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] =
+    useState(false);
+  const {
+    data: notificationsData,
+    isLoading: notificationsLoading,
+    refetch: fetchNotifications,
+  } = useGetNotificationsQuery(
+    { page: notificationPage, limit: 10 },
+    { skip: !userData } // Skip query if no user data
+  );
+  const { data: notificationCountData } = useGetNotificationCountQuery(
+    undefined,
+    { skip: !userData, pollingInterval: 30000 } // Poll every 30 seconds for real-time updates
+  );
   const [markAsRead] = useMarkNotificationAsReadMutation();
   const [markAllAsRead] = useMarkAllNotificationsAsReadMutation();
   const [fetchCandidateById] = useLazyFetchCandidateByIdQuery();
 
+  // Notification handlers
+  const handleNotificationClick = async (notification: any) => {
+    // Mark as read if not already read
+    if (!notification.isRead) {
+      markAsRead(notification._id);
+    }
+
+    // For interviewers, handle candidate-related and meeting notifications by opening dialog
+    if (
+      // userData?.role === "interviewer" &&
+      (notification.relatedEntity === "candidate" ||
+        notification.relatedEntity === "followup" ||
+        notification.relatedEntity === "checklist" ||
+        notification.relatedEntity === "meeting") &&
+      notification.relatedId
+    ) {
+      try {
+        const result = await fetchCandidateById(notification.relatedId);
+        if (result.data) {
+          setSelectedCandidate(result.data);
+          setIsCandidateDialogOpen(true);
+          return;
+        }
+      } catch (error) {
+        console.error("Failed to fetch candidate:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load candidate details",
+          variant: "destructive",
+        });
+      }
+    }
+    // For admin/hr or non-candidate notifications, navigate to the page
+    if (notification.actionUrl) {
+      // window.location.href = notification.actionUrl;
+      router.push(notification.actionUrl);
+      // router.refresh();
+      // window.location.reload();
+    }
+  };
+
+  const handleMarkAsRead = async (id: string) => {
+    try {
+      await markAsRead(id).unwrap();
+    } catch (error) {
+      console.error("Failed to mark notification as read:", error);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllAsRead().unwrap();
+      toast({
+        title: "Success",
+        description: "All notifications marked as read",
+      });
+    } catch (error) {
+      console.error("Failed to mark all notifications as read:", error);
+      toast({
+        title: "Error",
+        description: "Failed to mark all notifications as read",
+        variant: "destructive",
+      });
+    }
+  };
   const { user } = useSelector((state: any) => state.auth || {});
   const {
     data: orgCheckData,
@@ -211,7 +233,7 @@ export default function DashboardLayout({
 
   useEffect(() => {
     if (allowanceData) {
-      setHasMultipleOrgs(allowanceData.allow);
+      seHasMultipleOrgs(allowanceData.allow);
       dispatch(setAllowMultipleOrgs(allowanceData.allow));
     }
   }, [allowanceData, dispatch]);
@@ -231,10 +253,12 @@ export default function DashboardLayout({
       setUserData(user);
       refetch();
     }
-  }, [user, setUserLoggedIn, refetch]);
+  }, [user]);
 
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
+  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(
+    null
+  );
   const [isCandidateDialogOpen, setIsCandidateDialogOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
@@ -246,6 +270,7 @@ export default function DashboardLayout({
       const isSmallScreen = window.innerWidth < 1200;
       const userPreference = sessionStorage.getItem("sidebar-user-preference");
 
+      // On small screens, default to collapsed unless user has explicitly expanded
       if (isSmallScreen) {
         if (userPreference === "expanded") {
           setIsCollapsed(false);
@@ -253,6 +278,7 @@ export default function DashboardLayout({
           setIsCollapsed(true);
         }
       } else {
+        // On large screens, respect user preference or default to expanded
         if (userPreference === "collapsed") {
           setIsCollapsed(true);
         } else {
@@ -261,12 +287,15 @@ export default function DashboardLayout({
       }
     };
 
+    // Initial check
     handleResize();
+
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  }, []); // Remove isCollapsed dependency to avoid infinite loops
 
-  const handleLogout = useCallback(async () => {
+  const handleLogout = async () => {
+    // Cookies.remove("token");
     dispatch(logout());
     await fetch("/api/auth/logout");
     setUserData(null);
@@ -277,127 +306,68 @@ export default function DashboardLayout({
       description: "You have been successfully logged out",
     });
     window.location.href = "/auth/login";
-  }, [dispatch, setUserLoggedIn, refetch, toast]);
+  };
 
-  const generate_share_org = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      let parsedUser = user;
+  const generate_share_org = async (e: React.FormEvent) => {
+    e.preventDefault();
+    let parsedUser = user;
 
-      if (parsedUser) {
-        let url;
-        if (hasMultipleOrgs) {
-          url = `${window.location.origin}/apply-jobs?o=${parsedUser.organizationInfo?.name}`;
-        } else {
-          url = `${window.location.origin}/apply-jobs`;
-        }
-        navigator.clipboard
-          .writeText(url)
-          .then(() => {
-            toast({
-              title: "Success",
-              description: "Organization sharing URL is copied to your clipboard",
-              variant: "default",
-            });
-          })
-          .catch((err) => {
-            toast({
-              title: "Error",
-              description: err.message || "Failed to get the org url.",
-              variant: "destructive",
-            });
+    // console.log(user);
+    // if (user) {
+    //   const decryptedResponse = await verifyAndDecryptJWTToken(String(user));
+    //   if (decryptedResponse.success && decryptedResponse.user) {
+    //     parsedUser = decryptedResponse.user;
+    //   }
+    // }
+    if (parsedUser) {
+      let url;
+      if (hasMultipleOrgs) {
+        url = `${window.location.origin}/apply-jobs?o=${parsedUser.organizationInfo?.name}`;
+      } else {
+        url = `${window.location.origin}/apply-jobs`;
+      }
+      navigator.clipboard
+        .writeText(url)
+        .then(() => {
+          toast({
+            title: "Success",
+            description: "Organization sharing URL is copied to your clipboard",
+            variant: "default",
           });
-      }
-    },
-    [user, hasMultipleOrgs, toast]
-  );
-
-  const handleNotificationClick = useCallback(
-    async (notification: any) => {
-      if (!notification.isRead) {
-        markAsRead(notification._id);
-      }
-
-      if (
-        (notification.relatedEntity === "candidate" ||
-          notification.relatedEntity === "followup" ||
-          notification.relatedEntity === "checklist" ||
-          notification.relatedEntity === "meeting") &&
-        notification.relatedId
-      ) {
-        try {
-          const result = await fetchCandidateById(notification.relatedId);
-          if (result.data) {
-            setSelectedCandidate(result.data);
-            setIsCandidateDialogOpen(true);
-            return;
-          }
-        } catch (error) {
-          console.error("Failed to fetch candidate:", error);
+        })
+        .catch((err) => {
           toast({
             title: "Error",
-            description: "Failed to load candidate details",
+            description: err.message || "Failed to get the org url.",
             variant: "destructive",
           });
-        }
-      }
-      if (notification.actionUrl) {
-        router.push(notification.actionUrl);
-      }
-    },
-    [markAsRead, fetchCandidateById, setSelectedCandidate, setIsCandidateDialogOpen, toast, router]
-  );
-
-  const handleMarkAsRead = useCallback(
-    async (id: string) => {
-      try {
-        await markAsRead(id).unwrap();
-      } catch (error) {
-        console.error("Failed to mark notification as read:", error);
-      }
-    },
-    [markAsRead]
-  );
-
-  const handleMarkAllAsRead = useCallback(
-    async () => {
-      try {
-        await markAllAsRead().unwrap();
-        toast({
-          title: "Success",
-          description: "All notifications marked as read",
         });
-      } catch (error) {
-        console.error("Failed to mark all notifications as read:", error);
-        toast({
-          title: "Error",
-          description: "Failed to mark all notifications as read",
-          variant: "destructive",
-        });
-      }
-    },
-    [markAllAsRead, toast]
-  );
+    }
+  };
 
   const { theme } = useTheme();
 
-  const getLogoUrl = useCallback(
-    (portalLogo?: string, portalLogoDark?: string) => {
-      if (theme === "dark" && portalLogoDark) {
-        return portalLogoDark;
-      } else if (portalLogo) {
-        return portalLogo;
-      }
-      return theme === "dark" ? "/logo_dark.png" : "/logo.png";
-    },
-    [theme]
-  );
+  // Helper function to get the appropriate logo URL
+  const getLogoUrl = (portalLogo?: string, portalLogoDark?: string) => {
+    // Use appropriate logo based on theme and availability
+    if (theme === "dark" && portalLogoDark) {
+      return portalLogoDark;
+    } else if (portalLogo) {
+      return portalLogo;
+    }
 
-  const getUserAvatar = useCallback(() => {
+    // Otherwise use default logos based on theme
+    return theme === "dark" ? "/logo_dark.png" : "/logo.png";
+  };
+
+  // Helper function to get user avatar
+  const getUserAvatar = () => {
+    // Use theme-appropriate icon
     return theme === "dark" ? "/icon_dark.png" : "/icon.png";
-  }, [theme]);
+  };
 
-  const getUserInitials = useCallback((name?: string) => {
+  // Helper function to get user initials
+  const getUserInitials = (name?: string) => {
     if (!name) return "U";
     return name
       .split(" ")
@@ -405,19 +375,28 @@ export default function DashboardLayout({
       .join("")
       .toUpperCase()
       .slice(0, 2);
-  }, []);
+  };
 
-  const shouldShowPortalData = useMemo(
-    () => Boolean(portalConfigData && userData && portalConfigData.portalName),
-    [portalConfigData, userData]
+  const shouldShowPortalData = Boolean(
+    portalConfigData && userData && portalConfigData.portalName
   );
 
+  // Inject portal colors as CSS custom properties
   useEffect(() => {
+    // console.log("Portal config data:", portalConfigData);
     if (portalConfigData?.primaryColor && portalConfigData?.secondaryColor) {
+      // console.log("Injecting portal colors:", {
+      //   primary: portalConfigData.primaryColor,
+      //   secondary: portalConfigData.secondaryColor,
+      // });
       const root = document.documentElement;
       root.style.setProperty("--portal-primary", portalConfigData.primaryColor);
-      root.style.setProperty("--portal-secondary", portalConfigData.secondaryColor);
+      root.style.setProperty(
+        "--portal-secondary",
+        portalConfigData.secondaryColor
+      );
 
+      // Create lighter and darker variants for hover states
       const primaryRgb = hexToRgb(portalConfigData.primaryColor);
       const secondaryRgb = hexToRgb(portalConfigData.secondaryColor);
 
@@ -434,6 +413,8 @@ export default function DashboardLayout({
           "--portal-primary-light",
           lightenColor(portalConfigData.primaryColor, 10)
         );
+
+        // Update focus ring colors to use portal primary
         root.style.setProperty(
           "--focus-ring-color",
           `rgba(${primaryRgb.r}, ${primaryRgb.g}, ${primaryRgb.b}, 0.2)`
@@ -461,6 +442,7 @@ export default function DashboardLayout({
     }
   }, [portalConfigData]);
 
+  // Helper functions for color manipulation
   const hexToRgb = (hex: string) => {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result
@@ -481,6 +463,7 @@ export default function DashboardLayout({
     const g = Math.round(rgb.g * factor);
     const b = Math.round(rgb.b * factor);
 
+    // Ensure we always return a valid 6-digit hex
     const result = ((r << 16) + (g << 8) + b).toString(16).padStart(6, "0");
     return `#${result}`;
   };
@@ -494,26 +477,13 @@ export default function DashboardLayout({
     const g = Math.round(rgb.g + (255 - rgb.g) * factor);
     const b = Math.round(rgb.b + (255 - rgb.b) * factor);
 
+    // Ensure we always return a valid 6-digit hex
     const result = ((r << 16) + (g << 8) + b).toString(16).padStart(6, "0");
     return `#${result}`;
   };
 
-  const SidebarHeader = React.memo(
-    ({
-      isCollapsed,
-      onToggleCollapse,
-      shouldShowPortalData,
-      portalConfigData,
-      isLoading,
-      theme,
-    }: {
-      isCollapsed: boolean;
-      onToggleCollapse: (collapsed: boolean) => void;
-      shouldShowPortalData: boolean;
-      portalConfigData: any;
-      isLoading: boolean;
-      theme: string;
-    }) => (
+  const SidebarContent = () => (
+    <div className="flex flex-col h-full">
       <div
         className={cn(
           "flex items-center transition-all duration-200",
@@ -524,7 +494,10 @@ export default function DashboardLayout({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onToggleCollapse(false)}
+            onClick={() => {
+              setIsCollapsed(!isCollapsed);
+              sessionStorage.setItem("sidebar-user-preference", "expanded");
+            }}
             className="h-8 w-8 rounded-full flex-shrink-0"
             aria-label="Expand sidebar"
           >
@@ -557,7 +530,10 @@ export default function DashboardLayout({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onToggleCollapse(true)}
+              onClick={() => {
+                setIsCollapsed(!isCollapsed);
+                sessionStorage.setItem("sidebar-user-preference", "collapsed");
+              }}
               className="h-8 w-8 rounded-full flex-shrink-0"
               aria-label="Collapse sidebar"
             >
@@ -566,185 +542,87 @@ export default function DashboardLayout({
           </>
         )}
       </div>
-    )
-  );
-
-  const SidebarNav = React.memo(
-    ({
-      items,
-      userRole,
-      pathname,
-      isCollapsed,
-    }: {
-      items: SidebarItem[];
-      userRole: string | undefined;
-      pathname: string;
-      isCollapsed: boolean;
-    }) => (
-      <div className="space-y-2">
-        {items.map((item) => {
-          if (
-            (item.role === "admin" && userRole !== "admin") ||
-            (item.role === "hr" && userRole !== "admin" && userRole !== "hr") ||
-            (userRole === "interviewer" && item.title === "Jobs") ||
-            (userRole === "interviewer" && item.title === "Search") ||
-            (userRole === "interviewer" && item.title === "CV Upload")
-          ) {
-            return null;
-          }
-          const isActive =
-            (item.title === "Settings" &&
-              pathname.startsWith("/dashboard/settings")) ||
-            (item.title === "Analytics" &&
-              pathname.startsWith("/dashboard/analytics")) ||
-            (item.title === "Email History" &&
-              pathname.startsWith("/dashboard/email-history")) ||
-            pathname === item.href;
-
-          return (
-            <Link key={item.href} href={item.href}>
-              <span
-                className={cn(
-                  "w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent",
-                  isActive && "portal-nav-active",
-                  isCollapsed ? "justify-center" : "justify-start"
-                )}
-                style={
-                  isActive
-                    ? {
-                        backgroundColor: `rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)`,
-                        color: `var(--portal-primary, #6366f1)`,
-                        borderLeft: `3px solid var(--portal-primary, #6366f1)`,
-                      }
-                    : {}
-                }
-              >
-                {item.icon}
-                <span className={cn("", isCollapsed && "hidden")}>
-                  {item.title}
-                </span>
-              </span>
-            </Link>
-          );
-        })}
-      </div>
-    )
-  );
-
-  const UserProfile = React.memo(
-    ({
-      isCollapsed,
-      userData,
-      theme,
-      onShare,
-    }: {
-      isCollapsed: boolean;
-      userData: IUser | null;
-      theme: string;
-      onShare: (e: React.FormEvent) => void;
-    }) => (
-      <div
-        className={cn(
-          "flex items-center gap-3 bg-card rounded-lg p-2 transition-all border border-border",
-          isCollapsed ? "flex-col justify-center" : "justify-start"
-        )}
-      >
-        <div className="flex-shrink-0">
-          <div
-            className={`flex items-center justify-center bg-muted text-muted-foreground font-semibold h-8 w-8 rounded-full ${
-              isCollapsed ? "aspect-ratio-square h-6 w-6" : "ring-2 ring-border"
-            }`}
-          >
-            {getUserInitials(userData?.name)}
-          </div>
-        </div>
-        {!isCollapsed && (
-          <div className="flex flex-col min-w-0 flex-1">
-            <p className="text-sm font-semibold truncate text-foreground">
-              {userData?.name}
-            </p>
-            <p className="text-xs text-muted-foreground truncate">
-              {userData?.email}
-            </p>
-          </div>
-        )}
-        <Button
-          variant="ghost"
-          size="icon"
-          className={`h-8 w-8 rounded-full ${isCollapsed ? "ml-0" : "ml-auto"}`}
-          onClick={onShare}
-          title="Copy Portal URL"
-        >
-          <Link2Icon className="h-4 w-4" />
-          <span className="sr-only">Copy Portal URL</span>
-        </Button>
-      </div>
-    )
-  );
-
-  const SidebarLogout = React.memo(
-    ({
-      isCollapsed,
-      onLogout,
-    }: {
-      isCollapsed: boolean;
-      onLogout: () => void;
-    }) => (
-      <Button
-        variant="ghost"
-        className={cn(
-          "w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:text-destructive hover:bg-destructive/10 text-destructive",
-          isCollapsed ? "justify-center" : "justify-start"
-        )}
-        onClick={onLogout}
-      >
-        <LogOut className="h-5 w-5" />
-        <span className={cn("", isCollapsed && "hidden")}>Logout</span>
-      </Button>
-    )
-  );
-
-  const SidebarContent = React.memo(() => (
-    <div className="flex flex-col h-full">
-      <SidebarHeader
-        isCollapsed={isCollapsed}
-        onToggleCollapse={(collapsed) => {
-          setIsCollapsed(collapsed);
-          sessionStorage.setItem(
-            "sidebar-user-preference",
-            collapsed ? "collapsed" : "expanded"
-          );
-        }}
-        shouldShowPortalData={shouldShowPortalData}
-        portalConfigData={portalConfigData}
-        isLoading={isLoading}
-        theme={theme}
-      />
       <div className="flex-1 px-3 mt-2">
-        <SidebarNav
-          items={sidebarItems}
-          userRole={userData?.role}
-          pathname={pathname}
-          isCollapsed={isCollapsed}
-        />
+        <div className="space-y-2">
+          {sidebarItems.map((item) => {
+            if (
+              (item.role === "admin" && userData?.role !== "admin") ||
+              (item.role === "hr" &&
+                userData?.role !== "admin" &&
+                userData?.role !== "hr") ||
+              (userData?.role === "interviewer" && item.title === "Jobs") ||
+              (userData?.role === "interviewer" && item.title === "Search") ||
+              (userData?.role === "interviewer" && item.title === "CV Upload")
+            ) {
+              return null;
+            }
+            const isActive =
+              (item.title === "Settings" &&
+                pathname.startsWith("/dashboard/settings")) ||
+              (item.title === "Analytics" &&
+                pathname.startsWith("/dashboard/analytics")) ||
+              (item.title === "Email History" &&
+                pathname.startsWith("/dashboard/email-history")) ||
+              pathname === item.href;
+
+            return (
+              <Link key={item.href} href={item.href}>
+                <span
+                  className={cn(
+                    "w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent",
+                    isActive && "portal-nav-active",
+                    isCollapsed ? "justify-center" : "justify-start"
+                  )}
+                  style={
+                    isActive
+                      ? {
+                          backgroundColor: `rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)`,
+                          color: `var(--portal-primary, #6366f1)`,
+                          borderLeft: `3px solid var(--portal-primary, #6366f1)`,
+                        }
+                      : {}
+                  }
+                >
+                  {item.icon}
+                  <span className={cn("", isCollapsed && "hidden")}>
+                    {item.title}
+                  </span>
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* Onboarding Widget - only show for admin users */}
         {userData?.role === "admin" && (
           <OnboardingSidebar isCollapsed={isCollapsed} />
         )}
       </div>
       <div className="px-3 pb-4 mt-auto space-y-2">
+        {/* Notifications and Theme Toggle */}
         <div
+          // className="flex justify-start items-center gap-2 mb-2"
           className={cn(
             "flex justify-start items-center gap-2 mb-2",
             isCollapsed ? "flex-col" : "flex-row"
           )}
         >
           {userData && (
-            <NotificationWrapper
-              userData={userData}
-              isCollapsed={isCollapsed}
-              onNotificationClick={handleNotificationClick}
+            <NotificationButton
+              notifications={notificationsData?.notifications || []}
+              unreadCount={notificationCountData?.unreadCount || 0}
+              totalCount={notificationCountData?.totalCount || 0}
+              currentPage={notificationsData?.pagination?.currentPage || 1}
+              totalPages={notificationsData?.pagination?.totalPages || 1}
+              isLoading={notificationsLoading}
               onMarkAsRead={handleMarkAsRead}
+              fetchNotifications={fetchNotifications}
               onMarkAllAsRead={handleMarkAllAsRead}
+              onNotificationClick={handleNotificationClick}
+              onPageChange={setNotificationPage}
+              isOpen={isNotificationDropdownOpen}
+              onOpenChange={setIsNotificationDropdownOpen}
+              className="mr-1"
             />
           )}
           <ThemeToggle
@@ -754,17 +632,55 @@ export default function DashboardLayout({
           />
         </div>
         <div className="mt-auto space-y-2">
-          <UserProfile
-            isCollapsed={isCollapsed}
-            userData={userData}
-            theme={theme}
-            onShare={generate_share_org}
-          />
-          <SidebarLogout isCollapsed={isCollapsed} onLogout={handleLogout} />
+          <div
+            className={cn(
+              "flex items-center gap-3 bg-card rounded-lg p-2 transition-all border border-border",
+              isCollapsed ? "flex-col justify-center" : "justify-start"
+            )}
+          >
+            <div className="flex-shrink-0">
+              <div
+                className={`flex items-center justify-center bg-muted text-muted-foreground font-semibold h-8 w-8 rounded-full ${isCollapsed ? "aspect-ratio-square h-6 w-6" : "ring-2 ring-border"}`}
+              >
+                {getUserInitials(userData?.name)}
+              </div>
+            </div>
+            {!isCollapsed && (
+              <div className="flex flex-col min-w-0 flex-1">
+                <p className="text-sm font-semibold truncate text-foreground">
+                  {userData?.name}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {userData?.email}
+                </p>
+              </div>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`h-8 w-8 rounded-full ${isCollapsed ? "ml-0" : "ml-auto"}`}
+              onClick={generate_share_org}
+              title="Copy Portal URL"
+            >
+              <Link2Icon className="h-4 w-4" />
+              <span className="sr-only">Copy Portal URL</span>
+            </Button>
+          </div>
         </div>
+        <Button
+          variant="ghost"
+          className={cn(
+            "w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:text-destructive hover:bg-destructive/10 text-destructive",
+            isCollapsed ? "justify-center" : "justify-start"
+          )}
+          onClick={handleLogout}
+        >
+          <LogOut className="h-5 w-5" />
+          <span className={cn("", isCollapsed && "hidden")}>Logout</span>
+        </Button>
       </div>
     </div>
-  ));
+  );
 
   if (allowanceError || orgCheckError) {
     return (
@@ -810,11 +726,14 @@ export default function DashboardLayout({
               {children}
             </div>
           </main>
+
+          {/* Candidate Details Dialog for Interviewers */}
           <CandidateDetailsDialog
             candidate={selectedCandidate}
             isOpen={isCandidateDialogOpen}
             onOpenChange={setIsCandidateDialogOpen}
             onUpdate={() => {
+              // Optionally refresh candidate data
               if (selectedCandidate) {
                 fetchCandidateById(selectedCandidate._id);
               }
@@ -822,6 +741,8 @@ export default function DashboardLayout({
             hideEditButton={userData?.role === "interviewer"}
             hideCloseButtons={false}
           />
+
+          {/* Onboarding Modal */}
           <OnboardingModal />
         </div>
       </OnboardingProvider>
