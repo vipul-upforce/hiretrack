@@ -39,18 +39,18 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
       "HireTrack";
     document.title = title;
 
-    // const faviconUrl = portalSettings?.portalFavicon?.url || "/favicon.png";
-    // let favicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
+    const faviconUrl = portalSettings?.portalFavicon?.url || "/favicon.png";
+    let favicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
 
-    // if (favicon) {
-    //   favicon.href = faviconUrl;
-    // } else {
-    //   // create a new favicon if it doesn't exist
-    //   const newFavicon = document.createElement("link");
-    //   newFavicon.rel = "icon";
-    //   newFavicon.href = faviconUrl;
-    //   document.head.appendChild(newFavicon);
-    // }
+    if (favicon) {
+      favicon.href = faviconUrl;
+    } else {
+      // create a new favicon if it doesn't exist
+      const newFavicon = document.createElement("link");
+      newFavicon.rel = "icon";
+      newFavicon.href = faviconUrl;
+      document.head.appendChild(newFavicon);
+    }
   }, [portalSettings, uriOrgName, user, isHydrated]);
 
   // Handle browser extension interference
