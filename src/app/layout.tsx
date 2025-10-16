@@ -5,6 +5,7 @@ import { ClientLayout } from "./client-layout";
 import AuthInitializer from "@/components/AuthInitializer";
 import { Suspense } from "react";
 import LoadingScreen from "./loading-screen";
+import { pageMetaData } from "@/lib/services/pageMetaData";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,6 +16,9 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+export async function generateMetadata() {
+  return await pageMetaData();
+}
 
 export default function RootLayout({
   children,
@@ -25,7 +29,6 @@ export default function RootLayout({
     <Suspense fallback={<LoadingScreen />}>
       <html lang="en" suppressHydrationWarning>
         <head>
-          <title>Loading...</title>
           <link rel="icon" href="/favicon.png" />
           <script
             dangerouslySetInnerHTML={{
