@@ -611,18 +611,18 @@ export default function LoginFormContent({
       </div>
 
       {/* Main Content */}
-      <div className="relative z-10 w-full max-w-6xl mx-auto grid lg:grid-cols-2 gap-8 items-center">
+      <div className="relative z-10 w-full max-w-6xl mx-auto lg:grid lg:grid-cols-2 gap-8 items-center">
         {/* Left Side - Branding */}
         <motion.div
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8 }}
-          className="text-center lg:text-left space-y-6"
+          className="text-center lg:text-left space-y-6 lg:mb-0 mb-6 max-sm:-mt-4"
         >
-          <div className="space-y-4">
+          <div className="space-y-6 max-sm:space-y-0">
             {/* Logo Section */}
-            <div className="flex justify-center lg:justify-start mb-4">
-              <div className="relative w-72 h-36">
+            <div className="flex justify-center lg:justify-start max-sm:pt-8">
+              <div className="relative w-72 max-sm:w-64 h-36">
                 <Image
                   src={getLogoUrl()}
                   alt={portalName || (portalError ? "HireTrack" : "")}
@@ -648,7 +648,7 @@ export default function LoginFormContent({
               </span>
             </h1>
 
-            <p className="text-lg text-muted-foreground max-w-md mx-auto lg:mx-0">
+            <p className="text-lg text-muted-foreground max-w-md mx-auto lg:mx-0 max-sm:pt-4">
               Revolutionize your recruitment process with AI-powered candidate
               matching and intelligent screening.
             </p>
@@ -697,7 +697,7 @@ export default function LoginFormContent({
             />
           )}
 
-          <div className="relative bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl p-8 shadow-2xl">
+          <div className="relative bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl p-8 shadow-2xl max-lg:w-[60vw] w-full justify-self-center max-md:w-full">
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold mb-2">Welcome </h2>
 
