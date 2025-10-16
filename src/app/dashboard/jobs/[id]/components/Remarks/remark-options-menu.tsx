@@ -9,12 +9,13 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import useRoles from "@/hooks/useRoles";
+import { useState } from "react";
 
 interface RemarkOptionsMenuProps {
   type: "remark" | "note";
   remarkId: string;
   isPrivate?: boolean;
-  onTogglePrivacy?: (id: string, isPrivate: boolean) => void;
+  onTogglePrivacy?: (id: string, isPrivate: boolean) => Promise<void>;
   onEdit: (id: string) => void;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
@@ -29,9 +30,26 @@ export function RemarkOptionsMenu({
   isOpen,
   setIsOpen,
 }: RemarkOptionsMenuProps) {
-  const handlePrivacyToggle = (checked: boolean) => {
-    return onTogglePrivacy(remarkId, checked);
+  const [isLocalPrivate, setIsLocalPrivate] = useState(isPrivate); //state for 
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handlePrivacyToggle = async (checked: boolean) => {
+    setIsLoading(true);
+    const previousState = isLocalPrivate; // Keep the previous state to revert in case of failure
+    setIsLocalPrivate(checked); // Optimistically update the UI
+
+    try {
+      await onTogglePrivacy?.(remarkId, checked);
+      setIsLoading(false);
+      setError(null);
+    } catch (err) {
+      setIsLoading(false);
+      setError("Failed to update privacy!");
+      setIsLocalPrivate(previousState); // Revert to the previous state on failure
+    }
   };
+
   const role = useRoles();
 
   const handleEdit = () => {
@@ -41,8 +59,9 @@ export function RemarkOptionsMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className={`opacity-0 group-hover:opacity-100 transition duration-300 p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-300 ${isOpen ? "opacity-100" : ""
-          }`}
+        className={`opacity-0 group-hover:opacity-100 transition duration-300 p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-300 ${
+          isOpen ? "opacity-100" : ""
+        }`}
       >
         <MoreVertical className="h-4 w-4" />
         <span className="sr-only">Open options</span>
@@ -53,18 +72,19 @@ export function RemarkOptionsMenu({
           <>
             <div className="flex items-center justify-between px-2 py-2">
               <div className="flex items-center space-x-2">
-                {isPrivate ? (
+                {isLocalPrivate ? (
                   <EyeOff className="h-4 w-4 text-gray-500" />
                 ) : (
                   <Eye className="h-4 w-4 text-gray-500" />
                 )}
                 <Label htmlFor="privacy-toggle" className="text-sm">
-                  {isPrivate ? "Private" : "Public"}
+                  {isLocalPrivate ? "Private" : "Public"}
                 </Label>
               </div>
               <Switch
                 id="privacy-toggle"
-                checked={isPrivate}
+                checked={isLocalPrivate}
+                disabled={isLoading}
                 onCheckedChange={handlePrivacyToggle}
                 className="w-8 h-4 drop-shadow-lg border border-1 border-solid"
               />
