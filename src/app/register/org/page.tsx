@@ -128,7 +128,7 @@ function OrgRegisterPage() {
     values: OrgFormValues,
     { setStatus }: { setStatus: (message: string) => void }
   ) => {
-    if (!captcha) {
+    if (!captcha && captchaConfig?.captcha['enableCaptcha']) { 
       toast({
         title: "Error",
         description: "Captcha not verified. Please try again",
