@@ -29,29 +29,29 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Fetch portal settings for favicon and title
-  useEffect(() => {
-    if (!isHydrated) return;
+  // useEffect(() => {
+  //   if (!isHydrated) return;
 
-    const title =
-      portalSettings?.portalName ||
-      uriOrgName ||
-      user?.organizationInfo?.name ||
-      "HireTrack";
-    document.title = title;
+  //   // const title =
+  //   //   portalSettings?.portalName ||
+  //   //   uriOrgName ||
+  //   //   user?.organizationInfo?.name ||
+  //   //   "HireTrack";
+  //   // document.title = title;
 
-    const faviconUrl = portalSettings?.portalFavicon?.url || "/favicon.png";
-    let favicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
+  //   const faviconUrl = portalSettings?.portalFavicon?.url || "/favicon.png";
+  //   let favicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
 
-    if (favicon) {
-      favicon.href = faviconUrl;
-    } else {
-      // create a new favicon if it doesn't exist
-      const newFavicon = document.createElement("link");
-      newFavicon.rel = "icon";
-      newFavicon.href = faviconUrl;
-      document.head.appendChild(newFavicon);
-    }
-  }, [portalSettings, uriOrgName, user, isHydrated]);
+  //   if (favicon) {
+  //     favicon.href = faviconUrl;
+  //   } else {
+  //     // create a new favicon if it doesn't exist
+  //     const newFavicon = document.createElement("link");
+  //     newFavicon.rel = "icon";
+  //     newFavicon.href = faviconUrl;
+  //     document.head.appendChild(newFavicon);
+  //   }
+  // }, [portalSettings, uriOrgName, user, isHydrated]);
 
   // Handle browser extension interference
   useEffect(() => {
@@ -85,19 +85,19 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
     return <div suppressHydrationWarning />;
   }
 
-  // if there is an error then fallback to default info.
-  if (isError) {
+  // // if there is an error then fallback to default info.
+  // if (isError) {
 
-    console.log("Failed to fetch portal settings : ", error)
+  //   console.log("Failed to fetch portal settings : ", error)
 
-    document.title = uriOrgName || user?.organizationInfo?.name || "HireTrack";
-    const favicon = document.querySelector(
-      'link[rel="icon"]'
-    ) as HTMLLinkElement;
-    if (favicon) {
-      favicon.href = "/favicon.png";
-    }
-  }
+  //   document.title = uriOrgName || user?.organizationInfo?.name || "HireTrack";
+  //   const favicon = document.querySelector(
+  //     'link[rel="icon"]'
+  //   ) as HTMLLinkElement;
+  //   if (favicon) {
+  //     favicon.href = "/favicon.png";
+  //   }
+  // }
 
 
   return <div suppressHydrationWarning>{children}</div>;
