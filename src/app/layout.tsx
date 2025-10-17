@@ -17,6 +17,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 export async function generateMetadata() {
+  // console.log("current document title>>>>>>>>>>>> ", document.title);
   return await pageMetaData();
 }
 

@@ -3,11 +3,13 @@ import { useEffect, useState } from "react";
 import { useGetPortalConfigsQuery } from "@/lib/features/settings/settingsApi";
 
 import { useSelector } from "react-redux";
+import { usePathname } from "next/navigation";
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
   const { user } = useSelector((state: any) => state.auth || {});
   const [uriOrgName, setOrgName] = useState<string>();
   const [isHydrated, setIsHydrated] = useState(false);
+  const pathname = usePathname();
 
   const {
     data: portalSettings,
@@ -38,6 +40,11 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
       user?.organizationInfo?.name ||
       "HireTrack";
     document.title = title;
+    console.log("###title>>>>>>>>>>>> ", title);
+    console.log("#portalSettings>>>>>>>>>>>> ", portalSettings);
+    console.log("#uriOrgName>>>>>>>>>>>> ", uriOrgName);
+    console.log("#user>>>>>>>>>>>> ", user);
+    console.log("#isHydrated>>>>>>>>>>>> ", isHydrated);
 
     const faviconUrl = portalSettings?.portalFavicon?.url || "/favicon.png";
     let favicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
@@ -62,7 +69,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
       document.head.appendChild(touchIcon);
     }
     touchIcon.href = faviconUrl;
-  }, [portalSettings, uriOrgName, user, isHydrated]);
+  }, [portalSettings, uriOrgName, user, isHydrated, pathname]);
 
   // Handle browser extension interference
   useEffect(() => {
