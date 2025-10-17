@@ -438,10 +438,10 @@ const SignupForm = () => {
     checkAllowance();
   }, [router]);
 
-  // Set initial loading title
-  useEffect(() => {
-    document.title = "Loading...";
-  }, []);
+  // // Set initial loading title
+  // useEffect(() => {
+  //   document.title = "Loading...";
+  // }, []);
 
   // Fetch portal settings for logo and name
   useEffect(() => {
