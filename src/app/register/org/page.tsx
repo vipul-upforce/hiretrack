@@ -83,6 +83,7 @@ function OrgRegisterPage() {
   const [captcha, setCaptcha] = useState<string>();
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
   const [decryptedSiteKey, setDecryptedSiteKey] = useState<string | null>(null);
+  const [organizationId, setOrganizationId] = useState<string | null>(null);
 
   // Fetch CAPTCHA configuration
   const {
@@ -94,10 +95,14 @@ function OrgRegisterPage() {
     async function checkAllowance() {
       const data = await fetch("/api/organization");
       const allowance = await data.json();
+
+      setOrganizationId(allowance.data?.[0]?.organizationId);
+
       if (!allowance.allow) {
         router.push("/auth/login");
       }
     }
+
     checkAllowance();
   }, []);
   // Decrypt siteKey when captchaConfig is available
@@ -105,7 +110,8 @@ function OrgRegisterPage() {
     const decryptSiteKey = async () => {
       if (captchaConfig?.captcha?.siteKey) {
         const decrypted = await getDecodedCaptcha(
-          captchaConfig.captcha.siteKey
+          captchaConfig.captcha.siteKey,
+          organizationId
         );
         if (decrypted) {
           setDecryptedSiteKey(decrypted);
@@ -113,7 +119,7 @@ function OrgRegisterPage() {
       }
     };
     decryptSiteKey();
-  }, [captchaConfig]);
+  }, [captchaConfig, organizationId]);
 
   const initialValues: OrgFormValues = {
     name: "",

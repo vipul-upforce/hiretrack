@@ -98,6 +98,7 @@ export async function GET(req: NextRequest) {
     await connectToDatabase();
 
     const token = req.cookies.get("auth_token")?.value;
+    const orId = req.cookies.get("org_id")?.value;
     if (!token) {
       return NextResponse.json(
         { error: "Authentication required" },
@@ -105,7 +106,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const decryptedResponse = await verifyAndDecryptToken(token);
+    const decryptedResponse = await verifyAndDecryptToken(token, orId);
     if (!decryptedResponse.success) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
@@ -284,8 +285,8 @@ export async function POST(req: NextRequest) {
         { status: 401 }
       );
     }
-
-    const decryptedResponse = await verifyAndDecryptToken(token);
+    const orId = req.cookies.get("org_id")?.value;
+    const decryptedResponse = await verifyAndDecryptToken(token, orId);
     if (!decryptedResponse.success) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }

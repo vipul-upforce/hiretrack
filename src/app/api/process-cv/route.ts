@@ -215,7 +215,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Decrypt API keys from database - MOVED UP
-    aiProviders = decryptProviderKeys(aiProviders);
+    aiProviders = decryptProviderKeys(aiProviders, organizationId);
 
     const activeProvider = aiProviders.activeProvider;
     const apiKey = aiProviders[activeProvider]?.api_key;

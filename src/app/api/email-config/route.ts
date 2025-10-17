@@ -9,8 +9,11 @@ export async function GET(request: NextRequest) {
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const decryptedResponse = await verifyAndDecryptJWTToken(token.value);
+    const orgId = request.cookies.get("org_id")?.value;
+    const decryptedResponse = await verifyAndDecryptJWTToken(
+      token.value,
+      orgId
+    );
     if (!decryptedResponse.success || !decryptedResponse.user) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
@@ -21,11 +24,13 @@ export async function GET(request: NextRequest) {
     await connectToDatabase();
 
     // Get organization settings
-    const settings = await Settings!.findOne({ organizationId: user.organizationId });
+    const settings = await Settings!.findOne({
+      organizationId: user.organizationId,
+    });
     if (!settings) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         fromEmail: "noreply@hiretrack.com",
-        provider: "not_configured"
+        provider: "not_configured",
       });
     }
 
@@ -36,7 +41,7 @@ export async function GET(request: NextRequest) {
 
     if (mailConfig) {
       provider = mailConfig.mailProvider || "not_configured";
-      
+
       switch (mailConfig.mailProvider) {
         case "smtp":
           fromEmail = mailConfig.smtp_from || fromEmail;
@@ -57,9 +62,9 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error("Error fetching email config:", error);
     return NextResponse.json(
-      { 
+      {
         fromEmail: "noreply@hiretrack.com",
-        provider: "error"
+        provider: "error",
       },
       { status: 200 } // Return 200 with fallback values
     );

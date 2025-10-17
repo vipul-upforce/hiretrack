@@ -1019,7 +1019,7 @@ const ChecklistRemarksDialog = ({
           </div>
         </div>
 
-        <DialogFooter className="border-t bg-background px-6 py-4 sticky bottom-0 z-10">
+        <DialogFooter className="border-t bg-background px-6 py-4 sticky bottom-[-50%] z-10">
           {isChecklistMandatory && (
             // <Alert className="text-orange-400 flex flex-row  items-center">
             //   <AlertCircle className="h-4 w-4 p-0" color="orange" />

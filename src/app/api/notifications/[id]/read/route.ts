@@ -11,17 +11,17 @@ export async function PUT(
     const { id } = await params;
     // Check authentication
     const token = request.headers.get("cookie")?.match(/token=([^;]+)/)?.[1];
+    const orgId = request.cookies.get("org_id")?.value;
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const decryptedResponse = await verifyAndDecryptJWTToken(token);
+    const decryptedResponse = await verifyAndDecryptJWTToken(token, orgId);
     if (!decryptedResponse.success || !decryptedResponse.user) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
     const notificationId = id; // Use the resolved id
     const user = decryptedResponse.user;
-
 
     // Validate notification ID
     if (!mongoose.Types.ObjectId.isValid(notificationId)) {
@@ -69,6 +69,9 @@ export async function PUT(
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    return NextResponse.json({ error: "Unknown error occurred" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Unknown error occurred" },
+      { status: 500 }
+    );
   }
 }

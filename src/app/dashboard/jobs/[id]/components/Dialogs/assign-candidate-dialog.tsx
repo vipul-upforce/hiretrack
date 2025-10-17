@@ -947,7 +947,10 @@ export function AssignCandidateDialog({
                             <MentionTextarea
                               placeholder="Add a remark... (Alt+Enter to submit)"
                               value={field.value || ""}
-                              onChange={field.onChange}
+                              // onChange={field.onChange}
+                              onChange={(value: string) =>
+                                setFieldValue("remark", value)
+                              }
                               onKeyDown={getOnAltEnterSubmit(
                                 values,
                                 formikProps,

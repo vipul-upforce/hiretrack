@@ -192,10 +192,12 @@ export async function GET(req: NextRequest) {
 
     // Try to get organization from auth token
     const token = req.cookies.get("auth_token");
+    const orgId = req.cookies.get("org_id")?.value;
     if (token?.value) {
       try {
         const decryptedResponse = await verifyAndDecryptToken(
-          String(token?.value)
+          String(token?.value),
+          orgId
         );
         const userData = decryptedResponse.user;
         if (decryptedResponse.success) {
@@ -286,11 +288,12 @@ export async function PUT(req: NextRequest) {
     await connectToDatabase();
 
     const token = req.cookies.get("auth_token")?.value;
+    const orgId = req.cookies.get("org_id")?.value;
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const decryptedResponse = await verifyAndDecryptToken(token);
+    const decryptedResponse = await verifyAndDecryptToken(token, orgId);
     if (!decryptedResponse.success) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

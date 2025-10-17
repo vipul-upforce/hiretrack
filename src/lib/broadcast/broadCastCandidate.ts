@@ -14,7 +14,7 @@ export function broadcastCandidateUpdate(
   const encoder = new TextEncoder();
   orgClients?.forEach((client: any) => {
     try {
-      const encodedSSE = signToken(candidate);
+      const encodedSSE = signToken(candidate, orgId);
       const data = `data: ${JSON.stringify({ type: "candidateUpdate", candidate: encodedSSE })}\n\n`;
       const clientsCount = Array.from(global.sseClients.entries()).length;
       client.controller.enqueue(encoder.encode(data));
@@ -38,7 +38,7 @@ export function broadcastMultipleCandidateUpdate(
   const encoder = new TextEncoder();
   orgClients?.forEach((client: any) => {
     try {
-      const encodedSSE = signToken(candidates);
+      const encodedSSE = signToken(candidates, orgId);
       const data = `data: ${JSON.stringify({ type: "multipleCandidateUpdate", candidates: encodedSSE })}\n\n`;
       client.controller.enqueue(encoder.encode(data));
     } catch (error) {

@@ -2,18 +2,20 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import CryptoJS from "crypto-js";
 import { jwtVerify } from "jose";
+import { generateOrgJwtSecret } from "@/lib/jwtSecretGenerator";
 // import { log } from "@/lib/logger";
 
 interface JWTPayload {
   user: string;
 }
 
-export async function verifyAndDecryptToken(token: string) {
-  const JWT_SECRET =
-    process.env.JWT_SECRET ||
-    process.env.NEXT_PUBLIC_JWT_SECRET ||
-    "your_jwt_secret_key";
-  console.log(JWT_SECRET, "JWT_SECRET-10");
+export async function verifyAndDecryptToken(token: string, orgId: string) {
+  // const JWT_SECRET =
+  //   process.env.JWT_SECRET ||
+  //   process.env.NEXT_PUBLIC_JWT_SECRET ||
+  //   "your_jwt_secret_key";
+  const JWT_SECRET = generateOrgJwtSecret(orgId);
+  // console.log(JWT_SECRET, "JWT_SECRET-10");
 
   try {
     if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
@@ -62,10 +64,11 @@ export async function middleware(request: NextRequest) {
   // SECURITY FIX: Check both httpOnly and regular tokens for backward compatibility
   const httpOnlyToken = request.cookies.get("auth_token");
   // const regularToken = request.cookies.get("token");
-  const token = httpOnlyToken?.value;
 
+  const token = httpOnlyToken?.value;
+  const orgId = request.cookies.get("org_id")?.value;
   if (token) {
-    const decryptedResponse = await verifyAndDecryptToken(String(token));
+    const decryptedResponse = await verifyAndDecryptToken(String(token), orgId);
     if (decryptedResponse.success) {
       userData = decryptedResponse.user as unknown as {
         role: string;

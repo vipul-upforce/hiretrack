@@ -14,7 +14,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const decryptedResponse = await verifyAndDecryptJWTToken(token.value);
+    const orgId = request.cookies.get("org_id")?.value;
+    const decryptedResponse = await verifyAndDecryptJWTToken(
+      token.value,
+      orgId
+    );
     if (!decryptedResponse.success || !decryptedResponse.user) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }

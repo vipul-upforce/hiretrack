@@ -9,9 +9,11 @@ export async function GET(req: NextRequest) {
     let role;
     let userData;
     const token = req.cookies.get("auth_token");
+    const orgId = req.cookies.get("org_id")?.value;
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value)
+        String(token?.value),
+        orgId
       );
       userData = decryptedResponse.user;
       if (decryptedResponse.success) {
@@ -60,9 +62,11 @@ export async function PUT(req: NextRequest) {
     await dbConnect();
     let userData;
     const token = req.cookies.get("auth_token");
+    const orgId = req.cookies.get("org_id")?.value;
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value)
+        String(token?.value),
+        orgId
       );
       if (decryptedResponse.success) {
         userData = decryptedResponse.user;
@@ -105,7 +109,7 @@ export async function PUT(req: NextRequest) {
           { status: 400 }
         );
       }
-      
+
       // Ensure variables field exists, use simplified variables for custom templates
       if (!temp.variables) {
         temp.variables = ["SenderName", "ReceiverName", "PortalName"];

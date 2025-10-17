@@ -9,9 +9,11 @@ export async function GET(req: NextRequest) {
     await dbConnect();
     let organizationId = "";
     const token = req.cookies.get("auth_token");
+    const orgId = req.cookies.get("org_id")?.value;
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value)
+        String(token?.value),
+        orgId
       );
       const userData = decryptedResponse.user;
       if (decryptedResponse.success) {
@@ -65,7 +67,7 @@ export async function GET(req: NextRequest) {
     };
 
     // Decrypt API keys before sending to client
-    aiProviders = decryptProviderKeys(aiProviders);
+    aiProviders = decryptProviderKeys(aiProviders, orgId);
 
     return NextResponse.json({ aiProviders });
   } catch (error) {
@@ -83,9 +85,11 @@ export async function PUT(req: NextRequest) {
     await dbConnect();
     let organizationId = "";
     const token = req.cookies.get("auth_token");
+    const orgId = req.cookies.get("org_id")?.value;
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value)
+        String(token?.value),
+        orgId
       );
       const userData = decryptedResponse.user;
       if (decryptedResponse.success) {
@@ -106,7 +110,7 @@ export async function PUT(req: NextRequest) {
     const aiProvidersSetting = await req.json();
 
     // Encrypt API keys before storing in database
-    const encryptedProviders = encryptProviderKeys(aiProvidersSetting);
+    const encryptedProviders = encryptProviderKeys(aiProvidersSetting, orgId);
 
     const updatedUser = await Settings.findOneAndUpdate(
       {

@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Settings, Candidate, History, WebhookSubscription } from "@/lib/mongodb";
+import connectToDatabase, {
+  Settings,
+  Candidate,
+  History,
+  WebhookSubscription,
+} from "@/lib/mongodb";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
 import { createOAuth2Client } from "@/lib/google-calendar/config";
 import { decryptText } from "@/lib/encryption";
@@ -16,14 +21,18 @@ export async function POST(req: NextRequest) {
   try {
     console.log("🔄 Starting Google Calendar event sync");
     await connectToDatabase();
-    
+
     // Verify user
     let organizationId = "";
     let userId = "";
     let userName = "";
     const token = req.cookies.get("auth_token");
+    const orgId = req.cookies.get("org_id")?.value;
     if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(String(token?.value));
+      const decryptedResponse = await verifyAndDecryptToken(
+        String(token?.value),
+        orgId
+      );
       const userData = decryptedResponse.user;
       if (decryptedResponse.success) {
         organizationId = userData.organizationId || "";
@@ -40,28 +49,43 @@ export async function POST(req: NextRequest) {
     const { candidateId } = body;
 
     // Get candidate details
-    const candidate = await Candidate.findById(candidateId).populate('jobId');
+    const candidate = await Candidate.findById(candidateId).populate("jobId");
     if (!candidate) {
-      return NextResponse.json({ error: "Candidate not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Candidate not found" },
+        { status: 404 }
+      );
     }
 
     // Check if candidate has Google Meet details
     if (!candidate.assignment?.googleMeet?.eventId) {
-      return NextResponse.json({ error: "No Google Meet scheduled for this candidate" }, { status: 400 });
+      return NextResponse.json(
+        { error: "No Google Meet scheduled for this candidate" },
+        { status: 400 }
+      );
     }
 
     const eventId = candidate.assignment.googleMeet.eventId;
-    const jobId = typeof candidate.jobId === 'object' && candidate.jobId !== null && '_id' in candidate.jobId 
-      ? candidate.jobId._id.toString() 
-      : candidate.jobId?.toString() || '';
-    const jobTitle = typeof candidate.jobId === 'object' && candidate.jobId !== null && 'title' in candidate.jobId 
-      ? candidate.jobId.title 
-      : 'Position';
+    const jobId =
+      typeof candidate.jobId === "object" &&
+      candidate.jobId !== null &&
+      "_id" in candidate.jobId
+        ? candidate.jobId._id.toString()
+        : candidate.jobId?.toString() || "";
+    const jobTitle =
+      typeof candidate.jobId === "object" &&
+      candidate.jobId !== null &&
+      "title" in candidate.jobId
+        ? candidate.jobId.title
+        : "Position";
 
     // Get Google Calendar settings
     const settings = await Settings.findOne({ organizationId });
     if (!settings?.googleCalendar?.isConnected) {
-      return NextResponse.json({ error: "Google Calendar is not connected" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Google Calendar is not connected" },
+        { status: 400 }
+      );
     }
 
     // Decrypt credentials
@@ -98,54 +122,68 @@ export async function POST(req: NextRequest) {
 
     // Process attendee responses
     const attendees = event.attendees || [];
-    const previousResponses = candidate.assignment.googleMeet.attendeeResponses || [];
+    const previousResponses =
+      candidate.assignment.googleMeet.attendeeResponses || [];
     const updatedResponses = [];
     const historyEntries = [];
     const notificationPromises = [];
 
     for (const attendee of attendees) {
-      const attendeeEmail = attendee.email || '';
-      const attendeeName = attendee.displayName || attendeeEmail.split('@')[0];
-      const responseStatus = attendee.responseStatus || 'needsAction';
-      
+      const attendeeEmail = attendee.email || "";
+      const attendeeName = attendee.displayName || attendeeEmail.split("@")[0];
+      const responseStatus = attendee.responseStatus || "needsAction";
+
       // Find previous response for this attendee
-      const previousResponse = previousResponses.find(r => r.email === attendeeEmail);
-      
+      const previousResponse = previousResponses.find(
+        (r) => r.email === attendeeEmail
+      );
+
       // Check if response has changed
-      const hasChanged = !previousResponse || previousResponse.responseStatus !== responseStatus;
-      
+      const hasChanged =
+        !previousResponse || previousResponse.responseStatus !== responseStatus;
+
       // Create updated response object
       const updatedResponse = {
         email: attendeeEmail,
         name: attendeeName,
-        responseStatus: responseStatus as 'needsAction' | 'accepted' | 'declined' | 'tentative',
+        responseStatus: responseStatus as
+          | "needsAction"
+          | "accepted"
+          | "declined"
+          | "tentative",
         comment: attendee.comment,
         lastUpdated: new Date(),
         notificationSent: previousResponse?.notificationSent || false,
       };
-      
+
       updatedResponses.push(updatedResponse);
-      
+
       // If response changed and notification not already sent for this status
-      if (hasChanged && responseStatus !== 'needsAction') {
-        const shouldNotify = !previousResponse || 
-                           previousResponse.responseStatus !== responseStatus || 
-                           !previousResponse.notificationSent;
-        
+      if (hasChanged && responseStatus !== "needsAction") {
+        const shouldNotify =
+          !previousResponse ||
+          previousResponse.responseStatus !== responseStatus ||
+          !previousResponse.notificationSent;
+
         if (shouldNotify) {
-          console.log(`📬 Response change detected for ${attendeeEmail}: ${previousResponse?.responseStatus || 'none'} -> ${responseStatus}`);
-          
+          console.log(
+            `📬 Response change detected for ${attendeeEmail}: ${previousResponse?.responseStatus || "none"} -> ${responseStatus}`
+          );
+
           // Mark notification as sent
           updatedResponse.notificationSent = true;
-          
+
           // Create history entry
           const historyMessage = `${attendeeName} (${attendeeEmail}) ${
-            responseStatus === 'accepted' ? 'accepted' :
-            responseStatus === 'declined' ? 'declined' :
-            responseStatus === 'tentative' ? 'tentatively accepted' : 
-            'updated response for'
+            responseStatus === "accepted"
+              ? "accepted"
+              : responseStatus === "declined"
+                ? "declined"
+                : responseStatus === "tentative"
+                  ? "tentatively accepted"
+                  : "updated response for"
           } the interview invitation`;
-          
+
           historyEntries.push({
             title: `Meeting invite ${responseStatus}`,
             dateTime: new Date().toISOString(),
@@ -155,14 +193,14 @@ export async function POST(req: NextRequest) {
               userId: null, // System generated
             },
             metadata: {
-              eventType: 'meeting_response',
+              eventType: "meeting_response",
               responseStatus,
               attendeeEmail,
               attendeeName,
               comment: attendee.comment,
             },
           });
-          
+
           // Prepare notification based on response status
           const notificationParams = {
             organizationId,
@@ -172,25 +210,35 @@ export async function POST(req: NextRequest) {
             jobTitle: jobTitle,
             attendeeEmail: attendeeEmail,
             attendeeName: attendeeName,
-            interviewerId: candidate.assignment?.interviewerId?._id?.toString() || candidate.assignment?.interviewerId?.toString(),
+            interviewerId:
+              candidate.assignment?.interviewerId?._id?.toString() ||
+              candidate.assignment?.interviewerId?.toString(),
             interviewerName: candidate.assignment?.interviewerId?.name,
-            meetingDate: candidate.assignment?.time ? new Date(candidate.assignment.time) : undefined,
+            meetingDate: candidate.assignment?.time
+              ? new Date(candidate.assignment.time)
+              : undefined,
           };
-          
+
           switch (responseStatus) {
-            case 'accepted':
+            case "accepted":
               notificationPromises.push(
-                NotificationService.notifyMeetingInviteAccepted(notificationParams)
+                NotificationService.notifyMeetingInviteAccepted(
+                  notificationParams
+                )
               );
               break;
-            case 'declined':
+            case "declined":
               notificationPromises.push(
-                NotificationService.notifyMeetingInviteDeclined(notificationParams)
+                NotificationService.notifyMeetingInviteDeclined(
+                  notificationParams
+                )
               );
               break;
-            case 'tentative':
+            case "tentative":
               notificationPromises.push(
-                NotificationService.notifyMeetingInviteTentative(notificationParams)
+                NotificationService.notifyMeetingInviteTentative(
+                  notificationParams
+                )
               );
               break;
           }
@@ -200,8 +248,8 @@ export async function POST(req: NextRequest) {
 
     // Update candidate with new attendee responses
     await Candidate.findByIdAndUpdate(candidateId, {
-      'assignment.googleMeet.attendeeResponses': updatedResponses,
-      'assignment.googleMeet.lastSyncedAt': new Date(),
+      "assignment.googleMeet.attendeeResponses": updatedResponses,
+      "assignment.googleMeet.lastSyncedAt": new Date(),
     });
 
     // Add history entries if any changes detected
@@ -237,18 +285,19 @@ export async function POST(req: NextRequest) {
         notificationsSent: notificationPromises.length,
       },
     });
-    
   } catch (error) {
     console.error("❌ Event sync error:", error);
-    
+
     // Handle token expiry
     if (error instanceof Error && error.message.includes("invalid_grant")) {
       return NextResponse.json(
-        { error: "Google Calendar token expired. Please reconnect in settings." },
+        {
+          error: "Google Calendar token expired. Please reconnect in settings.",
+        },
         { status: 401 }
       );
     }
-    
+
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : "Failed to sync event",

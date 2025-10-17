@@ -21,15 +21,16 @@ export interface Attachment {
   size: number;
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     // Check authentication
     const token = request.headers.get("cookie")?.match(/token=([^;]+)/)?.[1];
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const decryptedResponse = await verifyAndDecryptJWTToken(token);
+    // const orgId = request.cookies.get("org_id")?.value;
+    const orgId = request.cookies.get("org_id")?.value;
+    const decryptedResponse = await verifyAndDecryptJWTToken(token, orgId);
     if (!decryptedResponse.success || !decryptedResponse.user) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
@@ -68,9 +69,11 @@ export async function POST(request: NextRequest) {
     await connectToDatabase();
     const data = await request.json();
     const token = request.cookies.get("auth_token");
+    const orgId = request.cookies.get("org_id")?.value;
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value)
+        String(token?.value),
+        orgId
       );
       const userData = decryptedResponse.user;
       if (decryptedResponse.success) {

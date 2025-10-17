@@ -5,7 +5,7 @@ import { User, Organization } from "@/lib/mongodb";
 import { OneOfMulOrganization } from "@/components/auth/OrganizationDialog";
 import { IUser } from "@/lib/models/user";
 import { IUCandidateAccount } from "@/lib/models/candidateAccount";
-import { setSecureAuthTokens } from "@/lib/secureTokens";
+import { setSecureAuthTokens, setSecureOrgId } from "@/lib/secureTokens";
 import { emailLoginRateLimiter } from "@/lib/rateLimiter";
 import { signToken } from "@/app/actions/auth";
 import { UserWithoutCF } from "@/types/login";
@@ -522,17 +522,33 @@ const returnTokenBasedResponse = async (obj: any) => {
     delete userWithoutCustomFields.organizationInfo.customFields;
   }
 
-  const token = await signToken(userWithoutCustomFields);
+  const token = await signToken(
+    userWithoutCustomFields,
+    obj.organizationId.toString()
+  );
 
   const response = NextResponse.json({
     message: "Logged In Successfully",
     user: token,
   });
   // SECURITY FIX: Use secure token system with improved security
-  const resp = setSecureAuthTokens(response, token, {
+  // const resp = setSecureAuthTokens(response, token, {
+  //   expires: 30, // 30 days
+  //   maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
+  // });
+  // Set secure auth token
+  let resp = setSecureAuthTokens(response, token, {
     expires: 30, // 30 days
     maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
   });
+
+  // Set secure organization ID
+  resp = setSecureOrgId(resp, obj.organizationId, {
+    expires: 30, // 30 days
+    maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
+    path: "/", // Consistent with auth token
+  });
+
   return resp;
 };
 

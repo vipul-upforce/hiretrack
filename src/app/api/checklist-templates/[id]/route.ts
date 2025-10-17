@@ -12,8 +12,8 @@ export async function GET(
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const decryptedResponse = await verifyAndDecryptJWTToken(token);
+    const orgId = req.cookies.get("org_id")?.value;
+    const decryptedResponse = await verifyAndDecryptJWTToken(token, orgId);
     if (!decryptedResponse.success || !decryptedResponse.user) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
@@ -21,10 +21,12 @@ export async function GET(
 
     await connectToDatabase();
 
-    const template = await ChecklistTemplate!.findOne({
-      _id: params.id,
-      organizationId: decoded.organizationId
-    }).populate("createdBy", "name email");
+    const template = await ChecklistTemplate!
+      .findOne({
+        _id: params.id,
+        organizationId: decoded.organizationId,
+      })
+      .populate("createdBy", "name email");
 
     if (!template) {
       return NextResponse.json(
@@ -35,7 +37,7 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      data: template
+      data: template,
     });
   } catch (error) {
     console.error("Error fetching checklist template:", error);
@@ -56,8 +58,8 @@ export async function PUT(
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const decryptedResponse = await verifyAndDecryptJWTToken(token);
+    const orgId = req.cookies.get("org_id")?.value;
+    const decryptedResponse = await verifyAndDecryptJWTToken(token, orgId);
     if (!decryptedResponse.success || !decryptedResponse.user) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
@@ -78,7 +80,7 @@ export async function PUT(
 
     const template = await ChecklistTemplate!.findOne({
       _id: params.id,
-      organizationId: decoded.organizationId
+      organizationId: decoded.organizationId,
     });
 
     if (!template) {
@@ -100,7 +102,7 @@ export async function PUT(
 
     return NextResponse.json({
       success: true,
-      data: template
+      data: template,
     });
   } catch (error) {
     console.error("Error updating checklist template:", error);
@@ -121,8 +123,8 @@ export async function DELETE(
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const decryptedResponse = await verifyAndDecryptJWTToken(token);
+    const orgId = req.cookies.get("org_id")?.value;
+    const decryptedResponse = await verifyAndDecryptJWTToken(token, orgId);
     if (!decryptedResponse.success || !decryptedResponse.user) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
@@ -140,7 +142,7 @@ export async function DELETE(
 
     const result = await ChecklistTemplate!.findOneAndDelete({
       _id: params.id,
-      organizationId: decoded.organizationId
+      organizationId: decoded.organizationId,
     });
 
     if (!result) {
@@ -152,7 +154,7 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: "Template deleted successfully"
+      message: "Template deleted successfully",
     });
   } catch (error) {
     console.error("Error deleting checklist template:", error);

@@ -371,9 +371,13 @@ export async function POST(req: NextRequest) {
     let organizationId;
     let senderEmail;
     const token = req.cookies.get("auth_token");
+    const orgId = req.cookies.get("org_id")?.value;
     let decryptedResponse;
     if (token?.value) {
-      decryptedResponse = await verifyAndDecryptToken(String(token?.value));
+      decryptedResponse = await verifyAndDecryptToken(
+        String(token?.value),
+        orgId
+      );
       if (decryptedResponse.success) {
         organizationId = decryptedResponse.user?.organizationId;
         senderEmail = decryptedResponse.user?.email;
@@ -511,9 +515,11 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     const token = req.cookies.get("auth_token");
+    const orgId = req.cookies.get("org_id")?.value;
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value)
+        String(token?.value),
+        orgId
       );
       if (
         !decryptedResponse.success ||

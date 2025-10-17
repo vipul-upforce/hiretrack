@@ -56,10 +56,12 @@ export async function GET(req: NextRequest) {
 
     // Try to get organization from auth token
     const token = req.cookies.get("auth_token");
+    const orgId = req.cookies.get("org_id")?.value;
     if (token?.value) {
       try {
         const decryptedResponse = await verifyAndDecryptToken(
-          String(token?.value)
+          String(token?.value),
+          orgId
         );
         const userData = decryptedResponse.user;
         if (decryptedResponse.success) {
@@ -108,7 +110,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Decrypt the CAPTCHA keys before returning
-    const decryptedSettings = decryptProviderKeys(settings.toObject());
+    // const decryptedSettings = decryptProviderKeys(settings.toObject());
     // console.log(decryptedSettings, "decryptedSettings");
 
     return NextResponse.json({ captcha: settings.captcha });
@@ -127,36 +129,12 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     await dbConnect();
-    let organizationId = "";
     const token = req.cookies.get("auth_token");
-
-    if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value)
-      );
-      const userData = decryptedResponse.user;
-      if (decryptedResponse.success) {
-        organizationId = userData.organizationId || "";
-        if (userData.role !== "admin") {
-          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-      } else {
-        return NextResponse.json(
-          { error: "Authentication required" },
-          { status: 401 }
-        );
-      }
-    } else {
+    const orgId = req.cookies.get("org_id")?.value;
+    if (!orgId) {
       return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
-
-    if (!Settings || !Organization) {
-      return NextResponse.json(
-        { error: "Database models not initialized" },
-        { status: 500 }
+        { error: "Organization ID missing" },
+        { status: 400 }
       );
     }
 
@@ -166,33 +144,28 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "Both site key and secret key are required with a valid CAPTCHA provider when enabling CAPTCHA",
+            "Both site key and secret key are required when enabling CAPTCHA",
         },
         { status: 400 }
       );
     }
 
-    // Encrypt the CAPTCHA keys before saving
-    const encryptedCaptcha = encryptProviderKeys({
-      captcha: {
-        enableCaptcha: enableCaptcha || false,
-        siteKey: siteKey || "",
-        secretKey: secretKey || "",
+    // Encrypt before saving
+    const encryptedCaptcha = encryptProviderKeys(
+      {
+        captcha: {
+          enableCaptcha: enableCaptcha || false,
+          siteKey: siteKey || "",
+          secretKey: secretKey || "",
+        },
       },
-    }).captcha;
+      orgId
+    ).captcha;
 
     const updatedSettings = await Settings.findOneAndUpdate(
-      {
-        organizationId: organizationId,
-      },
-      {
-        captcha: encryptedCaptcha,
-      },
-      {
-        new: true,
-        runValidators: true,
-        upsert: true,
-      }
+      { organizationId: orgId },
+      { captcha: encryptedCaptcha },
+      { new: true, runValidators: true, upsert: true }
     );
 
     if (!updatedSettings) {

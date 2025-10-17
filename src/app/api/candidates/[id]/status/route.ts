@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { Job } from "@/lib/mongodb";
 import { Candidate } from "@/lib/mongodb";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { NotificationService } from "@/lib/notifications/notificationService";
 
 export async function PATCH(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -14,8 +14,8 @@ export async function PATCH(
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const decryptedResponse = await verifyAndDecryptJWTToken(token);
+    const orgId = request.cookies.get("org_id")?.value;
+    const decryptedResponse = await verifyAndDecryptJWTToken(token, orgId);
     if (!decryptedResponse.success || !decryptedResponse.user) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
@@ -27,14 +27,14 @@ export async function PATCH(
     const { id } = await params;
 
     if (!Candidate || !Job) {
-      return NextResponse.json(
-        { error: "Models not found" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Models not found" }, { status: 400 });
     }
 
     // Get current candidate data to access old status and job info
-    const currentCandidate = await Candidate.findById(id).populate('jobId', 'title');
+    const currentCandidate = await Candidate.findById(id).populate(
+      "jobId",
+      "title"
+    );
     if (!currentCandidate) {
       return NextResponse.json(
         { error: "Candidate not found" },
@@ -52,7 +52,7 @@ export async function PATCH(
         "tracking.updatedAt": new Date(),
       },
       { new: true }
-    ).populate('jobId', 'title');
+    ).populate("jobId", "title");
 
     if (!updatedCandidate) {
       return NextResponse.json(
@@ -71,7 +71,10 @@ export async function PATCH(
           organizationId: userData.organizationId,
           candidateId: updatedCandidate._id.toString(),
           candidateName: updatedCandidate.name,
-          jobId: jobInfo?._id?.toString() || updatedCandidate.jobId?.toString() || "",
+          jobId:
+            jobInfo?._id?.toString() ||
+            updatedCandidate.jobId?.toString() ||
+            "",
           jobTitle: jobInfo?.title || "Unknown Job",
           oldStatus,
           newStatus: status,
@@ -79,9 +82,11 @@ export async function PATCH(
           triggerUserName: userData.name,
         });
         // console.log("Status updatesss notifyyy  ===== = ");
-
       } catch (notificationError) {
-        console.error("Failed to send status update notification:", notificationError);
+        console.error(
+          "Failed to send status update notification:",
+          notificationError
+        );
         // Don't fail the API call if notification fails
       }
     }
