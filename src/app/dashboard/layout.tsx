@@ -698,7 +698,7 @@ export default function DashboardLayout({
     <Suspense fallback={<LoadingScreen />}>
       <OnboardingProvider>
         <div className="w-full max-w-full flex" style={{ overflowX: "hidden" }}>
-          <PortalHead isLoading={true} />
+          {/* PortalHead is now redundant as we're handling metadata in client-layout */}
           <aside
             className={cn(
               "hidden h-screen border-r bg-background md:block transition-all duration-300",

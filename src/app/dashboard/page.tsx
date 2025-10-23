@@ -440,7 +440,11 @@ export default function DashboardPage() {
           (sseCandidate) => {
             // debugger;
             // Ensure the candidate has the required Assignment properties
-            if ("assignment" in sseCandidate && sseCandidate._id) {
+            if (
+              "assignment" in sseCandidate &&
+              sseCandidate._id &&
+              "assignment.interviewerId" in sseCandidate.assignment
+            ) {
               const candidateId = sseCandidate._id;
               const existingIndex = updatedAssignments.findIndex(
                 (assignment) =>
@@ -516,7 +520,10 @@ export default function DashboardPage() {
                 }
               }
             } else {
-              if (!sseCandidate.assignment) {
+              if (
+                !sseCandidate.assignment ||
+                !sseCandidate.assignment.interviewerId
+              ) {
                 console.log("No SSE assignment found");
                 // Remove if assignment is null/undefined
                 const candidateId = sseCandidate._id;
