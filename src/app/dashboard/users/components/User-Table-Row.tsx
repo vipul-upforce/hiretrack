@@ -35,6 +35,20 @@ export function UserTableRow({
   onPasswordClick,
   onEmailSettingsClick,
 }: UserTableRowProps) {
+
+  const getRoleBadgeColor = (role: string) => {
+    switch (role) {
+      case "hr":
+        return "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+      case "admin":
+        return "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"
+      case "system":
+        return "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
+      default:
+        return "bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300"
+    }
+  }
+
   return (
     <TableRow key={user._id}>
       <TableCell>
@@ -43,8 +57,8 @@ export function UserTableRow({
           <Badge className="ml-2 bg-red-500 hover:bg-red-600">Deleted</Badge>
         )}
       </TableCell>
-      <TableCell>{user.email}</TableCell>
-      <TableCell className="capitalize">{user.role}</TableCell>
+      <TableCell><span className="px-2.5 py-1 bg-primary-foreground rounded-lg">{user.email}</span></TableCell>
+      <TableCell className={`capitalize inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium ${getRoleBadgeColor(user.role)}`}>{user.role}</TableCell>
       <TableCell>{format(new Date(user.createdAt), "MMM d, yyyy")}</TableCell>
       <TableCell className="flex flex-row justify-between items-center gap-2">
         {user.role !== "system" && (

@@ -22,8 +22,10 @@ import {
   useFetchOpenJobsQuery,
   useAssignJobMutation,
 } from "@/lib/features/job/jobApi";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 import { useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 interface AssignJobDialogProps {
   candidate: Candidate | Candidate[];
@@ -47,7 +49,7 @@ export function AssignJobDialog({
   onOpenChange,
   onJobAssignment,
 }: AssignJobDialogProps) {
-  const { data: jobs } = useFetchOpenJobsQuery();
+  const { data: jobs, isFetching, error } = useFetchOpenJobsQuery();
   const [assignJob] = useAssignJobMutation();
   const [loading, setLoading] = useState(false);
 
@@ -157,65 +159,103 @@ export function AssignJobDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <Formik
-          initialValues={initialValues}
-          validationSchema={validationSchema}
-          onSubmit={handleSubmit}
-          enableReinitialize
-        >
-          {({ errors, touched, isSubmitting, setFieldValue }) => (
-            <Form className="flex-1 flex flex-col h-full overflow-y-scroll">
-              <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
-                <div className="grid gap-4 py-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="jobId">Assign To</Label>
-                    <Field name="jobId">
-                      {({ field }: { field: { value: string } }) => (
-                        <Select
-                          value={field.value}
-                          onValueChange={(value) =>
-                            setFieldValue("jobId", value)
-                          }
-                        >
-                          <SelectTrigger className="w-[400px]">
-                            <SelectValue placeholder="Select Job" />
-                          </SelectTrigger>
-                          <SelectContent className="w-[500px]">
-                            {jobs?.map((job) => (
-                              <SelectItem
-                                className="w-full hover:bg-gray-100 cursor-pointer"
-                                key={job._id}
-                                value={job._id}
-                              >
-                                {job.title}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+        {/* loading skeleton */}
+        {isFetching ? (
+          <div className="flex flex-col gap-4 px-6 py-8">
+            <div className="space-y-3">
+              <Skeleton className="h-4 w-[60%]" />
+              <Skeleton className="h-10 w-full rounded-md" />
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mt-4">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Loading open jobs...</span>
+            </div>
+          </div>
+        ) : error ? ( // error state
+          <div className="flex flex-col items-center justify-center px-6 py-12 text-center space-y-3">
+            <AlertCircle className="h-6 w-6 text-destructive" />
+            <p className="text-red-500 font-medium">Failed to fetch jobs</p>
+            <p className="text-muted-foreground text-sm">
+              Please try again or check your network connection.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.location.reload()}
+              className="mt-2"
+            >
+              Retry
+            </Button>
+          </div>
+        ) : (
+          <Formik
+            initialValues={initialValues}
+            validationSchema={validationSchema}
+            onSubmit={handleSubmit}
+            enableReinitialize
+          >
+            {({ errors, touched, isSubmitting, setFieldValue }) => (
+              <Form className="flex-1 flex flex-col h-full overflow-y-auto">
+                <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="jobId">Assign To</Label>
+                      <Field name="jobId">
+                        {({ field }: { field: { value: string } }) => (
+                          <Select
+                            value={field.value}
+                            onValueChange={(value) =>
+                              setFieldValue("jobId", value)
+                            }
+                          >
+                            <SelectTrigger className="w-[400px]">
+                              <SelectValue placeholder="Select Job" />
+                            </SelectTrigger>
+                            <SelectContent className="w-[500px]">
+                              {jobs?.length ? (
+                                jobs.map((job) => (
+                                  <SelectItem
+                                    className="w-full hover:bg-gray-100 cursor-pointer"
+                                    key={job._id}
+                                    value={job._id}
+                                  >
+                                    {job.title}
+                                  </SelectItem>
+                                ))
+                              ) : (
+                                <div className="text-sm text-muted-foreground px-4 py-2">
+                                  No open jobs available
+                                </div>
+                              )}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </Field>
+                      {errors.jobId && touched.jobId && (
+                        <div className="text-red-500 text-sm">
+                          {errors.jobId}
+                        </div>
                       )}
-                    </Field>
-                    {errors.jobId && touched.jobId && (
-                      <div className="text-red-500 text-sm">{errors.jobId}</div>
-                    )}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex relative bottom-0 justify-between w-full space-x-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10">
-                <Button
-                  type="submit"
-                  disabled={isSubmitting || loading}
-                  variant="primary"
-                >
-                  {isSubmitting || loading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : null}
-                  {isSubmitting || loading ? "Assigning" : "Assign"}
-                </Button>
-              </div>
-            </Form>
-          )}
-        </Formik>
+                <div className="flex relative bottom-0 justify-between w-full space-x-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10">
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting || loading}
+                    variant="primary"
+                  >
+                    {isSubmitting || loading ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : null}
+                    {isSubmitting || loading ? "Assigning" : "Assign"}
+                  </Button>
+                </div>
+              </Form>
+            )}
+          </Formik>
+        )}
       </DialogContent>
     </Dialog>
   );

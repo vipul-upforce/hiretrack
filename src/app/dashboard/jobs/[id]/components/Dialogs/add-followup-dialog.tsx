@@ -115,7 +115,7 @@ const AddFollowUpDialog = ({
           </div>
           <div className="flex gap-2">
             <Button
-              variant="info"
+              variant="secondary"
               onClick={() => onOpenChange(false)}
               disabled={isLoading}
             >

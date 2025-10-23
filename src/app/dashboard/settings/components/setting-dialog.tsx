@@ -126,7 +126,7 @@ const SettingDialog = ({
             <ComponentToRender onClose={onClose} isOpen={isOpen} />
           ) : setting.key === "ai-providers" ||
             setting.key === "google-calendar" ? (
-            <div className="flex-1 overflow-hidden px-6 py-0 overflow-y-auto">
+            <div className="flex-1 overflow-hidden px-6 py-0 overflow-y-auto ">
               <ComponentToRender onClose={onClose} isOpen={isOpen} />
             </div>
           ) : setting.key === "version" ? (
