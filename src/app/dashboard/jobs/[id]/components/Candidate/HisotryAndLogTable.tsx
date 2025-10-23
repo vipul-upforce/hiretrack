@@ -17,6 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { LogsTableSkeleton } from "./logs-table-skeleton";
 
 export const HistoryAndLogTable: React.FC<{
   candidate: Candidate;
@@ -318,7 +319,8 @@ export const LogsTable: React.FC<{
   candidate: Candidate;
   user: User | null;
   timeLineItems: ICandidateHistory[];
-}> = ({ candidate, user, timeLineItems }) => {
+  isLoading: boolean;
+}> = ({ candidate, user, timeLineItems, isLoading }) => {
   const tableRows = timeLineItems
     .sort(
       (a, b) =>
@@ -362,21 +364,20 @@ export const LogsTable: React.FC<{
         (log: IinfoUpdateLog, logIndex) => (
           <TableRow
             key={`${i}-${logIndex}-${interview.dateTime}`}
-            className="border-b border-gray-200 dark:border-gray-700"
+            className="border-b border-border hover:bg-muted/50 transition-colors"
           >
-            <TableCell className="p-2 w-[250px] text-gray-900 dark:text-gray-100">
+            <TableCell className="px-4 py-3 text-sm font-medium text-foreground">
               {logIndex === 0 ? `${timeDate} ${timeTime}` : ""}
             </TableCell>
-            <TableCell className="p-2 w-[250px] text-gray-900 dark:text-gray-100">
+            <TableCell className="px-4 py-3 text-sm text-foreground">
               {log.title.replace("Updated ", "") ?? log.title ?? "N/A"}
             </TableCell>
-            <TableCell className="p-2 max-w-[200px] break-words whitespace-pre-wrap text-gray-900 dark:text-gray-100">
+            <TableCell className="px-4 py-3 text-sm text-muted-foreground max-w-xs truncate">
               {Array.isArray(log.previousValue) &&
               log.previousValue.length > 0 &&
               log.previousValue[0].name ? (
                 <AttachmentsPopover
                   attachments={log.previousValue.map((file, index) => {
-                    // debugger
                     return {
                       id: `${i}-${logIndex}-${index}-${file.name}`,
                       name: file?.name,
@@ -423,22 +424,11 @@ export const LogsTable: React.FC<{
                   ?.replaceAll('"', "")
                   ?.replace("~", " ") ?? "N/A")
               )}
-              {(!log.previousValue &&
-                JSON.stringify(log.previousValue as string)
-                  ?.replaceAll('"', "")
-                  ?.replace("~", " ")) ??
-                "N/A"}
-              {/* {(!log.attachments &&
-                JSON.stringify(log.previousValue as string)
-                  ?.replaceAll('"', "")
-                  ?.replace("~", "")) ??
-                "N/A"} */}
             </TableCell>
-            <TableCell className="p-2 max-w-[250px] break-words whitespace-pre-wrap text-gray-900 dark:text-gray-100">
+            <TableCell className="px-4 py-3 text-sm text-muted-foreground max-w-xs truncate">
               {log.attachments && log.attachments.length > 0 ? (
                 <AttachmentsPopover
                   attachments={log.attachments.map((file, index) => {
-                    // debugger;
                     return {
                       id: `${i}-${logIndex}-${index}-${file.name}`,
                       name: file.name,
@@ -458,63 +448,69 @@ export const LogsTable: React.FC<{
                   ?.replace("~", "")) ??
                 "N/A"}
             </TableCell>
-            <TableCell className="p-2 w-[250px] break-words whitespace-pre-wrap text-gray-900 dark:text-gray-100">
+            <TableCell className="px-4 py-3 text-sm text-foreground font-medium">
               {typeof interview.assignmentBy === "object" &&
               interview.assignmentBy &&
               "name" in interview.assignmentBy &&
               typeof interview.assignmentBy.name === "string"
                 ? interview.assignmentBy.name
-                : ""}
+                : "—"}
             </TableCell>
           </TableRow>
         )
       );
     });
 
+  if (isLoading) {
+    return <LogsTableSkeleton />;
+  }
+
   return (
     <div className="space-y-4">
-      <div className="overflow-x-auto">
-        {tableRows.length > 0 ? (
-          <Table className="w-[130%] text-sm">
-            <TableHeader>
-              <TableRow className="border-b-0">
-                <TableHead className="font-bold text-left w-[150px] text-gray-900 dark:text-gray-100 px-0 py-2">
-                  Updated At
-                </TableHead>
-                <TableHead className="font-bold text-left w-[150px] text-gray-900 dark:text-gray-100 px-0 py-2">
-                  Fields Updated
-                </TableHead>
-                <TableHead className="font-bold text-left w-[200px] text-gray-900 dark:text-gray-100 px-0 py-2">
-                  Previous
-                </TableHead>
-                <TableHead className="font-bold text-left w-[200px] text-gray-900 dark:text-gray-100 px-0 py-2">
-                  Updated
-                </TableHead>
-                <TableHead className="font-bold text-left w-[150px] text-gray-900 dark:text-gray-100 px-0 py-2">
-                  Updated By
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {tableRows.length > 0 ? (
-                tableRows
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="px-0 py-2 text-center text-gray-500"
-                  >
-                    Candidate Info Updates Will Be Listed Here
-                  </TableCell>
+      <div className="border border-border rounded-lg bg-card overflow-hidden">
+        <div className="overflow-x-auto">
+          {tableRows.length > 0 ? (
+            <Table className="w-full text-sm">
+              <TableHeader>
+                <TableRow className="border-b border-border bg-muted/40 hover:bg-muted/40">
+                  <TableHead className="px-4 py-3 font-semibold text-foreground text-left">
+                    Updated At
+                  </TableHead>
+                  <TableHead className="px-4 py-3 font-semibold text-foreground text-left">
+                    Fields Updated
+                  </TableHead>
+                  <TableHead className="px-4 py-3 font-semibold text-foreground text-left">
+                    Previous Value
+                  </TableHead>
+                  <TableHead className="px-4 py-3 font-semibold text-foreground text-left">
+                    New Value
+                  </TableHead>
+                  <TableHead className="px-4 py-3 font-semibold text-foreground text-left">
+                    Updated By
+                  </TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        ) : (
-          <div className="w-full text-center text-gray-900 dark:text-gray-100">
-            No Logs Yet.
-          </div>
-        )}
+              </TableHeader>
+              <TableBody>
+                {tableRows.length > 0 ? (
+                  tableRows
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={5}
+                      className="px-4 py-8 text-center text-muted-foreground"
+                    >
+                      No updates yet
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="w-full py-12 text-center text-muted-foreground">
+              <p className="text-sm">No logs available</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

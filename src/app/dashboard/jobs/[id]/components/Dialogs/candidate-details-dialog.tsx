@@ -926,6 +926,7 @@ export function CandidateDetailsDialog({
                     Update Logs
                   </h3>
                   <LogsTable
+                    isLoading={!historyLoaded}
                     candidate={localCandidate}
                     user={user}
                     timeLineItems={validTimeLineItems}
