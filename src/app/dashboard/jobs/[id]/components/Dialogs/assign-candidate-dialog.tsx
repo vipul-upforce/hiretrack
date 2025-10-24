@@ -1078,6 +1078,7 @@ export function AssignCandidateDialog({
                       <Button
                         type="button"
                         variant="outline"
+                        disabled={isSubmitting}
                         onClick={() => onOpenChange(false)}
                       >
                         Cancel
