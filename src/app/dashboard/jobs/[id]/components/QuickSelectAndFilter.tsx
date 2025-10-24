@@ -10,6 +10,7 @@ import {
   SelectGroup,
   SelectItem,
   SelectLabel,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -274,24 +275,53 @@ export function QuickSelectAndFilter({
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectLabel>Open Jobs ({groupedJobs.open.length})</SelectLabel>
+              <SelectLabel className="flex items-center justify-between px-2 py-2">
+                <span className="font-semibold text-foreground">Open Jobs</span>
+                <Badge variant="outline" className="ml-2 text-xs">
+                  {groupedJobs.open.length}
+                </Badge>
+              </SelectLabel>
+
               {groupedJobs.open.map((job) => (
                 <SelectItem key={job._id} value={job._id}>
                   {job.title} ({jobCandidateCounts[job._id] || 0} candidates)
                 </SelectItem>
               ))}
             </SelectGroup>
+            {/* seprator */}
+            {groupedJobs.open.length > 0 && groupedJobs.draft.length > 0 && (
+              <SelectSeparator className="my-2" />
+            )}
+
             <SelectGroup>
-              <SelectLabel>Draft Jobs ({groupedJobs.draft.length})</SelectLabel>
+              <SelectLabel className="flex items-center justify-between px-2 py-2">
+                <span className="font-semibold text-foreground">
+                  Draft Jobs
+                </span>
+                <Badge variant="outline" className="ml-2 text-xs">
+                  {groupedJobs.draft.length}
+                </Badge>
+              </SelectLabel>
               {groupedJobs.draft.map((job) => (
                 <SelectItem key={job._id} value={job._id}>
                   {job.title} ({jobCandidateCounts[job._id] || 0} candidates)
                 </SelectItem>
               ))}
             </SelectGroup>
+
+            {/* Separator */}
+            {groupedJobs.draft.length > 0 && groupedJobs.closed.length > 0 && (
+              <SelectSeparator className="my-2" />
+            )}
+
             <SelectGroup>
-              <SelectLabel>
-                Closed Jobs ({groupedJobs.closed.length})
+              <SelectLabel className="flex items-center justify-between px-2 py-2">
+                <span className="font-semibold text-foreground">
+                  Closed Jobs
+                </span>
+                <Badge variant="outline" className="ml-2 text-xs">
+                  {groupedJobs.closed.length}
+                </Badge>
               </SelectLabel>
               {groupedJobs.closed.map((job) => (
                 <SelectItem key={job._id} value={job._id}>

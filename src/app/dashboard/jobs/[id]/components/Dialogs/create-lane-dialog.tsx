@@ -53,7 +53,7 @@ export function CreateLaneDialog({ onAddLane }: CreateLaneDialogProps) {
         submitLabel="Add Lane"
         isValid={isValid}
       >
-        <div className="space-y-2">
+        <div className="space-y-2 mb-1">
           <Label htmlFor="title">Lane Title</Label>
           <Input
             id="title"
