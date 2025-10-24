@@ -23,7 +23,7 @@ function CustomFieldFormList() {
       {/* <Separator className="my-4" /> */}
       <AddFormID isOpen={isOpen} setIsOpen={setIsOpen} />
 
-      <div className="flex flex-col py-4 gap-4 sticky top-0">
+      <div className="flex flex-col py-4 pt-0 gap-4 sticky top-0">
         {Object.entries(customFields).map(([formId, form]) => {
           const fields = form.fields.filter(
             (field) => !field.candidateId && !field.jobId
@@ -53,7 +53,7 @@ function CustomFieldFormList() {
 
         {/* Common Important Notes - shown only if there are forms */}
         {Object.keys(customFields).length > 0 && (
-          <div className="mt-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-lg p-4">
+          <div className="mt-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-lg p-4">
             <div className="flex items-start gap-3">
               <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
               <div className="text-sm text-amber-800 dark:text-amber-200">
