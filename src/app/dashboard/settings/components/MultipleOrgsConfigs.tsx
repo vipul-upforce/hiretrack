@@ -12,6 +12,7 @@ import {
 import React from "react";
 import { useDispatch } from "react-redux";
 import { setAllowMultipleOrgs } from "@/lib/features/org/orgSlice";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export interface multipleOrgsValues {
   multipleOrg: boolean;
@@ -69,7 +70,19 @@ export default function MultipleOrgsConfigs({
     }
   };
 
-  if (isLoading) return <div className="px-6 py-4">Loading...</div>;
+   if (isLoading) {
+    return (
+      <div className="px-6 py-4 space-y-6 animate-in fade-in duration-200">
+        <div className="space-y-2">
+          <Skeleton className="h-6 w-full rounded-md" />
+        </div>
+        <div className="flex justify-end gap-2 border-t border-border/10 pt-4">
+          <Skeleton className="h-8 w-24 rounded-md" />
+          <Skeleton className="h-8 w-24 rounded-md" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
