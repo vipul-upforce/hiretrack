@@ -248,6 +248,8 @@ export default function DashboardLayout({
     if (orgCheckData && !orgCheckData.exists) {
       Cookies.remove("token");
       dispatch(logout());
+      localStorage.removeItem("persist:auth");
+      localStorage.removeItem("persist:organization");
       fetch("/api/auth/logout");
       window.location.href = "/auth/login";
     }
@@ -314,6 +316,8 @@ export default function DashboardLayout({
   const handleLogout = async () => {
     // Cookies.remove("token");
     dispatch(logout());
+    localStorage.removeItem("persist:auth");
+    localStorage.removeItem("persist:organization");
     await fetch("/api/auth/logout");
     setUserData(null);
     setUserLoggedIn(false);
