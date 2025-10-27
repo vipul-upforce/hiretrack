@@ -357,128 +357,128 @@ export async function GET(req: NextRequest) {
               // preserveNullAndEmptyArrays: true,
             },
           },
-          {
-            $lookup: {
-              from: "histories",
-              let: { candidateId: "$candidates._id" },
-              pipeline: [
-                {
-                  $match: {
-                    $expr: {
-                      $eq: ["$candidateId", { $toString: "$$candidateId" }],
-                    },
-                  },
-                },
-                { $unwind: "$history" },
-                {
-                  $lookup: {
-                    from: "users",
-                    let: { uid: "$history.assignmentBy" },
-                    pipeline: [
-                      {
-                        $match: {
-                          $expr: {
-                            $and: [
-                              { $eq: ["$_id", "$$uid"] },
-                              {
-                                $or: [
-                                  { $eq: ["$isDeleted", false] },
-                                  { $not: { $ifNull: ["$isDeleted", false] } },
-                                ],
-                              },
-                            ],
-                          },
-                        },
-                      },
-                      { $project: { _id: 1, name: 1, email: 1 } },
-                    ],
-                    as: "assignmentByUser",
-                  },
-                },
-                {
-                  $set: {
-                    "history.assignmentBy": { $first: "$assignmentByUser" },
-                  },
-                },
-                {
-                  $lookup: {
-                    from: "users",
-                    let: { uid: "$history.currentInterviewer" },
-                    pipeline: [
-                      {
-                        $match: {
-                          $expr: { $eq: ["$_id", "$$uid"] },
-                        },
-                      },
-                      { $project: { _id: 1, name: 1, email: 1 } },
-                    ],
-                    as: "currentInterviewerUser",
-                  },
-                },
-                {
-                  $set: {
-                    "history.currentInterviewer": {
-                      $first: "$currentInterviewerUser",
-                    },
-                  },
-                },
-                {
-                  $lookup: {
-                    from: "users",
-                    let: { uid: "$history.previousInterviewer" },
-                    pipeline: [
-                      {
-                        $match: {
-                          $expr: { $eq: ["$_id", "$$uid"] },
-                        },
-                      },
-                      { $project: { _id: 1, name: 1, email: 1 } },
-                    ],
-                    as: "previousInterviewerUser",
-                  },
-                },
-                {
-                  $set: {
-                    "history.previousInterviewer": {
-                      $first: "$previousInterviewerUser",
-                    },
-                  },
-                },
-                {
-                  $lookup: {
-                    from: "users",
-                    let: { uid: "$history.note.userId" },
-                    pipeline: [
-                      {
-                        $match: {
-                          $expr: { $eq: ["$_id", "$$uid"] },
-                        },
-                      },
-                      { $project: { _id: 1, name: 1, email: 1 } },
-                    ],
-                    as: "noteUser",
-                  },
-                },
-                {
-                  $set: {
-                    "history.note.userId": { $first: "$noteUser" },
-                  },
-                },
-                {
-                  $group: {
-                    _id: "$_id",
-                    candidateId: { $first: "$candidateId" },
-                    jobId: { $first: "$jobId" },
-                    history: { $push: "$history" },
-                  },
-                },
-              ],
-              as: "histories",
-            },
-          },
-          {
-            $unwind: { path: "$histories" },
-          },
+          // {
+          //   $lookup: {
+          //     from: "histories",
+          //     let: { candidateId: "$candidates._id" },
+          //     pipeline: [
+          //       {
+          //         $match: {
+          //           $expr: {
+          //             $eq: ["$candidateId", { $toString: "$$candidateId" }],
+          //           },
+          //         },
+          //       },
+          //       { $unwind: "$history" },
+          //       {
+          //         $lookup: {
+          //           from: "users",
+          //           let: { uid: "$history.assignmentBy" },
+          //           pipeline: [
+          //             {
+          //               $match: {
+          //                 $expr: {
+          //                   $and: [
+          //                     { $eq: ["$_id", "$$uid"] },
+          //                     {
+          //                       $or: [
+          //                         { $eq: ["$isDeleted", false] },
+          //                         { $not: { $ifNull: ["$isDeleted", false] } },
+          //                       ],
+          //                     },
+          //                   ],
+          //                 },
+          //               },
+          //             },
+          //             { $project: { _id: 1, name: 1, email: 1 } },
+          //           ],
+          //           as: "assignmentByUser",
+          //         },
+          //       },
+          //       {
+          //         $set: {
+          //           "history.assignmentBy": { $first: "$assignmentByUser" },
+          //         },
+          //       },
+          //       {
+          //         $lookup: {
+          //           from: "users",
+          //           let: { uid: "$history.currentInterviewer" },
+          //           pipeline: [
+          //             {
+          //               $match: {
+          //                 $expr: { $eq: ["$_id", "$$uid"] },
+          //               },
+          //             },
+          //             { $project: { _id: 1, name: 1, email: 1 } },
+          //           ],
+          //           as: "currentInterviewerUser",
+          //         },
+          //       },
+          //       {
+          //         $set: {
+          //           "history.currentInterviewer": {
+          //             $first: "$currentInterviewerUser",
+          //           },
+          //         },
+          //       },
+          //       {
+          //         $lookup: {
+          //           from: "users",
+          //           let: { uid: "$history.previousInterviewer" },
+          //           pipeline: [
+          //             {
+          //               $match: {
+          //                 $expr: { $eq: ["$_id", "$$uid"] },
+          //               },
+          //             },
+          //             { $project: { _id: 1, name: 1, email: 1 } },
+          //           ],
+          //           as: "previousInterviewerUser",
+          //         },
+          //       },
+          //       {
+          //         $set: {
+          //           "history.previousInterviewer": {
+          //             $first: "$previousInterviewerUser",
+          //           },
+          //         },
+          //       },
+          //       {
+          //         $lookup: {
+          //           from: "users",
+          //           let: { uid: "$history.note.userId" },
+          //           pipeline: [
+          //             {
+          //               $match: {
+          //                 $expr: { $eq: ["$_id", "$$uid"] },
+          //               },
+          //             },
+          //             { $project: { _id: 1, name: 1, email: 1 } },
+          //           ],
+          //           as: "noteUser",
+          //         },
+          //       },
+          //       {
+          //         $set: {
+          //           "history.note.userId": { $first: "$noteUser" },
+          //         },
+          //       },
+          //       {
+          //         $group: {
+          //           _id: "$_id",
+          //           candidateId: { $first: "$candidateId" },
+          //           jobId: { $first: "$jobId" },
+          //           history: { $push: "$history" },
+          //         },
+          //       },
+          //     ],
+          //     as: "histories",
+          //   },
+          // },
+          // {
+          //   $unwind: { path: "$histories" },
+          // },
           {
             $lookup: {
               from: "organizations",
@@ -577,7 +577,7 @@ export async function GET(req: NextRequest) {
               contact: "$candidates.contact",
               createdAt: "$candidates.createdAt",
               updatedAt: "$candidates.updatedAt",
-              history: "$histories.history",
+              // history: "$histories.history",
               customFields: "$candidates.customFields",
               followUp: {
                 note: "$candidates.followUp.note",
