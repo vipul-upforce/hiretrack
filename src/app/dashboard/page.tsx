@@ -289,6 +289,7 @@ export default function DashboardPage() {
         loadingRef.current = false;
       }
     },
+
     [filterText, selectedAssignedTo, itemsPerPage]
   );
 
@@ -432,7 +433,6 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (sseCandidates && sseCandidates.length > 0) {
-      console.log("sseCandidates changed: ", sseCandidates);
       setAssignments((prevAssignments) => {
         let updatedAssignments: Assignment[] = [...prevAssignments];
 
@@ -517,7 +517,6 @@ export default function DashboardPage() {
               }
             } else {
               if (!sseCandidate.assignment) {
-                console.log("No SSE assignment found");
                 // Remove if assignment is null/undefined
                 const candidateId = sseCandidate._id;
                 const existingIndex = updatedAssignments.findIndex(
@@ -525,9 +524,9 @@ export default function DashboardPage() {
                     (assignment._id || assignment.id) === candidateId
                 );
                 if (existingIndex !== -1) {
-                  updatedAssignments = updatedAssignments.filter(
-                    (_, index) => index !== existingIndex
-                  );
+                  updatedAssignments = updatedAssignments.filter((_, index) => {
+                    return index != existingIndex;
+                  });
                 }
               }
             }
@@ -703,8 +702,10 @@ export default function DashboardPage() {
                     <div className="flex flex-wrap gap-6 justify-start ">
                       {assignments
                         .filter((assignment) => {
-                          console.log("assignment: ", assignment);
-                          return !assignment.isDeleted;
+                          return !(
+                            assignment.isDeleted ||
+                            assignment?.assignment?.interviewerId === null
+                          );
                         })
                         .map((assignment, index) => (
                           <div

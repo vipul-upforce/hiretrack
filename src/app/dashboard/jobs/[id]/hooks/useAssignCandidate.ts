@@ -31,6 +31,7 @@ export const useAssignCandidate = ({
 }: AssignCandidateDialogProps) => {
   const pathname = usePathname();
   const [confirmUnassignOpen, setConfirmUnassignOpen] = useState(false);
+  const [isUnassigning, setIsUnassigning] = useState(false);
   const [sendEmail] = useSendMailMutation();
   const [sendUnassignEmail] = useSendUnassignMailMutation();
   const [updateCandidate] = useUpdateCandidateMutation();
@@ -211,6 +212,7 @@ export const useAssignCandidate = ({
       return;
     }
 
+    setIsUnassigning(true);
     try {
       const updatedCandidate = {
         ...candidate,
@@ -276,6 +278,7 @@ export const useAssignCandidate = ({
       });
     } finally {
       setConfirmUnassignOpen(false);
+      setIsUnassigning(false);
     }
   };
 
@@ -285,5 +288,6 @@ export const useAssignCandidate = ({
     handleSubmit,
     handleUnassign,
     confirmUnassign,
+    isUnassigning,
   };
 };

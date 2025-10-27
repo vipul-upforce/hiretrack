@@ -39,11 +39,16 @@ function ActionItems({
 
       const updatedCandidate: Candidate = await response.json();
       setCandidate(updatedCandidate);
-      const updatedAssignments = assignments.map((assignment) =>
-        assignment._id === updatedCandidate._id
-          ? { ...assignment, ...updatedCandidate } // merge updated data
-          : assignment
-      );
+
+      const updatedAssignments = !updatedCandidate.assignment
+        ? assignments.filter(
+            (assignment) => assignment._id !== updatedCandidate._id
+          )
+        : assignments.map((assignment) =>
+            assignment._id === updatedCandidate._id
+              ? { ...assignment, ...updatedCandidate } // merge updated data
+              : assignment
+          );
       setAssignments(updatedAssignments);
       toast({
         title: "Success",

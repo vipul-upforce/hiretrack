@@ -69,17 +69,17 @@ export async function verifyAndDecryptSSE(token: string) {
     "hgerguhurhg_egosh_eohe_egjhagbqyuqwertyuiop";
   // console.log(JWT_SECRET, "JWT_SECRET-6");
   try {
-    console.log(JWT_SECRET, "JWT_SECRET-6");
+    // console.log(JWT_SECRET, "JWT_SECRET-6");
     if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
-    console.log("type of JWT_SECRET", typeof JWT_SECRET);
-    console.log("type of token", typeof token);
-    console.log("token", token);
+    // console.log("type of JWT_SECRET", typeof JWT_SECRET);
+    // console.log("type of token", typeof token);
+    // console.log("token", token);
     const decoded = jwtDecode<JWTPayload>(token);
-    console.log(decoded, "decoded");
+    // console.log(decoded, "decoded");
     if (!decoded || typeof decoded !== "object" || !decoded.user) {
       throw new Error("Invalid token structure");
     }
-    console.log("type of JWT_SECRET", typeof JWT_SECRET);
+    // console.log("type of JWT_SECRET", typeof JWT_SECRET);
     const bytes = CryptoJS.AES.decrypt(decoded.user, String(JWT_SECRET));
     const decryptedData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
     return { ...decryptedData };
@@ -110,21 +110,21 @@ export async function verifyAndDecrypCaptcha(token: string) {
     if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
     if (!token) throw new Error("Token is empty");
 
-    console.log(token, "token");
+    // console.log(token, "token");
     // console.log(JWT_SECRET, "JWT_SECRET-7");
 
     // Assume token is an AES-encrypted string (not a JWT)
     const bytes = CryptoJS.AES.decrypt(token, JWT_SECRET);
-    console.log(bytes, "bytes");
+    // console.log(bytes, "bytes");
     const decryptedData = bytes.toString(CryptoJS.enc.Utf8);
-    console.log(decryptedData, "decryptedData");
+    // console.log(decryptedData, "decryptedData");
     if (!decryptedData) {
       throw new Error("Decryption failed: no data returned");
     }
 
     return decryptedData; // Return decrypted string
   } catch (err) {
-    console.error("Decryption error:", err);
+    // console.error("Decryption error:", err);
     return null; // Return null to match getDecodedCaptcha expectation
   }
 }
