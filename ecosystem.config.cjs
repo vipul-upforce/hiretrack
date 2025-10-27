@@ -6,7 +6,7 @@ const LOG_DIR = path.resolve('../../.myapp/logs');
 module.exports = {
   apps: [
     {
-      name: "hiretrack-" +VERSION,
+      name: "hiretrack-v" +VERSION,
       script: "node_modules/next/dist/bin/next",
       args: "start -p 3000",
       cwd: "./",
