@@ -881,35 +881,35 @@ export async function GET(req: NextRequest) {
           req
         );
         // console.log("befire history: ", candidates.data.length);
-        const candidatesWithHistory = await Promise.all(
-          candidatesWithPrivateCF.map(async (candidate) => {
-            const history = await History?.findOne({
-              jobId: candidate.jobId._id,
-              candidateId: candidate._id.toString(),
-            })
-              .populate("history.currentInterviewer", "_id name email")
-              .populate("history.previousInterviewer", "_id name email")
-              .populate("history.assignmentBy", "_id name email")
-              .populate("history.note.userId", "_id name email")
-              .lean();
+        // const candidatesWithHistory = await Promise.all(
+        //   candidatesWithPrivateCF.map(async (candidate) => {
+        //     const history = await History?.findOne({
+        //       jobId: candidate.jobId._id,
+        //       candidateId: candidate._id.toString(),
+        //     })
+        //       .populate("history.currentInterviewer", "_id name email")
+        //       .populate("history.previousInterviewer", "_id name email")
+        //       .populate("history.assignmentBy", "_id name email")
+        //       .populate("history.note.userId", "_id name email")
+        //       .lean();
 
-            return {
-              ...candidate,
-              history: history
-                ? history.history.filter((entry) =>
-                    userData?.role === "admin" || userData?.role === "hr"
-                      ? true
-                      : !entry.remark?.id || !entry.remark.isPrivate
-                  )
-                : [],
-            };
-          })
-        );
+        //     return {
+        //       ...candidate,
+        //       history: history
+        //         ? history.history.filter((entry) =>
+        //             userData?.role === "admin" || userData?.role === "hr"
+        //               ? true
+        //               : !entry.remark?.id || !entry.remark.isPrivate
+        //           )
+        //         : [],
+        //     };
+        //   })
+        // );
 
         // console.log("aftetr history: ", candidatesWithHistory.length);
         return NextResponse.json([
           {
-            data: candidatesWithHistory,
+            data: candidatesWithPrivateCF,
             totalInterviews: candidates.totalInterviews,
             todaysInterviews,
             thisweeksInterviews,

@@ -20,8 +20,8 @@ export const pageMetaData = async () => {
     const title = org?.portalConfigs?.portalName || "HireTrack";
 
     const faviconUrl = org?.portalConfigs?.portalFavicon?.url || "/favicon.png";
-    console.log("$$$$###title>>>>>>>>>>>> ", title);
-    console.log("$$$$$$#faviconUrl>>>>>>>>>>>> ", faviconUrl);
+    // console.log("$$$$###title>>>>>>>>>>>> ", title);
+    // console.log("$$$$$$#faviconUrl>>>>>>>>>>>> ", faviconUrl);
     return {
       title,
       icons: {
