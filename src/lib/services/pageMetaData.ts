@@ -10,9 +10,9 @@ export const pageMetaData = async () => {
     if (!res.ok) throw new Error("Failed to fetch organization data");
 
     const data = await res.json();
-    data.data.forEach((org: any) => {
-      console.log("org", org.portalConfigs.portalName);
-    });
+    // data.data.forEach((org: any) => {
+    //   console.log("org", org.portalConfigs.portalName);
+    // });
     // Get the organization data - this will be cached by Next.js
     // We'll use client-side updates to ensure metadata is fresh when switching orgs
     const org = Array.isArray(data) ? data[0] : data?.data?.[0];
@@ -20,8 +20,8 @@ export const pageMetaData = async () => {
     const title = org?.portalConfigs?.portalName || "HireTrack";
 
     const faviconUrl = org?.portalConfigs?.portalFavicon?.url || "/favicon.png";
-    console.log("$$$$###title>>>>>>>>>>>> ", title);
-    console.log("$$$$$$#faviconUrl>>>>>>>>>>>> ", faviconUrl);
+    // console.log("$$$$###title>>>>>>>>>>>> ", title);
+    // console.log("$$$$$$#faviconUrl>>>>>>>>>>>> ", faviconUrl);
     return {
       title,
       icons: {
