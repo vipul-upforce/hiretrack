@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const mailProviders = [
   { key: "", label: "Select Mail Providers" },
@@ -198,27 +199,47 @@ export default function SMTPConfigs({ onClose }: { onClose: () => void }) {
     const credentials =
       values.mailProvider === "resend"
         ? {
-          resend_api_key: values.resend_api_key,
-          resend_from: values.resend_from,
-          reply_to: values.resend_reply_to,
-        }
+            resend_api_key: values.resend_api_key,
+            resend_from: values.resend_from,
+            reply_to: values.resend_reply_to,
+          }
         : values.mailProvider === "brevo"
           ? {
-            brevo_api_key: values.brevo_api_key,
-            brevo_from: values.brevo_from,
-            reply_to: values.brevo_reply_to,
-          }
+              brevo_api_key: values.brevo_api_key,
+              brevo_from: values.brevo_from,
+              reply_to: values.brevo_reply_to,
+            }
           : {
-            host: values.smtp_host,
-            port: values.smtp_port,
-            from: values.smtp_from,
-            user: values.smtp_user,
-            pass: values.smtp_password,
-          };
+              host: values.smtp_host,
+              port: values.smtp_port,
+              from: values.smtp_from,
+              user: values.smtp_user,
+              pass: values.smtp_password,
+            };
 
     await testConnection(values.mailProvider, credentials);
   };
-  if (isLoading) return <div className="px-6 py-4">Loading...</div>;
+
+  if (isLoading) {
+    return (
+      <div className="px-6 py-4 space-y-6 animate-in fade-in duration-200">
+        <div className="space-y-6">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+        <div className="flex justify-end gap-2 border-t border-border/10 pt-4">
+          <Skeleton className="h-10 w-24 rounded-md" />
+          <Skeleton className="h-10 w-24 rounded-md" />
+        </div>
+      </div>
+    );
+  }
 
   const formFields = [
     {
@@ -291,24 +312,35 @@ export default function SMTPConfigs({ onClose }: { onClose: () => void }) {
         onSubmit={handleSubmit}
         enableReinitialize
       >
-        {({ values, handleChange, handleBlur, handleSubmit, isSubmitting, setFieldValue }) => (
-          <Form onSubmit={handleSubmit} className="flex flex-col h-full">
+        {({
+          values,
+          handleChange,
+          handleBlur,
+          handleSubmit,
+          isSubmitting,
+          setFieldValue,
+        }) => (
+          <Form onSubmit={handleSubmit} className="flex flex-col h-full ">
             <div className="px-6 py-4 space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="mailProvider">Mail Provider</Label>
                 <Select
                   value={values.mailProvider}
-                  onValueChange={(value) => setFieldValue("mailProvider", value)}
+                  onValueChange={(value) =>
+                    setFieldValue("mailProvider", value)
+                  }
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select mail provider" />
                   </SelectTrigger>
                   <SelectContent>
-                    {mailProviders.filter(p => p.key !== "").map((provider) => (
-                      <SelectItem key={provider.key} value={provider.key}>
-                        {provider.label}
-                      </SelectItem>
-                    ))}
+                    {mailProviders
+                      .filter((p) => p.key !== "")
+                      .map((provider) => (
+                        <SelectItem key={provider.key} value={provider.key}>
+                          {provider.label}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
                 <ErrorMessage

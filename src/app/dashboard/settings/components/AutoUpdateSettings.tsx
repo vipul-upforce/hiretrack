@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/accordion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export interface AboutValues {
   enableAutoUpdate: boolean;
@@ -303,8 +304,15 @@ export default function AboutDialog({
 
   if (loading || !initialValues) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <span>Loading...</span>
+      <div className="px-6 py-4 space-y-6 animate-in fade-in duration-200">
+        <div className="space-y-1">
+          <Skeleton className="h-8 w-full" />
+        </div>
+        <div className="flex justify-between gap-2 border-t border-border/10 pt-1">
+          <Skeleton className="h-6 w-32 rounded-md" />
+          <Skeleton className="h-6 w-24 rounded-md" />
+        </div>
+        <Skeleton className="h-8 w-full rounded-md" />
       </div>
     );
   }

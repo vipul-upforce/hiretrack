@@ -59,7 +59,7 @@ const OrganizationDialog: React.FC<OrganizationDialogProps> = ({
             <RadioGroup
               value={selectedOrgId}
               onValueChange={(value) => setSelectedOrgIdLocal(value)}
-              className="space-y-2 max-h-[50vh] overflow-y-auto"
+              className="space-y-2 max-h-[50vh] "
             >
               {data.organizations.map((org) => (
                 <div

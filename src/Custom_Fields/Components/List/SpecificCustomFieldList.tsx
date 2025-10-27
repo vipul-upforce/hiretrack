@@ -379,7 +379,7 @@ export const CustomFieldItem = React.memo(
 
     return (
       <>
-        <div className="w-full">
+        <div className="w-full mb-2">
           <Card
             className={`
               w-full transition-all duration-200 border-l-4 border-l-blue-500 dark:border-l-blue-400 !bg-white dark:!bg-gray-900 !border !border-gray-200 dark:!border-gray-700/50 backdrop-blur-sm

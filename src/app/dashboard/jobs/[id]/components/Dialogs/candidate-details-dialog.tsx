@@ -53,6 +53,7 @@ import { scoreColors } from "@/lib/constants";
 import CandidateScoreCard from "../Utils/candidate-score-card";
 import { useSelector } from "react-redux";
 import { EvaluationResult } from "@/lib/ai-providers/evaluation-provider";
+import { HistoryTimelineSkeleton } from "../Candidate/history-timeine-skeleton";
 
 const labelClass = "font-semibold text-base";
 
@@ -851,11 +852,8 @@ export function CandidateDetailsDialog({
                   Candidate History
                 </h3>
                 {isHistoryLoading && !isRemarkSubmitting ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
-                    <span className="ml-2 text-sm text-muted-foreground">
-                      Loading history...
-                    </span>
+                  <div className="bg-card border border-border rounded-lg p-6">
+                    <HistoryTimelineSkeleton/>
                   </div>
                 ) : candidateHistory && candidateHistory.length > 0 ? (
                   candidateDetailsFields
@@ -870,11 +868,8 @@ export function CandidateDetailsDialog({
                       false // showHeader = false
                     )
                 ) : candidateHistory && candidateHistory.length === 0 ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
-                    <span className="ml-2 text-sm text-muted-foreground">
-                      Loading history...
-                    </span>
+                  <div className="bg-card border border-border rounded-lg p-6">
+                    <HistoryTimelineSkeleton/>
                   </div>
                 ) : (
                   <div className="text-center py-8">
@@ -926,6 +921,7 @@ export function CandidateDetailsDialog({
                     Update Logs
                   </h3>
                   <LogsTable
+                    isLoading={!historyLoaded}
                     candidate={localCandidate}
                     user={user}
                     timeLineItems={validTimeLineItems}

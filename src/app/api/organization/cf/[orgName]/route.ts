@@ -1,12 +1,13 @@
 import { Organization } from "@/lib/mongodb";
 import connectToDatabase from "@/lib/mongodb";
-import { NextResponse } from "next/server";
+import { apiRateLimiter } from "@/lib/rateLimiter";
+import { NextRequest, NextResponse } from "next/server";
 
 // Handle GET request
-export async function GET(
-  req: Request,
-  { params }: { params: Promise<{ orgName: string }> }
-) {
+const handleGetOrganization = async (
+  request: NextRequest,
+  { params }: { params: { orgName: string } }
+) => {
   await connectToDatabase();
   try {
     const { orgName } = await params;
@@ -41,4 +42,13 @@ export async function GET(
       { status: 400 }
     );
   }
+};
+
+export async function GET(
+  request: NextRequest,
+  context: { params: { orgName: string } }
+) {
+  return apiRateLimiter(request, (req: NextRequest) =>
+    handleGetOrganization(req, context)
+  );
 }

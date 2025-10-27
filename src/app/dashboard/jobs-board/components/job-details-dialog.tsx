@@ -5,9 +5,10 @@ import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { EditJobForm } from "./edit-job-form";
-import { Job } from "@/types/job";
+import type { Job } from "@/types/job";
 import { DetailsDialog } from "../../jobs/[id]/components/Dialogs/DetailsDialog";
 import { jobDetailsFields } from "./job-details-fields";
+import { Separator } from "@/components/ui/separator";
 
 interface JobDetailsDialogProps {
   job: Job | null;
@@ -17,8 +18,6 @@ interface JobDetailsDialogProps {
   onJobUpdate: (job: Job) => void;
   isEditMode?: boolean;
 }
-
-const labelClass = "font-semibold text-base";
 
 export function JobDetailsDialog({
   job,
@@ -42,9 +41,15 @@ export function JobDetailsDialog({
     setIsEditing(false);
     onOpenChange(false);
   };
+
   const header = (
-    <DialogHeader className="px-6 pt-6 ">
-      <DialogTitle className="text-lg font-semibold">Job Details</DialogTitle>
+    <DialogHeader className="px-6 pt-6 pb-4">
+      <DialogTitle className="text-2xl font-bold tracking-tight">
+        Job Details
+      </DialogTitle>
+      <p className="text-sm text-muted-foreground mt-1">
+        View and manage job information
+      </p>
     </DialogHeader>
   );
 
@@ -61,33 +66,48 @@ export function JobDetailsDialog({
       />
     </div>
   ) : (
-    <div className="flex-1 overflow-y-auto px-6 py-4 pt-4 space-y-6 border-t">
-      {jobDetailsFields.map((field, index) => {
-        if (field.shouldRender && !field.shouldRender(job)) return null;
-        return (
-          <div key={index} className="space-y-2">
-            <Label className={labelClass}>
-              {field.label.split(" |||||(")[0]}
-            </Label>
-            {field.render(job)}
-          </div>
-        );
-      })}
+    <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+      <div className="space-y-6">
+        {jobDetailsFields.map((field, index) => {
+          if (field.shouldRender && !field.shouldRender(job)) return null;
+          return (
+            <div key={index} className="group">
+              <Label className="text-sm font-semibold text-foreground uppercase tracking-wide block mb-3">
+                {field.label.split(" |||||(")[0]}
+              </Label>
+              <div className="bg-muted/30 rounded-lg p-4 border border-border/50 hover:border-border/80 transition-colors">
+                {field.render(job)}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 
   const footer = canEdit && (
-    <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4">
-      <Button variant="outline" onClick={handleClose}>
+    <div className="flex justify-end space-x-2 border-t bg-muted/20 px-6 py-4">
+      <Button
+        variant="outline"
+        onClick={handleClose}
+        className="font-medium bg-transparent"
+      >
         Close
       </Button>
-      <Button onClick={() => setIsEditing(true)} variant="primary">Edit Job</Button>
+      <Button
+        onClick={() => setIsEditing(true)}
+        variant="default"
+        className="font-medium"
+      >
+        Edit Job
+      </Button>
     </div>
   );
 
   return (
     <DetailsDialog open={isOpen} onOpenChange={handleClose}>
       {header}
+      <Separator className="mx-auto" />
       {body}
       {isEditing ? null : footer}
     </DetailsDialog>

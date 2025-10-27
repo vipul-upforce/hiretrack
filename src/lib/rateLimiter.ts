@@ -256,7 +256,7 @@ export const otpRateLimiter = createEmailOTPLimiter();
 // General API rate limiting
 export const apiRateLimiter = createRateLimiter({
   windowMs: 60 * 1000, // 1 minute
-  maxRequests: 100, // 100 requests per minute
+  maxRequests: 50, // 50 requests per minute
   message: "API rate limit exceeded",
 });
 

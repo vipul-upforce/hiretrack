@@ -446,6 +446,14 @@ export default function LoginFormContent({
     }
   }, [orgResponse]);
 
+  useEffect(() => {
+    if (selectedOrg != "" && formData.email != "" && formData.password != "") {
+      handleFormSubmit({
+        preventDefault: () => {},
+      } as unknown as React.FormEvent);
+    }
+  }, [selectedOrg]);
+
   // Set initial loading title
   // useEffect(() => {
   //   document.title = "Loading...";

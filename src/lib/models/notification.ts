@@ -167,6 +167,9 @@ export const notificationSchema = new Schema<INotification>(
   }
 );
 
+// TTL index for deleting notifications docs after 30 days
+notificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 30 });
+
 // Add compound indexes for efficient queries
 notificationSchema.index({ organizationId: 1, recipientId: 1, createdAt: -1 }); // Main query pattern
 notificationSchema.index({ organizationId: 1, recipientId: 1, isRead: 1 }); // Unread count
