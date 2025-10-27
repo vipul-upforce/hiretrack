@@ -76,28 +76,27 @@ export default function ApplyJobsContent({
     error: portalError,
   } = useGetPortalConfigsQuery(undefined);
 
-
   // Check query parameters for header/footer visibility
-  const hideHeaderParam = searchParams.get('hideHeader');
-  const hideFooterParam = searchParams.get('hideFooter');
-  const hideHeader = hideHeaderParam === 'true';
-  const hideFooter = hideFooterParam === 'true';
+  const hideHeaderParam = searchParams.get("hideHeader");
+  const hideFooterParam = searchParams.get("hideFooter");
+  const hideHeader = hideHeaderParam === "true";
+  const hideFooter = hideFooterParam === "true";
 
   // Determine if we should show header/footer based on query params and iframe status
   // Priority: explicit query params > iframe auto-hide behavior
   const hasHeaderParam = hideHeaderParam !== null;
   const hasFooterParam = hideFooterParam !== null;
 
-  const shouldShowHeader = showHeaderFooter && (
-    hasHeaderParam
-      ? !hideHeader  // If hideHeader param exists, respect its value (true/false)
-      : !isIframe    // If no param, hide only if in iframe
-  );
-  const shouldShowFooter = showHeaderFooter && (
-    hasFooterParam
-      ? !hideFooter  // If hideFooter param exists, respect its value (true/false)
-      : !isIframe    // If no param, hide only if in iframe
-  );
+  const shouldShowHeader =
+    showHeaderFooter &&
+    (hasHeaderParam
+      ? !hideHeader // If hideHeader param exists, respect its value (true/false)
+      : !isIframe); // If no param, hide only if in iframe
+  const shouldShowFooter =
+    showHeaderFooter &&
+    (hasFooterParam
+      ? !hideFooter // If hideFooter param exists, respect its value (true/false)
+      : !isIframe); // If no param, hide only if in iframe
   const { data } = useFetchAppliedApplicationQuery(
     {},
     { skip: orgName === "" }
@@ -239,7 +238,6 @@ export default function ApplyJobsContent({
     }
   }
 
-
   // useEffect(() => {
   //   checkAllowance();
   // }, [searchParams, orgName]);
@@ -270,7 +268,6 @@ export default function ApplyJobsContent({
     }
   }, [orgResponse, portalResponse, searchParams, orgName]);
 
-
   const pageInit = async () => {
     // debugger;
     // const token = Cookies.get("token");
@@ -297,6 +294,8 @@ export default function ApplyJobsContent({
           variant: "destructive",
         });
         dispatch(logout());
+        localStorage.removeItem("persist:auth");
+        localStorage.removeItem("persist:organization");
         await fetch("/api/auth/logout");
 
         window.location.href = "/auth/login";
@@ -363,6 +362,8 @@ export default function ApplyJobsContent({
     // Clear user data and token
     // Cookies.remove("token");
     dispatch(logout());
+    localStorage.removeItem("persist:auth");
+    localStorage.removeItem("persist:organization");
     await fetch("/api/auth/logout");
     toast({
       title: "Logged out",
@@ -374,7 +375,9 @@ export default function ApplyJobsContent({
   return (
     <div
       className={
-        (shouldShowHeader || shouldShowFooter) ? "flex flex-col min-h-screen relative" : "relative"
+        shouldShowHeader || shouldShowFooter
+          ? "flex flex-col min-h-screen relative"
+          : "relative"
       }
     >
       {/* Background pattern */}
@@ -400,7 +403,9 @@ export default function ApplyJobsContent({
       )}
       <main
         className={
-          (shouldShowHeader || shouldShowFooter) ? "flex-1 p-4 relative z-10" : "relative z-10"
+          shouldShowHeader || shouldShowFooter
+            ? "flex-1 p-4 relative z-10"
+            : "relative z-10"
         }
       >
         <div className="container mx-auto p-2">

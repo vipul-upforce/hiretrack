@@ -32,6 +32,8 @@ const authSlice = createSlice({
       state.user = null;
       state.token = null;
       Cookies.remove("user");
+      localStorage.removeItem("persist:auth");
+      localStorage.removeItem("persist:organization");
     },
   },
 });
