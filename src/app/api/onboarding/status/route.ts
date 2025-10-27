@@ -7,26 +7,36 @@ export async function GET(req: NextRequest) {
     await connectToDatabase();
 
     const token = req.cookies.get("auth_token")?.value;
+    const orgId = req.cookies.get("org_id")?.value;
     if (!token) {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
     }
 
-    const decryptedResponse = await verifyAndDecryptToken(token);
+    const decryptedResponse = await verifyAndDecryptToken(token, orgId);
     if (!decryptedResponse.success) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
 
     const user = decryptedResponse.user;
     if (user.role !== "admin") {
-      return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+      return NextResponse.json(
+        { error: "Admin access required" },
+        { status: 403 }
+      );
     }
 
     const settings = await Settings.findOne({
-      organizationId: user.organizationId
+      organizationId: user.organizationId,
     });
 
     if (!settings) {
-      return NextResponse.json({ error: "Settings not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Settings not found" },
+        { status: 404 }
+      );
     }
 
     const onboardingStatus = settings.onboardingStatus || {
@@ -39,7 +49,6 @@ export async function GET(req: NextRequest) {
     };
 
     return NextResponse.json({ onboardingStatus });
-
   } catch (error) {
     console.error("Error fetching onboarding status:", error);
     return NextResponse.json(
@@ -54,18 +63,25 @@ export async function PUT(req: NextRequest) {
     await connectToDatabase();
 
     const token = req.cookies.get("auth_token")?.value;
+    const orgId = req.cookies.get("org_id")?.value;
     if (!token) {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
     }
 
-    const decryptedResponse = await verifyAndDecryptToken(token);
+    const decryptedResponse = await verifyAndDecryptToken(token, orgId);
     if (!decryptedResponse.success) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
 
     const user = decryptedResponse.user;
     if (user.role !== "admin") {
-      return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+      return NextResponse.json(
+        { error: "Admin access required" },
+        { status: 403 }
+      );
     }
 
     const body = await req.json();
@@ -74,16 +90,16 @@ export async function PUT(req: NextRequest) {
       skippedSteps,
       doNotShowAgain,
       currentStep,
-      isCompleted
+      isCompleted,
     } = body;
 
     // const updateData: any = {
     //   "onboardingStatus.lastUpdated": new Date(),
     // };
 
-    const updateData = await Settings.findOne(
-      { organizationId: user.organizationId }
-    );
+    const updateData = await Settings.findOne({
+      organizationId: user.organizationId,
+    });
 
     updateData.onboardingStatus.lastUpdated = new Date();
 
@@ -105,12 +121,10 @@ export async function PUT(req: NextRequest) {
 
     await updateData.save();
 
-
     return NextResponse.json({
       success: true,
-      onboardingStatus: updateData.onboardingStatus
+      onboardingStatus: updateData.onboardingStatus,
     });
-
   } catch (error) {
     console.error("Error updating onboarding status:", error);
     return NextResponse.json(

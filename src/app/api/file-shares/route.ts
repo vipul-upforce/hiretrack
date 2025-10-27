@@ -10,8 +10,11 @@ export async function POST(request: NextRequest) {
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const decryptedResponse = await verifyAndDecryptJWTToken(token.value);
+    const orgId = request.cookies.get("org_id")?.value;
+    const decryptedResponse = await verifyAndDecryptJWTToken(
+      token.value,
+      orgId
+    );
     if (!decryptedResponse.success || !decryptedResponse.user) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
@@ -27,7 +30,6 @@ export async function POST(request: NextRequest) {
     const data = await request.json();
     const { files, shareOptions } = data;
 
-
     if (!files || !Array.isArray(files) || files.length === 0) {
       return NextResponse.json({ error: "No files provided" }, { status: 400 });
     }
@@ -42,9 +44,14 @@ export async function POST(request: NextRequest) {
     await connectToDatabase();
 
     // Get organization settings for file storage
-    const settings = await Settings!.findOne({ organizationId: user.organizationId });
+    const settings = await Settings!.findOne({
+      organizationId: user.organizationId,
+    });
     if (!settings) {
-      return NextResponse.json({ error: "Organization settings not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Organization settings not found" },
+        { status: 404 }
+      );
     }
 
     // Process each file
@@ -72,9 +79,9 @@ export async function POST(request: NextRequest) {
       results.push(result);
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      files: results 
+    return NextResponse.json({
+      success: true,
+      files: results,
     });
   } catch (error: any) {
     console.error("Error uploading files:", error);

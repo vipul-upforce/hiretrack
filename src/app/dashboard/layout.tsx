@@ -148,7 +148,7 @@ export default function DashboardLayout({
   );
   const { data: notificationCountData } = useGetNotificationCountQuery(
     undefined,
-    { skip: !userData, pollingInterval: 30000 } // Poll every 30 seconds for real-time updates
+    { skip: !userData, pollingInterval: 5000 } // Poll every 30 seconds for real-time updates
   );
   const [markAsRead] = useMarkNotificationAsReadMutation();
   const [markAllAsRead] = useMarkAllNotificationsAsReadMutation();

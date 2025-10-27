@@ -429,8 +429,16 @@ export default function LoginFormContent({
   useEffect(() => {
     const decryptSiteKey = async () => {
       if (captchaConfig?.captcha?.siteKey) {
+        // Use the organizationId from the first element of the orgResponse.data array
+        const organizationId = orgResponse?.data?.[0]?.organizationId;
+        if (!organizationId) {
+          console.error("No organizationId found in orgResponse.data[0]");
+          return;
+        }
+
         const decrypted = await getDecodedCaptcha(
-          captchaConfig.captcha.siteKey
+          captchaConfig.captcha.siteKey,
+          organizationId
         );
         if (decrypted) {
           setDecryptedSiteKey(decrypted);
@@ -438,8 +446,7 @@ export default function LoginFormContent({
       }
     };
     decryptSiteKey();
-  }, [captchaConfig]);
-
+  }, [captchaConfig, orgResponse?.data]);
   useEffect(() => {
     if (orgResponse?.portals?.length > 1) {
       setIsMultiple(true);

@@ -478,9 +478,13 @@ export async function PUT(req: NextRequest) {
     let organizationId;
     const data = await req.json();
     const token = req.cookies.get("auth_token");
+    const orgId = req.cookies.get("org_id")?.value;
     let decryptedResponse;
     if (token?.value) {
-      decryptedResponse = await verifyAndDecryptToken(String(token?.value));
+      decryptedResponse = await verifyAndDecryptToken(
+        String(token?.value),
+        orgId
+      );
       const userData = decryptedResponse.user;
       if (decryptedResponse.success) {
         organizationId = userData.organizationId || "";
@@ -650,8 +654,12 @@ export async function POST(req: NextRequest) {
     const token = req.cookies.get("auth_token");
     let decryptedResponse;
     let senderEmail;
+    const orgId = req.cookies.get("org_id")?.value;
     if (token?.value) {
-      decryptedResponse = await verifyAndDecryptToken(String(token?.value));
+      decryptedResponse = await verifyAndDecryptToken(
+        String(token?.value),
+        orgId
+      );
       const userData = decryptedResponse.user;
       if (decryptedResponse.success) {
         organizationId = userData.organizationId || "";
@@ -796,9 +804,11 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     const token = req.cookies.get("auth_token");
+    const orgId = req.cookies.get("org_id")?.value;
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value)
+        String(token?.value),
+        orgId
       );
       if (
         !decryptedResponse.success ||

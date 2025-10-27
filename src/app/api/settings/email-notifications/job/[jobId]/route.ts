@@ -25,8 +25,8 @@ export async function GET(
         { status: 401 }
       );
     }
-
-    const authResult = await verifyAndDecryptToken(token);
+    const orgId = request.cookies.get("org_id")?.value;
+    const authResult = await verifyAndDecryptToken(token, orgId);
     if (!authResult.success) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
@@ -118,8 +118,8 @@ export async function PUT(
         { status: 401 }
       );
     }
-
-    const authResult = await verifyAndDecryptToken(token);
+    const orgId = request.cookies.get("org_id")?.value;
+    const authResult = await verifyAndDecryptToken(token, orgId);
     if (!authResult.success) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
@@ -257,8 +257,8 @@ export async function DELETE(
         { status: 401 }
       );
     }
-
-    const authResult = await verifyAndDecryptToken(token);
+    const orgId = request.cookies.get("org_id")?.value;
+    const authResult = await verifyAndDecryptToken(token, orgId);
     if (!authResult.success) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }

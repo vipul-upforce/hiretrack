@@ -6,7 +6,12 @@ export interface SecureTokenOptions {
   domain?: string;
   path?: string;
 }
-
+export interface SecureOrgIdOptions {
+  maxAge?: number;
+  expires?: number;
+  domain?: string;
+  path?: string;
+}
 /**
  * Sets secure authentication tokens with improved security
  * - Sets a readable token for client-side functionality (temporary for migration)
@@ -106,4 +111,48 @@ export function getAuthToken(request: Request): string | undefined {
 
   // Prioritize httpOnly token for security
   return cookieMap.get("auth_token") || cookieMap.get("token");
+}
+
+/**
+ * Sets a secure organization ID in a cookie with enhanced security
+ * - Sets an httpOnly cookie for server-side operations
+ * - Applies consistent security flags
+ */
+export function setSecureOrgId(
+  response: NextResponse,
+  orgId: string,
+  options: SecureOrgIdOptions = {}
+) {
+  const {
+    maxAge = 30 * 24 * 60 * 60, // 30 days in seconds
+    expires = 30, // 30 days (legacy format)
+    domain,
+    path = "/",
+  } = options;
+
+  // Calculate expiration date
+  const expirationDate = new Date();
+  expirationDate.setDate(expirationDate.getDate() + expires);
+
+  // Common security flags
+  const isProduction = process.env.NODE_ENV === "production";
+  const secureFlag = isProduction; // Only use secure in production (requires HTTPS)
+
+  // Set httpOnly organization ID cookie for server-side operations
+  response.cookies.set("org_id", orgId, {
+    httpOnly: false, // Not accessible by JavaScript
+    secure: secureFlag,
+    sameSite: "strict",
+    maxAge: maxAge,
+    path: path,
+    domain: domain,
+  });
+
+  // Set additional security headers
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("X-Frame-Options", "SAMEORIGIN");
+  response.headers.set("X-XSS-Protection", "1; mode=block");
+  response.headers.set("Referrer-Policy", "no-referrer-when-downgrade");
+
+  return response;
 }

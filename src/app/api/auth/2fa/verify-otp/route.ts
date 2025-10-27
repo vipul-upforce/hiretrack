@@ -82,7 +82,10 @@ async function handleVerifyOtp(req: NextRequest) {
         { $unset: { otp: 1, otpExpires: 1 } }
       );
 
-      const response = await returnTokenBasedResponse(userData);
+      const response = await returnTokenBasedResponse(
+        userData,
+        userData[0].organizationId
+      );
       return response;
     } else {
       return NextResponse.json(
@@ -99,8 +102,8 @@ async function handleVerifyOtp(req: NextRequest) {
   }
 }
 
-const returnTokenBasedResponse = async (obj: any) => {
-  const token = await signToken(obj[0]);
+const returnTokenBasedResponse = async (obj: any, orgId: string) => {
+  const token = await signToken(obj[0], orgId);
 
   const response = NextResponse.json({
     message: "Logged In Successfully",

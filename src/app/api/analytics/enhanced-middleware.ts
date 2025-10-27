@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { jwtVerify } from "jose";
 import CryptoJS from "crypto-js";
 import { AuthenticatedUser, AnalyticsApiResponse } from "./middleware";
+import { generateOrgJwtSecret } from "@/lib/jwtSecretGenerator";
 
 // Rate limiting storage (in production, use Redis)
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
@@ -93,9 +94,11 @@ export class EnhancedAnalyticsMiddleware {
         return { user: null, error: "Authentication token not found" };
       }
 
-      const JWT_SECRET =
-        // process.env.JWT_SECRET ||
-        "hgerguhurhg_egosh_eohe_egjhagbqyuqwertyuiop";
+      // const JWT_SECRET = process.env.JWT_SECRET;
+      const orgId = cookieStore.get("org_id")?.value;
+      const JWT_SECRET = generateOrgJwtSecret(orgId);
+      console.log(JWT_SECRET, "JWT_SECRET-11");
+
       if (!JWT_SECRET) {
         console.error("JWT_SECRET not configured");
         return { user: null, error: "Server configuration error" };
@@ -246,7 +249,7 @@ export class EnhancedAnalyticsMiddleware {
   ): NextResponse {
     // Don't expose internal error details in production
     const sanitizedError =
-      process.env.ENVIRONMENT === "production"
+      process.env.NODE_ENV === "production"
         ? this.sanitizeErrorMessage(error)
         : error;
 

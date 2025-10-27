@@ -128,8 +128,8 @@ export async function PUT(req: NextRequest) {
         { status: 401 }
       );
     }
-
-    const decryptedResponse = await verifyAndDecryptToken(token.value);
+    const orgId = req.cookies.get("org_id")?.value;
+    const decryptedResponse = await verifyAndDecryptToken(token.value, orgId);
     if (!decryptedResponse?.user) {
       return NextResponse.json(
         { error: "Invalid or expired token" },

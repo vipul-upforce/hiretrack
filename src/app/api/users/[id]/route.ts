@@ -145,8 +145,9 @@ export async function PUT(
     await User.findByIdAndUpdate(id, userData);
 
     const token = req.cookies.get("auth_token");
+    const orgId = req.cookies.get("org_id")?.value;
     if (token) {
-      const data = verifyAndDecryptToken(token.value);
+      const data = verifyAndDecryptToken(token.value, orgId);
       if (data.email === userData?.email) {
         const updatedData = {
           ...data,
@@ -165,7 +166,7 @@ export async function PUT(
         //   sameSite: "strict",
         //   maxAge: 30 * 24 * 60 * 60, // 30 days
         // });
-        const response = refreshAndReAssignToken(updatedData);
+        const response = refreshAndReAssignToken(updatedData, orgId);
 
         return response;
       }
@@ -179,8 +180,8 @@ export async function PUT(
   }
 }
 
-const refreshAndReAssignToken = async (data: unknown) => {
-  const newToken = await signToken(data);
+const refreshAndReAssignToken = async (data: unknown, orgId: string) => {
+  const newToken = await signToken(data, orgId);
 
   const response = NextResponse.json({ message: "User updated successfully" });
 

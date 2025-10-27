@@ -32,6 +32,7 @@ import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { useDispatch, useSelector } from "react-redux";
 import { updateUser as updateUserInState } from "@/lib/redux/authSlice";
 import { Skeleton } from "@/components/ui/skeleton";
+import { generateOrgJwtSecret } from "@/lib/jwtSecretGenerator";
 
 interface User {
   id: string;
@@ -67,12 +68,13 @@ export default function FileStorageOptions({
   const [updateStorageConfigs, { isLoading: isUpdating }] =
     useUpdateFSConfigsMutation();
 
-  const signToken = async (payload: unknown) => {
-    const JWT_SECRET =
-      // process.env.JWT_SECRET ||
-      // process.env.NEXT_PUBLIC_JWT_SECRET ||
-      "hgerguhurhg_egosh_eohe_egjhagbqyuqwertyuiop";
-    // console.log(JWT_SECRET, "JWT_SECRET-4");
+  const signToken = async (payload: unknown, orgId: string) => {
+    // const JWT_SECRET =
+    //   process.env.JWT_SECRET ||
+    //   process.env.NEXT_PUBLIC_JWT_SECRET ||
+    //   "your_jwt_secret_key";
+    const JWT_SECRET = generateOrgJwtSecret(orgId);
+    console.log(JWT_SECRET, "JWT_SECRET-4");
     try {
       // Parse the payload as JSON
       const parsedPayload = payload;
@@ -189,7 +191,7 @@ export default function FileStorageOptions({
         description: "Storage settings updated successfully",
       });
       const updatedUser = { ...user, fileStorage: values.storageType };
-      const token = await signToken(updatedUser);
+      const token = await signToken(updatedUser, user.organizationId);
       // Cookies.set("token", String(token), {
       //   expires: 30,
       //   // maxAge: 30 * 24 * 60 * 60,

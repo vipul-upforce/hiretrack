@@ -386,6 +386,7 @@ const SignupForm = () => {
   const [isLoadingPortal, setIsLoadingPortal] = useState<boolean>(true);
   const [portalError, setPortalError] = useState<boolean>(false);
   const [decryptedSiteKey, setDecryptedSiteKey] = useState<string | null>(null);
+  const [organizationId, setOrganizationId] = useState<string | null>(null);
 
   // Fetch CAPTCHA configuration
   const {
@@ -405,7 +406,8 @@ const SignupForm = () => {
     const decryptSiteKey = async () => {
       if (captchaConfig?.captcha?.siteKey) {
         const decrypted = await getDecodedCaptcha(
-          captchaConfig.captcha.siteKey
+          captchaConfig.captcha.siteKey,
+          organizationId
         );
         if (decrypted) {
           setDecryptedSiteKey(decrypted);
@@ -413,7 +415,7 @@ const SignupForm = () => {
       }
     };
     decryptSiteKey();
-  }, [captchaConfig]);
+  }, [captchaConfig, organizationId]);
 
   // Extract orgName from query string
   useEffect(() => {
@@ -428,8 +430,10 @@ const SignupForm = () => {
   useEffect(() => {
     async function checkAllowance() {
       const data = await fetch("/api/organization");
+      const allowance = await data.json();
+      setOrganizationId(allowance.data?.[0]?.organizationId);
+
       if (!data.ok) {
-        const allowance = await data.json();
         if (!allowance.allow) {
           router.push("/signup");
         }
@@ -981,7 +985,7 @@ const SignupForm = () => {
                         decryptedSiteKey && (
                           <div className="flex justify-center">
                             <div className="recaptcha-container">
-                              <ReCAPTCHA
+                              {/* <ReCAPTCHA
                                 sitekey={
                                   process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!
                                 }
@@ -989,7 +993,14 @@ const SignupForm = () => {
                                   if (token) setCaptcha(token);
                                 }}
                                 theme={theme as "light" | "dark"}
-                              />
+                              /> */}
+                              {captchaConfig?.captcha?.enableCaptcha &&
+                                decryptedSiteKey && (
+                                  <ReCAPTCHA
+                                    sitekey={decryptedSiteKey}
+                                    onChange={(token) => setCaptcha(token)}
+                                  />
+                                )}
                             </div>
                           </div>
                         )}

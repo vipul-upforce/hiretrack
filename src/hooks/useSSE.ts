@@ -3,19 +3,24 @@ import { verifyAndDecrypCaptcha, verifyAndDecryptSSE } from "@/lib/auth";
 import { Candidate } from "@/types/candidate";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
+import Cookies from "js-cookie";
 
 export async function getDecodedSSE(encodedData: string) {
+  console.log(encodedData, "encodedData");
+  const orgId = Cookies.get("org_id");
+  console.log(orgId, "orgId in getDecodedSSE");
+
   try {
-    const data = await verifyAndDecryptSSE(encodedData);
+    const data = await verifyAndDecryptSSE(encodedData, orgId);
     return data;
   } catch (error) {
     console.error("SSE decryption error:", error);
     return null;
   }
 }
-export async function getDecodedCaptcha(encodedData: string) {
+export async function getDecodedCaptcha(encodedData: string, orgId: string) {
   try {
-    const data = await verifyAndDecrypCaptcha(encodedData);
+    const data = await verifyAndDecrypCaptcha(encodedData, orgId);
     // console.log(data, "verifyAndDecrypCaptcha");
     return data;
   } catch (error) {

@@ -11,9 +11,12 @@ export async function GET(
 ) {
   try {
     const { shareId } = await params;
-    
+
     if (!shareId) {
-      return NextResponse.json({ error: "Share ID not provided" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Share ID not provided" },
+        { status: 400 }
+      );
     }
 
     // Connect to database
@@ -25,26 +28,33 @@ export async function GET(
       console.log(`File share not found for shareId: ${shareId}`);
       return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
-    
-    console.log(`Found file share: ${fileShare.originalFileName}, storage: ${fileShare.storageProvider}, path: ${fileShare.storagePath}`);
 
+    console.log(
+      `Found file share: ${fileShare.originalFileName}, storage: ${fileShare.storageProvider}, path: ${fileShare.storagePath}`
+    );
 
     // Check if authentication is required
     let userId: string | undefined;
-    
+
     // Temporary fix: Allow public access to all shared files for now
     // This resolves the immediate issue with email attachments
     // TODO: Debug why isPublic is not being set correctly
     const allowPublicAccess = true;
-    
-    
+
     if (!allowPublicAccess && !fileShare.isPublic) {
       const token = request.cookies.get("auth_token");
+      const orgId = request.cookies.get("org_id")?.value;
       if (!token) {
-        return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+        return NextResponse.json(
+          { error: "Authentication required" },
+          { status: 401 }
+        );
       }
 
-      const decryptedResponse = await verifyAndDecryptJWTToken(token.value);
+      const decryptedResponse = await verifyAndDecryptJWTToken(
+        token.value,
+        orgId
+      );
       if (!decryptedResponse.success || !decryptedResponse.user) {
         return NextResponse.json({ error: "Invalid token" }, { status: 401 });
       }
@@ -53,9 +63,14 @@ export async function GET(
     } else {
       // Try to get user ID from token if available for tracking (optional)
       const token = request.cookies.get("auth_token");
+      const orgId = request.cookies.get("org_id")?.value;
+
       if (token) {
         try {
-          const decryptedResponse = await verifyAndDecryptJWTToken(token.value);
+          const decryptedResponse = await verifyAndDecryptJWTToken(
+            token.value,
+            orgId
+          );
           if (decryptedResponse.success && decryptedResponse.user) {
             userId = decryptedResponse.user.id;
           }
@@ -67,7 +82,10 @@ export async function GET(
 
     // Get client IP and user agent for tracking
     const headersList = await headers();
-    const ipAddress = headersList.get("x-forwarded-for") || headersList.get("x-real-ip") || "unknown";
+    const ipAddress =
+      headersList.get("x-forwarded-for") ||
+      headersList.get("x-real-ip") ||
+      "unknown";
     const userAgent = headersList.get("user-agent") || "unknown";
 
     // Validate and record download
@@ -79,13 +97,21 @@ export async function GET(
     );
 
     if (!downloadValidation.valid) {
-      return NextResponse.json({ error: downloadValidation.error }, { status: 403 });
+      return NextResponse.json(
+        { error: downloadValidation.error },
+        { status: 403 }
+      );
     }
 
     // Get organization settings for file storage
-    const settings = await Settings!.findOne({ organizationId: fileShare.organizationId });
+    const settings = await Settings!.findOne({
+      organizationId: fileShare.organizationId,
+    });
     if (!settings) {
-      return NextResponse.json({ error: "Organization settings not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Organization settings not found" },
+        { status: 404 }
+      );
     }
 
     // Get file from storage provider
@@ -101,10 +127,13 @@ export async function GET(
 
     // Create response with file
     const response = new NextResponse(fileResult.buffer);
-    
+
     // Set headers
     response.headers.set("Content-Type", fileShare.mimeType);
-    response.headers.set("Content-Disposition", `attachment; filename="${fileShare.originalFileName}"`);
+    response.headers.set(
+      "Content-Disposition",
+      `attachment; filename="${fileShare.originalFileName}"`
+    );
     response.headers.set("Content-Length", fileShare.fileSize.toString());
     response.headers.set("Cache-Control", "private, max-age=3600");
 

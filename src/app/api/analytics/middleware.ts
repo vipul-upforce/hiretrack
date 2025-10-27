@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { jwtVerify } from "jose";
 import CryptoJS from "crypto-js";
 import connectToDatabase, { User } from "@/lib/mongodb";
+import { generateOrgJwtSecret } from "@/lib/jwtSecretGenerator";
 
 // Simple in-memory rate limiting (use Redis in production)
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
@@ -44,10 +45,11 @@ export async function authenticateAnalyticsRequest(
       return null;
     }
 
+    const orgId = request.cookies.get("org_id")?.value;
+    const JWT_SECRET = generateOrgJwtSecret(orgId);
     // Use the same JWT verification as main middleware
-    const JWT_SECRET =
-      process.env.JWT_SECRET || "hgerguhurhg_egosh_eohe_egjhagbqyuqwertyuiop";
-    // console.log(JWT_SECRET, "JWT_SECRET-3");
+    // const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key";
+    console.log(JWT_SECRET, "JWT_SECRET-3");
     if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
 
     const secretKey = new TextEncoder().encode(JWT_SECRET);

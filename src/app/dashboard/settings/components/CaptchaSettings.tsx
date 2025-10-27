@@ -12,6 +12,7 @@ import {
 } from "@/lib/features/settings/settingsApi";
 import React, { useEffect, useState } from "react";
 import { getDecodedCaptcha, getDecodedSSE } from "@/hooks/useSSE";
+import Cookies from "js-cookie";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export interface CaptchaValues {
@@ -30,15 +31,18 @@ export default function CaptchaSettings({ onClose }: { onClose: () => void }) {
     siteKey: string;
     secretKey: string;
   }>({ siteKey: "", secretKey: "" });
+  const orgId = Cookies.get("org_id");
   // Decrypt siteKey and secretKey when data is available
   useEffect(() => {
     const decryptData = async () => {
       if (data?.captcha) {
         const decryptedSiteKey = await getDecodedCaptcha(
-          data.captcha.siteKey || ""
+          data.captcha.siteKey || "",
+          orgId
         );
         const decryptedSecretKey = await getDecodedCaptcha(
-          data.captcha.secretKey || ""
+          data.captcha.secretKey || "",
+          orgId
         );
         setDecryptedValues({
           siteKey: decryptedSiteKey || "",

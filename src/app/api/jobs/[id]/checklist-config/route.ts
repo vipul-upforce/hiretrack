@@ -17,8 +17,8 @@ export async function GET(
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const decryptedResponse = await verifyAndDecryptJWTToken(token);
+    const orgId = req.cookies.get("org_id")?.value;
+    const decryptedResponse = await verifyAndDecryptJWTToken(token, orgId);
     if (!decryptedResponse.success || !decryptedResponse.user) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
@@ -80,8 +80,8 @@ export async function POST(
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const decryptedResponse = await verifyAndDecryptJWTToken(token);
+    const orgId = req.cookies.get("org_id")?.value;
+    const decryptedResponse = await verifyAndDecryptJWTToken(token, orgId);
     if (!decryptedResponse.success || !decryptedResponse.user) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
@@ -180,7 +180,8 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const decryptedResponse = await verifyAndDecryptJWTToken(token);
+    const orgId = req.cookies.get("org_id")?.value;
+    const decryptedResponse = await verifyAndDecryptJWTToken(token, orgId);
     if (!decryptedResponse.success || !decryptedResponse.user) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
@@ -293,11 +294,12 @@ export async function DELETE(
 ) {
   try {
     const token = req.cookies.get("auth_token")?.value;
+    const orgId = req.cookies.get("org_id")?.value;
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const decryptedResponse = await verifyAndDecryptJWTToken(token);
+    const decryptedResponse = await verifyAndDecryptJWTToken(token, orgId);
     if (!decryptedResponse.success || !decryptedResponse.user) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }

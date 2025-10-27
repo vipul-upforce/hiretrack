@@ -2,6 +2,7 @@ import { verifyAndDecryptToken } from "@/app/actions/auth";
 import { NextRequest } from "next/server";
 import { jwtDecode } from "jwt-decode";
 import CryptoJS from "crypto-js";
+import { generateOrgJwtSecret } from "./jwtSecretGenerator";
 
 interface JWTPayload {
   user: string;
@@ -22,21 +23,23 @@ export async function auth(request: NextRequest) {
   const httpOnlyToken = request.cookies.get("auth_token");
   const regularToken = request.cookies.get("auth_token");
   const token = httpOnlyToken?.value || regularToken?.value;
+  const orgId = request.cookies.get("org_id")?.value;
 
   if (token) {
-    const decryptedResponse = await verifyAndDecryptToken(String(token));
+    const decryptedResponse = await verifyAndDecryptToken(String(token), orgId);
     if (decryptedResponse.success && decryptedResponse.user) {
       return { user: decryptedResponse.user };
     }
   }
 }
 
-export async function verifyAndDecryptJWTToken(token: string) {
-  const JWT_SECRET =
-    // process.env.JWT_SECRET ||
-    // process.env.NEXT_PUBLIC_JWT_SECRET ||
-    "hgerguhurhg_egosh_eohe_egjhagbqyuqwertyuiop";
-  // console.log(JWT_SECRET, "JWT_SECRET-5");
+export async function verifyAndDecryptJWTToken(token: string, orgId: string) {
+  // const JWT_SECRET =
+  //   process.env.JWT_SECRET ||
+  //   process.env.NEXT_PUBLIC_JWT_SECRET ||
+  //   "your_jwt_secret_key";
+  const JWT_SECRET = generateOrgJwtSecret(orgId);
+  console.log(JWT_SECRET, "JWT_SECRET-5");
   try {
     if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
 
@@ -62,12 +65,14 @@ export async function verifyAndDecryptJWTToken(token: string) {
     };
   }
 }
-export async function verifyAndDecryptSSE(token: string) {
-  const JWT_SECRET =
-    // process.env.JWT_SECRET ||
-    // process.env.NEXT_PUBLIC_JWT_SECRET ||
-    "hgerguhurhg_egosh_eohe_egjhagbqyuqwertyuiop";
-  // console.log(JWT_SECRET, "JWT_SECRET-6");
+export async function verifyAndDecryptSSE(token: string, orgId: string) {
+  // const JWT_SECRET =
+  //   process.env.JWT_SECRET ||
+  //   process.env.NEXT_PUBLIC_JWT_SECRET ||
+  //   "your_jwt_secret_key";
+  const JWT_SECRET = generateOrgJwtSecret(orgId);
+  console.log(JWT_SECRET, "JWT_SECRET-6");
+
   try {
     console.log(JWT_SECRET, "JWT_SECRET-6");
     if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
@@ -101,23 +106,25 @@ export async function getCurrentUser(
   return authResult.user as User;
 }
 
-export async function verifyAndDecrypCaptcha(token: string) {
-  const JWT_SECRET =
-    // process.env.JWT_SECRET ||
-    // process.env.NEXT_PUBLIC_JWT_SECRET ||
-    "hgerguhurhg_egosh_eohe_egjhagbqyuqwertyuiop";
+export async function verifyAndDecrypCaptcha(token: string, orgId: string) {
+  // const JWT_SECRET =
+  //   process.env.JWT_SECRET ||
+  //   process.env.NEXT_PUBLIC_JWT_SECRET ||
+  //   "your_jwt_secret_key";
+  const JWT_SECRET = generateOrgJwtSecret(orgId);
+
   try {
     if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
     if (!token) throw new Error("Token is empty");
 
-    console.log(token, "token");
-    // console.log(JWT_SECRET, "JWT_SECRET-7");
+    // console.log(token, "token");
+    console.log(JWT_SECRET, "JWT_SECRET-7");
 
     // Assume token is an AES-encrypted string (not a JWT)
     const bytes = CryptoJS.AES.decrypt(token, JWT_SECRET);
     console.log(bytes, "bytes");
     const decryptedData = bytes.toString(CryptoJS.enc.Utf8);
-    console.log(decryptedData, "decryptedData");
+    // console.log(decryptedData, "decryptedData");
     if (!decryptedData) {
       throw new Error("Decryption failed: no data returned");
     }

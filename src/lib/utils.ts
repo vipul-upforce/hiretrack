@@ -11,13 +11,15 @@ import { IJob } from "./models/job";
 // import { toast } from "@/hooks/use-toast";
 import jwt from "jsonwebtoken";
 import CryptoJS from "crypto-js";
+import { generateOrgJwtSecret } from "./jwtSecretGenerator";
 
-export const verifyAndDecryptToken = (token: string) => {
+export const verifyAndDecryptToken = (token: string, orgId?: string) => {
   try {
-    const JWT_SECRET =
-      process.env.NEXT_PUBLIC_JWT_SECRET ||
-      "hgerguhurhg_egosh_eohe_egjhagbqyuqwertyuiop";
+    // const JWT_SECRET =
+    //   process.env.NEXT_PUBLIC_JWT_SECRET || "your_jwt_secret_key";
     // console.log(JWT_SECRET, "JWT_SECRET-9");
+    const JWT_SECRET = generateOrgJwtSecret(orgId);
+    console.log(JWT_SECRET, "JWT_SECRET-9");
     if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
 
     const decoded = jwt.verify(token, JWT_SECRET);

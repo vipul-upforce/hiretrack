@@ -136,7 +136,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Decrypt API keys from database
-    aiProviders = decryptProviderKeys(aiProviders);
+    aiProviders = decryptProviderKeys(aiProviders, organizationId);
 
     const activeProvider = aiProviders.activeProvider;
     const apiKey = aiProviders[activeProvider]?.api_key;

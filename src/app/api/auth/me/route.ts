@@ -5,7 +5,9 @@ import { apiRateLimiter } from "@/lib/rateLimiter";
 const handleMeRoute = async(req: NextRequest) => {
    try {
     const token = req.cookies.get("auth_token")?.value;
+    const orgId = req.cookies.get("org_id")?.value;
 
+    console.log("orgId in /api/auth/me:", orgId);
     // Default candidate user for unauthenticated requests
     const defaultCandidateUser = {
       id: "guest",
@@ -22,7 +24,7 @@ const handleMeRoute = async(req: NextRequest) => {
       return NextResponse.json({ user: defaultCandidateUser }, { status: 200 });
     }
 
-    const result = await verifyAndDecryptToken(token);
+    const result = await verifyAndDecryptToken(token, orgId);
 
     if (result.success) {
       return NextResponse.json({ user: result.user }, { status: 200 });

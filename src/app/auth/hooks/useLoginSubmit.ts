@@ -110,6 +110,7 @@ export const useHandleLoginSubmit = ({
           email: values.email.toLowerCase().trim(),
           orgId: selectedOrg,
         }).unwrap();
+        console.log(response, "login response");
 
         if (
           response.organizations &&
@@ -122,9 +123,10 @@ export const useHandleLoginSubmit = ({
         }
         let is2FAEnabled = response.twofa;
 
-        const decryptedResponse = await verifyAndDecryptJWTToken(
-          String(response.user)
-        );
+        // const decryptedResponse = await verifyAndDecryptJWTToken(
+        //   String(response.user),
+        //   response.organizationId
+        // );
 
         // if (!decryptedResponse.success || !decryptedResponse.user) {
         //   setStatus(decryptedResponse.error || "Failed to process login.");

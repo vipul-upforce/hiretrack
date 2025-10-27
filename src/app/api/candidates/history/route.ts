@@ -31,8 +31,9 @@ export async function POST(request: NextRequest) {
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const decryptedResponse = await verifyAndDecryptJWTToken(token);
+    // Get org ID from cookies
+    const orgId = request.cookies.get("org_id")?.value;
+    const decryptedResponse = await verifyAndDecryptJWTToken(token, orgId);
     if (!decryptedResponse.success || !decryptedResponse.user) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
@@ -461,9 +462,11 @@ export async function PUT(request: NextRequest) {
     let userData;
 
     const token = request.cookies.get("auth_token");
+    const orgId = request.cookies.get("org_id")?.value;
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value)
+        String(token?.value),
+        orgId
       );
       userData = decryptedResponse.user;
       if (decryptedResponse.success) {
