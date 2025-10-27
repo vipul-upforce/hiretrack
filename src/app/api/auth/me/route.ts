@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { apiRateLimiter } from "@/lib/rateLimiter";
 
-export async function GET(req: NextRequest) {
-  try {
+const handleMeRoute = async(req: NextRequest) => {
+   try {
     const token = req.cookies.get("auth_token")?.value;
 
     // Default candidate user for unauthenticated requests
@@ -36,4 +37,8 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+export async function GET(req: NextRequest) {
+  return apiRateLimiter(req as NextRequest, handleMeRoute);
 }

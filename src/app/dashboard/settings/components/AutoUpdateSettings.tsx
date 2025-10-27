@@ -440,25 +440,27 @@ export default function AboutDialog({
                 </CardHeader> */}
                 <CardContent className="space-y-4 pt-6">
                   {!updateAvailable && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleCheckForUpdates}
-                      disabled={checkingUpdates}
-                      className="w-full bg-transparent"
-                    >
-                      {checkingUpdates ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Checking for updates...
-                        </>
-                      ) : (
-                        <>
-                          <Download className="mr-2 h-4 w-4" />
-                          Check for updates
-                        </>
-                      )}
-                    </Button>
+                    <div className="flex justify-end w-full">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleCheckForUpdates}
+                        disabled={checkingUpdates}
+                        className="bg-transparent"
+                      >
+                        {checkingUpdates ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Checking for updates...
+                          </>
+                        ) : (
+                          <>
+                            <Download className="mr-2 h-4 w-4" />
+                            Check for updates
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   )}
 
                   {/* Keep concise status messages */}

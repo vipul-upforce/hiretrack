@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { verifyAndDecryptToken } from "../../../../middleware";
 import path from "path";
 import fs from "fs/promises";
+import { apiRateLimiter } from "@/lib/rateLimiter";
 
 const ORG_BASE_DIR = path.join(process.cwd(), "organizations");
 // Handle POST request
@@ -220,8 +221,7 @@ export function OPTIONS() {
   return NextResponse.json({ message: "Method Not Allowed" }, { status: 405 });
 }
 
-//!!! THIS IMPLIES RESTRICT ACCESS TO REGISTER/ORG PAGE
-export async function GET(req: NextRequest) {
+const handleChekOrg = async(req: NextRequest) => {
   // let organizationId;
 
   // if (token?.value) {
@@ -290,4 +290,9 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+//!!! THIS IMPLIES RESTRICT ACCESS TO REGISTER/ORG PAGE
+export async function GET(req: NextRequest) {
+ return apiRateLimiter(req as NextRequest, handleChekOrg)
 }

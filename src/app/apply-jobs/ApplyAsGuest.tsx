@@ -210,6 +210,7 @@ export function ApplyAsGuestDialog({
   const [showTermsDialog, setShowTermsDialog] = useState(false);
   const [pendingFormValues, setPendingFormValues] = useState<any>(null);
   const [isSmallScreen, setIsSmallScreen] = useState(false);
+  const [isSubmittingApplication, setIsSubmittingApplication] = useState(false);
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -254,6 +255,7 @@ export function ApplyAsGuestDialog({
   const actualSubmit = async (values: CandidateFormValues) => {
     // console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
     // First check if already applied
+    setIsSubmittingApplication(true);
     if (hasAppliedAsGuest(jobId)) {
       toast({
         title: "Already Applied",
@@ -261,6 +263,7 @@ export function ApplyAsGuestDialog({
         variant: "destructive",
       });
       setIsOpen(false);
+      setIsSubmittingApplication(false);
       return;
     }
 
@@ -274,6 +277,7 @@ export function ApplyAsGuestDialog({
           "Duplicate file names found! Please rename before submitting.",
         variant: "destructive",
       });
+      setIsSubmittingApplication(false);
       return;
     }
 
@@ -416,6 +420,8 @@ export function ApplyAsGuestDialog({
         description: errorMessage,
         variant: "destructive",
       });
+    }finally{
+      setIsSubmittingApplication(false);
     }
   };
 
@@ -611,7 +617,7 @@ export function ApplyAsGuestDialog({
                   <Button
                     type={Object.keys(errors).length == 0 ? "button" : "submit"}
                     onClick={handleApply}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isSubmittingApplication}
                     className="flex-1 sm:flex-none transition-all duration-200 hover:shadow-md text-white"
                     style={{
                       backgroundColor: primaryColor,
@@ -628,7 +634,7 @@ export function ApplyAsGuestDialog({
                       target.style.borderColor = primaryColor;
                     }}
                   >
-                    {isSubmitting ? (
+                    {isSubmitting || isSubmittingApplication ? (
                       <>
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                         Saving...

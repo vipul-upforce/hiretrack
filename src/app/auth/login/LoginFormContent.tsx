@@ -446,10 +446,18 @@ export default function LoginFormContent({
     }
   }, [orgResponse]);
 
-  // Set initial loading title
   useEffect(() => {
-    document.title = "Loading...";
-  }, []);
+    if (selectedOrg != "" && formData.email != "" && formData.password != "") {
+      handleFormSubmit({
+        preventDefault: () => {},
+      } as unknown as React.FormEvent);
+    }
+  }, [selectedOrg]);
+
+  // Set initial loading title
+  // useEffect(() => {
+  //   document.title = "Loading...";
+  // }, []);
 
   // Fetch portal settings for logo and name
   useEffect(() => {

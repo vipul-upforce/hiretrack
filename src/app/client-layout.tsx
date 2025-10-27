@@ -3,17 +3,19 @@ import { useEffect, useState } from "react";
 import { useGetPortalConfigsQuery } from "@/lib/features/settings/settingsApi";
 
 import { useSelector } from "react-redux";
+import { usePathname } from "next/navigation";
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
   const { user } = useSelector((state: any) => state.auth || {});
   const [uriOrgName, setOrgName] = useState<string>();
   const [isHydrated, setIsHydrated] = useState(false);
+  const pathname = usePathname();
 
   const {
     data: portalSettings,
     isLoading,
     isError,
-    error
+    error,
   } = useGetPortalConfigsQuery(undefined, { skip: !isHydrated });
 
   // Handle hydration completion
@@ -38,6 +40,11 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
       user?.organizationInfo?.name ||
       "HireTrack";
     document.title = title;
+    console.log("###title>>>>>>>>>>>> ", title);
+    console.log("#portalSettings>>>>>>>>>>>> ", portalSettings);
+    console.log("#uriOrgName>>>>>>>>>>>> ", uriOrgName);
+    console.log("#user>>>>>>>>>>>> ", user);
+    console.log("#isHydrated>>>>>>>>>>>> ", isHydrated);
 
     const faviconUrl = portalSettings?.portalFavicon?.url || "/favicon.png";
     let favicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
@@ -51,7 +58,18 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
       newFavicon.href = faviconUrl;
       document.head.appendChild(newFavicon);
     }
-  }, [portalSettings, uriOrgName, user, isHydrated]);
+
+    // Also update apple-touch-icon for iOS devices
+    let touchIcon = document.querySelector(
+      "link[rel~='apple-touch-icon']"
+    ) as HTMLLinkElement;
+    if (!touchIcon) {
+      touchIcon = document.createElement("link");
+      touchIcon.rel = "apple-touch-icon";
+      document.head.appendChild(touchIcon);
+    }
+    touchIcon.href = faviconUrl;
+  }, [portalSettings, uriOrgName, user, isHydrated, pathname]);
 
   // Handle browser extension interference
   useEffect(() => {
@@ -87,8 +105,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
 
   // if there is an error then fallback to default info.
   if (isError) {
-
-    console.log("Failed to fetch portal settings : ", error)
+    console.log("Failed to fetch portal settings : ", error);
 
     document.title = uriOrgName || user?.organizationInfo?.name || "HireTrack";
     const favicon = document.querySelector(
@@ -98,7 +115,6 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
       favicon.href = "/favicon.png";
     }
   }
-
 
   return <div suppressHydrationWarning>{children}</div>;
 }

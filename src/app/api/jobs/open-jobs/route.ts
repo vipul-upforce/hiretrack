@@ -6,13 +6,14 @@ import {
   MAX_LENGTHS,
   sanitizeString,
 } from "@/lib/inputValidation";
+import { apiRateLimiter } from "@/lib/rateLimiter";
 
 interface CustomField {
   label: string;
   private?: boolean;
 }
 
-export async function GET(request: NextRequest) {
+const handleGetOpenJobs = async (request: NextRequest) => {
   try {
     // SECURITY FIX: Validate query parameters for public endpoint
     console.log("REQ INCOMING!!!! ");
@@ -148,4 +149,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
   }
+};
+
+export async function GET(request: NextRequest) {
+  return apiRateLimiter(request as NextRequest, handleGetOpenJobs);
 }
