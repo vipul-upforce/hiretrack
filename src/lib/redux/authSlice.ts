@@ -56,6 +56,9 @@ const authSlice = createSlice({
     logout: (state) => {
       state.user = null;
       state.isAuthenticated = false;
+      localStorage.removeItem('persist:auth');
+      localStorage.removeItem('persist:organization');
+      localStorage.removeItem('user');
     },
     updateUser: (state, action: PayloadAction<any>) => {
       if (state.user && (state.user.id || state.user.email)) {
