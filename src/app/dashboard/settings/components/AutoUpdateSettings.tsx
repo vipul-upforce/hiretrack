@@ -367,7 +367,7 @@ export default function AboutDialog({
                   </CardDescription>
                 </CardHeader> */}
                 <CardContent className="space-y-3 py-0 pt-6">
-                  <div className="flex flex-row justify-between items-start gap-3 p-0">
+                  <div className="flex flex-row gap-3 items-center p-0">
                     <div className="flex items-center gap-2">
                       <Checkbox
                         id="enableAutoUpdate"
@@ -456,7 +456,7 @@ export default function AboutDialog({
                   )}
 
                   {/* Keep concise status messages */}
-                  {updateAvailable && (
+                  {/* {updateAvailable && (
                     <Alert
                       variant={updateAvailable ? "destructive" : "default"}
                       className="border-dashed"
@@ -491,7 +491,7 @@ export default function AboutDialog({
                         </div>
                       </div>
                     </Alert>
-                  )}
+                  )} */}
                   {!updateAvailable && versionList && (
                     <Alert>
                       <CheckCircle className="h-4 w-4" />
