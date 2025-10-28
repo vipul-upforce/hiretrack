@@ -38,6 +38,7 @@ import {
 } from "../../jobs/[id]/hooks/dateTimeFormatting";
 import DesktopSkeletonHistroyLogs from "./history-logs-desktop-skeleton";
 import MobileSkeletonHistroyLogs from "./history-logs-mobile-skeleton";
+import { useRenderLogTitle } from "@/app/dashboard/hooks/useRenderLogTitle";
 
 type Props = {
   searchQuery: string;
@@ -90,6 +91,7 @@ export function ServerHistoryLogs({
     { offset: historyOffset, limit: historyPageSize, query: searchQuery },
     { skip: false }
   );
+  const { renderLogTitle } = useRenderLogTitle();
   const historyLogs: LogEntry[] = historyResp?.logs || [];
   const totalHistoryLines = historyResp?.totalLines || 0;
   const historyBusy = historyLoading || historyFetching;
@@ -189,7 +191,7 @@ export function ServerHistoryLogs({
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <div className="font-medium text-pretty">
-                          {log.title || "—"}
+                          {renderLogTitle(log)}
                         </div>
                         {(log as any).note?.description &&
                           typeof (log as any).note.description === "string" && (
@@ -287,7 +289,7 @@ export function ServerHistoryLogs({
                         <TableCell className="align-top">
                           <div className="max-w-[420px] space-y-1">
                             <div className="font-medium truncate">
-                              {log.title || "—"}
+                              {renderLogTitle(log)}
                             </div>
                             {(log as any).note?.description &&
                               typeof (log as any).note.description ===
