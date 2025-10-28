@@ -48,7 +48,7 @@ export interface FormValues {
 // Interface for AssignCandidateDialog props
 export interface AssignCandidateDialogProps {
   candidate: Candidate;
-  refetch: () => void;
+  refetch: () => Promise<void>;
   isOpen?: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdate: (updatedCandidate: Candidate) => void;

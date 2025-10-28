@@ -58,6 +58,7 @@ import dayjs from "dayjs";
 import { useSanitizeFiles } from "@/hooks/useSanitizeFiles";
 import { useSelector } from "react-redux";
 import { Textarea } from "@/components/ui/textarea";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 export function AssignCandidateDialog({
   candidate,
@@ -90,6 +91,7 @@ export function AssignCandidateDialog({
     handleSubmit,
     handleUnassign,
     confirmUnassign,
+    isUnassigning,
   } = useAssignCandidate({
     candidate,
     refetch,
@@ -1071,9 +1073,11 @@ export function AssignCandidateDialog({
                         <Button
                           type="button"
                           variant="outline"
+                          disabled={isUnassigning}
                           onClick={handleUnassign}
                         >
-                          Mark As Done
+                          {isUnassigning && <LoadingSpinner w={5} />}
+                          {isUnassigning ? "Marking..." : "Mark As Done"}
                         </Button>
                       )}
                     </div>
