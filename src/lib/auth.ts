@@ -23,7 +23,37 @@ export async function auth(request: NextRequest) {
   const httpOnlyToken = request.cookies.get("auth_token");
   const regularToken = request.cookies.get("auth_token");
   const token = httpOnlyToken?.value || regularToken?.value;
-  const orgId = request.cookies.get("org_id")?.value;
+  let orgId = request.cookies.get("org_id")?.value;
+
+  if (!orgId) {
+    try {
+      // Fetch the first organization's ID if orgId is missing
+      const response = await fetch("/api/organization");
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.length > 0) {
+          orgId = data[0]._id;
+        } else {
+          return {
+            success: false,
+            error: "No organizations found",
+          };
+        }
+      } else {
+        return {
+          success: false,
+          error: "Failed to fetch organization ID",
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          "Error fetching organization ID: " +
+          (error instanceof Error ? error.message : "Unknown error"),
+      };
+    }
+  }
 
   if (token) {
     const decryptedResponse = await verifyAndDecryptToken(String(token), orgId);

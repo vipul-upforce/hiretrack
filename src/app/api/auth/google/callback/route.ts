@@ -128,7 +128,11 @@ export async function GET(req: NextRequest) {
     }
 
     // Decrypt client secret
-    const clientSecret = decryptText(settings.googleCalendar.clientSecret);
+    const orgId = req.cookies.get("org_id")?.value;
+    const clientSecret = decryptText(
+      settings.googleCalendar.clientSecret,
+      orgId
+    );
 
     // Create OAuth2 client
     const redirectUri = getRedirectUri(req);
@@ -241,9 +245,9 @@ export async function GET(req: NextRequest) {
     // console.log("User email:", userEmail);
 
     // Encrypt and save tokens
-    const encryptedAccessToken = encryptText(tokens.access_token || "");
+    const encryptedAccessToken = encryptText(tokens.access_token || "", orgId);
     const encryptedRefreshToken = tokens.refresh_token
-      ? encryptText(tokens.refresh_token)
+      ? encryptText(tokens.refresh_token, orgId)
       : "";
 
     await Settings.findOneAndUpdate(

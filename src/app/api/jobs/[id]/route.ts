@@ -43,10 +43,12 @@ export async function PUT(
     const data = await request.json();
     const { id } = await params;
     const token = request.cookies.get("auth_token");
+    const orgId = request.cookies.get("org_id")?.value;
     let userData;
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value)
+        String(token?.value),
+        orgId
       );
       if (decryptedResponse.success) {
         userData = decryptedResponse.user;
@@ -103,9 +105,11 @@ export async function PUT(
           triggerUserName,
         });
         console.log("Notfyy nob Update === =- ");
-
       } catch (notificationError) {
-        console.error("Failed to send job update notification:", notificationError);
+        console.error(
+          "Failed to send job update notification:",
+          notificationError
+        );
         // Don't fail the API call if notification fails
       }
     }

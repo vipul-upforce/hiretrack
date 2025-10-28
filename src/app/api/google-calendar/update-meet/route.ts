@@ -21,9 +21,11 @@ export async function PUT(req: NextRequest) {
     // Verify user
     let organizationId = "";
     const token = req.cookies.get("auth_token");
+    const orgId = req.cookies.get("org_id")?.value;
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value)
+        String(token?.value),
+        orgId
       );
       const userData = decryptedResponse.user;
       if (decryptedResponse.success) {
@@ -55,9 +57,15 @@ export async function PUT(req: NextRequest) {
     }
 
     // Decrypt credentials
-    const clientSecret = decryptText(settings.googleCalendar.clientSecret);
-    const accessToken = decryptText(settings.googleCalendar.accessToken);
-    const refreshToken = decryptText(settings.googleCalendar.refreshToken);
+    const clientSecret = decryptText(
+      settings.googleCalendar.clientSecret,
+      orgId
+    );
+    const accessToken = decryptText(settings.googleCalendar.accessToken, orgId);
+    const refreshToken = decryptText(
+      settings.googleCalendar.refreshToken,
+      orgId
+    );
 
     // Create OAuth2 client
     const oauth2Client = createOAuth2Client({
@@ -216,9 +224,11 @@ export async function DELETE(req: NextRequest) {
     let userData: any = null;
 
     const token = req.cookies.get("auth_token");
+    const orgId = req.cookies.get("org_id")?.value;
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value)
+        String(token?.value),
+        orgId
       );
       userData = decryptedResponse.user;
 
@@ -259,9 +269,15 @@ export async function DELETE(req: NextRequest) {
     }
 
     // Decrypt credentials
-    const clientSecret = decryptText(settings.googleCalendar.clientSecret);
-    const accessToken = decryptText(settings.googleCalendar.accessToken);
-    const refreshToken = decryptText(settings.googleCalendar.refreshToken);
+    const clientSecret = decryptText(
+      settings.googleCalendar.clientSecret,
+      orgId
+    );
+    const accessToken = decryptText(settings.googleCalendar.accessToken, orgId);
+    const refreshToken = decryptText(
+      settings.googleCalendar.refreshToken,
+      orgId
+    );
 
     // Create OAuth2 client
     const oauth2Client = createOAuth2Client({

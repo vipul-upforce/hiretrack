@@ -33,9 +33,11 @@ export async function GET(req: NextRequest) {
     // Verify user is admin
     let organizationId = "";
     const token = req.cookies.get("auth_token");
+    const orgId = req.cookies.get("org_id")?.value;
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value)
+        String(token?.value),
+        orgId
       );
       const userData = decryptedResponse.user;
       if (decryptedResponse.success) {
@@ -116,7 +118,10 @@ export async function GET(req: NextRequest) {
     }
 
     // Decrypt client secret
-    const clientSecret = decryptText(settings.googleCalendar.clientSecret);
+    const clientSecret = decryptText(
+      settings.googleCalendar.clientSecret,
+      orgId
+    );
 
     // Create OAuth2 client
     const redirectUri = getRedirectUri(req);

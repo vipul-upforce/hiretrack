@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
   try {
     console.log("🚀 Google Meet scheduling started");
     await connectToDatabase();
-    
+
     if (!Settings) {
       console.error("❌ Settings model not found");
       return NextResponse.json(
@@ -40,14 +40,16 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
-    
+
     // Verify user
     let organizationId = "";
     let userId = "";
     const token = req.cookies.get("auth_token");
+    const orgId = req.cookies.get("org_id")?.value;
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value)
+        String(token?.value),
+        orgId
       );
       const userData = decryptedResponse.user;
       if (decryptedResponse.success) {
@@ -62,7 +64,7 @@ export async function POST(req: NextRequest) {
 
     const body: ScheduleMeetRequest = await req.json();
     console.log("📝 Request body:", JSON.stringify(body, null, 2));
-    
+
     const {
       candidateId,
       candidateName,
@@ -80,8 +82,11 @@ export async function POST(req: NextRequest) {
     // Get Google Calendar settings
     const settings = await Settings.findOne({ organizationId });
     console.log("⚙️ Settings found:", !!settings);
-    console.log("🔗 Google Calendar connected:", settings?.googleCalendar?.isConnected);
-    
+    console.log(
+      "🔗 Google Calendar connected:",
+      settings?.googleCalendar?.isConnected
+    );
+
     if (!settings?.googleCalendar?.isConnected) {
       console.error("❌ Google Calendar not connected");
       return NextResponse.json(
@@ -91,9 +96,15 @@ export async function POST(req: NextRequest) {
     }
 
     // Decrypt credentials
-    const clientSecret = decryptText(settings.googleCalendar.clientSecret);
-    const accessToken = decryptText(settings.googleCalendar.accessToken);
-    const refreshToken = decryptText(settings.googleCalendar.refreshToken);
+    const clientSecret = decryptText(
+      settings.googleCalendar.clientSecret,
+      orgId
+    );
+    const accessToken = decryptText(settings.googleCalendar.accessToken, orgId);
+    const refreshToken = decryptText(
+      settings.googleCalendar.refreshToken,
+      orgId
+    );
 
     // Create OAuth2 client
     const oauth2Client = createOAuth2Client({
@@ -113,37 +124,38 @@ export async function POST(req: NextRequest) {
     const calendar = google.calendar({ version: "v3", auth: oauth2Client });
 
     // Get organization timezone from settings
-    let organizationTimezone = settings.timeZone?.name || 'Asia/Kolkata';
-    
+    let organizationTimezone = settings.timeZone?.name || "Asia/Kolkata";
+
     // Map common timezone names to Google Calendar format
     const timezoneMap: { [key: string]: string } = {
-      'Asia/Kolkata': 'Asia/Kolkata',
-      'America/New_York': 'America/New_York',
-      'America/Los_Angeles': 'America/Los_Angeles',
-      'Europe/London': 'Europe/London',
-      'GMT+05:30': 'Asia/Kolkata',
-      'GMT+00:00': 'UTC',
-      'GMT-05:00': 'America/New_York',
-      'GMT-08:00': 'America/Los_Angeles',
+      "Asia/Kolkata": "Asia/Kolkata",
+      "America/New_York": "America/New_York",
+      "America/Los_Angeles": "America/Los_Angeles",
+      "Europe/London": "Europe/London",
+      "GMT+05:30": "Asia/Kolkata",
+      "GMT+00:00": "UTC",
+      "GMT-05:00": "America/New_York",
+      "GMT-08:00": "America/Los_Angeles",
     };
-    
+
     // Use mapped timezone if available, otherwise use the original
-    organizationTimezone = timezoneMap[organizationTimezone] || organizationTimezone;
-    
+    organizationTimezone =
+      timezoneMap[organizationTimezone] || organizationTimezone;
+
     console.log("🌍 Organization timezone:", {
       original: settings.timeZone?.name,
       mapped: organizationTimezone,
-      offset: settings.timeZone?.offset
+      offset: settings.timeZone?.offset,
     });
-    
+
     // Calculate end time
     const startDateTime = new Date(scheduledTime);
     const endDateTime = new Date(startDateTime.getTime() + duration * 60000);
-    
+
     console.log("⏰ Meeting time:", {
       start: startDateTime.toISOString(),
       end: endDateTime.toISOString(),
-      timezone: organizationTimezone
+      timezone: organizationTimezone,
     });
 
     // Build description with notes and attachments
@@ -157,48 +169,66 @@ Candidate: ${candidateName}`;
     }
 
     // Upload meeting attachments and add to description
-    const validAttachments = meetingAttachments?.filter(att => att && att.name && att.url) || [];
+    const validAttachments =
+      meetingAttachments?.filter((att) => att && att.name && att.url) || [];
     if (validAttachments.length > 0) {
       description += `\n\nAttachments:`;
-      
+
       const fileStorageSettings = settings.fileStorage;
       const uploadPromises = validAttachments.map(async (attachment) => {
         try {
           let uploadedUrl = "";
           const timestamp = new Date().getTime();
-          const uploadName = attachment.name || `meeting_attachment_${timestamp}`;
-          
+          const uploadName =
+            attachment.name || `meeting_attachment_${timestamp}`;
+
           // Convert attachment data to base64 if needed
-          const base64Data = attachment.url.startsWith('data:') ? attachment.url : `data:${attachment.type};base64,${attachment.url}`;
-          
+          const base64Data = attachment.url.startsWith("data:")
+            ? attachment.url
+            : `data:${attachment.type};base64,${attachment.url}`;
+
           switch (fileStorageSettings?.storageType) {
             case "cloudinary":
-              uploadedUrl = await uploadFile(base64Data, "documents", organizationId, uploadName);
+              uploadedUrl = await uploadFile(
+                base64Data,
+                "documents",
+                organizationId,
+                uploadName
+              );
               break;
             case "s3":
-              uploadedUrl = await uploadFileToS3(base64Data, "documents", organizationId, uploadName);
+              uploadedUrl = await uploadFileToS3(
+                base64Data,
+                "documents",
+                organizationId,
+                uploadName
+              );
               break;
             default:
-              uploadedUrl = await saveFileLocally(base64Data, "documents", uploadName);
+              uploadedUrl = await saveFileLocally(
+                base64Data,
+                "documents",
+                uploadName
+              );
           }
-          
+
           return { name: attachment.name, url: uploadedUrl };
         } catch (error) {
           console.error("Failed to upload attachment:", error);
           return { name: attachment.name, url: "Upload failed" };
         }
       });
-      
+
       const uploadedAttachments = await Promise.all(uploadPromises);
-      
+
       // Get the base URL from the request headers
-      const protocol = req.headers.get('x-forwarded-proto') || 'http';
-      const host = req.headers.get('host') || 'localhost:3000';
+      const protocol = req.headers.get("x-forwarded-proto") || "http";
+      const host = req.headers.get("host") || "localhost:3000";
       const baseUrl = `${protocol}://${host}`;
-      
+
       uploadedAttachments.forEach((attachment) => {
         // If it's a local file URL, prepend the base URL
-        const fullUrl = attachment.url.startsWith('/api/files') 
+        const fullUrl = attachment.url.startsWith("/api/files")
           ? `${baseUrl}${attachment.url}`
           : attachment.url;
         description += `\n- ${attachment.name}: ${fullUrl}`;
@@ -245,7 +275,7 @@ Candidate: ${candidateName}`;
       conferenceDataVersion: 1,
       sendUpdates: "all",
     });
-    
+
     console.log("✅ Google Calendar event created:", response.data.id);
     console.log("🔗 Meeting link:", response.data.hangoutLink);
 
@@ -256,12 +286,15 @@ Candidate: ${candidateName}`;
     const summary = event.summary;
 
     // Store initial attendee list with 'needsAction' status
-    const initialAttendeeResponses = guests.map(email => ({
+    const initialAttendeeResponses = guests.map((email) => ({
       email,
-      name: email === candidateEmail ? candidateName : 
-            email === settings.googleCalendar?.connectedEmail ? interviewerName : 
-            email.split('@')[0], // Default to email prefix for other attendees
-      responseStatus: 'needsAction' as const,
+      name:
+        email === candidateEmail
+          ? candidateName
+          : email === settings.googleCalendar?.connectedEmail
+            ? interviewerName
+            : email.split("@")[0], // Default to email prefix for other attendees
+      responseStatus: "needsAction" as const,
       lastUpdated: new Date(),
       notificationSent: false,
     }));
@@ -269,7 +302,7 @@ Candidate: ${candidateName}`;
     // Update candidate record with Google Meet info and initial attendee responses
     if (candidateId) {
       await Candidate.findByIdAndUpdate(candidateId, {
-        'assignment.googleMeet': {
+        "assignment.googleMeet": {
           eventId,
           meetingLink,
           htmlLink,
@@ -279,31 +312,35 @@ Candidate: ${candidateName}`;
           lastSyncedAt: new Date(),
         },
       });
-      console.log("✅ Updated candidate with meeting details and attendee list");
+      console.log(
+        "✅ Updated candidate with meeting details and attendee list"
+      );
     }
 
     // Try to set up webhook for this event (non-blocking)
     try {
       // Generate unique channel ID
       const channelId = `hiretrack-${organizationId}-${Date.now()}`;
-      const expirationTime = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 days from now
-      
+      const expirationTime = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days from now
+
       // Only set up webhook if we have a valid BASE_URL (production environment)
-      if (process.env.BASE_URL && process.env.ENVIRONMENT === 'production') {
+      if (process.env.BASE_URL && process.env.ENVIRONMENT === "production") {
         const webhookUrl = `${process.env.BASE_URL}/api/google-calendar/webhook`;
-        
+
         // Watch the event for changes
         const watchResponse = await calendar.events.watch({
-          calendarId: 'primary',
+          calendarId: "primary",
           requestBody: {
             id: channelId,
-            type: 'web_hook',
+            type: "web_hook",
             address: webhookUrl,
-            token: process.env.GOOGLE_CALENDAR_WEBHOOK_TOKEN || 'hiretrack-webhook-secret',
+            token:
+              process.env.GOOGLE_CALENDAR_WEBHOOK_TOKEN ||
+              "hiretrack-webhook-secret",
             expiration: expirationTime.toString(),
           },
         });
-        
+
         // Store webhook subscription
         if (watchResponse.data.resourceId) {
           const { WebhookSubscription } = await import("@/lib/mongodb");
@@ -313,17 +350,22 @@ Candidate: ${candidateName}`;
             channelId: channelId,
             eventId: eventId,
             candidateId: candidateId,
-            jobId: body.jobId || '',
+            jobId: body.jobId || "",
             expirationTime: new Date(expirationTime),
             active: true,
           });
           console.log("✅ Webhook subscription created for event:", eventId);
         }
       } else {
-        console.log("ℹ️ Webhook not configured (development environment or missing BASE_URL)");
+        console.log(
+          "ℹ️ Webhook not configured (development environment or missing BASE_URL)"
+        );
       }
     } catch (webhookError) {
-      console.error("⚠️ Failed to set up webhook (non-critical):", webhookError);
+      console.error(
+        "⚠️ Failed to set up webhook (non-critical):",
+        webhookError
+      );
       // Continue without webhook - manual sync will be available
     }
 
@@ -339,18 +381,21 @@ Candidate: ${candidateName}`;
     });
   } catch (error) {
     console.error("Google Meet scheduling error:", error);
-    
+
     // Handle token expiry
     if (error instanceof Error && error.message.includes("invalid_grant")) {
       return NextResponse.json(
-        { error: "Google Calendar token expired. Please reconnect in settings." },
+        {
+          error: "Google Calendar token expired. Please reconnect in settings.",
+        },
         { status: 401 }
       );
     }
-    
+
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Failed to schedule meeting",
+        error:
+          error instanceof Error ? error.message : "Failed to schedule meeting",
       },
       { status: 500 }
     );

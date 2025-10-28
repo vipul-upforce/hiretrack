@@ -47,6 +47,7 @@ export async function POST(req: NextRequest) {
     console.log("🔐 Verifying user token...");
     let organizationId = "";
     const token = req.cookies.get("auth_token");
+    const orgId = req.cookies.get("org_id")?.value;
     if (!token?.value) {
       console.log("❌ No token provided");
       return NextResponse.json(
@@ -60,7 +61,8 @@ export async function POST(req: NextRequest) {
 
     try {
       const decryptedResponse = await verifyAndDecryptToken(
-        String(token.value)
+        String(token.value),
+        orgId
       );
       if (!decryptedResponse.success) {
         console.log("❌ Invalid token:", decryptedResponse);
@@ -171,9 +173,18 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const clientSecret = decryptText(settings.googleCalendar.clientSecret);
-      const accessToken = decryptText(settings.googleCalendar.accessToken);
-      const refreshToken = decryptText(settings.googleCalendar.refreshToken);
+      const clientSecret = decryptText(
+        settings.googleCalendar.clientSecret,
+        orgId
+      );
+      const accessToken = decryptText(
+        settings.googleCalendar.accessToken,
+        orgId
+      );
+      const refreshToken = decryptText(
+        settings.googleCalendar.refreshToken,
+        orgId
+      );
 
       console.log("✅ Credentials decrypted successfully");
 

@@ -14,6 +14,14 @@ export async function verifyAndDecryptToken(token: string, orgId: string) {
   //   process.env.JWT_SECRET ||
   //   process.env.NEXT_PUBLIC_JWT_SECRET ||
   //   "your_jwt_secret_key";
+
+  if (!orgId) {
+    return {
+      success: false,
+      error: "Organization ID is missing from cookies",
+    };
+  }
+
   const JWT_SECRET = generateOrgJwtSecret(orgId);
   // console.log(JWT_SECRET, "JWT_SECRET-10");
 
@@ -67,7 +75,7 @@ export async function middleware(request: NextRequest) {
 
   const token = httpOnlyToken?.value;
   const orgId = request.cookies.get("org_id")?.value;
-  if (token) {
+  if (token && orgId) {
     const decryptedResponse = await verifyAndDecryptToken(String(token), orgId);
     if (decryptedResponse.success) {
       userData = decryptedResponse.user as unknown as {

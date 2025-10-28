@@ -98,7 +98,10 @@ export class AIEvaluationService {
         aiProviders.gemini.api_key.includes("U2FsdGVkX1")
       ) {
         console.log("API keys appear to be encrypted, decrypting...");
-        aiProviders = decryptProviderKeys(aiProviders);
+        aiProviders = decryptProviderKeys(
+          aiProviders,
+          candidate.organizationId
+        );
       }
 
       const activeProvider = aiProviders.activeProvider as AIProviderType;

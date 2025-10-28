@@ -89,9 +89,15 @@ export async function POST(req: NextRequest) {
     }
 
     // Decrypt credentials
-    const clientSecret = decryptText(settings.googleCalendar.clientSecret);
-    const accessToken = decryptText(settings.googleCalendar.accessToken);
-    const refreshToken = decryptText(settings.googleCalendar.refreshToken);
+    const clientSecret = decryptText(
+      settings.googleCalendar.clientSecret,
+      orgId
+    );
+    const accessToken = decryptText(settings.googleCalendar.accessToken, orgId);
+    const refreshToken = decryptText(
+      settings.googleCalendar.refreshToken,
+      orgId
+    );
 
     // Create OAuth2 client
     const oauth2Client = createOAuth2Client({

@@ -89,9 +89,11 @@ export async function POST(request: NextRequest) {
 
     try {
       const token = request.cookies.get("auth_token");
+      const orgId = request.cookies.get("org_id")?.value;
       if (token?.value) {
         const decryptedResponse = await verifyAndDecryptToken(
-          String(token?.value)
+          String(token?.value),
+          orgId
         );
         userData = decryptedResponse.user;
         if (decryptedResponse.success) {

@@ -24,9 +24,11 @@ export async function POST(req: NextRequest) {
     let senderUserId;
     let senderName;
     const token = req.cookies.get("auth_token");
+    const orgId = req.cookies.get("org_id")?.value;
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value)
+        String(token?.value),
+        orgId
       );
       if (decryptedResponse.success && decryptedResponse.user) {
         senderEmail = decryptedResponse.user.email;

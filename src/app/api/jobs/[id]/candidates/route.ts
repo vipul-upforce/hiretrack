@@ -13,9 +13,11 @@ export async function GET(
     await connectToDatabase();
     let role = "";
     const token = _request.cookies.get("auth_token");
+    const orgId = _request.cookies.get("org_id")?.value;
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value)
+        String(token?.value),
+        orgId
       );
       const userData = decryptedResponse.user;
       if (decryptedResponse.success) {
