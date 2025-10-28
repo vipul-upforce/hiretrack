@@ -6,7 +6,7 @@ import {
   useLazyGetNginxFileContentQuery,
 } from "@/lib/features/settings/settingsApi";
 import NginxLogsSkeleton from "./nginx-logs-skeleton";
-
+import { Skeleton } from "@/components/ui/skeleton";
 type Props = {
   searchQuery: string;
   setSearchQuery: (v: string) => void;
@@ -27,7 +27,7 @@ export function NginxLogs({ searchQuery, setSearchQuery, onError }: Props) {
 
   const {
     data: nginxData,
-    isLoading: isFilesLoading,
+    isFetching: isFilesLoading,
     isError: isFilesError,
     error: filesError,
   } = useGetNginxLogFilesQuery(undefined, { skip: !!searchQuery });
@@ -36,7 +36,7 @@ export function NginxLogs({ searchQuery, setSearchQuery, onError }: Props) {
     triggerGetFileContent,
     {
       data: fileData,
-      isLoading: isFileLoading,
+      isFetching: isFileLoading,
       isError: isFileError,
       error: fileError,
     },
@@ -88,16 +88,12 @@ export function NginxLogs({ searchQuery, setSearchQuery, onError }: Props) {
     if (!selectedFile || isFetchingMore) return;
     if (offset >= totalLines && totalLines !== 0) return;
 
-    const scrollToBottom = () => {
-      if (logContainerRef.current) {
-        const container = logContainerRef.current;
-        container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
-      }
-    };
-
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && !isFetchingMore) {
+          const container = logContainerRef.current;
+          if (!container) return;
+
           setIsFetchingMore(true);
           triggerGetFileContent({
             file: selectedFile,
@@ -110,7 +106,7 @@ export function NginxLogs({ searchQuery, setSearchQuery, onError }: Props) {
               setFileContent((prev) => [...prev, ...(data.content || [])]);
               setOffset((data.offset || 0) + (data.content?.length || 0));
               setTotalLines(data.totalLines || 0);
-              scrollToBottom();
+
             })
             .catch((err) => {
               onError?.("Error fetching more logs: " + err.message);
@@ -266,12 +262,42 @@ export function NginxLogs({ searchQuery, setSearchQuery, onError }: Props) {
                     <div id="log-sentinel" className="h-1" />
                   </pre>
                 ) : (
-                  <div className="text-gray-500 dark:text-gray-400 text-sm">
-                    {searchQuery && !isLoading
-                      ? "No logs match the search query."
-                      : !searchQuery
-                        ? "No content available."
-                        : "Loading..."}
+                  <div className="flex-1 flex items-center justify-center h-full">
+                    {searchQuery && !isLoading ? (
+                      <div className="text-center py-10">
+                        <p className="text-lg font-semibold">
+                          No matching logs found
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Try adjusting your search query or clear the filter.
+                        </p>
+                      </div>
+                    ) : !searchQuery && !isLoading ? (
+                      <div className="flex flex-col items-center justify-center py-16 bg-muted/50 rounded-md w-full">
+                        <p className="text-lg font-semibold mb-1">
+                          No content available
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          The selected log file is empty or unavailable.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="w-full space-y-2">
+                        {Array.from({ length: 100 }).map((_, i) => {
+                          const randomWidth =
+                            Math.floor(Math.random() * 50) + 50; 
+                          return (
+                            <Skeleton
+                              key={i}
+                              className="rounded-md h-6"
+                              style={{
+                                width: `${randomWidth}%`
+                              }}
+                            />
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 )}
                 {isFetchingMore && fileContent.length > 0 && (
