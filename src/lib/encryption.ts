@@ -27,6 +27,7 @@ export function encryptText(text: string, orgId: string): string {
  */
 export function decryptText(encryptedText: string, orgId: string): string {
   if (!encryptedText) return "";
+  console.log(orgId, ">>>>>> orgId in decryptText");
   const ENCRYPTION_KEY = generateOrgJwtSecret(orgId);
   console.log(ENCRYPTION_KEY, "ENCRYPTION_KEY in encryptText");
   try {

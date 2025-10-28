@@ -103,9 +103,11 @@ export async function GET(req: NextRequest) {
         }
       );
     }
-
+    // const orgId = req.cookies.get("org_id")?.value;
     // Get settings
-    const settings = await Settings.findOne({ organizationId });
+    const settings = await Settings.findOne({
+      organizationId: organizationId,
+    });
     if (
       !settings?.googleCalendar?.clientId ||
       !settings?.googleCalendar?.clientSecret
@@ -128,10 +130,14 @@ export async function GET(req: NextRequest) {
     }
 
     // Decrypt client secret
-    const orgId = req.cookies.get("org_id")?.value;
+    // console.log(orgId, "orgId in google calendar callback route");
+    console.log(
+      organizationId,
+      "organizationId in google calendar callback route"
+    );
     const clientSecret = decryptText(
       settings.googleCalendar.clientSecret,
-      orgId
+      organizationId
     );
 
     // Create OAuth2 client
@@ -245,13 +251,16 @@ export async function GET(req: NextRequest) {
     // console.log("User email:", userEmail);
 
     // Encrypt and save tokens
-    const encryptedAccessToken = encryptText(tokens.access_token || "", orgId);
+    const encryptedAccessToken = encryptText(
+      tokens.access_token || "",
+      organizationId
+    );
     const encryptedRefreshToken = tokens.refresh_token
-      ? encryptText(tokens.refresh_token, orgId)
+      ? encryptText(tokens.refresh_token, organizationId)
       : "";
 
     await Settings.findOneAndUpdate(
-      { organizationId },
+      { organizationId: organizationId },
       {
         $set: {
           "googleCalendar.isConnected": true,

@@ -5,6 +5,10 @@ const jwtSecretCache: Map<string, string> = new Map();
 
 // Function to generate a deterministic JWT secret based on organizationId
 export function generateOrgJwtSecret(organizationId: string): string {
+  console.log(
+    organizationId,
+    "++++++++++++++++++++ organizationId in generateOrgJwtSecret"
+  );
   if (!organizationId) {
     throw new Error("organizationId is required");
   }
