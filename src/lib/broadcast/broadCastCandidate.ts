@@ -15,7 +15,7 @@ export function broadcastCandidateUpdate(
   orgClients?.forEach(async (client: any) => {
     try {
       const encodedSSE = await signToken(candidate, orgId);
-      console.log(encodedSSE, " .......encodedSSE");
+      // console.log(encodedSSE, " .......encodedSSE");
       const data = `data: ${JSON.stringify({ type: "candidateUpdate", candidate: encodedSSE })}\n\n`;
       const clientsCount = Array.from(global.sseClients.entries()).length;
       client.controller.enqueue(encoder.encode(data));
