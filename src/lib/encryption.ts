@@ -27,12 +27,9 @@ export function encryptText(text: string, orgId: string): string {
  */
 export function decryptText(encryptedText: string, orgId: string): string {
   if (!encryptedText) return "";
-  console.log(orgId, ">>>>>> orgId in decryptText");
   const ENCRYPTION_KEY = generateOrgJwtSecret(orgId);
-  console.log(ENCRYPTION_KEY, "ENCRYPTION_KEY in encryptText");
   try {
     const bytes = CryptoJS.AES.decrypt(encryptedText, ENCRYPTION_KEY);
-    // console.log("ENCRYPTION_KEY: ", ENCRYPTION_KEY);
     const decrypted = bytes.toString(CryptoJS.enc.Utf8);
     return decrypted;
   } catch (error) {

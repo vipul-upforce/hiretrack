@@ -65,11 +65,6 @@ export async function GET(req: NextRequest) {
       );
     }
     if (googleCalendar.accessToken) {
-      console.log(
-        googleCalendar.accessToken,
-        "googleCalendar.accessToken in google calendar route"
-      );
-      console.log(orgId, "orgId in google calendar route");
       googleCalendar.accessToken = decryptText(
         googleCalendar.accessToken,
         orgId
