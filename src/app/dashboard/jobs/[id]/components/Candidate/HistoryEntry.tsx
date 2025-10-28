@@ -24,6 +24,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useRenderEntryTitle } from "@/app/dashboard/hooks/useRenderEntryTitle";
 // import { useDateFormatter } from "@/components/timezoneFormat/useGetFormattedTZ";
 
 // Component to display checklist responses
@@ -255,109 +256,12 @@ const RenderHistoryEntry = ({
   // Format the date using the user's timezone
   // const formattedDate = formatTZDate(dateObj);
 
-  // Helper function to determine the entry title
-  const renderEntryTitle = () => {
-    if (
-      (interview.title !== "" || !interview.title) &&
-      interview.title !== "Assigned to Job" &&
-      !interview.title?.includes("Followup") &&
-      !interview.title?.startsWith("Direct Email") &&
-      !interview.title?.startsWith("Email sent: ") &&
-      !interview.checklistForm &&
-      !(interview?.note?.description as string)?.startsWith("Email sent")
-    ) {
-      return (
-        <div className="flex flex-row items-start justify-between w-full">
-          <div className="flex flex-row w-[85%]">
-            {interview.currentInterviewer &&
-            typeof interview.currentInterviewer === "object" &&
-            "name" in interview.currentInterviewer ? (
-              <>
-                {interview.previousInterviewer &&
-                typeof interview.previousInterviewer === "object" &&
-                "name" in interview.previousInterviewer ? (
-                  <p className="pl-1">
-                    {interview.previousInterviewer.name +
-                      " → " +
-                      interview.currentInterviewer.name}
-                  </p>
-                ) : (
-                  <p className="pl-1">
-                    {`Assigned to ${interview.currentInterviewer.name}`}
-                  </p>
-                )}
-              </>
-            ) : interview.remark && interview.remark.description ? (
-              <p>{interview.title || "Remark Added"}</p>
-            ) : interview.title === "Candidate Added" &&
-              interview.assignmentBy ? (
-              <p>
-                {localCandidate.name} was added by{" "}
-                {interview.assignmentBy &&
-                typeof interview.assignmentBy === "object" &&
-                "name" in interview.assignmentBy
-                  ? `${interview.assignmentBy.name}`
-                  : ""}
-              </p>
-            ) : interview.title === "Self Applied" ? (
-              <p>{localCandidate.name} applied from portal</p>
-            ) : interview.title?.includes("Updated") ? (
-              <p>{interview.title}</p>
-            ) : interview.title === "Archived" ? (
-              <p>{localCandidate.name} was Archived</p>
-            ) : interview.title === "Unarchived" ? (
-              <p>{localCandidate.name} was Unarchived</p>
-            ) : interview?.previousInterviewer ? (
-              <p className="pl-1">
-                Unassigned from{" "}
-                {interview?.previousInterviewer &&
-                  typeof interview.previousInterviewer === "object" &&
-                  "name" in interview.previousInterviewer &&
-                  interview.previousInterviewer.name}
-              </p>
-            ) : (
-              <></>
-            )}
-          </div>
-          <div className="flex flex-col items-end text-right">
-            <p className="text-xs font-light text-gray-400">
-              {interview?.assignmentBy && "Updated by"}
-            </p>
-            <p className="font-light text-gray-500 text-sm">
-              {interview.assignmentBy &&
-              typeof interview.assignmentBy === "object" &&
-              "name" in interview?.assignmentBy
-                ? `${interview?.assignmentBy.name}`
-                : ""}
-            </p>
-          </div>
-        </div>
-      );
-    } else {
-      return (
-        <div className="flex flex-row items-start justify-between w-full">
-          {interview.title}
-          {interview.assignmentBy && (
-            <div className="flex flex-col items-end text-right">
-              <p className="text-xs font-light text-gray-400">
-                {interview?.assignmentBy && "Updated by"}
-              </p>
-              <p className="font-light text-gray-500 text-sm">
-                {interview.assignmentBy &&
-                typeof interview.assignmentBy === "object" &&
-                "name" in interview?.assignmentBy
-                  ? `${interview?.assignmentBy.name}`
-                  : ""}
-              </p>
-            </div>
-          )}
-        </div>
-      );
-    }
-  };
+  const { renderEntryTitle } = useRenderEntryTitle(interview, localCandidate);
+
   if (isLogTableEntry) {
     return;
   }
+
   return (
     <div key={indexKey} className="mb-10 ms-4 group">
       <div className="absolute w-3 h-3 bg-gray-200 rounded-full mt-1.5 -start-1.5 border border-white dark:border-gray-900 dark:bg-gray-700"></div>
