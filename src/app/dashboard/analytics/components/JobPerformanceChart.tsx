@@ -748,7 +748,7 @@ export const JobPerformanceChart: React.FC<JobPerformanceChartProps> = ({
         {/* Insights Cards */}
         {insights && (
           <div className="grid md:grid-cols-2 gap-4 mb-6">
-            {insights.topPerformingJobs.length > 1 ? (
+            {insights.topPerformingJobs.length > 0 ? (
               <div className="bg-emerald-50 dark:bg-emerald-950/20 p-4 rounded-lg border border-emerald-200 dark:border-emerald-800">
                 <h4 className="font-semibold text-emerald-800 dark:text-emerald-300 mb-2">
                   🏆 Top Performing Jobs
@@ -780,7 +780,7 @@ export const JobPerformanceChart: React.FC<JobPerformanceChartProps> = ({
                 </div>
               </div>
             )}
-            {insights.underperformingJobs.length > 1 ? (
+            {insights.underperformingJobs.length > 0 ? (
               <div className="bg-red-50 dark:bg-red-950/20 p-4 rounded-lg border border-red-200 dark:border-red-800">
                 <h4 className="font-semibold text-red-800 dark:text-red-300 mb-2">
                   ⚠️ Needs Attention
