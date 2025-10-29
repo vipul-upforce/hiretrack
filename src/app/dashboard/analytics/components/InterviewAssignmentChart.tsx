@@ -180,6 +180,17 @@ const PerformanceRadarChart: React.FC<{ data: AssignmentData[] }> = ({
       workloadScore: Math.min(interviewer.avgDailyAssignments * 20, 100), // Cap at 100
     }));
 
+  if (topPerformers.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[450px] border rounded-lg bg-muted/30">
+        <p className="text-sm text-muted-foreground italic">
+          No performance data available yet — once interviewers complete more
+          assignments, insights will appear here.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <ResponsiveContainer width="100%" height={450}>
       <RadarChart
@@ -352,6 +363,17 @@ const SuccessRateChart: React.FC<{ data: AssignmentData[] }> = ({ data }) => {
       successRate: interviewer.successRate,
       completionRate: interviewer.completionRate,
     }));
+
+  if (chartData.length == 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[450px] border rounded-lg bg-muted/30">
+        <p className="text-sm text-muted-foreground italic">
+          No data available yet — once interviewers complete more assignments,
+          insights will appear here.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <ResponsiveContainer width="100%" height={450}>
@@ -657,7 +679,7 @@ export const InterviewAssignmentChart: React.FC<
                 <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
                   {summary.overallCompletionRate}%
                 </div>
-                {summary.overallCompletionRate > 80 ? (
+                {summary.overallCompletionRate > 50 ? (
                   <TrendingUpIcon className="h-4 w-4 text-green-500" />
                 ) : (
                   <TrendingDownIcon className="h-4 w-4 text-red-500" />
