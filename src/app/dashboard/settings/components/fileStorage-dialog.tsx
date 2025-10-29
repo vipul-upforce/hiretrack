@@ -74,7 +74,7 @@ export default function FileStorageOptions({
     //   process.env.NEXT_PUBLIC_JWT_SECRET ||
     //   "your_jwt_secret_key";
     const JWT_SECRET = generateOrgJwtSecret(orgId);
-    console.log(JWT_SECRET, "JWT_SECRET-4");
+    // console.log(JWT_SECRET, "JWT_SECRET-4");
     try {
       // Parse the payload as JSON
       const parsedPayload = payload;

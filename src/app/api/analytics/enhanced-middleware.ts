@@ -97,7 +97,7 @@ export class EnhancedAnalyticsMiddleware {
       // const JWT_SECRET = process.env.JWT_SECRET;
       const orgId = cookieStore.get("org_id")?.value;
       const JWT_SECRET = generateOrgJwtSecret(orgId);
-      console.log(JWT_SECRET, "JWT_SECRET-11");
+      // console.log(JWT_SECRET, "JWT_SECRET-11");
 
       if (!JWT_SECRET) {
         console.error("JWT_SECRET not configured");

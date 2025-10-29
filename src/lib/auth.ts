@@ -69,7 +69,7 @@ export async function verifyAndDecryptJWTToken(token: string, orgId: string) {
   //   process.env.NEXT_PUBLIC_JWT_SECRET ||
   //   "your_jwt_secret_key";
   const JWT_SECRET = generateOrgJwtSecret(orgId);
-  console.log(JWT_SECRET, "JWT_SECRET-5");
+  // console.log(JWT_SECRET, "JWT_SECRET-5");
   try {
     if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
 
@@ -101,7 +101,7 @@ export async function verifyAndDecryptSSE(token: string, orgId: string) {
   //   process.env.NEXT_PUBLIC_JWT_SECRET ||
   //   "your_jwt_secret_key";
   const JWT_SECRET = generateOrgJwtSecret(orgId);
-  console.log(JWT_SECRET, "JWT_SECRET-6");
+  // console.log(JWT_SECRET, "JWT_SECRET-6");
 
   try {
     // console.log(JWT_SECRET, "JWT_SECRET-6");
