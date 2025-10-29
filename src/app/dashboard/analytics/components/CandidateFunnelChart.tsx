@@ -285,6 +285,7 @@ export const CandidateFunnelChart: React.FC<CandidateFunnelChartProps> = ({
   useEffect(() => {
     if (data) {
       setFunnelData(data.funnelData || []);
+      console.log("FUNNEL DATA: " ,data.funnelData)
       setSummary(data.summary || null);
     }
   }, [data]);
