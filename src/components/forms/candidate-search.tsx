@@ -78,17 +78,12 @@ function CandidateSearch() {
   const [currentFilters, setCurrentFilters] =
     useState<SearchFilter>(initialValues);
 
-<<<<<<< HEAD
   const {
     data: filteredCandidates,
     refetch: filterCandidates,
-    isLoading,
     isFetching,
+    isLoading,
   } = useFilterCandidatesQuery(currentFilters);
-=======
-  const { data: filteredCandidates, refetch: filterCandidates, isFetching, isLoading: isQueryLoading } =
-    useFilterCandidatesQuery(currentFilters);
->>>>>>> 57efb135ceaaf5bd8a300cc12ac6e609fc7a542b
 
   // FIX 1: Move the setSearchResults call inside useEffect
   useEffect(() => {

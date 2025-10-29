@@ -50,6 +50,10 @@ import OnboardingModal from "@/components/onboarding/OnboardingModal";
 import OnboardingSidebar from "@/components/onboarding/OnboardingSidebar";
 import SidebarLogo from "@/components/layouts/SidebarLogo";
 import SidebarContent from "@/components/layouts/SidebarContent";
+import {
+  useCheckOrgQuery,
+  useGetOrganizationAllowanceQuery,
+} from "@/lib/features/org/orgApi";
 
 interface SidebarItem {
   title: string;
@@ -129,6 +133,7 @@ export default function DashboardLayout({
     isLoading: allowanceLoading,
     error: allowanceError,
   } = useGetOrganizationAllowanceQuery();
+
   const [hasMultipleOrgs, seHasMultipleOrgs] = useState(false);
 
   // Notification hooks
@@ -361,7 +366,6 @@ export default function DashboardLayout({
       .slice(0, 2);
   };
 
-
   // Inject portal colors as CSS custom properties
   useEffect(() => {
     // console.log("Portal config data:", portalConfigData);
@@ -575,25 +579,24 @@ export default function DashboardLayout({
           </div>
         </main>
 
-          {/* Candidate Details Dialog for Interviewers */}
-          <CandidateDetailsDialog
-            candidate={selectedCandidate}
-            isOpen={isCandidateDialogOpen}
-            onOpenChange={setIsCandidateDialogOpen}
-            onUpdate={() => {
-              // Optionally refresh candidate data
-              if (selectedCandidate) {
-                fetchCandidateById(selectedCandidate._id);
-              }
-            }}
-            hideEditButton={userData?.role === "interviewer"}
-            hideCloseButtons={false}
-          />
+        {/* Candidate Details Dialog for Interviewers */}
+        <CandidateDetailsDialog
+          candidate={selectedCandidate}
+          isOpen={isCandidateDialogOpen}
+          onOpenChange={setIsCandidateDialogOpen}
+          onUpdate={() => {
+            // Optionally refresh candidate data
+            if (selectedCandidate) {
+              fetchCandidateById(selectedCandidate._id);
+            }
+          }}
+          hideEditButton={userData?.role === "interviewer"}
+          hideCloseButtons={false}
+        />
 
-          {/* Onboarding Modal */}
-          <OnboardingModal />
-        </div>
-      </OnboardingProvider>
-    </Suspense>
+        {/* Onboarding Modal */}
+        <OnboardingModal />
+      </div>
+    </OnboardingProvider>
   );
 }
