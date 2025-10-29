@@ -1,31 +1,30 @@
-import * as crypto from "crypto";
+function generateHash(organizationId: string): string {
+  let saltedId = "";
+  const first = organizationId.charAt(0);
+  const last = organizationId.charAt(organizationId.length - 1);
+  saltedId = organizationId
+    .replace(/a/gi, "@")
+    .replace(/e/gi, "3")
+    .replace(/i/gi, "!")
+    .replace(/o/gi, "0")
+    .replace(/u/gi, "_")
+    .replace(/s/gi, "$")
+    .replace(/t/gi, "7")
+    .replace(/n/gi, "N")
+    .replace(/m/gi, "2")
+    .replace(/l/gi, "1")
+    .replace(/k/gi, "9")
+    .replace(/j/gi, "8")
+    .replace(/h/gi, "7");
+  const salt = `${first}${saltedId}${last}_${organizationId.length}`;
 
-// Cache to store organization-specific JWT secrets
-const jwtSecretCache: Map<string, string> = new Map();
+  return salt;
+}
 
-// Function to generate a deterministic JWT secret based on organizationId
 export function generateOrgJwtSecret(organizationId: string): string {
   if (!organizationId) {
     throw new Error("organizationId is required");
   }
-
-  //   // Check if secret already exists for this organizationId
-  //   if (jwtSecretCache.has(organizationId)) {
-  //     const cachedSecret = jwtSecretCache.get(organizationId)!;
-  //     return cachedSecret;
-  //   }
-
-  //   // Generate a deterministic hash using organizationId
-  //   const hash: string = crypto
-  //     .createHash("sha256")
-  //     .update(organizationId)
-  //     .digest("base64");
-
-  //   // Trim to a reasonable length (e.g., 44 characters for base64 SHA-256)
-  //   const secret: string = hash.slice(0, 44);
-
-  // Store in cache
-  //   jwtSecretCache.set(organizationId, secret);
-
-  return organizationId;
+  const hash = generateHash(organizationId);
+  return hash;
 }
