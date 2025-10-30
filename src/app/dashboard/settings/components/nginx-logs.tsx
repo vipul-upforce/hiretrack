@@ -51,6 +51,9 @@ export function NginxLogs({ searchQuery, setSearchQuery, onError }: Props) {
     }
 
     if (nginxData?.files) {
+      if (selectedFile == null) {
+        setSelectedFile(nginxData.files[0]);
+      }
       setNginxFiles(nginxData.files);
       setIsNginxAvailable(nginxData.files.length > 0);
     }
@@ -79,7 +82,7 @@ export function NginxLogs({ searchQuery, setSearchQuery, onError }: Props) {
       });
   }, [selectedFile, searchQuery, triggerGetFileContent, onError]);
 
-  //  infinite scroll observer 
+  //  infinite scroll observer
   useEffect(() => {
     if (!selectedFile || isFetchingMore) return;
     if (offset >= totalLines && totalLines !== 0) return;
