@@ -5,6 +5,7 @@ import {
   useGetNginxLogFilesQuery,
   useLazyGetNginxFileContentQuery,
 } from "@/lib/features/settings/settingsApi";
+import NginxLogsSkeleton from "./nginx-logs-skeleton";
 
 type Props = {
   searchQuery: string;
@@ -136,6 +137,8 @@ export function NginxLogs({ searchQuery, setSearchQuery, onError }: Props) {
   ]);
 
   const isLoading = isFilesLoading || isFileLoading || isFetchingMore;
+
+  if (isFilesLoading) return <NginxLogsSkeleton />;
 
   return (
     <div className="flex-1 flex min-h-0">
