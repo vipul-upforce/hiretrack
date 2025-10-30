@@ -5,7 +5,10 @@
 export const pageMetaData = async () => {
   try {
     const url = process.env.BASE_URL || "http://localhost:3000";
-    const res = await fetch(`${url}/api/organization`);
+    const res = await fetch(`${url}/api/organization`, {
+      cache: "no-store", // disable fetch caching
+      next: { revalidate: 0 },
+    });
 
     if (!res.ok) throw new Error("Failed to fetch organization data");
 
@@ -20,8 +23,8 @@ export const pageMetaData = async () => {
     const title = org?.portalConfigs?.portalName || "HireTrack";
 
     const faviconUrl = org?.portalConfigs?.portalFavicon?.url || "/favicon.png";
-    // console.log("$$$$###title>>>>>>>>>>>> ", title);
-    // console.log("$$$$$$#faviconUrl>>>>>>>>>>>> ", faviconUrl);
+    console.log("$$$$###title>>>>>>>>>>>> ", title);
+    console.log("$$$$$$#faviconUrl>>>>>>>>>>>> ", faviconUrl);
     return {
       title,
       icons: {
@@ -39,3 +42,5 @@ export const pageMetaData = async () => {
     };
   }
 };
+
+export const revalidate = 40;
