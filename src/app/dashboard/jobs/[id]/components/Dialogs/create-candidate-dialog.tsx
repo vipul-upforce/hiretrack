@@ -195,6 +195,7 @@ export function CreateCandidateDialog({
   const [isSmallScreen, setIsSmallScreen] = useState(false);
   const [isLargeViewport, setIsLargeViewport] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
+  const [isFormSubmitting, setIsFormSubmitting] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -277,6 +278,7 @@ export function CreateCandidateDialog({
     }
 
     try {
+      setIsFormSubmitting(true);
       const hasOnlySpaces = Object.entries(values).some((value) => {
         if (typeof value[1] === "string") {
           return value[1].length > 0 && value[1].trim() === "";
@@ -457,6 +459,8 @@ export function CreateCandidateDialog({
         description: errorMessage,
         variant: "destructive",
       });
+    }finally{
+      setIsFormSubmitting(false);
     }
     setIsCreating(false);
   };
@@ -498,7 +502,7 @@ export function CreateCandidateDialog({
             isCreating ||
             isLoading ||
             isEvaluating ||
-            isAdding
+            isAdding 
               ? "Processing..."
               : "Apply Now"}
           </button>
@@ -625,7 +629,7 @@ export function CreateCandidateDialog({
                   }}
                   style={{ backgroundColor: primaryColor }}
                 >
-                  {isSubmitting
+                  {(isSubmitting || isFormSubmitting)
                     ? "Saving..."
                     : user && (user.role === "candidate" || user?.role === "")
                       ? "Apply"
