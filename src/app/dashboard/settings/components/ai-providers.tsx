@@ -41,6 +41,7 @@ import {
   getDefaultModel,
   getProviderModels,
 } from "@/lib/ai-providers/models-config";
+import AiProviderSkeleton from "./ai-provider-loading-skeleton";
 
 export interface AIProvidersValues {
   activeProvider: AIProviderType;
@@ -307,7 +308,7 @@ export default function AIProvidersConfigs({
     }
   };
 
-  if (isLoading) return <div className="px-6 py-4">Loading...</div>;
+  if (isLoading) return <AiProviderSkeleton />;
 
   const supportedProviders = AIProviderFactory.getSupportedProviders();
 
