@@ -228,7 +228,7 @@ const StageDistributionChart: React.FC<{ data: FunnelData[] }> = ({ data }) => {
     <ResponsiveContainer width="100%" height={400}>
       <PieChart>
         <Pie
-          data={pieData}
+          data={pieData as { stage: string; count: number; color: string }[]}
           cx="50%"
           cy="50%"
           outerRadius={100}

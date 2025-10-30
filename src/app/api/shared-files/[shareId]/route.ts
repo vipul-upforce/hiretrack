@@ -126,7 +126,7 @@ export async function GET(
     }
 
     // Create response with file
-    const response = new NextResponse(fileResult.buffer);
+    const response = new NextResponse(fileResult.buffer as BodyInit);
 
     // Set headers
     response.headers.set("Content-Type", fileShare.mimeType);

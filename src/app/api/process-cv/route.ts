@@ -128,7 +128,7 @@ function processZipEntries(zip: AdmZip): File[] {
       const content = entry.getData();
       // Extract just the filename from the full path
       const filename = entry.entryName.split("/").pop() || entry.entryName;
-      const file = new File([content], filename, {
+      const file = new File([content as BlobPart], filename, {
         type: "application/pdf",
       });
       files.push(file);
