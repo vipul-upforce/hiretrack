@@ -12,7 +12,7 @@ export async function verifyAndDecryptToken(token: string, orgId: string) {
   try {
     const JWT_SECRET = generateOrgJwtSecret(orgId);
 
-    console.log(JWT_SECRET, "JWT_SECRET-2");
+    // console.log(JWT_SECRET, "JWT_SECRET-2");
 
     if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
 
@@ -36,7 +36,7 @@ export const signToken = async (payload: unknown, orgId: string) => {
   console.log(payload, "payload-1 =-d--d-d");
   console.log(orgId, "orgId-1 =-d--d-d");
   const JWT_SECRET = generateOrgJwtSecret(orgId);
-  console.log(JWT_SECRET, "JWT_SECRET-3 secrate keyt");
+  // console.log(JWT_SECRET, "JWT_SECRET-3 secrate keyt");
 
   if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
 

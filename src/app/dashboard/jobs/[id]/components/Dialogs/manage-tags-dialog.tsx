@@ -83,8 +83,8 @@ const ManageTagsDialog = ({
       return;
     }
 
-    if(orgTags.some((tag) => tag.color === newTagColor)){
-       toast({
+    if (orgTags.some((tag) => tag.color === newTagColor)) {
+      toast({
         title: "Error",
         description: "Tag color already exists.",
         variant: "destructive",
@@ -206,8 +206,36 @@ const ManageTagsDialog = ({
             <DialogTitle>Manage Tags</DialogTitle>
           </DialogHeader>
           {isLoading ? (
-            <div className="flex justify-center h-4 py-10 pb-16">
-              <LoadingSpinner w={4} />
+            <div className="flex flex-col gap-4 max-h-[72vh] overflow-y-auto px-6 py-4 animate-pulse">
+              <div className="h-5 w-32 bg-gray-200 dark:bg-gray-800 rounded" />
+
+              <div className="flex gap-2">
+                <div className="h-10 w-full bg-gray-200 dark:bg-gray-800 rounded" />
+                <div className="h-10 w-20 bg-gray-200 dark:bg-gray-800 rounded" />
+              </div>
+
+              <div className="h-9 w-20 bg-gray-200 dark:bg-gray-800 rounded" />
+
+              <div className="h-5 w-28 bg-gray-200 dark:bg-gray-800 rounded mt-4" />
+
+              <div className="flex flex-col gap-2 mt-2">
+                {[...Array(7)].map((_, i) => (
+                  <div key={i} className="flex items-center justify-between">
+                    <div className="h-6 w-40 bg-gray-200 dark:bg-gray-800 rounded" />
+
+                    <div className="flex gap-2">
+                      <div className="h-6 w-6 bg-gray-300 dark:bg-gray-700 rounded-full" />
+                      <div className="h-6 w-6 bg-gray-300 dark:bg-gray-700 rounded-full" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Footer buttons skeleton */}
+              <div className="flex justify-end gap-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10">
+                <div className="h-9 w-20 bg-gray-200 dark:bg-gray-800 rounded" />
+                <div className="h-9 w-20 bg-gray-200 dark:bg-gray-800 rounded" />
+              </div>
             </div>
           ) : error || updateError ? (
             <p className="text-red-500">An error occurred. Please try again.</p>

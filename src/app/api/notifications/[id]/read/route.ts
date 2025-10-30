@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { Notification } from "@/lib/mongodb";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import { broadcastNotificationCount } from "@/lib/broadcast/broadcastNotifications";
 import mongoose from "mongoose";
 
 export async function PUT(
@@ -60,6 +61,15 @@ export async function PUT(
         { status: 404 }
       );
     }
+
+    try {
+      const unread = await Notification.countDocuments({
+        organizationId: user.organizationId,
+        recipientId: user._id,
+        isRead: false,
+      });
+      broadcastNotificationCount(user.organizationId, user._id, unread);
+    } catch (e) {}
 
     return NextResponse.json({
       message: "Notification marked as read",

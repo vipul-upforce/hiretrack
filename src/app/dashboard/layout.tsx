@@ -53,6 +53,7 @@ import {
   useGetOrganizationAllowanceQuery,
 } from "@/lib/features/org/orgApi";
 import LoadingScreen from "../loading-screen";
+import { useNotificationSSE } from "@/hooks/useNotificationSSE";
 
 interface SidebarItem {
   title: string;
@@ -146,9 +147,13 @@ export default function DashboardLayout({
     { page: notificationPage, limit: 10 },
     { skip: !userData } // Skip query if no user data
   );
-  const { data: notificationCountData } = useGetNotificationCountQuery(
-    undefined,
-    { skip: !userData, pollingInterval: 5000 } // Poll every 30 seconds for real-time updates
+  const { data: initialCounts } = useGetNotificationCountQuery(undefined, {
+    skip: !userData,
+    // one-time fetch only (no polling)
+  });
+  const { unreadCount, totalCount } = useNotificationSSE(
+    initialCounts?.unreadCount || 0,
+    initialCounts?.totalCount || 0
   );
   const [markAsRead] = useMarkNotificationAsReadMutation();
   const [markAllAsRead] = useMarkAllNotificationsAsReadMutation();
@@ -610,8 +615,8 @@ export default function DashboardLayout({
           {userData && (
             <NotificationButton
               notifications={notificationsData?.notifications || []}
-              unreadCount={notificationCountData?.unreadCount || 0}
-              totalCount={notificationCountData?.totalCount || 0}
+              unreadCount={unreadCount}
+              totalCount={totalCount}
               currentPage={notificationsData?.pagination?.currentPage || 1}
               totalPages={notificationsData?.pagination?.totalPages || 1}
               isLoading={notificationsLoading}

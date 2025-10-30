@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { RefreshCwIcon } from "lucide-react";
 import { Candidate } from "@/types/candidate";
 import useRoles from "@/hooks/useRoles";
+import { AIReEvaluateTrigger } from "./AIReEvaluateTrigger";
 
 interface ResumeEvaluationDetailsProps {
   labelClass: string;
@@ -22,7 +23,17 @@ export default function ResumeEvaluationDetails({
 }: ResumeEvaluationDetailsProps) {
   const [showEvalDetails, setShowEvalDetails] = useState(true);
   const role = useRoles();
-  if (!localCandidate.scores) return null;
+  if (!localCandidate.scores)
+    return (
+      <AIReEvaluateTrigger
+        labelClass={labelClass}
+        role={role}
+        onReEvaluate={onReEvaluate}
+        isReEvaluating={isReEvaluating}
+        isEvaluatingFor={isEvaluatingFor}
+        localCandidate={localCandidate}
+      />
+    );
 
   if (
     !localCandidate.scores.strengths?.length &&
@@ -30,7 +41,16 @@ export default function ResumeEvaluationDetails({
     !localCandidate.scores.areas_for_improvement?.length &&
     !localCandidate.scores.recommendation
   ) {
-    return null;
+    return (
+      <AIReEvaluateTrigger
+        labelClass={labelClass}
+        role={role}
+        onReEvaluate={onReEvaluate}
+        isReEvaluating={isReEvaluating}
+        isEvaluatingFor={isEvaluatingFor}
+        localCandidate={localCandidate}
+      />
+    );
   }
 
   return (
