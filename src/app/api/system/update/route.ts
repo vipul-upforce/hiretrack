@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     const homeDir = os.homedir();
 
     // Construct path to installer script in user's home
-    const installerPath = path.join(homeDir, ".myapp", "installer.sh");
+    const installerPath = path.join(homeDir, ".hiretrack", "installer.sh");
 
     // Determine shell based on OS
     const isWindows = process.platform === "win32";
