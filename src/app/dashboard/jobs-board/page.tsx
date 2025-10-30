@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { DragDropContext } from "@hello-pangea/dnd";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { useState, useEffect, useContext, useCallback } from "react";
+import { useState, useEffect, useContext, useCallback, useMemo } from "react";
 import { CreateJobDialog } from "./components/create-job-dialog";
 import { JobDetailsDialog } from "./components/job-details-dialog";
 import { initialColumns } from "./data/initial-data";
@@ -15,7 +15,6 @@ import {
   useDeleteJobMutation,
 } from "@/lib/features/job/jobApi";
 import { toast } from "@/hooks/use-toast";
-import Cookies from "js-cookie";
 import LoaderSkeleton from "./components/loader-skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -28,7 +27,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 // import withAuthGuard from "@/components/withAuthGuard";
 // import { NextPage } from "next";
 import KanbanColumn from "./components/kanban-column";
@@ -42,6 +40,21 @@ import { useSelector } from "react-redux";
 import { useGetUsersQuery } from "@/lib/features/users/usersApi";
 import { JobEmailNotificationSettingsDialog } from "@/components/dialogs/JobEmailNotificationSettingsDialog";
 import { GlobalEmailNotificationSettingsDialog } from "@/components/dialogs/GlobalEmailNotificationSettingsDialog";
+import { ViewToggle } from "./components/view-toggle";
+import { JobsTableView } from "./components/jobs-table-view";
+import {
+  JobsFilters,
+  StatusFilterValue,
+  DateFilterValue,
+  SortOption,
+} from "./components/jobs-filters";
+import {
+  startOfWeek,
+  startOfMonth,
+  startOfQuarter,
+  isAfter,
+  isSameDay,
+} from "date-fns";
 // import { GlobalEmailNotificationSettingsDialog } from "@/components/ui/GlobalEmailNotificationSettingsDialog"; // Import the new dialog
 
 interface User {
@@ -67,8 +80,6 @@ function JobCustomFieldsDialog({
   const {
     setStepName,
     customFields,
-    stepName,
-    selectedFormId,
     selecteFormIdTarget,
   } = context;
   const [hasAutoSelected, setHasAutoSelected] = useState(false);
@@ -167,6 +178,44 @@ function KanbanPage() {
     useState(false); // New state for global settings dialog
   const [selectedJobForEmailSettings, setSelectedJobForEmailSettings] =
     useState<Job | null>(null);
+
+  // View mode and filters state with localStorage persistence
+  const [viewMode, setViewMode] = useState<"board" | "table">(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("jobs-board-view-mode");
+      return (saved as "board" | "table") || "board";
+    }
+    return "board";
+  });
+
+  const [statusFilters, setStatusFilters] = useState<StatusFilterValue[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("jobs-board-status-filters");
+      try {
+        return saved ? JSON.parse(saved) : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
+
+  const [dateFilters, setDateFilters] = useState<DateFilterValue[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("jobs-board-date-filters");
+      try {
+        return saved ? JSON.parse(saved) : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
+
+  const [sortBy, setSortBy] = useState<SortOption>("date-desc");
+  const [sortField, setSortField] = useState<string | null>("tracking.createdAt");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [searchQuery, setSearchQuery] = useState("");
   // useEffect(() => {
   //   (async () => {
   //     const token = Cookies.get("token");
@@ -242,6 +291,124 @@ function KanbanPage() {
     setSelectedJobForEmailSettings(job);
     setIsEmailSettingsOpen(true);
   };
+
+  // Save view mode to localStorage when it changes
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("jobs-board-view-mode", viewMode);
+    }
+  }, [viewMode]);
+
+  // Save status filters to localStorage when they change
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("jobs-board-status-filters", JSON.stringify(statusFilters));
+    }
+  }, [statusFilters]);
+
+  // Save date filters to localStorage when they change
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("jobs-board-date-filters", JSON.stringify(dateFilters));
+    }
+  }, [dateFilters]);
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  // Filter and sort jobs for table view
+  const filteredAndSortedJobs = useMemo(() => {
+    if (!jobs || viewMode === "board") return [];
+
+    let filtered = jobs.filter(
+      (job) => showArchived ? job.isDeleted : !job.isDeleted
+    );
+
+    // Apply search query filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((job) =>
+        job.title.toLowerCase().includes(query) ||
+        job.description?.toLowerCase().includes(query) ||
+        job.skills?.some(skill => skill.toLowerCase().includes(query))
+      );
+    }
+
+    // Apply status filters (OR logic - show if matches any selected status)
+    if (statusFilters.length > 0) {
+      filtered = filtered.filter((job) => statusFilters.includes(job.status as StatusFilterValue));
+    }
+
+    // Apply date filters (OR logic - show if matches any selected date range)
+    if (dateFilters.length > 0 && filtered.length > 0) {
+      const now = new Date();
+      filtered = filtered.filter((job) => {
+        if (!job.tracking?.createdAt) return false;
+        const createdDate = new Date(job.tracking.createdAt);
+
+        return dateFilters.some((filter) => {
+          switch (filter) {
+            case "today":
+              return isSameDay(createdDate, now);
+            case "week":
+              return isAfter(createdDate, startOfWeek(now)) || isSameDay(createdDate, startOfWeek(now));
+            case "month":
+              return isAfter(createdDate, startOfMonth(now)) || isSameDay(createdDate, startOfMonth(now));
+            case "quarter":
+              return isAfter(createdDate, startOfQuarter(now)) || isSameDay(createdDate, startOfQuarter(now));
+            default:
+              return false;
+          }
+        });
+      });
+    }
+
+    // Apply sorting based on column clicks
+    if (sortField) {
+      const sorted = [...filtered].sort((a, b) => {
+        let aValue: any;
+        let bValue: any;
+
+        if (sortField === "createdAt") {
+          aValue = new Date(a.tracking?.createdAt || 0).getTime();
+          bValue = new Date(b.tracking?.createdAt || 0).getTime();
+        } else if (sortField === "candidateCount") {
+          aValue = a.candidateCount || 0;
+          bValue = b.candidateCount || 0;
+        } else if (sortField === "experience") {
+          aValue = a.experience || 0;
+          bValue = b.experience || 0;
+        } else {
+          aValue = a[sortField as keyof Job];
+          bValue = b[sortField as keyof Job];
+        }
+
+        // Handle string comparison
+        if (typeof aValue === "string" && typeof bValue === "string") {
+          return sortDirection === "asc"
+            ? aValue.localeCompare(bValue)
+            : bValue.localeCompare(aValue);
+        }
+
+        // Handle numeric comparison
+        if (typeof aValue === "number" && typeof bValue === "number") {
+          return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
+        }
+
+        return 0;
+      });
+
+      return sorted;
+    }
+
+    return filtered;
+  }, [jobs, viewMode, showArchived, searchQuery, statusFilters, dateFilters, sortField, sortDirection]);
 
   const onDragEnd = async (result: any) => {
     const { destination, source, draggableId } = result;
@@ -370,7 +537,7 @@ function KanbanPage() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden w-full">
-      {/* Header section with improved design */}
+      {/* Header section - stays the same always */}
       <div className="flex-shrink-0 px-4 pb-2 border-b border-gray-200 dark:border-gray-700">
         <Card className="border-0 shadow-none bg-transparent">
           <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-2 py-3 px-0">
@@ -379,7 +546,7 @@ function KanbanPage() {
               Job Positions
             </CardTitle>
 
-            {/* Right Section */}
+            {/* Right Section - Controls and Actions */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3">
               {/* Show Archived */}
               <div className="flex items-center space-x-2">
@@ -402,7 +569,7 @@ function KanbanPage() {
               <div className="flex flex-col sm:flex-row gap-2">
                 <Button
                   variant="outline"
-                  onClick={() => setIsGlobalEmailSettingsOpen(true)} // Open global settings dialog
+                  onClick={() => setIsGlobalEmailSettingsOpen(true)}
                   className="flex items-center gap-2"
                 >
                   <Mail className="h-4 w-4" />
@@ -427,27 +594,88 @@ function KanbanPage() {
         </Card>
       </div>
 
-      {/* <CandidatesPage /> */}
-      <div className="flex-1 overflow-hidden px-4 pb-4 mt-4">
-        <DragDropContext onDragEnd={onDragEnd}>
-          <div className="h-full overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 hover:scrollbar-thumb-gray-400 dark:hover:scrollbar-thumb-gray-500">
-            <div className="h-full flex gap-1 min-w-full">
-              {columns.map((column) => (
-                <KanbanColumn
-                  key={column.id}
-                  column={column}
-                  isCreatingJob={isCreatingJob}
-                  setSelectedJob={setSelectedJob}
-                  setIsDetailsOpen={setIsDetailsOpen}
-                  setIsEditMode={setIsEditMode}
-                  handleDeleteClick={handleDeleteClick}
-                  setDuplicate={setDuplicate}
-                  onEmailSettingsClick={handleEmailSettingsClick}
+      {/* Filters and View Toggle Section - below header */}
+      <div className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-black border-t border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-3 flex-1">
+          {/* Search Input - Only show in table view */}
+          {viewMode === "table" && (
+            <div className="flex-1 max-w-md">
+              <div className="relative">
+                <svg
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Search jobs..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-black text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
-              ))}
+              </div>
             </div>
-          </div>
-        </DragDropContext>
+          )}
+
+          {/* Filters - Only show in table view */}
+          {viewMode === "table" && (
+            <JobsFilters
+              statusFilters={statusFilters}
+              dateFilters={dateFilters}
+              onStatusFilterChange={setStatusFilters}
+              onDateFilterChange={setDateFilters}
+            />
+          )}
+        </div>
+
+        {/* View Toggle - Right side */}
+        <ViewToggle view={viewMode} onViewChange={setViewMode} />
+      </div>
+
+      {/* Content Area - Board or Table View */}
+      <div className="flex-1 overflow-hidden px-4 pb-4 mt-4">
+        {viewMode === "board" ? (
+          <DragDropContext onDragEnd={onDragEnd}>
+            <div className="h-full overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 hover:scrollbar-thumb-gray-400 dark:hover:scrollbar-thumb-gray-500">
+              <div className="h-full flex gap-1 min-w-full">
+                {columns.map((column) => (
+                  <KanbanColumn
+                    key={column.id}
+                    column={column}
+                    isCreatingJob={isCreatingJob}
+                    setSelectedJob={setSelectedJob}
+                    setIsDetailsOpen={setIsDetailsOpen}
+                    setIsEditMode={setIsEditMode}
+                    handleDeleteClick={handleDeleteClick}
+                    setDuplicate={setDuplicate}
+                    onEmailSettingsClick={handleEmailSettingsClick}
+                  />
+                ))}
+              </div>
+            </div>
+          </DragDropContext>
+        ) : (
+          <JobsTableView
+            jobs={filteredAndSortedJobs}
+            setSelectedJob={setSelectedJob}
+            setIsDetailsOpen={setIsDetailsOpen}
+            setIsEditMode={setIsEditMode}
+            handleDeleteClick={handleDeleteClick}
+            setDuplicate={setDuplicate}
+            onEmailSettingsClick={handleEmailSettingsClick}
+            sortField={sortField}
+            sortDirection={sortDirection}
+            onSort={handleSort}
+          />
+        )}
       </div>
 
       <JobDetailsDialog

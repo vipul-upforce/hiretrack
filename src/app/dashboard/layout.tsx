@@ -50,10 +50,8 @@ import OnboardingModal from "@/components/onboarding/OnboardingModal";
 import OnboardingSidebar from "@/components/onboarding/OnboardingSidebar";
 import SidebarLogo from "@/components/layouts/SidebarLogo";
 import SidebarContent from "@/components/layouts/SidebarContent";
-import {
-  useCheckOrgQuery,
-  useGetOrganizationAllowanceQuery,
-} from "@/lib/features/org/orgApi";
+import { useGetOrganizationAllowanceQuery } from "@/lib/features/org/orgApi";
+import { useCheckOrgQuery } from "@/lib/features/org/orgApi";
 
 interface SidebarItem {
   title: string;

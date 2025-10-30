@@ -107,6 +107,7 @@ export function CreateJobDialog({
   const initialValues: JobFormValues = {
     _id: "",
     title: "",
+    status: "draft",
     // company: "",
     description: "",
     skills: [] as string[],

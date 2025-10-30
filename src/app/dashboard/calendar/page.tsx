@@ -4,21 +4,25 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useFetchAssignedCandidatesQuery } from "@/lib/features/candidate/candidateApi";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
+import timeGridPlugin from "@fullcalendar/timegrid";
+import listPlugin from "@fullcalendar/list";
 import { useEffect, useState, useRef } from "react";
 import { EventClickArg } from "@fullcalendar/core";
 import { DateClickArg } from "@fullcalendar/interaction";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, X } from "lucide-react";
+import { Search, X, Calendar as CalendarIcon } from "lucide-react";
 import { CandidateDetailsDialog } from "../jobs/[id]/components/Dialogs/candidate-details-dialog";
 import { formatTime } from "../jobs/[id]/hooks/dateTimeFormatting";
 import { Candidate, CandidateStatus } from "@/types/candidate";
 import { Assignment } from "@/types/assignment";
 import LoaderSkeletonCalender from "./components/loader-skeleton-calender";
-import { RenderEvent } from "./components/renderCalendarEvent";
 import { useSSE } from "@/hooks/useSSE";
 import useRoles from "@/hooks/useRoles";
 import { useSelector } from "react-redux";
+import { StatsCards } from "./components/stats-cards";
+import { CalendarSidebar } from "./components/calendar-sidebar";
+import "./calendar.css";
 import interactionPlugin from "@fullcalendar/interaction";
 
 interface Interviewer {
@@ -91,6 +95,8 @@ export interface CustomCalendarEvent {
   endStr: string;
   url: string;
   display: string;
+  backgroundColor?: string;
+  borderColor?: string;
   extendedProps: {
     candidate: CandidateAssignment;
     interviewer: Interviewer;
@@ -110,6 +116,10 @@ export default function CalendarPage() {
   const calendarRef = useRef<FullCalendar>(null);
   const [searchText, setSearchText] = useState("");
   const [filterText, setFilterText] = useState("");
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [calendarView, setCalendarView] = useState<
+    "dayGridMonth" | "timeGridWeek" | "timeGridDay" | "listWeek"
+  >("dayGridMonth");
 
   const { user } = useSelector((state: any) => state.auth || {});
   const role = useRoles();
@@ -254,64 +264,82 @@ export default function CalendarPage() {
     }
   );
 
+  // Event color palette for better visual distinction
+  const eventColors = [
+    { bg: "#3b82f6", border: "#2563eb" }, // blue
+    { bg: "#10b981", border: "#059669" }, // green
+    { bg: "#8b5cf6", border: "#7c3aed" }, // purple
+    { bg: "#14b8a6", border: "#0d9488" }, // teal
+    { bg: "#f59e0b", border: "#d97706" }, // amber
+    { bg: "#ec4899", border: "#db2777" }, // pink
+  ];
+
   const events: CustomCalendarEvent[] =
-    filteredAssignments?.map((candidate: CandidateAssignment) => {
-      const startTime = candidate?.assignment?.time
-        ? new Date(candidate?.assignment?.time)
-        : undefined;
-      const endTime = candidate?.assignment?.time
-        ? new Date(candidate?.assignment?.time)
-        : undefined;
+    filteredAssignments?.map(
+      (candidate: CandidateAssignment, index: number) => {
+        const startTime = candidate?.assignment?.time
+          ? new Date(candidate?.assignment?.time)
+          : undefined;
+        const endTime = candidate?.assignment?.time
+          ? new Date(candidate?.assignment?.time)
+          : undefined;
 
-      const hasGoogleMeet = candidate?.assignment?.googleMeet;
-      const baseTitle =
-        candidate?.jobId && typeof candidate.jobId === "object"
-          ? candidate?.jobId?.title
-          : "Unknown";
-      const title = hasGoogleMeet ? `📹 ${baseTitle}` : baseTitle;
+        const hasGoogleMeet = candidate?.assignment?.googleMeet;
+        const baseTitle =
+          candidate?.jobId && typeof candidate.jobId === "object"
+            ? candidate?.jobId?.title
+            : "Unknown";
+        const title = hasGoogleMeet ? `📹 ${baseTitle}` : baseTitle;
 
-      return {
-        id: candidate._id,
-        title,
-        start: startTime,
-        end: endTime,
-        allDay: false,
-        startStr: startTime?.toISOString() || "",
-        endStr: endTime?.toISOString() || "",
-        url: "",
-        display: "auto",
-        backgroundColor: hasGoogleMeet ? "#3b82f6" : undefined,
-        borderColor: hasGoogleMeet ? "#1d4ed8" : undefined,
-        extendedProps: {
-          candidate: {
-            ...candidate,
-            jobId:
-              typeof candidate?.jobId === "string"
-                ? candidate?.jobId
-                : (candidate?.jobId as Job)?._id,
-            jobDetails:
-              typeof candidate?.jobId === "string"
-                ? undefined
-                : {
-                    title: (candidate?.jobId as Job)?.title,
-                    description: (candidate?.jobId as Job)?.description,
+        // Use different colors for different candidates
+        const colorIndex = index % eventColors.length;
+        const color = hasGoogleMeet
+          ? { bg: "#3b82f6", border: "#1d4ed8" }
+          : eventColors[colorIndex];
+
+        return {
+          id: candidate._id,
+          title,
+          start: startTime,
+          end: endTime,
+          allDay: false,
+          startStr: startTime?.toISOString() || "",
+          endStr: endTime?.toISOString() || "",
+          url: "",
+          display: "auto",
+          backgroundColor: color.bg,
+          borderColor: color.border,
+          extendedProps: {
+            candidate: {
+              ...candidate,
+              jobId:
+                typeof candidate?.jobId === "string"
+                  ? candidate?.jobId
+                  : (candidate?.jobId as Job)?._id,
+              jobDetails:
+                typeof candidate?.jobId === "string"
+                  ? undefined
+                  : {
+                      title: (candidate?.jobId as Job)?.title,
+                      description: (candidate?.jobId as Job)?.description,
+                    },
+            },
+            interviewer:
+              typeof candidate?.assignment?.interviewerId === "string"
+                ? {
+                    _id: candidate?.assignment?.interviewerId,
+                    name: "Unknown",
+                    email: "Unknown",
+                  }
+                : candidate?.assignment?.interviewerId || {
+                    _id: "",
+                    name: "Unknown",
+                    email: "Unknown",
                   },
           },
-          interviewer:
-            typeof candidate?.assignment?.interviewerId === "string"
-              ? {
-                  _id: candidate?.assignment?.interviewerId,
-                  name: "Unknown",
-                  email: "Unknown",
-                }
-              : candidate?.assignment?.interviewerId || {
-                  _id: "",
-                  name: "Unknown",
-                  email: "Unknown",
-                },
-        },
-      };
-    }) || [];
+        };
+      }
+    ) || [];
 
   const handleEventClick = (arg: EventClickArg) => {
     const event = arg.event;
@@ -322,7 +350,7 @@ export default function CalendarPage() {
     }
   };
 
-  const handleInterviewClick = (event: CustomCalendarEvent) => {
+  const handleSidebarEventClick = (event: CustomCalendarEvent) => {
     setSelectedEvent(event);
     setIsDetailsOpen(true);
   };
@@ -367,230 +395,274 @@ export default function CalendarPage() {
     }
   };
 
-  const getInterviewerName = (candidate: CandidateAssignment) => {
-    if (
-      candidate?.assignment?.interviewerId &&
-      typeof candidate.assignment.interviewerId === "object" &&
-      candidate.assignment.interviewerId._id &&
-      candidate.assignment.interviewerId.name
-    ) {
-      return candidate.assignment.interviewerId.name;
-    }
+  const handleDateSelect = (date: Date) => {
+    setSelectedDate(date);
+    calendarRef.current?.getApi().gotoDate(date);
   };
+
+  const handleViewChange = (
+    view: "dayGridMonth" | "timeGridWeek" | "timeGridDay" | "listWeek"
+  ) => {
+    setCalendarView(view);
+    calendarRef.current?.getApi().changeView(view);
+  };
+
+  // Calculate stats
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const todayCount = events.filter((event) => {
+    if (!event.start) return false;
+    const eventDate = new Date(event.start);
+    eventDate.setHours(0, 0, 0, 0);
+    return eventDate.getTime() === today.getTime();
+  }).length;
+
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - today.getDay());
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+  const thisWeekCount = events.filter((event) => {
+    if (!event.start) return false;
+    const eventDate = new Date(event.start);
+    eventDate.setHours(0, 0, 0, 0);
+    return eventDate >= startOfWeek && eventDate <= endOfWeek;
+  }).length;
+
+  const totalInterviews = events.length;
+
+  const upcomingCount = events.filter((event) => {
+    if (!event.start) return false;
+    const eventDate = new Date(event.start);
+    eventDate.setHours(0, 0, 0, 0);
+    return eventDate.getTime() > today.getTime();
+  }).length;
 
   if (isLoading) {
     return <LoaderSkeletonCalender />;
   }
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden w-full">
-      {/* Header section with improved design */}
-      <div className="flex-shrink-0 px-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-        <Card className="border-0 shadow-none bg-transparent">
-          <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-2 py-3 px-0">
-            {/* Title */}
-            <CardTitle className="line-clamp-2 md:mr-2 text-xl font-bold">
-              Calendar
-            </CardTitle>
+    <div className="h-screen flex flex-col overflow-hidden">
+      {/* Header */}
+      <div className="flex-shrink-0 px-6 py-4 border-b border-border/50">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <CalendarIcon className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">
+                Interview Calendar
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Manage interviews, screenings, assignments, and follow-ups
+              </p>
+            </div>
+          </div>
 
-            {/* Right Section - Search and Filter */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3">
-              <div className="flex gap-2 items-center">
-                <Input
-                  placeholder="Search assignments..."
-                  value={searchText}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    const sanitizedValue = value.replace(
-                      /[\/\\*+\?|\{\}\[\]()^$\.]/g,
-                      ""
-                    );
-                    setSearchText(sanitizedValue);
-                  }}
-                  className="max-w-lg w-96"
-                  onKeyPress={(e) => {
-                    if (e.key === "Enter") {
-                      applyFilter();
-                    }
-                  }}
-                />
-                <Button variant="outline" onClick={applyFilter}>
-                  <Search className="h-4 w-4 mr-2" />
-                  Filter
-                </Button>
+          {/* Search and View Controls */}
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex gap-2">
+              <Input
+                placeholder="Search by name, job, or skills..."
+                value={searchText}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  const sanitizedValue = value.replace(
+                    /[\/\\*+\?|\{\}\[\]()^$\.]/g,
+                    ""
+                  );
+                  setSearchText(sanitizedValue);
+                }}
+                className="w-64"
+                onKeyPress={(e) => {
+                  if (e.key === "Enter") {
+                    applyFilter();
+                  }
+                }}
+              />
+              <Button variant="outline" size="icon" onClick={applyFilter}>
+                <Search className="h-4 w-4" />
+              </Button>
+              {filterText && (
                 <Button
                   variant="outline"
+                  size="icon"
                   onClick={() => {
                     setFilterText("");
                     setSearchText("");
                   }}
                 >
-                  <X className="h-4 w-4 mr-2" />
-                  Clear
+                  <X className="h-4 w-4" />
                 </Button>
-              </div>
+              )}
             </div>
-          </CardHeader>
-        </Card>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-6 flex-1 min-h-0 px-4 pb-4 mt-4">
-        <div className="h-full border-0">
-          <div className="p-0 h-full">
-            <FullCalendar
-              ref={calendarRef}
-              plugins={[dayGridPlugin, interactionPlugin]}
-              initialView="dayGridMonth"
-              events={events}
-              eventClick={handleEventClick}
-              dateClick={handleDateClick}
-              headerToolbar={{
-                left: "prev,next today",
-                center: "title",
-                right: "",
-              }}
-              customButtons={{
-                today: {
-                  text: "Today",
-                  click: () => {
-                    calendarRef.current?.getApi().today();
-                  },
-                },
-              }}
-              height="100%"
-              contentHeight="100%"
-              handleWindowResize={true}
-              eventTextColor="var(--primary-foreground)"
-              eventContent={(arg) => {
-                return (
-                  <div className="bg-white dark:bg-black w-full rounded-lg border border-gray-200 dark:border-gray-600 p-1.5 shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-pointer">
-                    <div className="flex items-baseline gap-1 items-center justify-between">
-                      <span className="font-medium text-sm truncate text-gray-900 dark:text-gray-100">
-                        {arg.event._def.extendedProps.candidate.name}
-                      </span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {arg.event.start ? formatTime(arg.event.start) : ""}
-                      </span>
-                    </div>
-                    <div className="text-xs text-gray-700 dark:text-gray-300 truncate">
-                      {arg.event._def.extendedProps.interviewer.name}
-                    </div>
-                    <div className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
-                      {arg.event.title}
-                    </div>
-                  </div>
-                );
-              }}
-            />
+            {/* View Toggle Buttons */}
+            <div className="flex gap-1 border rounded-lg p-1">
+              <Button
+                variant={calendarView === "dayGridMonth" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => handleViewChange("dayGridMonth")}
+              >
+                Month
+              </Button>
+              <Button
+                variant={calendarView === "timeGridWeek" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => handleViewChange("timeGridWeek")}
+              >
+                Week
+              </Button>
+              <Button
+                variant={calendarView === "timeGridDay" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => handleViewChange("timeGridDay")}
+              >
+                Day
+              </Button>
+              <Button
+                variant={calendarView === "listWeek" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => handleViewChange("listWeek")}
+              >
+                Agenda
+              </Button>
+            </div>
           </div>
         </div>
-        <div className="flex flex-col gap-4 sticky top-6 h-[calc(100dvh-140px)] overflow-auto">
-          {/* Unscheduled interviews */}
-          {/* <Card>
-            <CardHeader>
-              <CardTitle>Scheduled Interviews</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {filteredAssignments.filter(
-                (candidate) => !candidate.assignment?.time
-              ).length > 0 ? (
-                filteredAssignments
-                  .filter((candidate) => !candidate.assignment?.time)
-                  .map((candidate, index) => (
-                    <div
-                      key={index}
-                      className="rounded-lg  mb-3 shadow-sm  bg-white"
-                    >
-                      <div className="font-bold text-md truncate">
-                        {candidate.name}
+      </div>
+
+      {/* Stats Cards */}
+      <div className="flex-shrink-0 px-6 pt-6 pb-6">
+        <StatsCards
+          todayCount={todayCount}
+          thisWeekCount={thisWeekCount}
+          totalInterviews={totalInterviews}
+          upcomingCount={upcomingCount}
+        />
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 min-h-0 px-6 pb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6 h-full">
+          {/* Left Sidebar */}
+          <CalendarSidebar
+            events={events}
+            selectedDate={selectedDate}
+            onDateSelect={handleDateSelect}
+            onEventClick={handleSidebarEventClick}
+          />
+
+          {/* Calendar */}
+          <Card className="h-full flex flex-col overflow-hidden">
+            <CardContent className="p-6 flex-1 overflow-auto">
+              <FullCalendar
+                ref={calendarRef}
+                plugins={[
+                  dayGridPlugin,
+                  timeGridPlugin,
+                  listPlugin,
+                  interactionPlugin,
+                ]}
+                initialView={calendarView}
+                events={events}
+                eventClick={handleEventClick}
+                dateClick={handleDateClick}
+                headerToolbar={{
+                  left: "prev,next today",
+                  center: "title",
+                  right: "",
+                }}
+                customButtons={{
+                  today: {
+                    text: "Today",
+                    click: () => {
+                      calendarRef.current?.getApi().today();
+                      setSelectedDate(new Date());
+                    },
+                  },
+                }}
+                height="100%"
+                contentHeight="100%"
+                handleWindowResize={true}
+                eventTextColor="#ffffff"
+                slotMinTime="08:00:00"
+                slotMaxTime="20:00:00"
+                allDaySlot={false}
+                nowIndicator={true}
+                eventContent={(arg) => {
+                  if (calendarView === "listWeek") {
+                    // List view has its own rendering
+                    return null;
+                  }
+
+                  const candidate = arg.event._def.extendedProps.candidate;
+                  const interviewer = arg.event._def.extendedProps.interviewer;
+                  const jobTitle =
+                    typeof candidate.jobId !== "string" &&
+                    candidate.jobId?.title
+                      ? candidate.jobId.title
+                      : candidate.jobDetails?.title || "";
+
+                  if (
+                    calendarView === "timeGridWeek" ||
+                    calendarView === "timeGridDay"
+                  ) {
+                    // Time grid view
+                    return (
+                      <div className="w-full h-full overflow-hidden px-2 py-1 break-words">
+                        <div className="font-semibold text-xs truncate overflow-hidden max-w-full">
+                          {candidate.name}
+                        </div>
+                        {jobTitle && (
+                          <div className="text-[10px] opacity-80 truncate capitalize overflow-hidden max-w-full">
+                            {jobTitle}
+                          </div>
+                        )}
+                        {interviewer.name && interviewer.name !== "Unknown" && (
+                          <div className="text-[10px] opacity-75 truncate capitalize overflow-hidden max-w-full">
+                            {interviewer.name}
+                          </div>
+                        )}
                       </div>
-                      <div className="text-xs text-gray-600 truncate">
-                        {typeof candidate.jobId === "object"
-                          ? candidate.jobId.title
-                          : "Unknown Job"}
+                    );
+                  }
+
+                  // Month view
+                  return (
+                    <div className="w-full h-full overflow-hidden px-1.5 py-0.5 break-words">
+                      <div className="flex items-center gap-1 mb-0.5 overflow-hidden max-w-full">
+                        <div className="font-medium text-[11px] truncate flex-1 overflow-hidden min-w-0">
+                          {candidate.name}
+                        </div>
+                        {arg.event.start && (
+                          <span className="text-[10px] opacity-80 shrink-0 whitespace-nowrap">
+                            {formatTime(arg.event.start)}
+                          </span>
+                        )}
                       </div>
-                      <div className="text-xs text-gray-500 truncate">
-                        Interviewer:{" "}
-                        {typeof candidate.assignment?.interviewerId === "object"
-                          ? candidate.assignment?.interviewerId.name
-                          : "Unknown"}
-                      </div>
+                      {jobTitle && (
+                        <div className="text-[9px] opacity-75 truncate capitalize overflow-hidden max-w-full">
+                          {jobTitle}
+                        </div>
+                      )}
+                      {interviewer.name && interviewer.name !== "Unknown" && (
+                        <div className="text-[9px] opacity-70 truncate capitalize overflow-hidden max-w-full">
+                          {interviewer.name}
+                        </div>
+                      )}
                     </div>
-                  ))
-              ) : (
-                <div className="text-center text-muted-foreground py-8">
-                  No interviews are scheduled
-                </div>
-              )}
-            </CardContent>
-          </Card> */}
-
-          {/* today's interview */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Today's Interview</CardTitle>
-            </CardHeader>
-            <CardContent className="pb-2">
-              {events
-                .filter(
-                  (event) =>
-                    new Date(event.start!).toLocaleDateString() ===
-                    new Date().toLocaleDateString()
-                )
-                .map((event, i) => (
-                  <RenderEvent
-                    key={i}
-                    event={event}
-                    events={events}
-                    getInterviewerName={getInterviewerName}
-                    index={i}
-                    handleInterviewClick={handleInterviewClick}
-                  />
-                ))}
-              <div className="text-center text-muted-foreground">
-                {events.filter(
-                  (event) =>
-                    event?.start?.toISOString().split("T")[0] ===
-                    new Date().toISOString().split("T")[0]
-                ).length > 0
-                  ? ""
-                  : "No interviews scheduled "}
-              </div>
-            </CardContent>
-            <CardHeader className="">
-              <CardTitle>Not Scheduled</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {events
-                .filter(
-                  (candidate) =>
-                    !candidate.extendedProps.candidate.assignment?.time
-                )
-                .map((event, i) => (
-                  // <div className="border-b border-gray-200 pb-2 mb-2">
-                  <RenderEvent
-                    key={i}
-                    event={event}
-                    events={events}
-                    getInterviewerName={getInterviewerName}
-                    index={i}
-                    handleInterviewClick={handleInterviewClick}
-                  />
-                  // </div>
-                ))}
-
-              <div className="text-center text-muted-foreground">
-                {events.filter(
-                  (candidate) =>
-                    !candidate.extendedProps.candidate.assignment?.time
-                ).length > 0
-                  ? ""
-                  : "No scheduled interviews"}
-              </div>
+                  );
+                }}
+              />
             </CardContent>
           </Card>
         </div>
       </div>
+
       {selectedEvent && (
         <CandidateDetailsDialog
           candidate={{

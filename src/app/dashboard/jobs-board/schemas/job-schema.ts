@@ -17,6 +17,9 @@ export const jobSchema = (customFields: Yup.Schema<unknown>) => {
       .required("Job title is required")
       .trim("Job title cannot have leading or trailing spaces")
       .max(300, "Job title cannot exceed 300 characters"),
+    status: Yup.string()
+      .oneOf(["draft", "open", "closed"], "Invalid status")
+      .required("Status is required"),
     // company: Yup.string()
     //   .required("Company name is required")
     //   .min(2, "Company name must be at least 2 characters")
@@ -62,6 +65,7 @@ export interface ISalary {
 export interface JobFormValues {
   _id: string;
   title: string;
+  status: "open" | "closed" | "draft";
   // company: string;
   description: string;
   skills: string[];

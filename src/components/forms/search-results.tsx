@@ -437,9 +437,7 @@ export function SearchResults({
     return (
       <Card className="p-6">
         <div className="text-center py-8">
-          <p className="text-lg font-bold">
-            No results found. Try adjusting your search criteria.
-          </p>
+          <p>No results found. Try adjusting your search criteria.</p>
         </div>
       </Card>
     );
