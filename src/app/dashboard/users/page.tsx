@@ -30,7 +30,7 @@ import { EmailNotificationSettingsDialog } from "@/components/dialogs/EmailNotif
 function UsersPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { data: users, isLoading, error, refetch } = useGetUsersQuery();
+  const { data: users = [], isLoading, error, refetch } = useGetUsersQuery();
   const [deleteUser, { isLoading: isDeleting }] = useDeleteUserMutation();
   const [isOpen, setIsOpen] = useState(false);
   const [isPasswordOpen, setIsPasswordOpen] = useState(false);

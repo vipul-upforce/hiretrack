@@ -37,22 +37,26 @@ const LoaderSkeletonUsers = () => (
               <TableRow key={i}>
                 <TableCell>
                   {" "}
-                  <Skeleton className="w-full h-5 rounded-lg" />
+                  <Skeleton className="w-[50%] h-5 rounded-lg" />
                 </TableCell>
                 <TableCell>
                   {" "}
-                  <Skeleton className="w-full h-5 rounded-lg" />
+                  <Skeleton className="w-[50%] h-5 rounded-lg" />
                 </TableCell>
                 <TableCell>
                   {" "}
-                  <Skeleton className="w-full h-5 rounded-lg" />
+                  <Skeleton className="w-[30%] h-5 rounded-lg" />
                 </TableCell>
                 <TableCell>
                   {" "}
-                  <Skeleton className="w-full h-5 rounded-lg" />
+                  <Skeleton className="w-[60%] h-5 rounded-lg" />
                 </TableCell>
-                <TableCell className="w-[100px]">
+                <TableCell className="w-[200px]">
                   <Skeleton className="ml-2 w-5 h-5 inline-block rounded-full" />
+                  <Skeleton className="ml-2 w-5 h-5 inline-block rounded-full" />
+                  <Skeleton className="ml-2 w-5 h-5 inline-block rounded-full" />
+                  <Skeleton className="ml-2 w-5 h-5 inline-block rounded-full" />
+
                 </TableCell>
               </TableRow>
             ))}
