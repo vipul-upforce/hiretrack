@@ -406,7 +406,7 @@ export default function AIProvidersConfigs({
         errors,
         touched,
       }) => (
-        <Form className="flex flex-col h-[calc(90vh-80px)] overflow-hidden">
+        <Form className="flex flex-col h-[calc(86vh-80px)] overflow-hidden">
           <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 sticky top-0">
             {/* AI Provider Cards */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
