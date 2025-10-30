@@ -19,7 +19,7 @@ export const verifyAndDecryptToken = (token: string, orgId?: string) => {
     //   process.env.NEXT_PUBLIC_JWT_SECRET || "your_jwt_secret_key";
     // console.log(JWT_SECRET, "JWT_SECRET-9");
     const JWT_SECRET = generateOrgJwtSecret(orgId);
-    console.log(JWT_SECRET, "JWT_SECRET-9");
+    // console.log(JWT_SECRET, "JWT_SECRET-9");
     if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
 
     const decoded = jwt.verify(token, JWT_SECRET);

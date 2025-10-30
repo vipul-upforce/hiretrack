@@ -12,7 +12,7 @@ export const signToken = (payload: any, orgId: string) => {
   const JWT_SECRET = generateOrgJwtSecret(orgId);
   if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
 
-  console.log(JWT_SECRET, "JWT_SECRET-8 ");
+  // console.log(JWT_SECRET, "JWT_SECRET-8 ");
 
   const encryptedPayload = CryptoJS.AES.encrypt(
     JSON.stringify(payload),
