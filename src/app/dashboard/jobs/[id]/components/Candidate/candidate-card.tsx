@@ -18,6 +18,7 @@ import {
   MessageCircle,
   Tag,
   Briefcase,
+  Download,
 } from "lucide-react";
 import { Candidate } from "@/types/candidate";
 import { formatDate, formatTime } from "../../hooks/dateTimeFormatting";
@@ -81,6 +82,7 @@ import {
 import TagsDialog from "../Dialogs/tags-dialog";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { AssignJobDialog } from "../Dialogs/assign-job-dialog";
+import { ShareCandidateDialog } from "../Dialogs/share-candidate-dialog";
 
 interface CandidateCardProps {
   candidate: Candidate;
@@ -137,6 +139,7 @@ const CandidateCard = memo(function CandidateCard({
   const [confirmUnassignOpen, setConfirmUnassignOpen] = useState(false);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const [isTagsOpen, setIsTagsOpen] = useState(false);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   // Update local candidate when prop changes
   useEffect(() => {
     setLocalCandidate(candidate);
@@ -461,6 +464,19 @@ const CandidateCard = memo(function CandidateCard({
                       >
                         <Mail className="h-4 w-4 mr-2" />
                         Send Email
+                      </DropdownMenuItem>
+                    )}
+
+                    {/* Download Profile - Only for admin and HR */}
+                    {(user?.role === "admin" || user?.role === "hr") && (
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsShareDialogOpen(true);
+                        }}
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Download Profile
                       </DropdownMenuItem>
                     )}
 
@@ -1419,6 +1435,13 @@ const CandidateCard = memo(function CandidateCard({
           // }}
         />
       )}
+
+      {/* Share Candidate Dialog */}
+      <ShareCandidateDialog
+        open={isShareDialogOpen}
+        onOpenChange={setIsShareDialogOpen}
+        candidate={localCandidate}
+      />
     </>
   );
 });
