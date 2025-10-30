@@ -1,4 +1,5 @@
-"use server";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 // This function is used by Next.js for initial server-side metadata generation
 // Client-side updates are handled in client-layout.tsx
@@ -42,5 +43,3 @@ export const pageMetaData = async () => {
     };
   }
 };
-
-export const revalidate = 40;
