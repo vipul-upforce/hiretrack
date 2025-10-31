@@ -339,6 +339,20 @@ const CandidateCard = memo(function CandidateCard({
     setCandidateToAssignJob(candidate);
     setIsAssignJobOpen(true);
   };
+
+  const formatSmartDate = (date: string) => {
+    const createdAt = new Date(date);
+    const now = Date.now();
+    const gap = now - createdAt.getTime();
+    const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+
+    if (gap < thirtyDays) {
+      return formatDistanceToNow(createdAt, { addSuffix: true });
+    } else {
+      return createdAt.toLocaleDateString();
+    }
+  };
+
   const renderCardContent = useMemo(
     () => (
       <div className="flex flex-col h-full relative">
@@ -603,46 +617,13 @@ const CandidateCard = memo(function CandidateCard({
             <div className="flex justify-between items-center">
               <div className="text-[11px] text-gray-500 capitalize    justify-between">
                 <p className="leading-tight truncate">
-                  Applied:{" "}
-                  {(() => {
-                    const createdAt = new Date(
-                      localCandidate.tracking.createdAt
-                    );
-                    // const distance = formatDistanceToNow(createdAt, { addSuffix: true });
-                    // const startsWithNumber = /^\d/.test(distance);
-                    // return startsWithNumber
-                    //   ? `${createdAt.toLocaleDateString()} . ${distance}`
-                    //   : distance;
-                    const distance = formatDistanceToNow(createdAt, {
-                      addSuffix: true,
-                    });
-                    const currentTime = Date.now();
-                    // debugger
-                    const gap = currentTime - createdAt.getTime(); // Time difference in milliseconds
-                    return gap > 24 * 3600 * 1000 // 24 hours in milliseconds
-                      ? `${createdAt.toLocaleDateString()} . ${distance}`
-                      : distance;
-                  })()}
+                  Applied: {formatSmartDate(localCandidate.tracking.createdAt)}
                 </p>
               </div>
               <div className="text-[11px] text-gray-500 capitalize  leading-tight truncate flex justify-end">
                 <p className="leading-tight truncate">
                   Last Updated:{" "}
-                  {(() => {
-                    const updatedAt = new Date(
-                      localCandidate.tracking.updatedAt
-                    );
-                    const currentTime = Date.now();
-                    const distance = formatDistanceToNow(updatedAt, {
-                      addSuffix: true,
-                    });
-                    // debugger
-                    // const startsWithNumber = /^\d/.test(distance);
-                    const gap = currentTime - updatedAt.getTime(); // Time difference in milliseconds
-                    return gap > 24 * 3600 * 1000 // 24 hours in milliseconds
-                      ? `${updatedAt.toLocaleDateString()} . ${distance}`
-                      : distance;
-                  })()}
+                  {formatSmartDate(localCandidate.tracking.updatedAt)}
                 </p>
               </div>
             </div>
