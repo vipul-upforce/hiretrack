@@ -54,8 +54,8 @@ export function useUserEmailNotificationSettings(
 
       // ✅ Normalize response: Ensure global exists (fallback to empty if missing)
       const normalizedSettings: EmailNotificationSettings = {
-        global: data.settings?.global || {},
-        jobLevel: data.settings?.jobLevel || {},
+        global: data.settings?.global || data.settings?.email || {},
+        jobLevel: data.settings?.jobLevel || data.settings?.email || {},
       };
 
       setSettings(normalizedSettings);
