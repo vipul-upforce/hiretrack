@@ -6,6 +6,11 @@ import {
   NotificationType,
   NotificationDecisionContext,
 } from "@/lib/services/emailDecisionEngine";
+import {
+  broadcastNotification,
+  broadcastNotifications,
+  broadcastNotificationCount,
+} from "@/lib/broadcast/broadcastNotifications";
 
 interface CreateNotificationParams {
   organizationId: string;
@@ -57,7 +62,28 @@ export class NotificationService {
         isRead: false,
       });
 
-      return notification.toObject();
+      const obj = notification.toObject();
+      try {
+        await broadcastNotification(
+          params.organizationId,
+          params.recipientId,
+          obj
+        );
+        const unread = await Notification.countDocuments({
+          organizationId: params.organizationId,
+          recipientId: params.recipientId,
+          isRead: false,
+        });
+        broadcastNotificationCount(
+          params.organizationId,
+          params.recipientId,
+          unread
+        );
+      } catch (e) {
+        console.error("Failed to broadcast notification:", e);
+      }
+
+      return obj;
     } catch (error) {
       console.error("❌ Error creating notification:", error);
       return null;
@@ -98,8 +124,31 @@ export class NotificationService {
 
       const createdNotifications = await Notification.insertMany(notifications);
       console.log(createdNotifications, "createdNotifications");
+      const created = createdNotifications.map((n) => n.toObject());
 
-      return createdNotifications.map((n) => n.toObject());
+      try {
+        await broadcastNotifications(baseParams.organizationId, created);
+        // send updated counts per recipient
+        const uniqRecipients = Array.from(
+          new Set(created.map((n) => n.recipientId))
+        );
+        for (const recipientId of uniqRecipients) {
+          const unread = await Notification.countDocuments({
+            organizationId: baseParams.organizationId,
+            recipientId,
+            isRead: false,
+          });
+          broadcastNotificationCount(
+            baseParams.organizationId,
+            recipientId,
+            unread
+          );
+        }
+      } catch (e) {
+        console.error("Failed to broadcast bulk notifications:", e);
+      }
+
+      return created;
     } catch (error) {
       console.error("❌ Error creating bulk notifications:", error);
       return [];

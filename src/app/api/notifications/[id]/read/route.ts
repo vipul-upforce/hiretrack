@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { Notification } from "@/lib/mongodb";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import mongoose from "mongoose";
+import { broadcastNotificationCount } from "@/lib/broadcast/broadcastNotifications";
 
 export async function PUT(
   request: NextRequest,
@@ -59,6 +60,17 @@ export async function PUT(
         { error: "Notification not found or access denied" },
         { status: 404 }
       );
+    }
+
+    try {
+      const unread = await Notification.countDocuments({
+        organizationId: user.organizationId,
+        recipientId: user._id,
+        isRead: false,
+      });
+      broadcastNotificationCount(user.organizationId, user._id, unread);
+    } catch (e) {
+      console.log("Error while broadcasting notifactin count : ", e)
     }
 
     return NextResponse.json({

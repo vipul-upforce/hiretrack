@@ -37,6 +37,8 @@ interface SidebarContentProps {
   onPageChange: (page: number) => void;
   onGenerateShareOrg: (e: React.FormEvent) => void;
   onLogout: () => void;
+  unreadCount: number;
+  totalCount: number;
 }
 
 /**
@@ -64,6 +66,8 @@ const SidebarContent = memo(
     onPageChange,
     onGenerateShareOrg,
     onLogout,
+    unreadCount,
+    totalCount,
   }: SidebarContentProps) => {
     const pathname = usePathname();
 
@@ -82,7 +86,9 @@ const SidebarContent = memo(
         <div
           className={cn(
             "flex items-center transition-all duration-200",
-            isCollapsed ? "h-16 justify-center px-2" : "h-16 justify-between px-4"
+            isCollapsed
+              ? "h-16 justify-center px-2"
+              : "h-16 justify-between px-4"
           )}
         >
           {isCollapsed ? (
@@ -185,8 +191,12 @@ const SidebarContent = memo(
             {userData && (
               <NotificationButton
                 notifications={notificationsData?.notifications || []}
-                unreadCount={notificationCountData?.unreadCount || 0}
-                totalCount={notificationCountData?.totalCount || 0}
+                unreadCount={
+                  unreadCount || notificationCountData?.unreadCount || 0
+                }
+                totalCount={
+                  totalCount || notificationCountData?.totalCount || 0
+                }
                 currentPage={notificationsData?.pagination?.currentPage || 1}
                 totalPages={notificationsData?.pagination?.totalPages || 1}
                 isLoading={notificationsLoading}
@@ -264,14 +274,22 @@ const SidebarContent = memo(
       prevProps.userData?.role === nextProps.userData?.role &&
       prevProps.userData?.name === nextProps.userData?.name &&
       prevProps.userData?.email === nextProps.userData?.email &&
-      prevProps.portalConfigData?.portalLogo?.url === nextProps.portalConfigData?.portalLogo?.url &&
-      prevProps.portalConfigData?.portalLogoDark?.url === nextProps.portalConfigData?.portalLogoDark?.url &&
-      prevProps.portalConfigData?.portalName === nextProps.portalConfigData?.portalName &&
+      prevProps.portalConfigData?.portalLogo?.url ===
+        nextProps.portalConfigData?.portalLogo?.url &&
+      prevProps.portalConfigData?.portalLogoDark?.url ===
+        nextProps.portalConfigData?.portalLogoDark?.url &&
+      prevProps.portalConfigData?.portalName ===
+        nextProps.portalConfigData?.portalName &&
       prevProps.isLoading === nextProps.isLoading &&
       prevProps.theme === nextProps.theme &&
-      prevProps.notificationCountData?.unreadCount === nextProps.notificationCountData?.unreadCount &&
-      prevProps.notificationCountData?.totalCount === nextProps.notificationCountData?.totalCount &&
-      prevProps.isNotificationDropdownOpen === nextProps.isNotificationDropdownOpen
+      prevProps.notificationCountData?.unreadCount ===
+        nextProps.notificationCountData?.unreadCount &&
+      prevProps.notificationCountData?.totalCount ===
+        nextProps.notificationCountData?.totalCount &&
+      prevProps.isNotificationDropdownOpen ===
+        nextProps.isNotificationDropdownOpen &&
+      prevProps.totalCount === nextProps.totalCount &&
+      prevProps.unreadCount === nextProps.unreadCount
       // Note: We intentionally ignore notificationsData changes when dropdown is closed
       // to prevent re-renders during polling
     );

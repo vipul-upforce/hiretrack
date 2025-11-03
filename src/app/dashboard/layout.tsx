@@ -52,6 +52,7 @@ import SidebarLogo from "@/components/layouts/SidebarLogo";
 import SidebarContent from "@/components/layouts/SidebarContent";
 import { useGetOrganizationAllowanceQuery } from "@/lib/features/org/orgApi";
 import { useCheckOrgQuery } from "@/lib/features/org/orgApi";
+import { useNotificationSSE } from "@/hooks/useNotificationSSE";
 
 interface SidebarItem {
   title: string;
@@ -148,8 +149,13 @@ export default function DashboardLayout({
   );
   const { data: notificationCountData } = useGetNotificationCountQuery(
     undefined,
-    { skip: !userData, pollingInterval: 5000 } // Poll every 30 seconds for real-time updates
+    { skip: !userData }
   );
+  const { unreadCount, totalCount } = useNotificationSSE(
+    notificationCountData?.unreadCount || 0,
+    notificationCountData?.totalCount || 0
+  );
+
   const [markAsRead] = useMarkNotificationAsReadMutation();
   const [markAllAsRead] = useMarkAllNotificationsAsReadMutation();
   const [fetchCandidateById] = useLazyFetchCandidateByIdQuery();
@@ -246,6 +252,13 @@ export default function DashboardLayout({
       window.location.href = "/auth/login";
     }
   }, [orgCheckData, dispatch]);
+
+  useEffect(() => {
+    if (totalCount >= 0 && notificationCountData && totalCount !== notificationCountData.totalCount) {
+      // refetch notification when unread count changes to display latest notifications
+      fetchNotifications();
+    }
+  }, [unreadCount]);
 
   useEffect(() => {
     if (user) {
@@ -535,6 +548,8 @@ export default function DashboardLayout({
             onPageChange={setNotificationPage}
             onGenerateShareOrg={generate_share_org}
             onLogout={handleLogout}
+            unreadCount={unreadCount}
+            totalCount={totalCount}
           />
         </aside>
         <Sheet>
@@ -568,6 +583,8 @@ export default function DashboardLayout({
               onPageChange={setNotificationPage}
               onGenerateShareOrg={generate_share_org}
               onLogout={handleLogout}
+              unreadCount={unreadCount}
+              totalCount={totalCount}
             />
           </SheetContent>
         </Sheet>

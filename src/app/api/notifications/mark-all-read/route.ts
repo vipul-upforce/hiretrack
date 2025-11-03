@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { Notification } from "@/lib/mongodb";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import { broadcastNotificationCount } from "@/lib/broadcast/broadcastNotifications";
 
 export async function PUT(request: NextRequest) {
   try {
@@ -39,6 +40,12 @@ export async function PUT(request: NextRequest) {
         updatedAt: new Date(),
       }
     );
+
+    try {
+      broadcastNotificationCount(user.organizationId, user._id, 0);
+    } catch (e) {
+      console.log("Broadcast notification failed for mark all read ", e);
+    }
 
     return NextResponse.json({
       message: "All notifications marked as read",
