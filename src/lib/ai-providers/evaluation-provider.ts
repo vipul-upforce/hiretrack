@@ -93,16 +93,16 @@ export class AIEvaluationService {
 
       // The API keys should already be decrypted by the calling code
       // Only decrypt if they appear to be encrypted (base64 check)
-      if (
-        aiProviders?.gemini?.api_key &&
-        aiProviders.gemini.api_key.includes("U2FsdGVkX1")
-      ) {
-        console.log("API keys appear to be encrypted, decrypting...");
-        aiProviders = decryptProviderKeys(
-          aiProviders,
-          candidate.organizationId
-        );
-      }
+      // if (
+      //   aiProviders?.gemini?.api_key &&
+      //   aiProviders.gemini.api_key.includes("U2FsdGVkX1")
+      // ) {
+      //   console.log("API keys appear to be encrypted, decrypting...");
+      //   aiProviders = decryptProviderKeys(
+      //     aiProviders,
+      //     candidate.organizationId
+      //   );
+      // }
 
       const activeProvider = aiProviders.activeProvider as AIProviderType;
 
