@@ -69,6 +69,53 @@ export interface Candidate {
     recommendation: string;
     notes: string;
     failure?: string;
+    confidenceScores?: {
+      overall: number;
+      skills: number;
+      experience: number;
+      affordability: number;
+    };
+    evidenceLinks?: {
+      overall: string;
+      skills: string;
+      experience: string;
+      affordability: string;
+    };
+    redFlags?: Array<{
+      type: string;
+      severity: 'low' | 'medium' | 'high';
+      description: string;
+      evidence: string;
+    }>;
+    comparativeRanking?: {
+      overallRank: number;
+      totalCandidates: number;
+      percentile: number;
+      skillsPercentile: number;
+      experiencePercentile: number;
+      affordabilityPercentile: number;
+      hasTie: boolean;
+      tiedWithCount: number;
+      rankingBasedOn: 'overall' | 'weighted';
+    };
+    interviewQuestions?: Array<{
+      category: string;
+      question: string;
+      reason: string;
+      priority: 'high' | 'medium' | 'low';
+      suggestedAnswer?: string;
+    }>;
+    skillsMatrix?: {
+      requiredAndPresent: Array<{
+        skill: string;
+        yearsOfExperience?: number;
+        proficiencyLevel?: string;
+        evidence: string;
+      }>;
+      requiredButMissing: string[];
+      presentButNotRequired: string[];
+    };
+    weightedScore?: number;
   };
   followUp?: {
     note: string;

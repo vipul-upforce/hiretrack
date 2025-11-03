@@ -42,10 +42,21 @@ export class GeminiProvider extends BaseAIProvider {
     }
   }
 
-  async evaluateResume(resumeBase64: string, apiKey: string, prompt: string, modelName?: string): Promise<string> {
+  async evaluateResume(
+    resumeBase64: string,
+    apiKey: string,
+    prompt: string,
+    modelName?: string,
+    temperature?: number
+  ): Promise<string> {
     const genAI = new GoogleGenerativeAI(apiKey);
     const selectedModel = modelName || getDefaultModel("gemini");
-    const model = genAI.getGenerativeModel({ model: selectedModel });
+    const model = genAI.getGenerativeModel({
+      model: selectedModel,
+      generationConfig: {
+        temperature: temperature !== undefined ? temperature : 0.1,
+      },
+    });
 
     const result = await model.generateContent({
       contents: [

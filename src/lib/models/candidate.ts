@@ -91,11 +91,60 @@ export interface ICandidate {
     overall: number;
     experience: number;
     skills: number;
+    affordability?: number;
     strengths: string[];
     areas_for_improvement: string[];
     recommendation: string;
     notes: string;
     failure?: string;
+    // New enhanced evaluation fields
+    confidenceScores?: {
+      overall: number;
+      skills: number;
+      experience: number;
+      affordability: number;
+    };
+    evidenceLinks?: {
+      overall: string;
+      skills: string;
+      experience: string;
+      affordability: string;
+    };
+    redFlags?: Array<{
+      type: string;
+      severity: 'low' | 'medium' | 'high';
+      description: string;
+      evidence: string;
+    }>;
+    comparativeRanking?: {
+      overallRank: number;
+      totalCandidates: number;
+      percentile: number;
+      skillsPercentile: number;
+      experiencePercentile: number;
+      affordabilityPercentile: number;
+      hasTie: boolean;
+      tiedWithCount: number;
+      rankingBasedOn: 'overall' | 'weighted';
+    };
+    interviewQuestions?: Array<{
+      category: string;
+      question: string;
+      reason: string;
+      priority: 'high' | 'medium' | 'low';
+      suggestedAnswer?: string;
+    }>;
+    skillsMatrix?: {
+      requiredAndPresent: Array<{
+        skill: string;
+        yearsOfExperience?: number;
+        proficiencyLevel?: string;
+        evidence: string;
+      }>;
+      requiredButMissing: string[];
+      presentButNotRequired: string[];
+    };
+    weightedScore?: number;
   };
   checklistData?: {
     [laneId: string]: {
@@ -317,6 +366,71 @@ export const candidateSchema = new Schema(
       recommendation: String,
       notes: String,
       failure: String,
+      // New enhanced evaluation fields
+      confidenceScores: {
+        overall: { type: Number, min: 0, max: 1 },
+        skills: { type: Number, min: 0, max: 1 },
+        experience: { type: Number, min: 0, max: 1 },
+        affordability: { type: Number, min: 0, max: 1 },
+      },
+      evidenceLinks: {
+        overall: String,
+        skills: String,
+        experience: String,
+        affordability: String,
+      },
+      redFlags: [
+        {
+          type: {
+            type: String,
+          },
+          severity: {
+            type: String,
+            enum: ['low', 'medium', 'high'],
+          },
+          description: String,
+          evidence: String,
+        },
+      ],
+      comparativeRanking: {
+        overallRank: Number,
+        totalCandidates: Number,
+        percentile: Number,
+        skillsPercentile: Number,
+        experiencePercentile: Number,
+        affordabilityPercentile: Number,
+        hasTie: Boolean,
+        tiedWithCount: Number,
+        rankingBasedOn: {
+          type: String,
+          enum: ['overall', 'weighted'],
+        },
+      },
+      interviewQuestions: [
+        {
+          category: { type: String },
+          question: { type: String },
+          reason: { type: String },
+          priority: {
+            type: String,
+            enum: ['high', 'medium', 'low'],
+          },
+          suggestedAnswer: { type: String },
+        },
+      ],
+      skillsMatrix: {
+        requiredAndPresent: [
+          {
+            skill: String,
+            yearsOfExperience: Number,
+            proficiencyLevel: String,
+            evidence: String,
+          },
+        ],
+        requiredButMissing: [String],
+        presentButNotRequired: [String],
+      },
+      weightedScore: Number,
     },
     checklistData: {
       type: Map,

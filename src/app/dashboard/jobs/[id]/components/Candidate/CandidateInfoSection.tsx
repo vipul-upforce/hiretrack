@@ -14,49 +14,61 @@ export const CandidateInfoSection = ({
   user,
   labelClass,
 }: CandidateInfoSectionProps) => (
-  <div className="grid grid-cols-2 gap-6">
-    <div className="space-y-2">
-      <Label className={labelClass}>Location</Label>
-      <div className="text-sm flex items-center gap-2 text-gray-900 dark:text-gray-100">
-        <MapPin className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-        {candidate.location}
+  <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2">
+    <div className="flex items-center gap-1.5 min-w-0">
+      <MapPin className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+      <div className="min-w-0 flex items-baseline gap-1">
+        <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">Location:</span>
+        <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+          {candidate.location}
+        </span>
       </div>
     </div>
-    <div className="space-y-2">
-      <Label className={labelClass}>Relevant Experience</Label>
-      <div className="text-sm flex items-center gap-2 text-gray-900 dark:text-gray-100">
-        <Briefcase className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-        {candidate.relevantExperience} years
+    <div className="flex items-center gap-1.5 min-w-0">
+      <Briefcase className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+      <div className="min-w-0 flex items-baseline gap-1">
+        <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">Rel. Exp:</span>
+        <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+          {candidate.relevantExperience}y
+        </span>
       </div>
     </div>
-    <div className="space-y-2">
-      <Label className={labelClass}> Total Experience</Label>
-      <div className="text-sm flex items-center gap-2 text-gray-900 dark:text-gray-100">
-        <Briefcase className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-        {candidate.experience} years
+    <div className="flex items-center gap-1.5 min-w-0">
+      <Briefcase className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+      <div className="min-w-0 flex items-baseline gap-1">
+        <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">Total Exp:</span>
+        <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+          {candidate.experience}y
+        </span>
       </div>
     </div>
-    <div className="space-y-2">
-      <Label className={labelClass}>Notice Period</Label>
-      <div className="text-sm flex items-center gap-2 text-gray-900 dark:text-gray-100">
-        <Clock className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-        {candidate.noticePeriod} days
+    <div className="flex items-center gap-1.5 min-w-0">
+      <Clock className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+      <div className="min-w-0 flex items-baseline gap-1">
+        <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">Notice:</span>
+        <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+          {candidate.noticePeriod}d
+        </span>
       </div>
     </div>
     {user?.role !== "interviewer" && (
       <>
-        <div className="space-y-2">
-          <Label className={labelClass}>Current CTC</Label>
-          <div className="text-sm flex items-center gap-2 text-gray-900 dark:text-gray-100">
-            <IndianRupee className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-            {candidate.currentCTC} LPA
+        <div className="flex items-center gap-1.5 min-w-0">
+          <IndianRupee className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+          <div className="min-w-0 flex items-baseline gap-1">
+            <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">Current:</span>
+            <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+              {candidate.currentCTC}L
+            </span>
           </div>
         </div>
-        <div className="space-y-2">
-          <Label className={labelClass}>Expected CTC</Label>
-          <div className="text-sm flex items-center gap-2 text-gray-900 dark:text-gray-100">
-            <IndianRupee className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-            {candidate.expectedCTC} LPA
+        <div className="flex items-center gap-1.5 min-w-0">
+          <IndianRupee className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+          <div className="min-w-0 flex items-baseline gap-1">
+            <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">Expected:</span>
+            <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+              {candidate.expectedCTC}L
+            </span>
           </div>
         </div>
       </>

@@ -125,6 +125,12 @@ export function CreateJobDialog({
     removedFiles: [] as string[],
     removedImages: [] as string[],
     customFields: { ...inits },
+    evaluationWeights: {
+      skills: 25,
+      experience: 25,
+      affordability: 25,
+      overall: 25,
+    },
   };
 
   const handleSubmit = async (

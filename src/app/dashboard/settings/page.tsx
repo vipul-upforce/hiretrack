@@ -143,6 +143,12 @@ function Settings() {
           icon: Bot,
         },
         {
+          title: "AI Evaluation Settings",
+          key: "evaluation",
+          description: "Configure AI candidate evaluation criteria and scoring",
+          icon: Sparkles,
+        },
+        {
           title: "Google Calendar",
           key: "google-calendar",
           description: "Connect Google Calendar for interview scheduling",

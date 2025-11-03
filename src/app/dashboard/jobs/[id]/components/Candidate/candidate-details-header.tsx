@@ -15,6 +15,9 @@ import {
   User,
   Phone,
   Mail,
+  Briefcase,
+  IndianRupee,
+  AlertCircle,
   FileDown,
 } from "lucide-react";
 import { CandidateStatusBadge } from "../Utils/candidate-status-badge";
@@ -191,17 +194,45 @@ export default function DetailsDialogHeader({
                   {candidate.location}
                 </span>
               )}
-              {candidate.experience !== undefined && (
+              {(candidate.relevantExperience !== undefined ||
+                candidate.experience !== undefined) && (
                 <span className="text-sm font-normal text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                  <Clock size={12} />
-                  {candidate.experience} years exp.
+                  <Briefcase size={12} />
+                  Exp:{" "}
+                  {candidate.relevantExperience !== undefined &&
+                    `${candidate.relevantExperience}y Rel`}
+                  {candidate.relevantExperience !== undefined &&
+                    candidate.experience !== undefined &&
+                    ", "}
+                  {candidate.experience !== undefined &&
+                    `${candidate.experience}y Total`}
                 </span>
               )}
-              {candidate.expectedCTC !== undefined &&
-                candidate.expectedCTC !== null &&
+              {candidate.noticePeriod !== undefined && (
+                <span className="text-sm font-normal text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                  <AlertCircle size={12} />
+                  Notice: {candidate.noticePeriod}d
+                </span>
+              )}
+              {((candidate.currentCTC !== undefined &&
+                candidate.currentCTC !== null) ||
+                (candidate.expectedCTC !== undefined &&
+                  candidate.expectedCTC !== null)) &&
                 user?.role !== "interviewer" && (
                   <span className="text-sm font-normal text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                    ₹{candidate.expectedCTC} LPA
+                    <IndianRupee size={12} />
+                    Salary:{" "}
+                    {candidate.currentCTC !== undefined &&
+                      candidate.currentCTC !== null &&
+                      `${candidate.currentCTC}L Cur`}
+                    {candidate.currentCTC !== undefined &&
+                      candidate.currentCTC !== null &&
+                      candidate.expectedCTC !== undefined &&
+                      candidate.expectedCTC !== null &&
+                      ", "}
+                    {candidate.expectedCTC !== undefined &&
+                      candidate.expectedCTC !== null &&
+                      `${candidate.expectedCTC}L Exp`}
                   </span>
                 )}
             </div>

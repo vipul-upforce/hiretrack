@@ -118,7 +118,8 @@ export abstract class BaseAIProvider implements AIProvider {
     resumeBase64: string,
     apiKey: string,
     prompt: string,
-    model?: string
+    model?: string,
+    temperature?: number
   ): Promise<string> {
     return "";
   }

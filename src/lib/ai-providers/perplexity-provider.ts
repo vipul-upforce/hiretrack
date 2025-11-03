@@ -71,7 +71,13 @@ ${resumeText}`;
     }
   }
 
-  async evaluateResume(resumeBase64: string, apiKey: string, prompt: string, modelName?: string): Promise<string> {
+  async evaluateResume(
+    resumeBase64: string,
+    apiKey: string,
+    prompt: string,
+    modelName?: string,
+    temperature?: number
+  ): Promise<string> {
     const selectedModel = modelName || getDefaultModel("perplexity");
 
     const resumeText = await this.extractTextFromPdf(resumeBase64);
@@ -97,7 +103,7 @@ ${resumeText}`;
             },
           ],
           max_tokens: 2000,
-          temperature: 0.1,
+          temperature: temperature !== undefined ? temperature : 0.1,
         }),
       }
     );

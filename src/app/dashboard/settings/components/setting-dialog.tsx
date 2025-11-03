@@ -26,6 +26,7 @@ import { useSelector } from "react-redux";
 import { User } from "@/lib/features/org/orgApi";
 import CaptchaSettings from "./CaptchaSettings";
 import AboutDialog from "./AutoUpdateSettings";
+import { EvaluationSettings } from "./evaluation-settings";
 export interface SettingComponentProps {
   onClose: () => void;
   isOpen?: boolean;
@@ -81,6 +82,9 @@ const SettingDialog = ({
 
   if (setting.key === "tags")
     return <ManageTagsDialog onClose={onClose} isOpen={isOpen} orgId={orgId} />;
+
+  if (setting.key === "evaluation")
+    return <EvaluationSettings onClose={onClose} isOpen={isOpen} />;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

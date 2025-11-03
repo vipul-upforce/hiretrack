@@ -53,6 +53,12 @@ export const jobSchema = (customFields: Yup.Schema<unknown>) => {
     images: Yup.array().of(Yup.mixed()),
     customFields: customFields,
     promptForStatusChangeReason: Yup.boolean(),
+    evaluationWeights: Yup.object().shape({
+      skills: Yup.number().min(0, "Weight cannot be negative").max(100, "Weight cannot exceed 100"),
+      experience: Yup.number().min(0, "Weight cannot be negative").max(100, "Weight cannot exceed 100"),
+      affordability: Yup.number().min(0, "Weight cannot be negative").max(100, "Weight cannot exceed 100"),
+      overall: Yup.number().min(0, "Weight cannot be negative").max(100, "Weight cannot exceed 100"),
+    }).optional(),
   });
 };
 
@@ -87,4 +93,10 @@ export interface JobFormValues {
     string | boolean | string[] | File[] | Dayjs | FileData[]
   >;
   promptForStatusChangeReason?: boolean;
+  evaluationWeights?: {
+    skills: number;
+    experience: number;
+    affordability: number;
+    overall: number;
+  };
 }

@@ -239,6 +239,47 @@ const settingsSchema = new Schema({
       default: new Map(),
     },
   },
+  evaluationConfig: {
+    temperature: {
+      type: Number,
+      default: 0.1,
+      min: 0,
+      max: 1,
+    },
+    customPrompt: {
+      type: String,
+      default: null,
+    },
+    autoEvaluateAllCandidates: {
+      type: Boolean,
+      default: false,
+    },
+    maxPdfPages: {
+      type: Number,
+      default: 4,
+      min: 0,
+    },
+    enableComparativeRanking: {
+      type: Boolean,
+      default: false,
+    },
+    enableInterviewQuestions: {
+      type: Boolean,
+      default: false,
+    },
+    enableConfidenceScores: {
+      type: Boolean,
+      default: true,
+    },
+    enableRedFlagsDetection: {
+      type: Boolean,
+      default: true,
+    },
+    enableSkillsMatrix: {
+      type: Boolean,
+      default: true,
+    },
+  },
 });
 
 export interface OrganizationEmailNotifications {
@@ -289,6 +330,7 @@ export interface ISettings {
   onboardingStatus?: IOnboardingStatus;
   organizationEmailNotifications?: OrganizationEmailNotifications;
   captcha?: ICaptcha;
+  evaluationConfig?: IEvaluationConfig;
 }
 
 export interface IGemini {
@@ -372,6 +414,19 @@ export interface ICaptcha {
   secretKey: string;
   captchaProvider: string;
 }
+
+export interface IEvaluationConfig {
+  temperature: number;
+  customPrompt: string | null;
+  autoEvaluateAllCandidates: boolean;
+  maxPdfPages: number;
+  enableComparativeRanking?: boolean;
+  enableInterviewQuestions?: boolean;
+  enableConfidenceScores?: boolean;
+  enableRedFlagsDetection?: boolean;
+  enableSkillsMatrix?: boolean;
+}
+
 export interface SettingsDocument extends Document, ISettings {}
 
 export default settingsSchema;
