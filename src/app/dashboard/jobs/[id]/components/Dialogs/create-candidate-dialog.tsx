@@ -75,6 +75,8 @@ interface CreateCandidateDialogProps {
   resumeFile?: File | null;
   isCreating?: (isCreating: boolean) => void;
   jobTitle?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
 }
 
 const getInitialValues = (customFields: CustomFieldValues) => ({
@@ -157,6 +159,8 @@ export function CreateCandidateDialog({
   setIsOpen,
   resumeFile,
   jobTitle,
+  primaryColor,
+  secondaryColor,
   // isCreating,
 }: CreateCandidateDialogProps) {
   const { toast } = useToast();
@@ -476,7 +480,16 @@ export function CreateCandidateDialog({
               isAdding ||
               isEvaluating
             }
-            className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            onMouseEnter={(e) => {
+              const target = e.target as HTMLElement;
+              target.style.backgroundColor = secondaryColor;
+            }}
+            onMouseLeave={(e) => {
+              const target = e.target as HTMLElement;
+              target.style.backgroundColor = primaryColor;
+            }}
+            style={{ backgroundColor: primaryColor }}
+            className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
           >
             {isSendingEmail ||
             isCreating ||
@@ -584,28 +597,37 @@ export function CreateCandidateDialog({
                 />
               </div>
               <div className="flex-shrink-0 flex justify-end bottom-0 space-x-2 border-t bg-background px-6 py-4 sticky z-999">
-                <Button
+                <button
                   type="button"
-                  variant="outline"
+                  className="inline-flex justify-center rounded-md border border-transparent bg-gray-100 hover:bg-gray-200 px-4 py-2 text-sm font-medium text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
                   onClick={() => setIsOpen(false)}
                 >
                   Cancel
-                </Button>
-                <Button
+                </button>
+                <button
                   onClick={() => {
                     // scrollToErrorMassage(errors);
                     handleApply();
                   }}
                   type={Object.keys(errors).length == 0 ? "button" : "submit"}
                   disabled={isSubmitting || isCreating || isLoading}
-                  variant="primary"
+                  onMouseEnter={(e) => {
+                    const target = e.target as HTMLElement;
+                    target.style.backgroundColor = secondaryColor;
+                  }}
+                  className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                  onMouseLeave={(e) => {
+                    const target = e.target as HTMLElement;
+                    target.style.backgroundColor = primaryColor;
+                  }}
+                  style={{ backgroundColor: primaryColor }}
                 >
                   {isSubmitting
                     ? "Saving..."
                     : user && (user.role === "candidate" || user?.role === "")
                       ? "Apply"
                       : "Add Candidate"}
-                </Button>
+                </button>
               </div>
             </Form>
           )}

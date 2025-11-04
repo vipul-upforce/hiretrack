@@ -68,7 +68,8 @@ export default function JobModal({
   useEffect(() => {
     if (portalData) {
       if (portalData.primaryColor) setPrimaryColor(portalData.primaryColor);
-      if (portalData.secondaryColor) setSecondaryColor(portalData.secondaryColor);
+      if (portalData.secondaryColor)
+        setSecondaryColor(portalData.secondaryColor);
     }
   }, [portalData]);
 
@@ -292,7 +293,7 @@ export default function JobModal({
                   {/* Close button - hidden on mobile, visible on desktop */}
                   <button
                     type="button"
-                    className="hidden lg:inline-flex items-center justify-center px-4 lg:px-6 py-2 lg:py-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 transition-colors"
+                    className="max-sm:hidden lg:inline-flex items-center justify-center px-4 lg:px-6 py-2  text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 transition-colors"
                     onFocus={(e) => {
                       e.target.style.boxShadow = `0 0 0 2px ${primaryColor}20`;
                     }}
@@ -309,16 +310,17 @@ export default function JobModal({
                     <button
                       onClick={handleContinue}
                       disabled={alreadyApplied || readOnly}
-                      className={`flex items-center justify-center w-full sm:w-auto px-6 lg:px-8 py-2 lg:py-3 text-sm font-semibold rounded-lg focus:outline-none focus:ring-2 transition-colors ${alreadyApplied || readOnly
-                        ? "bg-gray-100 dark:bg-black text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 cursor-not-allowed"
-                        : "text-white"
-                        }`}
+                      className={`flex items-center justify-center w-full sm:w-auto px-6 lg:px-8 py-2 lg:py-3 text-sm font-semibold rounded-lg focus:outline-none focus:ring-2 transition-colors ${
+                        alreadyApplied || readOnly
+                          ? "bg-gray-100 dark:bg-black text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 cursor-not-allowed"
+                          : "text-white"
+                      }`}
                       style={
                         alreadyApplied || readOnly
                           ? {}
                           : ({
-                            backgroundColor: primaryColor,
-                          } as React.CSSProperties)
+                              backgroundColor: primaryColor,
+                            } as React.CSSProperties)
                       }
                       onMouseEnter={(e) => {
                         if (!alreadyApplied && !readOnly) {
@@ -358,6 +360,8 @@ export default function JobModal({
                       ) : (
                         <div className="w-full">
                           <CreateCandidateDialog
+                            primaryColor={primaryColor}
+                            secondaryColor={secondaryColor}
                             jobId={job._id as string}
                             isOpen={isFormDialogOpen}
                             setIsOpen={setIsFormDialogOpen}

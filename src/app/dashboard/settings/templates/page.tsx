@@ -29,7 +29,10 @@ import {
   Edit,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { useGetMailTemplatesQuery, useUpdateMailTemplatesMutation } from "@/lib/features/settings/settingsApi";
+import {
+  useGetMailTemplatesQuery,
+  useUpdateMailTemplatesMutation,
+} from "@/lib/features/settings/settingsApi";
 import {
   Dialog,
   DialogContent,
@@ -61,6 +64,7 @@ import { useTheme } from "@/components/theme-provider";
 import { cn } from "@/lib/utils";
 import { Editor } from "@monaco-editor/react";
 import Link from "next/link";
+import EmailTemplateSkeleton from "../components/email-template-skeleton";
 
 interface EmailTemplate {
   id: string;
@@ -546,7 +550,11 @@ export default function EmailTemplatesPage() {
     useState<string>("job-application-hr");
   const [previewMode, setPreviewMode] = useState(false);
   const [loadingTemplate, setLoadingTemplate] = useState(false);
-  const { data: templateData, isLoading, error } = useGetMailTemplatesQuery(undefined);
+  const {
+    data: templateData,
+    isLoading,
+    error,
+  } = useGetMailTemplatesQuery(undefined);
   const [updateMailTemplates] = useUpdateMailTemplatesMutation();
   // Custom template management
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -569,7 +577,9 @@ export default function EmailTemplatesPage() {
     try {
       for (const template of templates) {
         if (!template.subject.trim() || !template.content.trim()) {
-          toast.error(`Template "${template.name}" has empty subject or content`);
+          toast.error(
+            `Template "${template.name}" has empty subject or content`
+          );
           setSaving(false);
           return;
         }
@@ -778,24 +788,37 @@ export default function EmailTemplatesPage() {
       return templates[0];
     }
     return current || defaultTemplates[0];
-
   };
 
   useEffect(() => {
-    if (templateData && templateData.templates && Object.keys(templateData.templates).length > 0) {
-      const loadedTemplates = Object.values(templateData.templates).map((template: any) => ({
-        id: template.templateId,
-        name: template.templateName,
-        subject: template.subject,
-        content: template.html,
-        variables: template.variables || defaultTemplates.find((t) => t.id === template.templateId)?.variables || templateVariables,
-        isCustom: !defaultTemplates.find((t) => t.id === template.templateId),
-        isDefault: !!defaultTemplates.find((t) => t.id === template.templateId),
-      }));
+    if (
+      templateData &&
+      templateData.templates &&
+      Object.keys(templateData.templates).length > 0
+    ) {
+      const loadedTemplates = Object.values(templateData.templates).map(
+        (template: any) => ({
+          id: template.templateId,
+          name: template.templateName,
+          subject: template.subject,
+          content: template.html,
+          variables:
+            template.variables ||
+            defaultTemplates.find((t) => t.id === template.templateId)
+              ?.variables ||
+            templateVariables,
+          isCustom: !defaultTemplates.find((t) => t.id === template.templateId),
+          isDefault: !!defaultTemplates.find(
+            (t) => t.id === template.templateId
+          ),
+        })
+      );
 
       const mergedTemplates = [...defaultTemplates];
       loadedTemplates.forEach((loaded: EmailTemplate) => {
-        const existingIndex = mergedTemplates.findIndex((t) => t.id === loaded.id);
+        const existingIndex = mergedTemplates.findIndex(
+          (t) => t.id === loaded.id
+        );
         if (existingIndex >= 0) {
           mergedTemplates[existingIndex] = loaded;
         } else {
@@ -882,14 +905,7 @@ export default function EmailTemplatesPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
-          <p className="text-muted-foreground">Loading email templates...</p>
-        </div>
-      </div>
-    );
+    return <EmailTemplateSkeleton />;
   }
 
   const currentTemplate = getCurrentTemplate();
@@ -927,7 +943,11 @@ export default function EmailTemplatesPage() {
             {/* Right Section - Action Buttons */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3">
               <div className="flex gap-2">
-                <Button onClick={handleSave} disabled={saving} variant="primary">
+                <Button
+                  onClick={handleSave}
+                  disabled={saving}
+                  variant="primary"
+                >
                   <Save className="h-4 w-4 mr-2" />
                   {saving ? "Saving..." : "Save Changes"}
                 </Button>
@@ -948,7 +968,11 @@ export default function EmailTemplatesPage() {
                   Select a template to customize
                 </p>
               </div>
-              <Button size="sm" onClick={() => setShowAddDialog(true)} variant="primary" >
+              <Button
+                size="sm"
+                onClick={() => setShowAddDialog(true)}
+                variant="primary"
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Custom
               </Button>
@@ -1445,8 +1469,12 @@ export default function EmailTemplatesPage() {
             <Button variant="outline" onClick={() => setShowAddDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={addCustomTemplate} disabled={loading} variant="primary">
-              {loading ? 'Adding...' : 'Add Template'}
+            <Button
+              onClick={addCustomTemplate}
+              disabled={loading}
+              variant="primary"
+            >
+              {loading ? "Adding..." : "Add Template"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1471,7 +1499,6 @@ export default function EmailTemplatesPage() {
               className="bg-red-600 hover:bg-red-700"
             >
               Delete
-
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1479,4 +1506,3 @@ export default function EmailTemplatesPage() {
     </div>
   );
 }
-
