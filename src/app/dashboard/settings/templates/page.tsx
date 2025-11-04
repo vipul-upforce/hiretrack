@@ -34,6 +34,10 @@ import {
   useUpdateMailTemplatesMutation,
 } from "@/lib/features/settings/settingsApi";
 import {
+  useGetMailTemplatesQuery,
+  useUpdateMailTemplatesMutation,
+} from "@/lib/features/settings/settingsApi";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -905,7 +909,7 @@ export default function EmailTemplatesPage() {
   };
 
   if (isLoading) {
-    return <EmailTemplateSkeleton />
+    return <EmailTemplateSkeleton />;
   }
 
   const currentTemplate = getCurrentTemplate();

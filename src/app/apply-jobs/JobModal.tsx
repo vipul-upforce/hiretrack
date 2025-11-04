@@ -71,6 +71,8 @@ export default function JobModal({
       if (portalData.primaryColor) setPrimaryColor(portalData.primaryColor);
       if (portalData.secondaryColor)
         setSecondaryColor(portalData.secondaryColor);
+      if (portalData.secondaryColor)
+        setSecondaryColor(portalData.secondaryColor);
     }
   }, [portalData]);
 
