@@ -384,7 +384,6 @@ export const defaultTemplatesFE: { [key: string]: IEmailTemplate } = {
       "candidateProfileLink",
       "dashboardLink",
       "organizationName",
-
     ],
   },
   "status-update": {
@@ -558,6 +557,7 @@ export const wierdFileNamePattern = /[^a-zA-Z0-9(). ]/g;
 //   },
 // };
 
+export const followUpSepretorPatternRegex = /\|\|\|\|\|\n/g;
 export const scoreColors: Record<
   number,
   {
