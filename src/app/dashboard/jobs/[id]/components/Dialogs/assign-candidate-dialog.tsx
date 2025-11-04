@@ -627,7 +627,10 @@ export function AssignCandidateDialog({
                                   {({ field }: FieldProps) => (
                                     <MentionTextarea
                                       value={field.value || ""}
-                                      onChange={field.onChange}
+                                      // onChange={field.onChange}
+                                      onChange={(value: string) =>
+                                        setFieldValue("meetingNotes", value)
+                                      }
                                       placeholder="Add notes to include in the meeting description... (Alt+Enter to submit)"
                                       rows={2}
                                       className="text-sm"

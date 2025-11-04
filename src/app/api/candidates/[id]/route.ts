@@ -270,9 +270,41 @@ export async function PUT(
       $currentDate: { "tracking.updatedAt": true },
     };
 
+    // if ("assignment" in data) {
+    //   if (data.assignment === null) {
+    //     updateObj.$unset = { assignment: 1 };
+    //   } else {
+    //     // // const tzFormattedTime = await getFormattedDate(
+    //     // //   request,
+    //     // //   new Date(data.assignment.time)
+    //     // // );
+    //     // // const tzFormattedAssignedAt = await getFormattedDate(
+    //     // //   request,
+    //     // //   new Date(data.assignment.assignedAt)
+    //     // // );
+
+    //     // // console.log("~~~~~~~~~ ", tzFormattedAssignedAt, tzFormattedTime);
+    //     // const updateAssignment = {
+    //     //   ...data.assignment,
+    //     //   // "assignment.time": tzFormattedTime,
+    //     //   // "assignment.assignedAt": tzFormattedAssignedAt,
+    //     // };
+    //     updateObj.$set.assignment = data.assignment;
+    //   }
+    // }
+
+    let assignmentCompletedFollowUp = null;
+
     if ("assignment" in data) {
       if (data.assignment === null) {
         updateObj.$unset = { assignment: 1 };
+
+        // Add follow-up entry to highlight assignment complete
+        assignmentCompletedFollowUp = {
+          note: `${userData?.name || "Unknown User"} has completed the last step.`,
+          date: null, // No specific follow-up date needed for completion note
+          userId: userData?.id,
+        };
       } else {
         // // const tzFormattedTime = await getFormattedDate(
         // //   request,
@@ -331,8 +363,130 @@ export async function PUT(
       updateObj.$set.tags = data.tags;
     }
     if ("followUp" in data) {
-      // console.log("☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️ FOllow Up in here");
+      console.log(
+        "☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️ FOllow Up in here",
+        data.followUp
+      );
       updateObj.$set.followUp = data.followUp;
+    }
+    // if ("followUp" in data) {
+    //   // Handle new regular notes added with incorrect \n separator
+    //   if (data.followUp?.note && data.followUp.note.includes("\n")) {
+    //     const notes = data.followUp.note
+    //       .split("|||||")
+    //       .flatMap((note) => note.split("\n"))
+    //       .filter((note) => note);
+    //     data.followUp.note = notes.join("|||||");
+    //     updateObj.$set.followUp = data.followUp;
+    //   } else {
+    //     updateObj.$set.followUp = data.followUp;
+    //   }
+    // }
+    // // Handle assignment completion follow-up
+    // if (assignmentCompletedFollowUp) {
+    //   // Merge with existing followUp if provided, or set new
+    //   if ("followUp" in data && data.followUp) {
+    //     // Append the completion note to existing followUp note if it exists
+    //     data.followUp.note = data.followUp.note
+    //       ? `${data.followUp.note}|||||\n${assignmentCompletedFollowUp.note}`
+    //       : assignmentCompletedFollowUp.note;
+    //     data.followUp.userId =
+    //       assignmentCompletedFollowUp.userId || data.followUp.userId;
+    //     updateObj.$set.followUp = data.followUp;
+    //   } else {
+    //     updateObj.$set.followUp = assignmentCompletedFollowUp;
+    //   }
+    // }
+
+    // if (assignmentCompletedFollowUp) {
+    //   const completionNote = `${userData?.name || "Unknown User"} has completed the last step.`;
+
+    //   if ("followUp" in data && data.followUp && data.followUp.note) {
+    //     // Split on ||||| and trim each note
+    //     let noteArr = data.followUp.note
+    //       .split("|||||")
+    //       .map((n) => n.trim())
+    //       .filter(Boolean);
+
+    //     console.log(noteArr, "split notes");
+
+    //     // 🛠 Look for an existing completion note (from ANY user)
+    //     const completionIndex = noteArr.findIndex((n) =>
+    //       n.endsWith("has completed the last step.")
+    //     );
+
+    //     if (completionIndex !== -1) {
+    //       // 🔄 Replace existing completion note
+    //       noteArr[completionIndex] = completionNote;
+    //     } else {
+    //       // ➕ Add new completion note at the end
+    //       noteArr.push(completionNote);
+    //     }
+
+    //     // Always join with ||||| + newline
+    //     data.followUp.note = noteArr.join("|||||\n");
+
+    //     // Ensure userId is updated
+    //     data.followUp.userId =
+    //       assignmentCompletedFollowUp.userId || data.followUp.userId;
+
+    //     updateObj.$set.followUp = data.followUp;
+
+    //     console.log(data.followUp.note, "updated follow-up note");
+    //   } else {
+    //     // No existing followUp → set new, wrapped properly
+    //     updateObj.$set.followUp = {
+    //       note: `${completionNote}`,
+    //       date: null,
+    //       userId: assignmentCompletedFollowUp.userId,
+    //     };
+    //   }
+    // }
+    if (assignmentCompletedFollowUp) {
+      const completionNote = `${userData?.name || "Unknown User"} has completed the last step.`;
+
+      if ("followUp" in data && data.followUp && data.followUp.note) {
+        // Split on ||||| and trim each note
+        let noteArr = data.followUp.note
+          .split("|||||")
+          .map((n) => n.trim())
+          .filter(Boolean);
+
+        console.log(noteArr, "split notes");
+
+        // 🛠 Look for an existing completion note (from ANY user)
+        const completionIndex = noteArr.findIndex((n) =>
+          n.endsWith("has completed the last step.")
+        );
+        console.log(completionIndex, "completionIndex");
+
+        if (completionIndex !== -1) {
+          // 🗑 Remove existing completion note
+          noteArr.splice(completionIndex, 1);
+        }
+        console.log(noteArr, "noteArr after remove acisting");
+
+        // ➕ Always add new completion note at the end
+        noteArr.push(completionNote);
+
+        // Always join with ||||| + newline
+        data.followUp.note = noteArr.join("|||||\n");
+
+        // Ensure userId is updated
+        data.followUp.userId =
+          assignmentCompletedFollowUp.userId || data.followUp.userId;
+
+        updateObj.$set.followUp = data.followUp;
+
+        console.log(data.followUp.note, "updated follow-up note");
+      } else {
+        // No existing followUp → set new, wrapped properly
+        updateObj.$set.followUp = {
+          note: `${completionNote}`,
+          date: null,
+          userId: assignmentCompletedFollowUp.userId,
+        };
+      }
     }
     // const whatWasUpdated: string[] = [];
     // if ("attachments" in data) {

@@ -9,6 +9,7 @@ import { ICandidateHistory } from "@/lib/models/history";
 import { User } from "@/lib/features/users/usersApi";
 import { usePathname } from "next/navigation";
 import dayjs, { Dayjs } from "dayjs";
+import { followUpSepretorPatternRegex } from "@/lib/constants";
 
 export const useRemarkHandlers = (
   localCandidate: Candidate | null,
@@ -41,7 +42,7 @@ export const useRemarkHandlers = (
   const [isSubRemarkPrivate, setIsSubRemarkPrivate] = useState(true);
   const [isRemarkSubmitting, setIsRemarkSubmitting] = useState(false);
   const [isFollowUpSubmitting, setIsFollowUpSubmitting] = useState(false);
-
+  const [MADFollowup, setMADFollowup] = useState<String | null>(null);
   useEffect(() => {
     if (user?.role === "interviewer") {
       setIsSubRemarkPrivate(false);
@@ -362,8 +363,15 @@ export const useRemarkHandlers = (
     }
     setIsFollowUpSubmitting(true);
     try {
+      const followUpSeparator = "|||||\n"; // Matches regex separator
+
+      const combinedNote = MADFollowup
+        ? `${newFollowUp.trim()}${followUpSeparator}${MADFollowup}`
+        : newFollowUp.trim();
+
       const newFollowUpObj = {
-        note: String(newFollowUp).trim(),
+        // note: String(newFollowUp).trim(),
+        note: combinedNote,
         date: newFollowUpDate?.toISOString() || "",
         // rating: remarkRating ? Number(remarkRating) : undefined,
         userId: {
@@ -372,6 +380,7 @@ export const useRemarkHandlers = (
           email: user.email,
         },
       };
+      setMADFollowup(null);
       // const newFollowUpHistoryObj = {
       //   // isPrivate: isSubRemarkPrivate,
       //   note: String(newFollowUp).trim(),
@@ -502,6 +511,8 @@ export const useRemarkHandlers = (
     setNewFollowUpDate,
     newFollowUp,
     newFollowUpDate,
+    MADFollowup,
+    setMADFollowup,
     handleRemoveFollowUp,
     isFollowUpSubmitting,
   };
