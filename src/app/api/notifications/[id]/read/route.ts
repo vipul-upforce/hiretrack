@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { Notification } from "@/lib/mongodb";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
-import mongoose from "mongoose";
 import { broadcastNotificationCount } from "@/lib/broadcast/broadcastNotifications";
+import mongoose from "mongoose";
 
 export async function PUT(
   request: NextRequest,
@@ -70,7 +70,7 @@ export async function PUT(
       });
       broadcastNotificationCount(user.organizationId, user._id, unread);
     } catch (e) {
-      console.log("Error while broadcasting notifactin count : ", e)
+      console.log("Error while broadcasting notifactin count : ", e);
     }
 
     return NextResponse.json({

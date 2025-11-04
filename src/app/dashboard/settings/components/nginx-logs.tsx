@@ -5,6 +5,7 @@ import {
   useGetNginxLogFilesQuery,
   useLazyGetNginxFileContentQuery,
 } from "@/lib/features/settings/settingsApi";
+import NginxLogsSkeleton from "./nginx-logs-skeleton";
 
 type Props = {
   searchQuery: string;
@@ -51,6 +52,9 @@ export function NginxLogs({ searchQuery, setSearchQuery, onError }: Props) {
     }
 
     if (nginxData?.files) {
+      if (selectedFile == null) {
+        setSelectedFile(nginxData.files[0]);
+      }
       setNginxFiles(nginxData.files);
       setIsNginxAvailable(nginxData.files.length > 0);
     }
@@ -79,7 +83,7 @@ export function NginxLogs({ searchQuery, setSearchQuery, onError }: Props) {
       });
   }, [selectedFile, searchQuery, triggerGetFileContent, onError]);
 
-  //  infinite scroll observer 
+  //  infinite scroll observer
   useEffect(() => {
     if (!selectedFile || isFetchingMore) return;
     if (offset >= totalLines && totalLines !== 0) return;
@@ -133,6 +137,8 @@ export function NginxLogs({ searchQuery, setSearchQuery, onError }: Props) {
   ]);
 
   const isLoading = isFilesLoading || isFileLoading || isFetchingMore;
+
+  if (isFilesLoading) return <NginxLogsSkeleton />;
 
   return (
     <div className="flex-1 flex min-h-0">

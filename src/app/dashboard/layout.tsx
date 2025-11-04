@@ -254,7 +254,11 @@ export default function DashboardLayout({
   }, [orgCheckData, dispatch]);
 
   useEffect(() => {
-    if (totalCount >= 0 && notificationCountData && totalCount !== notificationCountData.totalCount) {
+    if (
+      totalCount >= 0 &&
+      notificationCountData &&
+      totalCount !== notificationCountData.totalCount
+    ) {
       // refetch notification when unread count changes to display latest notifications
       fetchNotifications();
     }

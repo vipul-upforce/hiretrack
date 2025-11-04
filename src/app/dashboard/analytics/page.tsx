@@ -162,7 +162,6 @@ export default function AnalyticsPage() {
 
   const handleExport = () => {
     try {
-
       // Prepare comprehensive analytics data export
       const exportData: any[] = [];
 
@@ -533,7 +532,7 @@ export default function AnalyticsPage() {
                     Candidate Funnel
                   </CardTitle>
                   <CardDescription className="text-sm">
-                    Conversion through stages
+                    Selction ratio 
                   </CardDescription>
                 </div>
                 <div className="rounded-full bg-blue-100 dark:bg-blue-950/20 p-3">
@@ -543,9 +542,11 @@ export default function AnalyticsPage() {
               <CardContent className="space-y-3">
                 <div className="flex items-baseline space-x-2">
                   <div className="text-2xl font-bold">
-                    {funnelLoading
-                      ? <Skeleton className="w-10 h-8 rounded-lg" />
-                      : `${funnelData?.summary?.overallConversionRate || 0}%`}
+                    {funnelLoading ? (
+                      <Skeleton className="w-10 h-8 rounded-lg" />
+                    ) : (
+                      `${funnelData?.summary?.overallConversionRate || 0}%`
+                    )}
                   </div>
                   {!funnelLoading &&
                     funnelData?.summary?.overallConversionRate > 10 && (
@@ -597,7 +598,11 @@ export default function AnalyticsPage() {
               <CardContent className="space-y-3">
                 <div className="flex items-baseline space-x-2">
                   <div className="text-2xl font-bold">
-                    {jobLoading ? <Skeleton className="w-10 h-8 rounded-lg" /> : jobData?.summary?.openJobs || 0}
+                    {jobLoading ? (
+                      <Skeleton className="w-10 h-8 rounded-lg" />
+                    ) : (
+                      jobData?.summary?.openJobs || 0
+                    )}
                   </div>
                   <div className="text-sm text-muted-foreground">open jobs</div>
                 </div>
@@ -644,9 +649,11 @@ export default function AnalyticsPage() {
               <CardContent className="space-y-3">
                 <div className="flex items-baseline space-x-2">
                   <div className="text-2xl font-bold">
-                    {interviewLoading
-                      ? <Skeleton className="w-10 h-8 rounded-lg" />
-                      : `${interviewData?.summary?.overallCompletionRate || 0}%`}
+                    {interviewLoading ? (
+                      <Skeleton className="w-10 h-8 rounded-lg" />
+                    ) : (
+                      `${interviewData?.summary?.overallCompletionRate || 0}%`
+                    )}
                   </div>
                   {!interviewLoading &&
                     interviewData?.summary?.overallCompletionRate > 80 && (
@@ -696,9 +703,11 @@ export default function AnalyticsPage() {
               <CardContent className="space-y-3">
                 <div className="flex items-baseline space-x-2">
                   <div className="text-2xl font-bold">
-                    {trendsLoading
-                      ? <Skeleton className="w-10 h-8 rounded-lg" />
-                      : trendsData?.summary?.totalApplications || 0}
+                    {trendsLoading ? (
+                      <Skeleton className="w-10 h-8 rounded-lg" />
+                    ) : (
+                      trendsData?.summary?.totalApplications || 0
+                    )}
                   </div>
                   <div className="text-sm text-muted-foreground">
                     applications
@@ -749,19 +758,22 @@ export default function AnalyticsPage() {
                       {jobLoading
                         ? "Loading..."
                         : jobData?.insights?.topPerformingJobs?.[0]?.title ||
-                        jobData?.jobPerformanceData?.[0]?.title ||
-                        "No jobs available"}
+                          jobData?.jobPerformanceData?.[0]?.title ||
+                          "No jobs available"}
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="text-sm font-medium text-green-600 dark:text-green-400">
-                      {jobLoading
-                        ? <Skeleton className="w-10 h-6 rounded-lg" />
-                        : `${jobData?.insights?.topPerformingJobs?.[0]
-                          ?.successRate ||
-                        jobData?.jobPerformanceData?.[0]?.successRate ||
-                        0
-                        }%`}
+                      {jobLoading ? (
+                        <Skeleton className="w-10 h-6 rounded-lg" />
+                      ) : (
+                        `${
+                          jobData?.insights?.topPerformingJobs?.[0]
+                            ?.successRate ||
+                          jobData?.jobPerformanceData?.[0]?.successRate ||
+                          0
+                        }%`
+                      )}
                     </div>
                   </div>
                 </div>
@@ -777,11 +789,13 @@ export default function AnalyticsPage() {
                   </div>
                   <div className="text-right">
                     <div className="text-sm font-medium">
-                      {jobLoading
-                        ? <Skeleton className="w-10 h-6 rounded-lg" />
-                        : jobData?.summary?.avgTimeToFill > 0
-                          ? `${jobData.summary.avgTimeToFill} days`
-                          : "No hires yet"}
+                      {jobLoading ? (
+                        <Skeleton className="w-10 h-6 rounded-lg" />
+                      ) : jobData?.summary?.avgTimeToFill > 0 ? (
+                        `${jobData.summary.avgTimeToFill} days`
+                      ) : (
+                        "No hires yet"
+                      )}
                     </div>
                   </div>
                 </div>
@@ -800,20 +814,22 @@ export default function AnalyticsPage() {
                     <div className="text-sm text-muted-foreground">
                       {dateRange && dateRange.length === 2
                         ? (() => {
-                          const fromDate = toDate(dateRange[0]);
-                          const toDateValue = toDate(dateRange[1]);
-                          return fromDate && toDateValue
-                            ? `${fromDate.toLocaleDateString()} - ${toDateValue.toLocaleDateString()}`
-                            : "Selected date range";
-                        })()
+                            const fromDate = toDate(dateRange[0]);
+                            const toDateValue = toDate(dateRange[1]);
+                            return fromDate && toDateValue
+                              ? `${fromDate.toLocaleDateString()} - ${toDateValue.toLocaleDateString()}`
+                              : "Selected date range";
+                          })()
                         : "Selected date range"}
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="text-sm font-medium">
-                      {trendsLoading
-                        ? <Skeleton className="w-10 h-6 rounded-lg" />
-                        : trendsData?.summary?.totalApplications || 0}
+                      {trendsLoading ? (
+                        <Skeleton className="w-10 h-6 rounded-lg" />
+                      ) : (
+                        trendsData?.summary?.totalApplications || 0
+                      )}
                     </div>
                   </div>
                 </div>
@@ -827,9 +843,11 @@ export default function AnalyticsPage() {
                   </div>
                   <div className="text-right">
                     <div className="text-sm font-medium">
-                      {interviewLoading
-                        ? <Skeleton className="w-10 h-6 rounded-lg" />
-                        : interviewData?.summary?.totalInterviewers || 0}
+                      {interviewLoading ? (
+                        <Skeleton className="w-10 h-6 rounded-lg" />
+                      ) : (
+                        interviewData?.summary?.totalInterviewers || 0
+                      )}
                     </div>
                   </div>
                 </div>

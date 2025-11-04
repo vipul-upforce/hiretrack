@@ -180,6 +180,17 @@ const PerformanceRadarChart: React.FC<{ data: AssignmentData[] }> = ({
       workloadScore: Math.min(interviewer.avgDailyAssignments * 20, 100), // Cap at 100
     }));
 
+  if (topPerformers.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[450px] border rounded-lg bg-muted/30">
+        <p className="text-sm text-muted-foreground italic">
+          No performance data available yet — once interviewers complete more
+          assignments, insights will appear here.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <ResponsiveContainer width="100%" height={450}>
       <RadarChart
@@ -352,6 +363,17 @@ const SuccessRateChart: React.FC<{ data: AssignmentData[] }> = ({ data }) => {
       successRate: interviewer.successRate,
       completionRate: interviewer.completionRate,
     }));
+
+  if (chartData.length == 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[450px] border rounded-lg bg-muted/30">
+        <p className="text-sm text-muted-foreground italic">
+          No data available yet — once interviewers complete more assignments,
+          insights will appear here.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <ResponsiveContainer width="100%" height={450}>
@@ -657,7 +679,7 @@ export const InterviewAssignmentChart: React.FC<
                 <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
                   {summary.overallCompletionRate}%
                 </div>
-                {summary.overallCompletionRate > 80 ? (
+                {summary.overallCompletionRate > 50 ? (
                   <TrendingUpIcon className="h-4 w-4 text-green-500" />
                 ) : (
                   <TrendingDownIcon className="h-4 w-4 text-red-500" />
@@ -690,18 +712,25 @@ export const InterviewAssignmentChart: React.FC<
                 Top Performers
               </h4>
               <div className="space-y-1">
-                {insights.topPerformers
-                  .slice(0, 3)
-                  .map((interviewer: AssignmentData, index: number) => (
-                    <div key={interviewer.interviewerId} className="text-sm">
-                      <span className="font-medium text-foreground">
-                        {index + 1}. {interviewer.interviewerName.split(" ")[0]}
-                      </span>
-                      <span className="text-emerald-600 dark:text-emerald-400 ml-2">
-                        ({interviewer.successRate}% success)
-                      </span>
-                    </div>
-                  ))}
+                {insights.topPerformers.length > 0 ? (
+                  insights.topPerformers
+                    .slice(0, 3)
+                    .map((interviewer: AssignmentData, index: number) => (
+                      <div key={interviewer.interviewerId} className="text-sm">
+                        <span className="font-medium text-foreground">
+                          {index + 1}.{" "}
+                          {interviewer.interviewerName.split(" ")[0]}
+                        </span>
+                        <span className="text-emerald-600 dark:text-emerald-400 ml-2">
+                          ({interviewer.successRate}% success)
+                        </span>
+                      </div>
+                    ))
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">
+                    No top performers identified yet — keep an eye!
+                  </p>
+                )}
               </div>
             </div>
 
@@ -711,18 +740,25 @@ export const InterviewAssignmentChart: React.FC<
                 Overloaded
               </h4>
               <div className="space-y-1">
-                {insights.overloadedInterviewers
-                  .slice(0, 3)
-                  .map((interviewer: AssignmentData, index: number) => (
-                    <div key={interviewer.interviewerId} className="text-sm">
-                      <span className="font-medium text-foreground">
-                        {index + 1}. {interviewer.interviewerName.split(" ")[0]}
-                      </span>
-                      <span className="text-red-600 dark:text-red-400 ml-2">
-                        ({interviewer.assignments} assignments)
-                      </span>
-                    </div>
-                  ))}
+                {insights.overloadedInterviewers.length > 0 ? (
+                  insights.overloadedInterviewers
+                    .slice(0, 3)
+                    .map((interviewer: AssignmentData, index: number) => (
+                      <div key={interviewer.interviewerId} className="text-sm">
+                        <span className="font-medium text-foreground">
+                          {index + 1}.{" "}
+                          {interviewer.interviewerName.split(" ")[0]}
+                        </span>
+                        <span className="text-red-600 dark:text-red-400 ml-2">
+                          ({interviewer.assignments} assignments)
+                        </span>
+                      </div>
+                    ))
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">
+                    No one looks overloaded — good workload balance!
+                  </p>
+                )}
               </div>
             </div>
 

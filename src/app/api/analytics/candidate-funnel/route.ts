@@ -138,10 +138,10 @@ export async function GET(request: NextRequest) {
         let conversionRate = 0;
         if (index === 0) {
           conversionRate = currentCount > 0 ? 100 : 0;
-          previousStageCount = currentCount;
+          previousStageCount = totalCandidates;
         } else {
           conversionRate = calculateConversionRate(currentCount, previousStageCount);
-          previousStageCount = currentCount;
+          previousStageCount = totalCandidates;
         }
 
         funnelData.push({
@@ -160,14 +160,14 @@ export async function GET(request: NextRequest) {
       const rejectedCount = funnelData.find(f => f.stage.toLowerCase() === 'rejected')?.count || 0;
       
       const overallConversionRate = appliedCount > 0 
-        ? Math.round((acceptedCount / appliedCount) * 100 * 100) / 100 
+        ? Math.round((acceptedCount / totalCandidates) * 100 * 100) / 100 
         : 0;
 
       const response = createAnalyticsResponse(
         {
           funnelData,
           summary: {
-            totalCandidates: appliedCount,
+            totalCandidates: totalCandidates,
             acceptedCandidates: acceptedCount,
             rejectedCandidates: rejectedCount,
             overallConversionRate,

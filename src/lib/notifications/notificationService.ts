@@ -1,4 +1,9 @@
 import connectToDatabase, { Notification, User } from "@/lib/mongodb";
+import {
+  broadcastNotification,
+  broadcastNotifications,
+  broadcastNotificationCount,
+} from "@/lib/broadcast/broadcastNotifications";
 import { INotification } from "@/lib/models/notification";
 import { findMentionedUsers } from "@/lib/services/userMentionService";
 import {
@@ -6,11 +11,6 @@ import {
   NotificationType,
   NotificationDecisionContext,
 } from "@/lib/services/emailDecisionEngine";
-import {
-  broadcastNotification,
-  broadcastNotifications,
-  broadcastNotificationCount,
-} from "@/lib/broadcast/broadcastNotifications";
 
 interface CreateNotificationParams {
   organizationId: string;
@@ -61,7 +61,6 @@ export class NotificationService {
         metadata: params.metadata || {},
         isRead: false,
       });
-
       const obj = notification.toObject();
       try {
         await broadcastNotification(
