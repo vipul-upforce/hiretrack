@@ -289,7 +289,12 @@ const SidebarContent = memo(
       prevProps.isNotificationDropdownOpen ===
         nextProps.isNotificationDropdownOpen &&
       prevProps.totalCount === nextProps.totalCount &&
-      prevProps.unreadCount === nextProps.unreadCount
+      prevProps.unreadCount === nextProps.unreadCount &&
+      prevProps.onMarkAllAsRead === nextProps.onMarkAllAsRead &&
+      prevProps.onMarkAsRead === nextProps.onMarkAsRead &&
+      prevProps.onNotificationClick === nextProps.onNotificationClick &&
+      prevProps.onPageChange === nextProps.onPageChange &&
+      prevProps.onLogout === nextProps.onLogout
       // Note: We intentionally ignore notificationsData changes when dropdown is closed
       // to prevent re-renders during polling
     );
