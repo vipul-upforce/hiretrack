@@ -33,10 +33,7 @@ import {
   useGetMailTemplatesQuery,
   useUpdateMailTemplatesMutation,
 } from "@/lib/features/settings/settingsApi";
-import {
-  useGetMailTemplatesQuery,
-  useUpdateMailTemplatesMutation,
-} from "@/lib/features/settings/settingsApi";
+
 import {
   Dialog,
   DialogContent,

@@ -18,19 +18,28 @@ async function handleSendOtp(req: NextRequest) {
       );
     }
 
-    const settings = await Settings.findOne({ organizationId: new mongoose.Types.ObjectId(organizationId) }).lean();
+    const settings = await Settings.findOne({
+      organizationId: new mongoose.Types.ObjectId(organizationId),
+    }).lean();
     if (!settings || !settings.mailConfig) {
-      return NextResponse.json({ message: "Mail configuration not found" }, { status: 500 });
+      return NextResponse.json(
+        { message: "Mail configuration not found" },
+        { status: 500 }
+      );
     }
 
-    const fromEmail = settings.mailConfig.resend_from || settings.mailConfig.brevo_from || settings.mailConfig.smtp_from || "system@hiretrack.com";
+    const fromEmail =
+      settings.mailConfig.resend_from ||
+      settings.mailConfig.brevo_from ||
+      settings.mailConfig.smtp_from ||
+      "system@hiretrack.com";
 
     // Check if user has an existing OTP and its generation time
     const user = await User?.findOne({ email, organizationId }).populate({
       path: "organizationId",
       select: "name", // populate only organization name
     });
-    // console.log(user, "otp........");
+    console.log(user, "otp........");
 
     if (user && user.otp && user.otpExpires) {
       const currentTime = new Date();
@@ -101,13 +110,24 @@ async function handleSendOtp(req: NextRequest) {
         },
       }
     );
+    console.log(mailResult, "mailResulet+++++-=dd-d0");
 
     if (mailResult.status === 200) {
       return NextResponse.json({ message: "OTP sent successfully" });
     } else {
+      // If email service is down, 2FA is not possible.
+      // We should also invalidate the current OTP attempt.
+
+      await Settings.findOneAndUpdate(
+        { organizationId },
+        { $set: { "twoFA.enable2FA": false } },
+        { new: true }
+      );
       return NextResponse.json(
-        { message: "Failed to send OTP" },
-        { status: 500 }
+        {
+          message: "Email service is currently unavailable. 2FA disabled",
+        },
+        { status: 503 } // Service Unavailable
       );
     }
   } catch (error) {

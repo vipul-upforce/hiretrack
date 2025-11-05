@@ -202,25 +202,34 @@ export async function sendEventEmailWithHistory(
     }
     const mailConfig = settings.mailConfig;
 
-    // Filter out triggerer's email if provided
-    const triggerer = context.sentByEmail || triggererEmail;
-    let filteredEmails = emails.filter((email) => email && email !== triggerer);
-    if (triggerer) {
-      console.log(
-        "⌛ Filtered out triggerer's email:",
-        triggerer,
-        "from recipients:",
-        emails,
-        "-> result:",
-        filteredEmails
-      );
+    // 2. Determine if this is a 2FA or password reset email
+    const isAuthEmail = ["2fa_authentication", "password_reset"].includes(
+      context.metadata?.eventType || ""
+    );
+
+    // 3. Filter out triggerer's email unless it's a 2FA or password reset email
+    let filteredEmails = emails;
+    if (!isAuthEmail) {
+      const triggerer = context.sentByEmail || triggererEmail;
+
+      filteredEmails = emails.filter((email) => email && email !== triggerer);
+      if (triggerer) {
+        console.log(
+          "⌛ Filtered out triggerer's email:",
+          triggerer,
+          "from recipients:",
+          emails,
+          "-> result:",
+          filteredEmails
+        );
+      }
     }
 
     if (filteredEmails.length === 0) {
       return { status: 404, message: "No valid recipients found." };
     }
 
-    // 2. Find recipient users to get their IDs and correct names
+    // 4. Find recipient users to get their IDs and correct names
     const candidateRecipient =
       filteredEmails[0] && context.metadata?.eventType === "job_application"
         ? await Candidate.findOne({
@@ -237,12 +246,14 @@ export async function sendEventEmailWithHistory(
       .select("_id name email")
       .lean();
 
-    // Filter recipients based on email notification settings
-    const filteredRecipients = await filterRecipientsByNotificationSettings(
-      recipients,
-      organizationId,
-      context
-    );
+    // 5. Filter recipients based on notification settings (skip for 2FA and password reset emails)
+    const filteredRecipients = isAuthEmail
+      ? recipients
+      : await filterRecipientsByNotificationSettings(
+          recipients,
+          organizationId,
+          context
+        );
 
     const allRecipients = candidateRecipient
       ? [candidateRecipient, ...filteredRecipients]
@@ -256,7 +267,7 @@ export async function sendEventEmailWithHistory(
     }
     console.log("🔥 Filtered recipients:", allRecipients);
 
-    // 3. Determine email provider for history logging
+    // 6. Determine email provider for history logging
     let provider = "unknown";
     if (mailConfig.mailProvider) {
       provider = mailConfig.mailProvider;
@@ -268,7 +279,7 @@ export async function sendEventEmailWithHistory(
       provider = "smtp";
     }
 
-    // 4. Validate jobId and candidateId
+    // 7. Validate jobId and candidateId
     const jobId =
       context.metadata?.jobId &&
       mongoose.Types.ObjectId.isValid(context.metadata.jobId)
@@ -280,7 +291,7 @@ export async function sendEventEmailWithHistory(
         ? new mongoose.Types.ObjectId(context.metadata.candidateId)
         : undefined;
 
-    // 5. Send a single email with primary recipient in 'to' and others in 'bcc'
+    // 8. Send a single email with primary recipient in 'to' and others in 'bcc'
     const primaryRecipient = allRecipients[0];
     const bccRecipients = allRecipients.slice(1).map((r) => r.email);
 
@@ -792,9 +803,8 @@ async function filterRecipientsByNotificationSettings(
   };
 
   const rawEventType = context.metadata?.eventType || "";
-  const notificationType =
-    eventTypeToNotificationType[rawEventType] ||
-    NotificationType.STATUS_UPDATES;
+  const notificationType = eventTypeToNotificationType[rawEventType];
+  // NotificationType.STATUS_UPDATES;
 
   console.log(notificationType, "→ chosen NotificationType for", rawEventType);
 

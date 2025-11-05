@@ -548,24 +548,31 @@ export function CandidateDetailsDialog({
                         {localCandidate.followUp.note && (
                           <>
                             {(() => {
-                              // Split by imported separator regex
+                              // Split by imported separator regex and handle extra newlines
                               const parts = localCandidate.followUp.note
                                 .split(followUpSepretorPatternRegex)
-                                .map((subPart, index) => ({ subPart, index }))
-                                .filter(({ subPart }) => subPart.trim());
-                              console.log(parts, "parts cardsss");
+                                .flatMap((part, partIndex) =>
+                                  part
+                                    .split(/\n+/) // Split by newlines to handle \n\n in regular notes
+                                    .map((subPart) => subPart.trim())
+                                    .filter((subPart) => subPart)
+                                    .map((subPart, subIndex) => ({
+                                      subPart,
+                                      partIndex,
+                                      subIndex,
+                                    }))
+                                )
+                                .map((item, index) => ({ ...item, index }));
 
                               // Last non-empty part is the completion note (if multiple parts exist)
                               const completionNotes =
-                                parts.length > 1
+                                parts.length > 0
                                   ? [parts[parts.length - 1]]
                                   : [];
                               const otherNotes =
                                 parts.length > 0
-                                  ? parts.slice(0, -1).reverse()
-                                  : parts.reverse(); // Reverse non-completion notes for newest first
-                              console.log(completionNotes, "completionNotes");
-                              console.log(otherNotes, "otherNotes");
+                                  ? parts.slice(0, -1)
+                                  : parts.reverse(); // Reverse non-completion notes
 
                               // Show separator only if both completion and regular notes exist
                               const showSeparator =
@@ -579,21 +586,21 @@ export function CandidateDetailsDialog({
                                     key={`note-${index}`}
                                     className="relative"
                                   >
-                                    <p className="text-sm text-amber-800 dark:text-amber-200 leading-relaxed break-words">
+                                    <p className="text-xs text-amber-800 dark:text-amber-200 leading-tight line-clamp-2 break-words">
                                       {subPart}
                                     </p>
                                   </div>
                                 )
                               );
 
-                              // Render completion notes last
+                              // Render completion note last
                               const completionNotesRender = completionNotes.map(
                                 ({ subPart, index }) => (
                                   <div
                                     key={`note-${index}`}
                                     className="relative"
                                   >
-                                    <p className="text-sm text-amber-800 dark:text-amber-200 leading-relaxed break-words font-semibold">
+                                    <p className="text-xs text-amber-800 dark:text-amber-200 leading-tight line-clamp-2 break-words font-semibold">
                                       {subPart}
                                     </p>
                                   </div>
@@ -614,7 +621,7 @@ export function CandidateDetailsDialog({
                           </>
                         )}
                         {localCandidate.followUp.userId && (
-                          <div className="text-xs text-amber-700 dark:text-amber-300 mt-2">
+                          <div className="text-xs text-amber-700 dark:text-amber-300 mt-1">
                             Created by:{" "}
                             <span className="font-bold">
                               {localCandidate.followUp.userId.name}

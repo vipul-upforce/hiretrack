@@ -171,7 +171,8 @@ export const useHandleLoginSubmit = ({
             });
             // const data = await otpResponse.json();
             if (!otpResponse.ok) {
-              throw new Error("Failed to send OTP");
+              const errorData = await otpResponse.json();
+              throw new Error(errorData.message || "Failed to send OTP");
             }
 
             toast({
@@ -184,10 +185,14 @@ export const useHandleLoginSubmit = ({
             );
           } catch (error) {
             console.error(error);
-            setStatus("Failed to send OTP.");
+            const errorMessage =
+              error instanceof Error
+                ? error.message
+                : "An unknown error occurred";
+            setStatus(errorMessage);
             toast({
               title: "Error",
-              description: "Failed to send OTP.",
+              description: errorMessage,
               variant: "destructive",
             });
           }
