@@ -29,7 +29,7 @@ export async function GET(
       );
     }
 
-    // Read all matching lines into memory (reversible)
+    // Read lines from file
     const allLines: string[] = [];
     const rl = readline.createInterface({
       input: fs.createReadStream(filePath, "utf-8"),
@@ -47,9 +47,10 @@ export async function GET(
     // Reverse the lines to show latest first
     const reversedLines = allLines.reverse();
 
+    const paginated = reversedLines.slice(offset, offset + limit);
 
     return NextResponse.json({
-      content: reversedLines,
+      content: paginated,
       totalLines,
       offset,
       limit,
