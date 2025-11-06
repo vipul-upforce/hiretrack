@@ -84,16 +84,23 @@ interface LicenseValidationResponse {
 
 export function generateMachineCode(): string {
   try {
-    const osType = process.platform; // 'darwin' or 'linux'
+    const osType = process.platform;
     let id: string;
 
     if (osType === "linux") {
+      // On Linux, reads from /etc/machine-id
       id = execSync("cat /etc/machine-id").toString().trim();
     } else if (osType === "darwin") {
-      id = execSync("hostname | shasum -a 256 | awk '{print $1}'")
+      // On macOS, executes: hostname | shasum -a 256 | awk '{print $1}'
+      // This:
+      // 1. Gets the hostname,
+      // 2. Computes its SHA256 hash (using shasum -a 256),
+      // 3. Extracts the first part (digest) using awk.
+      id = execSync("system_profiler SPHardwareDataType | awk '/Hardware UUID/ { print $3; }'")
         .toString()
         .trim();
     } else if (osType === "win32") {
+      // On Windows, retrieves the system UUID using PowerShell
       id = execSync(
         'powershell -Command "(Get-CimInstance -ClassName Win32_ComputerSystemProduct).UUID"'
       )
