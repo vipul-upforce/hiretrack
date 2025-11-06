@@ -1,3 +1,4 @@
+import { getAuthenticatedUser } from "@/app/actions/auth";
 import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
 import { auth } from "@/lib/auth";
 import connectToDatabase, { CandidateAccount, History } from "@/lib/mongodb";
@@ -15,7 +16,7 @@ export async function POST(request: NextRequest) {
     }
     
     const jobId = request.nextUrl.searchParams?.get("jobid");
-    const { user } = (await auth(request)) || {};
+    const user = await getAuthenticatedUser(request);
 
     if (!user) {
       return NextResponse.json(

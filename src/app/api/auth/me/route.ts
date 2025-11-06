@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { getAuthenticatedUser, OrganizationInfo } from "@/app/actions/auth";
 import { apiRateLimiter } from "@/lib/rateLimiter";
 
 const handleMeRoute = async(req: NextRequest) => {
    try {
     const token = req.cookies.get("auth_token")?.value;
-    const orgId = req.cookies.get("org_id")?.value;
 
-    console.log("orgId in /api/auth/me:", orgId);
     // Default candidate user for unauthenticated requests
     const defaultCandidateUser = {
       id: "guest",
@@ -15,19 +13,24 @@ const handleMeRoute = async(req: NextRequest) => {
       email: "",
       role: "",
       organizationId: "",
-      organizationInfo: null as any,
+      organizationInfo: null as OrganizationInfo | null,
       appliedApplications: [] as string[],
-      fileStorage: null as any,
+      fileStorage: null as string | null,
     };
 
     if (!token) {
       return NextResponse.json({ user: defaultCandidateUser }, { status: 200 });
     }
 
-    const result = await verifyAndDecryptToken(token, orgId);
-
-    if (result.success) {
-      return NextResponse.json({ user: result.user }, { status: 200 });
+    const result = await getAuthenticatedUser(req)
+    if (!result) {
+      return NextResponse.json(
+        { message: "Unauthorised Access" },
+        { status: 401 }
+      );
+    }
+    if (result) {
+      return NextResponse.json({ user: result }, { status: 200 });
     } else {
       // Treat invalid/missing auth as guest candidate
       return NextResponse.json({ user: defaultCandidateUser }, { status: 200 });

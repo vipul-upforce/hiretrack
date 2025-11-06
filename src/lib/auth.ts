@@ -28,7 +28,7 @@ export async function auth(request: NextRequest) {
   if (!orgId) {
     try {
       // Fetch the first organization's ID if orgId is missing
-      const response = await fetch("/api/organization");
+      const response = await fetch("/api/organization?page=1&limit=1");
       if (response.ok) {
         const data = await response.json();
         if (data && data.length > 0) {

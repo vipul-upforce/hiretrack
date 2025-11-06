@@ -9,7 +9,7 @@ import {
   FileAttachment,
   handleFileAttachments,
 } from "@/lib/fileUtils";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 import { v4 as uuidv4 } from "uuid";
 import { auth } from "@/lib/auth";
 import mongoose, { Types } from "mongoose";
@@ -457,23 +457,15 @@ export async function PUT(request: NextRequest) {
       };
       // console.log("⏭️⏭️⏭️⏭️ ", data);
     }
-    let fileStorage = "local";
-    let organizationId;
-    let userData;
-
-    const token = request.cookies.get("auth_token");
-    const orgId = request.cookies.get("org_id")?.value;
-    if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value),
-        orgId
+    const userData = await getAuthenticatedUser(request);
+    if (!userData) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
       );
-      userData = decryptedResponse.user;
-      if (decryptedResponse.success) {
-        fileStorage = userData.fileStorage || "local";
-        organizationId = userData.organizationId || "";
-      }
     }
+    const fileStorage = userData.fileStorage || "local";
+    const organizationId = userData.organizationId;
     // Extracted history saving feature
     if (!data || !data.jobId || !data.candidateId) {
       return NextResponse.json(

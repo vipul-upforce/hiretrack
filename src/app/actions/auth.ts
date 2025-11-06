@@ -106,7 +106,7 @@ export async function getAuthenticatedUser(
   const token = request.cookies.get("auth_token")?.value;
   const orgId = request.cookies.get("org_id")?.value;
 
-  if (!token) return null;
+  if (!token || !orgId) return null;
 
   const { success, user } = await verifyAndDecryptToken(token, orgId);
   if (!success || !user) {

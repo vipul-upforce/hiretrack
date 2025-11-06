@@ -5,16 +5,13 @@ import connectToDatabase, {
   User,
   JobLaneConfig,
 } from "@/lib/mongodb";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
-import { CustomFieldFile } from "@/lib/fileUtils";
 import {
   validateUserCanSubmitFields,
   getUserRole,
-  filterChecklistResponses,
 } from "@/lib/utils/checklistVisibility";
 import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
-import { Console } from "console";
 import { NotificationService } from "@/lib/notifications/notificationService";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 
 // POST - Submit checklist responses for a candidate
 export async function POST(
@@ -22,20 +19,27 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const token = req.cookies.get("auth_token")?.value;
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // const token = req.cookies.get("auth_token")?.value;
+    // if (!token) {
+    //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // }
+
+
+    // // Get org ID from cookies
+    // const orgId = req.cookies.get("org_id")?.value;
+    // const decryptedResponse = await verifyAndDecryptJWTToken(token, orgId);
+    // if (!decryptedResponse.success || !decryptedResponse.user) {
+    //   return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    // }
+
+    // const decoded = decryptedResponse.user;
+    const decoded = await getAuthenticatedUser(req);
+    if (!decoded) {
+      return NextResponse.json(
+        { message: "Unauthorised Access" },
+        { status: 401 }
+      );
     }
-
-    // Get org ID from cookies
-    const orgId = req.cookies.get("org_id")?.value;
-    const decryptedResponse = await verifyAndDecryptJWTToken(token, orgId);
-    if (!decryptedResponse.success || !decryptedResponse.user) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    const decoded = decryptedResponse.user;
-
     await connectToDatabase();
 
     // Check if models are initialized
@@ -169,7 +173,7 @@ export async function POST(
     const checklistData = {
       checklistId,
       completedAt: currentTime,
-      completedBy: decoded._id || decoded.id || decoded.userId,
+      completedBy: decoded.id,
       responses: responses, // Keep as plain object
       // visibleInHistory,
     };
@@ -197,7 +201,7 @@ export async function POST(
     );
 
     // Get user details for history
-    const userId = decoded._id || decoded.id || decoded.userId;
+    const userId = decoded.id;
     const user = await User!.findById(userId);
 
     // Create history entry

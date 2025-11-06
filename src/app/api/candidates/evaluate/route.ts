@@ -7,13 +7,13 @@ import connectToDatabase, {
 } from "@/lib/mongodb";
 import { promises as fs } from "fs";
 import path from "path";
-import { stripHtml } from "@/app/dashboard/jobs-board/schemas/job-schema";
 import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
 import { ICandidate } from "@/lib/models/candidate";
 import { AIEvaluationService } from "@/lib/ai-providers/evaluation-provider";
 import { decryptProviderKeys } from "@/lib/encryption";
+import mongoose from "mongoose";
 
-const generateBase64 = async (url: any) => {
+const generateBase64 = async (url: string) => {
   // const urlParams = new URLSearchParams(url.split("files?pathName=")[1]);
   // const pathName = urlParams.get("pathName");
   const pathName = url.split("files?pathName=")[1];
@@ -37,9 +37,15 @@ interface JobForEvaluate {
 
 // Calculate comparative ranking for a candidate within their job's candidate pool
 async function calculateComparativeRanking(
-  candidateId: any,
-  jobId: any,
-  currentScores: any
+  candidateId: mongoose.Schema.Types.ObjectId | string,
+  jobId: mongoose.Schema.Types.ObjectId | string,
+  currentScores: {
+    overall: number;
+    skills: number;
+    experience: number;
+    affordability: number;
+    weightedScore: number;
+  }
 ) {
   try {
     // Get all candidates for this job with scores
@@ -47,7 +53,7 @@ async function calculateComparativeRanking(
       jobId: typeof jobId === "object" && "_id" in jobId ? jobId._id : jobId,
       scores: { $exists: true },
       isDeleted: { $ne: true },
-    }).select("scores");
+    }).select("scores").lean().exec();
 
     if (!candidates || candidates.length === 0) {
       return {

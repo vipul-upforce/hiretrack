@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import dbConnect, { CandidateAccount } from "@/lib/mongodb";
 import { User } from "@/lib/mongodb";
-import { verifyAndDecryptToken } from "../../../../../middleware";
+import { getAuthenticatedUser } from  "@/app/actions/auth";
 import { passwordResetRateLimiter } from "@/lib/rateLimiter";
 
 async function handleResetPassword(req: NextRequest) {
@@ -121,25 +121,10 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    const token = req.cookies.get("auth_token");
-    if (!token?.value) {
+    const userData = await getAuthenticatedUser(req, "admin");
+    if (!userData) {
       return NextResponse.json(
-        { error: "Authentication token missing" },
-        { status: 401 }
-      );
-    }
-    const orgId = req.cookies.get("org_id")?.value;
-    const decryptedResponse = await verifyAndDecryptToken(token.value, orgId);
-    if (!decryptedResponse?.user) {
-      return NextResponse.json(
-        { error: "Invalid or expired token" },
-        { status: 401 }
-      );
-    }
-    const role = decryptedResponse.user.role;
-    if (role !== "admin") {
-      return NextResponse.json(
-        { error: "Only Admins can perform this action" },
+        { message: "Unauthorised Access" },
         { status: 401 }
       );
     }

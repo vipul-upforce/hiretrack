@@ -4,8 +4,7 @@ import { Candidate } from "@/lib/mongodb";
 import { handleCustomFieldFiles, handleSingleFile } from "@/lib/fileUtils";
 import { handleFileAttachments } from "@/lib/fileUtils";
 import mongoose from "mongoose";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import { AuthenticatedUser, getAuthenticatedUser } from "@/app/actions/auth";
 import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
 import { NotificationService } from "@/lib/notifications/notificationService";
 import { sendSmartNotification } from "@/lib/unifiedEmailService";
@@ -24,18 +23,25 @@ export interface Attachment {
 export async function GET(request: NextRequest) {
   try {
     // Check authentication
-    const token = request.headers.get("cookie")?.match(/token=([^;]+)/)?.[1];
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    // const token = request.headers.get("cookie")?.match(/token=([^;]+)/)?.[1];
+    // if (!token) {
+    //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // }
+    // // const orgId = request.cookies.get("org_id")?.value;
     // const orgId = request.cookies.get("org_id")?.value;
-    const orgId = request.cookies.get("org_id")?.value;
-    const decryptedResponse = await verifyAndDecryptJWTToken(token, orgId);
-    if (!decryptedResponse.success || !decryptedResponse.user) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
+    // const decryptedResponse = await verifyAndDecryptJWTToken(token, orgId);
+    // if (!decryptedResponse.success || !decryptedResponse.user) {
+    //   return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    // }
 
-    const user = decryptedResponse.user;
+    // const user = decryptedResponse.user;
+    const user = await getAuthenticatedUser(request);
+    if (!user) {
+      return NextResponse.json(
+        { message: "Unauthorised Access" },
+        { status: 401 }
+      );
+    }
     const { searchParams } = new URL(request.url);
     const jobId = searchParams?.get("jobId");
 
@@ -48,14 +54,14 @@ export async function GET(request: NextRequest) {
     }
 
     // Filter by organization and jobId if provided
-    const query: any = { organizationId: user.organizationId };
+    const query: { organizationId: string; jobId?: string } = { organizationId: user?.organizationId || "" };
     if (jobId) {
       query.jobId = jobId;
     }
 
     const candidates = await Candidate.find(query).sort({
       "tracking.createdAt": -1,
-    });
+    }).lean().exec();
     return NextResponse.json(candidates);
   } catch (error: unknown) {
     if (error instanceof Error) {
@@ -68,16 +74,9 @@ export async function POST(request: NextRequest) {
   try {
     await connectToDatabase();
     const data = await request.json();
-    const token = request.cookies.get("auth_token");
-    const orgId = request.cookies.get("org_id")?.value;
-    if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value),
-        orgId
-      );
-      const userData = decryptedResponse.user;
-      if (decryptedResponse.success) {
-        const { organizationId, fileStorage } = userData;
+    const userData = await getAuthenticatedUser(request);
+      if (userData) {
+        const { organizationId, fileStorage } = userData as AuthenticatedUser;
         const organizationInfo = await Organization?.findById(
           new mongoose.Types.ObjectId(organizationId)
         );
@@ -358,7 +357,6 @@ export async function POST(request: NextRequest) {
           { status: 401 }
         );
       }
-    }
   } catch (error: unknown) {
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

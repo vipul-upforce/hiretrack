@@ -33,16 +33,36 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const users = await User.find(
-      {
-        // _id: { $ne: session.user.id },
-        organizationId: session.user.organizationId,
-        // isDeleted: { $ne: true }
-      },
-      { password: 0 }
-    ).sort({ createdAt: -1 });
+    const url = new URL(req.url);
+    const page = Math.max(parseInt(url.searchParams.get("page") || "1"), 1);
+    const limit = Math.min(parseInt(url.searchParams.get("limit") || "50"), 200);
+    const skip = (page - 1) * limit;
 
-    return NextResponse.json(users);
+    const query = {
+      organizationId: session.user.organizationId,
+      // isDeleted: { $ne: true }
+    } as any;
+
+    const projection = { password: 0 } as any;
+
+    const [users, total] = await Promise.all([
+      User.find(query, projection)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      User.countDocuments(query),
+    ]);
+
+    return NextResponse.json({
+      data: users,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error: unknown) {
     return NextResponse.json(
       {

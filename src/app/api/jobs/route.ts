@@ -4,7 +4,7 @@ import { Job } from "@/lib/mongodb";
 import { Candidate } from "@/lib/mongodb";
 import { auth } from "@/lib/auth";
 import { handleCustomFieldFiles, handleFileAttachments } from "@/lib/fileUtils";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 import { NotificationService } from "@/lib/notifications/notificationService";
 
 export async function GET(request: NextRequest) {
@@ -39,7 +39,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const jobs = await Job.find({ organizationId });
+    const jobs = await Job.find(
+      { organizationId },
+      { title: 1, status: 1, tracking: 1, isPublished: 1 }
+    ).lean();
     if (!jobs.length) {
       return NextResponse.json([]);
     }
@@ -62,7 +65,7 @@ export async function GET(request: NextRequest) {
     );
 
     const jobsWithCount = [...sortedJobs, ...otherJobs].map((job) => ({
-      ...job.toObject(),
+      ...(job as any),
       candidateCount: candidateCountMap.get(job._id.toString()) || 0,
     }));
 
@@ -76,10 +79,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  let fileStorage = "local";
-  let organizationId;
-  let userData: any;
+
   try {
+
     await connectToDatabase();
     const data = await request.json();
 
@@ -87,24 +89,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid data" }, { status: 400 });
     }
 
-    try {
-      const token = request.cookies.get("auth_token");
-      const orgId = request.cookies.get("org_id")?.value;
-      if (token?.value) {
-        const decryptedResponse = await verifyAndDecryptToken(
-          String(token?.value),
-          orgId
-        );
-        userData = decryptedResponse.user;
-        if (decryptedResponse.success) {
-          fileStorage = userData.fileStorage || "local";
-          organizationId = userData.organizationId || "";
-        }
-      }
-    } catch {
-      throw Error();
+    const userData = await getAuthenticatedUser(request);
+    if (!userData) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
+    const organizationId = userData.organizationId;
+    const fileStorage = userData.fileStorage || "local";
     // Handle file uploads
     if (data.attachments) {
       data.attachments = await handleFileAttachments(

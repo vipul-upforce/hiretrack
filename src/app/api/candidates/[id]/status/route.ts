@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { Job } from "@/lib/mongodb";
 import { Candidate } from "@/lib/mongodb";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { NotificationService } from "@/lib/notifications/notificationService";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 
 export async function PATCH(
   request: NextRequest,
@@ -10,18 +10,14 @@ export async function PATCH(
 ) {
   try {
     // Check authentication
-    const token = request.headers.get("cookie")?.match(/token=([^;]+)/)?.[1];
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    const orgId = request.cookies.get("org_id")?.value;
-    const decryptedResponse = await verifyAndDecryptJWTToken(token, orgId);
-    if (!decryptedResponse.success || !decryptedResponse.user) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
 
-    const userData = decryptedResponse.user;
-
+   const userData = await getAuthenticatedUser(request);
+    if (!userData) {
+      return NextResponse.json(
+        { message: "Unauthorised Access" },
+        { status: 401 }
+      );
+    }
     await connectToDatabase();
     const { status } = await request.json();
     const { id } = await params;
@@ -68,7 +64,7 @@ export async function PATCH(
       try {
         const jobInfo = updatedCandidate.jobId as any;
         await NotificationService.notifyCandidateStatusUpdated({
-          organizationId: userData.organizationId,
+          organizationId: userData?.organizationId,
           candidateId: updatedCandidate._id.toString(),
           candidateName: updatedCandidate.name,
           jobId:
@@ -78,7 +74,7 @@ export async function PATCH(
           jobTitle: jobInfo?.title || "Unknown Job",
           oldStatus,
           newStatus: status,
-          triggerUserId: userData._id,
+          triggerUserId: userData.id,
           triggerUserName: userData.name,
         });
         // console.log("Status updatesss notifyyy  ===== = ");
