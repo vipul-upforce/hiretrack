@@ -1,13 +1,13 @@
-// @ts-nocheck
-
 import { NextResponse, NextRequest } from "next/server";
-import connectToDatabase, { History, Settings } from "@/lib/mongodb";
+import connectToDatabase, { Settings } from "@/lib/mongodb";
 import { Candidate } from "@/lib/mongodb";
 import { User } from "@/lib/mongodb";
 import { Job } from "@/lib/mongodb";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 import { Types } from "mongoose";
 import { getFilterPrivateCF } from "@/lib/filterPrivateCF";
+import { parseGMTOffset, getTimeZoneDates } from "@/lib/utils/dateHelpers";
+import type { PipelineStage } from "mongoose";
 
 // export async function GET(req: NextRequest) {
 //   try {
@@ -110,68 +110,64 @@ import { getFilterPrivateCF } from "@/lib/filterPrivateCF";
 //   }
 // }
 
-function parseGMTOffset(offset) {
-  if (!offset || offset === "GMT+00:00") return 0;
-  const sign = offset.startsWith("GMT+") ? 1 : -1;
-  const [hours, minutes] = offset
-    .replace("GMT+", "")
-    .replace("GMT-", "")
-    .split(":")
-    .map(Number);
-  return sign * (hours * 60 * 60 * 1000 + minutes * 60 * 1000);
-}
 
 export async function GET(req: NextRequest) {
   try {
-    await connectToDatabase();
-    const searchParams = req.nextUrl.searchParams;
-    const token = req.cookies.get("auth_token");
-    const orgId = req.cookies.get("org_id")?.value;
-    if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value),
-        orgId
-      );
-      const userData = decryptedResponse.user;
-      if (decryptedResponse.success) {
-        if (!Candidate || !User || !Job) {
-          return NextResponse.json(
-            { error: "Candidate, User, or Job not found" },
-            { status: 400 }
-          );
-        }
-        const assignedTo = searchParams.get("assignedTo");
-        const filterValue = searchParams.get("filterValue");
-        const isInterviewer = userData?.role === "interviewer";
-        let interviewerFilter;
-        if (isInterviewer) {
-          interviewerFilter = {
-            $match: {
-              "assignment.interviewerId": new Types.ObjectId(userData.id),
-            },
-          };
-        } else if (assignedTo === "all") {
-          interviewerFilter = {
-            $match: {
-              "assignment.interviewerId": { $exists: true },
-            },
-          };
-        } else if (assignedTo) {
-          interviewerFilter = {
-            $match: {
-              "assignment.interviewerId": new Types.ObjectId(assignedTo),
-            },
-          };
-        } else {
-          interviewerFilter = {
-            $match: {},
-          };
-        }
+    // Connect to database and authenticate in parallel
+    const [userData] = await Promise.all([
+      getAuthenticatedUser(req, ["admin", "hr", "interviewer"]),
+      connectToDatabase(),
+    ]);
 
-        const isPagination = searchParams.get("isPagination") || false;
-        const page = parseInt(searchParams.get("page") || "1", 10);
-        const limit = parseInt(searchParams.get("limit") || "48", 10);
-        const skip = (page - 1) * limit;
+    if (!userData) {
+      return NextResponse.json(
+        { message: "Unauthorised Access" },
+        { status: 401 }
+      );
+    }
+
+    // Validate required models
+    if (!Job || !Candidate || !User || !Settings) {
+      return NextResponse.json(
+        { error: "Database models not available" },
+        { status: 500 }
+      );
+    }
+
+    const searchParams = req.nextUrl.searchParams;
+    const assignedTo = searchParams.get("assignedTo");
+    const filterValue = searchParams.get("filterValue");
+    const isInterviewer = userData.role === "interviewer";
+    const isPagination = searchParams.get("isPagination") === "true";
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || "48", 10);
+    const skip = (page - 1) * limit;
+
+    // Build interviewer filter
+    let interviewerFilter: { $match: Record<string, unknown> };
+    if (isInterviewer) {
+      interviewerFilter = {
+        $match: {
+          "assignment.interviewerId": new Types.ObjectId(userData.id),
+        },
+      };
+    } else if (assignedTo === "all") {
+      interviewerFilter = {
+        $match: {
+          "assignment.interviewerId": { $exists: true },
+        },
+      };
+    } else if (assignedTo) {
+      interviewerFilter = {
+        $match: {
+          "assignment.interviewerId": new Types.ObjectId(assignedTo),
+        },
+      };
+    } else {
+      interviewerFilter = {
+        $match: {},
+      };
+    }
 
         // const today = new Date();
         // const startOfToday = new Date(
@@ -195,164 +191,68 @@ export async function GET(req: NextRequest) {
         //   )
         // );
 
-        const settings = await Settings.findOne({
+    // Fetch settings in parallel with other operations (optimized query)
+    const settings = await Settings.findOne({
+      organizationId: userData.organizationId,
+    })
+      .select("timeZone.offset")
+      .lean()
+      .exec();
+
+    const userTimeZoneOffset = parseGMTOffset(settings?.timeZone?.offset);
+    const { startOfTodayUTC, endOfTodayUTC, startOfWeekUTC, endOfWeekUTC } =
+      getTimeZoneDates(userTimeZoneOffset);
+
+    // Build main aggregation pipeline with optimized structure
+    const candidateMatchPipeline: PipelineStage[] = [
+      {
+        $match: {
+          $expr: {
+            $eq: ["$jobId", "$$jobId"],
+          },
+        },
+      },
+      {
+        $match: {
+          $or: [
+            { isDeleted: { $eq: false } },
+            { isDeleted: { $exists: false } },
+          ],
+        },
+      },
+      interviewerFilter,
+    ];
+
+    // Add filterValue to candidate pipeline early for better performance
+    if (filterValue) {
+      candidateMatchPipeline.push({
+        $match: {
+          $or: [
+            { name: { $regex: filterValue, $options: "i" } },
+            { email: { $regex: filterValue, $options: "i" } },
+            { skills: { $regex: filterValue, $options: "i" } },
+          ],
+        },
+      });
+    }
+
+    const pipeline: PipelineStage[] = [
+      {
+        $match: {
+          status: "open",
           organizationId: new Types.ObjectId(userData.organizationId),
-        }).lean();
-        const userTimeZoneOffset = settings?.timeZone?.offset
-          ? parseGMTOffset(settings.timeZone.offset)
-          : 0;
-
-        // console.log("MY OFFSET: ", userTimeZoneOffset);
-        // const now = new Date();
-        // const nowInUserTimeZone = new Date(now.getTime() + userTimeZoneOffset);
-        // const startOfToday = new Date(
-        //   nowInUserTimeZone.getFullYear(),
-        //   nowInUserTimeZone.getMonth(),
-        //   nowInUserTimeZone.getDate(),
-        //   0,
-        //   0,
-        //   0,
-        //   0
-        // );
-        // const endOfToday = new Date(
-        //   nowInUserTimeZone.getFullYear(),
-        //   nowInUserTimeZone.getMonth(),
-        //   nowInUserTimeZone.getDate(),
-        //   23,
-        //   59,
-        //   59,
-        //   999
-        // );
-        // const startOfTodayUTC = new Date(
-        //   startOfToday.getTime() - userTimeZoneOffset
-        // );
-        // const endOfTodayUTC = new Date(
-        //   endOfToday.getTime() - userTimeZoneOffset
-        // );
-
-        // const dayOfWeek = nowInUserTimeZone.getDay();
-        // console.log("$$$$$$$$$$$ DAYOFWEEK: ", dayOfWeek);
-        // const startOfWeek = new Date(nowInUserTimeZone);
-        // console.log("$$$$$$$$$$$ startOfEWEEK: ", startOfWeek);
-        // startOfWeek.setDate(
-        //   nowInUserTimeZone.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1)
-        // );
-        // startOfWeek.setHours(0, 0, 0, 0);
-        // const endOfWeek = new Date(startOfWeek);
-        // console.log("$$$$$$$$$$$ ENDOFWEEK: ", endOfWeek);
-        // endOfWeek.setDate(startOfWeek.getDate() + 6);
-        // endOfWeek.setHours(23, 59, 59, 999);
-        // const startOfWeekUTC = new Date(
-        //   startOfWeek.getTime() - userTimeZoneOffset
-        // );
-        // console.log("$$$$$$$$$$$ STARTOFWEEKUTC: ", startOfWeekUTC);
-        // const endOfWeekUTC = new Date(endOfWeek.getTime() - userTimeZoneOffset);
-        // console.log("$$$$$$$$$$$ ENDOFWEEKUTC: ", endOfWeekUTC);
-
-        // Calculate timezone-aware dates
-        const now = new Date();
-        // console.log("$$$$$$$$$$$ Server UTC Time:", now);
-        // Adjust to IST (GMT+05:30)
-        const nowInUserTimeZone = new Date(now.getTime() + userTimeZoneOffset);
-        // console.log("$$$$$$$$$$$ Now in IST:", nowInUserTimeZone);
-
-        // Start and end of today in IST
-        const startOfToday = new Date(
-          nowInUserTimeZone.getFullYear(),
-          nowInUserTimeZone.getMonth(),
-          nowInUserTimeZone.getDate(),
-          0,
-          0,
-          0,
-          0
-        );
-        const endOfToday = new Date(
-          nowInUserTimeZone.getFullYear(),
-          nowInUserTimeZone.getMonth(),
-          nowInUserTimeZone.getDate(),
-          23,
-          59,
-          59,
-          999
-        );
-        // Convert to UTC
-        const startOfTodayUTC = new Date(
-          startOfToday.getTime() - userTimeZoneOffset
-        );
-        const endOfTodayUTC = new Date(
-          endOfToday.getTime() - userTimeZoneOffset
-        );
-        // console.log("$$$$$$$$$$$ StartOfTodayUTC:", startOfTodayUTC);
-        // console.log("$$$$$$$$$$$ EndOfTodayUTC:", endOfTodayUTC);
-
-        // Start and end of week (Monday to Sunday) in IST
-        const dayOfWeek = nowInUserTimeZone.getDay(); // 0 for Sunday, ..., 6 for Saturday
-        // console.log("$$$$$$$$$$$ DayOfWeek:", dayOfWeek);
-
-        // Start of week: Sunday
-        const startOfWeek = new Date(
-          nowInUserTimeZone.getFullYear(),
-          nowInUserTimeZone.getMonth(),
-          nowInUserTimeZone.getDate() - dayOfWeek,
-          0,
-          0,
-          0,
-          0
-        );
-        // console.log("$$$$$$$$$$$ StartOfWeek (IST):", startOfWeek);
-
-        // End of week: Saturday (6 days after Sunday)
-        const endOfWeek = new Date(
-          startOfWeek.getFullYear(),
-          startOfWeek.getMonth(),
-          startOfWeek.getDate() + 6,
-          23,
-          59,
-          59,
-          999
-        );
-        // console.log("$$$$$$$$$$$ EndOfWeek (IST):", endOfWeek);
-
-        // Convert to UTC
-        const startOfWeekUTC = new Date(
-          startOfWeek.getTime() - userTimeZoneOffset
-        );
-        const endOfWeekUTC = new Date(endOfWeek.getTime() - userTimeZoneOffset);
-        // console.log("$$$$$$$$$$$ StartOfWeekUTC:", startOfWeekUTC);
-        // console.log("$$$$$$$$$$$ EndOfWeekUTC:", endOfWeekUTC);
-
-        const pipeline = [
-          {
-            $match: {
-              status: "open",
-              organizationId: new Types.ObjectId(userData?.organizationId),
-            },
-          },
-          {
-            $lookup: {
-              from: "candidates",
-              let: { jobId: "$_id" },
-              pipeline: [
-                {
-                  $match: {
-                    $expr: {
-                      $eq: ["$jobId", "$$jobId"],
-                    },
-                  },
-                },
-                {
-                  $match: {
-                    $or: [
-                      { isDeleted: { $eq: false } },
-                      { isDeleted: { $exists: false } },
-                    ],
-                  },
-                },
-                interviewerFilter,
-              ],
-              as: "candidates",
-            },
-          },
+          $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
+        },
+      },
+      {
+        $lookup: {
+          from: "candidates",
+          let: { jobId: "$_id" },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          pipeline: candidateMatchPipeline as any,
+          as: "candidates",
+        },
+      },
           {
             $unwind: {
               path: "$candidates",
@@ -557,14 +457,14 @@ export async function GET(req: NextRequest) {
               skills: "$candidates.skills",
               expectedCTC: {
                 $cond: [
-                  { $eq: [userData?.role, "interviewer"] },
+                  { $eq: [isInterviewer, true] },
                   0,
                   "$candidates.expectedCTC",
                 ],
               },
               currentCTC: {
                 $cond: [
-                  { $eq: [userData?.role, "interviewer"] },
+                  { $eq: [isInterviewer, true] },
                   0,
                   "$candidates.currentCTC",
                 ],
@@ -594,7 +494,7 @@ export async function GET(req: NextRequest) {
               totalInterviews: {
                 $sum: {
                   $cond: [
-                    { $eq: [userData?.role, "interviewer"] },
+                    { $eq: [isInterviewer, true] },
                     {
                       $cond: [
                         {
@@ -623,72 +523,14 @@ export async function GET(req: NextRequest) {
           },
         ];
 
-        if (filterValue) {
-          pipeline.push({
-            $addFields: {
-              data: {
-                $filter: {
-                  input: "$data",
-                  cond: {
-                    $or: [
-                      {
-                        $regexMatch: {
-                          input: { $ifNull: ["$$this.name", ""] },
-                          regex: filterValue,
-                          options: "i",
-                        },
-                      },
-                      {
-                        $regexMatch: {
-                          input: { $ifNull: ["$$this.email", ""] },
-                          regex: filterValue,
-                          options: "i",
-                        },
-                      },
-                      {
-                        $anyElementTrue: {
-                          $map: {
-                            input: { $ifNull: ["$$this.skills", []] },
-                            as: "skill",
-                            in: {
-                              $regexMatch: {
-                                input: { $ifNull: ["$$skill", ""] },
-                                regex: filterValue,
-                                options: "i",
-                              },
-                            },
-                          },
-                        },
-                      },
-                      {
-                        $anyElementTrue: {
-                          $map: {
-                            input: { $ifNull: ["$$this.jobId.skills", []] },
-                            as: "jobSkill",
-                            in: {
-                              $regexMatch: {
-                                input: { $ifNull: ["$$jobSkill", ""] },
-                                regex: filterValue,
-                                options: "i",
-                              },
-                            },
-                          },
-                        },
-                      },
-                    ],
-                  },
-                },
-              },
-            },
-          });
-        }
-        if (isPagination) {
-          pipeline.push({
-            $addFields: {
-              data: { $slice: ["$data", skip, limit] },
-            },
-          });
-        }
+    // Add pagination if enabled
+    if (isPagination) {
+      pipeline.push({
+        $addFields: {
+          data: { $slice: ["$data", skip, limit] },
+        },
+      });
+    }
 
         // Separate aggregation for todaysInterviews
         const todaysInterviewsPipeline = [
@@ -708,8 +550,8 @@ export async function GET(req: NextRequest) {
                     $expr: {
                       $and: [
                         { $eq: ["$jobId", "$$jobId"] },
-                        { $gte: ["$assignment.time", startOfToday] },
-                        { $lt: ["$assignment.time", endOfToday] },
+                        { $gte: ["$assignment.time", startOfTodayUTC] },
+                        { $lt: ["$assignment.time", endOfTodayUTC] },
                         ...(isInterviewer
                           ? [
                               {
@@ -757,8 +599,8 @@ export async function GET(req: NextRequest) {
                     $expr: {
                       $and: [
                         { $eq: ["$jobId", "$$jobId"] },
-                        { $gte: ["$assignment.time", startOfWeek] },
-                        { $lt: ["$assignment.time", endOfWeek] },
+                        { $gte: ["$assignment.time", startOfWeekUTC] },
+                        { $lt: ["$assignment.time", endOfWeekUTC] },
                         ...(isInterviewer
                           ? [
                               {
@@ -860,10 +702,10 @@ export async function GET(req: NextRequest) {
           thisweeksInterviewsResult,
           assignmentCountsResult,
         ] = await Promise.all([
-          Job.aggregate(pipeline),
-          Job.aggregate(todaysInterviewsPipeline),
-          Job.aggregate(thisweeksInterviewsPipeline),
-          Job.aggregate(assignmentsCountPipeline),
+          Job.aggregate(pipeline as PipelineStage[]),
+          Job.aggregate(todaysInterviewsPipeline as PipelineStage[]),
+          Job.aggregate(thisweeksInterviewsPipeline as PipelineStage[]),
+          Job.aggregate(assignmentsCountPipeline as PipelineStage[]),
         ]);
         const candidates = mainResult[0] || { data: [], totalInterviews: 0 };
         const todaysInterviews = todaysInterviewsResult[0]?.count || 0;
@@ -877,63 +719,40 @@ export async function GET(req: NextRequest) {
         // );
         // console.log("after filter: ", filteredCandidates.length);
 
-        if (!History) return;
-        const candidatesWithPrivateCF = await getFilterPrivateCF(
-          candidates.data,
-          req
-        );
-        // console.log("befire history: ", candidates.data.length);
-        // const candidatesWithHistory = await Promise.all(
-        //   candidatesWithPrivateCF.map(async (candidate) => {
-        //     const history = await History?.findOne({
-        //       jobId: candidate.jobId._id,
-        //       candidateId: candidate._id.toString(),
-        //     })
-        //       .populate("history.currentInterviewer", "_id name email")
-        //       .populate("history.previousInterviewer", "_id name email")
-        //       .populate("history.assignmentBy", "_id name email")
-        //       .populate("history.note.userId", "_id name email")
-        //       .lean();
+    // Filter private custom fields
+    const candidatesWithPrivateCF = await getFilterPrivateCF(
+      candidates.data,
+      req
+    );
 
-        //     return {
-        //       ...candidate,
-        //       history: history
-        //         ? history.history.filter((entry) =>
-        //             userData?.role === "admin" || userData?.role === "hr"
-        //               ? true
-        //               : !entry.remark?.id || !entry.remark.isPrivate
-        //           )
-        //         : [],
-        //     };
-        //   })
-        // );
+    // Calculate pagination metadata
+    const totalCandidates = candidates.data.length;
+    const totalPages = isPagination ? Math.ceil(totalCandidates / limit) : 1;
 
-        // console.log("aftetr history: ", candidatesWithHistory.length);
-        return NextResponse.json([
-          {
-            data: candidatesWithPrivateCF,
-            totalInterviews: candidates.totalInterviews,
-            todaysInterviews,
-            thisweeksInterviews,
-            assignmentCount,
+    return NextResponse.json([
+      {
+        data: candidatesWithPrivateCF,
+        totalInterviews: candidates.totalInterviews,
+        todaysInterviews,
+        thisweeksInterviews,
+        assignmentCount,
+        ...(isPagination && {
+          pagination: {
+            page,
+            limit,
+            total: totalCandidates,
+            totalPages,
           },
-        ]);
-      } else {
-        return NextResponse.json(
-          { message: "Unauthorised Access" },
-          { status: 401 }
-        );
+        }),
       }
-    } else {
-      return NextResponse.json(
-        { message: "Unauthorised Access" },
-        { status: 401 }
-      );
-    }
+    ]);
   } catch (error) {
-    if (error instanceof Error) {
-      console.log(error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error ? error.message : "Internal server error",
+      },
+      { status: 500 }
+    );
   }
 }
