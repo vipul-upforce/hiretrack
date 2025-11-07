@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendSmartNotification } from "@/lib/unifiedEmailService";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 import connectToDatabase, { Settings, User, EmailHistory } from "@/lib/mongodb";
 import mongoose from "mongoose";
 import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
@@ -352,7 +352,11 @@ async function sendQueuedEmail(
 
 export async function POST(req: NextRequest) {
   try {
-    await connectToDatabase();
+    const [userData, body] = await Promise.all([
+      getAuthenticatedUser(req),
+      req.json(),
+      connectToDatabase(),
+    ]);
     const {
       jobName,
       jobId,
@@ -366,32 +370,13 @@ export async function POST(req: NextRequest) {
       prev_status,
       endTime,
       startTime,
-    } = await req.json();
+    } = body;
 
-    let organizationId;
-    let senderEmail;
-    const token = req.cookies.get("auth_token");
-    const orgId = req.cookies.get("org_id")?.value;
-    let decryptedResponse;
-    if (token?.value) {
-      decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value),
-        orgId
-      );
-      if (decryptedResponse.success) {
-        organizationId = decryptedResponse.user?.organizationId;
-        senderEmail = decryptedResponse.user?.email;
-      } else {
-        return NextResponse.json({ error: "Invalid token." }, { status: 401 });
-      }
+    if (!userData) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    if (!organizationId) {
-      return NextResponse.json(
-        { error: "Organization ID is missing." },
-        { status: 400 }
-      );
-    }
+    const organizationId = userData.organizationId;
+    const senderEmail = userData.email;
 
     if (!eventTitle) {
       return NextResponse.json(
@@ -418,11 +403,9 @@ export async function POST(req: NextRequest) {
         { status: 404 }
       );
     }
-    console.log("Users: ", users);
-    console.log("decryptedResponse: ", decryptedResponse);
     let hrContactInfo = "";
-    if (decryptedResponse?.user?.role === "hr") {
-      hrContactInfo = `${decryptedResponse?.user?.email} ${decryptedResponse?.user?.name}`;
+    if (userData?.role === "hr") {
+      hrContactInfo = `${userData?.email} ${userData?.name}`;
     } else {
       const hrUser = users.find((user) => user.role === "hr");
       console.log("HR USER: ", hrUser);
@@ -430,7 +413,7 @@ export async function POST(req: NextRequest) {
     }
     console.log("HR CONTACT INFO: ", hrContactInfo);
 
-    const actionBy = decryptedResponse?.user.name;
+    const actionBy = userData?.name;
     const emailList = users.map((user) => user.email);
     const eventSubTitle =
       prev_status || prev_status !== ""
@@ -457,9 +440,9 @@ export async function POST(req: NextRequest) {
       candidateDetails,
       candidateId: id, // The candidate ID from the request
       jobId: jobId, // Would need to be passed in the request if available
-      sentBy: decryptedResponse?.user._id,
-      sentByEmail: decryptedResponse?.user.email,
-      sentByName: decryptedResponse?.user.name,
+      sentBy: userData?.id,
+      sentByEmail: userData?.email,
+      sentByName: userData?.name,
       startTime,
       endTime,
       hrContactInfo,
@@ -514,21 +497,9 @@ export async function POST(req: NextRequest) {
 // ⛔⛔⛔ for debug only
 export async function GET(req: NextRequest) {
   try {
-    const token = req.cookies.get("auth_token");
-    const orgId = req.cookies.get("org_id")?.value;
-    if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value),
-        orgId
-      );
-      if (
-        !decryptedResponse.success ||
-        decryptedResponse.user.role !== "admin"
-      ) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-      }
-    } else {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const userData = await getAuthenticatedUser(req, "admin");
+    if (!userData) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
     // Return queue status (only for admin users)

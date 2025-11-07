@@ -1,27 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { Settings } from "@/lib/mongodb";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 
 export async function GET(req: NextRequest) {
   try {
     await connectToDatabase();
 
-    const token = req.cookies.get("auth_token")?.value;
-    const orgId = req.cookies.get("org_id")?.value;
-    if (!token) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
-
-    const decryptedResponse = await verifyAndDecryptToken(token, orgId);
-    if (!decryptedResponse.success) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    const user = decryptedResponse.user;
-    if (user.role !== "admin") {
+    const user = await getAuthenticatedUser(req, "admin");
+    if (!user) {
       return NextResponse.json(
         { error: "Admin access required" },
         { status: 403 }
@@ -30,7 +16,7 @@ export async function GET(req: NextRequest) {
 
     const settings = await Settings.findOne({
       organizationId: user.organizationId,
-    });
+    }).select("onboardingStatus").lean().exec();
 
     if (!settings) {
       return NextResponse.json(
@@ -60,31 +46,18 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    await connectToDatabase();
-
-    const token = req.cookies.get("auth_token")?.value;
-    const orgId = req.cookies.get("org_id")?.value;
-    if (!token) {
+    const [user, body] = await Promise.all([
+      getAuthenticatedUser(req, "admin"),
+      req.json(),
+      connectToDatabase(),
+    ]);
+    if (!user) {
       return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
-
-    const decryptedResponse = await verifyAndDecryptToken(token, orgId);
-    if (!decryptedResponse.success) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    const user = decryptedResponse.user;
-    if (user.role !== "admin") {
-      return NextResponse.json(
-        { error: "Admin access required" },
+        { error: "Unauthorized" },
         { status: 403 }
       );
     }
 
-    const body = await req.json();
     const {
       completedSteps,
       skippedSteps,

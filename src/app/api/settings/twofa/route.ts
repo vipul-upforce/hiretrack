@@ -1,29 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect, { Organization, Settings } from "@/lib/mongodb";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import connectToDatabase, { Organization, Settings } from "@/lib/mongodb";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 
 export async function GET(req: NextRequest) {
   try {
-    await dbConnect();
-    let organizationId = "";
-    const token = req.cookies.get("auth_token");
-    const orgId = req.cookies.get("org_id")?.value;
-    if (!token) {
-      const url = new URL(req.url);
-      organizationId = url.searchParams?.get("orgId") || "";
-    }
-    if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value),
-        orgId
-      );
-      const userData = decryptedResponse.user;
-      if (decryptedResponse.success) {
-        organizationId = userData.organizationId || "";
-        if (userData.role !== "admin") {
-          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-      }
+    await connectToDatabase();
+    const url = new URL(req.url);
+    let organizationId = url.searchParams?.get("orgId") || "";
+    
+    const userData = await getAuthenticatedUser(req, "admin");
+    if (userData) {
+      organizationId = userData.organizationId || "";
+    } else if (!organizationId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     if (!Settings || !Organization) {
       return NextResponse.json(
@@ -70,24 +59,16 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    await dbConnect();
-    let organizationId = "";
-    const token = req.cookies.get("auth_token");
-    const orgId = req.cookies.get("org_id")?.value;
+    const [userData, { enable2FA }] = await Promise.all([
+      getAuthenticatedUser(req, "admin"),
+      req.json(),
+      connectToDatabase(),
+    ]);
 
-    if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value),
-        orgId
-      );
-      const userData = decryptedResponse.user;
-      if (decryptedResponse.success) {
-        organizationId = userData.organizationId || "";
-        if (userData.role !== "admin") {
-          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-      }
+    if (!userData) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const organizationId = userData.organizationId || "";
 
     if (!Settings || !Organization) {
       return NextResponse.json(
@@ -96,8 +77,7 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    const { enable2FA } = await req.json();
-
+   
     // Check email configuration before enabling 2FA
     const settings = await Settings.findOne({ organizationId });
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { Settings, Organization } from "@/lib/mongodb";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 
 // Define step validation functions (SHOW ACTUAL STATUS BUT FORCE SIDEBAR VISIBLE)
 const stepValidators = {
@@ -95,24 +95,11 @@ const stepValidators = {
 
 export async function GET(req: NextRequest) {
   try {
-    await connectToDatabase();
-
-    const token = req.cookies.get("auth_token")?.value;
-    const orId = req.cookies.get("org_id")?.value;
-    if (!token) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
-
-    const decryptedResponse = await verifyAndDecryptToken(token, orId);
-    if (!decryptedResponse.success) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    const user = decryptedResponse.user;
-    if (user.role !== "admin") {
+    const [user] = await Promise.all([
+      getAuthenticatedUser(req, "admin"),
+      connectToDatabase(),
+    ]);
+    if (!user) {
       return NextResponse.json(
         { error: "Admin access required" },
         { status: 403 }
@@ -125,19 +112,10 @@ export async function GET(req: NextRequest) {
 
     // Try to find organizationId from various possible locations
     const orgId =
-      user.organizationInfo?.organizationId ||
-      user.organizationId ||
-      user.organization?._id ||
-      user.organization?.id ||
-      user.orgId;
-
-    console.log("Found organizationId:", orgId);
-    console.log("OrganizationId type:", typeof orgId);
+      user.organizationId 
 
     if (!orgId) {
-      console.log("❌ No organizationId found in user object!");
-      console.log("Falling back to default validation...");
-
+   
       // Return a default response that assumes everything is configured for testing
       return NextResponse.json({
         stepStatus: {
@@ -163,8 +141,10 @@ export async function GET(req: NextRequest) {
     let organization = null;
 
     try {
-      settings = await Settings.findOne({ organizationId: orgId });
-      organization = await Organization.findOne({ _id: orgId });
+    [settings, organization] = await Promise.all([
+      Settings.findOne({ organizationId: orgId }).lean().exec(),
+      Organization.findOne({ _id: orgId }).lean().exec(),
+    ]);
 
       console.log("Settings found:", !!settings);
       console.log("Organization found:", !!organization);
@@ -278,6 +258,11 @@ export async function POST(req: NextRequest) {
   try {
     await connectToDatabase();
 
+    const [body, user] = await Promise.all([
+      req.json(),
+      getAuthenticatedUser(req, "admin"),
+      connectToDatabase(),
+    ]);
     const token = req.cookies.get("auth_token")?.value;
     if (!token) {
       return NextResponse.json(
@@ -285,22 +270,14 @@ export async function POST(req: NextRequest) {
         { status: 401 }
       );
     }
-    const orId = req.cookies.get("org_id")?.value;
-    const decryptedResponse = await verifyAndDecryptToken(token, orId);
-    if (!decryptedResponse.success) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    const user = decryptedResponse.user;
-    if (user.role !== "admin") {
+    if (!user) {
       return NextResponse.json(
         { error: "Admin access required" },
         { status: 403 }
       );
     }
 
-    const { step } = await req.json();
-
+    const { step } = body;
     if (!step || !stepValidators[step as keyof typeof stepValidators]) {
       return NextResponse.json({ error: "Invalid step" }, { status: 400 });
     }
@@ -310,19 +287,10 @@ export async function POST(req: NextRequest) {
 
     // Try to find organizationId from various possible locations
     const orgId =
-      user.organizationInfo?.organizationId ||
-      user.organizationId ||
-      user.organization?._id ||
-      user.organization?.id ||
-      user.orgId;
-
-    console.log("Found organizationId:", orgId);
+      user.organizationId 
 
     if (!orgId) {
-      console.log(
-        "❌ No organizationId found, using fallback validation for step:",
-        step
-      );
+
 
       // Return fallback validation - assume most steps are configured for testing
       const fallbackStatus = {
@@ -349,8 +317,10 @@ export async function POST(req: NextRequest) {
     let organization = null;
 
     try {
-      settings = await Settings.findOne({ organizationId: orgId });
-      organization = await Organization.findOne({ _id: orgId });
+      [settings, organization] = await Promise.all([
+        Settings.findOne({ organizationId: orgId }).lean().exec(),
+        Organization.findOne({ _id: orgId }).lean().exec(),
+      ]);
 
       // Try alternative ID formats if not found
       if (!settings) {

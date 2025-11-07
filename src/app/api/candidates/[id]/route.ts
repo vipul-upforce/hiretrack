@@ -1476,10 +1476,10 @@ export async function DELETE(
 ) {
   try {
     // Execute independent operations in parallel
-    const [{ id }, { dateTime }, userCookie] = await Promise.all([
+    const [{ id }, { dateTime }, userData] = await Promise.all([
       params,
       _request.json(),
-      auth(_request),
+      getAuthenticatedUser(_request,"admin"),
       connectToDatabase(),
     ]);
 
@@ -1516,7 +1516,7 @@ export async function DELETE(
       title: candidate.isDeleted ? "Unarchived" : "Archived",
       previousInterviewer: null,
       currentInterviewer: null,
-      assignmentBy: userCookie?.user.id,
+      assignmentBy: userData?.id
     };
 
     // Execute history update and candidate update in parallel

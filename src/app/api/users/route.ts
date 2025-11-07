@@ -1,23 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect from "@/lib/mongodb";
 // import { User } from '@/models/User';
-import { User } from "@/lib/mongodb";
-import { auth } from "@/lib/auth";
+import connectToDatabase, { User } from "@/lib/mongodb";
 import mongoose from "mongoose";
 import { Organization } from "@/lib/mongodb";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth(req);
+    const [session] = await Promise.all([
+      getAuthenticatedUser(req, "admin"),
+      connectToDatabase(),
+    ]);
 
-    if (
-      !session
-      // session.user.role !== "admin" ||
-    ) {
+    if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    await dbConnect();
 
     // Give models a moment to initialize if they haven't already
     let retries = 0;
@@ -35,11 +32,20 @@ export async function GET(req: NextRequest) {
 
     const url = new URL(req.url);
     const page = Math.max(parseInt(url.searchParams.get("page") || "1"), 1);
-    const limit = Math.min(parseInt(url.searchParams.get("limit") || "50"), 200);
+    const limit = Math.min(
+      parseInt(url.searchParams.get("limit") || "50"),
+      200
+    );
+    const search = url.searchParams.get("search") || "";
     const skip = (page - 1) * limit;
 
     const query = {
-      organizationId: session.user.organizationId,
+      organizationId: session.organizationId,
+      $or: [
+        { name: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+        { role: { $regex: search, $options: "i" } },
+      ],
       // isDeleted: { $ne: true }
     } as any;
 
@@ -50,19 +56,21 @@ export async function GET(req: NextRequest) {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
-        .lean(),
+        .lean()
+        .exec(),
       User.countDocuments(query),
     ]);
 
-    return NextResponse.json({
-      data: users,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    });
+    // return NextResponse.json({
+    //   data: users,
+    //   pagination: {
+    //     page,
+    //     limit,
+    //     total,
+    //     totalPages: Math.ceil(total / limit),
+    //   },
+    // });
+    return NextResponse.json(users);
   } catch (error: unknown) {
     return NextResponse.json(
       {
@@ -76,7 +84,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PUT(req: Request) {
-  await dbConnect();
+  await connectToDatabase();
 
   // Give models a moment to initialize if they haven't already
   let retries = 0;
@@ -100,7 +108,7 @@ export async function PUT(req: Request) {
         { status: 500 }
       );
     }
-    const organization = await Organization.findById(organizationId);
+    const organization = await Organization.findById(organizationId).exec();
     if (!organization) {
       return NextResponse.json(
         { error: "Organization not found" },

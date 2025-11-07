@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Settings } from "@/lib/mongodb";
-import { Organization, User } from "@/lib/mongodb";
+import connectToDatabase, { Settings,Organization, User } from "@/lib/mongodb";
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
-import { verifyAndDecryptToken } from  "@/app/actions/auth";
+import { getAuthenticatedUser } from  "@/app/actions/auth";
 import path from "path";
 import fs from "fs/promises";
 import { apiRateLimiter } from "@/lib/rateLimiter";
@@ -25,19 +24,8 @@ export async function POST(req: NextRequest) {
   await connectToDatabase();
   let createdOrg = null;
   let admin = null;
-  let organizationId = "";
-  const token = req.cookies.get("auth_token");
-  const orgId = req.cookies.get("org_id")?.value;
-  if (token?.value) {
-    const decryptedResponse = await verifyAndDecryptToken(
-      String(token?.value),
-      orgId
-    );
-    const userData = decryptedResponse.user;
-    if (decryptedResponse.success) {
-      organizationId = userData.organizationId || "";
-    }
-  }
+  const userData = await getAuthenticatedUser(req);
+  const organizationId = userData?.organizationId || "";
   try {
     const { name, adminData } = await req.json();
 

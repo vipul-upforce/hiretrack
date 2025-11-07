@@ -2,49 +2,37 @@ import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { Organization } from "@/lib/mongodb";
 import { Job } from "@/lib/mongodb";
 import { Candidate } from "@/lib/mongodb";
-import { auth } from "@/lib/auth";
 import { handleCustomFieldFiles, handleFileAttachments } from "@/lib/fileUtils";
 import { getAuthenticatedUser } from "@/app/actions/auth";
 import { NotificationService } from "@/lib/notifications/notificationService";
 
 export async function GET(request: NextRequest) {
   try {
-    await connectToDatabase();
-
-    // Check authentication
-    const session = await auth(request);
-    if (
-      !session ||
-      !session.user?.organizationId ||
-      session.user.role === "candidate" ||
-      session.user.role === ""
-    ) {
+    const [userData] = await Promise.all([
+      getAuthenticatedUser(request, ["admin", "hr", "interviewer"]),
+      connectToDatabase(),
+    ]);
+    if (!userData) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const organizationId = userData.organizationId;
 
-    if (!Organization || !Job || !Candidate) {
-      return NextResponse.json(
-        { error: "Database not connected" },
-        { status: 400 }
-      );
+    const [jobs, organization] = await Promise.all([
+      Job.find(
+        { organizationId },
+        { title: 1, status: 1, tracking: 1, isPublished: 1 }
+      ).lean().exec(),
+      Organization.findById(organizationId).lean().exec(),
+    ]);
+
+    if (!jobs.length) {
+      return NextResponse.json([]);
     }
-    const organizationId = session.user.organizationId;
-
-    // Fetch organization
-    const organization = await Organization.findById(organizationId);
     if (!organization) {
       return NextResponse.json(
         { error: "Organization not found" },
         { status: 404 }
       );
-    }
-
-    const jobs = await Job.find(
-      { organizationId },
-      { title: 1, status: 1, tracking: 1, isPublished: 1 }
-    ).lean();
-    if (!jobs.length) {
-      return NextResponse.json([]);
     }
 
     const openJobCardsOrder = organization.openJobCards || [];
@@ -79,17 +67,18 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-
   try {
-
     await connectToDatabase();
-    const data = await request.json();
+    const [userData, data] = await Promise.all([
+      getAuthenticatedUser(request, ["admin", "hr"]),
+      request.json(),
+      connectToDatabase(),
+    ]);
 
     if (!data || !data.title || !data.attachments) {
       return NextResponse.json({ error: "Invalid data" }, { status: 400 });
     }
 
-    const userData = await getAuthenticatedUser(request);
     if (!userData) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

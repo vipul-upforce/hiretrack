@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect, { User, Settings } from "@/lib/mongodb";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 import mongoose from "mongoose";
 import { EmailNotificationSettings } from "@/lib/models/user";
 import { OrganizationEmailNotifications } from "@/lib/models/settings";
@@ -14,24 +14,8 @@ export async function GET(request: NextRequest) {
     await dbConnect();
 
     // Get user from token
-    const token = request.cookies.get("auth_token")?.value;
-    if (!token) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
-
-    const orgId = request.cookies.get("org_id")?.value;
-    const authResult = await verifyAndDecryptToken(token, orgId);
-    if (!authResult.success) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    const currentUser = authResult.user;
-
-    // Only admins can view organization settings
-    if (currentUser.role !== "admin") {
+    const currentUser = await getAuthenticatedUser(request, "admin");
+    if (!currentUser) {
       return NextResponse.json(
         { error: "Admin access required" },
         { status: 403 }
@@ -92,33 +76,18 @@ export async function GET(request: NextRequest) {
  */
 export async function PUT(request: NextRequest) {
   try {
-    await dbConnect();
-
-    // Get user from token
-    const token = request.cookies.get("auth_token")?.value;
-    if (!token) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
-    const orgId = request.cookies.get("org_id")?.value;
-    const authResult = await verifyAndDecryptToken(token, orgId);
-    if (!authResult.success) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    const currentUser = authResult.user;
-
-    // Only admins can update organization settings
-    if (currentUser.role !== "admin") {
+    const [currentUser, body] = await Promise.all([
+      getAuthenticatedUser(request, "admin"),
+      request.json(),
+      dbConnect(),
+    ]);
+    if (!currentUser) {
       return NextResponse.json(
         { error: "Admin access required" },
         { status: 403 }
       );
     }
 
-    const body = await request.json();
     const { defaultSettings, adminOverrides } = body;
 
     // Validate default settings

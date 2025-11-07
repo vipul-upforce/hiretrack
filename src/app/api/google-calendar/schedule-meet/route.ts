@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { Settings, Candidate } from "@/lib/mongodb";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 import { createOAuth2Client } from "@/lib/google-calendar/config";
 import { decryptText } from "@/lib/encryption";
 import { google } from "googleapis";
@@ -30,8 +30,11 @@ interface ScheduleMeetRequest {
 
 export async function POST(req: NextRequest) {
   try {
-    console.log("🚀 Google Meet scheduling started");
-    await connectToDatabase();
+    const [userData, body] = await Promise.all([
+      getAuthenticatedUser(req),
+      req.json(),
+      connectToDatabase(),
+    ]);
 
     if (!Settings) {
       console.error("❌ Settings model not found");
@@ -42,28 +45,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify user
-    let organizationId = "";
-    let userId = "";
-    const token = req.cookies.get("auth_token");
-    const orgId = req.cookies.get("org_id")?.value;
-    if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value),
-        orgId
-      );
-      const userData = decryptedResponse.user;
-      if (decryptedResponse.success) {
-        organizationId = userData.organizationId || "";
-        userId = userData.id || "";
-      } else {
-        return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-      }
-    } else {
-      return NextResponse.json({ error: "No token provided" }, { status: 401 });
+    if (!userData) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const organizationId = userData.organizationId || "";
 
-    const body: ScheduleMeetRequest = await req.json();
-    console.log("📝 Request body:", JSON.stringify(body, null, 2));
 
     const {
       candidateId,
@@ -80,7 +66,7 @@ export async function POST(req: NextRequest) {
     } = body;
 
     // Get Google Calendar settings
-    const settings = await Settings.findOne({ organizationId });
+    const settings = await Settings.findOne({ organizationId }).lean().exec();
     console.log("⚙️ Settings found:", !!settings);
     console.log(
       "🔗 Google Calendar connected:",
@@ -98,12 +84,12 @@ export async function POST(req: NextRequest) {
     // Decrypt credentials
     const clientSecret = decryptText(
       settings.googleCalendar.clientSecret,
-      orgId
+      organizationId
     );
-    const accessToken = decryptText(settings.googleCalendar.accessToken, orgId);
+    const accessToken = decryptText(settings.googleCalendar.accessToken, organizationId);
     const refreshToken = decryptText(
       settings.googleCalendar.refreshToken,
-      orgId
+      organizationId
     );
 
     // Create OAuth2 client

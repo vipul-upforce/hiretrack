@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect, { Organization, Settings } from "@/lib/mongodb";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 import { decryptProviderKeys, encryptProviderKeys } from "@/lib/encryption";
 import {
   MAX_LENGTHS,
   validateQueryParams,
   VALIDATION_PATTERNS,
 } from "@/lib/inputValidation";
-import connectToDatabase from "@/lib/mongodb";
 import { apiRateLimiter } from "@/lib/rateLimiter";
 
 const handleGetCaptcha = async(req: NextRequest) => {
@@ -32,7 +31,7 @@ const handleGetCaptcha = async(req: NextRequest) => {
         { status: 400 }
       );
     }
-    await connectToDatabase();
+    await dbConnect();
 
     // Give models a moment to initialize if they haven't already
     let retries = 0;
@@ -56,23 +55,15 @@ const handleGetCaptcha = async(req: NextRequest) => {
     let isAuthenticated = false;
 
     // Try to get organization from auth token
-    const token = req.cookies.get("auth_token");
-    const orgId = req.cookies.get("org_id")?.value;
-    if (token?.value) {
-      try {
-        const decryptedResponse = await verifyAndDecryptToken(
-          String(token?.value),
-          orgId
-        );
-        const userData = decryptedResponse.user;
-        if (decryptedResponse.success) {
-          organizationId = userData.organizationId || "";
-          isAuthenticated = true;
-        }
-      } catch (error) {
-        // Token verification failed, continue as anonymous user
-        console.log("Token verification failed, serving as anonymous user");
+    try {
+      const userData = await getAuthenticatedUser(req);
+      if (userData) {
+        organizationId = userData.organizationId || "";
+        isAuthenticated = true;
       }
+    } catch {
+      // Token verification failed, continue as anonymous user
+      console.log("Token verification failed, serving as anonymous user");
     }
     console.log(isAuthenticated, "isAuthenticated");
     console.log(organizationId, "organizationId");
@@ -84,11 +75,11 @@ const handleGetCaptcha = async(req: NextRequest) => {
       settings = await Settings.findOne(
         { organizationId: organizationId },
         { captcha: 1 }
-      );
+      ).lean().exec();
       console.log(settings, "settings");
     } else {
       // Anonymous user - try orgId from query or default organization
-
+``
       // Fallback to default organization
       const defaultOrg = await Organization.findOne({}).sort({
         createdAt: 1,
@@ -99,7 +90,7 @@ const handleGetCaptcha = async(req: NextRequest) => {
         settings = await Settings.findOne(
           { organizationId: defaultOrg._id.toString() },
           { captcha: 1 }
-        );
+        ).lean().exec();
       }
     }
 
@@ -134,8 +125,15 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     await dbConnect();
-    const token = req.cookies.get("auth_token");
-    const orgId = req.cookies.get("org_id")?.value;
+    const [user, body] = await Promise.all([
+      getAuthenticatedUser(req),
+      req.json(),
+      dbConnect(),
+    ]);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const orgId = user.organizationId;
     if (!orgId) {
       return NextResponse.json(
         { error: "Organization ID missing" },
@@ -143,7 +141,7 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    const { enableCaptcha, siteKey, secretKey } = await req.json();
+    const { enableCaptcha, siteKey, secretKey } = body;
 
     if (enableCaptcha && (!siteKey || !secretKey)) {
       return NextResponse.json(
