@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import dbConnect, { CandidateAccount } from "@/lib/mongodb";
-import { User } from "@/lib/mongodb";
+import connectToDatabase, { CandidateAccount,User } from "@/lib/mongodb";
 import { getAuthenticatedUser } from  "@/app/actions/auth";
 import { passwordResetRateLimiter } from "@/lib/rateLimiter";
 
 async function handleResetPassword(req: NextRequest) {
   try {
-    await dbConnect();
+    await connectToDatabase();
     const { token, password } = await req.json();
 
     if (!User || !CandidateAccount) {
@@ -98,7 +97,7 @@ export async function POST(req: Request) {
 
 export async function PUT(req: NextRequest) {
   try {
-    await dbConnect();
+    await connectToDatabase();
     const { candidateId, password } = await req.json();
 
     if (!candidateId || !password) {

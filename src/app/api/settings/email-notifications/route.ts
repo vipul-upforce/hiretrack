@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect, { User, Settings } from "@/lib/mongodb";
+import connectToDatabase, { User, Settings } from "@/lib/mongodb";
 import { getAuthenticatedUser } from "@/app/actions/auth";
 import mongoose from "mongoose";
 import { EmailNotificationSettings } from "@/lib/models/user";
@@ -11,7 +11,7 @@ import { OrganizationEmailNotifications } from "@/lib/models/settings";
  */
 export async function GET(request: NextRequest) {
   try {
-    await dbConnect();
+    await connectToDatabase();
 
     // Get user from token
     const currentUser = await getAuthenticatedUser(request, "admin");
@@ -79,7 +79,7 @@ export async function PUT(request: NextRequest) {
     const [currentUser, body] = await Promise.all([
       getAuthenticatedUser(request, "admin"),
       request.json(),
-      dbConnect(),
+      connectToDatabase(),
     ]);
     if (!currentUser) {
       return NextResponse.json(

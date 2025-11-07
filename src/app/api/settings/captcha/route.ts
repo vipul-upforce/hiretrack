@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect, { Organization, Settings } from "@/lib/mongodb";
+import connectToDatabase, { Organization, Settings } from "@/lib/mongodb";
 import { getAuthenticatedUser } from "@/app/actions/auth";
 import { decryptProviderKeys, encryptProviderKeys } from "@/lib/encryption";
 import {
@@ -31,7 +31,7 @@ const handleGetCaptcha = async(req: NextRequest) => {
         { status: 400 }
       );
     }
-    await dbConnect();
+    await connectToDatabase();
 
     // Give models a moment to initialize if they haven't already
     let retries = 0;
@@ -124,11 +124,11 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    await dbConnect();
+    await connectToDatabase();
     const [user, body] = await Promise.all([
       getAuthenticatedUser(req),
       req.json(),
-      dbConnect(),
+      connectToDatabase(),
     ]);
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

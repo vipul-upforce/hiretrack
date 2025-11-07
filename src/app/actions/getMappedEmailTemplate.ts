@@ -1,5 +1,5 @@
 import { defaultTemplates } from "@/lib/constants";
-import dbConnect, { Settings } from "@/lib/mongodb";
+import connectToDatabase, { Settings } from "@/lib/mongodb";
 import { loadTemplate, MapTemplate } from "@/lib/templateLoader";
 
 export async function getMappedEmailTemplate(
@@ -7,7 +7,7 @@ export async function getMappedEmailTemplate(
   variables: Record<string, any>,
   organizationId: string
 ): Promise<{ emailContent: string; emailSubject: string }> {
-  await dbConnect();
+  await connectToDatabase();
 
   const settings = await Settings?.findOne({ organizationId });
 

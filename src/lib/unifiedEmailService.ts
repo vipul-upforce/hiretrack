@@ -1,5 +1,5 @@
 import { sendMail as sendMailWithContext } from "./emailUtils";
-import dbConnect, {
+import connectToDatabase, {
   Settings,
   User,
   Candidate,
@@ -53,7 +53,7 @@ export async function sendUnifiedMail(
   options: UnifiedEmailOptions
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
-    await dbConnect();
+    await connectToDatabase();
 
     // Get organization settings for mail configuration
     const settings = (await Settings.findOne({
@@ -187,7 +187,7 @@ export async function sendEventEmailWithHistory(
   triggererEmail?: string
 ): Promise<{ status: number; message: string }> {
   try {
-    await dbConnect();
+    await connectToDatabase();
 
     // 1. Get organization's mail configuration
     const settings = await Settings.findOne({
@@ -398,7 +398,7 @@ export async function sendSmartNotification(
   mentionedUsers?: string[];
 }> {
   try {
-    await dbConnect();
+    await connectToDatabase();
 
     // Validate jobId and candidateId
     if (context.jobId && !mongoose.Types.ObjectId.isValid(context.jobId)) {

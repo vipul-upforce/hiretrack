@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from "next/server";
 import crypto from "crypto";
-import dbConnect, { CandidateAccount, Settings } from "@/lib/mongodb";
+import connectToDatabase, { CandidateAccount, Settings } from "@/lib/mongodb";
 import { User } from "@/lib/mongodb";
 import { sendEventEmailWithHistory } from "@/lib/unifiedEmailService";
 import { ObjectId, Types } from "mongoose";
@@ -48,7 +48,7 @@ const getNodemailerErrorMessage = (error: NodemailerError) => {
 // Initial lookup to find all accounts with the given email
 async function handleForgotPassword(req: NextRequest) {
   try {
-    await dbConnect();
+    await connectToDatabase();
     const { email, selectedOrgId } = await req.json();
 
     if (!User || !Settings || !CandidateAccount)

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect, { Settings } from "@/lib/mongodb";
+import connectToDatabase, { Settings } from "@/lib/mongodb";
 import { getAuthenticatedUser } from "@/app/actions/auth";
 import { decryptProviderKeys, encryptProviderKeys } from "@/lib/encryption";
 import { getDefaultModel } from "@/lib/ai-providers/models-config";
 
 export async function GET(req: NextRequest) {
   try {
-    await dbConnect();
+    await connectToDatabase();
     const userData = await getAuthenticatedUser(req, "admin");
     if (!userData) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -74,7 +74,7 @@ export async function PUT(req: NextRequest) {
     const [userData, aiProvidersSetting] = await Promise.all([
       getAuthenticatedUser(req, "admin"),
       req.json(),
-      dbConnect(),
+      connectToDatabase(),
     ]);
     if (!userData) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

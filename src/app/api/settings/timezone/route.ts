@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect, { Settings } from "@/lib/mongodb";
+import connectToDatabase, { Settings } from "@/lib/mongodb";
 import {
   getAuthenticatedUser,
 } from "@/app/actions/auth";
 
 export async function GET(req: NextRequest) {
   try {
-    await dbConnect();
+    await connectToDatabase();
 
     const userData = await getAuthenticatedUser(req, "admin");
     if (!userData) {
@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    await dbConnect();
+    await connectToDatabase();
     const userData = await getAuthenticatedUser(req, "admin");
     if (!userData) {
       return NextResponse.json(

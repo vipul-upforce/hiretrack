@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect, { User } from "@/lib/mongodb";
+import connectToDatabase, { User } from "@/lib/mongodb";
 import { getAuthenticatedUser } from "@/app/actions/auth";
 import mongoose from "mongoose";
 import { getUserEffectiveNotificationSettings } from "@/lib/services/emailDecisionEngine";
@@ -17,7 +17,7 @@ export async function GET(
     const [currentUser, { userId }] = await Promise.all([
       getAuthenticatedUser(request),
       params,
-      dbConnect(),
+      connectToDatabase(),
     ]);
 
     // Validate userId
@@ -85,12 +85,12 @@ export async function PUT(
   { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    await dbConnect();
+    await connectToDatabase();
 
     const [currentUser, { userId }] = await Promise.all([
       getAuthenticatedUser(request, ["admin"]),
       params,
-      dbConnect(),
+      connectToDatabase(),
     ]);
 
 
@@ -267,7 +267,7 @@ export async function DELETE(
     const [{ userId },currentUser] = await Promise.all([
       params,
       getAuthenticatedUser(request, ["admin"]),
-      dbConnect(),
+      connectToDatabase(),
     ]);
 
  

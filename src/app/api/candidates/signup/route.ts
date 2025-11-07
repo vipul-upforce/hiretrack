@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import dbConnect, { CandidateAccount, Organization, User } from "@/lib/mongodb";
+import connectToDatabase, { CandidateAccount, Organization, User } from "@/lib/mongodb";
 import { validateInput, VALIDATION_PATTERNS, MAX_LENGTHS, sanitizeString } from "@/lib/inputValidation";
 
 export async function POST(req: NextRequest) {
   try {
-    await dbConnect();
+    await connectToDatabase();
     const requestData = await req.json();
     
     // SECURITY FIX: Validate candidate signup input
