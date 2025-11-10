@@ -8,6 +8,10 @@ import { Suspense } from "react";
 import LoadingScreen from "./loading-screen";
 import { getPortalMetadata } from "@/lib/getPortalMetadata";
 
+// Disable caching for this layout - forces generateMetadata to run on every request
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -19,6 +23,7 @@ const geistMono = Geist_Mono({
 });
 
 export async function generateMetadata(): Promise<Metadata> {
+  // This will now be called on every request, not just at build time
   const portalData = await getPortalMetadata();
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
