@@ -8,10 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { TimerResetIcon as ResetIcon, SearchIcon } from "lucide-react";
 import { useFilterCandidatesQuery } from "@/lib/features/candidate/candidateApi";
-import Cookies from "js-cookie";
 import { useToast } from "@/hooks/use-toast";
 import { Candidate } from "@/types/candidate";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import withAuthGuard from "../withAuthGuard";
 import { SearchSchema } from "./searchSchema";
 import { useSelector } from "react-redux";
@@ -71,7 +69,7 @@ function CandidateSearch() {
     createdBefore: "",
     logicOperator: "$and",
     page: 1,
-    limit: 100,
+    limit: 20,
     customFields: null,
   };
 
@@ -117,7 +115,7 @@ function CandidateSearch() {
       // Update pagination info if available
       if (response.pagination) {
         setCurrentPage(response.pagination.page || 1);
-        setCurrentPageLimit(response.pagination.limit || 100);
+        setCurrentPageLimit(response.pagination.limit || 20);
         setTotalPages(response.pagination.totalPages || 0);
         setTotalRecordsCount(response.pagination.total || 0);
       }
