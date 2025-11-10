@@ -601,25 +601,26 @@ export function CreateCandidateDialog({
                 />
               </div>
               <div className="flex-shrink-0 flex justify-end bottom-0 space-x-2 border-t bg-background px-6 py-4 sticky z-999">
-                <button
+                <Button
                   type="button"
                   className="inline-flex justify-center rounded-md border border-transparent bg-gray-100 hover:bg-gray-200 px-4 py-2 text-sm font-medium text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
                   onClick={() => setIsOpen(false)}
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => {
                     // scrollToErrorMassage(errors);
                     handleApply();
                   }}
+                  variant="primary"
                   type={Object.keys(errors).length == 0 ? "button" : "submit"}
                   disabled={isSubmitting || isCreating || isLoading}
                   onMouseEnter={(e) => {
                     const target = e.target as HTMLElement;
                     target.style.backgroundColor = secondaryColor;
                   }}
-                  className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                  // className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
                   onMouseLeave={(e) => {
                     const target = e.target as HTMLElement;
                     target.style.backgroundColor = primaryColor;
@@ -631,7 +632,7 @@ export function CreateCandidateDialog({
                     : user && (user.role === "candidate" || user?.role === "")
                       ? "Apply"
                       : "Add Candidate"}
-                </button>
+                </Button>
               </div>
             </Form>
           )}
