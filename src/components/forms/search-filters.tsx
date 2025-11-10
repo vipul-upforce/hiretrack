@@ -32,9 +32,7 @@ import {
   Plus,
   Settings,
   Trash2,
-  Search,
   Filter,
-  X,
   ChevronDown,
   ChevronRight,
 } from "lucide-react";
@@ -95,14 +93,14 @@ export function SearchFilters({
     const newCols = cols.map((col) =>
       col.id === colId
         ? {
-          ...col,
-          fieldId,
-          label: selectedField.label,
-          type: selectedField.type,
-          options: selectedField.options as string[],
-          name: selectedField.label,
-          value: selectedField ? "" : (col.value ?? ""),
-        }
+            ...col,
+            fieldId,
+            label: selectedField.label,
+            type: selectedField.type,
+            options: selectedField.options as string[],
+            name: selectedField.label,
+            value: selectedField ? "" : (col.value ?? ""),
+          }
         : col
     );
     setCols(newCols);
@@ -260,7 +258,7 @@ export function SearchFilters({
           </CardTitle>
         </CardHeader>
         {isSalaryExpanded && (
-          <CardContent className="pt-0 pb-2">
+          <CardContent className="pt-0 pb-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Expected CTC Range */}
               <div className="space-y-2">
@@ -442,73 +440,171 @@ export function SearchFilters({
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
-                        className={`w-full justify-start text-left font-normal h-9 ${hasError("createdAfter") || hasError("createdBefore")
-                          ? "border-destructive"
-                          : ""
-                          }`}
+                        className={`w-full justify-start text-left font-normal h-9 ${
+                          hasError("createdAfter") || hasError("createdBefore")
+                            ? "border-destructive"
+                            : ""
+                        }`}
                       >
                         <CalendarIcon className="mr-2 h-3 w-3" />
-                        {values.createdAfter && values.createdBefore ? (
-                          <span>
-                            {format(new Date(values.createdAfter), "MMM dd")} -{" "}
-                            {format(
-                              new Date(values.createdBefore),
-                              "MMM dd, yyyy"
-                            )}
-                          </span>
-                        ) : values.createdAfter ? (
-                          <span>
-                            From{" "}
-                            {format(
-                              new Date(values.createdAfter),
-                              "MMM dd, yyyy"
-                            )}
-                          </span>
-                        ) : values.createdBefore ? (
-                          <span>
-                            Until{" "}
-                            {format(
-                              new Date(values.createdBefore),
-                              "MMM dd, yyyy"
-                            )}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">
-                            Select date range
-                          </span>
-                        )}
+                        {(() => {
+                          const afterDate = values.createdAfter?.trim()
+                            ? new Date(values.createdAfter)
+                            : null;
+                          const beforeDate = values.createdBefore?.trim()
+                            ? new Date(values.createdBefore)
+                            : null;
+
+                          // Check if dates are valid
+                          const isValidAfter =
+                            afterDate && !isNaN(afterDate.getTime());
+                          const isValidBefore =
+                            beforeDate && !isNaN(beforeDate.getTime());
+
+                          if (isValidAfter && isValidBefore) {
+                            return (
+                              <span>
+                                {format(afterDate, "MMM dd")} -{" "}
+                                {format(beforeDate, "MMM dd, yyyy")}
+                              </span>
+                            );
+                          } else if (isValidAfter) {
+                            return (
+                              <span>
+                                From {format(afterDate, "MMM dd, yyyy")}
+                              </span>
+                            );
+                          } else if (isValidBefore) {
+                            return (
+                              <span>
+                                Until {format(beforeDate, "MMM dd, yyyy")}
+                              </span>
+                            );
+                          } else {
+                            return (
+                              <span className="text-muted-foreground">
+                                Select date range
+                              </span>
+                            );
+                          }
+                        })()}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
                       <DatePicker
-                        value={
-                          values.createdAfter && values.createdBefore
-                            ? [
-                              new Date(values.createdAfter),
-                              new Date(values.createdBefore),
-                            ]
-                            : null
-                        }
+                        value={(() => {
+                          const afterStr = values.createdAfter?.trim();
+                          const beforeStr = values.createdBefore?.trim();
+
+                          if (afterStr && beforeStr) {
+                            try {
+                              const afterDate = new Date(afterStr);
+                              const beforeDate = new Date(beforeStr);
+
+                              // Only return array if both dates are valid
+                              if (
+                                !isNaN(afterDate.getTime()) &&
+                                !isNaN(beforeDate.getTime())
+                              ) {
+                                return [afterDate, beforeDate];
+                              }
+                            } catch (e) {
+                              // Invalid dates, return null
+                            }
+                          }
+                          return null;
+                        })()}
                         onChange={(dateRange) => {
+                          console.log(
+                            "DatePicker onChange called with:",
+                            dateRange
+                          );
+
+                          // Helper function to convert any date-like object to Date
+                          const toDate = (dateValue: any): Date | null => {
+                            if (!dateValue) return null;
+
+                            // If it's already a Date object
+                            if (dateValue instanceof Date) {
+                              return !isNaN(dateValue.getTime())
+                                ? dateValue
+                                : null;
+                            }
+
+                            // If it has a toDate method (Dayjs or similar)
+                            if (
+                              dateValue &&
+                              typeof dateValue.toDate === "function"
+                            ) {
+                              try {
+                                const date = dateValue.toDate();
+                                return !isNaN(date.getTime()) ? date : null;
+                              } catch (e) {
+                                return null;
+                              }
+                            }
+
+                            // If it's a string, try to parse it
+                            if (typeof dateValue === "string") {
+                              const date = new Date(dateValue);
+                              return !isNaN(date.getTime()) ? date : null;
+                            }
+
+                            // If it's a number (timestamp)
+                            if (typeof dateValue === "number") {
+                              const date = new Date(dateValue);
+                              return !isNaN(date.getTime()) ? date : null;
+                            }
+
+                            return null;
+                          };
+
                           if (
                             Array.isArray(dateRange) &&
                             dateRange.length === 2
                           ) {
                             const [startDate, endDate] = dateRange;
-                            setFieldValue(
-                              "createdAfter",
-                              startDate && startDate instanceof Date
-                                ? startDate.toISOString()
-                                : ""
-                            );
-                            setFieldValue(
-                              "createdBefore",
-                              endDate && endDate instanceof Date
-                                ? endDate.toISOString()
-                                : ""
-                            );
+                            const start = toDate(startDate);
+                            const end = toDate(endDate);
+
+                            if (start) {
+                              // Set to start of day for createdAfter
+                              const startOfDay = new Date(start);
+                              startOfDay.setHours(0, 0, 0, 0);
+                              console.log(
+                                "Setting createdAfter:",
+                                startOfDay.toISOString()
+                              );
+                              setFieldValue(
+                                "createdAfter",
+                                startOfDay.toISOString()
+                              );
+                            } else {
+                              console.log(
+                                "Invalid start date, clearing createdAfter"
+                              );
+                              setFieldValue("createdAfter", "");
+                            }
+
+                            if (end) {
+                              // Set to end of day for createdBefore
+                              const endOfDay = new Date(end);
+                              endOfDay.setHours(23, 59, 59, 999);
+                              console.log(
+                                "Setting createdBefore:",
+                                endOfDay.toISOString()
+                              );
+                              setFieldValue(
+                                "createdBefore",
+                                endOfDay.toISOString()
+                              );
+                            } else {
+                              console.log(
+                                "Invalid end date, clearing createdBefore"
+                              );
+                              setFieldValue("createdBefore", "");
+                            }
                           } else {
-                            // Clear both dates
                             setFieldValue("createdAfter", "");
                             setFieldValue("createdBefore", "");
                           }
@@ -550,7 +646,10 @@ export function SearchFilters({
                     )}
                   </Button>
                 </DialogTrigger>
-                <DialogContent size="2xl" className="overflow-hidden flex flex-col">
+                <DialogContent
+                  size="2xl"
+                  className="overflow-hidden flex flex-col"
+                >
                   <DialogHeader>
                     <DialogTitle>Configure Custom Fields</DialogTitle>
                     <DialogDescription>
@@ -603,12 +702,12 @@ export function SearchFilters({
                                   options={col?.options as string[]}
                                   value={
                                     col.value as
-                                    | string
-                                    | string[]
-                                    | boolean
-                                    | Dayjs
-                                    | [Dayjs, Dayjs]
-                                    | undefined
+                                      | string
+                                      | string[]
+                                      | boolean
+                                      | Dayjs
+                                      | [Dayjs, Dayjs]
+                                      | undefined
                                   }
                                   onChange={(value) =>
                                     updateColValue(
@@ -658,6 +757,8 @@ export function SearchFilters({
                           name: values.name?.trim() || "",
                           location: values.location?.trim() || "",
                           customFields: values.customFields,
+                          createdAfter: values.createdAfter || "",
+                          createdBefore: values.createdBefore || "",
                         };
                         handleSearch(trimmedValues);
                         setIsMetaFieldsModalOpen(false);
