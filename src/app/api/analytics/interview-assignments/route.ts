@@ -116,7 +116,24 @@ export async function GET(request: NextRequest) {
                 ],
               },
             },
-            pendingInterviews: { $sum: 1 },
+          pendingInterviews: {
+              $sum: {
+                $cond: [
+                  { 
+                    $not: [
+                      { 
+                        $or: [
+                          { $eq: ["$status", "accepted"] },
+                          { $eq: ["$status", "rejected"] }
+                        ]
+                      }
+                    ]
+                  },
+                  1,
+                  0
+                ]
+              }
+            },
             acceptedCandidates: {
               $sum: {
                 $cond: [{ $eq: ["$status", "accepted"] }, 1, 0],
