@@ -132,12 +132,12 @@ function CandidateSearch() {
 
   const handleSearch = useCallback(
     async (values: SearchFilter) => {
-      setIsSearching(true);
-
       // FIX 3: Update filters first, then the query will automatically refetch
       const updatedFilters = {
         ...values,
         organizationId: OrgID || values.organizationId,
+        createdAfter: values.createdAfter?.trim() || undefined,
+        createdBefore: values.createdBefore?.trim() || undefined,
       };
 
       setCurrentFilters(updatedFilters);
@@ -247,6 +247,8 @@ function CandidateSearch() {
               name: values.name?.trim() || "",
               location: values.location?.trim() || "",
               customFields: values.customFields,
+              createdAfter: values.createdAfter || "",
+              createdBefore: values.createdBefore || "",
             };
             handleSearch(trimmedValues);
           }}
@@ -263,19 +265,20 @@ function CandidateSearch() {
                   onClick={() => resetForm()}
                   disabled={!dirty}
                   className="px-6"
+                  size="lg"
                 >
                   <ResetIcon className="mr-2 h-4 w-4" />
                   Reset
                 </Button>
                 <Button
                   type="submit"
-                  disabled={isSearching || !isValid}
+                  disabled={isQueryLoading || isFetching || !isValid}
                   variant="primary"
                   className="px-8"
                   size="lg"
                 >
                   <SearchIcon className="mr-2 h-4 w-4" />
-                  {isSearching ? "Searching..." : "Search"}
+                  {isQueryLoading || isFetching ? "Searching..." : "Search"}
                 </Button>
               </div>
             </Form>
