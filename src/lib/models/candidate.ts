@@ -319,16 +319,19 @@ export const candidateSchema = new Schema(
         summary: String,
         description: String,
         meetingNotes: String,
-        meetingAttachments: [
-          {
-            id: String,
-            name: String,
-            url: String,
-            type: { type: String, default: "pdf" },
-            size: Number,
-          },
-        ],
-        attendeeResponses: [
+        meetingAttachments: {
+          type: [
+            {
+              id: String,
+              name: String,
+              url: String,
+              type: { type: String, default: "pdf" },
+              size: Number,
+            },
+          ],
+          default: undefined,
+        },
+        attendeeResponses: {type: [
           {
             email: String,
             name: String,
@@ -342,6 +345,8 @@ export const candidateSchema = new Schema(
             notificationSent: Boolean,
           },
         ],
+        default: undefined,
+      },
         lastSyncedAt: Date,
       },
     },
