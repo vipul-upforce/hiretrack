@@ -21,8 +21,7 @@ export async function GET(req: NextRequest) {
         role = userData.role;
       }
     }
-
-    if (!userData || role !== "admin") {
+    if (!userData || (role !== "admin" && role !== "hr")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

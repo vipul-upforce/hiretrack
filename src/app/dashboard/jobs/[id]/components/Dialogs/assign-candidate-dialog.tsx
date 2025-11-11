@@ -677,7 +677,7 @@ export function AssignCandidateDialog({
                                         roleColor =
                                           "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400";
                                       } else if (email === user?.email) {
-                                        role = "HR";
+                                        role = user?.role === "hr" ? "HR" : "Admin";
                                         roleColor =
                                           "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-400";
                                       }
