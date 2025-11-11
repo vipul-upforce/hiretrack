@@ -265,6 +265,7 @@ function CandidateSearch() {
                   onClick={() => resetForm()}
                   disabled={!dirty}
                   className="px-6"
+                  size="lg"
                 >
                   <ResetIcon className="mr-2 h-4 w-4" />
                   Reset
