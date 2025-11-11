@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Calendar,
   Search,
@@ -39,6 +39,7 @@ import {
 import DesktopSkeletonHistroyLogs from "./history-logs-desktop-skeleton";
 import MobileSkeletonHistroyLogs from "./history-logs-mobile-skeleton";
 import { useRenderLogTitle } from "@/app/dashboard/hooks/useRenderLogTitle";
+import { useDebounce } from "@/hooks/useDebounce";
 
 type Props = {
   searchQuery: string;
@@ -82,6 +83,12 @@ export function ServerHistoryLogs({
     () => (historyPage - 1) * historyPageSize,
     [historyPage, historyPageSize]
   );
+  const [rawSearch, setRawSearch] = useState(searchQuery);
+  const debouncedSearchQuery = useDebounce(rawSearch, 500);
+
+  useEffect(() => {
+    setSearchQuery(debouncedSearchQuery);
+  }, [debouncedSearchQuery, setSearchQuery]);
 
   const {
     data: historyResp,
@@ -129,9 +136,9 @@ export function ServerHistoryLogs({
             type="text"
             aria-label="Search history logs"
             placeholder="Search logs by candidate, job title, email, skills, or remarks..."
-            value={searchQuery}
+            value={rawSearch}
             onChange={(e) => {
-              setSearchQuery(e.target.value);
+              setRawSearch(e.target.value);
               setHistoryPage(1);
             }}
             className="pl-10"
