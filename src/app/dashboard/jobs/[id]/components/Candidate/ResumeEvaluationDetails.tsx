@@ -50,23 +50,23 @@ export default function ResumeEvaluationDetails({
       />
     );
 
-  if (
-    !localCandidate.scores.strengths?.length &&
-    !localCandidate.scores.notes &&
-    !localCandidate.scores.areas_for_improvement?.length &&
-    !localCandidate.scores.recommendation
-  ) {
-    return (
-      <AIReEvaluateTrigger
-        labelClass={labelClass}
-        role={role}
-        onReEvaluate={onReEvaluate}
-        isReEvaluating={isReEvaluating}
-        isEvaluatingFor={isEvaluatingFor}
-        localCandidate={localCandidate}
-      />
-    );
-  }
+  // if (
+  //   !localCandidate.scores.strengths?.length &&
+  //   !localCandidate.scores.notes &&
+  //   !localCandidate.scores.areas_for_improvement?.length &&
+  //   !localCandidate.scores.recommendation
+  // ) {
+  //   return (
+  //     <AIReEvaluateTrigger
+  //       labelClass={labelClass}
+  //       role={role}
+  //       onReEvaluate={onReEvaluate}
+  //       isReEvaluating={isReEvaluating}
+  //       isEvaluatingFor={isEvaluatingFor}
+  //       localCandidate={localCandidate}
+  //     />
+  //   );
+  // }
 
   return (
     <>
