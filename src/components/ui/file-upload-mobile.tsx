@@ -81,24 +81,11 @@ export function MobileFileUpload({
     file: null,
     isExisting: false,
   });
-  // const [user, setUser] = useState<User | null>(null);
   const { user }: { user: User } = useSelector(
     (state: any) => state.auth || {}
   );
   const [droppedFiles, setDroppedFiles] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // useEffect(() => {
-  //   (async () => {
-  //     const token = Cookies.get("token");
-  //     if (token) {
-  //       const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-  //       if (decryptedResponse.success && decryptedResponse.user) {
-  //         setUser(decryptedResponse.user);
-  //       }
-  //     }
-  //   })();
-  // }, []);
 
   const handleRename = (newName: string) => {
     if (renameFile.file) {
