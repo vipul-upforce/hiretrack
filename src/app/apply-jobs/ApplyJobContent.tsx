@@ -1,36 +1,25 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import JobModal from "./JobModal";
 import { useFetchOpenJobQuery } from "@/lib/features/job/jobApi";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import {
-  LogOut,
-  Search,
-  MapPin,
-  Calendar,
-  Briefcase,
-  ChevronRight,
-} from "lucide-react";
-import Cookies from "js-cookie";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCustomFields } from "@/Custom_Fields/hooks/use-customFields";
 import { useFetchAppliedApplicationQuery } from "@/lib/features/candidate/candidateApi";
-import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
-import { SerializedError } from "@reduxjs/toolkit";
-import Image from "next/image";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import type { FetchBaseQueryError } from "@reduxjs/toolkit/query";
+import type { SerializedError } from "@reduxjs/toolkit";
 import InvalidPage from "@/components/InvalidPage";
-import { Input } from "@/components/ui/input";
-import { JobCardSkeleton } from "./JobCardSkeleton";
-import { ISettings } from "@/lib/models/settings";
 import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
-import CustomFieldBadge from "../dashboard/jobs/[id]/components/Candidate/CustomFieldBadge";
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "@/lib/redux/authSlice";
 import { useIsIframe } from "./IframeDetector";
 import { useFetchOrgQuery } from "@/lib/features/org/orgApi";
 import { useGetPortalConfigsQuery } from "@/lib/features/settings/settingsApi";
+import { HeaderSection } from "./components/header-section";
+import { SearchBar } from "./components/search-bar";
+import { JobGrid } from "./components/job-grid";
+import { ErrorState } from "./components/error-state";
 
 interface Job {
   _id: string;
@@ -64,6 +53,7 @@ export default function ApplyJobsContent({
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isModalOpen, setIsJobModalOpen] = useState(false);
   const [appliedApplications, setAppliedApplications] = useState<string[]>([]);
+
   const {
     data: orgResponse,
     isLoading: isOrgLoading,
@@ -76,27 +66,19 @@ export default function ApplyJobsContent({
     error: portalError,
   } = useGetPortalConfigsQuery(undefined);
 
-  // Check query parameters for header/footer visibility
   const hideHeaderParam = searchParams.get("hideHeader");
   const hideFooterParam = searchParams.get("hideFooter");
   const hideHeader = hideHeaderParam === "true";
   const hideFooter = hideFooterParam === "true";
 
-  // Determine if we should show header/footer based on query params and iframe status
-  // Priority: explicit query params > iframe auto-hide behavior
   const hasHeaderParam = hideHeaderParam !== null;
   const hasFooterParam = hideFooterParam !== null;
 
   const shouldShowHeader =
-    showHeaderFooter &&
-    (hasHeaderParam
-      ? !hideHeader // If hideHeader param exists, respect its value (true/false)
-      : !isIframe); // If no param, hide only if in iframe
+    showHeaderFooter && (hasHeaderParam ? !hideHeader : !isIframe);
   const shouldShowFooter =
-    showHeaderFooter &&
-    (hasFooterParam
-      ? !hideFooter // If hideFooter param exists, respect its value (true/false)
-      : !isIframe); // If no param, hide only if in iframe
+    showHeaderFooter && (hasFooterParam ? !hideFooter : !isIframe);
+
   const { data } = useFetchAppliedApplicationQuery(
     {},
     { skip: orgName === "" }
@@ -117,7 +99,6 @@ export default function ApplyJobsContent({
     footerHTML: "",
   });
 
-  // Portal settings for styling
   const [primaryColor, setPrimaryColor] = useState<string>("#6366f1");
   const [secondaryColor, setSecondaryColor] = useState<string>("#8b5cf6");
   const [logoUrl, setLogoUrl] = useState<string>("");
@@ -136,6 +117,7 @@ export default function ApplyJobsContent({
     isLoading: boolean;
     error: FetchBaseQueryError | SerializedError;
   };
+
   const { formNameObject } = useCustomForm("Job Position");
 
   async function checkAllowance() {
@@ -151,16 +133,14 @@ export default function ApplyJobsContent({
         setInvalidPage(false);
 
         const config = allowance?.data?.find(
-          (org: ISettings) => org?.portalConfigs?.portalName === urlOrgName
+          (org: any) => org?.portalConfigs?.portalName === urlOrgName
         )?.portalConfigs;
 
-        // Apply org config
         if (config?.primaryColor) setPrimaryColor(config.primaryColor);
         if (config?.secondaryColor) setSecondaryColor(config.secondaryColor);
         if (config?.portalLogo?.url) setLogoUrl(config.portalLogo.url);
         if (config?.portalName) setPortalName(config.portalName);
 
-        // Override with portal config
         if (portalData) {
           if (portalData.primaryColor) setPrimaryColor(portalData.primaryColor);
           if (portalData.secondaryColor)
@@ -175,7 +155,6 @@ export default function ApplyJobsContent({
           if (portalData.portalName) setPortalName(portalData.portalName);
         }
 
-        // Load Header/Footer HTML
         if (config?.portalHeader?.url && config?.portalFooter?.url) {
           try {
             const [headerRes, footerRes] = await Promise.all([
@@ -196,7 +175,6 @@ export default function ApplyJobsContent({
         return;
       }
 
-      // Default org case
       if (allowance.allow) {
         setInvalidPage(true);
       }
@@ -238,11 +216,6 @@ export default function ApplyJobsContent({
     }
   }
 
-  // useEffect(() => {
-  //   checkAllowance();
-  // }, [searchParams, orgName]);
-
-  // Set CSS variables for dynamic theming
   useEffect(() => {
     document.documentElement.style.setProperty(
       "--portal-primary",
@@ -269,18 +242,10 @@ export default function ApplyJobsContent({
   }, [orgResponse, portalResponse, searchParams, orgName]);
 
   const pageInit = async () => {
-    // debugger;
-    // const token = Cookies.get("token");
     const urlOrgName = searchParams?.get("o");
     if (user) {
       try {
-        // const decryptedResponse = await verifyAndDecryptJWTToken(token);
-        if (
-          // decryptedResponse.success &&
-          // decryptedResponse.user &&
-          user.organizationInfo &&
-          user.organizationInfo.name
-        ) {
+        if (user.organizationInfo && user.organizationInfo.name) {
           setOrgName(user.organizationInfo.name);
           setUserLoggedIn(true);
         } else {
@@ -297,7 +262,6 @@ export default function ApplyJobsContent({
         localStorage.removeItem("persist:auth");
         localStorage.removeItem("persist:organization");
         await fetch("/api/auth/logout");
-
         window.location.href = "/auth/login";
       }
     } else {
@@ -319,48 +283,12 @@ export default function ApplyJobsContent({
     setQueryTitle(searchTerm);
   };
 
-  if (invalidPage) {
-    return <InvalidPage message="Page Doesn't Exist" />;
-  }
-
-  if (isLoading)
-    return <div className="flex justify-center p-8">Loading...</div>;
-
-  if (error && !isLoading) {
-    if (isFetchBaseQueryError(error) && error.status !== 404) {
-      return (
-        <div className="px-3 font-bold text-muted-foreground w-[100vw] flex flex-col items-center justify-center">
-          <Image
-            src="/error.webp"
-            alt="No data illustration"
-            width={600}
-            height={600}
-          />
-          {isFetchBaseQueryError(error) &&
-            "data" in error &&
-            (error.data as { error: string })?.error}
-        </div>
-      );
-    } else {
-      return (
-        <div className="px-3 font-bold text-muted-foreground w-[100vw] flex flex-col items-center justify-center">
-          <Image
-            src="/notfound.jpg"
-            alt="No data illustration"
-            width={600}
-            height={600}
-          />
-          {isFetchBaseQueryError(error) &&
-            "data" in error &&
-            (error.data as { error: string })?.error}
-        </div>
-      );
-    }
-  }
+  const handleClearSearch = () => {
+    setSearchTerm("");
+    setQueryTitle("");
+  };
 
   const handleLogout = async () => {
-    // Clear user data and token
-    // Cookies.remove("token");
     dispatch(logout());
     localStorage.removeItem("persist:auth");
     localStorage.removeItem("persist:organization");
@@ -369,9 +297,39 @@ export default function ApplyJobsContent({
       title: "Logged out",
       description: "You have been successfully logged out",
     });
-
     window.location.href = "/auth/login";
   };
+
+  if (invalidPage) {
+    return <InvalidPage message="Page Doesn't Exist" />;
+  }
+
+  if (error && !isLoading) {
+    if (isFetchBaseQueryError(error) && error.status !== 404) {
+      return (
+        <ErrorState
+          imageUrl="/error.webp"
+          errorMessage={
+            isFetchBaseQueryError(error) &&
+            "data" in error &&
+            (error.data as { error: string })?.error
+          }
+        />
+      );
+    } else {
+      return (
+        <ErrorState
+          imageUrl="/notfound.jpg"
+          errorMessage={
+            isFetchBaseQueryError(error) &&
+            "data" in error &&
+            (error.data as { error: string })?.error
+          }
+        />
+      );
+    }
+  }
+
   return (
     <div
       className={
@@ -401,6 +359,7 @@ export default function ApplyJobsContent({
       {shouldShowHeader && (
         <div dangerouslySetInnerHTML={{ __html: layoutState?.headerHTML }} />
       )}
+
       <main
         className={
           shouldShowHeader || shouldShowFooter
@@ -409,283 +368,54 @@ export default function ApplyJobsContent({
         }
       >
         <div className="container mx-auto p-2">
-          <div className="py-4 flex flex-row justify-between items-start mb-8">
-            <div>
-              <h1 className="lg:text-3xl sm:text-2xl text-xl font-bold mb-2 bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-                Open Positions {orgName ? `for ${orgName}` : ""}
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400 text-sm">
-                Discover amazing opportunities and take your career to the next
-                level
-              </p>
-            </div>
-
-            {userLoggedIn && (
-              <Button
-                variant="ghost"
-                className={cn(
-                  "flex items-center gap-2 rounded-xl px-4 py-2 text-sm transition-all text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-800/50 backdrop-blur-sm",
-                  "justify-start"
-                )}
-                onClick={handleLogout}
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">Logout</span>
-              </Button>
-            )}
-          </div>
+          <HeaderSection
+            orgName={orgName}
+            userLoggedIn={userLoggedIn}
+            onLogout={handleLogout}
+          />
 
           {jobs && jobs.length > 0 && (
-            <div className="flex gap-3 mb-8 w-full flex-row">
-              <div className="relative w-full flex flex-row items-center max-w-md">
-                <Input
-                  type="text"
-                  placeholder="Search..."
-                  className="pl-12 pr-4 py-3 border rounded-xl bg-white dark:bg-black border-gray-200 dark:border-gray-700 focus:ring-2 w-full transition-colors"
-                  onFocus={(e) => {
-                    e.target.style.borderColor = primaryColor;
-                    e.target.style.boxShadow = `0 0 0 2px ${primaryColor}20`;
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = "rgb(209 213 219)";
-                    e.target.style.boxShadow = "none";
-                  }}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleSearch();
-                    }
-                  }}
-                />
-                <Search className="absolute left-4 text-gray-400 h-5 w-5" />
-              </div>
-              <Button
-                onClick={handleSearch}
-                className="px-6 py-3 text-sm font-semibold rounded-xl text-white transition-colors"
-                style={{
-                  backgroundColor: primaryColor,
-                  borderColor: primaryColor,
-                }}
-                onMouseEnter={(e) => {
-                  const target = e.target as HTMLElement;
-                  target.style.backgroundColor = secondaryColor;
-                }}
-                onMouseLeave={(e) => {
-                  const target = e.target as HTMLElement;
-                  target.style.backgroundColor = primaryColor;
-                }}
-              >
-                <Search className="w-4 h-4 mr-2" />
-                Search
-              </Button>
-            </div>
+            <SearchBar
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              onSearch={handleSearch}
+              primaryColor={primaryColor}
+              secondaryColor={secondaryColor}
+            />
           )}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {isLoading ? (
-              // Show skeleton loading cards
-              <>
-                {[...Array(6)].map((_, index) => (
-                  <JobCardSkeleton key={index} />
-                ))}
-              </>
-            ) : error ? (
-              // Show error state
-              <div className="px-3 font-bold text-muted-foreground w-[100vw] flex flex-col items-center justify-center">
-                <Image
-                  src={
-                    isFetchBaseQueryError(error) && error.status !== 404
-                      ? "/error.webp"
-                      : "/notfound.jpg"
-                  }
-                  alt="No data illustration"
-                  width={600}
-                  height={600}
-                />
-                {isFetchBaseQueryError(error) &&
-                  "data" in error &&
-                  (error.data as { error: string })?.error}
-              </div>
-            ) : jobs && jobs.length > 0 ? (
-              // Show job cards
-              jobs.map((job, index) => (
-                <div
-                  key={index}
-                  className="bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg p-6 cursor-pointer hover:shadow-md transition-shadow duration-200"
-                  onClick={() => {
-                    setSelectedJob(job);
-                    setIsJobModalOpen(true);
-                  }}
-                >
-                  {/* Card content */}
-                  <div className="flex flex-col h-full">
-                    {/* Header section */}
-                    <div className="flex-1 mb-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-white leading-tight line-clamp-2">
-                          {job.title}
-                        </h2>
-                        <ChevronRight className="w-5 h-5 text-gray-400" />
-                      </div>
 
-                      <div
-                        className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed line-clamp-3 mb-4"
-                        dangerouslySetInnerHTML={{
-                          __html: job?.description || "No description found",
-                        }}
-                      />
-
-                      {/* Skills badges */}
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {job.skills.slice(0, 3).map((skill, i) => (
-                          <span
-                            key={i}
-                            className="px-3 py-1 text-xs font-medium rounded-full border"
-                            style={{
-                              backgroundColor: `${primaryColor}10`,
-                              color: primaryColor,
-                              borderColor: `${primaryColor}30`,
-                            }}
-                          >
-                            {skill}
-                          </span>
-                        ))}
-                        {job.skills.length > 3 && (
-                          <span className="px-3 py-1 text-xs font-medium rounded-full bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-500">
-                            +{job.skills.length - 3} more
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Footer section */}
-                    <div className="space-y-3">
-                      {/* Experience and Salary row */}
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                          <Briefcase className="w-4 h-4" />
-                          <span className="font-medium">
-                            {job.experience} years exp
-                          </span>
-                        </div>
-
-                        {job.salary && job.salary.inText && (
-                          <div className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
-                            <span className="w-4 h-4 flex items-center justify-center text-sm font-semibold">
-                              ₹
-                            </span>
-                            {job.salary?.inText || job.salary?.inText === "" ? (
-                              <span className="text-sm font-semibold">
-                                {job.salary.inText}
-                              </span>
-                            ) : (
-                              <span className="text-sm font-semibold">
-                                {job.salary?.min &&
-                                  job.salary.min !== 0 &&
-                                  `${job.salary.min}`}
-                                {job.salary?.min &&
-                                  job.salary.min !== 0 &&
-                                  job.salary?.max &&
-                                  job.salary.max !== 0 &&
-                                  "-"}
-                                {job.salary?.max &&
-                                  job.salary.max !== 0 &&
-                                  `${job.salary.max}`}
-                                {(job.salary?.min || job.salary?.max) && " LPA"}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Custom fields */}
-                      {job?.customFields &&
-                        Object.entries(job?.customFields).filter(
-                          ([key, value]) => {
-                            const field = formNameObject?.fields.find(
-                              (f) => f.label === key
-                            );
-                            if (field?.jobId && field.jobId !== job?._id)
-                              return false;
-                            if (
-                              (typeof value === "string" && value === "") ||
-                              (typeof value === "object" &&
-                                Object.keys(value).length === 0)
-                            ) {
-                              return false;
-                            }
-                            return field?.showOnCard;
-                          }
-                        ).length > 0 && (
-                          <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                            {Object.entries(job?.customFields)
-                              .filter(([key, value]) => {
-                                const field = formNameObject?.fields.find(
-                                  (f) => f.label === key
-                                );
-                                if (field?.jobId && field.jobId !== job?._id)
-                                  return false;
-                                if (
-                                  (typeof value === "string" && value === "") ||
-                                  (typeof value === "object" &&
-                                    Object.keys(value).length === 0)
-                                ) {
-                                  return false;
-                                }
-                                return field?.showOnCard;
-                              })
-                              .map(([key, value], i) => (
-                                <div key={i}>
-                                  <CustomFieldBadge kii={key} value={value} />
-                                </div>
-                              ))}
-                          </div>
-                        )}
-
-                      {/* Apply indicator */}
-                      <div className="flex items-center justify-between pt-2">
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          Click to view details & apply
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              ""
-            )}
-          </div>
-          {error && !jobs && (
-            <div className="px-3 font-bold text-muted-foreground w-[100vw] flex flex-col items-center justify-center">
-              <Image
-                src="/notfound.jpg"
-                alt="No data illustration"
-                width={600}
-                height={600}
-              />
-              No Jobs Found
-            </div>
-          )}
-          <JobModal
-            job={selectedJob}
-            isOpen={isModalOpen}
-            onClose={() => setIsJobModalOpen(false)}
-            orgName={orgName}
-            readOnly={
-              !!(
-                appliedApplications &&
-                selectedJob &&
-                appliedApplications.includes(selectedJob?._id)
-              )
-            }
+          <JobGrid
+            jobs={jobs}
+            isLoading={isLoading}
+            primaryColor={primaryColor}
+            formNameObject={formNameObject}
+            onJobClick={(job) => {
+              setSelectedJob(job);
+              setIsJobModalOpen(true);
+            }}
+            hasSearch={queryTitle !== ""}
+            onClearSearch={handleClearSearch}
           />
-          {/* )} */}
         </div>
       </main>
+
       {shouldShowFooter && (
         <div dangerouslySetInnerHTML={{ __html: layoutState.footerHTML }} />
       )}
+
+      <JobModal
+        job={selectedJob}
+        isOpen={isModalOpen}
+        onClose={() => setIsJobModalOpen(false)}
+        orgName={orgName}
+        readOnly={
+          !!(
+            appliedApplications &&
+            selectedJob &&
+            appliedApplications.includes(selectedJob?._id)
+          )
+        }
+      />
     </div>
   );
 }
