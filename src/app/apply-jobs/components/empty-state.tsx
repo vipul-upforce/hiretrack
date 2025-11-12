@@ -7,7 +7,7 @@ import Image from "next/image";
 interface EmptyStateProps {
   title: string;
   description?: string;
-  imageUrl: string;
+  imageUrl?: string;
   onBack?: () => void;
   showBackButton?: boolean;
 }
@@ -20,14 +20,18 @@ export function EmptyState({
   showBackButton = false,
 }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center py-12">
-      <Image
-        src={imageUrl || "/placeholder.svg"}
-        alt={title}
-        width={400}
-        height={400}
-        className="mb-6"
-      />
+    <div
+      className={`flex flex-col items-center justify-center ${imageUrl ? "max-sm:pt-2 py-10" : "py-28"}`}
+    >
+      {imageUrl && (
+        <Image
+          src={imageUrl}
+          alt={title}
+          width={350}
+          height={350}
+          className="mb-6"
+        />
+      )}
       <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
         {title}
       </h2>
