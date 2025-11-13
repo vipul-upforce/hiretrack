@@ -21,6 +21,7 @@ import {
   useUpdateUserEmailNotificationSettings,
   UserEmailSettings,
 } from "@/hooks/useEmailNotificationSettings";
+import EmailNotificationSettingsSkeleton from "./email-notification-settings-skeleton";
 
 // Generate default settings automatically for all notification types
 const createDefaultNotificationSettings = (): Record<
@@ -162,7 +163,7 @@ export function EmailNotificationSettingsDialog({
         });
       }
 
-      // Reset job-level
+      // Reset job-leve
       if (jobId && settings.jobLevel?.[jobId]) {
         const jobSettings = createDefaultNotificationSettings();
         Object.entries(settings.jobLevel[jobId]).forEach(([key, value]) => {
@@ -209,37 +210,6 @@ export function EmailNotificationSettingsDialog({
     });
   };
 
-  if (loading) {
-    return (
-      <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Email Notification Settings</DialogTitle>
-          </DialogHeader>
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin" />
-            <span className="ml-2">Loading settings...</span>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
-  if (error) {
-    return (
-      <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Email Notification Settings</DialogTitle>
-          </DialogHeader>
-          <div className="flex items-center justify-center py-8 text-red-500">
-            <span>Failed to load settings: {error}</span>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="p-0 overflow-hidden flex flex-col sm:max-w-lg">
@@ -259,55 +229,70 @@ export function EmailNotificationSettingsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col h-full">
-          <div className="space-y-4 flex-1 overflow-y-auto px-6 py-4 max-h-[70vh] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-            <div className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              <Badge variant="outline">
-                {jobId ? "Job-Specific Settings" : "Global Settings"}
-              </Badge>
-            </div>
-
-            <Separator />
-
-            <div className="space-y-0">
-              {notificationTypes.map((type) => (
-                <EmailNotificationToggle
-                  key={type}
-                  type={type}
-                  enabled={getCurrentSettings()[type]}
-                  source="global-user"
-                  onToggle={handleToggle}
-                  disabled={updating}
-                  showSource={true}
-                />
-              ))}
-            </div>
+        {loading ? (
+          <EmailNotificationSettingsSkeleton />
+        ) : error ? (
+          <div className="flex items-center justify-center py-8 text-red-500">
+            <span>Failed to load settings: {error}</span>
           </div>
+        ) : (
+          <>
+            <div className="flex flex-col h-full">
+              <div className="space-y-4 flex-1 overflow-y-auto px-6 py-4 max-h-[70vh] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+                <div className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  <Badge variant="outline">
+                    {jobId ? "Job-Specific Settings" : "Global Settings"}
+                  </Badge>
+                </div>
 
-          <div className="flex justify-between items-center border-t bg-background px-6 py-4 sticky bottom-0 z-10 gap-4">
-            <Button
-              variant="outline"
-              onClick={handleReset}
-              disabled={updating || !hasChanges()}
-            >
-              Reset
-            </Button>
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={updating}
-              >
-                Cancel
-              </Button>
-              <Button onClick={handleSave} disabled={updating || !hasChanges()}>
-                {updating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                Save Changes
-              </Button>
+                <Separator />
+
+                <div className="space-y-0">
+                  {notificationTypes.map((type) => (
+                    <EmailNotificationToggle
+                      key={type}
+                      type={type}
+                      enabled={getCurrentSettings()[type]}
+                      source="global-user"
+                      onToggle={handleToggle}
+                      disabled={updating}
+                      showSource={true}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center border-t bg-background px-6 py-4 sticky bottom-0 z-10 gap-4">
+                <Button
+                  variant="outline"
+                  onClick={handleReset}
+                  disabled={updating || !hasChanges()}
+                >
+                  Reset
+                </Button>
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => onOpenChange(false)}
+                    disabled={updating}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSave}
+                    disabled={updating || !hasChanges()}
+                  >
+                    {updating && (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    )}
+                    Save Changes
+                  </Button>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
