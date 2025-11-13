@@ -160,7 +160,21 @@ export async function saveFileLocally(
   await ensureDirectoryExists(path.join(publicPath, folder));
 
   const base64Data = base64.replace(/^data:[^;]+;base64,/, "");
-  const filePath = path.join("..", "assets", folder, fileName);
+  let filePath = path.join("..", "assets", folder, fileName);
+
+  // Check for existing file and make the name unique if needed
+  const ext = path.extname(fileName);
+  const base = path.basename(fileName, ext);
+  let uniqueFileName = fileName;
+  let counter = 1;
+  let uniqueFilePath = filePath;
+  while (fs.existsSync(uniqueFilePath)) {
+    uniqueFileName = `${base}_${counter}${ext}`;
+    uniqueFilePath = path.join("..", "assets", folder, uniqueFileName);
+    counter++;
+  }
+  filePath = uniqueFilePath;
+
   await fs.promises.writeFile(filePath, Buffer.from(base64Data, "base64"));
 
   return `/api/files?pathName=${filePath}`;
