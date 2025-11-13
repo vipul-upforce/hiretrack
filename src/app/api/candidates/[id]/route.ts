@@ -8,7 +8,6 @@ import { ICandidate as IExternalCandidate } from "@/lib/models/candidate";
 import mongoose, { ProjectionType } from "mongoose";
 import { getAuthenticatedUser } from "@/app/actions/auth";
 import { sendMail } from "../../event-mail";
-import { auth } from "@/lib/auth";
 import { Attachment } from "../route";
 import { IinfoUpdateLog } from "@/lib/models/history";
 import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";

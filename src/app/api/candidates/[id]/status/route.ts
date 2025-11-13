@@ -11,16 +11,18 @@ export async function PATCH(
   try {
     // Check authentication
 
-   const userData = await getAuthenticatedUser(request);
+    const [userData, { id }, { status }] = await Promise.all([
+      getAuthenticatedUser(request),
+      params,
+      request.json(),
+      connectToDatabase(),
+    ]);
     if (!userData) {
       return NextResponse.json(
         { message: "Unauthorised Access" },
         { status: 401 }
       );
     }
-    await connectToDatabase();
-    const { status } = await request.json();
-    const { id } = await params;
 
     if (!Candidate || !Job) {
       return NextResponse.json({ error: "Models not found" }, { status: 400 });

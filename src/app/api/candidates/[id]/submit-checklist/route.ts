@@ -7,11 +7,11 @@ import connectToDatabase, {
 } from "@/lib/mongodb";
 import {
   validateUserCanSubmitFields,
-  getUserRole,
 } from "@/lib/utils/checklistVisibility";
 import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
 import { NotificationService } from "@/lib/notifications/notificationService";
 import { getAuthenticatedUser } from "@/app/actions/auth";
+import { UserRole } from "@/lib/models/JobLaneConfig";
 
 // POST - Submit checklist responses for a candidate
 export async function POST(
@@ -33,8 +33,13 @@ export async function POST(
     // }
 
     // const decoded = decryptedResponse.user;
-    const decoded = await getAuthenticatedUser(req);
-    if (!decoded) {
+    const [userData, { id }, body] = await Promise.all([
+      getAuthenticatedUser(req),
+      params,
+      req.json(),
+      connectToDatabase(),
+    ]);
+    if (!userData) {
       return NextResponse.json(
         { message: "Unauthorised Access" },
         { status: 401 }
@@ -55,7 +60,6 @@ export async function POST(
       );
     }
 
-    const body = await req.json();
     const {
       checklistId,
       checklistName,
@@ -76,7 +80,7 @@ export async function POST(
       );
     }
 
-    const { id } = await params;
+
     // Get candidate
     const candidate = await Candidate!.findById(id).populate([
       {
@@ -103,11 +107,7 @@ export async function POST(
       );
     }
 
-    // Get user role for permission validation
-    const userRole = getUserRole(decoded.role);
-    if (!userRole) {
-      return NextResponse.json({ error: "Invalid user role" }, { status: 403 });
-    }
+    const userRole = userData?.role as UserRole;
 
     // Get the job lane configuration to validate field permissions
     const laneConfig = await JobLaneConfig!.findOne({ jobId: candidate.jobId });
@@ -146,7 +146,7 @@ export async function POST(
     const canSubmitFields = validateUserCanSubmitFields(
       submittedFieldIds,
       checklist.fields,
-      userRole
+      userRole 
     );
 
     if (!canSubmitFields) {
@@ -173,7 +173,7 @@ export async function POST(
     const checklistData = {
       checklistId,
       completedAt: currentTime,
-      completedBy: decoded.id,
+      completedBy: userData.id,
       responses: responses, // Keep as plain object
       // visibleInHistory,
     };
@@ -201,7 +201,7 @@ export async function POST(
     );
 
     // Get user details for history
-    const userId = decoded.id;
+    const userId = userData.id;
     const user = await User!.findById(userId);
 
     // Create history entry
@@ -275,7 +275,7 @@ export async function POST(
     try {
       const jobInfo = candidate.jobId as any;
       await NotificationService.notifyChecklistCompleted({
-        organizationId: decoded.organizationId || "",
+        organizationId: userData.organizationId || "",
         candidateId: candidate._id.toString(),
         candidateName: candidate.name || "Unknown Candidate",
         jobId: jobInfo?._id?.toString() || candidate.jobId?.toString() || "",
@@ -291,7 +291,7 @@ export async function POST(
       // Continue execution even if notification fails
     }
 
-    const candidateHistoryPopulated = await History?.findOne({
+    const candidateHistoryPopulated = await History!.findOne({
       jobId:
         typeof candidate?.jobId === "object" && "_id" in candidate?.jobId
           ? candidate?.jobId?._id

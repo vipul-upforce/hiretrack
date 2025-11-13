@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { History, JobLaneConfig } from "@/lib/mongodb";
 import { getAuthenticatedUser } from "@/app/actions/auth";
-import {
-  filterChecklistResponses,
-} from "@/lib/utils/checklistVisibility";
+import { filterChecklistResponses } from "@/lib/utils/checklistVisibility";
 import type { UserRole } from "@/lib/models/JobLaneConfig";
 // Disable static generation for this API route
 export const dynamic = "force-dynamic";
@@ -14,16 +12,17 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-
-
     const [{ id }, userData] = await Promise.all([
       params,
-      getAuthenticatedUser(request,["admin","hr","interviewer"]),
+      getAuthenticatedUser(request, ["admin", "hr", "interviewer"]),
       connectToDatabase(),
     ]);
 
     if (!userData) {
-      return NextResponse.json({ message: "Unauthorised Access" }, { status: 401 });
+      return NextResponse.json(
+        { message: "Unauthorised Access" },
+        { status: 401 }
+      );
     }
 
     const role = userData?.role;
@@ -46,20 +45,16 @@ export async function GET(
       candidateId: candidateId,
     })
       .populate(populateFields)
-      .lean({ virtuals: true });
-
-  
+      .lean();
 
     if (!history) {
       return NextResponse.json({ history: [] });
     }
 
-  
-
     // Get job lane configuration for checklist field filtering
     const laneConfig = await JobLaneConfig?.findOne({
       jobId: history.jobId,
-    });
+    }).lean().exec();
 
     // Filter history entries and checklist responses based on user role
     const filteredHistory = history.history

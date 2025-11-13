@@ -6,8 +6,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
-    await connectToDatabase();
-    
+
+    const [user] = await Promise.all([
+      getAuthenticatedUser(request),
+      connectToDatabase(),
+    ]);
     // Give models a moment to initialize if they haven't already
     let retries = 0;
     while (!CandidateAccount && retries < 5) {
@@ -16,7 +19,6 @@ export async function POST(request: NextRequest) {
     }
     
     const jobId = request.nextUrl.searchParams?.get("jobid");
-    const user = await getAuthenticatedUser(request);
 
     if (!user) {
       return NextResponse.json(
