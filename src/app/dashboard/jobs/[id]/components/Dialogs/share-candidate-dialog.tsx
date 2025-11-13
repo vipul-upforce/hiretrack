@@ -53,6 +53,7 @@ export interface ShareFieldsSelection {
   overallScore: boolean;
   experienceScore: boolean;
   skillsScore: boolean;
+  affordability: boolean;
   strengths: boolean;
   areasForImprovement: boolean;
   recommendation: boolean;
@@ -73,37 +74,39 @@ export interface ShareFieldsSelection {
 }
 
 // Memoized CheckboxField component
-const CheckboxField = memo(({
-  id,
-  label,
-  checked,
-  onCheckedChange,
-  disabled = false,
-}: {
-  id: string;
-  label: string;
-  checked: boolean;
-  onCheckedChange: (checked: boolean) => void;
-  disabled?: boolean;
-}) => (
-  <div className="flex items-center space-x-2 py-1.5">
-    <Checkbox
-      id={id}
-      checked={checked}
-      onCheckedChange={onCheckedChange}
-      disabled={disabled}
-    />
-    <Label
-      htmlFor={id}
-      className={cn(
-        "text-sm font-normal cursor-pointer flex-1",
-        disabled && "opacity-50 cursor-not-allowed"
-      )}
-    >
-      {label}
-    </Label>
-  </div>
-));
+const CheckboxField = memo(
+  ({
+    id,
+    label,
+    checked,
+    onCheckedChange,
+    disabled = false,
+  }: {
+    id: string;
+    label: string;
+    checked: boolean;
+    onCheckedChange: (checked: boolean) => void;
+    disabled?: boolean;
+  }) => (
+    <div className="flex items-center space-x-2 py-1.5">
+      <Checkbox
+        id={id}
+        checked={checked}
+        onCheckedChange={onCheckedChange}
+        disabled={disabled}
+      />
+      <Label
+        htmlFor={id}
+        className={cn(
+          "text-sm font-normal cursor-pointer flex-1",
+          disabled && "opacity-50 cursor-not-allowed"
+        )}
+      >
+        {label}
+      </Label>
+    </div>
+  )
+);
 
 CheckboxField.displayName = "CheckboxField";
 
@@ -113,48 +116,54 @@ interface CategoryCardProps {
   icon: any;
   category: "basic" | "professional" | "ai" | "job" | "additional";
   children: React.ReactNode;
-  onSelectAll: (category: "basic" | "professional" | "ai" | "job" | "additional") => void;
-  onDeselectAll: (category: "basic" | "professional" | "ai" | "job" | "additional") => void;
+  onSelectAll: (
+    category: "basic" | "professional" | "ai" | "job" | "additional"
+  ) => void;
+  onDeselectAll: (
+    category: "basic" | "professional" | "ai" | "job" | "additional"
+  ) => void;
 }
 
-const CategoryCard = memo(({
-  title,
-  icon: Icon,
-  category,
-  children,
-  onSelectAll,
-  onDeselectAll,
-}: CategoryCardProps) => (
-  <Card className="border-muted">
-    <CardContent className="p-4">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Icon className="h-4 w-4 text-primary" />
-          <h3 className="font-semibold text-sm">{title}</h3>
+const CategoryCard = memo(
+  ({
+    title,
+    icon: Icon,
+    category,
+    children,
+    onSelectAll,
+    onDeselectAll,
+  }: CategoryCardProps) => (
+    <Card className="border-muted">
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Icon className="h-4 w-4 text-primary" />
+            <h3 className="font-semibold text-sm">{title}</h3>
+          </div>
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs px-2"
+              onClick={() => onSelectAll(category)}
+            >
+              All
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs px-2"
+              onClick={() => onDeselectAll(category)}
+            >
+              None
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs px-2"
-            onClick={() => onSelectAll(category)}
-          >
-            All
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs px-2"
-            onClick={() => onDeselectAll(category)}
-          >
-            None
-          </Button>
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-x-4">{children}</div>
-    </CardContent>
-  </Card>
-));
+        <div className="grid grid-cols-2 gap-x-4">{children}</div>
+      </CardContent>
+    </Card>
+  )
+);
 
 CategoryCard.displayName = "CategoryCard";
 
@@ -177,6 +186,7 @@ export function ShareCandidateDialog({
     experience: true,
     relevantExperience: true,
     skills: true,
+
     currentCTC: true,
     expectedCTC: true,
     noticePeriod: true,
@@ -186,6 +196,7 @@ export function ShareCandidateDialog({
     experienceScore: true,
     skillsScore: true,
     strengths: true,
+    affordability: true,
     areasForImprovement: true,
     recommendation: true,
     notes: true,
@@ -204,84 +215,95 @@ export function ShareCandidateDialog({
     resume: true,
   });
 
-  const toggleField = useCallback((field: keyof ShareFieldsSelection, value?: boolean) => {
-    setSelection((prev) => ({
-      ...prev,
-      [field]: value !== undefined ? value : !prev[field],
-    }));
-  }, []);
+  const toggleField = useCallback(
+    (field: keyof ShareFieldsSelection, value?: boolean) => {
+      setSelection((prev) => ({
+        ...prev,
+        [field]: value !== undefined ? value : !prev[field],
+      }));
+    },
+    []
+  );
 
-  const selectAllInCategory = useCallback((category: "basic" | "professional" | "ai" | "job" | "additional") => {
-    const updates: Partial<ShareFieldsSelection> = {};
+  const selectAllInCategory = useCallback(
+    (category: "basic" | "professional" | "ai" | "job" | "additional") => {
+      const updates: Partial<ShareFieldsSelection> = {};
 
-    if (category === "basic") {
-      updates.name = true;
-      updates.email = true;
-      updates.phone = true;
-      updates.location = true;
-    } else if (category === "professional") {
-      updates.experience = true;
-      updates.relevantExperience = true;
-      updates.skills = true;
-      updates.currentCTC = true;
-      updates.expectedCTC = true;
-      updates.noticePeriod = true;
-    } else if (category === "ai") {
-      updates.overallScore = true;
-      updates.experienceScore = true;
-      updates.skillsScore = true;
-      updates.strengths = true;
-      updates.areasForImprovement = true;
-      updates.recommendation = true;
-      updates.notes = true;
-    } else if (category === "job") {
-      updates.jobDetails = true;
-      updates.status = true;
-    } else if (category === "additional") {
-      updates.assignment = true;
-      updates.followUp = true;
-      updates.tags = true;
-      updates.customFields = true;
-    }
+      if (category === "basic") {
+        updates.name = true;
+        updates.email = true;
+        updates.phone = true;
+        updates.location = true;
+      } else if (category === "professional") {
+        updates.experience = true;
+        updates.relevantExperience = true;
+        updates.skills = true;
+        updates.currentCTC = true;
+        updates.expectedCTC = true;
+        updates.noticePeriod = true;
+      } else if (category === "ai") {
+        updates.overallScore = true;
+        updates.experienceScore = true;
+        updates.skillsScore = true;
+        updates.affordability = true;
+        updates.strengths = true;
+        updates.areasForImprovement = true;
+        updates.recommendation = true;
+        updates.notes = true;
+      } else if (category === "job") {
+        updates.jobDetails = true;
+        updates.status = true;
+      } else if (category === "additional") {
+        updates.assignment = true;
+        updates.followUp = true;
+        updates.tags = true;
+        updates.customFields = true;
+      }
 
-    setSelection((prev) => ({ ...prev, ...updates }));
-  }, []);
+      setSelection((prev) => ({ ...prev, ...updates }));
+    },
+    []
+  );
 
-  const deselectAllInCategory = useCallback((category: "basic" | "professional" | "ai" | "job" | "additional") => {
-    const updates: Partial<ShareFieldsSelection> = {};
+  const deselectAllInCategory = useCallback(
+    (category: "basic" | "professional" | "ai" | "job" | "additional") => {
+      const updates: Partial<ShareFieldsSelection> = {};
 
-    if (category === "basic") {
-      updates.name = false;
-      updates.email = false;
-      updates.phone = false;
-      updates.location = false;
-    } else if (category === "professional") {
-      updates.experience = false;
-      updates.relevantExperience = false;
-      updates.skills = false;
-      updates.currentCTC = false;
-      updates.expectedCTC = false;
-      updates.noticePeriod = false;
-    } else if (category === "ai") {
-      updates.overallScore = false;
-      updates.experienceScore = false;
-      updates.skillsScore = false;
-      updates.strengths = false;
-      updates.areasForImprovement = false;
-      updates.recommendation = false;
-      updates.notes = false;
-    } else if (category === "job") {
-      updates.jobDetails = false;
-      updates.status = false;
-    } else if (category === "additional") {
-      updates.assignment = false;
-      updates.followUp = false;
-      updates.tags = false;
-      updates.customFields = false;
-    }
+      if (category === "basic") {
+        updates.name = false;
+        updates.email = false;
+        updates.phone = false;
+        updates.location = false;
+      } else if (category === "professional") {
+        updates.experience = false;
+        updates.relevantExperience = false;
+        updates.skills = false;
+        updates.currentCTC = false;
+        updates.expectedCTC = false;
+        updates.noticePeriod = false;
+      } else if (category === "ai") {
+        updates.overallScore = false;
+        updates.experienceScore = false;
+        updates.skillsScore = false;
+        updates.affordability = false;
+        updates.strengths = false;
+        updates.areasForImprovement = false;
+        updates.recommendation = false;
+        updates.notes = false;
+      } else if (category === "job") {
+        updates.jobDetails = false;
+        updates.status = false;
+      } else if (category === "additional") {
+        updates.assignment = false;
+        updates.followUp = false;
+        updates.tags = false;
+        updates.customFields = false;
+      }
 
-    setSelection((prev) => ({ ...prev, ...updates }));
-  }, []);
+      setSelection((prev) => ({ ...prev, ...updates }));
+    },
+    []
+  );
 
   const handleGeneratePDF = async () => {
     setIsGenerating(true);
@@ -336,7 +358,10 @@ export function ShareCandidateDialog({
     }
   };
 
-  const selectedCount = useMemo(() => Object.values(selection).filter(Boolean).length, [selection]);
+  const selectedCount = useMemo(
+    () => Object.values(selection).filter(Boolean).length,
+    [selection]
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -345,7 +370,9 @@ export function ShareCandidateDialog({
         className="overflow-hidden flex flex-col justify-start"
       >
         <DialogHeader>
-          <DialogTitle>Download Candidate Profile - {candidate.name}</DialogTitle>
+          <DialogTitle>
+            Download Candidate Profile - {candidate.name}
+          </DialogTitle>
           <DialogDescription>
             Customize and export the profile as a PDF
           </DialogDescription>
@@ -381,25 +408,33 @@ export function ShareCandidateDialog({
                   id="name"
                   label="Name"
                   checked={selection.name}
-                  onCheckedChange={(checked) => toggleField('name', checked as boolean)}
+                  onCheckedChange={(checked) =>
+                    toggleField("name", checked as boolean)
+                  }
                 />
                 <CheckboxField
                   id="email"
                   label="Email"
                   checked={selection.email}
-                  onCheckedChange={(checked) => toggleField('email', checked as boolean)}
+                  onCheckedChange={(checked) =>
+                    toggleField("email", checked as boolean)
+                  }
                 />
                 <CheckboxField
                   id="phone"
                   label="Phone"
                   checked={selection.phone}
-                  onCheckedChange={(checked) => toggleField('phone', checked as boolean)}
+                  onCheckedChange={(checked) =>
+                    toggleField("phone", checked as boolean)
+                  }
                 />
                 <CheckboxField
                   id="location"
                   label="Location"
                   checked={selection.location}
-                  onCheckedChange={(checked) => toggleField('location', checked as boolean)}
+                  onCheckedChange={(checked) =>
+                    toggleField("location", checked as boolean)
+                  }
                 />
               </CategoryCard>
 
@@ -415,37 +450,49 @@ export function ShareCandidateDialog({
                   id="experience"
                   label="Total Experience"
                   checked={selection.experience}
-                  onCheckedChange={(checked) => toggleField('experience', checked as boolean)}
+                  onCheckedChange={(checked) =>
+                    toggleField("experience", checked as boolean)
+                  }
                 />
                 <CheckboxField
                   id="relevantExperience"
                   label="Relevant Experience"
                   checked={selection.relevantExperience}
-                  onCheckedChange={(checked) => toggleField('relevantExperience', checked as boolean)}
+                  onCheckedChange={(checked) =>
+                    toggleField("relevantExperience", checked as boolean)
+                  }
                 />
                 <CheckboxField
                   id="skills"
                   label="Skills"
                   checked={selection.skills}
-                  onCheckedChange={(checked) => toggleField('skills', checked as boolean)}
+                  onCheckedChange={(checked) =>
+                    toggleField("skills", checked as boolean)
+                  }
                 />
                 <CheckboxField
                   id="currentCTC"
                   label="Current CTC"
                   checked={selection.currentCTC}
-                  onCheckedChange={(checked) => toggleField('currentCTC', checked as boolean)}
+                  onCheckedChange={(checked) =>
+                    toggleField("currentCTC", checked as boolean)
+                  }
                 />
                 <CheckboxField
                   id="expectedCTC"
                   label="Expected CTC"
                   checked={selection.expectedCTC}
-                  onCheckedChange={(checked) => toggleField('expectedCTC', checked as boolean)}
+                  onCheckedChange={(checked) =>
+                    toggleField("expectedCTC", checked as boolean)
+                  }
                 />
                 <CheckboxField
                   id="noticePeriod"
                   label="Notice Period"
                   checked={selection.noticePeriod}
-                  onCheckedChange={(checked) => toggleField('noticePeriod', checked as boolean)}
+                  onCheckedChange={(checked) =>
+                    toggleField("noticePeriod", checked as boolean)
+                  }
                 />
               </CategoryCard>
 
@@ -462,43 +509,66 @@ export function ShareCandidateDialog({
                     id="overallScore"
                     label="Overall Score"
                     checked={selection.overallScore}
-                    onCheckedChange={(checked) => toggleField('overallScore', checked as boolean)}
+                    onCheckedChange={(checked) =>
+                      toggleField("overallScore", checked as boolean)
+                    }
                   />
                   <CheckboxField
                     id="experienceScore"
                     label="Experience Score"
                     checked={selection.experienceScore}
-                    onCheckedChange={(checked) => toggleField('experienceScore', checked as boolean)}
+                    onCheckedChange={(checked) =>
+                      toggleField("experienceScore", checked as boolean)
+                    }
                   />
                   <CheckboxField
                     id="skillsScore"
                     label="Skills Score"
                     checked={selection.skillsScore}
-                    onCheckedChange={(checked) => toggleField('skillsScore', checked as boolean)}
+                    onCheckedChange={(checked) =>
+                      toggleField("skillsScore", checked as boolean)
+                    }
                   />
+                  <CheckboxField
+                    id="affordability"
+                    label="Affordability"
+                    checked={selection.affordability}
+                    onCheckedChange={(checked) =>
+                      toggleField("affordability", checked as boolean)
+                    }
+                  />
+
                   <CheckboxField
                     id="strengths"
                     label="Strengths"
                     checked={selection.strengths}
-                    onCheckedChange={(checked) => toggleField('strengths', checked as boolean)}
+                    onCheckedChange={(checked) =>
+                      toggleField("strengths", checked as boolean)
+                    }
                   />
                   <CheckboxField
                     id="areasForImprovement"
                     label="Areas for Improvement"
                     checked={selection.areasForImprovement}
-                    onCheckedChange={(checked) => toggleField('areasForImprovement', checked as boolean)}
+                    onCheckedChange={(checked) =>
+                      toggleField("areasForImprovement", checked as boolean)
+                    }
                   />
                   <CheckboxField
                     id="recommendation"
                     label="Recommendation"
                     checked={selection.recommendation}
-                    onCheckedChange={(checked) => toggleField('recommendation', checked as boolean)}
+                    onCheckedChange={(checked) =>
+                      toggleField("recommendation", checked as boolean)
+                    }
                   />
                   <CheckboxField
                     id="notes"
                     label="AI Notes"
                     checked={selection.notes}
-                    onCheckedChange={(checked) => toggleField('notes', checked as boolean)}
+                    onCheckedChange={(checked) =>
+                      toggleField("notes", checked as boolean)
+                    }
                   />
                 </CategoryCard>
               )}
@@ -515,13 +585,17 @@ export function ShareCandidateDialog({
                   id="jobDetails"
                   label="Job Details"
                   checked={selection.jobDetails}
-                  onCheckedChange={(checked) => toggleField('jobDetails', checked as boolean)}
+                  onCheckedChange={(checked) =>
+                    toggleField("jobDetails", checked as boolean)
+                  }
                 />
                 <CheckboxField
                   id="status"
                   label="Application Status"
                   checked={selection.status}
-                  onCheckedChange={(checked) => toggleField('status', checked as boolean)}
+                  onCheckedChange={(checked) =>
+                    toggleField("status", checked as boolean)
+                  }
                 />
               </CategoryCard>
 
@@ -538,7 +612,9 @@ export function ShareCandidateDialog({
                     id="assignment"
                     label="Interview Assignment"
                     checked={selection.assignment}
-                    onCheckedChange={(checked) => toggleField('assignment', checked as boolean)}
+                    onCheckedChange={(checked) =>
+                      toggleField("assignment", checked as boolean)
+                    }
                   />
                 )}
                 {candidate.followUp && (
@@ -546,7 +622,9 @@ export function ShareCandidateDialog({
                     id="followUp"
                     label="Follow-up Notes"
                     checked={selection.followUp}
-                    onCheckedChange={(checked) => toggleField('followUp', checked as boolean)}
+                    onCheckedChange={(checked) =>
+                      toggleField("followUp", checked as boolean)
+                    }
                   />
                 )}
                 {candidate.tags && candidate.tags.length > 0 && (
@@ -554,7 +632,9 @@ export function ShareCandidateDialog({
                     id="tags"
                     label="Tags"
                     checked={selection.tags}
-                    onCheckedChange={(checked) => toggleField('tags', checked as boolean)}
+                    onCheckedChange={(checked) =>
+                      toggleField("tags", checked as boolean)
+                    }
                   />
                 )}
                 {candidate.customFields &&
@@ -563,7 +643,9 @@ export function ShareCandidateDialog({
                       id="customFields"
                       label="Custom Fields"
                       checked={selection.customFields}
-                      onCheckedChange={(checked) => toggleField('customFields', checked as boolean)}
+                      onCheckedChange={(checked) =>
+                        toggleField("customFields", checked as boolean)
+                      }
                     />
                   )}
               </CategoryCard>
@@ -580,11 +662,14 @@ export function ShareCandidateDialog({
                           <Checkbox
                             id="resume"
                             checked={selection.resume}
-                            onCheckedChange={(checked) => toggleField('resume', checked === true)}
+                            onCheckedChange={(checked) =>
+                              toggleField("resume", checked === true)
+                            }
                           />
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          The candidate's resume will be merged at the end of the profile PDF
+                          The candidate's resume will be merged at the end of
+                          the profile PDF
                         </p>
                       </div>
                     </div>
