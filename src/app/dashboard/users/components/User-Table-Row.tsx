@@ -56,11 +56,7 @@ export function UserTableRow({
             <span className="line-through text-muted-foreground italic">
               {user.name}
             </span>
-            <Badge
-              variant="destructive"
-            >
-              Deleted
-            </Badge>
+            <Badge variant="destructive">Deleted</Badge>
           </div>
         )}
 
@@ -93,7 +89,11 @@ export function UserTableRow({
               disabled={isDeleting || user.isDeleted}
               className="bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
             >
-              <Trash2 className="h-4 w-4" />
+              {isDeleting ? (
+                <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
+              )}
             </Button>
             <Button
               variant="outline"
