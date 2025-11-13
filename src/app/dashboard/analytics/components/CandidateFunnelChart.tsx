@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  FunnelChart,
-  Funnel,
   Cell,
   ResponsiveContainer,
   BarChart,
@@ -14,9 +12,6 @@ import {
   Tooltip,
   PieChart,
   Pie,
-  LineChart,
-  Line,
-  Legend,
 } from "recharts";
 import {
   Card,
@@ -101,47 +96,6 @@ const CustomFunnelChart: React.FC<{ data: FunnelData[] }> = ({ data }) => {
           ))}
         </Bar>
       </BarChart>
-    </ResponsiveContainer>
-  );
-};
-
-// Conversion Rate Line Chart
-const ConversionRateChart: React.FC<{ data: FunnelData[] }> = ({ data }) => {
-  return (
-    <ResponsiveContainer width="100%" height={400}>
-      <LineChart
-        data={data}
-        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-      >
-        <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-        <XAxis dataKey="stage" />
-        <YAxis />
-        <Tooltip
-          content={({ active, payload, label }) => {
-            if (active && payload && payload[0]) {
-              const value = payload[0].value as number;
-              return (
-                <div className="bg-background border rounded-lg shadow-lg p-3">
-                  <p className="font-semibold text-foreground">
-                    Stage: {label}
-                  </p>
-                  <p className="text-foreground">
-                    Conversion Rate: <span className="font-bold">{value}%</span>
-                  </p>
-                </div>
-              );
-            }
-            return null;
-          }}
-        />
-        <Line
-          type="monotone"
-          dataKey="conversionRate"
-          stroke="#8884d8"
-          strokeWidth={3}
-          dot={{ fill: "#8884d8", strokeWidth: 2, r: 6 }}
-        />
-      </LineChart>
     </ResponsiveContainer>
   );
 };
@@ -469,9 +423,8 @@ export const CandidateFunnelChart: React.FC<CandidateFunnelChartProps> = ({
 
         {/* Charts */}
         <Tabs defaultValue="funnel" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="funnel">Funnel View</TabsTrigger>
-            <TabsTrigger value="conversion">Conversion Rate</TabsTrigger>
             <TabsTrigger value="time">Time Analysis</TabsTrigger>
             <TabsTrigger value="distribution">Distribution</TabsTrigger>
           </TabsList>
@@ -482,15 +435,6 @@ export const CandidateFunnelChart: React.FC<CandidateFunnelChartProps> = ({
                 Candidate Count by Stage
               </h3>
               <CustomFunnelChart data={funnelData} />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="conversion" className="mt-4">
-            <div className="h-[500px]">
-              <h3 className="text-lg font-semibold mb-4">
-                Stage-to-Stage Conversion Rates
-              </h3>
-              <ConversionRateChart data={funnelData} />
             </div>
           </TabsContent>
 
