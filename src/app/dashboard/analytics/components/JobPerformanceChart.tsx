@@ -39,6 +39,7 @@ import {
 import { useJobPerformance } from "../hooks/useAnalytics";
 import { AnalyticsFilters } from "../hooks/useAnalytics";
 import { exportToCSV } from "../utils/export";
+import JobPerformanceSkeleton from "./loading-skeletons/job-performance";
 
 interface JobPerformanceChartProps {
   filters?: AnalyticsFilters;
@@ -561,21 +562,7 @@ export const JobPerformanceChart: React.FC<JobPerformanceChartProps> = ({
   };
 
   if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Job Performance Analytics</CardTitle>
-          <CardDescription>
-            Analyze job posting effectiveness and hiring success
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        </CardContent>
-      </Card>
-    );
+     return <JobPerformanceSkeleton />;
   }
 
   if (error) {

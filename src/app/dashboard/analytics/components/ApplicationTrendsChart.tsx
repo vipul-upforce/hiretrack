@@ -48,6 +48,7 @@ import {
 import { useApplicationTrends } from "../hooks/useAnalytics";
 import { AnalyticsFilters } from "../hooks/useAnalytics";
 import { exportToCSV } from "../utils/export";
+import ApplicationTrendsSkeleton from "./loading-skeletons/application-trends";
 
 interface ApplicationTrendsChartProps {
   filters?: AnalyticsFilters;
@@ -547,21 +548,7 @@ export const ApplicationTrendsChart: React.FC<ApplicationTrendsChartProps> = ({
   };
 
   if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Application Trends Analytics</CardTitle>
-          <CardDescription>
-            Monitor application patterns over time
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <ApplicationTrendsSkeleton/>
   }
 
   if (error) {

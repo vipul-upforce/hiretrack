@@ -31,8 +31,6 @@ import { CandidateFunnelChart } from "./components/CandidateFunnelChart";
 import { JobPerformanceChart } from "./components/JobPerformanceChart";
 import { InterviewAssignmentChart } from "./components/InterviewAssignmentChart";
 import { ApplicationTrendsChart } from "./components/ApplicationTrendsChart";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
-import Cookies from "js-cookie";
 import {
   useCandidateFunnel,
   useJobPerformance,
@@ -550,8 +548,7 @@ export default function AnalyticsPage() {
                   </div>
                   {!funnelLoading &&
                     funnelData?.summary?.overallConversionRate > 10 && (
-                      // <TrendingUpIcon className="h-4 w-4 text-green-500" />
-                      <Skeleton className="w-10 h-5 rounded-lg" />
+                      <TrendingUpIcon className="h-4 w-4 text-green-500" />
                     )}
                 </div>
                 <div className="text-xs text-muted-foreground space-y-1">

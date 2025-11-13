@@ -36,6 +36,7 @@ import {
 import { useCandidateFunnel } from "../hooks/useAnalytics";
 import { AnalyticsFilters } from "../hooks/useAnalytics";
 import { exportToCSV } from "../utils/export";
+import CandidateFunnelSkeleton from "./loading-skeletons/candidate-funnel";
 
 interface CandidateFunnelChartProps {
   filters?: AnalyticsFilters;
@@ -366,21 +367,7 @@ export const CandidateFunnelChart: React.FC<CandidateFunnelChartProps> = ({
   };
 
   if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Candidate Funnel</CardTitle>
-          <CardDescription>
-            Visualize candidate flow through hiring stages
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        </CardContent>
-      </Card>
-    );
+     return <CandidateFunnelSkeleton/>
   }
 
   if (error) {

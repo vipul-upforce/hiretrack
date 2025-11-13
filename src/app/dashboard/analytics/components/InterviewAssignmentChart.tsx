@@ -46,6 +46,7 @@ import {
 import { useInterviewAssignments } from "../hooks/useAnalytics";
 import { AnalyticsFilters } from "../hooks/useAnalytics";
 import { exportToCSV } from "../utils/export";
+import InterviewAssignmentSkeleton from "./loading-skeletons/interview-assignment";
 
 interface InterviewAssignmentChartProps {
   filters?: AnalyticsFilters;
@@ -583,21 +584,7 @@ export const InterviewAssignmentChart: React.FC<
   };
 
   if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Interview Assignment Analytics</CardTitle>
-          <CardDescription>
-            Track interviewer workload and performance
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        </CardContent>
-      </Card>
-    );
+     return <InterviewAssignmentSkeleton/>
   }
 
   if (error) {
