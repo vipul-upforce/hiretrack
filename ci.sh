@@ -9,7 +9,38 @@ set -e
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
+
+# ==================== OS DETECTION ====================
+detect_os() {
+  case "$(uname -s)" in
+    Darwin*)
+      echo "macOS"
+      ;;
+    Linux*)
+      echo "Linux"
+      ;;
+    CYGWIN*|MINGW*|MSYS*)
+      echo "Windows"
+      ;;
+    *)
+      echo "Unknown"
+      ;;
+  esac
+}
+
+OS_TYPE=$(detect_os)
+echo -e "${BLUE}Detected Operating System: ${YELLOW}$OS_TYPE${NC}"
+
+# Set tar options based on OS
+if [ "$OS_TYPE" = "macOS" ]; then
+  echo -e "${YELLOW}macOS detected: Setting COPYFILE_DISABLE to prevent ._ files${NC}"
+  export COPYFILE_DISABLE=1
+  TAR_EXCLUDE_OPTS="--exclude='._*' --exclude='.DS_Store'"
+else
+  TAR_EXCLUDE_OPTS=""
+fi
 
 # ==================== CONFIGURATION ====================
 # Set these environment variables before running
@@ -51,15 +82,22 @@ if [ ! -d "node_modules" ]; then
   npm install
 fi
 
-# Install curl and jq if not available
-if ! command -v curl &> /dev/null; then
-  echo "Installing curl..."
-  apt-get update && apt-get install -y curl
-fi
+# Install curl and jq if not available (Linux only)
+if [ "$OS_TYPE" = "Linux" ]; then
+  if ! command -v curl &> /dev/null; then
+    echo "Installing curl..."
+    apt-get update && apt-get install -y curl
+  fi
 
-if ! command -v jq &> /dev/null; then
-  echo "Installing jq..."
-  apt-get install -y jq
+  if ! command -v jq &> /dev/null; then
+    echo "Installing jq..."
+    apt-get install -y jq
+  fi
+elif [ "$OS_TYPE" = "macOS" ]; then
+  if ! command -v jq &> /dev/null; then
+    echo -e "${YELLOW}jq not found. Install with: brew install jq${NC}"
+    exit 1
+  fi
 fi
 
 # Get latest GitHub release tag
@@ -136,17 +174,40 @@ jq --arg version "$VERSION_WITHOUT_PREFIX" '.version = $version' package.json > 
 echo "Building Next.js application..."
 NODE_OPTIONS="--max-old-space-size=3072" npx next build
 
-# Create tarball
+# Create tarball with OS-specific handling
 TARBALL_NAME="hiretrack-${CURRENT_VERSION}.tar.gz"
 echo "Creating tarball: $TARBALL_NAME"
 
 mkdir -p temp
-tar -czvf temp/$TARBALL_NAME package.json package-lock.json ecosystem.config.cjs .next .env public
+
+if [ "$OS_TYPE" = "macOS" ]; then
+  echo -e "${YELLOW}Using macOS-specific tar options to exclude ._ files${NC}"
+  # macOS tar with exclusions
+  COPYFILE_DISABLE=1 tar -czvf temp/$TARBALL_NAME \
+    --exclude='._*' \
+    --exclude='.DS_Store' \
+    --exclude='.AppleDouble' \
+    --exclude='.LSOverride' \
+    package.json package-lock.json ecosystem.config.cjs .next .env public
+else
+  # Standard tar for Linux/other systems
+  tar -czvf temp/$TARBALL_NAME \
+    package.json package-lock.json ecosystem.config.cjs .next .env public
+fi
+
 mv temp/$TARBALL_NAME .
 rm -rf temp
 
 echo "TARBALL_NAME=$TARBALL_NAME" >> version.env
 echo -e "${GREEN}Build completed successfully!${NC}"
+
+# Verify tarball contents (optional - helps debugging)
+echo -e "${BLUE}Verifying tarball contents...${NC}"
+if tar -tzf $TARBALL_NAME | grep -q "^\._"; then
+  echo -e "${RED}WARNING: Tarball contains ._ files!${NC}"
+else
+  echo -e "${GREEN}✓ Tarball is clean (no ._ files)${NC}"
+fi
 
 # ==================== RELEASE STAGE ====================
 echo -e "\n${BLUE}=== RELEASE STAGE ===${NC}"
@@ -267,4 +328,5 @@ echo "Tarball uploaded: $TARBALL_NAME"
 echo "Migration script uploaded: $MIGRATION_ASSET_NAME"
 
 echo -e "\n${BLUE}=== Pipeline Completed ===${NC}"
-
+echo -e "OS: ${YELLOW}$OS_TYPE${NC}"
+echo -e "Version: ${GREEN}$CURRENT_VERSION${NC}"

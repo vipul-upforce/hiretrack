@@ -8,7 +8,9 @@ import { Suspense } from "react";
 import LoadingScreen from "./loading-screen";
 import { getPortalMetadata } from "@/lib/getPortalMetadata";
 
-// Disable caching for this layout - forces generateMetadata to run on every request
+// Force dynamic to ensure fresh metadata on each page load
+// getPortalMetadata() uses Next.js unstable_cache with revalidate=0 to fetch fresh data
+// while still deduplicating concurrent requests within the same request
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
@@ -23,7 +25,6 @@ const geistMono = Geist_Mono({
 });
 
 export async function generateMetadata(): Promise<Metadata> {
-  // This will now be called on every request, not just at build time
   const portalData = await getPortalMetadata();
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
