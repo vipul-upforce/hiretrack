@@ -17,9 +17,6 @@ import TimeZoneSelect from "./TimeZone-Dialog";
 import EmailTemplateEditor from "./edit-mail-dialog";
 import LogsDialog from "./LogsDialog";
 import ManageTagsDialog from "../../jobs/[id]/components/Dialogs/manage-tags-dialog";
-import { useEffect, useState } from "react";
-import Cookies from "js-cookie";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import twoFASettings from "./twofa-setting";
 import GoogleCalendarSettings from "./google-calendar";
 import { useSelector } from "react-redux";
@@ -63,22 +60,10 @@ const SettingDialog = ({
   setting: { title: string; description: string; key: string; orgId?: string };
 }) => {
   const ComponentToRender = settingComponents[setting.key];
-  // const [orgId, setOrgId] = useState("");
   const { user }: { user: User } = useSelector(
     (state: any) => state.auth || {}
   );
   const orgId = user.organizationId;
-  // useEffect(() => {
-  //   (async () => {
-  //     const token = Cookies.get("token");
-  //     if (token) {
-  //       const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-  //       if (decryptedResponse.success && decryptedResponse.user) {
-  //         setOrgId(decryptedResponse.user.organizationId);
-  //       }
-  //     }
-  //   })();
-  // }, []);
 
   if (setting.key === "tags")
     return <ManageTagsDialog onClose={onClose} isOpen={isOpen} orgId={orgId} />;
@@ -134,7 +119,7 @@ const SettingDialog = ({
               <ComponentToRender onClose={onClose} isOpen={isOpen} />
             </div>
           ) : setting.key === "version" ? (
-            <div className="flex-1 overflow-hidden px-2 py-0 overflow-y-auto">
+            <div className="flex-1 overflow-hidden py-0 overflow-y-auto">
               <ComponentToRender onClose={onClose} isOpen={isOpen} />
             </div>
           ) : (

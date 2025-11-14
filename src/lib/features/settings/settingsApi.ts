@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { VersionListResponse } from "@/app/dashboard/settings/components/AutoUpdateSettings";
 
 // Interface for test connection request
 interface TestConnectionRequest {
@@ -21,6 +22,15 @@ interface TestConnectionResponse {
   message: string;
 }
 
+interface AutoUpdateResponse {
+  autoUpdate: boolean;
+}
+
+interface TriggerUpdateResponse {
+  success: boolean;
+  error?: string;
+}
+
 // Interface for LogEntry
 export interface LogEntry {
   candidateId: string;
@@ -29,9 +39,19 @@ export interface LogEntry {
   jobData: any;
   dateTime: string;
   assignmentBy: any[];
-  currentInterviewer: { _id: string; name: string; email: string; role: string }[];
+  currentInterviewer: {
+    _id: string;
+    name: string;
+    email: string;
+    role: string;
+  }[];
   remark: any;
-  previousInterviewer: { _id: string; name: string; email: string; role: string }[];
+  previousInterviewer: {
+    _id: string;
+    name: string;
+    email: string;
+    role: string;
+  }[];
   title: string;
   note: { description: string; date: string; rating: number; userId: string[] };
   attachments: any[];
@@ -58,7 +78,17 @@ export const settingsApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: "/api",
   }),
-  tagTypes: ["Settings", "Backups", "NginxLogs", "ServerLogs", "EmailHistory", "Assets"],
+  tagTypes: [
+    "Settings",
+    "Backups",
+    "NginxLogs",
+    "ServerLogs",
+    "EmailHistory",
+    "Assets",
+    "AutoUpdate",
+    "SystemUpdate",
+    "VersionList",
+  ],
   endpoints: (builder) => ({
     getBackups: builder.query<any, void>({
       query: () => "/backups",
@@ -212,7 +242,10 @@ export const settingsApi = createApi({
       }),
       invalidatesTags: ["Settings"],
     }),
-    testConnection: builder.mutation<TestConnectionResponse, TestConnectionRequest>({
+    testConnection: builder.mutation<
+      TestConnectionResponse,
+      TestConnectionRequest
+    >({
       query: (body) => ({
         url: "/test-connection",
         method: "POST",
@@ -316,6 +349,31 @@ export const settingsApi = createApi({
       },
       providesTags: ["EmailHistory"],
     }),
+    getAutoUpdate: builder.query<AutoUpdateResponse, void>({
+      query: () => `/settings/auto-update`,
+      providesTags: ["AutoUpdate"],
+    }),
+
+    toggleAutoUpdate: builder.mutation<AutoUpdateResponse, void>({
+      query: () => ({
+        url: `/settings/auto-update`,
+        method: "POST",
+      }),
+      invalidatesTags: ["AutoUpdate"],
+    }),
+
+    getVersionList: builder.query<VersionListResponse, void>({
+      query: () => `/version/list`,
+      providesTags: ["VersionList"],
+    }),
+
+    triggerUpdate: builder.mutation<TriggerUpdateResponse, void>({
+      query: () => ({
+        url: `/system/update`,
+        method: "POST",
+      }),
+      invalidatesTags: ["SystemUpdate", "VersionList"],
+    }),
   }),
 });
 
@@ -355,6 +413,11 @@ export const {
   useGetServerLogsQuery,
   useGetNginxFileContentQuery,
   useGetEmailHistoryQuery,
+  useGetAutoUpdateQuery,
+  useToggleAutoUpdateMutation,
+  useLazyGetVersionListQuery,
+  useGetVersionListQuery,
+  useTriggerUpdateMutation,
 } = settingsApi;
 
 export type { TestConnectionRequest, TestConnectionResponse };
