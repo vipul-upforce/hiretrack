@@ -1,4 +1,166 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { Candidate } from "@/types/candidate";
+import { getDecodedSSE } from "./useSSE";
+
+// Singleton SSE connection manager
+type Subscriber = {
+  id: string;
+  onNotificationCountUpdated?: (count: number) => void;
+  onNotification?: (notification: string) => void;
+  onNotifications?: (notifications: string[]) => void;
+  onCandidateUpdate?: (candidate: Candidate) => void;
+  onMultipleCandidateUpdate?: (candidates: Candidate[]) => void;
+  onLanesUpdate?: (lanes: string[]) => void;
+  onClientsUpdate?: (clients: number) => void;
+  onConnectionChange?: (connected: boolean) => void;
+};
+
+class SSEManager {
+  private eventSource: EventSource | null = null;
+  private subscribers: Map<string, Subscriber> = new Map();
+  private reconnectTimeout: NodeJS.Timeout | null = null;
+  private isConnecting = false;
+
+  subscribe(subscriber: Subscriber): () => void {
+    this.subscribers.set(subscriber.id, subscriber);
+    
+    // If no connection exists and we're not already connecting, create one
+    if (!this.eventSource && !this.isConnecting) {
+      this.connect();
+    }
+
+    // Return unsubscribe function
+    return () => {
+      this.subscribers.delete(subscriber.id);
+      // If no more subscribers, close the connection
+      if (this.subscribers.size === 0) {
+        this.disconnect();
+      }
+    };
+  }
+
+  private connect() {
+    if (this.isConnecting || this.eventSource) return;
+    
+    this.isConnecting = true;
+    this.eventSource = new EventSource(`/api/sse/notifications`);
+    
+    this.eventSource.onopen = () => {
+      this.isConnecting = false;
+      this.broadcastConnectionChange(true);
+      console.log("SSE connection opened (shared)");
+    };
+
+    this.eventSource.onmessage = async (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        await this.handleMessage(data);
+      } catch (e) {
+        console.log("UPEXPECTED ERROR : ", e);
+      }
+    };
+
+    this.eventSource.onerror = () => {
+      console.error("SSE error");
+      this.broadcastConnectionChange(false);
+      if (this.eventSource) {
+        this.eventSource.close();
+        this.eventSource = null;
+      }
+      this.isConnecting = false;
+
+      // Reconnect if we still have subscribers
+      if (this.subscribers.size > 0 && !this.reconnectTimeout) {
+        this.reconnectTimeout = setTimeout(() => {
+          this.reconnectTimeout = null;
+          this.connect();
+        }, 100);
+      }
+    };
+  }
+
+  private async handleMessage(data: any) {
+    if (data?.type === "notificationCountUpdated" && typeof data.count === "number") {
+      this.subscribers.forEach((sub) => {
+        sub.onNotificationCountUpdated?.(data.count);
+      });
+    }
+
+    if (data?.type === "notification" && typeof data.notification === "string") {
+      this.subscribers.forEach((sub) => {
+        sub.onNotification?.(data.notification);
+      });
+    }
+
+    if (data?.type === "notifications" && Array.isArray(data.notifications)) {
+      const tokens: string[] = data.notifications.filter(
+        (t: unknown) => typeof t === "string"
+      );
+      if (tokens.length) {
+        this.subscribers.forEach((sub) => {
+          sub.onNotifications?.(tokens);
+        });
+      }
+    }
+
+    if (data.type === "candidateUpdate") {
+      const encodedCandidate = data.candidate;
+      const updatedCandidate = await getDecodedSSE(encodedCandidate);
+      if (updatedCandidate && updatedCandidate._id) {
+        this.subscribers.forEach((sub) => {
+          sub.onCandidateUpdate?.(updatedCandidate);
+        });
+      }
+    }
+
+    if (data.type === "multipleCandidateUpdate") {
+      const decodedCandidates = await getDecodedSSE(data.candidates);
+      if (decodedCandidates) {
+        const updatedCandidates = Object.values(decodedCandidates) as Candidate[];
+        this.subscribers.forEach((sub) => {
+          sub.onMultipleCandidateUpdate?.(updatedCandidates);
+        });
+      }
+    }
+
+    if (data.type === "lanesUpdate") {
+      this.subscribers.forEach((sub) => {
+        sub.onLanesUpdate?.(data.lanes);
+      });
+    }
+
+    if (data.type === "clients") {
+      this.subscribers.forEach((sub) => {
+        sub.onClientsUpdate?.(data.clients);
+      });
+    }
+  }
+
+  private broadcastConnectionChange(connected: boolean) {
+    this.subscribers.forEach((sub) => {
+      sub.onConnectionChange?.(connected);
+    });
+  }
+
+  private disconnect() {
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+    if (this.eventSource) {
+      this.eventSource.close();
+      this.eventSource = null;
+    }
+    this.isConnecting = false;
+  }
+
+  getConnectionState(): boolean {
+    return this.eventSource?.readyState === EventSource.OPEN;
+  }
+}
+
+// Singleton instance
+const sseManager = new SSEManager();
 
 export function useNotificationSSE(
   initialUnreadCount: number = 0,
@@ -8,76 +170,71 @@ export function useNotificationSSE(
   const [totalCount, setTotalCount] = useState<number>(initialTotalCount);
   const [notification, setNotification] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<string[]>([]);
-  const eventSourceRef = useRef<EventSource | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Candidate update state
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [lanes, setLanes] = useState<string[]>();
+  const [clients, setClients] = useState<number>();
+  const [isConnected, setIsConnected] = useState<boolean>(true);
+  const subscriberIdRef = useRef<string>(
+    `subscriber-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+  );
 
-  const connect = () => {
-    // Close existing connection first
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-    }
+  // Callbacks for SSE events
+  const handleNotificationCountUpdated = useCallback((count: number) => {
+    setTotalCount((c) => c + 1);
+    setUnreadCount(count);
+  }, []);
 
-    const es = new EventSource(`/api/sse/notifications`);
-    eventSourceRef.current = es;
+  const handleNotification = useCallback((notificationStr: string) => {
+    setNotification(notificationStr);
+    setNotifications((prev) => [notificationStr, ...prev]);
+    console.log("New notification received via SSE:", notificationStr);
+  }, []);
 
-    es.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
+  const handleNotifications = useCallback((notificationTokens: string[]) => {
+    setTotalCount((c) => c + notificationTokens.length);
+    setNotifications((prev) => [...notificationTokens, ...prev]);
+  }, []);
 
-        // unread count from server
-        if (
-          data?.type === "notificationCountUpdated" &&
-          typeof data.count === "number"
-        ) {
-          setTotalCount((c) => c + 1);
-          setUnreadCount(data.count);
-        }
+  const handleCandidateUpdate = useCallback((updatedCandidate: Candidate) => {
+    console.log("Decoded candidate:", {
+      updatedCandidateId: updatedCandidate?._id,
+      status: updatedCandidate?.status,
+      updatedCandidate,
+    });
 
-        // new single notification
-        if (data?.type === "notification") {
-          // setTotalCount((c) => c + 1);
-          if (typeof data.notification === "string") {
-            setNotification(data.notification);
-            setNotifications((prev) => [data.notification, ...prev]);
-            console.log(
-              "New notification received via SSE:",
-              data.notification
-            );
-          }
-        }
-
-        // bulk notifications
-        if (
-          data?.type === "notifications" &&
-          Array.isArray(data.notifications)
-        ) {
-          setTotalCount((c) => c + data.notifications.length);
-          // store raw tokens for future use without surfacing in UI
-          const tokens: string[] = data.notifications.filter(
-            (t: unknown) => typeof t === "string"
-          );
-          if (tokens.length) {
-            setNotifications((prev) => [...tokens, ...prev]);
-          }
-        }
-      } catch (e) {
-        console.log("UPEXPECTED ERROR : ", e);
+    setCandidates((prev) => {
+      const index = prev.findIndex((c) => c._id === updatedCandidate._id);
+      if (index >= 0) {
+        return [
+          ...prev.slice(0, index),
+          updatedCandidate,
+          ...prev.slice(index + 1),
+        ];
       }
-    };
+      return [...prev, updatedCandidate];
+    });
+  }, []);
 
-    es.onerror = () => {
-      // Close broken stream
-      es.close();
+  const handleMultipleCandidateUpdate = useCallback((updatedCandidates: Candidate[]) => {
+    setCandidates((prev: Candidate[]) => {
+      const updatedIds = new Set(updatedCandidates.map((c: Candidate) => c._id));
+      const filtered = prev.filter((c) => !updatedIds.has(c._id));
+      return [...filtered, ...updatedCandidates];
+    });
+  }, []);
 
-      // Reconnect immediately
-      if (!reconnectTimeoutRef.current) {
-        reconnectTimeoutRef.current = setTimeout(() => {
-          reconnectTimeoutRef.current = null;
-          connect();
-        }, 100); // small delay prevents tight loop if server down
-      }
-    };
-  };
+  const handleLanesUpdate = useCallback((lanesData: string[]) => {
+    setLanes(lanesData);
+  }, []);
+
+  const handleClientsUpdate = useCallback((clientsCount: number) => {
+    setClients(clientsCount);
+  }, []);
+
+  const handleConnectionChange = useCallback((connected: boolean) => {
+    setIsConnected(connected);
+  }, []);
 
   useEffect(() => {
     setUnreadCount(initialUnreadCount);
@@ -87,17 +244,44 @@ export function useNotificationSSE(
   }, [initialUnreadCount, initialTotalCount]);
 
   useEffect(() => {
-    connect();
+    // Subscribe to the shared SSE connection
+    const unsubscribe = sseManager.subscribe({
+      id: subscriberIdRef.current,
+      onNotificationCountUpdated: handleNotificationCountUpdated,
+      onNotification: handleNotification,
+      onNotifications: handleNotifications,
+      onCandidateUpdate: handleCandidateUpdate,
+      onMultipleCandidateUpdate: handleMultipleCandidateUpdate,
+      onLanesUpdate: handleLanesUpdate,
+      onClientsUpdate: handleClientsUpdate,
+      onConnectionChange: handleConnectionChange,
+    });
 
-    return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-      }
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
-    };
-  }, []);
+    // Set initial connection state
+    setIsConnected(sseManager.getConnectionState());
 
-  return { unreadCount, totalCount, notification, notifications };
+    return unsubscribe;
+  }, [
+    handleNotificationCountUpdated,
+    handleNotification,
+    handleNotifications,
+    handleCandidateUpdate,
+    handleMultipleCandidateUpdate,
+    handleLanesUpdate,
+    handleClientsUpdate,
+    handleConnectionChange,
+  ]);
+
+  return {
+    unreadCount,
+    totalCount,
+    notification,
+    notifications,
+    // Candidate update state
+    candidates,
+    setCandidates,
+    lanes,
+    clients,
+    isConnected,
+  };
 }

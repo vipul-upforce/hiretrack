@@ -3,12 +3,23 @@ import { ICandidate } from "../models/candidate";
 import { ICandidateHistory } from "../models/history";
 // import { auth } from "../auth";
 
-// Broadcast candidate updates to all SSE clients
+interface NotificationSSEClient {
+  id: number;
+  orgId: string;
+  userId: string;
+  controller: ReadableStreamDefaultController;
+}
+
+declare global {
+  var sseNotificationClients: Map<string, Map<number, NotificationSSEClient>>;
+}
+
+// Broadcast candidate updates to all SSE clients via notification stream
 export function broadcastCandidateUpdate(
   candidate: ICandidate & { history?: ICandidateHistory[] }
 ) {
   const orgId = candidate.organizationId;
-  const orgClients = global.sseClients?.get(orgId);
+  const orgClients = global.sseNotificationClients?.get(orgId);
   if (!orgClients) return;
 
   const encoder = new TextEncoder();
@@ -17,11 +28,11 @@ export function broadcastCandidateUpdate(
       const encodedSSE = await signToken(candidate, orgId);
       // console.log(encodedSSE, " .......encodedSSE");
       const data = `data: ${JSON.stringify({ type: "candidateUpdate", candidate: encodedSSE })}\n\n`;
-      const clientsCount = Array.from(global.sseClients.entries()).length;
+      const clientsCount = orgClients.size;
       client.controller.enqueue(encoder.encode(data));
       client.controller.enqueue(
         encoder.encode(
-          `data: ${JSON.stringify({ type: "clients", clients: clientsCount })}\n\n`
+          `data: ${JSON.stringify({ type: "clients", clients: clientsCount, orgId })}\n\n`
         )
       );
     } catch (error) {
@@ -33,7 +44,7 @@ export function broadcastMultipleCandidateUpdate(
   candidates: (ICandidate & { history?: ICandidateHistory[] })[]
 ) {
   const orgId = candidates[0]?.organizationId;
-  const orgClients = global.sseClients?.get(orgId);
+  const orgClients = global.sseNotificationClients?.get(orgId);
   if (!orgClients) return;
 
   const encoder = new TextEncoder();
@@ -52,19 +63,19 @@ export function broadcastLaneUpdate(
   lanes: string[],
   jobId?: string
 ) {
-  const orgClients = global.sseClients?.get(orgId);
+  const orgClients = global.sseNotificationClients?.get(orgId);
   if (!orgClients) return;
 
   const encoder = new TextEncoder();
   orgClients?.forEach((client: any) => {
     try {
       const data = `data: ${JSON.stringify({ type: "lanesUpdate", lanes })}\n\n`;
-      const clientsCount = Array.from(global.sseClients.entries()).length;
+      const clientsCount = orgClients.size;
 
       client.controller.enqueue(encoder.encode(data));
       client.controller.enqueue(
         encoder.encode(
-          `data: ${JSON.stringify({ type: "clients", clients: clientsCount })}\n\n`
+          `data: ${JSON.stringify({ type: "clients", clients: clientsCount, orgId })}\n\n`
         )
       );
     } catch (error) {
