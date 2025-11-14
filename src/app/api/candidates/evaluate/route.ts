@@ -434,15 +434,9 @@ export async function PUT(request: NextRequest) {
       scores.comparativeRanking = comparativeRanking;
     }
 
-    // Debug: Check if suggestedAnswer is in scores before saving
-    console.log("📝 Scores before saving to DB:", JSON.stringify(scores.interviewQuestions, null, 2));
-
     candidate.scores = scores;
     candidate.contact = candidate.contact;
     await candidate.save();
-
-    // Debug: Check if suggestedAnswer is in candidate after saving
-    console.log("📝 Candidate scores after save:", JSON.stringify(candidate.scores.interviewQuestions, null, 2));
 
     const fullCandidate = (await Candidate.findById(candidate._id)
       .populate([
@@ -461,8 +455,6 @@ export async function PUT(request: NextRequest) {
       ])
       .lean()) as ICandidate;
 
-    // Debug: Check if suggestedAnswer is in fullCandidate after query
-    console.log("📝 Full candidate interviewQuestions after query:", JSON.stringify(fullCandidate.scores?.interviewQuestions, null, 2));
     const candidateHistory = await History?.findOne({
       candidateId: candidate._id,
       jobId:
@@ -481,7 +473,6 @@ export async function PUT(request: NextRequest) {
       ...fullCandidate,
       history: candidateHistoryPopulated?.history,
     };
-    console.log("📝 Broadcasting interviewQuestions:", JSON.stringify(dataTobroadcast.scores?.interviewQuestions, null, 2));
 
     broadcastCandidateUpdate(dataTobroadcast);
 

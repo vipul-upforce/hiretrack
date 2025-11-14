@@ -1,5 +1,4 @@
 "use client";
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useFetchAssignedCandidatesQuery } from "@/lib/features/candidate/candidateApi";
 import FullCalendar from "@fullcalendar/react";
@@ -339,10 +338,7 @@ export default function CalendarPage() {
         const startTime = candidate?.assignment?.time
           ? new Date(candidate?.assignment?.time)
           : undefined;
-        const endTime = candidate?.assignment?.time
-          ? new Date(candidate?.assignment?.time)
-          : undefined;
-
+        const endTime = new Date(startTime.getTime() + 1000)
         const hasGoogleMeet = candidate?.assignment?.googleMeet;
         const baseTitle =
           candidate?.jobId && typeof candidate.jobId === "object"
@@ -360,10 +356,10 @@ export default function CalendarPage() {
           id: candidate._id,
           title,
           start: startTime,
-          end: endTime,
           allDay: false,
           startStr: startTime?.toISOString() || "",
-          endStr: endTime?.toISOString() || "",
+          end: calendarView === "dayGridMonth" ? endTime : undefined,
+          endStr: calendarView === "dayGridMonth" ? endTime.toISOString() : "",
           url: "",
           display: "auto",
           backgroundColor: color.bg,
@@ -505,46 +501,45 @@ export default function CalendarPage() {
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex-shrink-0 px-6 py-4 border-b border-border/50">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-b border-border/50">
+        <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
+          {/* Left */}
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-primary/10">
               <CalendarIcon className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
                 Interview Calendar
               </h1>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Manage interviews, screenings, assignments, and follow-ups
               </p>
             </div>
           </div>
 
-          {/* Search and View Controls */}
-          <div className="flex flex-col sm:flex-row gap-2">
-            <div className="flex gap-2">
+          {/* Search + View Switch */}
+          <div className="flex flex-col sm:flex-row sm:items-center lg:justify-between  gap-2">
+            {/* Search */}
+            <div className="flex gap-2 w-full sm:w-auto">
               <Input
                 placeholder="Search by name, job, or skills..."
                 value={searchText}
                 onChange={(e) => {
-                  const value = e.target.value;
-                  const sanitizedValue = value.replace(
+                  const value = e.target.value.replace(
                     /[\/\\*+\?|\{\}\[\]()^$\.]/g,
                     ""
                   );
-                  setSearchText(sanitizedValue);
+                  setSearchText(value);
                 }}
-                className="w-64"
-                onKeyPress={(e) => {
-                  if (e.key === "Enter") {
-                    applyFilter();
-                  }
-                }}
+                className="flex-1 sm:w-64"
+                onKeyPress={(e) => e.key === "Enter" && applyFilter()}
               />
+
               <Button variant="outline" size="icon" onClick={applyFilter}>
                 <Search className="h-4 w-4" />
               </Button>
+
               {filterText && (
                 <Button
                   variant="outline"
@@ -559,8 +554,8 @@ export default function CalendarPage() {
               )}
             </div>
 
-            {/* View Toggle Buttons */}
-            <div className="flex gap-1 border rounded-lg p-1">
+            {/* Views */}
+            <div className="flex gap-1 border rounded-lg p-1 overflow-hidden">
               <Button
                 variant={calendarView === "dayGridMonth" ? "default" : "ghost"}
                 size="sm"
@@ -594,134 +589,152 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="flex-shrink-0 px-6 pt-6 pb-6">
-        <StatsCards
-          todayCount={todayCount}
-          thisWeekCount={thisWeekCount}
-          totalInterviews={totalInterviews}
-          upcomingCount={upcomingCount}
-        />
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 min-h-0 px-6 pb-6">
-        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6 h-full">
-          {/* Left Sidebar */}
-          <CalendarSidebar
-            events={events}
-            selectedDate={selectedDate}
-            onDateSelect={handleDateSelect}
-            onEventClick={handleSidebarEventClick}
+      {/* BODY scrollable */}
+      <div className="flex-1 min-h-0 overflow-y-auto ">
+        {/* Stats */}
+        <div className="px-4 sm:px-6 pt-4 pb-6">
+          <StatsCards
+            todayCount={todayCount}
+            thisWeekCount={thisWeekCount}
+            totalInterviews={totalInterviews}
+            upcomingCount={upcomingCount}
           />
+        </div>
 
-          {/* Calendar */}
-          <Card className="h-full flex flex-col overflow-hidden">
-            <CardContent className="p-6 flex-1 overflow-auto">
-              <FullCalendar
-                ref={calendarRef}
-                plugins={[
-                  dayGridPlugin,
-                  timeGridPlugin,
-                  listPlugin,
-                  interactionPlugin,
-                ]}
-                initialView={calendarView}
+        {/* Main Content */}
+        <div className="px-4 sm:px-6 pb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] xl:grid-cols-[320px_1fr] gap-4 md:gap-6">
+            {/* Sidebar */}
+            <div className="min-h-0">
+              <CalendarSidebar
                 events={events}
-                eventClick={handleEventClick}
-                dateClick={handleDateClick}
-                headerToolbar={{
-                  left: "prev,next today",
-                  center: "title",
-                  right: "",
-                }}
-                customButtons={{
-                  today: {
-                    text: "Today",
-                    click: () => {
-                      calendarRef.current?.getApi().today();
-                      setSelectedDate(new Date());
+                selectedDate={selectedDate}
+                onDateSelect={handleDateSelect}
+                onEventClick={handleSidebarEventClick}
+              />
+            </div>
+
+            {/* Calendar */}
+            <Card className="flex flex-col h-full min-h-[500px] border border-border/50">
+              <CardContent className="p-3 sm:p-6 flex-1 min-h-0 overflow-auto">
+                <FullCalendar
+                  ref={calendarRef}
+                  plugins={[
+                    dayGridPlugin,
+                    timeGridPlugin,
+                    listPlugin,
+                    interactionPlugin,
+                  ]}
+                  initialView={calendarView}
+                  events={events}
+                  eventClick={handleEventClick}
+                  dateClick={handleDateClick}
+                  headerToolbar={{
+                    left: "prev,next today",
+                    center: "title",
+                    right: "",
+                  }}
+                  customButtons={{
+                    today: {
+                      text: "Today",
+                      click: () => {
+                        calendarRef.current?.getApi().today();
+                        setSelectedDate(new Date());
+                      },
                     },
-                  },
-                }}
-                height="100%"
-                contentHeight="100%"
-                handleWindowResize={true}
-                eventTextColor="#ffffff"
-                slotMinTime="08:00:00"
-                slotMaxTime="20:00:00"
-                allDaySlot={false}
-                nowIndicator={true}
-                eventContent={(arg) => {
-                  if (calendarView === "listWeek") {
-                    // List view has its own rendering
-                    return null;
-                  }
+                  }}
+                  height="100%"
+                  contentHeight="100%"
+                  handleWindowResize={true}
+                  nowIndicator={true}
+                  allDaySlot={false}
+                  eventTextColor="#fff"
+                  slotMinTime="00:00:00"
+                  slotMaxTime="24:00:00"
+                  eventContent={(arg) => {
+                    if (calendarView === "listWeek") {
+                      // List view has its own rendering
+                      return null;
+                    }
 
-                  const candidate = arg.event._def.extendedProps.candidate;
-                  const interviewer = arg.event._def.extendedProps.interviewer;
-                  const jobTitle =
-                    typeof candidate.jobId !== "string" &&
-                    candidate.jobId?.title
-                      ? candidate.jobId.title
-                      : candidate.jobDetails?.title || "";
+                    const candidate = arg.event._def.extendedProps.candidate;
+                    const interviewer =
+                      arg.event._def.extendedProps.interviewer;
+                    const jobTitle =
+                      typeof candidate.jobId !== "string" &&
+                      candidate.jobId?.title
+                        ? candidate.jobId.title
+                        : candidate.jobDetails?.title || "";
 
-                  if (
-                    calendarView === "timeGridWeek" ||
-                    calendarView === "timeGridDay"
-                  ) {
-                    // Time grid view
+                    if (
+                      calendarView === "timeGridWeek" ||
+                      calendarView === "timeGridDay"
+                    ) {
+                      // Time grid view
+                      return (
+                        <div className="w-full h-full overflow-hidden px-2 py-1 break-words">
+                          {/* <div className="font-semibold text-xs truncate overflow-hidden max-w-full">
+                                            {candidate.name}
+                                          </div> */}
+                          <div className="flex items-center gap-1 mb-0.5 overflow-hidden max-w-full">
+                            <div className="font-medium text-[11px] truncate flex-1 overflow-hidden min-w-0">
+                              {candidate.name}
+                            </div>
+                            {arg.event.start && (
+                              <span className="text-[10px] opacity-80 shrink-0 whitespace-nowrap">
+                                {formatTime(arg.event.start)}
+                              </span>
+                            )}
+                          </div>
+                          {jobTitle && (
+                            <div className="text-[10px] opacity-80 truncate capitalize overflow-hidden max-w-full">
+                              {jobTitle}
+                            </div>
+                          )}
+                          {interviewer.name &&
+                            interviewer.name !== "Unknown" && (
+                              <div className="text-[10px] opacity-75 truncate capitalize overflow-hidden max-w-full">
+                                {interviewer.name}
+                              </div>
+                            )}
+                        </div>
+                      );
+                    }
+
+                    // Month view
                     return (
-                      <div className="w-full h-full overflow-hidden px-2 py-1 break-words">
-                        <div className="font-semibold text-xs truncate overflow-hidden max-w-full">
-                          {candidate.name}
+                      <div className="w-full h-full overflow-hidden px-1.5 py-0.5 break-words">
+                        <div className="flex items-center gap-1 mb-0.5 overflow-hidden max-w-full">
+                          <div className="font-medium text-[11px] truncate flex-1 overflow-hidden min-w-0">
+                            {candidate.name}
+                          </div>
+                          {arg.event.start && (
+                            <span className="text-[10px] opacity-80 shrink-0 whitespace-nowrap">
+                              {formatTime(arg.event.start)}
+                            </span>
+                          )}
                         </div>
                         {jobTitle && (
-                          <div className="text-[10px] opacity-80 truncate capitalize overflow-hidden max-w-full">
+                          <div className="text-[9px] opacity-75 truncate capitalize overflow-hidden max-w-full">
                             {jobTitle}
                           </div>
                         )}
                         {interviewer.name && interviewer.name !== "Unknown" && (
-                          <div className="text-[10px] opacity-75 truncate capitalize overflow-hidden max-w-full">
+                          <div className="text-[9px] opacity-70 truncate capitalize overflow-hidden max-w-full">
                             {interviewer.name}
                           </div>
                         )}
                       </div>
                     );
-                  }
-
-                  // Month view
-                  return (
-                    <div className="w-full h-full overflow-hidden px-1.5 py-0.5 break-words">
-                      <div className="flex items-center gap-1 mb-0.5 overflow-hidden max-w-full">
-                        <div className="font-medium text-[11px] truncate flex-1 overflow-hidden min-w-0">
-                          {candidate.name}
-                        </div>
-                        {arg.event.start && (
-                          <span className="text-[10px] opacity-80 shrink-0 whitespace-nowrap">
-                            {formatTime(arg.event.start)}
-                          </span>
-                        )}
-                      </div>
-                      {jobTitle && (
-                        <div className="text-[9px] opacity-75 truncate capitalize overflow-hidden max-w-full">
-                          {jobTitle}
-                        </div>
-                      )}
-                      {interviewer.name && interviewer.name !== "Unknown" && (
-                        <div className="text-[9px] opacity-70 truncate capitalize overflow-hidden max-w-full">
-                          {interviewer.name}
-                        </div>
-                      )}
-                    </div>
-                  );
-                }}
-              />
-            </CardContent>
-          </Card>
+                  }}
+                />
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
 
+      {/* Candidate Dialog */}
       {selectedEvent && (
         <CandidateDetailsDialog
           candidate={{
@@ -760,8 +773,7 @@ export default function CalendarPage() {
           onUpdate={async () => {
             const { data } = await refetch();
             const updatedCandidate = data?.find(
-              (candidate) =>
-                candidate._id === selectedEvent?.extendedProps.candidate._id
+              (c) => c._id === selectedEvent?.extendedProps.candidate._id
             );
             if (updatedCandidate) {
               setSelectedEvent({

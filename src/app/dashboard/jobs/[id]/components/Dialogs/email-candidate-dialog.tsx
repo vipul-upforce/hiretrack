@@ -51,6 +51,7 @@ interface EmailCandidateDialogProps {
     _id: string;
     name: string;
     email: string;
+    jobTitle: string;
   };
 }
 
@@ -171,7 +172,8 @@ export function EmailCandidateDialog({
     return content
       .replace(/{{SenderName}}/g, userName || userEmail)
       .replace(/{{ReceiverName}}/g, candidate.name)
-      .replace(/{{PortalName}}/g, organizationName);
+      .replace(/{{PortalName}}/g, organizationName)
+      .replace(/{{jobTitle}}/g, candidate.jobTitle || "");
   };
 
   // Handle template selection

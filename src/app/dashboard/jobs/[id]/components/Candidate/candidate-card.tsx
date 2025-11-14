@@ -1550,6 +1550,8 @@ const CandidateCard = memo(function CandidateCard({
             _id: localCandidate._id,
             name: localCandidate.name,
             email: localCandidate.email,
+            jobTitle: localCandidate.jobId?.title,
+            
           }}
         />
       )}

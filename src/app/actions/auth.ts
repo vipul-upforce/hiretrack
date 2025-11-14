@@ -33,8 +33,8 @@ export async function verifyAndDecryptToken(token: string, orgId: string) {
 }
 
 export const signToken = async (payload: unknown, orgId: string) => {
-  console.log(payload, "payload-1 =-d--d-d");
-  console.log(orgId, "orgId-1 =-d--d-d");
+  // console.log(payload, "payload-1 =-d--d-d");
+  // console.log(orgId, "orgId-1 =-d--d-d");
   const JWT_SECRET = generateOrgJwtSecret(orgId);
   // console.log(JWT_SECRET, "JWT_SECRET-3 secrate keyt");
 
