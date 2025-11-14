@@ -111,7 +111,7 @@ export function useAnalytics<T = any>({
 
     try {
       const queryParams = buildQueryParams();
-      const url = `/api/analytics/${endpoint}${queryParams ? `?${queryParams}` : ""}`;
+      const url = `/api/analytics/${endpoint}${queryParams ? `?${queryParams}` : ""}`; 
       
       // Create abort controller for timeout handling
       const controller = new AbortController();

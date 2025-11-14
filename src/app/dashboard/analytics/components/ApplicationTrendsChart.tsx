@@ -548,7 +548,7 @@ export const ApplicationTrendsChart: React.FC<ApplicationTrendsChartProps> = ({
   };
 
   if (loading) {
-    return <ApplicationTrendsSkeleton/>
+    return <ApplicationTrendsSkeleton />;
   }
 
   if (error) {
@@ -591,6 +591,18 @@ export const ApplicationTrendsChart: React.FC<ApplicationTrendsChartProps> = ({
     }
   };
 
+  const getGranularityLabel = (value: string) => {
+    switch (value) {
+      case "daily":
+        return "day";
+      case "weekly":
+        return "week";
+      case "monthly":
+        return "month";
+      default:
+        return value;
+    }
+  };
   return (
     <Card>
       <CardHeader>
@@ -648,7 +660,7 @@ export const ApplicationTrendsChart: React.FC<ApplicationTrendsChartProps> = ({
                 {summary.avgApplicationsPerPeriod}
               </div>
               <div className="text-sm text-green-600 dark:text-green-400">
-                Avg per {granularity.slice(0, -2)}
+                Avg per {getGranularityLabel(granularity)}
               </div>
             </div>
             <div className="bg-purple-50 dark:bg-purple-950/20 p-4 rounded-lg border border-purple-200 dark:border-purple-800">
