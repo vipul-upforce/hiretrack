@@ -333,68 +333,77 @@ export default function CalendarPage() {
   ];
 
   const events: CustomCalendarEvent[] =
-    filteredAssignments?.map(
-      (candidate: CandidateAssignment, index: number) => {
-        const startTime = candidate?.assignment?.time
-          ? new Date(candidate?.assignment?.time)
-          : undefined;
-        const endTime = new Date(startTime.getTime() + 1000)
-        const hasGoogleMeet = candidate?.assignment?.googleMeet;
-        const baseTitle =
-          candidate?.jobId && typeof candidate.jobId === "object"
-            ? candidate?.jobId?.title
-            : "Unknown";
-        const title = hasGoogleMeet ? `📹 ${baseTitle}` : baseTitle;
+  filteredAssignments?.map((candidate: CandidateAssignment, index: number) => {
 
-        // Use different colors for different candidates
-        const colorIndex = index % eventColors.length;
-        const color = hasGoogleMeet
-          ? { bg: "#3b82f6", border: "#1d4ed8" }
-          : eventColors[colorIndex];
+    // Start time
+    const startTime = candidate?.assignment?.time
+      ? new Date(candidate.assignment.time)
+      : null;
+    // End time = start + 1 sec
+    const endTime = startTime
+      ? new Date(startTime.getTime() + 1000)
+      : null;
 
-        return {
-          id: candidate._id,
-          title,
-          start: startTime,
-          allDay: false,
-          startStr: startTime?.toISOString() || "",
-          end: calendarView === "dayGridMonth" ? endTime : undefined,
-          endStr: calendarView === "dayGridMonth" ? endTime.toISOString() : "",
-          url: "",
-          display: "auto",
-          backgroundColor: color.bg,
-          borderColor: color.border,
-          extendedProps: {
-            candidate: {
-              ...candidate,
-              jobId:
-                typeof candidate?.jobId === "string"
-                  ? candidate?.jobId
-                  : (candidate?.jobId as Job)?._id,
-              jobDetails:
-                typeof candidate?.jobId === "string"
-                  ? undefined
-                  : {
-                      title: (candidate?.jobId as Job)?.title,
-                      description: (candidate?.jobId as Job)?.description,
-                    },
-            },
-            interviewer:
-              typeof candidate?.assignment?.interviewerId === "string"
-                ? {
-                    _id: candidate?.assignment?.interviewerId,
-                    name: "Unknown",
-                    email: "Unknown",
-                  }
-                : candidate?.assignment?.interviewerId || {
-                    _id: "",
-                    name: "Unknown",
-                    email: "Unknown",
-                  },
-          },
-        };
-      }
-    ) || [];
+    const hasGoogleMeet = candidate?.assignment?.googleMeet;
+
+    const baseTitle =
+      candidate?.jobId && typeof candidate.jobId === "object"
+        ? candidate.jobId.title
+        : "Unknown";
+
+    const title = hasGoogleMeet ? `📹 ${baseTitle}` : baseTitle;
+
+    // Colors
+    const colorIndex = index % eventColors.length;
+    const color = hasGoogleMeet
+      ? { bg: "#3b82f6", border: "#1d4ed8" }
+      : eventColors[colorIndex];
+
+    return {
+      id: candidate._id,
+      title,
+      start: startTime,
+      startStr: startTime?.toISOString() || "",
+      end: calendarView === "dayGridMonth" ? endTime : startTime,
+      endStr:
+        calendarView === "dayGridMonth"
+          ? endTime?.toISOString() || ""
+          : "",
+      allDay: false,
+      display: "auto",
+      backgroundColor: color.bg,
+      borderColor: color.border,
+      url: "",
+      extendedProps: {
+        candidate: {
+          ...candidate,
+          jobId:
+            typeof candidate?.jobId === "string"
+              ? candidate?.jobId
+              : (candidate?.jobId as Job)?._id,
+          jobDetails:
+            typeof candidate?.jobId === "string"
+              ? undefined
+              : {
+                  title: (candidate?.jobId as Job)?.title,
+                  description: (candidate?.jobId as Job)?.description,
+                },
+        },
+        interviewer:
+          typeof candidate?.assignment?.interviewerId === "string"
+            ? {
+                _id: candidate?.assignment?.interviewerId,
+                name: "Unknown",
+                email: "Unknown",
+              }
+            : candidate?.assignment?.interviewerId || {
+                _id: "",
+                name: "Unknown",
+                email: "Unknown",
+              },
+      },
+    };
+  }) || [];
 
   const handleEventClick = (arg: EventClickArg) => {
     const event = arg.event;
