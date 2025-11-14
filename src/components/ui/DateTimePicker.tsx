@@ -21,9 +21,32 @@ export function DateTimePicker({
   portalContainer?: HTMLElement | null;
 }) {
   // Convert Dayjs to Date for the new DatePicker
-  const dateValue = value ? value.toDate() : null;
+  // const dateValue = value ? value.toDate() : null;
+  const dateValue = React.useMemo(() => {
+    return value ? value.toDate() : null;
+  }, [value?.valueOf()]); // Use valueOf() to compare actual timestamp
 
-  const handleDateChange = (date: any) => {
+
+  // const handleDateChange = (date: any) => {
+  //   let normalizedDate: Date | null = null;
+
+  //   if (date && typeof date === "object") {
+  //     if ("toDate" in date) {
+  //       normalizedDate = date.toDate();
+  //     } else if (date instanceof Date) {
+  //       normalizedDate = date;
+  //     }
+  //   }
+
+  //   if (normalizedDate && !isNaN(normalizedDate.getTime())) {
+  //     onChange(dayjs(normalizedDate));
+  //   } else {
+  //     onChange(null);
+  //   }
+
+  //   onBlur?.();
+  // };
+  const handleDateChange = React.useCallback((date: any) => {
     let normalizedDate: Date | null = null;
 
     if (date && typeof date === "object") {
@@ -34,14 +57,19 @@ export function DateTimePicker({
       }
     }
 
-    if (normalizedDate && !isNaN(normalizedDate.getTime())) {
-      onChange(dayjs(normalizedDate));
-    } else {
-      onChange(null);
-    }
+    // Convert to Dayjs
+    const newDayjsValue = normalizedDate && !isNaN(normalizedDate.getTime()) 
+      ? dayjs(normalizedDate) 
+      : null;
 
-    onBlur?.();
-  };
+    // Only call onChange if the value actually changed
+    const currentTimestamp = value?.valueOf() || null;
+    const newTimestamp = newDayjsValue?.valueOf() || null;
+
+    if (currentTimestamp !== newTimestamp) {
+      onChange(newDayjsValue);
+    }
+  }, [value, onChange]);
 
   return (
     <DatePicker
