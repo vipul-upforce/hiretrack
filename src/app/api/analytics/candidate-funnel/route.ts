@@ -1,22 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Candidate } from "@/lib/mongodb";
-import { 
-  withAnalyticsAuth, 
-  createAnalyticsResponse, 
-  createAnalyticsErrorResponse 
+import connectToDatabase, { Candidate, Job, Organization } from "@/lib/mongodb";
+import {
+  withAnalyticsAuth,
+  createAnalyticsResponse,
+  createAnalyticsErrorResponse,
 } from "../middleware";
-import { parseAnalyticsRequest, calculateConversionRate, getStageColor } from "../utils";
+import {
+  parseAnalyticsRequest,
+  calculateConversionRate,
+  getStageColor,
+} from "../utils";
 import { FunnelData } from "../types";
 import { Types } from "mongoose";
 
-const CANDIDATE_STAGES = [
-  "applied",
-  "screening", 
-  "shortlisted",
-  "processing",
-  "accepted",
-  "rejected"
-];
+interface defaultLanesResponse {
+  defaultLanes?: string[];
+  lanes?: string[];
+  _id: Types.ObjectId;
+}
 
 export async function GET(request: NextRequest) {
   return withAnalyticsAuth(request, async (user, req) => {
@@ -29,14 +30,19 @@ export async function GET(request: NextRequest) {
 
       const { organizationId, dateRange, filters } = parseAnalyticsRequest(req);
 
-      // Debug logging
-      console.log("Candidate funnel analytics request:", {
-        organizationId,
-        userOrganizationId: user.organizationId,
-        dateRange,
-        jobIds: filters?.jobIds,
-        candidateStatuses: filters?.candidateStatuses,
-      });
+      let defaultLanes: defaultLanesResponse;
+      if (filters?.jobIds && filters?.jobIds?.length > 0) {
+        defaultLanes = await Job.findOne({
+          _id: filters.jobIds[0],
+          organizationId: organizationId,
+        }).select("lanes");
+      } else {
+        defaultLanes =
+          await Organization.findById(organizationId).select("defaultLanes");
+      }
+
+      const defaultLanesFinal =
+        defaultLanes.defaultLanes || defaultLanes.lanes || [];
 
       // Build aggregation pipeline for candidate funnel analysis
       const pipeline = [
@@ -51,13 +57,15 @@ export async function GET(request: NextRequest) {
               },
             }),
             ...(filters?.jobIds?.length && {
-              jobId: { $in: filters.jobIds.map(id => {
-                try {
-                  return new Types.ObjectId(id);
-                } catch {
-                  return id; // Keep as string if not a valid ObjectId
-                }
-              }) },
+              jobId: {
+                $in: filters.jobIds.map((id) => {
+                  try {
+                    return new Types.ObjectId(id);
+                  } catch {
+                    return id; // Keep as string if not a valid ObjectId
+                  }
+                }),
+              },
             }),
             ...(filters?.candidateStatuses?.length && {
               status: { $in: filters.candidateStatuses },
@@ -74,11 +82,8 @@ export async function GET(request: NextRequest) {
             // Calculate average time in stage
             avgTimeInStage: {
               $avg: {
-                $subtract: [
-                  "$tracking.updatedAt",
-                  "$tracking.createdAt"
-                ]
-              }
+                $subtract: ["$tracking.updatedAt", "$tracking.createdAt"],
+              },
             },
             // Collect creation dates for trend analysis
             createdDates: { $push: "$tracking.createdAt" },
@@ -90,18 +95,19 @@ export async function GET(request: NextRequest) {
         },
       ];
 
-      const results = await Candidate.collection.aggregate(pipeline, {
-        maxTimeMS: 15000, // 15 second timeout
-        allowDiskUse: false // Use memory only for better performance
-      }).toArray();
-      console.log("Candidate funnel aggregation results:", results.length, results);
+      const results = await Candidate.collection
+        .aggregate(pipeline, {
+          maxTimeMS: 15000, // 15 second timeout
+          allowDiskUse: false, // Use memory only for better performance
+        })
+        .toArray();
 
       // Process results to create funnel data with conversion rates
       const stageData = new Map<string, any>();
       let totalCandidates = 0;
 
       // Initialize all stages with zero counts
-      CANDIDATE_STAGES.forEach(stage => {
+      defaultLanesFinal.forEach((stage) => {
         stageData.set(stage, {
           stage,
           count: 0,
@@ -112,12 +118,12 @@ export async function GET(request: NextRequest) {
 
       // Populate with actual data
       results.forEach((result) => {
-        if (CANDIDATE_STAGES.includes(result._id)) {
+        if (defaultLanesFinal.includes(result._id)) {
           stageData.set(result._id, {
             stage: result._id,
             count: result.count,
-            avgTimeInDays: result.avgTimeInStage 
-              ? Math.round(result.avgTimeInStage / (1000 * 60 * 60 * 24)) 
+            avgTimeInDays: result.avgTimeInStage
+              ? Math.round(result.avgTimeInStage / (1000 * 60 * 60 * 24))
               : 0,
             createdDates: result.createdDates,
           });
@@ -129,10 +135,10 @@ export async function GET(request: NextRequest) {
       const funnelData: FunnelData[] = [];
       let previousStageCount = totalCandidates;
 
-      CANDIDATE_STAGES.forEach((stage, index) => {
+      defaultLanesFinal.forEach((stage, index) => {
         const stageInfo = stageData.get(stage)!;
         const currentCount = stageInfo.count;
-        
+
         // For the first stage (applied), conversion rate is 100%
         // For subsequent stages, calculate conversion from previous stage
         let conversionRate = 0;
@@ -140,7 +146,10 @@ export async function GET(request: NextRequest) {
           conversionRate = currentCount > 0 ? 100 : 0;
           previousStageCount = totalCandidates;
         } else {
-          conversionRate = calculateConversionRate(currentCount, previousStageCount);
+          conversionRate = calculateConversionRate(
+            currentCount,
+            previousStageCount
+          );
           previousStageCount = totalCandidates;
         }
 
@@ -149,19 +158,25 @@ export async function GET(request: NextRequest) {
           count: currentCount,
           conversionRate,
           avgTimeInDays: stageInfo.avgTimeInDays,
-          previousStageCount: index === 0 ? currentCount : funnelData[index - 1]?.count || 0,
+          previousStageCount:
+            index === 0 ? currentCount : funnelData[index - 1]?.count || 0,
           color: getStageColor(stage),
         });
       });
 
       // Calculate overall funnel metrics
       const appliedCount = funnelData[0]?.count || 0;
-      const acceptedCount = funnelData.find(f => f.stage.toLowerCase() === 'accepted')?.count || 0;
-      const rejectedCount = funnelData.find(f => f.stage.toLowerCase() === 'rejected')?.count || 0;
-      
-      const overallConversionRate = appliedCount > 0 
-        ? Math.round((acceptedCount / totalCandidates) * 100 * 100) / 100 
-        : 0;
+      const acceptedCount =
+        funnelData.find((f) => f.stage.toLowerCase() === "accepted")?.count ||
+        0;
+      const rejectedCount =
+        funnelData.find((f) => f.stage.toLowerCase() === "rejected")?.count ||
+        0;
+
+      const overallConversionRate =
+        appliedCount > 0
+          ? Math.round((acceptedCount / totalCandidates) * 100 * 100) / 100
+          : 0;
 
       const response = createAnalyticsResponse(
         {
@@ -171,7 +186,9 @@ export async function GET(request: NextRequest) {
             acceptedCandidates: acceptedCount,
             rejectedCandidates: rejectedCount,
             overallConversionRate,
-            avgTimeToHire: funnelData.reduce((sum, stage) => sum + stage.avgTimeInDays, 0) / funnelData.length,
+            avgTimeToHire:
+              funnelData.reduce((sum, stage) => sum + stage.avgTimeInDays, 0) /
+              funnelData.length,
           },
         },
         user.organizationId,
@@ -182,25 +199,27 @@ export async function GET(request: NextRequest) {
       );
 
       return NextResponse.json(response);
-
-    } catch (error:any) {
+    } catch (error: any) {
       console.error("Candidate funnel analytics error:", error);
-      
+
       // Handle specific error types with better messages
-      if (error.message?.includes('timeout') || error.message?.includes('maxTimeMS')) {
+      if (
+        error.message?.includes("timeout") ||
+        error.message?.includes("maxTimeMS")
+      ) {
         return createAnalyticsErrorResponse(
           "Query timeout - please try a smaller date range or add job filters",
           408
         );
       }
-      
-      if (error.message?.includes('memory')) {
+
+      if (error.message?.includes("memory")) {
         return createAnalyticsErrorResponse(
-          "Dataset too large - please add filters to reduce data size", 
+          "Dataset too large - please add filters to reduce data size",
           413
         );
       }
-      
+
       return createAnalyticsErrorResponse(
         "Failed to generate candidate funnel analytics",
         500
