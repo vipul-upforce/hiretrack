@@ -9,15 +9,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  RefreshCcwIcon,
-} from "lucide-react";
+import { RefreshCcwIcon } from "lucide-react";
 import { useCandidateFunnel } from "../hooks/useAnalytics";
 import { AnalyticsFilters } from "../hooks/useAnalytics";
 import CandidateFunnelSkeleton from "./loading-skeletons/candidate-funnel";
 import { SummaryCards } from "./candidate-funnel/summary-cards";
 import { FunnelTabs } from "./candidate-funnel/funnel-tabs";
 import ExportButton from "./candidate-funnel/export-button";
+import EmptyState from "./empty-state";
 
 interface CandidateFunnelChartProps {
   filters?: AnalyticsFilters;
@@ -93,6 +92,16 @@ export const CandidateFunnelChart: React.FC<CandidateFunnelChartProps> = ({
           </div>
         </CardContent>
       </Card>
+    );
+  }
+
+  if (!data || funnelData.length === 0) {
+    return (
+      <EmptyState
+        title="Candidate Funnel Analytics"
+        description="Visualize candidate flow through hiring stages"
+        message="No Data available."
+      />
     );
   }
 

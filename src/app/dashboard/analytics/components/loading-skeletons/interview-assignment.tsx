@@ -18,8 +18,8 @@ const InterviewAssignmentSkeleton = () => {
       </CardHeader>
 
       <CardContent>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          {[1, 2, 3, 4].map((i) => (
+        <div className="grid grid-cols-2 md:grid-cols-2 gap-4 mb-6">
+          {[1, 2].map((i) => (
             <div
               key={i}
               className="bg-muted/20 dark:bg-muted/10 p-4 rounded-lg border border-muted/40"
@@ -30,8 +30,8 @@ const InterviewAssignmentSkeleton = () => {
           ))}
         </div>
 
-        <div className="grid md:grid-cols-3 gap-4 mb-6">
-          {[1, 2, 3].map((i) => (
+        <div className="grid md:grid-cols-2 gap-4 mb-6">
+          {[1, 2].map((i) => (
             <div
               key={i}
               className="bg-muted/20 dark:bg-muted/10 p-4 rounded-lg border border-muted/40"
@@ -48,12 +48,6 @@ const InterviewAssignmentSkeleton = () => {
         </div>
 
         <div className="w-full">
-          <div className="grid w-full grid-cols-4 gap-2 mb-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-8 bg-muted rounded animate-pulse" />
-            ))}
-          </div>
-
           <div className="h-[550px] w-full bg-muted/30 rounded-lg animate-pulse" />
         </div>
       </CardContent>
