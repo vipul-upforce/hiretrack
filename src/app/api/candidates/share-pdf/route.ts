@@ -424,12 +424,12 @@ export async function POST(req: NextRequest) {
       if (selection.currentCTC && candidate.currentCTC)
         addKeyValue(
           "Current CTC",
-          `₹ ${candidate.currentCTC.toLocaleString()}`
+          `${candidate.currentCTC.toLocaleString()} LPA`
         );
       if (selection.expectedCTC && candidate.expectedCTC)
         addKeyValue(
           "Expected CTC",
-          `₹ ${candidate.expectedCTC.toLocaleString()}`
+          `${candidate.expectedCTC.toLocaleString()} LPA`
         );
       if (selection.noticePeriod)
         addKeyValue("Notice Period", `${candidate.noticePeriod} days`);

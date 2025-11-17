@@ -338,30 +338,32 @@ export async function PUT(request: NextRequest) {
       customPrompt: null,
     };
 
-    if (!evaluationConfig.autoEvaluateAllCandidates) {
+  if (!evaluationConfig.autoEvaluateAllCandidates) {
       // Check page count
-      try {
-        const pdfBuffer = Buffer.from(base64Resume, "base64");
-        const pdfjs = await import("pdfjs-dist/legacy/build/pdf.js");
-        const pdf = await pdfjs.getDocument({ data: pdfBuffer }).promise;
-        const pageCount = pdf.numPages;
-
-        if (
-          evaluationConfig.maxPdfPages > 0 &&
-          pageCount > evaluationConfig.maxPdfPages
-        ) {
-          return NextResponse.json(
-            {
-              error: `Resume has ${pageCount} pages. Auto-evaluation is limited to ${evaluationConfig.maxPdfPages} pages. Please evaluate manually or update settings.`,
-            },
-            { status: 400 }
-          );
-        }
-      } catch (pdfError) {
-        console.warn("PDF page count check failed:", pdfError);
-        // Continue with evaluation if page check fails
+    try {
+      const pdfBuffer = Buffer.from(base64Resume, "base64");
+      const uint8Array = new Uint8Array(pdfBuffer);
+  
+      const pdfjs = await import("pdfjs-dist/legacy/build/pdf.js");
+      const pdf = await pdfjs.getDocument({ data: uint8Array }).promise;
+  
+      const pageCount = pdf.numPages;
+  
+      if (
+        evaluationConfig.maxPdfPages > 0 &&
+        pageCount > evaluationConfig.maxPdfPages
+      ) {
+        return NextResponse.json(
+          {
+            error: `Resume has ${pageCount} pages. Auto-evaluation is limited to ${evaluationConfig.maxPdfPages} pages. Please evaluate manually or update settings.`,
+          },
+          { status: 400 }
+        );
       }
+    } catch (pdfError) {
+      console.warn("PDF page count check failed:", pdfError);
     }
+  }
 
     const jobDescription =
       candidate.jobId &&
@@ -433,7 +435,7 @@ export async function PUT(request: NextRequest) {
       );
       scores.comparativeRanking = comparativeRanking;
     }
-
+    
     candidate.scores = scores;
     candidate.contact = candidate.contact;
     await candidate.save();

@@ -127,7 +127,11 @@ const AddFollowUpDialog = ({
                 onAddingFollowup();
               }}
               variant="info"
-              disabled={isLoading || !newFollowUp.trim()}
+              disabled={
+                isLoading ||
+                (!newFollowUp.trim() && !newFollowUpDate)
+              }
+            
             >
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {candidate?.followUp?.note || candidate?.followUp?.date
