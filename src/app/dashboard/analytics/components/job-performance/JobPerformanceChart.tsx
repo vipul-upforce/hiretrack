@@ -10,14 +10,14 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCcwIcon } from "lucide-react";
-import { useJobPerformance } from "../hooks/useAnalytics";
-import { AnalyticsFilters } from "../hooks/useAnalytics";
-import JobPerformanceSkeleton from "./loading-skeletons/job-performance";
-import SummaryCards from "./job-performance/summary-cards";
-import JobStatusBreakdown from "./job-performance/job-status-breakdown";
-import InsightsCards from "./job-performance/insights-cards";
-import JobPerformanceTabs from "./job-performance/job-performance-tabs";
-import JobPerformanceExport from "./job-performance/job-performance-export";
+import { useJobPerformance } from "../../hooks/useAnalytics";
+import { AnalyticsFilters } from "../../hooks/useAnalytics";
+import JobPerformanceSkeleton from "./../loading-skeletons/job-performance";
+import SummaryCards from "./summary-cards";
+import JobStatusBreakdown from "./job-status-breakdown";
+import InsightsCards from "./insights-cards";
+import JobPerformanceTabs from "./job-performance-tabs";
+import JobPerformanceExport from "./job-performance-export";
 
 export interface JobPerformanceChartProps {
   filters?: AnalyticsFilters;

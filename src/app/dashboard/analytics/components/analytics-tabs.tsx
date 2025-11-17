@@ -1,27 +1,39 @@
-"use client"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { HomeIcon, GitBranchIcon, BriefcaseIcon, MessageSquareIcon, ActivityIcon } from "lucide-react"
-import { OverviewTab } from "./overview-tab"
-import { CandidateFunnelChart } from "./CandidateFunnelChart"
-import { JobPerformanceChart } from "./JobPerformanceChart"
-import { InterviewAssignmentChart } from "./InterviewAssignmentChart"
-import { ApplicationTrendsChart } from "./ApplicationTrendsChart"
-import type { FunnelData, JobData, InterviewData, TrendsData, Filters } from "./types"
+"use client";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  HomeIcon,
+  GitBranchIcon,
+  BriefcaseIcon,
+  MessageSquareIcon,
+  ActivityIcon,
+} from "lucide-react";
+import { OverviewTab } from "./overview/overview-tab";
+import { CandidateFunnelChart } from "./candidate-funnel/CandidateFunnelChart";
+import { JobPerformanceChart } from "./job-performance/JobPerformanceChart";
+import { InterviewAssignmentChart } from "./interview-assignment/InterviewAssignmentChart";
+import { ApplicationTrendsChart } from "./trends/ApplicationTrendsChart";
+import type {
+  FunnelData,
+  JobData,
+  InterviewData,
+  TrendsData,
+  Filters,
+} from "./types";
 
 interface AnalyticsTabsProps {
-  activeTab: string
-  onTabChange: (tabValue: string) => void
-  filters: Filters
-  organizationId: string | undefined
-  funnelData: FunnelData
-  jobData: JobData
-  interviewData: InterviewData
-  trendsData: TrendsData
-  isLoadingFunnel: boolean
-  isLoadingJob: boolean
-  isLoadingInterview: boolean
-  isLoadingTrends: boolean
-  dateRange: Date[] | null
+  activeTab: string;
+  onTabChange: (tabValue: string) => void;
+  filters: Filters;
+  organizationId: string | undefined;
+  funnelData: FunnelData;
+  jobData: JobData;
+  interviewData: InterviewData;
+  trendsData: TrendsData;
+  isLoadingFunnel: boolean;
+  isLoadingJob: boolean;
+  isLoadingInterview: boolean;
+  isLoadingTrends: boolean;
+  dateRange: Date[] | null;
 }
 
 export function AnalyticsTabs({
@@ -82,23 +94,35 @@ export function AnalyticsTabs({
 
       {/* Candidate Funnel Tab */}
       <TabsContent value="funnel" className="space-y-4">
-        <CandidateFunnelChart filters={filters} organizationId={organizationId} />
+        <CandidateFunnelChart
+          filters={filters}
+          organizationId={organizationId}
+        />
       </TabsContent>
 
       {/* Job Performance Tab */}
       <TabsContent value="jobs" className="space-y-4">
-        <JobPerformanceChart filters={filters} organizationId={organizationId} />
+        <JobPerformanceChart
+          filters={filters}
+          organizationId={organizationId}
+        />
       </TabsContent>
 
       {/* Interview Assignments Tab */}
       <TabsContent value="interviews" className="space-y-4">
-        <InterviewAssignmentChart filters={filters} organizationId={organizationId} />
+        <InterviewAssignmentChart
+          filters={filters}
+          organizationId={organizationId}
+        />
       </TabsContent>
 
       {/* Application Trends Tab */}
       <TabsContent value="trends" className="space-y-4">
-        <ApplicationTrendsChart filters={filters} organizationId={organizationId} />
+        <ApplicationTrendsChart
+          filters={filters}
+          organizationId={organizationId}
+        />
       </TabsContent>
     </Tabs>
-  )
+  );
 }

@@ -1,19 +1,19 @@
-"use client"
-import { MetricsCardsGrid } from "./metrics-cards-grid"
-import { QuickInsightsSection } from "./quick-insights-section"
-import type { FunnelData, JobData, InterviewData, TrendsData } from "./types"
+"use client";
+import { MetricsCardsGrid } from "./metrics-cards-grid";
+import { QuickInsightsSection } from "./quick-insights-section";
+import type { FunnelData, JobData, InterviewData, TrendsData } from "../types";
 
 interface OverviewTabProps {
-  funnelData: FunnelData
-  jobData: JobData
-  interviewData: InterviewData
-  trendsData: TrendsData
-  isLoadingFunnel: boolean
-  isLoadingJob: boolean
-  isLoadingInterview: boolean
-  isLoadingTrends: boolean
-  dateRange: Date[] | null
-  onNavigateToTab: (tabValue: string) => void
+  funnelData: FunnelData;
+  jobData: JobData;
+  interviewData: InterviewData;
+  trendsData: TrendsData;
+  isLoadingFunnel: boolean;
+  isLoadingJob: boolean;
+  isLoadingInterview: boolean;
+  isLoadingTrends: boolean;
+  dateRange: Date[] | null;
+  onNavigateToTab: (tabValue: string) => void;
 }
 
 export function OverviewTab({
@@ -54,5 +54,5 @@ export function OverviewTab({
         isLoadingInterview={isLoadingInterview}
       />
     </div>
-  )
+  );
 }

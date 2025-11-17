@@ -7,7 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { JobData, TrendsData } from "./types";
+import type { JobData, TrendsData } from "./../types";
 
 interface QuickInsightsSectionProps {
   jobData: JobData;

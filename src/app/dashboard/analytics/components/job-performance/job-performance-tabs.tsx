@@ -4,7 +4,7 @@ import { ApplicationsTimeScatterChart } from "./application-time-to-fill-chart";
 import { TopJobsChart } from "./top-jobs-chart";
 import { SuccessRateChart } from "./success-rate-chart";
 import { JobStatusChart } from "./job-status-chart";
-import { JobPerformanceData } from "../JobPerformanceChart";
+import { JobPerformanceData } from "./JobPerformanceChart";
 
 interface JobPerformanceTabsProps {
   jobData: JobPerformanceData[];

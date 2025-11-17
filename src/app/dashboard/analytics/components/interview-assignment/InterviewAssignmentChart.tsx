@@ -10,14 +10,14 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCcwIcon, DownloadIcon } from "lucide-react";
-import { useInterviewAssignments } from "../hooks/useAnalytics";
-import { AnalyticsFilters } from "../hooks/useAnalytics";
-import { exportToCSV } from "../utils/export";
-import InterviewAssignmentSkeleton from "./loading-skeletons/interview-assignment";
-import { WorkloadDistributionChart } from "./interview-assignment/workload-assignment-chart";
-import { SummaryCards } from "./interview-assignment/summary-cards";
-import InsightsCards from "./interview-assignment/insights-cards";
-import EmptyState from "./empty-state";
+import { useInterviewAssignments } from "../../hooks/useAnalytics";
+import { AnalyticsFilters } from "../../hooks/useAnalytics";
+import { exportToCSV } from "../../utils/export";
+import InterviewAssignmentSkeleton from "./../loading-skeletons/interview-assignment";
+import { WorkloadDistributionChart } from "./workload-assignment-chart";
+import { SummaryCards } from "./summary-cards";
+import InsightsCards from "./insights-cards";
+import EmptyState from "./../empty-state";
 
 interface InterviewAssignmentChartProps {
   filters?: AnalyticsFilters;

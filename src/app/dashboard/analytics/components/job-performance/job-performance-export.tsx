@@ -4,7 +4,7 @@ import React, { useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { DownloadIcon } from "lucide-react";
 import { exportToCSV } from "../../utils/export";
-import { JobPerformanceData } from "../JobPerformanceChart";
+import { JobPerformanceData } from "./JobPerformanceChart";
 
 interface Props {
   jobData: JobPerformanceData[];
