@@ -4,30 +4,21 @@ import { getAuthenticatedUser } from "@/app/actions/auth";
 
 export async function GET(req: NextRequest) {
   try {
-    await connectToDatabase();
-    
-    const userData = await getAuthenticatedUser(req);
+    const [userData] = await Promise.all([
+      getAuthenticatedUser(req, "admin"),
+      connectToDatabase(),
+    ]);
     if (!userData) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    
     const organizationId = userData.organizationId;
-    if (!User) {
-      return NextResponse.json(
-        { error: "User Model not found" },
-        { status: 400 }
-      );
-    }
     const interviewers = await User.find({
       organizationId,
       role: {
         $ne: "system",
       },
       isDeleted: { $ne: true },
-    }).select("_id name email organizationId");
+    }).select("_id name email organizationId").lean().exec();
 
     return NextResponse.json(interviewers);
   } catch (error: unknown) {

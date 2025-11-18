@@ -214,7 +214,7 @@ const handleGetPortalData = async (req: NextRequest) => {
           portalConfigs: 1,
           smtpConfigs: 1,
         }
-      );
+      ).lean().exec();
     } else {
       // Anonymous user - get default organization settings
       // Try to find a default organization or the first available one
@@ -225,7 +225,7 @@ const handleGetPortalData = async (req: NextRequest) => {
           {
             portalConfigs: 1,
           }
-        );
+        ).lean().exec();
       }
     }
 

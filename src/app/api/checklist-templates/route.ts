@@ -1,27 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { ChecklistTemplate } from "@/lib/mongodb";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { IChecklistTemplate } from "@/lib/models/ChecklistTemplate";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 
 // GET - Get all checklist templates for the organization
 export async function GET(req: NextRequest) {
   try {
-    const token = req.cookies.get("auth_token")?.value;
-    if (!token) {
+    const [user] = await Promise.all([
+      getAuthenticatedUser(req),
+      connectToDatabase(),
+    ]);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const orgId = req.cookies.get("org_id")?.value;
-    const decryptedResponse = await verifyAndDecryptJWTToken(token, orgId);
-    if (!decryptedResponse.success || !decryptedResponse.user) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-    const decoded = decryptedResponse.user;
 
-    await connectToDatabase();
+    
 
     // Check if model is initialized
     if (!ChecklistTemplate) {
-      console.error("ChecklistTemplate model not initialized");
       return NextResponse.json(
         { error: "Database models not initialized" },
         { status: 500 }
@@ -33,13 +29,13 @@ export async function GET(req: NextRequest) {
     const isActive = searchParams.get("active") === "true";
 
     // Build query
-    const query: any = { organizationId: decoded.organizationId };
+    const query: any = { organizationId: user.organizationId };
     if (type) query.type = type;
     if (isActive) query.isActive = true;
 
     const templates = await ChecklistTemplate.find(query)
       .populate("createdBy", "name email")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 }).lean().exec();
 
     return NextResponse.json({
       success: true,
@@ -57,26 +53,15 @@ export async function GET(req: NextRequest) {
 // POST - Create a new checklist template
 export async function POST(req: NextRequest) {
   try {
-    const token = req.cookies.get("auth_token")?.value;
-    if (!token) {
+    const [decoded,body] = await Promise.all([
+      getAuthenticatedUser(req,["admin", "hr"]),
+      req.json(),
+      connectToDatabase(),
+    ]);
+    if (!decoded) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const orgId = req.cookies.get("org_id")?.value;
-    const decryptedResponse = await verifyAndDecryptJWTToken(token, orgId);
-    if (!decryptedResponse.success || !decryptedResponse.user) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-    const decoded = decryptedResponse.user;
 
-    // Check if user is admin or HR
-    if (!["admin", "hr"].includes(decoded.role)) {
-      return NextResponse.json(
-        { error: "Only admin and HR can create templates" },
-        { status: 403 }
-      );
-    }
-
-    await connectToDatabase();
 
     // Check if model is initialized
     if (!ChecklistTemplate) {
@@ -87,7 +72,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const body = await req.json();
     let { name, description, type, fields } = body;
 
     // Validate required fields

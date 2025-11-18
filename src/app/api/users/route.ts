@@ -47,9 +47,9 @@ export async function GET(req: NextRequest) {
         { role: { $regex: search, $options: "i" } },
       ],
       // isDeleted: { $ne: true }
-    } as any;
+    } as Record<string, unknown>;
 
-    const projection = { password: 0 } as any;
+    const projection = { password: 0 } as Record<string, unknown>;
 
     const [users, total] = await Promise.all([
       User.find(query, projection)

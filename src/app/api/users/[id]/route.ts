@@ -9,20 +9,13 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth(req);
-
-    if (!session || session.user.role !== "admin") {
+    const [userData, { id }] = await Promise.all([
+      getAuthenticatedUser(req, "admin"),
+      params,
+      connectToDatabase(),
+    ]);
+    if (!userData) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    await connectToDatabase();
-
-    const { id } = await params;
-    if (session.user.id === id) {
-      return NextResponse.json(
-        { error: "You cannot delete yourself" },
-        { status: 401 }
-      );
     }
     if (!User) {
       return NextResponse.json(
@@ -30,14 +23,20 @@ export async function DELETE(
         { status: 400 }
       );
     }
+    if (userData.id === id) {
+      return NextResponse.json(
+        { error: "You cannot delete yourself" },
+        { status: 401 }
+      );
+    }
 
-    const isUserExisted = await User.findByIdAndUpdate(id).lean().exec();
+    const isUserExisted = await User.findById(id).select("role organizationId _id").lean().exec();
 
     const isAdmin = isUserExisted?.role === "admin";
     if (isAdmin) {
       const adminCount = await User.countDocuments({
         role: "admin",
-        organizationId: session?.user?.organizationId,
+        organizationId: userData.organizationId,
         $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
       });
       if (adminCount <= 1) {

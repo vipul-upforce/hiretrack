@@ -263,13 +263,6 @@ export async function POST(req: NextRequest) {
       getAuthenticatedUser(req, "admin"),
       connectToDatabase(),
     ]);
-    const token = req.cookies.get("auth_token")?.value;
-    if (!token) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
     if (!user) {
       return NextResponse.json(
         { error: "Admin access required" },
