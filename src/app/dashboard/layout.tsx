@@ -41,6 +41,7 @@ import SidebarContent from "@/components/layouts/SidebarContent";
 import { useGetOrganizationAllowanceQuery } from "@/lib/features/org/orgApi";
 import { useCheckOrgQuery } from "@/lib/features/org/orgApi";
 import { useNotificationSSE } from "@/hooks/useNotificationSSE";
+import { NotificationsProvider } from "@/contexts/NotificationsContext";
 
 interface SidebarItem {
   title: string;
@@ -520,7 +521,13 @@ export default function DashboardLayout({
         </Sheet>
         <main className="w-full overflow-x-hidden overflow-y-hidden h-[100dvh]">
           <div className="max-w-[100%] mx-auto overflow-x-hidden overflow-y-hidden">
-            {children}
+            <NotificationsProvider
+              notifications={notificationsData?.notifications || []}
+              isLoading={notificationsLoading}
+              refetch={fetchNotifications}
+            >
+              {children}
+            </NotificationsProvider>
           </div>
         </main>
 

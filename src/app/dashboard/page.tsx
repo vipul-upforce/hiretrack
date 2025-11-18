@@ -17,9 +17,9 @@ import { ITag } from "@/lib/models/organization";
 import { useSelector } from "react-redux";
 import RecentActivities from "./components/RecentActivities";
 import {
-  useGetNotificationsQuery,
   useMarkNotificationAsReadMutation,
 } from "@/lib/features/notifications/notificationsApi";
+import { useNotificationsContext } from "@/contexts/NotificationsContext";
 import { useLazyFetchCandidateByIdQuery } from "@/lib/features/candidate/candidateApi";
 import { CandidateDetailsDialog } from "./jobs/[id]/components/Dialogs/candidate-details-dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -442,15 +442,10 @@ export default function DashboardPage() {
     }))
     ?.sort((a) => (a.label === "Me" ? -1 : 1));
 
-  // Fetch notifications for admin and HR
+  // Fetch notifications for admin and HR - use shared context from layout
   const showRecentActivities = user?.role === "admin" || user?.role === "hr";
-  const { data: notificationsData, isLoading: notificationsLoading } =
-    useGetNotificationsQuery(
-      { page: 1, limit: 10 },
-      {
-        skip: !showRecentActivities,
-      }
-    );
+  const { notifications, isLoading: notificationsLoading } =
+    useNotificationsContext();
 
   // Save sidebar preference to localStorage
   useEffect(() => {
@@ -748,7 +743,7 @@ export default function DashboardPage() {
         {showRecentActivities && isActivitiesSidebarOpen && (
           <div className="w-96 flex-shrink-0 overflow-y-auto">
             <RecentActivities
-              notifications={notificationsData?.notifications || []}
+              notifications={notifications}
               isLoading={notificationsLoading}
               onNotificationClick={handleNotificationClick}
             />
