@@ -131,6 +131,15 @@ export const historySchema = new Schema({
   },
   history: [candidateHistory],
 });
+// 4. History - Candidate + Job + DateTime (N+1 queries)
+historySchema.index(
+  { 
+    candidateId: 1, 
+    jobId: 1, 
+    "history.dateTime": -1 
+  },
+  { name: "idx_history_candidate_job_datetime", background: true }
+);
 
 export interface ICandidateHistory {
   _id?: string;

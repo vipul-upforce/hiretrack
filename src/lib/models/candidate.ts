@@ -541,5 +541,28 @@ candidateSchema.index(
   { organizationId: 1, jobId: 1, status: 1, isDeleted: 1 },
   { name: "idx_orgId_jobId_status_deleted", background: true }
 );
+// CRITICAL MISSING INDEXES:
+
+// 1. Candidates - Assignment time queries (used in assignments route)
+candidateSchema.index(
+  { 
+    "assignment.interviewerId": 1, 
+    "assignment.time": 1,
+    organizationId: 1,
+    isDeleted: 1 
+  },
+  { name: "idx_assignment_interviewer_time_org", background: true, sparse: true }
+);
+
+// 2. Candidates - Job + Status + Date range (analytics)
+candidateSchema.index(
+  { 
+    jobId: 1, 
+    status: 1, 
+    "tracking.createdAt": -1,
+    isDeleted: 1 
+  },
+  { name: "idx_job_status_created_deleted", background: true }
+);
 
 // export const Candidate = mongoose.model('Candidate', candidateSchema);
