@@ -33,7 +33,7 @@ export function runIfCookiePresent<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): any {
   const {
-    cookieName = "auth_token",
+    cookieName = "auth_state",
     orgIdCookieName = "org_id",
     emptyResponse = null as TResult,
   } = options;
