@@ -7,6 +7,7 @@ import {
   Eye,
   ChevronLeft,
   ChevronRightIcon,
+  RefreshCwIcon,
 } from "lucide-react";
 import {
   Table,
@@ -94,6 +95,7 @@ export function ServerHistoryLogs({
     data: historyResp,
     isLoading: historyLoading,
     isFetching: historyFetching,
+    refetch,
   } = useGetServerLogsQuery(
     { offset: historyOffset, limit: historyPageSize, query: searchQuery },
     { skip: false }
@@ -146,6 +148,17 @@ export function ServerHistoryLogs({
         </div>
 
         <div className="flex items-center gap-3">
+          <Button
+            onClick={refetch}
+            disabled={historyFetching}
+            variant="secondary"
+          >
+            <RefreshCwIcon
+              className={`h-1 w-1 transition-transform ${
+                historyFetching ? "animate-spin" : ""
+              }`}
+            />
+          </Button>
           <span className="text-sm text-muted-foreground">Items per page</span>
           <Select
             value={String(historyPageSize)}
@@ -153,6 +166,7 @@ export function ServerHistoryLogs({
               setHistoryPageSize(Number.parseInt(v, 10));
               setHistoryPage(1);
             }}
+            disabled={historyFetching}
           >
             <SelectTrigger
               className="w-[100px]"
