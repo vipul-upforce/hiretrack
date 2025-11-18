@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { runIfCookiePresent } from "@/lib/utils/queryGuards";
 import { Candidate } from "@/types/candidate";
 import { ICandidateHistory } from "@/lib/models/history";
 import { OneOfMulOrganization } from "@/components/auth/OrganizationDialog";
@@ -45,7 +46,7 @@ export const candidateApi = createApi({
       providesTags: ["Candidate"],
     }),
     fetchAssignments: builder.query<
-      any,
+      unknown,
       { isPagination?: boolean; page?: number; limit?: number; filterValue?: string; assignedTo?: string }
     >({
       query: ({ isPagination = true, page = 1, limit = 48, filterValue = "", assignedTo = "" }) => {
@@ -103,10 +104,11 @@ export const candidateApi = createApi({
       invalidatesTags: ["Candidate"],
     }),
     fetchAppliedApplication: builder.query({
-      query: () => ({
-        url: `/candidates/apply-application`,
-        method: "GET",
-      }),
+      queryFn: (_arg, _api, _extraOptions, baseQuery) =>
+        runIfCookiePresent(baseQuery, () => ({
+          url: `/candidates/apply-application`,
+          method: "GET",
+        })),
       providesTags: ["CandidateApplication"],
     }),
     updateAppliedApplication: builder.mutation({
