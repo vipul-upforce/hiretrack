@@ -112,28 +112,28 @@ export class AIEvaluationService {
           },
         };
 
-        console.log(
-          "AIEvaluationService: Using backward compatibility for legacy Gemini settings"
-        );
+        // console.log(
+        //   "AIEvaluationService: Using backward compatibility for legacy Gemini settings"
+        // );
       }
 
-      // Log the received AI providers
-      console.log(
-        "AIEvaluationService received aiProviders:",
-        JSON.stringify(
-          {
-            hasAiProviders: !!aiProviders,
-            activeProvider: aiProviders?.activeProvider,
-            hasGeminiKey: !!aiProviders?.gemini?.api_key,
-            geminiKeyLength: aiProviders?.gemini?.api_key?.length,
-            hasOpenAIKey: !!aiProviders?.openai?.api_key,
-            hasAnthropicKey: !!aiProviders?.anthropic?.api_key,
-            hasPerplexityKey: !!aiProviders?.perplexity?.api_key,
-          },
-          null,
-          2
-        )
-      );
+      // // Log the received AI providers
+      // console.log(
+      //   "AIEvaluationService received aiProviders:",
+      //   JSON.stringify(
+      //     {
+      //       hasAiProviders: !!aiProviders,
+      //       activeProvider: aiProviders?.activeProvider,
+      //       hasGeminiKey: !!aiProviders?.gemini?.api_key,
+      //       geminiKeyLength: aiProviders?.gemini?.api_key?.length,
+      //       hasOpenAIKey: !!aiProviders?.openai?.api_key,
+      //       hasAnthropicKey: !!aiProviders?.anthropic?.api_key,
+      //       hasPerplexityKey: !!aiProviders?.perplexity?.api_key,
+      //     },
+      //     null,
+      //     2
+      //   )
+      // );
 
       const activeProvider = aiProviders.activeProvider as AIProviderType;
 
@@ -218,7 +218,7 @@ export class AIEvaluationService {
   }
   private static parseEvaluationResponse(response: string): EvaluationResult {
     try {
-      console.log("Raw evaluation response:", response);
+      // console.log("Raw evaluation response:", response);
 
       // Clean the response - handle multiple formats
       let jsonString = response
@@ -232,7 +232,7 @@ export class AIEvaluationService {
         jsonString = jsonMatch[0];
       }
 
-      console.log("Cleaned JSON string:", jsonString);
+      // console.log("Cleaned JSON string:", jsonString);
 
       let parsedObject;
       try {
@@ -368,7 +368,12 @@ export class AIEvaluationService {
       ✓ Experience: "8 years total - 5 years at TechCorp as Senior Dev in fintech, 3 years at StartupXYZ in e-commerce. Domain relevant"
       ✓ Affordability: "Current 12 LPA, expects 15 LPA. Budget 12-18 LPA. Fits mid-range with 25% standard increment"
 
-    CRITICAL: Return ONLY valid JSON, no additional text before or after. Ensure all strings are properly formatted.
+    CRITICAL: Return ONLY valid JSON, no additional text before or after. Ensure all strings are properly formatted. and All numeric fields must be numbers only. Never return strings like "Not specified". 
+              If a numeric value is unknown, return 0.
+ 
+    IMPORTANT RULE: 
+    - Never use severity values other than "low", "medium", or "high".
+    - Do NOT use: "critical", "severe", "major", "urgent", or any custom value.
 
     Return your evaluation in this JSON format:
     {
@@ -479,12 +484,28 @@ export class AIEvaluationService {
         "experience": "Mention SPECIFIC companies, roles, years, domain relevance. E.g., '8 years: TechCorp (5yrs, fintech), StartupXYZ (3yrs, e-commerce)'",
         "affordability": "Show CALCULATION: 'Current 12 LPA, Expected 15 LPA (25% jump), Budget 12-18 LPA - fits mid-range'"
       },
-      "redFlags": array of objects [{type, severity, description, evidence}],
+      "redFlags": array of objects [
+     {
+    "type": string,
+    "severity": string ("low" | "medium" | "high" ONLY — do NOT use any other values),
+    "description": string,
+    "evidence": string
+   },
+],
+
       "skillsMatrix": {
-        "requiredAndPresent": array of objects [{skill, yearsOfExperience, proficiencyLevel, evidence}],
-        "requiredButMissing": array of strings,
-        "presentButNotRequired": array of strings
-      },
+  "requiredAndPresent": array of objects [
+    {
+      "skill": string,
+      "yearsOfExperience": number (0 if unknown; do NOT use strings),
+      "proficiencyLevel": string(Not Present if unknown),
+      "evidence": string
+    }
+  ],
+  "requiredButMissing": array of strings,
+  "presentButNotRequired": array of strings
+}
+
     }`;
     }
 
