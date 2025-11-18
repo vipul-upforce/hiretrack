@@ -26,15 +26,6 @@ const generateBase64 = async (url: any) => {
   const base64Resume = fileBuffer.toString("base64");
   return base64Resume;
 };
-
-interface JobForEvaluate {
-  description: string;
-  title: string;
-  skills: string[];
-  salary?: string;
-  experience?: number;
-}
-
 // Calculate comparative ranking for a candidate within their job's candidate pool
 async function calculateComparativeRanking(
   candidateId: any,
@@ -47,7 +38,7 @@ async function calculateComparativeRanking(
       jobId: typeof jobId === "object" && "_id" in jobId ? jobId._id : jobId,
       scores: { $exists: true },
       isDeleted: { $ne: true },
-    }).select("scores");
+    }).select("_id scores");
 
     if (!candidates || candidates.length === 0) {
       return {
@@ -64,7 +55,7 @@ async function calculateComparativeRanking(
     }
 
     const totalCandidates = candidates.length;
-
+ 
     // Determine which score to use for ranking (weighted score if available, otherwise overall)
     const useWeightedScore = currentScores.weightedScore != null;
     const rankingBasedOn: 'overall' | 'weighted' = useWeightedScore ? 'weighted' : 'overall';
@@ -73,17 +64,17 @@ async function calculateComparativeRanking(
     // Calculate percentiles for each dimension (including ties)
     const calculatePercentile = (value: number, allValues: number[]) => {
       const sorted = allValues.filter((v) => v != null).sort((a, b) => a - b);
+      if (sorted.length <= 1) return 100;
+
       const countBelow = sorted.filter((v) => v < value).length;
       const countEqual = sorted.filter((v) => v === value).length;
-      // Use midpoint method for ties: add half of tied values
-      const adjustedCount = countBelow + (countEqual - 1) / 2;
-      return Math.round((adjustedCount / sorted.length) * 100);
+
+      // Midpoint method for ties
+      const adjustedCount = countBelow + (countEqual - 1) * 0.5;
+
+      return Math.round((adjustedCount / (sorted.length - 1)) * 100);
     };
 
-    // Extract scores for all candidates
-    const allOverallScores = candidates
-      .map((c) => c.scores?.overall)
-      .filter((s) => s != null);
     const allSkillsScores = candidates
       .map((c) => c.scores?.skills)
       .filter((s) => s != null);
@@ -104,14 +95,15 @@ async function calculateComparativeRanking(
       })
       .sort((a, b) => {
         const scoreA = useWeightedScore ? (a.scores?.weightedScore || 0) : (a.scores?.overall || 0);
-        const scoreB = useWeightedScore ? (b.scores?.weightedScore || 0) : (b.scores?.overall || 0);
+        const scoreB = useWeightedScore ? (b.scores?.weightedScore || 0) : (b.scores?.overall || 0);        
         return scoreB - scoreA; // Highest first
       });
+     const index = sortedCandidates.findIndex(
+       (c) => c._id.toString() === candidateId.toString()
+       );
 
-    const currentCandidateRank =
-      sortedCandidates.findIndex(
-        (c) => c._id.toString() === candidateId.toString()
-      ) + 1;
+      const currentCandidateRank =
+      index === -1 ? sortedCandidates.length : index + 1;
 
     // Check for ties at the same ranking score
     const candidatesWithSameScore = sortedCandidates.filter((c) => {
@@ -119,8 +111,10 @@ async function calculateComparativeRanking(
       return score === currentRankingScore;
     });
     const hasTie = candidatesWithSameScore.length > 1;
-    const tiedWithCount = candidatesWithSameScore.length - 1; // Excluding current candidate
-
+    let tiedWithCount = 0;
+    if(hasTie){
+      tiedWithCount = candidatesWithSameScore.length - 1; // Excluding current candidate
+    }
     // Get all ranking scores for percentile calculation
     const allRankingScores = sortedCandidates.map((c) =>
       useWeightedScore ? (c.scores?.weightedScore || 0) : (c.scores?.overall || 0)
@@ -143,7 +137,7 @@ async function calculateComparativeRanking(
         allAffordabilityScores
       ),
       hasTie,
-      tiedWithCount,
+      tiedWithCount: tiedWithCount || 0,
       rankingBasedOn,
     };
   } catch (error) {
