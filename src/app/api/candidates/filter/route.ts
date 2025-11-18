@@ -12,7 +12,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const page = parseInt(request.nextUrl.searchParams.get("page") || "1");
     const limit = parseInt(request.nextUrl.searchParams.get("limit") || "20");
-    // const limit = 100;
     const skip = (page - 1) * limit;
     const {
       name,
@@ -33,6 +32,13 @@ export async function POST(request: NextRequest) {
 
     const query: Record<string, any> = { [logicOperator]: [] };
 
+    const addLogicCondition = (condition: Record<string, unknown>) => {
+      if (!Array.isArray(query[logicOperator])) {
+        query[logicOperator] = [];
+      }
+      (query[logicOperator] as Record<string, unknown>[]).push(condition);
+    };
+
     if (organizationId) {
       if (!query.$and) query.$and = [];
       query.$and.push({ organizationId: organizationId });
@@ -41,7 +47,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (name) {
-      query[logicOperator].push({
+      addLogicCondition({
         name: {
           $regex: name.trim(),
           $options: "i",
@@ -58,11 +64,11 @@ export async function POST(request: NextRequest) {
         },
       }));
 
-      query[logicOperator].push({ $or: skillsConditions });
+      addLogicCondition({ $or: skillsConditions });
     }
 
     if (location) {
-      query[logicOperator].push({
+      addLogicCondition({
         location: {
           $regex: location.trim(),
           $options: "i",
@@ -75,111 +81,109 @@ export async function POST(request: NextRequest) {
       const expectedCTCQuery: { $gte?: number; $lte?: number } = {};
       if (minExpectedCTC) expectedCTCQuery.$gte = parseFloat(minExpectedCTC);
       if (maxExpectedCTC) expectedCTCQuery.$lte = parseFloat(maxExpectedCTC);
-      query[logicOperator].push({ expectedCTC: expectedCTCQuery });
+      addLogicCondition({ expectedCTC: expectedCTCQuery });
     }
 
     if (minCurrentCTC || maxCurrentCTC) {
       const currentCTCQuery: { $gte?: number; $lte?: number } = {};
       if (minCurrentCTC) currentCTCQuery.$gte = parseFloat(minCurrentCTC);
       if (maxCurrentCTC) currentCTCQuery.$lte = parseFloat(maxCurrentCTC);
-      query[logicOperator].push({ currentCTC: currentCTCQuery });
+      addLogicCondition({ currentCTC: currentCTCQuery });
     }
 
     if (minExperience || maxExperience) {
       const experienceQuery: { $gte?: number; $lte?: number } = {};
       if (minExperience) experienceQuery.$gte = parseFloat(minExperience);
       if (maxExperience) experienceQuery.$lte = parseFloat(maxExperience);
-      query[logicOperator].push({ experience: experienceQuery });
+      addLogicCondition({ experience: experienceQuery });
     }
 
     if (createdAfter || createdBefore) {
       const dateQuery: { $gte?: Date; $lte?: Date } = {};
       if (createdAfter) dateQuery.$gte = new Date(createdAfter);
       if (createdBefore) dateQuery.$lte = new Date(createdBefore);
-      query[logicOperator].push({ "tracking.createdAt": dateQuery });
+      addLogicCondition({ "tracking.createdAt": dateQuery });
     }
 
     if (customFields && typeof customFields === "object") {
-      const types = await getKeysType(organizationId);
+      const types = (await getKeysType(organizationId)) || [];
 
-      await Promise.all(
-        Object.entries(customFields).map(async ([key, value]) => {
-          const fieldPath = `customFields.${key}`;
-          const matchedType = types.find(
-            (type: CustomField) => type.label === key
+      Object.entries(customFields).forEach(([key, value]) => {
+        if (value === undefined || value === null) {
+          return;
+        }
+
+        const fieldPath = `customFields.${key}`;
+        const matchedType = types.find(
+          (type: CustomField) => type.label === key
+        );
+        const fieldType = matchedType?.type;
+
+        if (
+          fieldType &&
+          (fieldType === "date" || fieldType === "datetime") &&
+          Array.isArray(value)
+        ) {
+          const dateCondition = buildDateRangeCondition(
+            fieldPath,
+            value,
+            fieldType
           );
-          const isDateTime = matchedType?.type === "datetime";
 
-          if (
-            Array.isArray(value) &&
-            (dayjs(value[0]).isValid() || dayjs(value[1]).isValid())
-          ) {
-            const start =
-              value[0] && dayjs(value[0]).isValid()
-                ? (!isDateTime
-                    ? dayjs(value[0]).add(1, "day")
-                    : dayjs(value[0])
-                  ).toDate()
-                : null;
-
-            const end =
-              value[1] && dayjs(value[1]).isValid()
-                ? (!isDateTime
-                    ? dayjs(value[1]).add(1, "day")
-                    : dayjs(value[1])
-                  ).toDate()
-                : null;
-
-            if (start && end) {
-              query[logicOperator].push({
-                [fieldPath]: {
-                  $gte: start.toISOString(),
-                  $lte: end.toISOString(),
-                },
-              });
-            } else if (start) {
-              console.log("osnide start", start);
-              console.log("start.toISOString() :>> ", start.toISOString());
-              query[logicOperator].push({
-                [fieldPath]: {
-                  $gte: start.toISOString(),
-                },
-              });
-            } else if (end) {
-              query[logicOperator].push({
-                [fieldPath]: {
-                  $lte: end.toISOString(),
-                },
-              });
-            }
+          if (dateCondition) {
+            addLogicCondition(dateCondition);
           }
+          return;
+        }
 
-          // ✅ Handle single string (text input)
-          else if (typeof value === "string" && value.trim() !== "") {
-            query[logicOperator].push({
+        if (fieldType === "time" && Array.isArray(value)) {
+          const timeCondition = buildTimeRangeCondition(fieldPath, value);
+          if (timeCondition) {
+            addLogicCondition(timeCondition);
+          }
+          return;
+        }
+
+        if (
+          !fieldType &&
+          Array.isArray(value) &&
+          value.some((entry) => dayjs(entry).isValid())
+        ) {
+          const fallbackCondition = buildDateRangeCondition(
+            fieldPath,
+            value,
+            "datetime"
+          );
+          if (fallbackCondition) {
+            addLogicCondition(fallbackCondition);
+          }
+          return;
+        }
+
+        if (typeof value === "string" && value.trim() !== "") {
+          addLogicCondition({
+            [fieldPath]: {
+              $regex: value,
+              $options: "i",
+            },
+          });
+          return;
+        }
+
+        if (Array.isArray(value) && value.length > 0) {
+          const regexArray = value
+            .filter((v) => typeof v === "string" && v.trim() !== "")
+            .map((v) => new RegExp(v, "i"));
+
+          if (regexArray.length > 0) {
+            addLogicCondition({
               [fieldPath]: {
-                $regex: value,
-                $options: "i",
+                $in: regexArray,
               },
             });
           }
-
-          // ✅ Handle multi-select (array of strings, not date)
-          else if (Array.isArray(value) && value.length > 0) {
-            const regexArray = value
-              .filter((v) => typeof v === "string" && v.trim() !== "")
-              .map((v) => new RegExp(v, "i"));
-
-            if (regexArray.length > 0) {
-              query[logicOperator].push({
-                [fieldPath]: {
-                  $in: regexArray,
-                },
-              });
-            }
-          }
-        })
-      );
+        }
+      });
     }
 
     if (!Candidate) {
@@ -400,6 +404,178 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+const parseDateInput = (value: unknown) => {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = dayjs(value as string | number | Date);
+  return parsed.isValid() ? parsed : null;
+};
+
+const buildDateFieldExpression = (fieldPath: string, format?: string) => {
+  const fieldRef = `$${fieldPath}`;
+  const isoParser = {
+    $dateFromString: {
+      dateString: fieldRef,
+      onNull: null,
+      onError: null,
+    },
+  };
+
+  const formattedParser = format
+    ? {
+        $dateFromString: {
+          dateString: fieldRef,
+          format,
+          onNull: null,
+          onError: null,
+        },
+      }
+    : null;
+
+  return {
+    $let: {
+      vars: {
+        rawValue: fieldRef,
+        isoValue: isoParser,
+        formattedValue: formattedParser,
+      },
+      in: {
+        $cond: [
+          { $eq: [{ $type: "$$rawValue" }, "date"] },
+          "$$rawValue",
+          formattedParser
+            ? {
+                $ifNull: ["$$isoValue", "$$formattedValue"],
+              }
+            : "$$isoValue",
+        ],
+      },
+    },
+  };
+};
+
+const buildDateRangeCondition = (
+  fieldPath: string,
+  range: unknown[],
+  fieldType: "date" | "datetime"
+) => {
+  if (!Array.isArray(range)) {
+    return null;
+  }
+
+  const [startRaw, endRaw] = range;
+  const start = parseDateInput(startRaw);
+  const end = parseDateInput(endRaw);
+
+  const startDate =
+    start && fieldType === "date"
+      ? start.startOf("day").toDate()
+      : start?.toDate();
+  const endDate =
+    end && fieldType === "date" ? end.endOf("day").toDate() : end?.toDate();
+
+  if (!startDate && !endDate) {
+    return null;
+  }
+
+  const dateFormat = fieldType === "date" ? "%m/%d/%Y" : undefined;
+  const fieldExpression = buildDateFieldExpression(fieldPath, dateFormat);
+
+  const comparisons: Record<string, unknown>[] = [];
+
+  if (startDate) {
+    comparisons.push({
+      $gte: [fieldExpression, startDate],
+    });
+  }
+
+  if (endDate) {
+    comparisons.push({
+      $lte: [fieldExpression, endDate],
+    });
+  }
+
+  if (!comparisons.length) {
+    return null;
+  }
+
+  if (comparisons.length === 1) {
+    return {
+      $expr: comparisons[0],
+    };
+  }
+
+  return {
+    $expr: {
+      $and: comparisons,
+    },
+  };
+};
+
+const parseTimeStringToDate = (value: unknown) => {
+  if (typeof value !== "string" || !value.trim()) {
+    return null;
+  }
+
+  const [hoursStr, minutesStr = "0", secondsStr = "0"] = value.split(":");
+  const hours = Number(hoursStr);
+  const minutes = Number(minutesStr);
+  const seconds = Number(secondsStr);
+
+  if (Number.isNaN(hours) || Number.isNaN(minutes) || Number.isNaN(seconds)) {
+    return null;
+  }
+
+  return new Date(Date.UTC(1970, 0, 1, hours, minutes, seconds));
+};
+
+const buildTimeRangeCondition = (fieldPath: string, range: unknown[]) => {
+  if (!Array.isArray(range)) {
+    return null;
+  }
+
+  const [startRaw, endRaw] = range;
+  const start = parseTimeStringToDate(startRaw);
+  const end = parseTimeStringToDate(endRaw);
+
+  if (!start && !end) {
+    return null;
+  }
+
+  const fieldExpression = buildDateFieldExpression(fieldPath, "%H:%M");
+  const comparisons: Record<string, unknown>[] = [];
+
+  if (start) {
+    comparisons.push({
+      $gte: [fieldExpression, start],
+    });
+  }
+
+  if (end) {
+    comparisons.push({
+      $lte: [fieldExpression, end],
+    });
+  }
+
+  if (!comparisons.length) {
+    return null;
+  }
+
+  if (comparisons.length === 1) {
+    return {
+      $expr: comparisons[0],
+    };
+  }
+
+  return {
+    $expr: {
+      $and: comparisons,
+    },
+  };
+};
 
 const getKeysType = async (orgId: string) => {
   const keys = await Organization?.aggregate([

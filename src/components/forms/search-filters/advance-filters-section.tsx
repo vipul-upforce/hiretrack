@@ -76,9 +76,6 @@ export function AdvancedFiltersSection({
               hasError={hasError}
               getErrorMessage={getErrorMessage}
             />
-
-            {/* Empty space for balance */}
-            <div></div>
           </div>
 
           {/* Custom Fields Button */}

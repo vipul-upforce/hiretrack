@@ -24,6 +24,7 @@ import { RenderFieldInFilter } from "@/Custom_Fields/Components/CustomFields/Ren
 import type { CustomField } from "@/Custom_Fields/Types/CustomField";
 import type { Dayjs } from "dayjs";
 import type { SearchFilter } from "../candidate-search";
+import { useToast } from "@/hooks/use-toast";
 
 interface CustomFieldsDialogProps {
   isOpen: boolean;
@@ -54,8 +55,30 @@ export function CustomFieldsDialog({
   updateColValue,
   removeMetaField,
 }: CustomFieldsDialogProps) {
+  const { toast } = useToast();
+
+  const removeInvalidFields = () => {
+    const valid = cols.filter(
+      (col) =>
+        typeof col.fieldId === "string" &&
+        col.fieldId.trim() !== "" &&
+        col.value !== ""
+    );
+
+    setCols(valid);
+    return valid;
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) {
+          removeInvalidFields();
+        }
+        setIsOpen(open);
+      }}
+    >
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2 bg-transparent">
           <Settings className="h-4 w-4" />
@@ -76,7 +99,7 @@ export function CustomFieldsDialog({
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto">
-          <Separator className="my-4" />
+          <Separator className="mt-0 mb-4" />
           <div className="rounded-lg p-4">
             <div className="grid grid-cols-[200px_1fr_2px_0px] gap-4 mb-4">
               <Label className="font-semibold">Field</Label>
@@ -84,7 +107,14 @@ export function CustomFieldsDialog({
               <div></div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 p-2">
+              {cols.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground">
+                  <p className="text-sm">
+                    Select any custom field filter to get started
+                  </p>
+                </div>
+              )}
               {cols.map((col, index) => (
                 <div key={col.id as string}>
                   <div
@@ -154,7 +184,7 @@ export function CustomFieldsDialog({
         <DialogFooter>
           <Button
             type="button"
-            size="sm"
+            variant="primary"
             onClick={() => {
               setCols([
                 ...cols,
@@ -171,9 +201,26 @@ export function CustomFieldsDialog({
           </Button>
           <Button
             type="button"
-            size="sm"
             variant="outline"
             onClick={() => {
+              const hasInvalid = cols.some(
+                (col) =>
+                  !col.fieldId ||
+                  (typeof col.fieldId === "string" &&
+                    col.fieldId.trim() === "") ||
+                  col.value === "" ||
+                  col.value === undefined
+              );
+
+              if (hasInvalid) {
+                toast({
+                  variant: "destructive",
+                  title: "Incomplete Filter",
+                  description: "Please choose both a field and a value.",
+                });
+                return;
+              }
+
               const trimmedValues = {
                 ...values,
                 name: values.name?.trim() || "",
@@ -182,12 +229,14 @@ export function CustomFieldsDialog({
                 createdAfter: values.createdAfter || "",
                 createdBefore: values.createdBefore || "",
               };
+
               handleSearch(trimmedValues);
               setIsOpen(false);
             }}
           >
             Apply Filter
           </Button>
+
           <Button
             type="button"
             variant="outline"
