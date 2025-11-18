@@ -29,7 +29,14 @@ export const ApplicationTrendsLineChart: React.FC<{
           interval={0}
           fontSize={12}
         />
-        <YAxis />
+        <YAxis
+          label={{
+            value: "No. of Applications",
+            angle: -90,
+            position: "insideLeft",
+            style: { textAnchor: "middle", fontSize: 16 },
+          }}
+        />
         <Tooltip
           content={({ active, payload, label }) => {
             if (active && payload && payload[0]) {

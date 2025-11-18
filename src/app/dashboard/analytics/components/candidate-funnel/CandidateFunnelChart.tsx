@@ -50,11 +50,13 @@ export const CandidateFunnelChart: React.FC<CandidateFunnelChartProps> = ({
   );
   const [funnelData, setFunnelData] = useState<FunnelData[]>([]);
   const [summary, setSummary] = useState<FunnelSummary | null>(null);
+  const [dataReady, setDataReady] = useState(false);
 
   useEffect(() => {
     if (data) {
       setFunnelData(data.funnelData || []);
       setSummary(data.summary || null);
+      setDataReady(true);
     }
   }, [data]);
 
@@ -95,7 +97,7 @@ export const CandidateFunnelChart: React.FC<CandidateFunnelChartProps> = ({
     );
   }
 
-  if (!data || funnelData.length === 0) {
+  if ((!data || funnelData.length === 0) && dataReady) {
     return (
       <EmptyState
         title="Candidate Funnel Analytics"

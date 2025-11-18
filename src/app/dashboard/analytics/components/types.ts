@@ -1,4 +1,6 @@
-// Type definitions for analytics components
+// Import API types for consistency
+import type { JobPerformanceData as APIJobPerformanceData } from "@/app/api/analytics/types";
+
 export interface DateRange {
   from: Date;
   to: Date;
@@ -38,29 +40,14 @@ export interface JobSummary {
   avgTimeToFill: number;
 }
 
+// Re-export JobPerformanceData from API types for consistency
+export type JobPerformanceData = APIJobPerformanceData;
+
 export interface JobData {
   summary?: JobSummary;
-  jobPerformanceData?: Array<{
-    title: string;
-    status: string;
-    applications: number;
-    accepted: number;
-    rejected: number;
-    processing: number;
-    successRate: number;
-    timeToFill: number;
-    jobDuration: number;
-    requiredExperience: string;
-    skillsRequired: string;
-    salaryRange?: { inText: string };
-    createdAt: string;
-    closedAt?: string;
-  }>;
+  jobPerformanceData?: JobPerformanceData[];
   insights?: {
-    topPerformingJobs?: Array<{
-      title: string;
-      successRate: number;
-    }>;
+    topPerformingJobs?: JobPerformanceData[];
   };
   data?: any;
 }

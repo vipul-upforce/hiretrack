@@ -68,6 +68,7 @@ export const ApplicationTrendsChart: React.FC<ApplicationTrendsChartProps> = ({
   );
   const [trendData, setTrendData] = useState<TrendData[]>([]);
   const [summary, setSummary] = useState<any>(null);
+  const [dataReady, setDataReady] = useState(false);
   const [insights, setInsights] = useState<any>(null);
 
   useEffect(() => {
@@ -75,6 +76,7 @@ export const ApplicationTrendsChart: React.FC<ApplicationTrendsChartProps> = ({
       setTrendData(data.trendData || []);
       setSummary(data.summary || null);
       setInsights(data.insights || null);
+      setDataReady(true);
     }
   }, [data]);
 
@@ -267,7 +269,7 @@ export const ApplicationTrendsChart: React.FC<ApplicationTrendsChartProps> = ({
     );
   }
 
-  if (!data || trendData.length === 0) {
+  if ((trendData.length === 0 || !data) && dataReady) {
     return (
       <EmptyState
         title="No Application Trends Data"

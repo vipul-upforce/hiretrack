@@ -29,7 +29,14 @@ export const ConversionRateChart: React.FC<{ data: TrendData[] }> = ({
           interval={0}
           fontSize={12}
         />
-        <YAxis />
+        <YAxis
+          label={{
+            value: "Acceptance / Rejection Rate (%)",
+            angle: -90,
+            position: "insideLeft",
+            style: { textAnchor: "middle", fontSize: 16 },
+          }}
+        />
         <Tooltip
           content={({ active, payload, label }) => {
             if (active && payload && payload.length > 0) {

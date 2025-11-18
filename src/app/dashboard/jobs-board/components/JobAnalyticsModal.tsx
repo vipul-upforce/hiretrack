@@ -137,7 +137,7 @@ export const JobAnalyticsModal: React.FC<JobAnalyticsModalProps> = ({
       exportData.push({}); // Empty row for spacing
 
       // Add analytics data similar to the main export
-      const funnelInfo = funnelData?.data || funnelData;
+      const funnelInfo =  funnelData || null;
       if (funnelInfo?.funnelData && funnelInfo.funnelData.length > 0) {
         exportData.push({ "Report Type": "=== CANDIDATE FUNNEL ===" });
         funnelInfo.funnelData.forEach((stage) => {
@@ -168,7 +168,7 @@ export const JobAnalyticsModal: React.FC<JobAnalyticsModalProps> = ({
         exportData.push({});
       }
 
-      const interviewInfo = interviewData?.data || interviewData;
+      const interviewInfo = interviewData || null;
       if (
         interviewInfo?.assignmentData &&
         interviewInfo.assignmentData.length > 0
@@ -186,7 +186,7 @@ export const JobAnalyticsModal: React.FC<JobAnalyticsModalProps> = ({
         exportData.push({});
       }
 
-      const trendsInfo = trendsData?.data || trendsData;
+      const trendsInfo = trendsData || null;
       if (trendsInfo?.trendData && trendsInfo.trendData.length > 0) {
         exportData.push({ "Report Type": "=== APPLICATION TRENDS ===" });
         trendsInfo.trendData.forEach((trend) => {

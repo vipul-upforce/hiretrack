@@ -1,4 +1,3 @@
-// Analytics API Types
 export interface AnalyticsRequest {
   organizationId: string;
   dateRange?: {

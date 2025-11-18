@@ -26,7 +26,6 @@ export function HeaderControls({
   const [showPicker, setShowPicker] = useState(false);
   const [tempRange, setTempRange] = useState<Date[] | null>(dateRange);
 
-  // Keep tempRange in sync when parent dateRange changes (e.g. reset from outside)
   useEffect(() => {
     setTempRange(dateRange);
   }, [dateRange]);
@@ -49,7 +48,6 @@ export function HeaderControls({
       !tempRange[0] ||
       !tempRange[1]
     ) {
-      // Optionally you can close even if incomplete — here we simply ignore apply
       setShowPicker(false);
       return;
     }
@@ -85,7 +83,6 @@ export function HeaderControls({
             <DatePicker
               value={tempRange}
               onChange={(newRange) => {
-                // Only update local temp state — don't call parent yet
                 setTempRange(newRange);
               }}
               range={true}
