@@ -8,7 +8,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { FunnelData } from "../CandidateFunnelChart";
+import { FunnelData } from "./CandidateFunnelChart";
 
 export const CustomFunnelChart: React.FC<{ data: FunnelData[] }> = ({
   data,

@@ -13,6 +13,7 @@ import { settingsApi } from "./features/settings/settingsApi";
 import { organizationSlice } from "./features/org/orgSlice";
 import { checklistApi } from "./features/checklist/checklistApi";
 import { notificationsApi } from "./features/notifications/notificationsApi";
+import { analyticsApi } from "./features/analytics/analyticsApi";
 import authReducer from "@/lib/redux/authSlice";
 
 // Persist config for auth slice
@@ -42,6 +43,7 @@ const rootReducer = combineReducers({
   [apiSlice.reducerPath]: apiSlice.reducer,
   [checklistApi.reducerPath]: checklistApi.reducer,
   [notificationsApi.reducerPath]: notificationsApi.reducer,
+  [analyticsApi.reducerPath]: analyticsApi.reducer,
 });
 
 export const store = configureStore({
@@ -63,6 +65,7 @@ export const store = configureStore({
       checklistApi.middleware,
       notificationsApi.middleware,
       defaultLanesApi.middleware,
+      analyticsApi.middleware,
     ),
 });
 

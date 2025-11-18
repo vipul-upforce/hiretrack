@@ -56,7 +56,7 @@ export const ApplicationsTimeScatterChart: React.FC<{
             if (active && payload && payload[0]) {
               const data = payload[0].payload as JobPerformanceData;
               return (
-                <div className="bg-background border rounded-lg shadow-lg p-3">
+                <span className="bg-background border block rounded-lg shadow-lg p-3">
                   <p className="font-semibold text-foreground">{data.title}</p>
                   <p className="text-foreground">
                     Applications:{" "}
@@ -73,7 +73,7 @@ export const ApplicationsTimeScatterChart: React.FC<{
                   <p className="text-foreground">
                     Status: <Badge variant="outline">{data.status}</Badge>
                   </p>
-                </div>
+                </span>
               );
             }
             return null;

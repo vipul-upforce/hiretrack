@@ -1,5 +1,5 @@
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
-import { FunnelData } from "../CandidateFunnelChart";
+import { FunnelData } from "./CandidateFunnelChart";
 
 export const StageDistributionChart: React.FC<{ data: FunnelData[] }> = ({ data }) => {
   const pieData = data.filter((item) => item.count > 0);

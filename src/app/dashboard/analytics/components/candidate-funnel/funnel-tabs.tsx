@@ -4,7 +4,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CustomFunnelChart } from "./funnel-chart";
 import { StageDistributionChart } from "./distribution-pie-chart";
 import { TimeInStageChart } from "./time-in-stage-chart";
-import { FunnelData } from "../CandidateFunnelChart";
+import { FunnelData } from "./CandidateFunnelChart";
 
 export const FunnelTabs = ({ funnelData }: { funnelData: FunnelData[] }) => {
   return (

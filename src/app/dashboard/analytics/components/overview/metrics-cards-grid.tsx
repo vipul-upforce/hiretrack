@@ -6,7 +6,7 @@ import {
   ClockIcon,
   BarChartIcon,
 } from "lucide-react";
-import type { FunnelData, JobData, InterviewData, TrendsData } from "./types";
+import type { FunnelData, JobData, InterviewData, TrendsData } from "../types";
 
 interface MetricsCardsGridProps {
   funnelData: FunnelData;

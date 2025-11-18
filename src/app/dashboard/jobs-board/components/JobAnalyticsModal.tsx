@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -19,9 +19,9 @@ import {
   RefreshCcwIcon,
   CalendarIcon,
 } from "lucide-react";
-import { CandidateFunnelChart } from "@/app/dashboard/analytics/components/CandidateFunnelChart";
-import { InterviewAssignmentChart } from "@/app/dashboard/analytics/components/InterviewAssignmentChart";
-import { ApplicationTrendsChart } from "@/app/dashboard/analytics/components/ApplicationTrendsChart";
+import { CandidateFunnelChart } from "@/app/dashboard/analytics/components/candidate-funnel/CandidateFunnelChart";
+import { InterviewAssignmentChart } from "@/app/dashboard/analytics/components/interview-assignment/InterviewAssignmentChart";
+import { ApplicationTrendsChart } from "@/app/dashboard/analytics/components/trends/ApplicationTrendsChart";
 import { exportToCSV } from "@/app/dashboard/analytics/utils/export";
 import {
   useCandidateFunnel,
@@ -72,6 +72,7 @@ export const JobAnalyticsModal: React.FC<JobAnalyticsModalProps> = ({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState("funnel");
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [tempRange, setTempRange] = useState<Date[] | null>(dateRange);
 
   // Memoize filters with jobId
   const filters = useMemo(() => {
@@ -136,7 +137,7 @@ export const JobAnalyticsModal: React.FC<JobAnalyticsModalProps> = ({
       exportData.push({}); // Empty row for spacing
 
       // Add analytics data similar to the main export
-      const funnelInfo = funnelData?.data || funnelData;
+      const funnelInfo =  funnelData || null;
       if (funnelInfo?.funnelData && funnelInfo.funnelData.length > 0) {
         exportData.push({ "Report Type": "=== CANDIDATE FUNNEL ===" });
         funnelInfo.funnelData.forEach((stage) => {
@@ -167,7 +168,7 @@ export const JobAnalyticsModal: React.FC<JobAnalyticsModalProps> = ({
         exportData.push({});
       }
 
-      const interviewInfo = interviewData?.data || interviewData;
+      const interviewInfo = interviewData || null;
       if (
         interviewInfo?.assignmentData &&
         interviewInfo.assignmentData.length > 0
@@ -185,7 +186,7 @@ export const JobAnalyticsModal: React.FC<JobAnalyticsModalProps> = ({
         exportData.push({});
       }
 
-      const trendsInfo = trendsData?.data || trendsData;
+      const trendsInfo = trendsData || null;
       if (trendsInfo?.trendData && trendsInfo.trendData.length > 0) {
         exportData.push({ "Report Type": "=== APPLICATION TRENDS ===" });
         trendsInfo.trendData.forEach((trend) => {
@@ -228,45 +229,72 @@ export const JobAnalyticsModal: React.FC<JobAnalyticsModalProps> = ({
           {/* Controls */}
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between p-4 border-b">
             <div className="flex flex-wrap gap-2 items-center">
-              {!showDatePicker ? (
+              {showDatePicker ? (
+                <div className="relative">
+                  {/* FIXED: Prevent auto-close by fully controlling the popover */}
+                  <div className="p-3 border rounded-md bg-white shadow-md flex flex-col gap-3">
+                    <DatePicker
+                      value={tempRange}
+                      onChange={(newRange) => {
+                        setTempRange(newRange); // Live update only
+                      }}
+                      range
+                      showTimePicker={false}
+                      format="MM/DD/YYYY"
+                      placeholder="Select date range"
+                      className="w-[260px]"
+                    />
+
+                    {/* ACTION BUTTONS */}
+                    <div className="flex items-center justify-end gap-2">
+                      {/* CANCEL BUTTON */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setTempRange(dateRange); // Reset
+                          setShowDatePicker(false); // Close
+                        }}
+                      >
+                        Cancel
+                      </Button>
+
+                      {/* DONE BUTTON */}
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => {
+                          if (tempRange?.[0] && tempRange?.[1]) {
+                            setDateRange(tempRange); // Apply selection
+                            setShowDatePicker(false); // Close picker
+                            handleRefresh(); // Fire API only now
+                          }
+                        }}
+                      >
+                        Done
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setShowDatePicker(true)}
+                  onClick={() => {
+                    setTempRange(dateRange);
+                    setShowDatePicker(true);
+                  }}
                   className="flex items-center gap-2"
                 >
                   <CalendarIcon className="h-4 w-4" />
                   <span>
                     {dateRange && dateRange.length === 2
-                      ? `${toDate(dateRange[0])?.toLocaleDateString()} - ${toDate(dateRange[1])?.toLocaleDateString()}`
+                      ? `${toDate(dateRange[0])?.toLocaleDateString()} - ${toDate(
+                          dateRange[1]
+                        )?.toLocaleDateString()}`
                       : "Select date range"}
                   </span>
                 </Button>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <DatePicker
-                    value={dateRange}
-                    onChange={(newRange) => {
-                      setDateRange(newRange);
-                      setShowDatePicker(false);
-                    }}
-                    range={true}
-                    showTimePicker={false}
-                    format="MM/DD/YYYY"
-                    placeholder="Select date range"
-                    className="w-[240px]"
-                    // minDate={maxSelectableDate} // Job creation date (earliest date)
-                    // maxDate={new Date()} // Today (latest date)
-                    // autoFocus={true}
-                  />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowDatePicker(false)}
-                  >
-                    Cancel
-                  </Button>
-                </div>
               )}
             </div>
 

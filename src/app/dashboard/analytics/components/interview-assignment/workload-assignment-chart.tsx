@@ -54,24 +54,8 @@ export const WorkloadDistributionChart: React.FC<{
                     {data.interviewerName}
                   </p>
                   <p className="text-foreground">
-                    Total Assignments:{" "}
+                    Total Pending Assignments:{" "}
                     <span className="font-bold">{data.assignments}</span>
-                  </p>
-                  <p className="text-foreground">
-                    Completed:{" "}
-                    <span className="font-bold text-green-600 dark:text-green-400">
-                      {data.completions}
-                    </span>
-                  </p>
-                  <p className="text-foreground">
-                    Pending:{" "}
-                    <span className="font-bold text-orange-600 dark:text-orange-400">
-                      {data.pending}
-                    </span>
-                  </p>
-                  <p className="text-foreground">
-                    Completion Rate:{" "}
-                    <span className="font-bold">{data.completionRate}%</span>
                   </p>
                 </div>
               );
@@ -82,15 +66,10 @@ export const WorkloadDistributionChart: React.FC<{
         <Bar
           dataKey="assignments"
           fill="#3B82F6"
-          radius={[4, 4, 0, 0]}
+          radius={[5, 5, 0, 0]}
           opacity={0.8}
         />
-        <Bar
-          dataKey="completions"
-          fill="#10B981"
-          radius={[4, 4, 0, 0]}
-          opacity={0.8}
-        />
+       
       </BarChart>
     </ResponsiveContainer>
   );

@@ -4,7 +4,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { DownloadIcon } from "lucide-react";
 import { exportToCSV } from "../../utils/export";
-import type { FunnelData, FunnelSummary } from "../CandidateFunnelChart";
+import type { FunnelData, FunnelSummary } from "./CandidateFunnelChart";
 
 interface ExportButtonProps {
   funnelData: FunnelData[];

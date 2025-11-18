@@ -10,13 +10,13 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCcwIcon } from "lucide-react";
-import { useCandidateFunnel } from "../hooks/useAnalytics";
-import { AnalyticsFilters } from "../hooks/useAnalytics";
-import CandidateFunnelSkeleton from "./loading-skeletons/candidate-funnel";
-import { SummaryCards } from "./candidate-funnel/summary-cards";
-import { FunnelTabs } from "./candidate-funnel/funnel-tabs";
-import ExportButton from "./candidate-funnel/export-button";
-import EmptyState from "./empty-state";
+import { useCandidateFunnel } from "../../hooks/useAnalytics";
+import { AnalyticsFilters } from "../../hooks/useAnalytics";
+import CandidateFunnelSkeleton from "./../loading-skeletons/candidate-funnel";
+import { SummaryCards } from "./summary-cards";
+import { FunnelTabs } from "./funnel-tabs";
+import ExportButton from "./export-button";
+import EmptyState from "./../empty-state";
 
 interface CandidateFunnelChartProps {
   filters?: AnalyticsFilters;
@@ -50,11 +50,13 @@ export const CandidateFunnelChart: React.FC<CandidateFunnelChartProps> = ({
   );
   const [funnelData, setFunnelData] = useState<FunnelData[]>([]);
   const [summary, setSummary] = useState<FunnelSummary | null>(null);
+  const [dataReady, setDataReady] = useState(false);
 
   useEffect(() => {
     if (data) {
       setFunnelData(data.funnelData || []);
       setSummary(data.summary || null);
+      setDataReady(true);
     }
   }, [data]);
 
@@ -95,7 +97,7 @@ export const CandidateFunnelChart: React.FC<CandidateFunnelChartProps> = ({
     );
   }
 
-  if (!data || funnelData.length === 0) {
+  if ((!data || funnelData.length === 0) && dataReady) {
     return (
       <EmptyState
         title="Candidate Funnel Analytics"

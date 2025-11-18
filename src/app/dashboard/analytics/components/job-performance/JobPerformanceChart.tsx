@@ -10,40 +10,20 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCcwIcon } from "lucide-react";
-import { useJobPerformance } from "../hooks/useAnalytics";
-import { AnalyticsFilters } from "../hooks/useAnalytics";
-import JobPerformanceSkeleton from "./loading-skeletons/job-performance";
-import SummaryCards from "./job-performance/summary-cards";
-import JobStatusBreakdown from "./job-performance/job-status-breakdown";
-import InsightsCards from "./job-performance/insights-cards";
-import JobPerformanceTabs from "./job-performance/job-performance-tabs";
-import JobPerformanceExport from "./job-performance/job-performance-export";
+import { useJobPerformance } from "../../hooks/useAnalytics";
+import { AnalyticsFilters } from "../../hooks/useAnalytics";
+import JobPerformanceSkeleton from "./../loading-skeletons/job-performance";
+import SummaryCards from "./summary-cards";
+import JobStatusBreakdown from "./job-status-breakdown";
+import InsightsCards from "./insights-cards";
+import JobPerformanceTabs from "./job-performance-tabs";
+import JobPerformanceExport from "./job-performance-export";
+import EmptyState from "../empty-state";
+import type { JobPerformanceData } from "../types";
 
 export interface JobPerformanceChartProps {
   filters?: AnalyticsFilters;
   organizationId?: string;
-}
-
-export interface JobPerformanceData {
-  jobId: string;
-  title: string;
-  applications: number;
-  accepted: number;
-  rejected: number;
-  processing: number;
-  timeToFill: number;
-  successRate: number;
-  status: string;
-  createdAt: Date;
-  closedAt?: Date;
-  jobDuration: number;
-  salaryRange?: {
-    min?: number;
-    max?: number;
-    inText?: string;
-  } | null;
-  requiredExperience: number;
-  skillsRequired: number;
 }
 
 export const JobPerformanceChart: React.FC<JobPerformanceChartProps> = ({
@@ -56,13 +36,15 @@ export const JobPerformanceChart: React.FC<JobPerformanceChartProps> = ({
   );
   const [jobData, setJobData] = useState<JobPerformanceData[]>([]);
   const [summary, setSummary] = useState<any>(null);
+  const [dataReady, setDataReady] = useState(false);
   const [insights, setInsights] = useState<any>(null);
 
   useEffect(() => {
     if (data) {
-      setJobData(data.jobPerformanceData || []);
+      setJobData(data.jobPerformanceData|| []);
       setSummary(data.summary || null);
       setInsights(data.insights || null);
+      setDataReady(true);
     }
   }, [data]);
 
@@ -100,6 +82,16 @@ export const JobPerformanceChart: React.FC<JobPerformanceChartProps> = ({
           </div>
         </CardContent>
       </Card>
+    );
+  }
+
+  if (jobData.length === 0 && dataReady) {
+    return (
+      <EmptyState
+        title="No Job Performance Data"
+        description="Analyze job posting effectiveness and hiring success"
+        message="No Data available."
+      />
     );
   }
 

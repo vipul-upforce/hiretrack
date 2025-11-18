@@ -122,7 +122,7 @@ export default function AnalyticsPage() {
       exportData.push({})
 
       // ... existing export logic ...
-      const funnelInfo = funnelData?.data || funnelData
+      const funnelInfo = funnelData
       if (funnelInfo?.funnelData && funnelInfo.funnelData.length > 0) {
         exportData.push({ "Report Type": "=== CANDIDATE FUNNEL ANALYSIS ===" })
 
@@ -164,7 +164,7 @@ export default function AnalyticsPage() {
         exportData.push({})
       }
 
-      const jobInfo = jobData?.data || jobData
+      const jobInfo = jobData
       if (jobInfo?.jobPerformanceData && jobInfo.jobPerformanceData.length > 0) {
         exportData.push({ "Report Type": "=== JOB PERFORMANCE ANALYSIS ===" })
 
@@ -226,7 +226,7 @@ export default function AnalyticsPage() {
         exportData.push({})
       }
 
-      const interviewInfo = interviewData?.data || interviewData
+      const interviewInfo = interviewData
       if (interviewInfo?.assignmentData && interviewInfo.assignmentData.length > 0) {
         exportData.push({
           "Report Type": "=== INTERVIEW ASSIGNMENT ANALYSIS ===",
@@ -275,7 +275,7 @@ export default function AnalyticsPage() {
         exportData.push({})
       }
 
-      const trendsInfo = trendsData?.data || trendsData
+      const trendsInfo = trendsData
       if (trendsInfo?.trendData && trendsInfo.trendData.length > 0) {
         exportData.push({
           "Report Type": "=== APPLICATION TRENDS ANALYSIS ===",
