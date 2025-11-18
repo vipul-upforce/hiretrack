@@ -22,19 +22,7 @@ export interface Attachment {
 
 export async function GET(request: NextRequest) {
   try {
-    // Check authentication
-    // const token = request.headers.get("cookie")?.match(/token=([^;]+)/)?.[1];
-    // if (!token) {
-    //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    // }
-    // // const orgId = request.cookies.get("org_id")?.value;
-    // const orgId = request.cookies.get("org_id")?.value;
-    // const decryptedResponse = await verifyAndDecryptJWTToken(token, orgId);
-    // if (!decryptedResponse.success || !decryptedResponse.user) {
-    //   return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    // }
 
-    // const user = decryptedResponse.user;
     const user = await getAuthenticatedUser(request);
     if (!user) {
       return NextResponse.json(

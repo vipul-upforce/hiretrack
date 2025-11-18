@@ -28,8 +28,6 @@ import useCustomForm, {
 import { ICandidateHistory } from "@/lib/models/history";
 import { Resume } from "@/lib/redux/types";
 import FormUpdater from "../Utils/FormUpdater";
-import Cookies from "js-cookie";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { useApplyHandler } from "@/app/apply-jobs/useApplyHandler";
 import { TermsConfirmationDialog } from "@/components/TermsConfirmationDialog";
 import { useSelector } from "react-redux";
@@ -218,17 +216,7 @@ export function CreateCandidateDialog({
     }
   }, [isOpen]);
 
-  // useEffect(() => {
-  //   (async () => {
-  //     const token = Cookies.get("token");
-  //     if (token) {
-  //       const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-  //       if (decryptedResponse.success && decryptedResponse.user) {
-  //         setuser(decryptedResponse.user);
-  //       }
-  //     }
-  //   })();
-  // }, []);
+
 
   useEffect(() => {
     if (isOpen && isClient) {

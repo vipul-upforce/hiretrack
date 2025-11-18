@@ -4,9 +4,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { useLoginMutation } from "@/lib/features/auth/authApi";
 import { useCustomFields } from "@/Custom_Fields/hooks/use-customFields";
-import Cookies from "js-cookie";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
-import * as jose from "jose";
 
 import { LoginFormValues, UserWithoutCF } from "@/types/login";
 import { useCallback } from "react";
@@ -123,20 +120,7 @@ export const useHandleLoginSubmit = ({
         }
         let is2FAEnabled = response.twofa;
 
-        // const decryptedResponse = await verifyAndDecryptJWTToken(
-        //   String(response.user),
-        //   response.organizationId
-        // );
-
-        // if (!decryptedResponse.success || !decryptedResponse.user) {
-        //   setStatus(decryptedResponse.error || "Failed to process login.");
-        //   toast({
-        //     title: "Error",
-        //     description: decryptedResponse.error || "Failed to process login.",
-        //     variant: "destructive",
-        //   });
-        //   return;
-        // }
+        
 
         // try {
         //   const check2FA = await fetch(

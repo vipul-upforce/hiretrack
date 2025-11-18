@@ -29,8 +29,6 @@ import { useRemarkHandlers } from "../../hooks/useRemarkHandlers";
 import { useEffect, useRef, useState, memo, useCallback, useMemo } from "react";
 import dayjs from "dayjs";
 import Cookies from "js-cookie";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
-import { User } from "@/lib/features/users/usersApi";
 import TagsList from "@/components/ui/tagsList";
 import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
 import CustomFieldBadge from "./CustomFieldBadge";

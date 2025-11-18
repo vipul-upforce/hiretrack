@@ -35,8 +35,6 @@ import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
 import CustomFieldBadge from "../../jobs/[id]/components/Candidate/CustomFieldBadge";
 import { formatDistanceToNow } from "date-fns";
 import { JobAnalyticsModal } from "./JobAnalyticsModal";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
-import Cookies from "js-cookie";
 import { useEffect } from "react";
 import AttachmentsPopover from "../../jobs/[id]/components/Remarks/attachments-popover";
 import { useSelector } from "react-redux";
@@ -77,12 +75,8 @@ const JobCard = ({
   useEffect(() => {
     const getUserOrganization = async () => {
       try {
-        // const token = Cookies.get("token");
         if (user) {
-          // const decryptedResponse = await verifyAndDecryptJWTToken(token);
-          // if (decryptedResponse.success && decryptedResponse.user) {
           setOrganizationId(user.organizationId);
-          // }
         }
       } catch (error) {
         console.error("Error getting user organization:", error);

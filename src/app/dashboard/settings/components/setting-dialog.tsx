@@ -17,9 +17,6 @@ import TimeZoneSelect from "./TimeZone-Dialog";
 import EmailTemplateEditor from "./edit-mail-dialog";
 import LogsDialog from "./LogsDialog";
 import ManageTagsDialog from "../../jobs/[id]/components/Dialogs/manage-tags-dialog";
-import { useEffect, useState } from "react";
-import Cookies from "js-cookie";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import twoFASettings from "./twofa-setting";
 import GoogleCalendarSettings from "./google-calendar";
 import { useSelector } from "react-redux";
@@ -68,17 +65,6 @@ const SettingDialog = ({
     (state: any) => state.auth || {}
   );
   const orgId = user.organizationId;
-  // useEffect(() => {
-  //   (async () => {
-  //     const token = Cookies.get("token");
-  //     if (token) {
-  //       const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-  //       if (decryptedResponse.success && decryptedResponse.user) {
-  //         setOrgId(decryptedResponse.user.organizationId);
-  //       }
-  //     }
-  //   })();
-  // }, []);
 
   if (setting.key === "tags")
     return <ManageTagsDialog onClose={onClose} isOpen={isOpen} orgId={orgId} />;

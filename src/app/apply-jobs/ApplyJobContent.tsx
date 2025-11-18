@@ -19,7 +19,6 @@ import { useFetchAppliedApplicationQuery } from "@/lib/features/candidate/candid
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import { SerializedError } from "@reduxjs/toolkit";
 import Image from "next/image";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import InvalidPage from "@/components/InvalidPage";
 import { Input } from "@/components/ui/input";
 import { JobCardSkeleton } from "./JobCardSkeleton";
@@ -99,7 +98,7 @@ export default function ApplyJobsContent({
       : !isIframe); // If no param, hide only if in iframe
   const { data } = useFetchAppliedApplicationQuery(
     {},
-    { skip: orgName === "" }
+    { skip: orgName === null || orgName === "" }
   );
   const { user } = useSelector((state: any) => state.auth || null);
 
@@ -130,7 +129,7 @@ export default function ApplyJobsContent({
     error,
   } = useFetchOpenJobQuery(
     { orgName: orgName, title: queryTitle },
-    { skip: orgName === null }
+    { skip: orgName === null || orgName === "" }
   ) as {
     data: Job[];
     isLoading: boolean;
@@ -274,10 +273,7 @@ export default function ApplyJobsContent({
     const urlOrgName = searchParams?.get("o");
     if (user) {
       try {
-        // const decryptedResponse = await verifyAndDecryptJWTToken(token);
         if (
-          // decryptedResponse.success &&
-          // decryptedResponse.user &&
           user.organizationInfo &&
           user.organizationInfo.name
         ) {

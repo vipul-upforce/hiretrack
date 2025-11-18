@@ -19,11 +19,8 @@ import type { CandidateFormValues } from "../../schemas/candidate-schema";
 import { useFetchInterviewersQuery } from "@/lib/features/user/userApi";
 import { v4 as uuidv4 } from "uuid";
 import CustomFields from "@/Custom_Fields/Components/CustomFields";
-import Cookies from "js-cookie";
 import { useEffect, useState, useRef } from "react";
 import { toast } from "@/hooks/use-toast";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
-import type { User } from "@/lib/features/org/orgApi";
 import dayjs from "dayjs";
 import { MobileFileUpload } from "@/components/ui/file-upload-mobile";
 import { useSanitizeFiles } from "@/hooks/useSanitizeFiles";
@@ -140,17 +137,6 @@ export function CandidateForm({
       ? values.assignment.interviewerId
       : values.assignment?.interviewerId?._id || "";
 
-  // useEffect(() => {
-  //   (async () => {
-  //     const token = Cookies.get("token");
-  //     if (token) {
-  //       const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-  //       if (decryptedResponse.success && decryptedResponse.user) {
-  //         setuser(decryptedResponse.user);
-  //       }
-  //     }
-  //   })();
-  // }, []);
 
   useEffect(() => {
     // if (values.resume && !(values.resume as { url?: string }).url) {

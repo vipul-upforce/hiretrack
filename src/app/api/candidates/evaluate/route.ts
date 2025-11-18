@@ -311,9 +311,6 @@ export async function PUT(request: NextRequest) {
     }
 
     let base64Resume;
-    // const cookie = (await request.cookies.get("token")?.value) || "{}";
-    // const token = await verifyAndDecryptToken(cookie);
-    // const user = (await token).user;
     const fileStorage = settingsData.fileStorage.storageType || "local";
     if (fileStorage === "local") {
       base64Resume = await generateBase64(resumeUrl);

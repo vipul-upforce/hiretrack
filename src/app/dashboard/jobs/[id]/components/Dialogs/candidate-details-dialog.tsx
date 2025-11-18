@@ -12,12 +12,10 @@ import {
   useLazyFetchCandidatesQuery,
 } from "@/lib/features/candidate/candidateApi";
 import { useParams } from "next/navigation";
-import Cookies from "js-cookie";
 import { AssignCandidateDialog } from "./assign-candidate-dialog";
 import { usePathname } from "next/navigation";
 import { ICandidateHistory } from "@/lib/models/history";
 import { AssignJobDialog } from "./assign-job-dialog";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { User } from "@/lib/features/users/usersApi";
 import { evaluateCandidate } from "@/app/apply-jobs/ApplyAsGuest";
 import { CandidateDetailsDialogProps } from "../../schemas/candidateDetailsDialogProps";

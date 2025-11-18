@@ -27,7 +27,6 @@ import Cookies from "js-cookie";
 import { useCustomFields } from "@/Custom_Fields/hooks/use-customFields";
 import { useGetPortalConfigsQuery } from "@/lib/features/settings/settingsApi";
 import { IUser } from "@/lib/models/user";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { setAllowMultipleOrgs } from "@/lib/features/org/orgSlice";
 import { logout } from "@/lib/redux/authSlice";
 import { useDispatch, useSelector } from "react-redux";
@@ -333,14 +332,6 @@ export default function DashboardLayout({
   const generate_share_org = async (e: React.FormEvent) => {
     e.preventDefault();
     let parsedUser = user;
-
-    // console.log(user);
-    // if (user) {
-    //   const decryptedResponse = await verifyAndDecryptJWTToken(String(user));
-    //   if (decryptedResponse.success && decryptedResponse.user) {
-    //     parsedUser = decryptedResponse.user;
-    //   }
-    // }
     if (parsedUser) {
       let url;
       if (hasMultipleOrgs) {

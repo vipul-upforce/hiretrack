@@ -8,7 +8,6 @@ import {
 } from "@/lib/features/checklist/checklistApi";
 import { Candidate, CandidateStatus } from "@/types/candidate";
 import React, { useState, useEffect, useContext, useMemo } from "react";
-import Cookies from "js-cookie";
 import { toast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -21,7 +20,6 @@ import {
 import { MentionTextarea } from "@/components/ui/mention-textarea";
 import { Rating } from "@mui/material";
 import { Button } from "@/components/ui/button";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { sentStatusMailHandler } from "@/lib/utils";
 import { useSendStatusMailMutation } from "@/lib/features/org/orgApi";
 import { Switch } from "@/components/ui/switch";
@@ -727,17 +725,6 @@ const ChecklistRemarksDialog = ({
       return;
     }
 
-    // const token = Cookies.get("auth_token");
-    // if (!token) {
-    //   toast({
-    //     title: "Error",
-    //     description: "Authentication required",
-    //     variant: "destructive",
-    //   });
-    //   return;
-    // }
-
-    // const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
     if (!user) {
       toast({
         title: "Error",

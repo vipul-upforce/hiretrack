@@ -26,7 +26,6 @@ import {
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { SignupSchema } from "../schema/Signup.schema";
 import { SignupFormValues } from "@/types/signup";
 import { useSelector } from "react-redux";

@@ -11,8 +11,6 @@ import {
   User,
 } from "@/lib/features/org/orgApi";
 import { useToast } from "@/hooks/use-toast";
-import Cookies from "js-cookie";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import withAuthGuard from "@/components/withAuthGuard";
 import { useSelector } from "react-redux";
 import CvBatchLoader from "./CvBatchLoader";
@@ -74,22 +72,7 @@ export function CVBatchProcessor() {
     skip: !User?.organizationId,
   });
 
-  // const getUser = async () => {
-  //   // debugger;
-  //   const userData = Cookies.get("token");
-  //   if (userData) {
-  //     const decryptedResponse = await verifyAndDecryptJWTToken(
-  //       String(userData)
-  //     );
-  //     if (decryptedResponse.success && decryptedResponse.user) {
-  //       setUser(decryptedResponse.user);
-  //     }
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   getUser();
-  // }, []);
+ 
 
   useEffect(() => {
     if (batches) {

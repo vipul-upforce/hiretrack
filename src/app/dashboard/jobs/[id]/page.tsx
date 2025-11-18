@@ -24,10 +24,7 @@ import {
   useGetJobLanesQuery,
 } from "@/lib/features/lane/laneApi";
 import { useGetJobLaneConfigQuery } from "@/lib/features/checklist/checklistApi";
-import { User } from "@/lib/features/users/usersApi";
-import Cookies from "js-cookie";
 import { Breadcrumb } from "./components/Utils/breadcrumb";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { Checkbox } from "@/components/ui/checkbox";
 import { KanbanColumn } from "./components/Lanes/KanbanColumn";
 import { useKanbanBoard } from "./hooks/useKanbanBoard";
@@ -276,17 +273,7 @@ export default function JobProgressPage() {
   //   scrollRef,
   // ]);
 
-  // useEffect(() => {
-  //   // const token = Cookies.get("token");
-  //   if (user) {
-  //     verifyAndDecryptJWTToken(token).then((decryptedResponse) => {
-  //       console.log("User fetch result:", decryptedResponse);
-  //       if (decryptedResponse.success && decryptedResponse.user) {
-  //         setUser(decryptedResponse.user);
-  //       }
-  //     });
-  //   }
-  // }, []);
+ 
 
   useEffect(() => {
     if (!isDialogOpen) {
@@ -487,16 +474,7 @@ export default function JobProgressPage() {
     }
   }, [isLaneEditOpen]);
 
-  // useEffect(() => {
-  //   const token = Cookies.get("token");
-  //   if (token) {
-  //     verifyAndDecryptJWTToken(token).then((decryptedResponse) => {
-  //       if (decryptedResponse.success && decryptedResponse.user) {
-  //         setUser(decryptedResponse.user);
-  //       }
-  //     });
-  //   }
-  // }, []);
+
 
   useEffect(() => {
     if (!isDialogOpen) {

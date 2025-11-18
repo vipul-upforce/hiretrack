@@ -5,36 +5,25 @@ import connectToDatabase, {
   Settings,
   History,
 } from "@/lib/mongodb";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { sendMail } from "@/lib/emailUtils";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 
 export async function POST(request: NextRequest) {
   try {
-    // Authenticate user
-    const token = request.cookies.get("auth_token");
-    if (!token) {
+    const [userData, data] = await Promise.all([
+      getAuthenticatedUser(request),
+      request.json(),
+      connectToDatabase(),
+    ]);
+    if (!userData) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    // Get org ID from cookies
-    const orgId = request.cookies.get("org_id")?.value;
-    const decryptedResponse = await verifyAndDecryptJWTToken(
-      token.value,
-      orgId
-    );
-    if (!decryptedResponse.success || !decryptedResponse.user) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    const user = decryptedResponse.user;
-
-    // Check role - candidates cannot send emails
+    const user = userData;
     if (user.role === "candidate" || user.role === "") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Parse request body
-    const data = await request.json();
     const {
       candidateId,
       subject,
@@ -79,14 +68,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Connect to database
-    await connectToDatabase();
-
-    // Get candidate
-    const candidate = await Candidate!.findOne({
-      _id: candidateId,
-      organizationId: user.organizationId,
-    });
+    const [candidate, settings] = await Promise.all([
+      Candidate!.findOne({
+        _id: candidateId,
+        organizationId: user.organizationId,
+      }),
+      Settings!.findOne({
+        organizationId: user.organizationId,
+      }),
+    ]);
 
     if (!candidate) {
       return NextResponse.json(
@@ -95,10 +85,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get organization settings
-    const settings = await Settings!.findOne({
-      organizationId: user.organizationId,
-    });
     if (!settings) {
       return NextResponse.json(
         { error: "Organization settings not found" },
@@ -205,87 +191,89 @@ export async function POST(request: NextRequest) {
     });
     // Send email with context for automatic history tracking
     try {
-      const emailResult = await sendMail(
-        settings.mailConfig,
-        emailData.to,
-        emailData.subject,
-        emailData.text,
-        emailData.html,
-        emailData.cc,
-        emailData.bcc,
-        emailData.replyTo,
-        emailData.from,
-        {
-          emailHistoryId: String(emailHistory._id),
-        },
-        user.email
-      );
+      const [emailResult] = await Promise.all([
+        sendMail(
+          settings.mailConfig,
+          emailData.to,
+          emailData.subject,
+          emailData.text,
+          emailData.html,
+          emailData.cc,
+          emailData.bcc,
+          emailData.replyTo,
+          emailData.from,
+          {
+            emailHistoryId: String(emailHistory._id),
+          },
+          user.email
+        ),
 
-      // Check if email was sent successfully
-      if (!emailResult.success) {
-        throw new Error(emailResult.error || "Failed to send email");
-      }
+        // Update email history with success status
+        await EmailHistory!.updateOne(
+          { _id: emailHistory._id },
+          {
+            status: "sent",
+            sentAt: new Date(),
+          }
+        ),
 
-      // Update email history with success status
-      await EmailHistory!.updateOne(
-        { _id: emailHistory._id },
-        {
-          status: "sent",
-          sentAt: new Date(),
-        }
-      );
-
-      // Add to candidate history
-      await History!.findOneAndUpdate(
-        {
-          candidateId: candidate._id.toString(),
-          jobId: candidate.jobId,
-        },
-        {
-          $push: {
-            history: {
-              dateTime: new Date().toISOString(),
-              title: !!subject ? subject : "Direct Email Sent",
-              previousInterviewer: null,
-              currentInterviewer: null,
-              assignmentBy: user.id,
-              note: {
-                description: `Email sent to candidate by ${user.name || user.email}`,
-                date: new Date().toISOString(),
-                rating: 0,
-                userId: user.id,
+        // Add to candidate history
+        await History!.findOneAndUpdate(
+          {
+            candidateId: candidate._id.toString(),
+            jobId: candidate.jobId,
+          },
+          {
+            $push: {
+              history: {
+                dateTime: new Date().toISOString(),
+                title: !!subject ? subject : "Direct Email Sent",
+                previousInterviewer: null,
+                currentInterviewer: null,
+                assignmentBy: user.id,
+                note: {
+                  description: `Email sent to candidate by ${user.name || user.email}`,
+                  date: new Date().toISOString(),
+                  rating: 0,
+                  userId: user.id,
+                },
+                attachments: [],
               },
-              attachments: [],
             },
           },
-        },
-        { upsert: true }
-      );
+          { upsert: true }
+        ),
+      ]);
+
+      // Check if email was sent successfully
+      if (!emailResult?.success) {
+        throw new Error(emailResult.error || "Failed to send email");
+      }
 
       return NextResponse.json({
         success: true,
         message: "Email sent successfully",
         emailHistoryId: emailHistory._id,
       });
-    } catch (emailError: any) {
+    } catch (emailError: unknown) {
       // Update email history with failure
       await EmailHistory!.updateOne(
         { _id: emailHistory._id },
         {
           status: "failed",
-          error: emailError.message || "Failed to send email",
+          error: emailError instanceof Error ? emailError.message : "Failed to send email",
         }
       );
 
       return NextResponse.json(
-        { error: "Failed to send email", details: emailError.message },
+        { error: "Failed to send email", details: emailError instanceof Error ? emailError.message : "Failed to send email" },
         { status: 500 }
       );
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in send email to candidate:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to process email request" },
+      { error: error instanceof Error ? error.message : "Failed to process email request" },
       { status: 500 }
     );
   }

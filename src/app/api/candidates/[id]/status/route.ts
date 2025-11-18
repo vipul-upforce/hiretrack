@@ -64,7 +64,7 @@ export async function PATCH(
     // Trigger notification if status actually changed
     if (oldStatus !== status && oldStatus && status) {
       try {
-        const jobInfo = updatedCandidate.jobId as any;
+        const jobInfo = updatedCandidate.jobId as Record<string, unknown>;
         await NotificationService.notifyCandidateStatusUpdated({
           organizationId: userData?.organizationId,
           candidateId: updatedCandidate._id.toString(),
@@ -73,7 +73,7 @@ export async function PATCH(
             jobInfo?._id?.toString() ||
             updatedCandidate.jobId?.toString() ||
             "",
-          jobTitle: jobInfo?.title || "Unknown Job",
+          jobTitle: jobInfo?.title as string || "Unknown Job",
           oldStatus,
           newStatus: status,
           triggerUserId: userData.id,

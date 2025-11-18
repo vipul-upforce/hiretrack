@@ -31,8 +31,6 @@ import { CandidateFunnelChart } from "./components/CandidateFunnelChart";
 import { JobPerformanceChart } from "./components/JobPerformanceChart";
 import { InterviewAssignmentChart } from "./components/InterviewAssignmentChart";
 import { ApplicationTrendsChart } from "./components/ApplicationTrendsChart";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
-import Cookies from "js-cookie";
 import {
   useCandidateFunnel,
   useJobPerformance,
@@ -122,10 +120,8 @@ export default function AnalyticsPage() {
   useEffect(() => {
     const getUserOrganization = async () => {
       try {
-        // const token = Cookies.get("token");
         if (user) {
-          // const decryptedResponse = await verifyAndDecryptJWTToken(token);
-          // if (user) {
+         
           setOrganizationId(user.organizationId);
           // }
         }

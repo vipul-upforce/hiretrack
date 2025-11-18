@@ -7,7 +7,6 @@ import type { OrgInfo } from "@/lib/models/user";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import DashboardLoader from "./components/dashboard-loader";
 import ActionItems from "@/components/actionitems";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Search, Bell, Calendar, TrendingUp, Clock } from "lucide-react";
 import { RenderTodaysInterviews } from "./components/RenderTodaysInterviews";
@@ -355,19 +354,6 @@ export default function DashboardPage() {
     [isLoadingMore, hasMoreData, loadMoreData]
   );
 
-  // const checkUser = async () => {
-
-  //   if (user) {
-  //     const decryptedResponse = await verifyAndDecryptJWTToken(String(user));
-  //     if (decryptedResponse.success && decryptedResponse.user) {
-  //       setUser(decryptedResponse.user);
-  //     }
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   checkUser();
-  // }, []);
 
   useEffect(() => {
     // debugger;

@@ -216,17 +216,6 @@ function KanbanPage() {
   const [sortField, setSortField] = useState<string | null>("tracking.createdAt");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [searchQuery, setSearchQuery] = useState("");
-  // useEffect(() => {
-  //   (async () => {
-  //     const token = Cookies.get("token");
-  //     if (token) {
-  //       const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-  //       if (decryptedResponse.success && decryptedResponse.user) {
-  //         setUser(decryptedResponse.user);
-  //       }
-  //     }
-  //   })();
-  // }, []);
 
   useEffect(() => {
     if (user) {
