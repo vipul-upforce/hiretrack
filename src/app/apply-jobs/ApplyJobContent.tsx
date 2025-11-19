@@ -4,12 +4,11 @@ import { useEffect, useState } from "react";
 import JobModal from "./JobModal";
 import { useFetchOpenJobQuery } from "@/lib/features/job/jobApi";
 import { useToast } from "@/hooks/use-toast";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useCustomFields } from "@/Custom_Fields/hooks/use-customFields";
 import { useFetchAppliedApplicationQuery } from "@/lib/features/candidate/candidateApi";
 import type { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import type { SerializedError } from "@reduxjs/toolkit";
-import InvalidPage from "@/components/InvalidPage";
 import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "@/lib/redux/authSlice";
@@ -54,17 +53,11 @@ export default function ApplyJobsContent({
   const [isModalOpen, setIsJobModalOpen] = useState(false);
   const [appliedApplications, setAppliedApplications] = useState<string[]>([]);
 
-  const {
-    data: orgResponse,
-    isLoading: isOrgLoading,
-    error: orgError,
-  } = useFetchOrgQuery(undefined);
+  const { data: orgResponse, isLoading: isOrgLoading } =
+    useFetchOrgQuery(undefined);
 
-  const {
-    data: portalResponse,
-    isLoading: isPortalLoading,
-    error: portalError,
-  } = useGetPortalConfigsQuery(undefined);
+  const { data: portalResponse, isLoading: isPortalLoading } =
+    useGetPortalConfigsQuery(undefined);
 
   const hideHeaderParam = searchParams.get("hideHeader");
   const hideFooterParam = searchParams.get("hideFooter");
@@ -86,7 +79,6 @@ export default function ApplyJobsContent({
   const { user } = useSelector((state: any) => state.auth || null);
 
   const { toast } = useToast();
-  const router = useRouter();
   const { setUserLoggedIn, userLoggedIn } = useCustomFields();
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [queryTitle, setQueryTitle] = useState<string>("");
@@ -176,7 +168,7 @@ export default function ApplyJobsContent({
       }
 
       if (allowance.allow) {
-        setInvalidPage(true);
+        // setInvalidPage(true);
       }
 
       const config = allowance?.data?.[0]?.portalConfigs;
@@ -300,9 +292,9 @@ export default function ApplyJobsContent({
     window.location.href = "/auth/login";
   };
 
-  if (invalidPage) {
-    return <InvalidPage message="Page Doesn't Exist" />;
-  }
+  // if (invalidPage) {
+  //   return <InvalidPage message="Page Doesn't Exist" />;
+  // }
 
   if (error && !isLoading) {
     if (isFetchBaseQueryError(error) && error.status !== 404) {
