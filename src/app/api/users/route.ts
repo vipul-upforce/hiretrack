@@ -30,27 +30,53 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const nonSystemUsers = await User.find(
+    // const nonSystemUsers = await User.find(
+    //   {
+    //     role: { $ne: "system" },
+    //     organizationId: session.organizationId
+    //   },
+    //   { password: 0 }
+    // ).sort({ createdAt: -1 });
+
+    // // Fetch only the latest system user
+    // const latestSystemUser = await User.findOne(
+    //   {
+    //     role: "system",
+    //     organizationId: session.organizationId
+    //   },
+    //   { password: 0 }
+    // ).sort({ createdAt: -1 });
+
+    if (!mongoose.Types.ObjectId.isValid(session.organizationId)) {
+      return NextResponse.json(
+        { error: "Invalid organization identifier" },
+        { status: 400 }
+      );
+    }
+
+    const orgObjectId = new mongoose.Types.ObjectId(session.organizationId);
+
+    const [aggregated] = await User.aggregate([
+      { $match: { organizationId: orgObjectId } },
+      { $sort: { createdAt: -1 } },
+      { $project: { password: 0 } },
       {
-        role: { $ne: "system" },
-        organizationId: session.user.organizationId
+        $facet: {
+          nonSystem: [{ $match: { role: { $ne: "system" } } }],
+          latestSystem: [
+            { $match: { role: "system" } },
+            { $limit: 1 }
+          ],
+        },
       },
-      { password: 0 }
-    ).sort({ createdAt: -1 });
-
-    // Fetch only the latest system user
-    const latestSystemUser = await User.findOne(
       {
-        role: "system",
-        organizationId: session.user.organizationId
+        $project: {
+          result: { $concatArrays: ["$nonSystem", "$latestSystem"] },
+        },
       },
-      { password: 0 }
-    ).sort({ createdAt: -1 });
+    ]);
 
-    const result = [...nonSystemUsers];
-    if (latestSystemUser) result.push(latestSystemUser);
-
-    return NextResponse.json(result);
+    return NextResponse.json(aggregated?.result ?? []);
   } catch (error: unknown) {
     return NextResponse.json(
       {
