@@ -123,7 +123,6 @@ Available placeholders:
         setEnableRedFlagsDetection(config.enableRedFlagsDetection !== false); // default true
         setEnableSkillsMatrix(config.enableSkillsMatrix !== false); // default true
         setEnableComparativeRanking(config.enableComparativeRanking || false); // default false
-        setEnableInterviewQuestions(config.enableInterviewQuestions || false); // default false
       }
     } catch (error) {
       console.error("Failed to fetch evaluation settings:", error);
@@ -145,7 +144,6 @@ Available placeholders:
           enableRedFlagsDetection,
           enableSkillsMatrix,
           enableComparativeRanking,
-          enableInterviewQuestions,
         }),
       });
 
@@ -184,7 +182,6 @@ Available placeholders:
     setEnableRedFlagsDetection(true);
     setEnableSkillsMatrix(true);
     setEnableComparativeRanking(false);
-    setEnableInterviewQuestions(false);
   };
 
   return (
@@ -327,22 +324,7 @@ Available placeholders:
                 checked={enableComparativeRanking}
                 onCheckedChange={setEnableComparativeRanking}
               />
-            </div>
-
-            {/* Screening Questions - Admin Controls */}
-            <div className="flex items-center justify-between space-x-2">
-              <div className="space-y-0.5">
-                <Label htmlFor="enableQuestions">Screening Question Generation (Admin Controls)</Label>
-                <p className="text-sm text-muted-foreground">
-                  AI generates 5-6 targeted screening questions including client communication assessment
-                </p>
-              </div>
-              <Switch
-                id="enableQuestions"
-                checked={enableInterviewQuestions}
-                onCheckedChange={setEnableInterviewQuestions}
-              />
-            </div>
+            </div>            
           </div>
 
           {/* Custom Prompt Toggle */}
@@ -397,7 +379,7 @@ Available placeholders:
           {/* Warning */}
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="text-xs">
+            <AlertDescription className="text-xs pt-2">
               Changes will only apply to new evaluations. Existing candidate scores will not be affected. Manual re-evaluation will use these new settings.
             </AlertDescription>
           </Alert>
@@ -413,7 +395,9 @@ Available placeholders:
             <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={loading}>
+            <Button
+            variant="primary"
+             onClick={handleSave} disabled={loading}>
               {loading ? "Saving..." : "Save Changes"}
             </Button>
           </div>

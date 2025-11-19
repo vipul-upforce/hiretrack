@@ -14,10 +14,8 @@ export default function UsersLayout({
     (state: any) => state.auth || {}
   );
   const checkUser = async () => {
-    // const token = Cookies.get("token");
     if (user) {
       if (user.role !== "admin") {
-        // debugger;
         router.push("/dashboard");
       }
     }

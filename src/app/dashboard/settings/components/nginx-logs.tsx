@@ -7,6 +7,8 @@ import {
 } from "@/lib/features/settings/settingsApi";
 import NginxLogsSkeleton from "./nginx-logs-skeleton";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useDebounce } from "@/hooks/useDebounce";
+
 type Props = {
   searchQuery: string;
   setSearchQuery: (v: string) => void;
@@ -24,6 +26,17 @@ export function NginxLogs({ searchQuery, setSearchQuery, onError }: Props) {
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const linesPerLoad = 100;
   const logContainerRef = useRef<HTMLDivElement>(null);
+  const [rawSearch, setRawSearch] = useState(searchQuery);
+  const debouncedSearchQuery = useDebounce(rawSearch, 700);
+
+  useEffect(() => {
+    setSearchQuery(debouncedSearchQuery);
+    setOffset(0);
+    setTotalLines(0);
+    if (debouncedSearchQuery === "") {
+      setFileContent([]);
+    }
+  }, [debouncedSearchQuery, setSearchQuery]);
 
   const {
     data: nginxData,
@@ -106,7 +119,6 @@ export function NginxLogs({ searchQuery, setSearchQuery, onError }: Props) {
               setFileContent((prev) => [...prev, ...(data.content || [])]);
               setOffset((data.offset || 0) + (data.content?.length || 0));
               setTotalLines(data.totalLines || 0);
-
             })
             .catch((err) => {
               onError?.("Error fetching more logs: " + err.message);
@@ -187,13 +199,11 @@ export function NginxLogs({ searchQuery, setSearchQuery, onError }: Props) {
                   <input
                     type="text"
                     placeholder="Search logs..."
-                    value={searchQuery}
+                    value={rawSearch}
                     onChange={(e) => {
-                      if (e.target.value !== "(" && e.target.value !== ")") {
-                        setSearchQuery(e.target.value);
-                        setOffset(0);
-                        setTotalLines(0);
-                        setFileContent([]);
+                      const v = e.target.value;
+                      if (v !== "(" && v !== ")") {
+                        setRawSearch(v);
                       }
                     }}
                     className="border rounded-lg px-4 py-2 text-sm w-full max-w-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background"
@@ -285,13 +295,13 @@ export function NginxLogs({ searchQuery, setSearchQuery, onError }: Props) {
                       <div className="w-full space-y-2">
                         {Array.from({ length: 100 }).map((_, i) => {
                           const randomWidth =
-                            Math.floor(Math.random() * 50) + 50; 
+                            Math.floor(Math.random() * 50) + 50;
                           return (
                             <Skeleton
                               key={i}
                               className="rounded-md h-6"
                               style={{
-                                width: `${randomWidth}%`
+                                width: `${randomWidth}%`,
                               }}
                             />
                           );

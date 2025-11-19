@@ -60,7 +60,6 @@ const SettingDialog = ({
   setting: { title: string; description: string; key: string; orgId?: string };
 }) => {
   const ComponentToRender = settingComponents[setting.key];
-  // const [orgId, setOrgId] = useState("");
   const { user }: { user: User } = useSelector(
     (state: any) => state.auth || {}
   );
@@ -120,7 +119,7 @@ const SettingDialog = ({
               <ComponentToRender onClose={onClose} isOpen={isOpen} />
             </div>
           ) : setting.key === "version" ? (
-            <div className="flex-1 overflow-hidden px-2 py-0 overflow-y-auto">
+            <div className="flex-1 overflow-hidden py-0 overflow-y-auto">
               <ComponentToRender onClose={onClose} isOpen={isOpen} />
             </div>
           ) : (

@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Organization } from "@/lib/mongodb";
+import connectToDatabase from "@/lib/mongodb";
 import { Candidate } from "@/lib/mongodb";
 import dayjs from "dayjs";
-import { Types } from "mongoose";
 import { CustomField } from "@/Custom_Fields/Types/CustomField";
+import {
+  buildDateRangeCondition,
+  buildTimeRangeCondition,
+  getKeysType,
+} from "./util";
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,8 +15,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const page = parseInt(request.nextUrl.searchParams.get("page") || "1");
-    const limit = parseInt(request.nextUrl.searchParams.get("limit") || "100");
-    // const limit = 100;
+    const limit = parseInt(request.nextUrl.searchParams.get("limit") || "20");
     const skip = (page - 1) * limit;
     const {
       name,
@@ -33,6 +36,13 @@ export async function POST(request: NextRequest) {
 
     const query: Record<string, any> = { [logicOperator]: [] };
 
+    const addLogicCondition = (condition: Record<string, unknown>) => {
+      if (!Array.isArray(query[logicOperator])) {
+        query[logicOperator] = [];
+      }
+      (query[logicOperator] as Record<string, unknown>[]).push(condition);
+    };
+
     if (organizationId) {
       if (!query.$and) query.$and = [];
       query.$and.push({ organizationId: organizationId });
@@ -41,7 +51,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (name) {
-      query[logicOperator].push({
+      addLogicCondition({
         name: {
           $regex: name.trim(),
           $options: "i",
@@ -58,11 +68,11 @@ export async function POST(request: NextRequest) {
         },
       }));
 
-      query[logicOperator].push({ $or: skillsConditions });
+      addLogicCondition({ $or: skillsConditions });
     }
 
     if (location) {
-      query[logicOperator].push({
+      addLogicCondition({
         location: {
           $regex: location.trim(),
           $options: "i",
@@ -75,111 +85,109 @@ export async function POST(request: NextRequest) {
       const expectedCTCQuery: { $gte?: number; $lte?: number } = {};
       if (minExpectedCTC) expectedCTCQuery.$gte = parseFloat(minExpectedCTC);
       if (maxExpectedCTC) expectedCTCQuery.$lte = parseFloat(maxExpectedCTC);
-      query[logicOperator].push({ expectedCTC: expectedCTCQuery });
+      addLogicCondition({ expectedCTC: expectedCTCQuery });
     }
 
     if (minCurrentCTC || maxCurrentCTC) {
       const currentCTCQuery: { $gte?: number; $lte?: number } = {};
       if (minCurrentCTC) currentCTCQuery.$gte = parseFloat(minCurrentCTC);
       if (maxCurrentCTC) currentCTCQuery.$lte = parseFloat(maxCurrentCTC);
-      query[logicOperator].push({ currentCTC: currentCTCQuery });
+      addLogicCondition({ currentCTC: currentCTCQuery });
     }
 
     if (minExperience || maxExperience) {
       const experienceQuery: { $gte?: number; $lte?: number } = {};
       if (minExperience) experienceQuery.$gte = parseFloat(minExperience);
       if (maxExperience) experienceQuery.$lte = parseFloat(maxExperience);
-      query[logicOperator].push({ experience: experienceQuery });
+      addLogicCondition({ experience: experienceQuery });
     }
 
     if (createdAfter || createdBefore) {
       const dateQuery: { $gte?: Date; $lte?: Date } = {};
       if (createdAfter) dateQuery.$gte = new Date(createdAfter);
       if (createdBefore) dateQuery.$lte = new Date(createdBefore);
-      query[logicOperator].push({ "tracking.createdAt": dateQuery });
+      addLogicCondition({ "tracking.createdAt": dateQuery });
     }
 
     if (customFields && typeof customFields === "object") {
-      const types = await getKeysType(organizationId);
+      const types = (await getKeysType(organizationId)) || [];
 
-      await Promise.all(
-        Object.entries(customFields).map(async ([key, value]) => {
-          const fieldPath = `customFields.${key}`;
-          const matchedType = types.find(
-            (type: CustomField) => type.label === key
+      Object.entries(customFields).forEach(([key, value]) => {
+        if (value === undefined || value === null) {
+          return;
+        }
+
+        const fieldPath = `customFields.${key}`;
+        const matchedType = types.find(
+          (type: CustomField) => type.label === key
+        );
+        const fieldType = matchedType?.type;
+
+        if (
+          fieldType &&
+          (fieldType === "date" || fieldType === "datetime") &&
+          Array.isArray(value)
+        ) {
+          const dateCondition = buildDateRangeCondition(
+            fieldPath,
+            value,
+            fieldType
           );
-          const isDateTime = matchedType?.type === "datetime";
 
-          if (
-            Array.isArray(value) &&
-            (dayjs(value[0]).isValid() || dayjs(value[1]).isValid())
-          ) {
-            const start =
-              value[0] && dayjs(value[0]).isValid()
-                ? (!isDateTime
-                    ? dayjs(value[0]).add(1, "day")
-                    : dayjs(value[0])
-                  ).toDate()
-                : null;
-
-            const end =
-              value[1] && dayjs(value[1]).isValid()
-                ? (!isDateTime
-                    ? dayjs(value[1]).add(1, "day")
-                    : dayjs(value[1])
-                  ).toDate()
-                : null;
-
-            if (start && end) {
-              query[logicOperator].push({
-                [fieldPath]: {
-                  $gte: start.toISOString(),
-                  $lte: end.toISOString(),
-                },
-              });
-            } else if (start) {
-              console.log("osnide start", start);
-              console.log("start.toISOString() :>> ", start.toISOString());
-              query[logicOperator].push({
-                [fieldPath]: {
-                  $gte: start.toISOString(),
-                },
-              });
-            } else if (end) {
-              query[logicOperator].push({
-                [fieldPath]: {
-                  $lte: end.toISOString(),
-                },
-              });
-            }
+          if (dateCondition) {
+            addLogicCondition(dateCondition);
           }
+          return;
+        }
 
-          // ✅ Handle single string (text input)
-          else if (typeof value === "string" && value.trim() !== "") {
-            query[logicOperator].push({
+        if (fieldType === "time" && Array.isArray(value)) {
+          const timeCondition = buildTimeRangeCondition(fieldPath, value);
+          if (timeCondition) {
+            addLogicCondition(timeCondition);
+          }
+          return;
+        }
+
+        if (
+          !fieldType &&
+          Array.isArray(value) &&
+          value.some((entry) => dayjs(entry).isValid())
+        ) {
+          const fallbackCondition = buildDateRangeCondition(
+            fieldPath,
+            value,
+            "datetime"
+          );
+          if (fallbackCondition) {
+            addLogicCondition(fallbackCondition);
+          }
+          return;
+        }
+
+        if (typeof value === "string" && value.trim() !== "") {
+          addLogicCondition({
+            [fieldPath]: {
+              $regex: value,
+              $options: "i",
+            },
+          });
+          return;
+        }
+
+        if (Array.isArray(value) && value.length > 0) {
+          const regexArray = value
+            .filter((v) => typeof v === "string" && v.trim() !== "")
+            .map((v) => new RegExp(v, "i"));
+
+          if (regexArray.length > 0) {
+            addLogicCondition({
               [fieldPath]: {
-                $regex: value,
-                $options: "i",
+                $in: regexArray,
               },
             });
           }
-
-          // ✅ Handle multi-select (array of strings, not date)
-          else if (Array.isArray(value) && value.length > 0) {
-            const regexArray = value
-              .filter((v) => typeof v === "string" && v.trim() !== "")
-              .map((v) => new RegExp(v, "i"));
-
-            if (regexArray.length > 0) {
-              query[logicOperator].push({
-                [fieldPath]: {
-                  $in: regexArray,
-                },
-              });
-            }
-          }
-        })
-      );
+        }
+      });
     }
 
     if (!Candidate) {
@@ -400,33 +408,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-const getKeysType = async (orgId: string) => {
-  const keys = await Organization?.aggregate([
-    {
-      $match: {
-        _id: new Types.ObjectId(orgId),
-      },
-    },
-    {
-      $project: {
-        customFieldsArray: { $objectToArray: "$customFields" },
-      },
-    },
-    {
-      $unwind: "$customFieldsArray",
-    },
-    {
-      $match: {
-        "customFieldsArray.v.formName": "Candidate",
-      },
-    },
-    {
-      $project: {
-        fields: "$customFieldsArray.v.fields",
-        _id: 0,
-      },
-    },
-  ]);
-  return keys?.[0].fields;
-};

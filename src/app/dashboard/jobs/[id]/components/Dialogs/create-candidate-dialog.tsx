@@ -444,7 +444,7 @@ export function CreateCandidateDialog({
         description: errorMessage,
         variant: "destructive",
       });
-    }finally{
+    } finally {
       setIsFormSubmitting(false);
     }
     setIsCreating(false);
@@ -481,18 +481,18 @@ export function CreateCandidateDialog({
               target.style.backgroundColor = primaryColor;
             }}
             style={{ backgroundColor: primaryColor }}
-            className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            className="inline-flex justify-center w-full rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
           >
             {isSendingEmail ||
             isCreating ||
             isLoading ||
             isEvaluating ||
-            isAdding 
+            isAdding
               ? "Processing..."
               : "Apply Now"}
           </button>
         ) : (
-          <Button variant="primary">
+          <Button variant="primary" className="w-full">
             <Plus className="h-4 w-4 mr-2" />
             Add Candidate
           </Button>
@@ -615,7 +615,7 @@ export function CreateCandidateDialog({
                   }}
                   style={{ backgroundColor: primaryColor }}
                 >
-                  {(isSubmitting || isFormSubmitting)
+                  {isSubmitting || isFormSubmitting
                     ? "Saving..."
                     : user && (user.role === "candidate" || user?.role === "")
                       ? "Apply"

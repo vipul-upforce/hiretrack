@@ -79,13 +79,11 @@ export function MobileFileUpload({
     file: null,
     isExisting: false,
   });
-  // const [user, setUser] = useState<User | null>(null);
   const { user }: { user: User } = useSelector(
     (state: any) => state.auth || {}
   );
   const [droppedFiles, setDroppedFiles] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
 
   const handleRename = (newName: string) => {
     if (renameFile.file) {

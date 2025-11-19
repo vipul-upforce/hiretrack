@@ -38,13 +38,13 @@ interface RenderFieldProps {
   label: string;
   type: string;
   value:
-  | string
-  | string[]
-  | boolean
-  | FileData[]
-  | Dayjs
-  | [Dayjs, Dayjs]
-  | undefined;
+    | string
+    | string[]
+    | boolean
+    | FileData[]
+    | Dayjs
+    | [Dayjs, Dayjs]
+    | undefined;
   onChange?: (
     value: string | string[] | boolean | FileData[] | Dayjs | [Dayjs, Dayjs]
   ) => void;
@@ -291,7 +291,7 @@ export const RenderFieldInFilter = ({
               ] as [string, string];
               onChange?.(newRange);
             }}
-            onBlur={() => { }}
+            onBlur={() => {}}
             name={name as string}
           />
           <TimePicker
@@ -303,7 +303,7 @@ export const RenderFieldInFilter = ({
               ] as [string, string];
               onChange?.(newRange);
             }}
-            onBlur={() => { }}
+            onBlur={() => {}}
             name={name as string}
           />
         </div>
@@ -312,32 +312,75 @@ export const RenderFieldInFilter = ({
     case "datetime":
       return (
         <div className="flex gap-2">
-          <DateTimePicker
-            value={value ? (value as [Dayjs, Dayjs])[0] : undefined}
-            onChange={(date) => {
-              const newRange = [date, (value as [Dayjs, Dayjs])?.[1]] as [
-                Dayjs,
-                Dayjs,
-              ];
-              onChange?.(newRange);
-            }}
-            onBlur={() => { }}
-          // min={min ? dayjs(min) : undefined}
-          // max={max ? dayjs(max) : undefined}
-          />
-          <DateTimePicker
-            value={value ? (value as [Dayjs, Dayjs])[1] : undefined}
-            onChange={(date) => {
-              const newRange = [(value as [Dayjs, Dayjs])?.[0], date] as [
-                Dayjs,
-                Dayjs,
-              ];
-              onChange?.(newRange);
-            }}
-            onBlur={() => { }}
-          // min={min ? dayjs(min) : undefined}
-          // max={max ? dayjs(max) : undefined}
-          />
+          {/* Start DateTime */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full justify-start text-left font-normal"
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {value && (value as [Dayjs, Dayjs])[0] ? (
+                  format((value as [Dayjs, Dayjs])[0].toDate(), "PPp")
+                ) : (
+                  <span>Start date & time</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <DateTimePicker
+                value={
+                  value && (value as [Dayjs, Dayjs])[0]
+                    ? (value as [Dayjs, Dayjs])[0]
+                    : undefined
+                }
+                onChange={(date) => {
+                  const newRange = [
+                    date || undefined,
+                    (value as [Dayjs, Dayjs])?.[1],
+                  ] as [Dayjs | undefined, Dayjs | undefined];
+                  onChange?.(newRange as [Dayjs, Dayjs]);
+                }}
+                placeholder="Select start date & time"
+                onBlur={() => {}}
+              />
+            </PopoverContent>
+          </Popover>
+
+          {/* End DateTime */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full justify-start text-left font-normal"
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {value && (value as [Dayjs, Dayjs])[1] ? (
+                  format((value as [Dayjs, Dayjs])[1].toDate(), "PPp")
+                ) : (
+                  <span>End date & time</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <DateTimePicker
+                value={
+                  value && (value as [Dayjs, Dayjs])[1]
+                    ? (value as [Dayjs, Dayjs])[1]
+                    : undefined
+                }
+                onChange={(date) => {
+                  const newRange = [
+                    (value as [Dayjs, Dayjs])?.[0],
+                    date || undefined,
+                  ] as [Dayjs | undefined, Dayjs | undefined];
+                  onChange?.(newRange as [Dayjs, Dayjs]);
+                }}
+                placeholder="Select end date & time"
+                onBlur={() => {}}
+              />
+            </PopoverContent>
+          </Popover>
         </div>
       );
 
@@ -399,11 +442,11 @@ export const RenderFieldInFilter = ({
           existingFiles={
             Array.isArray(value)
               ? (value as FileData[]).map((file) => ({
-                name: file.name,
-                type: file.type,
-                size: file.size,
-                preview: file.base64,
-              }))
+                  name: file.name,
+                  type: file.type,
+                  size: file.size,
+                  preview: file.base64,
+                }))
               : []
           }
         />

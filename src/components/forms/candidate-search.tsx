@@ -68,8 +68,9 @@ function CandidateSearch() {
     createdAfter: "",
     createdBefore: "",
     logicOperator: "$and",
+    organizationId: user ? user.organizationId : "",
     page: 1,
-    limit: 100,
+    limit: 20,
     customFields: null,
   };
 
@@ -81,7 +82,9 @@ function CandidateSearch() {
     refetch: filterCandidates,
     isFetching,
     isLoading: isQueryLoading,
-  } = useFilterCandidatesQuery(currentFilters);
+  } = useFilterCandidatesQuery(currentFilters, {
+    skip: !user.organizationId,
+  });
 
   // FIX 1: Move the setSearchResults call inside useEffect
   useEffect(() => {
@@ -115,7 +118,7 @@ function CandidateSearch() {
       // Update pagination info if available
       if (response.pagination) {
         setCurrentPage(response.pagination.page || 1);
-        setCurrentPageLimit(response.pagination.limit || 100);
+        setCurrentPageLimit(response.pagination.limit || 20);
         setTotalPages(response.pagination.totalPages || 0);
         setTotalRecordsCount(response.pagination.total || 0);
       }
@@ -132,12 +135,12 @@ function CandidateSearch() {
 
   const handleSearch = useCallback(
     async (values: SearchFilter) => {
-      setIsSearching(true);
-
       // FIX 3: Update filters first, then the query will automatically refetch
       const updatedFilters = {
         ...values,
         organizationId: OrgID || values.organizationId,
+        createdAfter: values.createdAfter?.trim() || undefined,
+        createdBefore: values.createdBefore?.trim() || undefined,
       };
 
       setCurrentFilters(updatedFilters);
@@ -247,13 +250,18 @@ function CandidateSearch() {
               name: values.name?.trim() || "",
               location: values.location?.trim() || "",
               customFields: values.customFields,
+              createdAfter: values.createdAfter || "",
+              createdBefore: values.createdBefore || "",
             };
             handleSearch(trimmedValues);
           }}
         >
           {({ resetForm, isValid, dirty }) => (
             <Form className="space-y-6">
-              <SearchFilters handleSearch={handleSearch} />
+              <SearchFilters
+                handleSearch={handleSearch}
+                key={JSON.stringify(initialValues)}
+              />
 
               {/* Action Buttons */}
               <div className="flex justify-end gap-4 pt-4 border-t">
@@ -263,19 +271,20 @@ function CandidateSearch() {
                   onClick={() => resetForm()}
                   disabled={!dirty}
                   className="px-6"
+                  size="lg"
                 >
                   <ResetIcon className="mr-2 h-4 w-4" />
                   Reset
                 </Button>
                 <Button
                   type="submit"
-                  disabled={isSearching || !isValid}
+                  disabled={isQueryLoading || isFetching || !isValid}
                   variant="primary"
                   className="px-8"
                   size="lg"
                 >
                   <SearchIcon className="mr-2 h-4 w-4" />
-                  {isSearching ? "Searching..." : "Search"}
+                  {isQueryLoading || isFetching ? "Searching..." : "Search"}
                 </Button>
               </div>
             </Form>

@@ -78,7 +78,7 @@ interface EmailTemplate {
 }
 
 // Updated with simple variables for email templates
-const templateVariables = ["SenderName", "ReceiverName", "PortalName"];
+const templateVariables = ["SenderName", "ReceiverName", "PortalName", "jobTitle"];
 
 // Sample custom templates that users can add
 const sampleCustomTemplates = [

@@ -99,6 +99,7 @@ export function clearAuthTokens(response: NextResponse) {
   response.cookies.set("auth_token", "", cookieOptions);
   response.cookies.set("auth_state", "", authStateCoonkieOptions);
   response.cookies.delete("auth_token");
+  response.cookies.delete("org_id");
   response.cookies.delete("auth_state");
   return response;
 }

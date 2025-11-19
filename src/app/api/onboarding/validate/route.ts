@@ -91,6 +91,10 @@ const stepValidators = {
   },
 
   // Removed customFields - it's not mandatory for onboarding
+  customFields: (settings: any, organization: any) => {
+    const customFields = organization?.customFields;
+    return customFields ? true : false;
+  },
 };
 
 export async function GET(req: NextRequest) {
@@ -295,7 +299,7 @@ export async function POST(req: NextRequest) {
         timezone: true,
         storage: true,
         users: true,
-        customFields: false,
+        customFields: true,
       };
 
       const isValid =
@@ -340,7 +344,7 @@ export async function POST(req: NextRequest) {
         timezone: true,
         storage: true,
         users: true,
-        customFields: false,
+        customFields: true,
       };
 
       const isValid =

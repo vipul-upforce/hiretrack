@@ -4,8 +4,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ChipInput } from "@/components/ui/chip-input";
 import { FileUpload } from "@/components/ui/file-upload";
-import { Button } from "@/components/ui/button";
-import { Paperclip, X, FileIcon } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -25,8 +23,8 @@ import dayjs from "dayjs";
 import { MobileFileUpload } from "@/components/ui/file-upload-mobile";
 import { useSanitizeFiles } from "@/hooks/useSanitizeFiles";
 import { useSelector } from "react-redux";
-import { FileDropZone } from "@/components/ui/file-drop-zone";
 import { normalizeCTCToLPA, formatCTCAsLPA } from "@/lib/ctc-normalizer";
+import { ResumePreviewSection } from "./candidate-form-components/resume-preview-section";
 
 interface CandidateFormProps {
   onFileUpload?: (file: File) => Promise<string | void>; // Prop to handle file upload to a persistent storage
@@ -45,9 +43,6 @@ export function CandidateForm({
     errors,
     setTouched,
     submitCount,
-    // touched,
-    // setFieldTouched,
-    // dirty,
   } = useFormikContext<CandidateFormValues>();
   const { data: interviewers } = useFetchInterviewersQuery();
   const [nameField, nameMeta] = useField("name");
@@ -62,12 +57,10 @@ export function CandidateForm({
   const [resumeField, resumeMeta] = useField("resume");
   const [attachmentsField] = useField("attachments");
   const [timeTouched, setTimeTouched] = useState(false);
-  // const [assignment] = useField("assignment");
   const [tempResumeUrl, setTempResumeUrl] = useState<string | null>(null);
   const [currentBlobUrl, setCurrentBlobUrl] = useState<string | null>(null); // State to track only blob URLs for cleanup
   const [emailField, emailMeta] = useField("email");
   const [contactField, contactMeta] = useField("contact");
-  // const [user, setuser] = useState<User | null>(null);
   const { user } = useSelector((state: any) => state.auth || {});
   const formRef = useRef<HTMLDivElement>(null);
   const { sanitizeFiles } = useSanitizeFiles();
@@ -137,11 +130,7 @@ export function CandidateForm({
       ? values.assignment.interviewerId
       : values.assignment?.interviewerId?._id || "";
 
-
   useEffect(() => {
-    // if (values.resume && !(values.resume as { url?: string }).url) {
-    //   return;
-    // }
     // Cleanup previous blob URL if it exists
     if (currentBlobUrl) {
       URL.revokeObjectURL(currentBlobUrl);
@@ -155,7 +144,6 @@ export function CandidateForm({
         const newBlobUrl = URL.createObjectURL(values.resume);
         setTempResumeUrl(newBlobUrl);
         setCurrentBlobUrl(newBlobUrl); // Store the blob URL for cleanup
-        // console.log(newBlobUrl, "newBlobUrl");
       } else if ("url" in resumeValue && resumeValue.url) {
         // For persistent preview from a public URL (e.g., after upload)
         setTempResumeUrl(resumeValue.url);
@@ -172,7 +160,6 @@ export function CandidateForm({
     };
   }, [values.resume]); // Only depend on values.resume
 
-  // console.log(tempResumeUrl, "tempResumeUrl");
   return (
     <div className="w-full h-full flex flex-col" ref={formRef}>
       {/* Mobile Layout - Stacked */}
@@ -184,124 +171,9 @@ export function CandidateForm({
             <Label className="font-semibold">
               Resume <span className="text-red-500">*</span>
             </Label>
-            {/* <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800 hover:from-blue-100 hover:to-indigo-100 dark:hover:from-blue-900/30 dark:hover:to-indigo-900/30 text-blue-700 dark:text-blue-300"
-                  onClick={() => {
-                    const input = document.createElement("input");
-                    input.type = "file";
-                    input.accept = ".pdf";
-                    input.onchange = async (e) => {
-                      const files = (e.target as HTMLInputElement).files;
-                      if (files && files.length > 0) {
-                        const file = files[0];
-                        const sanitizedFiles = sanitizeFiles([file]);
-
-                        if (!user && file.size > 3 * 1024 * 1024) {
-                          toast({
-                            title: `File "${file.name}" exceeds 3MB. Please upload a smaller file.`,
-                            variant: "destructive",
-                          });
-                          return;
-                        }
-                        if (
-                          user &&
-                          user.role === "candidate" &&
-                          file.size > 3 * 1024 * 1024
-                        ) {
-                          toast({
-                            title:
-                              "File size exceeds 3MB. Please upload a smaller file.",
-                            variant: "destructive",
-                          });
-                          return;
-                        }
-                        if (
-                          user &&
-                          ["hr", "admin", "interviewer"].includes(user.role) &&
-                          file.size > 5 * 1024 * 1024
-                        ) {
-                          toast({
-                            title:
-                              "File size exceeds 5MB. Please upload a smaller file.",
-                            variant: "destructive",
-                          });
-                          return;
-                        }
-
-                        setFieldValue("resume", sanitizedFiles[0]);
-                        setTempResumeUrl(
-                          URL.createObjectURL(sanitizedFiles[0])
-                        );
-
-                        if (onFileUpload) {
-                          await onFileUpload(sanitizedFiles[0]);
-                        }
-                        setTimeout(() => {
-                          setTouched({
-                            name: true,
-                            email: true,
-                            contact: true,
-                            location: true,
-                            experience: true,
-                            skills: true,
-                            expectedCTC: true,
-                            currentCTC: true,
-                            noticePeriod: true,
-                            resume: true as any,
-                          });
-                        }, 100);
-                      }
-                    };
-                    input.click();
-                  }}
-                >
-                  <Paperclip className="w-4 h-4" />
-                  {resumeField.value ? "Change Resume" : "Select Resume"}
-                </Button>
-                <span className="text-sm text-muted-foreground">
-                  PDF files only, max{" "}
-                  {user?.role === "candidate" ? "3MB" : "5MB"}
-                </span>
-              </div>
-
-              {resumeField.value && (
-                <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <FileIcon className="w-4 h-4 text-green-600 dark:text-green-400" />
-                    <span className="text-sm font-medium text-green-700 dark:text-green-300">
-                      {resumeField.value.name || "Resume uploaded"}
-                    </span>
-                    {resumeField.value.size && (
-                      <span className="text-xs text-green-600 dark:text-green-400">
-                        ({(resumeField.value.size / 1024 / 1024).toFixed(2)} MB)
-                      </span>
-                    )}
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                    onClick={() => {
-                      setFieldValue("resume", null);
-                      setTempResumeUrl(null);
-                    }}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              )}
-            </div> */}
+            
             <MobileFileUpload
               accept={{ "application/pdf": [".pdf"] }}
-              // maxFiles={
-              //   user && (user.role === "candidate" || user.role === "") ? 2 : 30
-              // }
-              // maxFiles={1}
               onFileSelect={async (files) => {
                 if (!user && files[0].size > 3 * 1024 * 1024) {
                   toast({
@@ -340,10 +212,6 @@ export function CandidateForm({
                 // Create a temporary blob URL for immediate client-side preview
                 setTempResumeUrl(URL.createObjectURL(sanitizedFiles[0]));
 
-                // Call onFileUpload to handle the actual upload to a persistent storage (e.g., Vercel Blob)
-                // The parent component should update `values.resume` with the public URL returned from the upload
-                // For example: const publicUrl = await onFileUpload(files[0]);
-                // if (publicUrl) { setFieldValue("resume", { url: publicUrl }); }
                 if (onFileUpload) {
                   await onFileUpload(sanitizedFiles[0]);
                 }
@@ -524,10 +392,6 @@ export function CandidateForm({
                 <Label htmlFor="expectedCTC" className="font-semibold">
                   Expected CTC (LPA) <span className="text-red-500">*</span>
                 </Label>
-                {/* <span className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                  Enter as LPA (e.g., 12), annual (e.g., 12,00,000), or monthly
-                  (e.g., 50,000)
-                </span> */}
               </div>
               <Input
                 id="expectedCTC"
@@ -583,10 +447,6 @@ export function CandidateForm({
                 <Label htmlFor="currentCTC" className="font-semibold">
                   Current CTC (LPA) <span className="text-red-500">*</span>
                 </Label>
-                {/* <span className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                  Enter as LPA (e.g., 10), annual (e.g., 10,00,000), or monthly
-                  (e.g., 40,000)
-                </span> */}
               </div>
               <Input
                 id="currentCTC"
@@ -718,15 +578,6 @@ export function CandidateForm({
                     }}
                     placeholder="Select time"
                   />
-                  {/* {errors?.assignment && touched?.assignment && (
-                    <p className="text-sm text-red-500">
-                      {String(
-                        errors.assignment[
-                          "time" as keyof typeof errors.assignment
-                        ] || ""
-                      )}
-                    </p>
-                  )} */}
                   {timeTouched &&
                     values.assignment?.time &&
                     new Date(values.assignment?.time) < new Date() && (
@@ -734,12 +585,6 @@ export function CandidateForm({
                         Assignment date should not be in past
                       </p>
                     )}
-                  {/* {timeTouched &&
-                    values.assignment?.time &&
-                    errors.push({
-                      "assignment.time":
-                        "Assignment date should not be in past",
-                    })} */}
                 </div>
               </div>
             </div>
@@ -748,135 +593,7 @@ export function CandidateForm({
           {/* Additional Attachments - Mobile */}
           <div className="space-y-3">
             <Label className="font-semibold">Additional Attachments</Label>
-            {/* <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex items-center gap-2"
-                  onClick={() => {
-                    const input = document.createElement("input");
-                    input.type = "file";
-                    input.multiple = true;
-                    input.onchange = (e) => {
-                      const files = (e.target as HTMLInputElement).files;
-                      if (files && files.length > 0) {
-                        const currentFiles = attachmentsField.value || [];
-                        const sanitizedFiles = sanitizeFiles(Array.from(files));
-                        const newFiles = sanitizedFiles
-                          .filter((file) => {
-                            if (!user && file.size > 3 * 1024 * 1024) {
-                              toast({
-                                title: `File "${file.name}" exceeds 3MB. Please upload a smaller file.`,
-                                variant: "destructive",
-                              });
-                              return false;
-                            }
-                            if (
-                              user &&
-                              user.role === "candidate" &&
-                              file.size > 3 * 1024 * 1024
-                            ) {
-                              toast({
-                                title: `File "${file.name}" exceeds 3MB. Please upload a smaller file.`,
-                                variant: "destructive",
-                              });
-                              return false;
-                            }
-                            if (
-                              user &&
-                              ["hr", "admin", "interviewer"].includes(
-                                user.role
-                              ) &&
-                              file.size > 5 * 1024 * 1024
-                            ) {
-                              toast({
-                                title: `File "${file.name}" exceeds 5MB. Please upload a smaller file.`,
-                                variant: "destructive",
-                              });
-                              return false;
-                            }
-                            return true;
-                          })
-                          .map((file) => {
-                            let newFileName = file.name;
-                            const fileExists = currentFiles.some(
-                              (att: File) => att.name === file.name
-                            );
-                            if (fileExists) {
-                              const fileExtension = file.name.split(".").pop();
-                              const baseName = file.name.replace(
-                                /\.[^/.]+$/,
-                                ""
-                              );
-                              newFileName = `${baseName}_${uuidv4()}.${fileExtension}`;
-                            }
-                            return new File([file], newFileName, {
-                              type: file.type,
-                            });
-                          });
 
-                        const updatedFileSelection = [
-                          ...currentFiles,
-                          ...newFiles,
-                        ];
-                        if (updatedFileSelection.length > 2) {
-                          toast({
-                            title: "Maximum 2 files are allowed",
-                            variant: "destructive",
-                          });
-                          return;
-                        }
-                        setFieldValue("attachments", updatedFileSelection);
-                      }
-                    };
-                    input.click();
-                  }}
-                >
-                  <Paperclip className="w-4 h-4" />
-                  Add Attachments
-                </Button>
-                <span className="text-sm text-muted-foreground">
-                  Max 2 files,{" "}
-                  {user?.role === "candidate" ? "3MB each" : "5MB each"}
-                </span>
-              </div>
-
-              {attachmentsField.value && attachmentsField.value.length > 0 && (
-                <div className="space-y-2">
-                  {attachmentsField.value.map((file: File, index: number) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg"
-                    >
-                      <div className="flex items-center gap-2">
-                        <FileIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                        <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                          {file.name}
-                        </span>
-                        <span className="text-xs text-blue-600 dark:text-blue-400">
-                          ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                        </span>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                        onClick={() => {
-                          const updatedFiles = attachmentsField.value.filter(
-                            (_: File, i: number) => i !== index
-                          );
-                          setFieldValue("attachments", updatedFiles);
-                        }}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div> */}
             <MobileFileUpload
               accept={{}}
               maxFiles={
@@ -961,20 +678,6 @@ export function CandidateForm({
             />
           </div>
 
-          {/* Resume Preview - Mobile */}
-          {/* {tempResumeUrl && (
-            <div className="space-y-2">
-              <Label>Resume Preview</Label>
-              <div className="w-full h-64 rounded-lg border overflow-hidden">
-                <iframe
-                  src={tempResumeUrl}
-                  className="w-full h-full"
-                  title="Resume Preview"
-                />
-              </div>
-            </div>
-          )} */}
-
           {/* Bottom padding for mobile to ensure content is accessible */}
           <div className="h-24"></div>
         </div>
@@ -989,118 +692,7 @@ export function CandidateForm({
             <Label className="font-semibold">
               Resume <span className="text-red-500">*</span>
             </Label>
-            {/* <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800 hover:from-blue-100 hover:to-indigo-100 dark:hover:from-blue-900/30 dark:hover:to-indigo-900/30 text-blue-700 dark:text-blue-300"
-                  onClick={() => {
-                    const input = document.createElement("input");
-                    input.type = "file";
-                    input.accept = ".pdf";
-                    input.onchange = async (e) => {
-                      const files = (e.target as HTMLInputElement).files;
-                      if (files && files.length > 0) {
-                        const file = files[0];
-                        const sanitizedFiles = sanitizeFiles([file]);
 
-                        if (!user && file.size > 3 * 1024 * 1024) {
-                          toast({
-                            title: `File "${file.name}" exceeds 3MB. Please upload a smaller file.`,
-                            variant: "destructive",
-                          });
-                          return;
-                        }
-                        if (
-                          user &&
-                          user.role === "candidate" &&
-                          file.size > 3 * 1024 * 1024
-                        ) {
-                          toast({
-                            title:
-                              "File size exceeds 3MB. Please upload a smaller file.",
-                            variant: "destructive",
-                          });
-                          return;
-                        }
-                        if (
-                          user &&
-                          ["hr", "admin", "interviewer"].includes(user.role) &&
-                          file.size > 5 * 1024 * 1024
-                        ) {
-                          toast({
-                            title:
-                              "File size exceeds 5MB. Please upload a smaller file.",
-                            variant: "destructive",
-                          });
-                          return;
-                        }
-
-                        setFieldValue("resume", sanitizedFiles[0]);
-                        setTempResumeUrl(
-                          URL.createObjectURL(sanitizedFiles[0])
-                        );
-
-                        if (onFileUpload) {
-                          await onFileUpload(sanitizedFiles[0]);
-                        }
-                        setTimeout(() => {
-                          setTouched({
-                            name: true,
-                            email: true,
-                            contact: true,
-                            location: true,
-                            experience: true,
-                            skills: true,
-                            expectedCTC: true,
-                            currentCTC: true,
-                            noticePeriod: true,
-                            resume: true as any,
-                          });
-                        }, 100);
-                      }
-                    };
-                    input.click();
-                  }}
-                >
-                  <Paperclip className="w-4 h-4" />
-                  {resumeField.value ? "Change Resume" : "Select Resume"}
-                </Button>
-                <span className="text-sm text-muted-foreground">
-                  PDF files only, max{" "}
-                  {user?.role === "candidate" ? "3MB" : "5MB"}
-                </span>
-              </div>
-
-              {resumeField.value && (
-                <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <FileIcon className="w-4 h-4 text-green-600 dark:text-green-400" />
-                    <span className="text-sm font-medium text-green-700 dark:text-green-300">
-                      {resumeField.value.name || "Resume uploaded"}
-                    </span>
-                    {resumeField.value.size && (
-                      <span className="text-xs text-green-600 dark:text-green-400">
-                        ({(resumeField.value.size / 1024 / 1024).toFixed(2)} MB)
-                      </span>
-                    )}
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                    onClick={() => {
-                      setFieldValue("resume", null);
-                      setTempResumeUrl(null);
-                    }}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              )}
-            </div> */}
             <FileUpload
               id="resume"
               isResume={true}
@@ -1401,10 +993,6 @@ export function CandidateForm({
                   >
                     Expected CTC (LPA) <span className="text-red-500">*</span>
                   </Label>
-                  {/* <span className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    Enter as LPA (e.g., 12), annual (e.g., 12,00,000), or
-                    monthly (e.g., 50,000)
-                  </span> */}
                 </div>
                 <Input
                   id="expectedCTC"
@@ -1645,141 +1233,6 @@ export function CandidateForm({
                 Additional Documents
               </h3>
             </div>
-            {/* <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex items-center gap-2"
-                  onClick={() => {
-                    const input = document.createElement("input");
-                    input.type = "file";
-                    input.multiple = true;
-                    input.onchange = (e) => {
-                      const files = (e.target as HTMLInputElement).files;
-                      if (files && files.length > 0) {
-                        const currentFiles = attachmentsField.value || [];
-                        const sanitizedFiles = sanitizeFiles(Array.from(files));
-                        const newFiles = sanitizedFiles
-                          .filter((file) => {
-                            if (!user && file.size > 3 * 1024 * 1024) {
-                              toast({
-                                title: `File "${file.name}" exceeds 3MB. Please upload a smaller file.`,
-                                variant: "destructive",
-                              });
-                              return false;
-                            }
-                            if (
-                              user &&
-                              user.role === "candidate" &&
-                              file.size > 3 * 1024 * 1024
-                            ) {
-                              toast({
-                                title: `File "${file.name}" exceeds 3MB. Please upload a smaller file.`,
-                                variant: "destructive",
-                              });
-                              return false;
-                            }
-                            if (
-                              user &&
-                              ["hr", "admin", "interviewer"].includes(
-                                user.role
-                              ) &&
-                              file.size > 100 * 1024 * 1024
-                            ) {
-                              toast({
-                                title: `File "${file.name}" exceeds 100MB. Please upload a smaller file.`,
-                                variant: "destructive",
-                              });
-                              return false;
-                            }
-                            return true;
-                          })
-                          .map((file) => {
-                            let newFileName = file.name;
-                            const fileExists = currentFiles.some(
-                              (att: File) => att.name === file.name
-                            );
-                            if (fileExists) {
-                              const fileExtension = file.name.split(".").pop();
-                              const baseName = file.name.replace(
-                                /\.[^/.]+$/,
-                                ""
-                              );
-                              newFileName = `${baseName}_${uuidv4()}.${fileExtension}`;
-                            }
-                            return new File([file], newFileName, {
-                              type: file.type,
-                            });
-                          });
-
-                        const updatedFileSelection = [
-                          ...currentFiles,
-                          ...newFiles,
-                        ];
-                        if (user?.role === "candidate" && updatedFileSelection.length > 2) {
-                          toast({
-                            title: "Maximum 2 files are allowed",
-                            variant: "destructive",
-                          });
-                          return;
-                        }
-                        setFieldValue("attachments", updatedFileSelection);
-                      }
-                    };
-                    input.click();
-                  }}
-                >
-                  <Paperclip className="w-4 h-4" />
-                  Add Documents
-                </Button>
-                <span className="text-sm text-muted-foreground">
-
-                  {user?.role === "candidate"
-                    ? "Max 2 files, 3MB each"
-                    : user && ["hr", "admin", "interviewer"].includes(user.role)
-                      ? "100MB per file"
-                      : "5MB per file"}
-                </span>
-              </div>
-
-              {attachmentsField.value && attachmentsField.value.length > 0 && (
-                <div className="space-y-2">
-                  {attachmentsField.value.map((file: File, index: number) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-3 bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg"
-                    >
-                      <div className="flex items-center gap-2">
-                        <FileIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                        <div className="flex flex-col min-w-0">
-                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                            {file.name}
-                          </span>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {(file.size / 1024 / 1024).toFixed(2)} MB
-                          </span>
-                        </div>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                        onClick={() => {
-                          const updatedFiles = attachmentsField.value.filter(
-                            (_: File, i: number) => i !== index
-                          );
-                          setFieldValue("attachments", updatedFiles);
-                        }}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div> */}
 
             <FileUpload
               accept={{}}
@@ -1824,18 +1277,6 @@ export function CandidateForm({
                       });
                       return false;
                     }
-                    // const specialCharPattern = /^[^a-zA-Z0-9(]|[^a-zA-Z0-9)]$/;
-                    // const problematicFiles = files.filter((file) =>
-                    //   specialCharPattern.test(file.name)
-                    // );
-                    // if (specialCharPattern.test(file.name)) {
-                    //   toast({
-                    //     title: "Alert",
-                    //     description:
-                    //       "The file name is not suitable, it can cuase errors.",
-                    //   });
-                    //   return false;
-                    // }
 
                     return true;
                   })
@@ -1878,48 +1319,7 @@ export function CandidateForm({
           </div>
         </div>
 
-        {/* Resume Preview Section */}
-        {/* <div className="w-full lg:w-1/2 h-64 sm:h-80 lg:h-full">
-          <div className="w-full h-full rounded-lg border overflow-hidden">
-            {tempResumeUrl ? (
-              <iframe
-                src={tempResumeUrl}
-                className="w-full h-full"
-                title="Resume Preview"
-              />
-            ) : (
-              <div className="w-full h-full bg-muted flex items-center justify-center">
-                <div className="text-center p-4 sm:p-6">
-                  <p className="text-sm sm:text-base text-muted-foreground">
-                    Upload resume to see preview
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div> */}
-        <div className="w-full lg:w-1/2 h-64 sm:h-80 lg:h-full">
-          <div className="w-full h-full rounded-lg border overflow-hidden">
-            {tempResumeUrl ? (
-              <iframe
-                src={tempResumeUrl}
-                className="w-full h-full"
-                title="Resume Preview"
-              />
-            ) : (
-              <div className="w-full h-full bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-                <div className="text-center p-4 sm:p-6">
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    No Resume Preview Available
-                  </h3>
-                  <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
-                    Please upload resume to see a preview here!
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+       <ResumePreviewSection tempResumeUrl={tempResumeUrl} />
       </div>
     </div>
   );

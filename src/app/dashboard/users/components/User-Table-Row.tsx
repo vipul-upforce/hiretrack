@@ -35,30 +35,46 @@ export function UserTableRow({
   onPasswordClick,
   onEmailSettingsClick,
 }: UserTableRowProps) {
-
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
       case "hr":
-        return "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+        return "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300";
       case "admin":
-        return "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"
+        return "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300";
       case "system":
-        return "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
+        return "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300";
       default:
-        return "bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300"
+        return "bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300";
     }
-  }
+  };
 
   return (
     <TableRow key={user._id}>
       <TableCell>
-        {user.name}
         {user.isDeleted && (
-          <Badge className="ml-2 bg-red-500 hover:bg-red-600">Deleted</Badge>
+          <div className="flex items-center gap-2">
+            <span className="line-through text-muted-foreground italic">
+              {user.name}
+            </span>
+            <Badge variant="destructive">Deleted</Badge>
+          </div>
         )}
+
+        {!user.isDeleted && <span>{user.name}</span>}
       </TableCell>
-      <TableCell><span className="px-2.5 py-1 bg-primary-foreground rounded-lg">{user.email}</span></TableCell>
-      <TableCell className={`capitalize inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium ${getRoleBadgeColor(user.role)}`}>{user.role}</TableCell>
+
+      <TableCell>
+        <span className="px-2.5 py-1 bg-primary-foreground rounded-lg">
+          {user.email}
+        </span>
+      </TableCell>
+      <TableCell>
+        <span
+          className={`capitalize px-2.5 py-1 rounded-md  ${getRoleBadgeColor(user.role)}`}
+        >
+          {user.role}
+        </span>
+      </TableCell>
       <TableCell>{format(new Date(user.createdAt), "MMM d, yyyy")}</TableCell>
       <TableCell className="flex flex-row justify-between items-center gap-2">
         {user.role !== "system" && (
@@ -73,7 +89,11 @@ export function UserTableRow({
               disabled={isDeleting || user.isDeleted}
               className="bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
             >
-              <Trash2 className="h-4 w-4" />
+              {isDeleting ? (
+                <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
+              )}
             </Button>
             <Button
               variant="outline"
@@ -120,15 +140,22 @@ export function UserTableRow({
             </Button>
           </div>
         )}
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => onEditClick(user)}
-          disabled={isUpdating}
-          className="bg-white dark:bg-black border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-        >
-          <EditIcon className="h-4 w-4 text-gray-700 dark:text-gray-300" />
-        </Button>
+        {user.role !== "system" && (
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => onEditClick(user)}
+            disabled={isUpdating}
+            className="bg-white dark:bg-black border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            <EditIcon className="h-4 w-4 text-gray-700 dark:text-gray-300" />
+          </Button>
+        )}
+        {user.role === "system" && (
+          <span className="text-sm text-muted-foreground py-2">
+            No actions available
+          </span>
+        )}
       </TableCell>
     </TableRow>
   );

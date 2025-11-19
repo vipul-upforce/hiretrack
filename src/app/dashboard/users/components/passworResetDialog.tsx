@@ -176,8 +176,8 @@ export function ResetPasswordDialog({
                   variant="primary"
                 >
                   {isReseting ? (
-                    <div className="flex items-center">
-                      <div className="w-4 h-4 mr-2 border-t-2 border-b-2 border-white rounded-full animate-spin"></div>
+                    <div className="flex items-center gap-1">
+                      <div className="h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       Updating...
                     </div>
                   ) : (

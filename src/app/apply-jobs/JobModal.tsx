@@ -184,30 +184,6 @@ export default function JobModal({
                   </div>
                 </div>
 
-                {/* {job?.links?.length > 0 && (
-                  <div className="space-y-3">
-                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Job Links
-                    </h4>
-                    <div className="bg-white dark:bg-black rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                      {job.links.map((link, index) => (
-                        <a
-                          key={index}
-                          href={link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 dark:text-blue-400 hover:underline break-all block"
-                          style={{
-                            wordBreak: "break-word",
-                            overflowWrap: "break-word",
-                          }}
-                        >
-                          {link}
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-                )} */}
                 {/* Experience & Salary Section */}
                 <div className="space-y-2 lg:space-y-3">
                   <h4 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-white">
@@ -241,18 +217,19 @@ export default function JobModal({
                     </div>
 
                     {/* Salary */}
-                    {(job as JobWithSalary)?.salary && (
-                      <div className="bg-white dark:bg-black rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                        <div className="flex items-center gap-3">
+                    {((job as JobWithSalary)?.salary.inText != "" ||
+                      (job as JobWithSalary)?.salary.min > 0) && (
+                      <div className="bg-white dark:bg-black rounded-lg p-3 lg:p-4 border border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center gap-2 lg:gap-3">
                           <div
-                            className="p-2 rounded-lg flex items-center justify-center"
+                            className="p-1.5 lg:p-2 px-2 lg:px-3 rounded-lg flex items-center justify-center"
                             style={{
-                              backgroundColor: `${secondaryColor}15`,
+                              backgroundColor: `${primaryColor}15`,
                             }}
                           >
                             <span
                               className="text-lg font-bold"
-                              style={{ color: secondaryColor }}
+                              style={{ color: primaryColor }}
                             >
                               ₹
                             </span>

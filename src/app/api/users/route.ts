@@ -30,47 +30,27 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const url = new URL(req.url);
-    const page = Math.max(parseInt(url.searchParams.get("page") || "1"), 1);
-    const limit = Math.min(
-      parseInt(url.searchParams.get("limit") || "50"),
-      200
-    );
-    const search = url.searchParams.get("search") || "";
-    const skip = (page - 1) * limit;
+    const nonSystemUsers = await User.find(
+      {
+        role: { $ne: "system" },
+        organizationId: session.user.organizationId
+      },
+      { password: 0 }
+    ).sort({ createdAt: -1 });
 
-    const query = {
-      organizationId: session.organizationId,
-      $or: [
-        { name: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
-        { role: { $regex: search, $options: "i" } },
-      ],
-      // isDeleted: { $ne: true }
-    } as Record<string, unknown>;
+    // Fetch only the latest system user
+    const latestSystemUser = await User.findOne(
+      {
+        role: "system",
+        organizationId: session.user.organizationId
+      },
+      { password: 0 }
+    ).sort({ createdAt: -1 });
 
-    const projection = { password: 0 } as Record<string, unknown>;
+    const result = [...nonSystemUsers];
+    if (latestSystemUser) result.push(latestSystemUser);
 
-    const [users, total] = await Promise.all([
-      User.find(query, projection)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean()
-        .exec(),
-      User.countDocuments(query),
-    ]);
-
-    // return NextResponse.json({
-    //   data: users,
-    //   pagination: {
-    //     page,
-    //     limit,
-    //     total,
-    //     totalPages: Math.ceil(total / limit),
-    //   },
-    // });
-    return NextResponse.json(users);
+    return NextResponse.json(result);
   } catch (error: unknown) {
     return NextResponse.json(
       {
