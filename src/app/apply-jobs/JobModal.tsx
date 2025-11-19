@@ -6,16 +6,8 @@ import { useState, useEffect } from "react";
 import ApplyOptions from "./ApplyOptions";
 import { hasAppliedAsGuest } from "./ApplyAsGuest";
 import "../../components/ui/rte/rteStyles.css";
-import {
-  Briefcase,
-  Clock,
-  X,
-  ArrowRight,
-  CheckCircle,
-  Plus,
-} from "lucide-react";
+import { Briefcase, X, ArrowRight, CheckCircle } from "lucide-react";
 import { useGetPortalConfigsQuery } from "@/lib/features/settings/settingsApi";
-import { Button } from "@/components/ui/button";
 
 interface Job {
   title: string;
@@ -59,15 +51,12 @@ export default function JobModal({
 
   const roles = useRoles();
 
-  const {
-    data: portalData,
-    isLoading: isPortalLoading,
-    error: portalError,
-  } = useGetPortalConfigsQuery(undefined, { skip: !isOpen });
+  const { data: portalData, isFetching: isPortalLoading } =
+    useGetPortalConfigsQuery(undefined, { skip: !isOpen });
 
   // Apply portal colors when fetched
   useEffect(() => {
-    if (portalData) {
+    if (portalData && !isPortalLoading) {
       if (portalData.primaryColor) setPrimaryColor(portalData.primaryColor);
       if (portalData.secondaryColor)
         setSecondaryColor(portalData.secondaryColor);
@@ -90,15 +79,22 @@ export default function JobModal({
       const applied = hasAppliedAsGuest(job._id);
       setAlreadyApplied(applied);
     }
-  }, [job]);
+  }, [job, onClose]);
 
   if (!job) return null;
+
+  const salary = (job as JobWithSalary)?.salary;
+
+  const hasSalary =
+    salary &&
+    !salary.isPrivate &&
+    ((salary.inText && salary.inText.trim() !== "") ||
+      (salary.min && salary.min > 0));
 
   const handleContinue = () => {
     setIsPendingOptionsOpen(true);
     onClose();
   };
-  // console.log(/"JobModal job:", job);
 
   return (
     <>
@@ -217,8 +213,7 @@ export default function JobModal({
                     </div>
 
                     {/* Salary */}
-                    {((job as JobWithSalary)?.salary.inText != "" ||
-                      (job as JobWithSalary)?.salary.min > 0) && (
+                    {hasSalary && (
                       <div className="bg-white dark:bg-black rounded-lg p-3 lg:p-4 border border-gray-200 dark:border-gray-700">
                         <div className="flex items-center gap-2 lg:gap-3">
                           <div
