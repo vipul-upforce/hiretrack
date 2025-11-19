@@ -120,12 +120,10 @@ const parseTimeStringToDate = (value: unknown) => {
     return null;
   }
 
-  // Normalize "6:08" → "06:08"
   const [h, m] = value.split(":");
   const hours = h.padStart(2, "0");
   const minutes = m?.padStart(2, "0") || "00";
 
-  // Build ISO datetime Mongo will parse as a valid Date
   const isoString = `1970-01-01T${hours}:${minutes}:00Z`;
 
   const parsed = dayjs(isoString);
@@ -157,37 +155,32 @@ export const buildTimeRangeCondition = (
           {
             $let: {
               vars: {
-                raw: { $ifNull: [`$${fieldPath}`, ""] }, // <-- PREVENTS the error
+                raw: { $ifNull: [`$${fieldPath}`, ""] }, 
               },
               in: {
                 $cond: [
                   { $lte: [{ $strLenCP: "$$raw" }, 4] },
 
-                  // Case: "6:14" or "3:9"
                   {
                     $concat: [
                       {
                         $cond: [
                           { $eq: [{ $substr: ["$$raw", 1, 1] }, ":"] },
-                          // If single digit hour → pad
                           { $concat: ["0", { $substr: ["$$raw", 0, 1] }] },
-                          // Else already 2-digit hour
                           { $substr: ["$$raw", 0, 2] },
                         ],
                       },
                       ":",
                       {
-                        // Minutes
                         $cond: [
                           { $eq: [{ $strLenCP: "$$raw" }, 3] },
-                          { $concat: ["0", { $substr: ["$$raw", 2, 1] }] }, // "6:8"
+                          { $concat: ["0", { $substr: ["$$raw", 2, 1] }] }, 
                           { $substr: ["$$raw", 2, 2] },
                         ],
                       },
                     ],
                   },
 
-                  // Case: already "HH:mm"
                   "$$raw",
                 ],
               },

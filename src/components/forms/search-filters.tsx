@@ -43,6 +43,15 @@ export function SearchFilters({
   };
 
   useEffect(() => {
+    if (
+      !values.customFields ||
+      Object.keys(values.customFields || {}).length === 0
+    ) {
+      setCols([]);
+    }
+  }, [values.customFields]);
+
+  useEffect(() => {
     (async () => {
       if (user?.organizationId) {
         const data = await getCustomField(user?.organizationId);
