@@ -432,7 +432,7 @@ export default function LoginFormContent({
         // Use the organizationId from the first element of the orgResponse.data array
         const organizationId = orgResponse?.data?.[0]?.organizationId;
         if (!organizationId) {
-          console.error("No organizationId found in orgResponse.data[0]");
+          console.log("No organizationId found in orgResponse.data[0]");
           return;
         }
 

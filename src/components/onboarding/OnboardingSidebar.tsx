@@ -44,17 +44,15 @@ const OnboardingSidebar: React.FC<OnboardingSidebarProps> = ({
     e.stopPropagation();
     setShowDismissDialog(true); // Show the confirmation dialog
   };
-  // debugger;
+
   if (
     isLoading ||
-    (onboardingStatus?.isCompleted && progress
-      ? progress?.percentage === 100
-      : true) ||
-    onboardingStatus?.doNotShowAgain
+    onboardingStatus?.doNotShowAgain ||
+    (onboardingStatus?.isCompleted && progress?.percentage === 100)
   ) {
     return null;
   }
-
+  
   const handleOpenOnboarding = () => {
     setIsOpen(true);
   };
