@@ -68,6 +68,7 @@ function CandidateSearch() {
     createdAfter: "",
     createdBefore: "",
     logicOperator: "$and",
+    organizationId: user ? user.organizationId : "",
     page: 1,
     limit: 20,
     customFields: null,
@@ -81,7 +82,9 @@ function CandidateSearch() {
     refetch: filterCandidates,
     isFetching,
     isLoading: isQueryLoading,
-  } = useFilterCandidatesQuery(currentFilters);
+  } = useFilterCandidatesQuery(currentFilters, {
+    skip: !user.organizationId,
+  });
 
   // FIX 1: Move the setSearchResults call inside useEffect
   useEffect(() => {
@@ -255,7 +258,10 @@ function CandidateSearch() {
         >
           {({ resetForm, isValid, dirty }) => (
             <Form className="space-y-6">
-              <SearchFilters handleSearch={handleSearch} />
+              <SearchFilters
+                handleSearch={handleSearch}
+                key={JSON.stringify(initialValues)}
+              />
 
               {/* Action Buttons */}
               <div className="flex justify-end gap-4 pt-4 border-t">
