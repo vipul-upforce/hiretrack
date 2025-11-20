@@ -154,7 +154,8 @@ export function JobEmailNotificationSettingsDialog({
             Job Email Notification Settings
           </DialogTitle>
           <DialogDescription>
-            Configure email notification preferences for &ldquo;{jobTitle}&rdquo;
+            Configure email notification preferences for &ldquo;{jobTitle}
+            &rdquo;
             <span className="block mt-1 text-sm text-muted-foreground">
               These settings will override your global preferences for this job
             </span>
@@ -199,8 +200,14 @@ export function JobEmailNotificationSettingsDialog({
                 >
                   Cancel
                 </Button>
-                <Button onClick={handleSave} disabled={updating || !hasChanges()}>
-                  {updating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                <Button
+                  variant="primary"
+                  onClick={handleSave}
+                  disabled={updating || !hasChanges()}
+                >
+                  {updating && (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  )}
                   Save Changes
                 </Button>
               </div>

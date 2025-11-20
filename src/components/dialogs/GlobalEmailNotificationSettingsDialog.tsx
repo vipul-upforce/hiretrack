@@ -126,7 +126,7 @@ export function GlobalEmailNotificationSettingsDialog({
         </DialogHeader>
 
         {loading ? (
-           <EmailNotificationSettingsSkeleton />
+          <EmailNotificationSettingsSkeleton />
         ) : error ? (
           <div className="flex items-center justify-center py-8 text-red-600">
             <span>Error loading settings: {error}</span>
@@ -164,6 +164,7 @@ export function GlobalEmailNotificationSettingsDialog({
                   Cancel
                 </Button>
                 <Button
+                  variant="primary"
                   onClick={handleSave}
                   disabled={updating || !hasChanges()}
                 >

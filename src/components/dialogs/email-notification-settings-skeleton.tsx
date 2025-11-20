@@ -29,13 +29,12 @@ const EmailNotificationSettingsSkeleton = () => {
           Reset
         </Button>
         <div className="flex gap-3">
-          <Button
-            variant="outline"
-            disabled
-          >
+          <Button variant="outline" disabled>
             Cancel
           </Button>
-          <Button disabled>Save Changes</Button>
+          <Button variant="primary" disabled>
+            Save Changes
+          </Button>
         </div>
       </div>
     </div>

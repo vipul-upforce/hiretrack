@@ -54,7 +54,11 @@ type LogEntry = {
   candidateData: Candidate;
   jobData: Job;
   dateTime: string;
-  assignmentBy: any;
+  assignmentBy: {
+    _id: string;
+    name: string;
+    email: string;
+  }[];
   currentInterviewer: {
     _id: string;
     name: string;
@@ -293,6 +297,9 @@ export function ServerHistoryLogs({
                       <TableHead className="min-w-[160px] text-xs uppercase tracking-wider text-muted-foreground">
                         Date
                       </TableHead>
+                      <TableHead className="min-w-[160px] text-xs uppercase tracking-wider text-muted-foreground">
+                        Updated By
+                      </TableHead>
                       <TableHead className="text-right min-w-[100px] text-xs uppercase tracking-wider text-muted-foreground">
                         Actions
                       </TableHead>
@@ -352,6 +359,20 @@ export function ServerHistoryLogs({
                           </div>
                           <div className="text-xs text-muted-foreground">
                             {formatTime(log.dateTime)}
+                          </div>
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <div className="flex flex-col">
+                            <span className="font-medium">
+                              {log?.assignmentBy.length
+                                ? log?.assignmentBy[0]?.name
+                                : "SELF"}
+                            </span>
+                            <span className="text-xs text-muted-foreground truncate">
+                              {log?.assignmentBy.length
+                                ? log?.assignmentBy[0]?.email
+                                : log?.candidateData?.email}
+                            </span>
                           </div>
                         </TableCell>
                         <TableCell className="text-right align-top">

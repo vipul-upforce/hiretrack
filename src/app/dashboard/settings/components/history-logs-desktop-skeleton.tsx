@@ -26,6 +26,9 @@ const DesktopSkeletonHistroyLogs = () => {
             <TableHead className="min-w-[160px] text-xs uppercase tracking-wider text-muted-foreground">
               Date
             </TableHead>
+            <TableHead className="min-w-[160px] text-xs uppercase tracking-wider text-muted-foreground">
+              Updated by
+            </TableHead>
             <TableHead className="text-right min-w-[100px] text-xs uppercase tracking-wider text-muted-foreground">
               Actions
             </TableHead>
@@ -56,6 +59,13 @@ const DesktopSkeletonHistroyLogs = () => {
                 <div className="space-y-2">
                   <Skeleton className="h-4 w-[40%]" />
                   <Skeleton className="h-3 w-[30%]" />
+                </div>
+              </TableCell>
+
+              <TableCell>
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-[50%]" />
+                  <Skeleton className="h-3 w-[70%]" />
                 </div>
               </TableCell>
               <TableCell className="text-right">

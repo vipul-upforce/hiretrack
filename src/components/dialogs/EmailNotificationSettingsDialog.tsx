@@ -280,6 +280,7 @@ export function EmailNotificationSettingsDialog({
                     Cancel
                   </Button>
                   <Button
+                    variant="primary"
                     onClick={handleSave}
                     disabled={updating || !hasChanges()}
                   >
