@@ -652,11 +652,14 @@ export default function LoginFormContent({
               Smart Hiring
               <br />
               <span
-                className="bg-clip-text text-transparent"
+                className="text-transparent"
                 style={{
-                  background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
+                  backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
                   WebkitBackgroundClip: "text",
                   backgroundClip: "text",
+                  display: "inline-block",
+                  backgroundRepeat: "no-repeat",
+                  backgroundSize: "100%",
                 }}
               >
                 Made Simple
