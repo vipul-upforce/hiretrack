@@ -16,9 +16,9 @@ const LoaderSkeleton = () => (
     <Separator className="p-0 m-0" />
 
     <div className="flex flex-row items-center justify-evenly gap-4 px-3 pt-2 mx-auto w-auto">
-      {[...Array(8)].map(() => {
+      {[...Array(8)].map((_, i) => {
         return (
-          <div className="flex flex-col max-w-[500px] h-full border-2 gap-8 rounded-lg p-4 mx-auto">
+          <div key={i} className="flex flex-col max-w-[500px] h-full border-2 gap-8 rounded-lg p-4 mx-auto">
             <div className="flex flex-row justify-between pt-2 px-2">
               <div className="flex flex-row gap-2">
                 <Skeleton className="h-6 w-8"/>
@@ -29,8 +29,8 @@ const LoaderSkeleton = () => (
                 <Skeleton className="h-6 w-4"/>
               </div>
             </div>
-            {[...Array(4)].map(() => {
-              return <CandidateCardSkeleton />;
+            {[...Array(4)].map((_,i) => {
+              return <CandidateCardSkeleton key={i}/>;
             })}
           </div>
         );
