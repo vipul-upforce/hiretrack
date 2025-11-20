@@ -60,7 +60,6 @@ export function CVBatchProcessor() {
   const [postBatch] = usePostBatchMutation();
   const [isPosting, setIsPosting] = useState(false);
   const { toast } = useToast();
-  // const [User, setUser] = useState<User | null>(null);
   const { user: User }: { user: User } = useSelector(
     (state: any) => state.auth || {}
   );
@@ -73,23 +72,6 @@ export function CVBatchProcessor() {
   } = useFetchBatchesQuery(User ? User?.organizationId : "", {
     skip: !User?.organizationId,
   });
-
-  // const getUser = async () => {
-  //   // debugger;
-  //   const userData = Cookies.get("token");
-  //   if (userData) {
-  //     const decryptedResponse = await verifyAndDecryptJWTToken(
-  //       String(userData)
-  //     );
-  //     if (decryptedResponse.success && decryptedResponse.user) {
-  //       setUser(decryptedResponse.user);
-  //     }
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   getUser();
-  // }, []);
 
   useEffect(() => {
     if (batches) {
@@ -141,7 +123,6 @@ export function CVBatchProcessor() {
       setCompletedBatches((prevBatches) => [batchResult, ...prevBatches]);
       setFiles([]);
     } catch (error) {
-      // alert(error instanceof Error ? error.message : "Failed to process batch");
       console.log(
         error instanceof Error ? error.message : "Failed to process batch"
       );
