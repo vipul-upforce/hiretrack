@@ -142,78 +142,10 @@ export default function CalendarPage() {
     setFilterText(searchText.trim());
   };
 
-  // debugger;
-
-  // Merge assignments with sseCandidates, prioritizing sseCandidates for updates
-  // const mergedAssignments = (
-  //   assignments && assignments[0]?.data ? [...assignments[0].data] : []
-  // ).map((assignment: CandidateAssignment) => {
-  //   // debugger;
-  //   console.log(
-  //     sseCandidates,
-  //     " ____________ ... sseCandidates in mergedAssignments"
-  //   );
-  //   const sseCandidate = sseCandidates.find((c: CandidateAssignment) => {
-  //     console.log(c, " ____________ ... c in mergedAssignments");
-  //     return role === "interviewer"
-  //       ? (c._id === assignment?._id &&
-  //           typeof c.assignment?.interviewerId === "object" &&
-  //           c.assignment?.interviewerId?._id === user.id) ||
-  //           (typeof c.assignment?.interviewerId === "string" &&
-  //             c.assignment?.interviewerId === user.id)
-  //       : c._id === assignment._id;
-  //   });
-  //   console.log(
-  //     sseCandidate,
-  //     " ____________ ... sseCandidate in mergedAssignments"
-  //   );
-  //   console.log(
-  //     assignment,
-  //     " ____________ ... assignment in mergedAssignments"
-  //   );
-  //   return role === "interviewer" ? sseCandidate : sseCandidate || assignment;
-  // });
   const sseUpdatesMap = new Map(
     sseCandidates.map((c: CandidateAssignment) => [c._id, c])
   );
-  // const mergedAssignments = (
-  //   assignments && assignments[0]?.data ? [...assignments[0].data] : []
-  // ).map((assignment: CandidateAssignment) => {
-  //   const sseCandidate = sseCandidates.find((c: CandidateAssignment) =>
-  //     role === "interviewer"
-  //       ? (c._id === assignment?._id &&
-  //           typeof c.assignment?.interviewerId === "object" &&
-  //           c.assignment?.interviewerId?._id === user.id) ||
-  //         (typeof c.assignment?.interviewerId === "string" &&
-  //           c.assignment?.interviewerId === user.id)
-  //       : c._id === assignment._id
-  //   );
-  //   debugger;
-
-  //   // 1. If no SSE data yet, fall back to assignment (initial load)
-  //   // 2. If SSE data has a match, use it
-  //   // 3. If SSE exists but interviewer has no match, skip outdated data
-  //   if (role === "interviewer") {
-  //     if (sseCandidates.length === 0) return assignment; // initial DB load
-  //     console.log(sseCandidates, "------------------------------");
-  //     return sseCandidate || null; // use SSE or skip if irrelevant
-  //   }
-
-  //   // For other roles, keep fallback behavior
-  //   return sseCandidate || assignment;
-  // });
-
-  // debugger;
-  // // Add any new candidates from sseCandidates that aren't in assignments
-  // sseCandidates?.forEach((sseCandidate: CandidateAssignment) => {
-  //   if (
-  //     !mergedAssignments.some(
-  //       (a: CandidateAssignment) => a?._id === sseCandidate?._id
-  //     )
-  //   ) {
-  //     mergedAssignments.push(sseCandidate);
-  //   }
-  // });
+ 
   const mergedAssignments = (
     assignments && assignments[0]?.data ? [...assignments[0].data] : []
   )

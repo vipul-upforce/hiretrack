@@ -397,10 +397,10 @@ export function CandidateDetailsDialog({
         className="w-full flex flex-col h-full"
       >
         <TabsList
-  className={`grid w-full ${
-    user?.role === "interviewer" ? "grid-cols-2" : "grid-cols-3"
-  } bg-transparent border-b border-gray-200 dark:border-gray-700 rounded-none h-12`}
->
+          className={`grid w-full ${
+            user?.role === "interviewer" ? "grid-cols-2" : "grid-cols-3"
+          } bg-transparent border-b border-gray-200 dark:border-gray-700 rounded-none h-12`}
+        >
           <TabsTrigger
             value="overview"
             className="flex items-center gap-2 data-[state=active]:bg-transparent data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 dark:data-[state=active]:border-blue-400 rounded-none h-full"
@@ -1107,7 +1107,7 @@ export function CandidateDetailsDialog({
         ) : (
           <div>
             <Button variant="primary" onClick={() => setIsAssigningJob(true)}>
-              Assign Job
+              {!candidate.jobId ? "Assign Job" : "Switch Job"}
             </Button>
           </div>
         )}

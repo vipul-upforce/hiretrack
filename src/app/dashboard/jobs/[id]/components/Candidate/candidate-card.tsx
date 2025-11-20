@@ -192,7 +192,6 @@ const CandidateCard = memo(function CandidateCard({
   const [candidateToAssignJob, setCandidateToAssignJob] =
     useState<Candidate | null>(null);
   const [isAssignJobOpen, setIsAssignJobOpen] = useState(false);
-  // const [MADFollowup, setMADFollowup] = useState<String | null>(null);
   const onAddRemarkOpenChange = () => {
     // debugger;
     setOpenRemarksFor(null);
@@ -315,17 +314,6 @@ const CandidateCard = memo(function CandidateCard({
     [toast]
   );
 
-  // Update follow-up state when dialog opens for editing
-  // useEffect(() => {
-  //   if (isAddingFollowUp) {
-  //     setNewFollowUp(localCandidate?.followUp?.note || "");
-  //     if (localCandidate?.followUp?.date) {
-  //       setNewFollowUpDate(dayjs(localCandidate.followUp.date));
-  //     } else {
-  //       setNewFollowUpDate(null);
-  //     }
-  //   }
-  // }, [isAddingFollowUp, localCandidate]);
   useEffect(() => {
     if (isAddingFollowUp) {
       console.log(
@@ -349,11 +337,6 @@ const CandidateCard = memo(function CandidateCard({
           return true;
         }
       });
-      // const followUpParts = parts
-      //   .filter((p) => p.endsWith("has completed the last step."))
-      //   .pop(); // get the last element
-      // setMADFollowup(followUpParts);
-      // console.log(followUpParts, "followUpParts = -iru8r8fi");
 
       // use the most recent follow-up note for editing, or empty string
       const userNote =
@@ -368,18 +351,6 @@ const CandidateCard = memo(function CandidateCard({
     }
   }, [isAddingFollowUp, localCandidate]);
 
-  // const handleCandidateUpdateWithOptimism = useCallback(
-  //   (updatedCandidate: Candidate) => {
-  //     // Immediately update local state if handler is provided
-  //     // debugger;
-  //     if (onCandidateUpdate) {working on Foolowup
-  //       onCandidateUpdate(updatedCandidate);
-  //     }
-  //     // refetch();
-  //   },
-  //   [onCandidateUpdate]
-  // );
-  //   [onCandidateUpdate])
   const handleAssignJob = (candidate: Candidate, e: React.MouseEvent) => {
     e.stopPropagation();
     setCandidateToAssignJob(candidate);
@@ -557,7 +528,7 @@ const CandidateCard = memo(function CandidateCard({
                       onClick={(e) => handleAssignJob(candidate, e)}
                     >
                       <Briefcase className="mr-2 h-4 w-4" />
-                      Assign Job
+                      {!candidate.jobId ? "Assign Job" : "Switch Job"}
                     </DropdownMenuItem>
                     {user?.role !== "interviewer" && (
                       <DropdownMenuItem
@@ -569,23 +540,6 @@ const CandidateCard = memo(function CandidateCard({
                       >
                         <Tag className="h-4 w-4 mr-2" />
                         Tags
-                        {/* <Popover modal={true}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-5 w-5"
-                          title="Tags"
-                          ref={triggerRef}
-                        >
-                          Add Tags
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent
-                        onClick={handlePopoverContentClick}
-                        className="p-0"
-                      ></PopoverContent>
-                    </Popover> */}
                       </DropdownMenuItem>
                     )}
 
@@ -674,58 +628,6 @@ const CandidateCard = memo(function CandidateCard({
               </div>
             </div>
           </div>
-          {/* Follow-up Section - Just below header */}
-          {/* {(localCandidate?.followUp?.date ||
-            localCandidate?.followUp?.note) && (
-            <div className="mb-2 p-2 bg-amber-50 dark:bg-amber-900/20 rounded border-l-4 border-amber-400 dark:border-amber-500">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-start gap-2 flex-1 min-w-0">
-                  <Bell className="h-3 w-3 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    {localCandidate.followUp.date && (
-                      <div className="text-xs text-amber-700 dark:text-amber-300 font-medium mb-1">
-                        {formatDate(localCandidate.followUp.date)} at{" "}
-                        {formatTime(localCandidate.followUp.date)}
-                      </div>
-                    )}
-                    <p className="text-xs text-amber-800 dark:text-amber-200 leading-tight line-clamp-2 break-words">
-                      {localCandidate.followUp.note as string}
-                    </p>
-                    {localCandidate.followUp.userId && (
-                      <div className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                        Created by:{" "}
-                        <span className="font-bold">
-                          {localCandidate.followUp.userId.name}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                {user?.role !== "candidate" && user?.role !== "interviewer" && (
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsAddingFollowUp(true);
-                      }}
-                      className="text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-200 transition-colors duration-200"
-                    >
-                      <Edit className="h-3 w-3" />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setRemoveFUOpenLocal(true);
-                      }}
-                      className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors duration-200"
-                    >
-                      <Trash2Icon size={12} />
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          )} */}
 
           {(localCandidate?.followUp?.date ||
             localCandidate?.followUp?.note) && (
@@ -1517,19 +1419,6 @@ const CandidateCard = memo(function CandidateCard({
         isLoading={isLoading}
         loadingText="Marking as done..."
       />
-      {/* 
-      {(isAddRemarkOpen || openRemarks) && (
-        <AddRemarksDialog
-          candidate={localCandidate}
-          isOpen={openRemarks}
-          onOpenChange={() => {
-            setOpenRemarksFor(null);
-            setIsAddRemarkOpen(false);
-          }}
-          setOpenRemarksFor={() => {}}
-          refetch={async () => refetch()}
-        />
-      )} */}
 
       {/* Render AddRemarksDialog conditionally on dashboard (using local state) */}
       {onDashboard && isAddRemarkOpen && (
@@ -1551,7 +1440,6 @@ const CandidateCard = memo(function CandidateCard({
             name: localCandidate.name,
             email: localCandidate.email,
             jobTitle: localCandidate.jobId?.title,
-            
           }}
         />
       )}
@@ -1565,15 +1453,6 @@ const CandidateCard = memo(function CandidateCard({
             setCandidateToAssignJob(null);
             refetch();
           }}
-          // onJobAssignment={(updatedCandidate) => {
-          // If this returns updated candidate
-          // if (updatedCandidate && onCandidateUpdate) {
-          //   onCandidateUpdate(updatedCandidate);
-          // }
-          // handleCandidateUpdateWithOptimism;
-          // setIsAssignJobOpen(false);
-          // setCandidateToAssignJob(null);
-          // }}
         />
       )}
 
