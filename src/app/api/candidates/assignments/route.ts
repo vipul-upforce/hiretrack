@@ -499,15 +499,15 @@ export async function GET(req: NextRequest) {
               pipeline: [
                 {
                   $match: {
-                    $expr: {
-                      $eq: ["$jobId", "$$jobId"],
-                    },
+                    $expr: { $eq: ["$jobId", "$$jobId"] },
                   },
                 },
                 {
                   $match: {
                     $or: [
-                      { isDeleted: { $eq: false } },
+                      { isDeleted: { $exists: false } }, // if isDeleted key is missing in DB
+                      { isDeleted: null },
+                      { isDeleted: false },
                     ],
                   },
                 },
@@ -578,7 +578,7 @@ export async function GET(req: NextRequest) {
           candidates.data,
           req
         );
-        // console.
+
         return NextResponse.json([
           {
             data: candidatesWithPrivateCF,
