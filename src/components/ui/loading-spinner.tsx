@@ -1,9 +1,9 @@
-import UniqueLoading from "./morph-loading";
+import { Spinner } from "./spinner";
 
 export function LoadingSpinner({ w }: { w?: number }) {
   return (
     <div className="flex items-center justify-center">
-      <UniqueLoading variant="morph" size="sm" />
+      <Spinner />
     </div>
   );
 }

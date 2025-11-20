@@ -16,15 +16,14 @@ import { Candidate } from "@/types/candidate";
 import { ITag } from "@/lib/models/organization";
 import { useSelector } from "react-redux";
 import RecentActivities from "./components/RecentActivities";
-import {
-  useMarkNotificationAsReadMutation,
-} from "@/lib/features/notifications/notificationsApi";
+import { useMarkNotificationAsReadMutation } from "@/lib/features/notifications/notificationsApi";
 import { useNotificationsContext } from "@/contexts/NotificationsContext";
 import { useLazyFetchCandidateByIdQuery } from "@/lib/features/candidate/candidateApi";
 import { CandidateDetailsDialog } from "./jobs/[id]/components/Dialogs/candidate-details-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import DashboardCards from "./components/DashboardCards";
+import { DashboardSkeleton } from "@/components/skeletons/dashboard-skeleton";
 
 export interface Assignment {
   id: string;
@@ -573,8 +572,8 @@ export default function DashboardPage() {
               : "w-full"
           }`}
         >
-          {isLoading ? (
-            <DashboardLoader />
+          {isLoading || !assignments ? (
+            <DashboardSkeleton role={user?.role} />
           ) : (
             <>
               <DashboardCards assignmentsCounts={assignmentsCounts} />
