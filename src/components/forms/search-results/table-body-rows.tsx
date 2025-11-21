@@ -309,7 +309,6 @@ export const TableBodyRows = memo(function TableBodyRows({
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={(e) => handleDelete(candidate, e as any)}
-                      disabled={candidate.isDeleted}
                     >
                       <Archive className="mr-2 h-4 w-4" />
                       {candidate.isDeleted ? "Unarchived" : "Archive"}

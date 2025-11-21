@@ -82,6 +82,8 @@ export function SearchResults({
   const [confirmDialogConfig, setConfirmDialogConfig] = useState<{
     title: string;
     message: string;
+    buttonName: string;
+    loadingText: string;
     onConfirm: () => Promise<void>;
     onCancel: () => void;
   } | null>(null);
@@ -209,6 +211,8 @@ export function SearchResults({
     setConfirmDialogConfig({
       title: "Confirm Delete",
       message: `Are you sure you want to delete ${selectedCandidates.length} candidate(s)? This action cannot be undone.`,
+      buttonName: "Archive",
+      loadingText: "Deleting...",
       onConfirm: async () => {
         setIsDeleting(true);
         try {
@@ -225,8 +229,10 @@ export function SearchResults({
               title: "Success",
               description: `Successfully deleted ${successfulDeletes} candidate(s)`,
             });
+
             setSelectedCandidates([]);
             setSelectAll(false);
+
             await refetch();
           } else {
             toast({
@@ -246,10 +252,9 @@ export function SearchResults({
           setIsConfirmDialogOpen(false);
         }
       },
-      onCancel: () => {
-        setIsConfirmDialogOpen(false);
-      },
+      onCancel: () => setIsConfirmDialogOpen(false),
     });
+
     setIsConfirmDialogOpen(true);
   }, [selectedCandidates, deleteCandidate, refetch]);
 
@@ -275,23 +280,39 @@ export function SearchResults({
 
   const handleDelete = useCallback(
     (candidate: Candidate) => {
+      const isRestore = candidate.isDeleted === true;
+
       setConfirmDialogConfig({
-        title: "Confirm Delete",
-        message: `Are you sure you want to delete ${candidate.name}? This action cannot be undone.`,
+        title: isRestore ? "Restore Candidate" : "Confirm Delete",
+        message: isRestore
+          ? `Are you sure you want to restore ${candidate.name}?`
+          : `Are you sure you want to delete ${candidate.name}? This action cannot be undone.`,
+        buttonName: isRestore ? "Restore" : "Archive",
+        loadingText: isRestore ? "Restoring..." : "Deleting...",
         onConfirm: async () => {
           setIsDeleting(true);
           try {
-            await deleteCandidate(candidate._id).unwrap();
+            const res = await deleteCandidate(candidate._id).unwrap();
+
+            const updatedCandidate = {
+              ...candidate,
+              isDeleted: !isRestore,
+            };
+
+            if (onCandidateUpdate) onCandidateUpdate(updatedCandidate);
+
             toast({
               title: "Success",
-              description: `Candidate ${candidate.name} deleted successfully`,
+              description: isRestore
+                ? `Candidate ${candidate.name} restored successfully`
+                : `Candidate ${candidate.name} deleted successfully`,
             });
           } catch (error: any) {
             toast({
               title: "Error",
               description:
                 error?.data?.error ||
-                `Failed to delete candidate ${candidate.name}`,
+                `Failed to ${isRestore ? "restore" : "delete"} candidate ${candidate.name}`,
               variant: "destructive",
             });
           } finally {
@@ -299,13 +320,12 @@ export function SearchResults({
             setIsConfirmDialogOpen(false);
           }
         },
-        onCancel: () => {
-          setIsConfirmDialogOpen(false);
-        },
+        onCancel: () => setIsConfirmDialogOpen(false),
       });
+
       setIsConfirmDialogOpen(true);
     },
-    [deleteCandidate]
+    [deleteCandidate, onCandidateUpdate]
   );
 
   const handleAddRemark = useCallback((candidate: Candidate) => {
@@ -497,8 +517,8 @@ export function SearchResults({
           onConfirm={confirmDialogConfig.onConfirm}
           onCancel={confirmDialogConfig.onCancel}
           isLoading={isDeleting}
-          loadingText="Deleting..."
-          buttonName="Archive"
+          loadingText={confirmDialogConfig.loadingText}
+          buttonName={confirmDialogConfig.buttonName}
         />
       )}
     </>
