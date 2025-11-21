@@ -16,3 +16,10 @@ export interface PortalSettings {
   primaryColor: string;
   secondaryColor: string;
 }
+
+export interface ColorCombination {
+  name: string;
+  primary: string;
+  secondary: string;
+  isDefault?: boolean;
+}
