@@ -33,10 +33,12 @@ export function NginxLogs({ searchQuery, setSearchQuery, onError }: Props) {
     setSearchQuery(debouncedSearchQuery);
     setOffset(0);
     setTotalLines(0);
-    if (debouncedSearchQuery === "") {
-      setFileContent([]);
-    }
   }, [debouncedSearchQuery, setSearchQuery]);
+
+  useEffect(() => {
+    if (debouncedSearchQuery === "") return;
+    setFileContent([]);
+  }, [debouncedSearchQuery]);
 
   const {
     data: nginxData,
@@ -172,7 +174,9 @@ export function NginxLogs({ searchQuery, setSearchQuery, onError }: Props) {
                     onClick={() => {
                       if (selectedFile === file) return;
                       setSearchQuery("");
+                      setRawSearch("");
                       setSelectedFile(file);
+                      setFileContent([]);
                       setOffset(0);
                       setTotalLines(0);
                     }}
