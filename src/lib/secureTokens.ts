@@ -89,6 +89,7 @@ export function clearAuthTokens(response: NextResponse) {
   response.cookies.set("auth_token", "", cookieOptions);
   console.log("GONNA REMOVE THE TOKEN...");
   response.cookies.delete("auth_token");
+  response.cookies.delete("org_id");
   return response;
 }
 

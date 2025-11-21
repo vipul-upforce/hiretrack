@@ -17,6 +17,9 @@ global.sseNotificationClients =
   global.sseNotificationClients ||
   new Map<string, Map<number, NotificationSSEClient>>();
 
+
+export const runtime = "nodejs";
+
 export async function GET(req: NextRequest) {
   const cookie = await auth(req);
   const user = cookie?.user;
