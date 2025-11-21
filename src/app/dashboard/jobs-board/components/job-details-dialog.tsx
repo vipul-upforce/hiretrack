@@ -96,7 +96,7 @@ export function JobDetailsDialog({
       </Button>
       <Button
         onClick={() => setIsEditing(true)}
-        variant="default"
+        variant="primary"
         className="font-medium"
       >
         Edit Job

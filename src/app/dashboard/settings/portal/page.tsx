@@ -55,28 +55,10 @@ import { cn } from "@/lib/utils";
 import { Editor } from "@monaco-editor/react";
 import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
-import { Organization } from "@/lib/mongodb";
 import { User } from "../../jobs/[id]/schemas/AssignCandidateSchema";
 import { useGetOrganizationAllowanceQuery } from "@/lib/features/org/orgApi";
-
-interface FileUpload {
-  id: string;
-  name: string;
-  url: string;
-  type: string;
-  size: number;
-}
-
-interface PortalSettings {
-  portalName: string;
-  portalLogo: FileUpload | null;
-  portalLogoDark: FileUpload | null;
-  portalFavicon: FileUpload | null;
-  portalHeader: FileUpload | null;
-  portalFooter: FileUpload | null;
-  primaryColor: string;
-  secondaryColor: string;
-}
+import { FileUpload, PortalSettings } from "./types";
+import { FileUploadCard } from "./components/file-upload-card";
 
 const predefinedColors = [
   "#6366f1", // Indigo
@@ -367,74 +349,6 @@ export default function PortalConfigurationPage() {
       </div>
     );
   };
-  const FileUploadCard = ({
-    title,
-    description,
-    file,
-    type,
-    accept = "image/*",
-    maxSize,
-  }: {
-    title: string;
-    description: string;
-    file: FileUpload | null;
-    type: keyof PortalSettings;
-    accept?: string;
-    maxSize?: string;
-  }) => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {file ? (
-          <div className="relative group">
-            <div className="aspect-video relative bg-muted rounded-lg overflow-hidden">
-              {file.type.startsWith("image/") ? (
-                <Image
-                  src={file.url}
-                  alt={file.name}
-                  fill
-                  className="object-contain"
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full">
-                  <p className="text-sm text-muted-foreground">{file.name}</p>
-                </div>
-              )}
-            </div>
-            <Button
-              variant="destructive"
-              size="icon"
-              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={() => removeFile(type)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        ) : (
-          <label className="block">
-            <input
-              type="file"
-              accept={accept}
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleFileUpload(file, type);
-              }}
-            />
-            <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center cursor-pointer hover:border-muted-foreground/50 transition-colors">
-              <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">
-                Click to upload {maxSize && `(max ${maxSize})`}
-              </p>
-            </div>
-          </label>
-        )}
-      </CardContent>
-    </Card>
-  );
 
   if (loading) {
     return (
@@ -555,8 +469,8 @@ export default function PortalConfigurationPage() {
                         id="portalName"
                         value={
                           settings.portalName &&
-                            settings.portalName !== "" &&
-                            settings.portalName.length > 0
+                          settings.portalName !== "" &&
+                          settings.portalName.length > 0
                             ? settings.portalName
                             : user.organizationInfo.name
                         }
@@ -584,12 +498,16 @@ export default function PortalConfigurationPage() {
                     description="Logo for light theme"
                     file={settings.portalLogo}
                     type="portalLogo"
+                    handleFileUpload={handleFileUpload}
+                    removeFile={removeFile}
                   />
                   <FileUploadCard
                     title="Dark Theme Logo"
                     description="Logo for dark theme"
                     file={settings.portalLogoDark}
                     type="portalLogoDark"
+                    handleFileUpload={handleFileUpload}
+                    removeFile={removeFile}
                   />
                   <FileUploadCard
                     title="Favicon"
@@ -598,6 +516,8 @@ export default function PortalConfigurationPage() {
                     type="portalFavicon"
                     accept="image/x-icon,image/png"
                     maxSize="32x32"
+                    handleFileUpload={handleFileUpload}
+                    removeFile={removeFile}
                   />
                 </div>
               </TabsContent>
@@ -624,7 +544,7 @@ export default function PortalConfigurationPage() {
                               ? "border-primary ring-2 ring-primary ring-offset-2"
                               : "border-border hover:border-primary/50",
                             combo.isDefault &&
-                            "bg-gradient-to-br from-primary/5 to-secondary/5"
+                              "bg-gradient-to-br from-primary/5 to-secondary/5"
                           )}
                           onClick={() =>
                             setSettings((prev) => ({
@@ -1321,19 +1241,19 @@ export default function PortalConfigurationPage() {
                             {(previewTheme === "dark"
                               ? settings.portalLogoDark
                               : settings.portalLogo) && (
-                                <div className="h-10 w-32 relative bg-white/10 rounded">
-                                  <Image
-                                    src={
-                                      previewTheme === "dark"
-                                        ? settings.portalLogoDark?.url || ""
-                                        : settings.portalLogo?.url || ""
-                                    }
-                                    alt="Logo"
-                                    fill
-                                    className="object-contain p-2"
-                                  />
-                                </div>
-                              )}
+                              <div className="h-10 w-32 relative bg-white/10 rounded">
+                                <Image
+                                  src={
+                                    previewTheme === "dark"
+                                      ? settings.portalLogoDark?.url || ""
+                                      : settings.portalLogo?.url || ""
+                                  }
+                                  alt="Logo"
+                                  fill
+                                  className="object-contain p-2"
+                                />
+                              </div>
+                            )}
                             <h3 className="text-white font-semibold">
                               {settings.portalName || "Portal Name"}
                             </h3>
