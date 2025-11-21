@@ -171,7 +171,7 @@ export async function createFileShare(options: FileShareOptions): Promise<FileSh
 export async function getFileShare(shareId: string): Promise<IFileShare | null> {
   try {
     await connectToDatabase();
-    const fileShare = await FileShare!.findOne({ shareId }).lean().exec();
+    const fileShare = await FileShare!.findOne({ shareId }).exec();
     return fileShare;
   } catch (error) {
     console.error("Error getting file share:", error);

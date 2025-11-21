@@ -290,6 +290,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const token = req.cookies.get("auth_token")?.value || "";
     const organizationId = userData.organizationId || "";
     const fileStorage = userData.fileStorage || "local";
 
@@ -302,9 +303,6 @@ export async function PUT(req: NextRequest) {
     }
 
     const data = await req.json();
-    console.log(`[PUT] Request data keys: ${Object.keys(data)}`);
-    console.log(`[PUT] Has portalHeaderHtml: ${!!data.portalHeaderHtml}`);
-    console.log(`[PUT] Has portalFooterHtml: ${!!data.portalFooterHtml}`);
     if (data.portalHeaderHtml) {
       console.log(`[PUT] Header HTML length: ${data.portalHeaderHtml.length}`);
     }

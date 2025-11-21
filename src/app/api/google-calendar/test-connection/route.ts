@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
 
   // Wrap everything in a super-safe try-catch
   try {
-    const [userData, settings] = await Promise.all([
+    const [userData, SettingModel] = await Promise.all([
       getAuthenticatedUser(req),
       getSettingsModel(),
     ]); 
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     }
     const organizationId = userData.organizationId;
    
-    
+    const settings = await SettingModel.findOne({ organizationId }).lean().exec();
     if (!settings) {
       console.log("❌ No settings found for organization:", organizationId);
       return NextResponse.json(
@@ -109,15 +109,15 @@ export async function POST(req: NextRequest) {
 
       const clientSecret = decryptText(
         settings.googleCalendar.clientSecret,
-        orgId
+        organizationId
       );
       const accessToken = decryptText(
         settings.googleCalendar.accessToken,
-        orgId
+        organizationId
       );
       const refreshToken = decryptText(
         settings.googleCalendar.refreshToken,
-        orgId
+        organizationId
       );
 
       console.log("✅ Credentials decrypted successfully");

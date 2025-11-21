@@ -11,7 +11,6 @@ import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
 import { ICandidate } from "@/lib/models/candidate";
 import { AIEvaluationService } from "@/lib/ai-providers/evaluation-provider";
 import { decryptProviderKeys } from "@/lib/encryption";
-import mongoose from "mongoose";
 
 const generateBase64 = async (url: string) => {
   // const urlParams = new URLSearchParams(url.split("files?pathName=")[1]);
@@ -28,20 +27,14 @@ const generateBase64 = async (url: string) => {
 };
 // Calculate comparative ranking for a candidate within their job's candidate pool
 async function calculateComparativeRanking(
-  candidateId: mongoose.Schema.Types.ObjectId | string,
-  jobId: mongoose.Schema.Types.ObjectId | string,
-  currentScores: {
-    overall: number;
-    skills: number;
-    experience: number;
-    affordability: number;
-    weightedScore: number;
-  }
+  candidateId: any,
+  jobId: any,
+  currentScores:any,
 ) {
   try {
     // Get all candidates for this job with scores
     const candidates = await Candidate.find({
-      jobId: typeof jobId === "object" && "_id" in jobId ? jobId._id : jobId,
+      jobId: jobId,
       scores: { $exists: true },
       isDeleted: { $ne: true },
     }).select("_id scores");

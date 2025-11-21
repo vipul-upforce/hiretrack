@@ -1,3 +1,329 @@
+// import { NextRequest, NextResponse } from "next/server";
+// import connectToDatabase, {
+//   Candidate,
+//   History,
+//   User,
+//   JobLaneConfig,
+// } from "@/lib/mongodb";
+// import {
+//   validateUserCanSubmitFields,
+// } from "@/lib/utils/checklistVisibility";
+// import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
+// import { NotificationService } from "@/lib/notifications/notificationService";
+// import { getAuthenticatedUser } from "@/app/actions/auth";
+// import { UserRole } from "@/lib/models/JobLaneConfig";
+
+// // POST - Submit checklist responses for a candidate
+// export async function POST(
+//   req: NextRequest,
+//   { params }: { params: { id: string } }
+// ) {
+//   try {
+//     const [userData, { id }, body] = await Promise.all([
+//       getAuthenticatedUser(req),
+//       params,
+//       req.json(),
+//       connectToDatabase(),
+//     ]);
+//     if (!userData) {
+//       return NextResponse.json(
+//         { message: "Unauthorised Access" },
+//         { status: 401 }
+//       );
+//     }
+//     await connectToDatabase();
+
+//     // Check if models are initialized
+//     if (!Candidate || !History || !User) {
+//       console.error("Models not initialized:", {
+//         Candidate: !!Candidate,
+//         History: !!History,
+//         User: !!User,
+//       });
+//       return NextResponse.json(
+//         { error: "Database models not initialized" },
+//         { status: 500 }
+//       );
+//     }
+
+//     const {
+//       checklistId,
+//       checklistName,
+//       checklistType,
+//       laneId,
+//       laneName,
+//       // visibleInHistory,
+//       responses,
+//       remark,
+//       currentTime,
+//     } = body;
+
+//     // Validate required fields
+//     if (!checklistId || !checklistType || !laneId || !responses) {
+//       return NextResponse.json(
+//         { error: "Missing required fields" },
+//         { status: 400 }
+//       );
+//     }
+
+//     // Get candidate
+//     const candidate = await Candidate!.findById(id).populate([
+//       {
+//         path: "assignment.interviewerId",
+//         select: "_id name email",
+//       },
+//       {
+//         path: "remarks.userId",
+//         select: "name email",
+//       },
+//       {
+//         path: "followUp.userId",
+//         select: "name email",
+//       },
+//       {
+//         path: "jobId",
+//         select: "_id description title",
+//       },
+//     ]);
+//     if (!candidate) {
+//       return NextResponse.json(
+//         { error: "Candidate not found" },
+//         { status: 404 }
+//       );
+//     }
+
+//     const userRole = userData?.role as UserRole;
+
+//     // Get the job lane configuration to validate field permissions
+//     const laneConfig = await JobLaneConfig!.findOne({ jobId: candidate.jobId });
+//     if (!laneConfig) {
+//       return NextResponse.json(
+//         { error: "Lane configuration not found" },
+//         { status: 404 }
+//       );
+//     }
+
+//     // Find the specific checklist for validation
+//     const targetLane = laneConfig.laneConfigs.find(
+//       (lc) => lc.laneId === laneId
+//     );
+//     if (!targetLane) {
+//       return NextResponse.json(
+//         { error: "Lane not found in configuration" },
+//         { status: 404 }
+//       );
+//     }
+
+//     const checklist =
+//       checklistType === "incoming"
+//         ? targetLane.incomingChecklist
+//         : targetLane.outgoingChecklist;
+
+//     if (!checklist || checklist.id !== checklistId) {
+//       return NextResponse.json(
+//         { error: "Checklist not found or ID mismatch" },
+//         { status: 404 }
+//       );
+//     }
+
+//     // Validate that user can submit responses for the submitted fields
+//     const submittedFieldIds = Object.keys(responses);
+//     const canSubmitFields = validateUserCanSubmitFields(
+//       submittedFieldIds,
+//       checklist.fields,
+//       userRole
+//     );
+
+//     if (!canSubmitFields) {
+//       return NextResponse.json(
+//         {
+//           error:
+//             "User does not have permission to submit responses for some of these fields",
+//         },
+//         { status: 403 }
+//       );
+//     }
+
+//     // Initialize checklistData if not exists (Mongoose Map)
+//     if (!candidate.checklistData) {
+//       candidate.checklistData = {};
+//     }
+
+//     // Get or create lane checklist data
+//     // let laneChecklistData = candidate.checklistData?.get(laneId) || {};
+//     let laneChecklistData =
+//       (candidate.checklistData && candidate.checklistData[laneId]) || {};
+
+//     // Store checklist responses
+//     const checklistData = {
+//       checklistId,
+//       completedAt: currentTime,
+//       completedBy: userData.id,
+//       responses: responses, // Keep as plain object
+//       // visibleInHistory,
+//     };
+
+//     // Update based on checklist type
+//     if (checklistType === "incoming") {
+//       laneChecklistData.incoming = checklistData;
+//     } else {
+//       laneChecklistData.outgoing = checklistData;
+//     }
+//     // Update the candidate's checklist data using MongoDB's Map update syntax
+//     const updateQuery =
+//       checklistType === "incoming"
+//         ? { [`checklistData.${laneId}.incoming`]: checklistData }
+//         : { [`checklistData.${laneId}.outgoing`]: checklistData };
+
+//     await Candidate!.findByIdAndUpdate(
+//       id,
+//       { $set: updateQuery },
+//       {
+//         new: true,
+//         runValidators: false, // Skip validation for other fields
+//         upsert: false,
+//       }
+//     );
+
+//     // Get user details for history
+//     const userId = userData.id;
+//     const user = await User!.findById(userId);
+
+//     // Create history entry
+//     const historyEntry: any = {
+//       dateTime: currentTime,
+//       title: `Completed ${checklistType} checklist for ${laneName} lane`,
+//       checklistForm: {
+//         checklistId,
+//         checklistName,
+//         checklistType,
+//         laneId,
+//         laneName,
+//         responses: Object.fromEntries(
+//           Object.entries(responses).map(
+//             ([fieldId, response]: [string, any]) => [
+//               fieldId,
+//               {
+//                 fieldId,
+//                 fieldLabel: response.fieldLabel || fieldId,
+//                 fieldType: response.fieldType || "text",
+//                 value: response.value,
+//                 files: response.files || [],
+//                 visibleInHistory: response.visibleInHistory || [],
+//               },
+//             ]
+//           )
+//         ),
+//         completedAt: currentTime,
+//         completedBy: userId,
+//       },
+//       currentInterviewer: null,
+//       previousInterviewer: null,
+//       assignmentBy: userId,
+//     };
+
+//     // Add remark if provided
+//     if (remark && remark.description) {
+//       historyEntry.remark = {
+//         id: currentTime,
+//         isPrivate: remark.isPrivate || false,
+//         description: remark.description,
+//         date: currentTime,
+//         rating: remark.rating,
+//         userId: {
+//           _id: userId,
+//           name: user?.name || "",
+//           email: user?.email || "",
+//         },
+//       };
+
+//       candidate.remarks = [...(candidate.remarks || []), historyEntry.remark];
+//       await candidate.save();
+//     }
+
+//     // Update history
+//     await History!.findOneAndUpdate(
+//       {
+//         jobId:
+//           typeof candidate?.jobId === "object" && "_id" in candidate?.jobId
+//             ? candidate?.jobId?._id
+//             : candidate.jobId,
+//         candidateId: candidate?._id.toString(),
+//       },
+//       {
+//         $push: { history: historyEntry },
+//       },
+//       { upsert: true }
+//     );
+
+//     // Notify checklist completion
+//     try {
+//       const jobInfo = candidate.jobId as any;
+//       await NotificationService.notifyChecklistCompleted({
+//         organizationId: userData.organizationId || "",
+//         candidateId: candidate._id.toString(),
+//         candidateName: candidate.name || "Unknown Candidate",
+//         jobId: jobInfo?._id?.toString() || candidate.jobId?.toString() || "",
+//         jobTitle: jobInfo?.title || "Unknown Job",
+//         triggerUserId: userId,
+//         triggerUserName: user?.name || "Unknown User",
+//       });
+//     } catch (notificationError) {
+//       console.error(
+//         "Failed to send checklist completion notification:",
+//         notificationError
+//       );
+//       // Continue execution even if notification fails
+//     }
+
+//     const candidateHistoryPopulated = await History!.findOne({
+//       jobId:
+//         typeof candidate?.jobId === "object" && "_id" in candidate?.jobId
+//           ? candidate?.jobId?._id
+//           : candidate.jobId,
+//       candidateId: candidate?._id.toString(),
+//     })
+//       .populate([
+//         { path: "history.assignmentBy", select: "_id name email" },
+//         { path: "history.currentInterviewer", select: "_id name email" },
+//         { path: "history.previousInterviewer", select: "_id name email" },
+//         { path: "history.note.userId", select: "_id name email" },
+//       ])
+//       .lean();
+//     const candidateObj = candidate.toObject();
+//     broadcastCandidateUpdate({
+//       ...candidateObj,
+//       history: candidateHistoryPopulated?.history || [],
+//     });
+//     return NextResponse.json({
+//       success: true,
+//       message: "Checklist submitted successfully",
+//       data: {
+//         candidateId: id,
+//         checklistType,
+//         laneId,
+//         // historyEntry,
+//         completedAt: checklistData.completedAt,
+//       },
+//     });
+//   } catch (error) {
+//     console.error("Error submitting checklist:", error);
+//     console.error("Error details:", {
+//       message: error instanceof Error ? error.message : "Unknown error",
+//       stack: error instanceof Error ? error.stack : undefined,
+//       // candidateId: params.id,
+//       error: error,
+//     });
+//     return NextResponse.json(
+//       {
+//         error: "Failed to submit checklist",
+//         details: error instanceof Error ? error.message : "Unknown error",
+//       },
+//       { status: 500 }
+//     );
+//   }
+// }
+
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, {
   Candidate,
@@ -5,13 +331,16 @@ import connectToDatabase, {
   User,
   JobLaneConfig,
 } from "@/lib/mongodb";
+import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import { CustomFieldFile } from "@/lib/fileUtils";
 import {
   validateUserCanSubmitFields,
+  getUserRole,
+  filterChecklistResponses,
 } from "@/lib/utils/checklistVisibility";
 import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
+import { Console } from "console";
 import { NotificationService } from "@/lib/notifications/notificationService";
-import { getAuthenticatedUser } from "@/app/actions/auth";
-import { UserRole } from "@/lib/models/JobLaneConfig";
 
 // POST - Submit checklist responses for a candidate
 export async function POST(
@@ -19,18 +348,20 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const [userData, { id }, body] = await Promise.all([
-      getAuthenticatedUser(req),
-      params,
-      req.json(),
-      connectToDatabase(),
-    ]);
-    if (!userData) {
-      return NextResponse.json(
-        { message: "Unauthorised Access" },
-        { status: 401 }
-      );
+    const token = req.cookies.get("auth_token")?.value;
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Get org ID from cookies
+    const orgId = req.cookies.get("org_id")?.value;
+    const decryptedResponse = await verifyAndDecryptJWTToken(token, orgId);
+    if (!decryptedResponse.success || !decryptedResponse.user) {
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    }
+
+    const decoded = decryptedResponse.user;
+
     await connectToDatabase();
 
     // Check if models are initialized
@@ -46,6 +377,7 @@ export async function POST(
       );
     }
 
+    const body = await req.json();
     const {
       checklistId,
       checklistName,
@@ -66,7 +398,7 @@ export async function POST(
       );
     }
 
-
+    const { id } = await params;
     // Get candidate
     const candidate = await Candidate!.findById(id).populate([
       {
@@ -93,7 +425,11 @@ export async function POST(
       );
     }
 
-    const userRole = userData?.role as UserRole;
+    // Get user role for permission validation
+    const userRole = getUserRole(decoded.role);
+    if (!userRole) {
+      return NextResponse.json({ error: "Invalid user role" }, { status: 403 });
+    }
 
     // Get the job lane configuration to validate field permissions
     const laneConfig = await JobLaneConfig!.findOne({ jobId: candidate.jobId });
@@ -132,7 +468,7 @@ export async function POST(
     const canSubmitFields = validateUserCanSubmitFields(
       submittedFieldIds,
       checklist.fields,
-      userRole 
+      userRole
     );
 
     if (!canSubmitFields) {
@@ -159,7 +495,7 @@ export async function POST(
     const checklistData = {
       checklistId,
       completedAt: currentTime,
-      completedBy: userData.id,
+      completedBy: decoded._id || decoded.id || decoded.userId,
       responses: responses, // Keep as plain object
       // visibleInHistory,
     };
@@ -187,7 +523,7 @@ export async function POST(
     );
 
     // Get user details for history
-    const userId = userData.id;
+    const userId = decoded._id || decoded.id || decoded.userId;
     const user = await User!.findById(userId);
 
     // Create history entry
@@ -261,7 +597,7 @@ export async function POST(
     try {
       const jobInfo = candidate.jobId as any;
       await NotificationService.notifyChecklistCompleted({
-        organizationId: userData.organizationId || "",
+        organizationId: decoded.organizationId || "",
         candidateId: candidate._id.toString(),
         candidateName: candidate.name || "Unknown Candidate",
         jobId: jobInfo?._id?.toString() || candidate.jobId?.toString() || "",
@@ -277,7 +613,7 @@ export async function POST(
       // Continue execution even if notification fails
     }
 
-    const candidateHistoryPopulated = await History!.findOne({
+    const candidateHistoryPopulated = await History?.findOne({
       jobId:
         typeof candidate?.jobId === "object" && "_id" in candidate?.jobId
           ? candidate?.jobId?._id
