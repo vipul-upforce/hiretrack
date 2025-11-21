@@ -49,7 +49,7 @@ export function RenameFileDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="p-0 overflow-hidden flex flex-col">
+      <DialogContent className="p-0 overflow-hidden flex flex-col z-[99999]">
         <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle>Rename File</DialogTitle>
         </DialogHeader>
@@ -66,7 +66,11 @@ export function RenameFileDialog({
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" variant="success" disabled={newName.length < 3}>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={newName.length < 3}
+            >
               Rename
             </Button>
           </DialogFooter>

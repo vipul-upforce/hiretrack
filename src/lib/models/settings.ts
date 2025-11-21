@@ -263,10 +263,6 @@ const settingsSchema = new Schema({
       type: Boolean,
       default: false,
     },
-    enableInterviewQuestions: {
-      type: Boolean,
-      default: false,
-    },
     enableConfidenceScores: {
       type: Boolean,
       default: true,
@@ -421,7 +417,6 @@ export interface IEvaluationConfig {
   autoEvaluateAllCandidates: boolean;
   maxPdfPages: number;
   enableComparativeRanking?: boolean;
-  enableInterviewQuestions?: boolean;
   enableConfidenceScores?: boolean;
   enableRedFlagsDetection?: boolean;
   enableSkillsMatrix?: boolean;

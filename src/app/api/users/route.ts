@@ -10,10 +10,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await auth(req);
 
-    if (
-      !session
-      // session.user.role !== "admin" ||
-    ) {
+    if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -33,16 +30,27 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const users = await User.find(
+    const nonSystemUsers = await User.find(
       {
-        // _id: { $ne: session.user.id },
-        organizationId: session.user.organizationId,
-        // isDeleted: { $ne: true }
+        role: { $ne: "system" },
+        organizationId: session.user.organizationId
       },
       { password: 0 }
     ).sort({ createdAt: -1 });
 
-    return NextResponse.json(users);
+    // Fetch only the latest system user
+    const latestSystemUser = await User.findOne(
+      {
+        role: "system",
+        organizationId: session.user.organizationId
+      },
+      { password: 0 }
+    ).sort({ createdAt: -1 });
+
+    const result = [...nonSystemUsers];
+    if (latestSystemUser) result.push(latestSystemUser);
+
+    return NextResponse.json(result);
   } catch (error: unknown) {
     return NextResponse.json(
       {

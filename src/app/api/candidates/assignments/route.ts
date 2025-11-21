@@ -9,107 +9,6 @@ import { verifyAndDecryptToken } from "@/app/actions/auth";
 import { Types } from "mongoose";
 import { getFilterPrivateCF } from "@/lib/filterPrivateCF";
 
-// export async function GET(req: NextRequest) {
-//   try {
-//     await connectToDatabase();
-
-//     if (token?.value) {
-//       const decryptedResponse = await verifyAndDecryptToken(
-//         String(token?.value)
-//       );
-//       const userData = decryptedResponse.user;
-//       if (decryptedResponse.success) {
-//         const openJobs = await Job!.find({ status: "open" }).lean();
-//         const jobIds = openJobs.map((job) => job._id.toString());
-//         const query = {
-//           "assignment.interviewerId":
-//             userData?.role === "interviewer" ? userData?.id : { $exists: true },
-//           $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
-//           jobId: { $in: jobIds },
-//         };
-//         if (!Candidate || !User || !Job) {
-//           return NextResponse.json(
-//             { error: "Candidate, User, or Job not found" },
-//             { status: 400 }
-//           );
-//         }
-//         const projection =
-//           userData?.role === "interviewer"
-//             ? {
-//                 currentCTC: 0,
-//                 expectedCTC: 0,
-//                 customFields: 0,
-//               }
-//             : {};
-//         const candidates = await Candidate.find(query, projection).populate([
-//           {
-//             path: "assignment.interviewerId",
-//             model: User,
-//             select: "_id name email",
-//           },
-//           {
-//             path: "remarks.userId",
-//             model: User,
-//             select: "_id name email",
-//           },
-//           {
-//             path: "jobId",
-//             model: Job,
-//             select: "_id title skills description organizationId",
-//           },
-//         ]);
-//         const filteredCandidates = candidates.filter(
-//           (candidate) =>
-//             candidate.jobId?.organizationId?.toString() ===
-//               userData.organizationId && candidate.status !== "rejected"
-//         );
-
-//         if (!History) return;
-
-//         const candidatesWithHistory = await Promise.all(
-//           filteredCandidates.map(async (candidate) => {
-//             const history = await History?.findOne({
-//               jobId: candidate.jobId._id,
-//               candidateId: candidate._id.toString(),
-//             })
-//               .populate("history.currentInterviewer", "_id name email")
-//               .populate("history.previousInterviewer", "_id name email")
-//               .populate("history.assignmentBy", "_id name email")
-//               .populate("history.note.userId", "_id name email")
-//               .lean();
-
-//             return {
-//               ...candidate._doc,
-//               history: history
-//                 ? history.history.filter((entry) =>
-//                     userData?.role === "admin" || userData?.role === "hr"
-//                       ? true
-//                       : !entry.remark?.isPrivate
-//                   )
-//                 : [],
-//             };
-//           })
-//         );
-//         return NextResponse.json(candidatesWithHistory);
-//       } else {
-//         return NextResponse.json(
-//           { message: "Unauthorised Access" },
-//           { status: 401 }
-//         );
-//       }
-//     } else {
-//       return NextResponse.json(
-//         { message: "Unauthorised Access" },
-//         { status: 401 }
-//       );
-//     }
-//   } catch (error) {
-//     if (error instanceof Error) {
-//       return NextResponse.json({ error: error.message }, { status: 500 });
-//     }
-//   }
-// }
-
 function parseGMTOffset(offset) {
   if (!offset || offset === "GMT+00:00") return 0;
   const sign = offset.startsWith("GMT+") ? 1 : -1;
@@ -173,28 +72,6 @@ export async function GET(req: NextRequest) {
         const limit = parseInt(searchParams.get("limit") || "48", 10);
         const skip = (page - 1) * limit;
 
-        // const today = new Date();
-        // const startOfToday = new Date(
-        //   Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())
-        // );
-        // const endOfToday = new Date(
-        //   Date.UTC(today.getFullYear(), today.getMonth(), today.getDate() + 1)
-        // );
-        // const startOfWeek = new Date(
-        //   Date.UTC(
-        //     today.getFullYear(),
-        //     today.getMonth(),
-        //     today.getDate() - today.getDay() + 1
-        //   )
-        // );
-        // const endOfWeek = new Date(
-        //   Date.UTC(
-        //     today.getFullYear(),
-        //     today.getMonth(),
-        //     today.getDate() - today.getDay() + 8
-        //   )
-        // );
-
         const settings = await Settings.findOne({
           organizationId: new Types.ObjectId(userData.organizationId),
         }).lean();
@@ -202,59 +79,11 @@ export async function GET(req: NextRequest) {
           ? parseGMTOffset(settings.timeZone.offset)
           : 0;
 
-        // console.log("MY OFFSET: ", userTimeZoneOffset);
-        // const now = new Date();
-        // const nowInUserTimeZone = new Date(now.getTime() + userTimeZoneOffset);
-        // const startOfToday = new Date(
-        //   nowInUserTimeZone.getFullYear(),
-        //   nowInUserTimeZone.getMonth(),
-        //   nowInUserTimeZone.getDate(),
-        //   0,
-        //   0,
-        //   0,
-        //   0
-        // );
-        // const endOfToday = new Date(
-        //   nowInUserTimeZone.getFullYear(),
-        //   nowInUserTimeZone.getMonth(),
-        //   nowInUserTimeZone.getDate(),
-        //   23,
-        //   59,
-        //   59,
-        //   999
-        // );
-        // const startOfTodayUTC = new Date(
-        //   startOfToday.getTime() - userTimeZoneOffset
-        // );
-        // const endOfTodayUTC = new Date(
-        //   endOfToday.getTime() - userTimeZoneOffset
-        // );
-
-        // const dayOfWeek = nowInUserTimeZone.getDay();
-        // console.log("$$$$$$$$$$$ DAYOFWEEK: ", dayOfWeek);
-        // const startOfWeek = new Date(nowInUserTimeZone);
-        // console.log("$$$$$$$$$$$ startOfEWEEK: ", startOfWeek);
-        // startOfWeek.setDate(
-        //   nowInUserTimeZone.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1)
-        // );
-        // startOfWeek.setHours(0, 0, 0, 0);
-        // const endOfWeek = new Date(startOfWeek);
-        // console.log("$$$$$$$$$$$ ENDOFWEEK: ", endOfWeek);
-        // endOfWeek.setDate(startOfWeek.getDate() + 6);
-        // endOfWeek.setHours(23, 59, 59, 999);
-        // const startOfWeekUTC = new Date(
-        //   startOfWeek.getTime() - userTimeZoneOffset
-        // );
-        // console.log("$$$$$$$$$$$ STARTOFWEEKUTC: ", startOfWeekUTC);
-        // const endOfWeekUTC = new Date(endOfWeek.getTime() - userTimeZoneOffset);
-        // console.log("$$$$$$$$$$$ ENDOFWEEKUTC: ", endOfWeekUTC);
-
         // Calculate timezone-aware dates
         const now = new Date();
-        // console.log("$$$$$$$$$$$ Server UTC Time:", now);
+
         // Adjust to IST (GMT+05:30)
         const nowInUserTimeZone = new Date(now.getTime() + userTimeZoneOffset);
-        // console.log("$$$$$$$$$$$ Now in IST:", nowInUserTimeZone);
 
         // Start and end of today in IST
         const startOfToday = new Date(
@@ -282,12 +111,9 @@ export async function GET(req: NextRequest) {
         const endOfTodayUTC = new Date(
           endOfToday.getTime() - userTimeZoneOffset
         );
-        // console.log("$$$$$$$$$$$ StartOfTodayUTC:", startOfTodayUTC);
-        // console.log("$$$$$$$$$$$ EndOfTodayUTC:", endOfTodayUTC);
 
         // Start and end of week (Monday to Sunday) in IST
         const dayOfWeek = nowInUserTimeZone.getDay(); // 0 for Sunday, ..., 6 for Saturday
-        // console.log("$$$$$$$$$$$ DayOfWeek:", dayOfWeek);
 
         // Start of week: Sunday
         const startOfWeek = new Date(
@@ -299,7 +125,6 @@ export async function GET(req: NextRequest) {
           0,
           0
         );
-        // console.log("$$$$$$$$$$$ StartOfWeek (IST):", startOfWeek);
 
         // End of week: Saturday (6 days after Sunday)
         const endOfWeek = new Date(
@@ -311,15 +136,12 @@ export async function GET(req: NextRequest) {
           59,
           999
         );
-        // console.log("$$$$$$$$$$$ EndOfWeek (IST):", endOfWeek);
 
         // Convert to UTC
         const startOfWeekUTC = new Date(
           startOfWeek.getTime() - userTimeZoneOffset
         );
         const endOfWeekUTC = new Date(endOfWeek.getTime() - userTimeZoneOffset);
-        // console.log("$$$$$$$$$$$ StartOfWeekUTC:", startOfWeekUTC);
-        // console.log("$$$$$$$$$$$ EndOfWeekUTC:", endOfWeekUTC);
 
         const pipeline = [
           {
@@ -356,131 +178,8 @@ export async function GET(req: NextRequest) {
           {
             $unwind: {
               path: "$candidates",
-              // preserveNullAndEmptyArrays: true,
             },
           },
-          // {
-          //   $lookup: {
-          //     from: "histories",
-          //     let: { candidateId: "$candidates._id" },
-          //     pipeline: [
-          //       {
-          //         $match: {
-          //           $expr: {
-          //             $eq: ["$candidateId", { $toString: "$$candidateId" }],
-          //           },
-          //         },
-          //       },
-          //       { $unwind: "$history" },
-          //       {
-          //         $lookup: {
-          //           from: "users",
-          //           let: { uid: "$history.assignmentBy" },
-          //           pipeline: [
-          //             {
-          //               $match: {
-          //                 $expr: {
-          //                   $and: [
-          //                     { $eq: ["$_id", "$$uid"] },
-          //                     {
-          //                       $or: [
-          //                         { $eq: ["$isDeleted", false] },
-          //                         { $not: { $ifNull: ["$isDeleted", false] } },
-          //                       ],
-          //                     },
-          //                   ],
-          //                 },
-          //               },
-          //             },
-          //             { $project: { _id: 1, name: 1, email: 1 } },
-          //           ],
-          //           as: "assignmentByUser",
-          //         },
-          //       },
-          //       {
-          //         $set: {
-          //           "history.assignmentBy": { $first: "$assignmentByUser" },
-          //         },
-          //       },
-          //       {
-          //         $lookup: {
-          //           from: "users",
-          //           let: { uid: "$history.currentInterviewer" },
-          //           pipeline: [
-          //             {
-          //               $match: {
-          //                 $expr: { $eq: ["$_id", "$$uid"] },
-          //               },
-          //             },
-          //             { $project: { _id: 1, name: 1, email: 1 } },
-          //           ],
-          //           as: "currentInterviewerUser",
-          //         },
-          //       },
-          //       {
-          //         $set: {
-          //           "history.currentInterviewer": {
-          //             $first: "$currentInterviewerUser",
-          //           },
-          //         },
-          //       },
-          //       {
-          //         $lookup: {
-          //           from: "users",
-          //           let: { uid: "$history.previousInterviewer" },
-          //           pipeline: [
-          //             {
-          //               $match: {
-          //                 $expr: { $eq: ["$_id", "$$uid"] },
-          //               },
-          //             },
-          //             { $project: { _id: 1, name: 1, email: 1 } },
-          //           ],
-          //           as: "previousInterviewerUser",
-          //         },
-          //       },
-          //       {
-          //         $set: {
-          //           "history.previousInterviewer": {
-          //             $first: "$previousInterviewerUser",
-          //           },
-          //         },
-          //       },
-          //       {
-          //         $lookup: {
-          //           from: "users",
-          //           let: { uid: "$history.note.userId" },
-          //           pipeline: [
-          //             {
-          //               $match: {
-          //                 $expr: { $eq: ["$_id", "$$uid"] },
-          //               },
-          //             },
-          //             { $project: { _id: 1, name: 1, email: 1 } },
-          //           ],
-          //           as: "noteUser",
-          //         },
-          //       },
-          //       {
-          //         $set: {
-          //           "history.note.userId": { $first: "$noteUser" },
-          //         },
-          //       },
-          //       {
-          //         $group: {
-          //           _id: "$_id",
-          //           candidateId: { $first: "$candidateId" },
-          //           jobId: { $first: "$jobId" },
-          //           history: { $push: "$history" },
-          //         },
-          //       },
-          //     ],
-          //     as: "histories",
-          //   },
-          // },
-          // {
-          //   $unwind: { path: "$histories" },
-          // },
           {
             $lookup: {
               from: "organizations",
@@ -498,7 +197,6 @@ export async function GET(req: NextRequest) {
           {
             $unwind: {
               path: "$organization",
-              // preserveNullAndEmptyArrays: true,
             },
           },
           {
@@ -579,7 +277,6 @@ export async function GET(req: NextRequest) {
               contact: "$candidates.contact",
               createdAt: "$candidates.createdAt",
               updatedAt: "$candidates.updatedAt",
-              // history: "$histories.history",
               customFields: "$candidates.customFields",
               followUp: {
                 note: "$candidates.followUp.note",
@@ -802,12 +499,18 @@ export async function GET(req: NextRequest) {
               pipeline: [
                 {
                   $match: {
-                    $expr: {
-                      $eq: ["$jobId", "$$jobId"],
-                    },
+                    $expr: { $eq: ["$jobId", "$$jobId"] },
                   },
                 },
-                // interviewerFilter,
+                {
+                  $match: {
+                    $or: [
+                      { isDeleted: { $exists: false } }, // if isDeleted key is missing in DB
+                      { isDeleted: null },
+                      { isDeleted: false },
+                    ],
+                  },
+                },
               ],
               as: "candidates",
             },
@@ -869,46 +572,13 @@ export async function GET(req: NextRequest) {
         const todaysInterviews = todaysInterviewsResult[0]?.count || 0;
         const thisweeksInterviews = thisweeksInterviewsResult[0]?.count || 0;
         const assignmentCount = assignmentCountsResult || [];
-        // console.log("befire filter: ", candidates.data.length);
-        // const filteredCandidates = candidates.data?.filter(
-        //   (candidate) =>
-        //     candidate.jobId?.organizationId?.toString() ===
-        //       userData.organizationId && candidate.status !== "rejected"
-        // );
-        // console.log("after filter: ", filteredCandidates.length);
 
         if (!History) return;
         const candidatesWithPrivateCF = await getFilterPrivateCF(
           candidates.data,
           req
         );
-        // console.log("befire history: ", candidates.data.length);
-        // const candidatesWithHistory = await Promise.all(
-        //   candidatesWithPrivateCF.map(async (candidate) => {
-        //     const history = await History?.findOne({
-        //       jobId: candidate.jobId._id,
-        //       candidateId: candidate._id.toString(),
-        //     })
-        //       .populate("history.currentInterviewer", "_id name email")
-        //       .populate("history.previousInterviewer", "_id name email")
-        //       .populate("history.assignmentBy", "_id name email")
-        //       .populate("history.note.userId", "_id name email")
-        //       .lean();
 
-        //     return {
-        //       ...candidate,
-        //       history: history
-        //         ? history.history.filter((entry) =>
-        //             userData?.role === "admin" || userData?.role === "hr"
-        //               ? true
-        //               : !entry.remark?.id || !entry.remark.isPrivate
-        //           )
-        //         : [],
-        //     };
-        //   })
-        // );
-
-        // console.log("aftetr history: ", candidatesWithHistory.length);
         return NextResponse.json([
           {
             data: candidatesWithPrivateCF,

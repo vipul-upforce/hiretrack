@@ -68,10 +68,10 @@ export type EmailHistoryRecord = {
   body?: string;
 };
 import { useGetEmailHistoryQuery } from "@/lib/features/settings/settingsApi";
-// import  EmailHistoryRecord  from "../../email-history/page";
+import { useDebounce } from "@/hooks/useDebounce";
+import EmailHistorySkeleton from "./email-history-skeleton";
 
 export function EmailHistory() {
-
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
@@ -80,18 +80,20 @@ export function EmailHistory() {
     null
   );
   const [refreshing, setRefreshing] = useState(false);
-  const {
-    data,
-    error,
-    isLoading,
-    isFetching,
-    refetch,
-  } = useGetEmailHistoryQuery({
-    page,
-    limit: pageSize,
-    search,
-    status: statusFilter,
-  });
+  const [rawSearch, setRawSearch] = useState(search);
+  const debouncedSearchQuery = useDebounce(rawSearch, 700);
+
+  useEffect(() => {
+    setSearch(debouncedSearchQuery);
+  }, [debouncedSearchQuery]);
+
+  const { data, error, isLoading, isFetching, refetch } =
+    useGetEmailHistoryQuery({
+      page,
+      limit: pageSize,
+      search,
+      status: statusFilter,
+    });
 
   const emails = data?.emails ?? [];
   const totalPages = data?.pagination?.total ?? 1;
@@ -113,21 +115,21 @@ export function EmailHistory() {
     switch (status) {
       case "sent":
         return (
-          <Badge className="bg-green-100 text-green-800 border-green-200">
+          <Badge className="bg-green-100 text-green-800 border-green-200 hover:bg-green-200">
             <CheckCircle className="h-3 w-3 mr-1" />
             Sent
           </Badge>
         );
       case "failed":
         return (
-          <Badge className="bg-red-100 text-red-800 border-red-200">
+          <Badge className="bg-red-100 text-red-800 border-red-200 hover:bg-red-200">
             <XCircle className="h-3 w-3 mr-1" />
             Failed
           </Badge>
         );
       case "pending":
         return (
-          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
+          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200">
             <Clock className="h-3 w-3 mr-1" />
             Pending
           </Badge>
@@ -169,9 +171,9 @@ export function EmailHistory() {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
             placeholder="Search by subject, sender, or recipient..."
-            value={search}
+            value={rawSearch}
             onChange={(e) => {
-              setSearch(e.target.value);
+              setRawSearch(e.target.value);
               setPage(1);
             }}
             className="pl-10"
@@ -197,9 +199,7 @@ export function EmailHistory() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-        </div>
+        <EmailHistorySkeleton />
       ) : emails?.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
           <Mail className="h-12 w-12 mx-auto mb-4 text-gray-300" />
@@ -240,20 +240,20 @@ export function EmailHistory() {
                       </span>
                       {((email.cc && email.cc.length > 0) ||
                         (email.bcc && email.bcc.length > 0)) && (
-                          <span className="text-xs text-muted-foreground">
-                            {email.cc &&
-                              email.cc.length > 0 &&
-                              `CC: ${email.cc.length}`}
-                            {email.cc &&
-                              email.cc.length > 0 &&
-                              email.bcc &&
-                              email.bcc.length > 0 &&
-                              ", "}
-                            {email.bcc &&
-                              email.bcc.length > 0 &&
-                              `BCC: ${email.bcc.length}`}
-                          </span>
-                        )}
+                        <span className="text-xs text-muted-foreground">
+                          {email.cc &&
+                            email.cc.length > 0 &&
+                            `CC: ${email.cc.length}`}
+                          {email.cc &&
+                            email.cc.length > 0 &&
+                            email.bcc &&
+                            email.bcc.length > 0 &&
+                            ", "}
+                          {email.bcc &&
+                            email.bcc.length > 0 &&
+                            `BCC: ${email.bcc.length}`}
+                        </span>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -410,19 +410,19 @@ export function EmailHistory() {
                         {((selectedEmail.cc && selectedEmail.cc.length > 0) ||
                           (selectedEmail.bcc &&
                             selectedEmail.bcc.length > 0)) && (
-                            <span className="ml-2">
-                              {selectedEmail.cc &&
-                                selectedEmail.cc.length > 0 && (
-                                  <span>cc: {selectedEmail.cc.join(", ")}</span>
-                                )}
-                              {selectedEmail.bcc &&
-                                selectedEmail.bcc.length > 0 && (
-                                  <span className="ml-2">
-                                    bcc: {selectedEmail.bcc.join(", ")}
-                                  </span>
-                                )}
-                            </span>
-                          )}
+                          <span className="ml-2">
+                            {selectedEmail.cc &&
+                              selectedEmail.cc.length > 0 && (
+                                <span>cc: {selectedEmail.cc.join(", ")}</span>
+                              )}
+                            {selectedEmail.bcc &&
+                              selectedEmail.bcc.length > 0 && (
+                                <span className="ml-2">
+                                  bcc: {selectedEmail.bcc.join(", ")}
+                                </span>
+                              )}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -435,7 +435,7 @@ export function EmailHistory() {
                     {selectedEmail.body ? (
                       // Check if content is HTML by looking for HTML tags
                       selectedEmail.body.includes("<") &&
-                        selectedEmail.body.includes(">") ? (
+                      selectedEmail.body.includes(">") ? (
                         <div
                           className="leading-relaxed"
                           dangerouslySetInnerHTML={{

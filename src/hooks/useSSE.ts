@@ -7,7 +7,7 @@ import Cookies from "js-cookie";
 import { useNotificationSSE } from "./useNotificationSSE";
 
 export async function getDecodedSSE(encodedData: string) {
-  console.log(encodedData, "encodedData");
+  // console.log(encodedData, "encodedData");
   const orgId = Cookies.get("org_id");
   console.log(orgId, "orgId in getDecodedSSE");
 

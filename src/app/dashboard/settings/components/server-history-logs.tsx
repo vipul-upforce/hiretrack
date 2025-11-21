@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Calendar,
   Search,
   Eye,
   ChevronLeft,
   ChevronRightIcon,
+  RefreshCwIcon,
 } from "lucide-react";
 import {
   Table,
@@ -39,6 +40,7 @@ import {
 import DesktopSkeletonHistroyLogs from "./history-logs-desktop-skeleton";
 import MobileSkeletonHistroyLogs from "./history-logs-mobile-skeleton";
 import { useRenderLogTitle } from "@/app/dashboard/hooks/useRenderLogTitle";
+import { useDebounce } from "@/hooks/useDebounce";
 
 type Props = {
   searchQuery: string;
@@ -52,7 +54,11 @@ type LogEntry = {
   candidateData: Candidate;
   jobData: Job;
   dateTime: string;
-  assignmentBy: any;
+  assignmentBy: {
+    _id: string;
+    name: string;
+    email: string;
+  }[];
   currentInterviewer: {
     _id: string;
     name: string;
@@ -82,11 +88,18 @@ export function ServerHistoryLogs({
     () => (historyPage - 1) * historyPageSize,
     [historyPage, historyPageSize]
   );
+  const [rawSearch, setRawSearch] = useState(searchQuery);
+  const debouncedSearchQuery = useDebounce(rawSearch, 500);
+
+  useEffect(() => {
+    setSearchQuery(debouncedSearchQuery);
+  }, [debouncedSearchQuery, setSearchQuery]);
 
   const {
     data: historyResp,
     isLoading: historyLoading,
     isFetching: historyFetching,
+    refetch,
   } = useGetServerLogsQuery(
     { offset: historyOffset, limit: historyPageSize, query: searchQuery },
     { skip: false }
@@ -129,9 +142,9 @@ export function ServerHistoryLogs({
             type="text"
             aria-label="Search history logs"
             placeholder="Search logs by candidate, job title, email, skills, or remarks..."
-            value={searchQuery}
+            value={rawSearch}
             onChange={(e) => {
-              setSearchQuery(e.target.value);
+              setRawSearch(e.target.value);
               setHistoryPage(1);
             }}
             className="pl-10"
@@ -139,6 +152,17 @@ export function ServerHistoryLogs({
         </div>
 
         <div className="flex items-center gap-3">
+          <Button
+            onClick={refetch}
+            disabled={historyFetching}
+            variant="secondary"
+          >
+            <RefreshCwIcon
+              className={`h-1 w-1 transition-transform ${
+                historyFetching ? "animate-spin" : ""
+              }`}
+            />
+          </Button>
           <span className="text-sm text-muted-foreground">Items per page</span>
           <Select
             value={String(historyPageSize)}
@@ -146,6 +170,7 @@ export function ServerHistoryLogs({
               setHistoryPageSize(Number.parseInt(v, 10));
               setHistoryPage(1);
             }}
+            disabled={historyFetching}
           >
             <SelectTrigger
               className="w-[100px]"
@@ -272,6 +297,9 @@ export function ServerHistoryLogs({
                       <TableHead className="min-w-[160px] text-xs uppercase tracking-wider text-muted-foreground">
                         Date
                       </TableHead>
+                      <TableHead className="min-w-[160px] text-xs uppercase tracking-wider text-muted-foreground">
+                        Updated By
+                      </TableHead>
                       <TableHead className="text-right min-w-[100px] text-xs uppercase tracking-wider text-muted-foreground">
                         Actions
                       </TableHead>
@@ -331,6 +359,20 @@ export function ServerHistoryLogs({
                           </div>
                           <div className="text-xs text-muted-foreground">
                             {formatTime(log.dateTime)}
+                          </div>
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <div className="flex flex-col">
+                            <span className="font-medium">
+                              {log?.assignmentBy.length
+                                ? log?.assignmentBy[0]?.name
+                                : "SELF"}
+                            </span>
+                            <span className="text-xs text-muted-foreground truncate">
+                              {log?.assignmentBy.length
+                                ? log?.assignmentBy[0]?.email
+                                : log?.candidateData?.email}
+                            </span>
                           </div>
                         </TableCell>
                         <TableCell className="text-right align-top">

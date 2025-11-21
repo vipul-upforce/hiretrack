@@ -83,20 +83,18 @@ export function EditUserDialog({
         description:
           "Error: " +
           (typeof error === "object" &&
-            error !== null &&
-            "data" in error &&
-            typeof error.data === "object" &&
-            error.data &&
-            "error" in error.data
+          error !== null &&
+          "data" in error &&
+          typeof error.data === "object" &&
+          error.data &&
+          "error" in error.data
             ? (error.data as { error: string }).error
             : "Unknown error"),
         variant: "destructive",
       });
-    }
-    finally {
+    } finally {
       setIsLoading(false);
     }
-
   };
 
   if (!selectedUser) return null;
@@ -194,7 +192,7 @@ export function EditUserDialog({
                 </div>
               )}
 
-              <div className="flex justify-end border-t bg-background px-6 py-4 sticky bottom-0 z-10">
+              <div className="flex justify-end border-t bg-background pt-4 sticky bottom-0 z-10">
                 <Button
                   type="submit"
                   disabled={isUpdating || isLoading}

@@ -70,16 +70,17 @@ export default function JobSpecificCustomFields({ jobId }: { jobId: string }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          {/* <h3 className="text-lg font-semibold">
-            Job-specific candidate fields
-          </h3> */}
           <p className="text-sm text-orange-500 dark:text-gray-400 flex flex-row items-center gap-2 ">
             <AlertCircle className="h-4 w-4" />
             These fields will only appear for candidates applying to this
             specific job.
           </p>
         </div>
-        <Button onClick={handleAddField} className="flex items-center gap-2">
+        <Button
+          onClick={handleAddField}
+          variant="primary"
+          className="flex items-center gap-2"
+        >
           <Plus className="h-4 w-4" />
           Add Field
         </Button>

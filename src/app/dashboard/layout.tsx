@@ -7,35 +7,25 @@ import {
   Menu,
   KanbanSquare,
   Calendar,
-  ChevronRight,
-  LogOut,
   Home,
   Users,
   Settings,
   SearchCheckIcon,
-  Link2Icon,
   UploadIcon,
   BarChart3Icon,
-  Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { Separator } from "@/components/ui/separator";
+import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import Cookies from "js-cookie";
 import { useCustomFields } from "@/Custom_Fields/hooks/use-customFields";
 import { useGetPortalConfigsQuery } from "@/lib/features/settings/settingsApi";
 import { IUser } from "@/lib/models/user";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { setAllowMultipleOrgs } from "@/lib/features/org/orgSlice";
 import { logout } from "@/lib/redux/authSlice";
 import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "@/lib/store";
 import PortalHead from "@/components/layouts/PortalHead";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useTheme } from "@/components/theme-provider";
-import { NotificationButton } from "@/components/ui/notifications";
 import {
   useGetNotificationsQuery,
   useGetNotificationCountQuery,
@@ -47,8 +37,6 @@ import { useLazyFetchCandidateByIdQuery } from "@/lib/features/candidate/candida
 import { Candidate } from "@/types/candidate";
 import { OnboardingProvider } from "@/components/onboarding/OnboardingProvider";
 import OnboardingModal from "@/components/onboarding/OnboardingModal";
-import OnboardingSidebar from "@/components/onboarding/OnboardingSidebar";
-import SidebarLogo from "@/components/layouts/SidebarLogo";
 import SidebarContent from "@/components/layouts/SidebarContent";
 import { useGetOrganizationAllowanceQuery } from "@/lib/features/org/orgApi";
 import { useCheckOrgQuery } from "@/lib/features/org/orgApi";
@@ -107,13 +95,7 @@ const sidebarItems: SidebarItem[] = [
     href: "/dashboard/settings",
     icon: <Settings className="h-5 w-5" />,
     role: "admin",
-  },
-  // {
-  //   title: "Email History",
-  //   href: "/dashboard/email-history",
-  //   icon: <Mail className="h-5 w-5" />,
-  //   role: "admin",
-  // },
+  }
 ];
 
 export default function DashboardLayout({
@@ -195,38 +177,12 @@ export default function DashboardLayout({
     }
     // For admin/hr or non-candidate notifications, navigate to the page
     if (notification.actionUrl) {
-      // window.location.href = notification.actionUrl;
       router.push(notification.actionUrl);
-      // router.refresh();
-      // window.location.reload();
     }
   };
 
-  const handleMarkAsRead = async (id: string) => {
-    try {
-      await markAsRead(id).unwrap();
-    } catch (error) {
-      console.error("Failed to mark notification as read:", error);
-    }
-  };
-
-  const handleMarkAllAsRead = async () => {
-    try {
-      await markAllAsRead().unwrap();
-      toast({
-        title: "Success",
-        description: "All notifications marked as read",
-      });
-    } catch (error) {
-      console.error("Failed to mark all notifications as read:", error);
-      toast({
-        title: "Error",
-        description: "Failed to mark all notifications as read",
-        variant: "destructive",
-      });
-    }
-  };
   const { user } = useSelector((state: any) => state.auth || {});
+
   const {
     data: orgCheckData,
     error: orgCheckError,
@@ -234,9 +190,6 @@ export default function DashboardLayout({
   } = useCheckOrgQuery(user?.organizationId, { skip: !user });
 
   const dispatch = useDispatch();
-  const allowMultipleOrgs = useSelector(
-    (state: RootState) => state.organization.allowMultipleOrgs
-  );
 
   useEffect(() => {
     if (allowanceData) {
@@ -280,7 +233,6 @@ export default function DashboardLayout({
     null
   );
   const [isCandidateDialogOpen, setIsCandidateDialogOpen] = useState(false);
-  const pathname = usePathname();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -315,7 +267,6 @@ export default function DashboardLayout({
   }, []); // Remove isCollapsed dependency to avoid infinite loops
 
   const handleLogout = async () => {
-    // Cookies.remove("token");
     dispatch(logout());
     localStorage.removeItem("persist:auth");
     localStorage.removeItem("persist:organization");
@@ -334,13 +285,6 @@ export default function DashboardLayout({
     e.preventDefault();
     let parsedUser = user;
 
-    // console.log(user);
-    // if (user) {
-    //   const decryptedResponse = await verifyAndDecryptJWTToken(String(user));
-    //   if (decryptedResponse.success && decryptedResponse.user) {
-    //     parsedUser = decryptedResponse.user;
-    //   }
-    // }
     if (parsedUser) {
       let url;
       if (hasMultipleOrgs) {
@@ -369,31 +313,9 @@ export default function DashboardLayout({
 
   const { theme } = useTheme();
 
-  // Helper function to get user avatar
-  const getUserAvatar = () => {
-    // Use theme-appropriate icon
-    return theme === "dark" ? "/icon_dark.png" : "/icon.png";
-  };
-
-  // Helper function to get user initials
-  const getUserInitials = (name?: string) => {
-    if (!name) return "U";
-    return name
-      .split(" ")
-      .map((word) => word.charAt(0))
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
   // Inject portal colors as CSS custom properties
   useEffect(() => {
-    // console.log("Portal config data:", portalConfigData);
     if (portalConfigData?.primaryColor && portalConfigData?.secondaryColor) {
-      // console.log("Injecting portal colors:", {
-      //   primary: portalConfigData.primaryColor,
-      //   secondary: portalConfigData.secondaryColor,
-      // });
       const root = document.documentElement;
       root.style.setProperty("--portal-primary", portalConfigData.primaryColor);
       root.style.setProperty(

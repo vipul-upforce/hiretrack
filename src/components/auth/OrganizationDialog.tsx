@@ -102,6 +102,7 @@ const OrganizationDialog: React.FC<OrganizationDialogProps> = ({
             </Button>
             <Button
               type="button"
+              variant="primary"
               onClick={handleContinue}
               disabled={!!loadingOrg || !selectedOrgId}
             >

@@ -26,15 +26,6 @@ const generateBase64 = async (url: any) => {
   const base64Resume = fileBuffer.toString("base64");
   return base64Resume;
 };
-
-interface JobForEvaluate {
-  description: string;
-  title: string;
-  skills: string[];
-  salary?: string;
-  experience?: number;
-}
-
 // Calculate comparative ranking for a candidate within their job's candidate pool
 async function calculateComparativeRanking(
   candidateId: any,
@@ -47,7 +38,7 @@ async function calculateComparativeRanking(
       jobId: typeof jobId === "object" && "_id" in jobId ? jobId._id : jobId,
       scores: { $exists: true },
       isDeleted: { $ne: true },
-    }).select("scores");
+    }).select("_id scores");
 
     if (!candidates || candidates.length === 0) {
       return {
@@ -64,7 +55,7 @@ async function calculateComparativeRanking(
     }
 
     const totalCandidates = candidates.length;
-
+ 
     // Determine which score to use for ranking (weighted score if available, otherwise overall)
     const useWeightedScore = currentScores.weightedScore != null;
     const rankingBasedOn: 'overall' | 'weighted' = useWeightedScore ? 'weighted' : 'overall';
@@ -73,17 +64,17 @@ async function calculateComparativeRanking(
     // Calculate percentiles for each dimension (including ties)
     const calculatePercentile = (value: number, allValues: number[]) => {
       const sorted = allValues.filter((v) => v != null).sort((a, b) => a - b);
+      if (sorted.length <= 1) return 100;
+
       const countBelow = sorted.filter((v) => v < value).length;
       const countEqual = sorted.filter((v) => v === value).length;
-      // Use midpoint method for ties: add half of tied values
-      const adjustedCount = countBelow + (countEqual - 1) / 2;
-      return Math.round((adjustedCount / sorted.length) * 100);
+
+      // Midpoint method for ties
+      const adjustedCount = countBelow + (countEqual - 1) * 0.5;
+
+      return Math.round((adjustedCount / (sorted.length - 1)) * 100);
     };
 
-    // Extract scores for all candidates
-    const allOverallScores = candidates
-      .map((c) => c.scores?.overall)
-      .filter((s) => s != null);
     const allSkillsScores = candidates
       .map((c) => c.scores?.skills)
       .filter((s) => s != null);
@@ -104,14 +95,15 @@ async function calculateComparativeRanking(
       })
       .sort((a, b) => {
         const scoreA = useWeightedScore ? (a.scores?.weightedScore || 0) : (a.scores?.overall || 0);
-        const scoreB = useWeightedScore ? (b.scores?.weightedScore || 0) : (b.scores?.overall || 0);
+        const scoreB = useWeightedScore ? (b.scores?.weightedScore || 0) : (b.scores?.overall || 0);        
         return scoreB - scoreA; // Highest first
       });
+     const index = sortedCandidates.findIndex(
+       (c) => c._id.toString() === candidateId.toString()
+       );
 
-    const currentCandidateRank =
-      sortedCandidates.findIndex(
-        (c) => c._id.toString() === candidateId.toString()
-      ) + 1;
+      const currentCandidateRank =
+      index === -1 ? sortedCandidates.length : index + 1;
 
     // Check for ties at the same ranking score
     const candidatesWithSameScore = sortedCandidates.filter((c) => {
@@ -119,8 +111,10 @@ async function calculateComparativeRanking(
       return score === currentRankingScore;
     });
     const hasTie = candidatesWithSameScore.length > 1;
-    const tiedWithCount = candidatesWithSameScore.length - 1; // Excluding current candidate
-
+    let tiedWithCount = 0;
+    if(hasTie){
+      tiedWithCount = candidatesWithSameScore.length - 1; // Excluding current candidate
+    }
     // Get all ranking scores for percentile calculation
     const allRankingScores = sortedCandidates.map((c) =>
       useWeightedScore ? (c.scores?.weightedScore || 0) : (c.scores?.overall || 0)
@@ -143,7 +137,7 @@ async function calculateComparativeRanking(
         allAffordabilityScores
       ),
       hasTie,
-      tiedWithCount,
+      tiedWithCount: tiedWithCount || 0,
       rankingBasedOn,
     };
   } catch (error) {
@@ -338,30 +332,32 @@ export async function PUT(request: NextRequest) {
       customPrompt: null,
     };
 
-    if (!evaluationConfig.autoEvaluateAllCandidates) {
+  if (!evaluationConfig.autoEvaluateAllCandidates) {
       // Check page count
-      try {
-        const pdfBuffer = Buffer.from(base64Resume, "base64");
-        const pdfjs = await import("pdfjs-dist/legacy/build/pdf.js");
-        const pdf = await pdfjs.getDocument({ data: pdfBuffer }).promise;
-        const pageCount = pdf.numPages;
-
-        if (
-          evaluationConfig.maxPdfPages > 0 &&
-          pageCount > evaluationConfig.maxPdfPages
-        ) {
-          return NextResponse.json(
-            {
-              error: `Resume has ${pageCount} pages. Auto-evaluation is limited to ${evaluationConfig.maxPdfPages} pages. Please evaluate manually or update settings.`,
-            },
-            { status: 400 }
-          );
-        }
-      } catch (pdfError) {
-        console.warn("PDF page count check failed:", pdfError);
-        // Continue with evaluation if page check fails
+    try {
+      const pdfBuffer = Buffer.from(base64Resume, "base64");
+      const uint8Array = new Uint8Array(pdfBuffer);
+  
+      const pdfjs = await import("pdfjs-dist/legacy/build/pdf.js");
+      const pdf = await pdfjs.getDocument({ data: uint8Array }).promise;
+  
+      const pageCount = pdf.numPages;
+  
+      if (
+        evaluationConfig.maxPdfPages > 0 &&
+        pageCount > evaluationConfig.maxPdfPages
+      ) {
+        return NextResponse.json(
+          {
+            error: `Resume has ${pageCount} pages. Auto-evaluation is limited to ${evaluationConfig.maxPdfPages} pages. Please evaluate manually or update settings.`,
+          },
+          { status: 400 }
+        );
       }
+    } catch (pdfError) {
+      console.warn("PDF page count check failed:", pdfError);
     }
+  }
 
     const jobDescription =
       candidate.jobId &&
@@ -433,16 +429,10 @@ export async function PUT(request: NextRequest) {
       );
       scores.comparativeRanking = comparativeRanking;
     }
-
-    // Debug: Check if suggestedAnswer is in scores before saving
-    console.log("📝 Scores before saving to DB:", JSON.stringify(scores.interviewQuestions, null, 2));
-
+    
     candidate.scores = scores;
     candidate.contact = candidate.contact;
     await candidate.save();
-
-    // Debug: Check if suggestedAnswer is in candidate after saving
-    console.log("📝 Candidate scores after save:", JSON.stringify(candidate.scores.interviewQuestions, null, 2));
 
     const fullCandidate = (await Candidate.findById(candidate._id)
       .populate([
@@ -461,8 +451,6 @@ export async function PUT(request: NextRequest) {
       ])
       .lean()) as ICandidate;
 
-    // Debug: Check if suggestedAnswer is in fullCandidate after query
-    console.log("📝 Full candidate interviewQuestions after query:", JSON.stringify(fullCandidate.scores?.interviewQuestions, null, 2));
     const candidateHistory = await History?.findOne({
       candidateId: candidate._id,
       jobId:
@@ -481,7 +469,6 @@ export async function PUT(request: NextRequest) {
       ...fullCandidate,
       history: candidateHistoryPopulated?.history,
     };
-    console.log("📝 Broadcasting interviewQuestions:", JSON.stringify(dataTobroadcast.scores?.interviewQuestions, null, 2));
 
     broadcastCandidateUpdate(dataTobroadcast);
 

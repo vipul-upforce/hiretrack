@@ -50,7 +50,11 @@ export function CalendarSidebar({
     .filter((e) => e.start)
     .map((e) => new Date(e.start!));
 
-  const renderEventCard = (event: CustomCalendarEvent, index: number, showDate: boolean = false) => {
+  const renderEventCard = (
+    event: CustomCalendarEvent,
+    index: number,
+    showDate: boolean = false
+  ) => {
     const candidate = event.extendedProps.candidate;
     const interviewer = event.extendedProps.interviewer;
 
@@ -65,14 +69,18 @@ export function CalendarSidebar({
             <h4 className="font-semibold text-sm line-clamp-1">
               {candidate.name}
             </h4>
-            {typeof candidate.jobId !== "string" && (candidate.jobId as Job)?.title && (
-              <p className="text-xs text-muted-foreground capitalize line-clamp-1">
-                {(candidate.jobId as Job).title}
-              </p>
-            )}
+            {typeof candidate.jobId !== "string" &&
+              (candidate.jobId as Job)?.title && (
+                <p className="text-xs text-muted-foreground capitalize line-clamp-1">
+                  {(candidate.jobId as Job).title}
+                </p>
+              )}
           </div>
           {candidate.status && (
-            <Badge variant="secondary" className="text-[10px] px-2 py-0.5 shrink-0">
+            <Badge
+              variant="secondary"
+              className="text-[10px] px-2 py-0.5 shrink-0"
+            >
               {candidate.status}
             </Badge>
           )}
@@ -88,7 +96,9 @@ export function CalendarSidebar({
           {interviewer.name && interviewer.name !== "Unknown" && (
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <MapPin className="h-3 w-3" />
-              <span className="capitalize line-clamp-1">{interviewer.name}</span>
+              <span className="capitalize line-clamp-1">
+                {interviewer.name}
+              </span>
             </div>
           )}
           {showDate && event.start && (
@@ -106,80 +116,97 @@ export function CalendarSidebar({
   };
 
   return (
-    <aside className="w-full lg:w-80 space-y-2.5 h-full overflow-auto">
-      {/* Today's Schedule */}
-      <Card>
-        <CardHeader className="p-3 pb-2">
-          <CardTitle className="text-sm font-semibold">Today's Schedule</CardTitle>
-        </CardHeader>
-        <CardContent className="p-3 pt-0">
-          {todaysEvents.length > 0 ? (
-            <div className="space-y-1.5">
-              {todaysEvents.map((event, index) => renderEventCard(event, index))}
-            </div>
-          ) : (
-            <div className="text-center py-3">
-              <p className="text-xs text-muted-foreground">
-                No events scheduled for today
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+    <aside
+      className=" w-full h-full space-y-3 md:w-full lg:w-[260px] xl:w-[300px] overflow-hidden" >
+      <div className="flex flex-col gap-3 h-full overflow-auto p-3 border rounded-lg">
+        {/* Today's Schedule */}
+        <Card className="max-h-[300px] flex-shrink-0 overflow-y-auto">
+          <CardHeader className="p-3 pb-2">
+            <CardTitle className="text-sm font-semibold">
+              Today's Schedule
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 pt-0">
+            {todaysEvents.length > 0 ? (
+              <div className="space-y-1.5">
+                {todaysEvents.map((event, index) =>
+                  renderEventCard(event, index)
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-3">
+                <p className="text-xs text-muted-foreground">
+                  No events scheduled for today
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-      {/* Upcoming Events */}
-      <Card>
-        <CardHeader className="p-3 pb-2">
-          <CardTitle className="text-sm font-semibold">Upcoming Events</CardTitle>
-        </CardHeader>
-        <CardContent className="p-3 pt-0">
-          {upcomingEvents.length > 0 ? (
-            <div className="space-y-1.5">
-              {upcomingEvents.map((event, index) => renderEventCard(event, index, true))}
-            </div>
-          ) : (
-            <div className="text-center py-3">
-              <p className="text-xs text-muted-foreground">
-                No upcoming events
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        {/* Upcoming Events */}
+        <Card className=" max-h-[370px] flex-shrink-0 overflow-y-auto">
+          <CardHeader className="p-3 pb-2">
+            <CardTitle className="text-sm font-semibold">
+              Upcoming Events
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 pt-0">
+            {upcomingEvents.length > 0 ? (
+              <div className="space-y-1.5">
+                {upcomingEvents.map((event, index) =>
+                  renderEventCard(event, index, true)
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-3">
+                <p className="text-xs text-muted-foreground">
+                  No upcoming events
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-      {/* Not Scheduled */}
-      <Card>
-        <CardHeader className="p-3 pb-2">
-          <CardTitle className="text-sm font-semibold">Not Scheduled</CardTitle>
-        </CardHeader>
-        <CardContent className="p-3 pt-0">
-          {notScheduledEvents.length > 0 ? (
-            <div className="space-y-1.5">
-              {notScheduledEvents.map((event, index) => renderEventCard(event, index))}
-            </div>
-          ) : (
-            <div className="text-center py-3">
-              <p className="text-xs text-muted-foreground">
-                All candidates are scheduled
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        {/* Not Scheduled */}
+        <Card className="max-h-[300px] flex-shrink-0 overflow-y-auto">
+          <CardHeader className="p-3 pb-2">
+            <CardTitle className="text-sm font-semibold">
+              Not Scheduled
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 pt-0">
+            {notScheduledEvents.length > 0 ? (
+              <div className="space-y-1.5">
+                {notScheduledEvents.map((event, index) =>
+                  renderEventCard(event, index)
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-3">
+                <p className="text-xs text-muted-foreground">
+                  All candidates are scheduled
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-      {/* Quick Navigation */}
-      <Card>
-        <CardHeader className="p-3 pb-2">
-          <CardTitle className="text-sm font-semibold">Quick Navigation</CardTitle>
-        </CardHeader>
-        <CardContent className="p-3 pt-0">
-          <MiniCalendar
-            selectedDate={selectedDate}
-            onDateSelect={onDateSelect}
-            eventDates={eventDates}
-          />
-        </CardContent>
-      </Card>
+        {/* Mini Calendar */}
+        <Card className=" max-h-full flex-shrink-0">
+          <CardHeader className="p-3 pb-2">
+            <CardTitle className="text-sm font-semibold">
+              Quick Navigation
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 pt-0">
+            <MiniCalendar
+              selectedDate={selectedDate}
+              onDateSelect={onDateSelect}
+              eventDates={eventDates}
+            />
+          </CardContent>
+        </Card>
+      </div>
     </aside>
   );
 }

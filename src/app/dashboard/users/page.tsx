@@ -31,7 +31,8 @@ function UsersPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { data: users = [], isLoading, error, refetch } = useGetUsersQuery();
-  const [deleteUser, { isLoading: isDeleting }] = useDeleteUserMutation();
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [deleteUser] = useDeleteUserMutation();
   const [isOpen, setIsOpen] = useState(false);
   const [isPasswordOpen, setIsPasswordOpen] = useState(false);
   const [isEmailSettingsOpen, setIsEmailSettingsOpen] = useState(false);
@@ -58,7 +59,9 @@ function UsersPage() {
   }, []);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [userIdToDelete, setUserIdToDelete] = useState<string | null>(null);
+
   const handleDelete = async (id: string) => {
+    setDeletingUserId(id);
     try {
       await deleteUser(id).unwrap();
       toast({
@@ -80,6 +83,8 @@ function UsersPage() {
         title: "Failed to delete user",
         variant: "destructive",
       });
+    } finally {
+      setDeletingUserId(null);
     }
   };
 
@@ -215,8 +220,8 @@ function UsersPage() {
                     <UserTableRow
                       key={user._id}
                       user={user}
-                      isDeleting={isDeleting}
-                      isUpdating={isDeleting}
+                      isDeleting={deletingUserId === user._id}
+                      isUpdating={false}
                       onDeleteClick={() => {
                         setUserIdToDelete(user._id);
                         setShowDeleteDialog(true);

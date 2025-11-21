@@ -75,7 +75,7 @@ export interface IUser {
   organizationInfo?: OrgInfo;
   name: string;
   email: string;
-  role: "admin" | "hr" | "interviewer" | "candidate";
+  role: "admin" | "hr" | "interviewer" | "candidate" | "system";
   password: string;
   createdAt: Date;
   updatedAt: Date;

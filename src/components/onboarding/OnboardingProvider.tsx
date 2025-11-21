@@ -7,6 +7,7 @@ import React, {
   useState,
   ReactNode,
 } from "react";
+import { onboardingApi } from "@/lib/features/onboarding/onboardingApi";
 import { useSelector } from "react-redux";
 
 export interface OnboardingStep {
@@ -34,6 +35,20 @@ export interface OnboardingProgress {
   percentage: number;
 }
 
+export interface StepStatus {
+  [stepId: string]: boolean;
+}
+
+export interface ValidateResponse {
+  isValid: boolean;
+  progress: OnboardingProgress;
+  stepStatus: StepStatus;
+}
+
+export interface StatusResponse {
+  onboardingStatus: OnboardingStatus;
+}
+
 interface OnboardingContextType {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
@@ -47,14 +62,13 @@ interface OnboardingContextType {
   completeStep: (stepId: string) => Promise<void>;
   skipStep: (stepId: string) => Promise<void>;
   validateStep: (stepId: string) => Promise<boolean>;
-  refreshProgress: () => Promise<void>;
+  refreshProgress: (status: OnboardingStatus | null) => Promise<void>; // ← UPDATED
   doNotShowAgain: () => Promise<void>;
 }
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(
   undefined
 );
-
 interface OnboardingProviderProps {
   children: ReactNode;
 }
@@ -64,7 +78,6 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  // Debug state changes
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [steps, setSteps] = useState<OnboardingStep[]>([]);
   const [onboardingStatus, setOnboardingStatus] =
@@ -83,21 +96,15 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
     }
   }, [user]);
 
-  // Auto-open onboarding for new admins
   useEffect(() => {
     if (!isLoading && onboardingStatus && user?.role === "admin") {
-      // Show onboarding if:
-      // 1. Not completed
-      // 2. User hasn't chosen "do not show again"
-      // 3. Progress is low (less than 50%)
-      const shouldShowOnboarding =
+      const shouldShow =
         !onboardingStatus.isCompleted &&
         !onboardingStatus.doNotShowAgain &&
         (progress?.percentage || 0) < 50 &&
-        onboardingStatus.currentStep === 0; // Only on first visit
+        onboardingStatus.currentStep === 0;
 
-      if (shouldShowOnboarding) {
-        // Small delay to let the UI settle
+      if (shouldShow) {
         setTimeout(() => setIsOpen(true), 1000);
       }
     }
@@ -107,126 +114,95 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
     try {
       setIsLoading(true);
 
-      // Fetch onboarding status
-      const statusResponse = await fetch("/api/onboarding/status");
-      if (statusResponse.ok) {
-        const statusData = await statusResponse.json();
-        setOnboardingStatus(statusData.onboardingStatus);
-        setCurrentStepIndex(statusData.onboardingStatus.currentStep || 0);
-      }
+      // 1) Load STATUS first
+      const status = await onboardingApi.getStatus();
+      if (status) {
+        setOnboardingStatus(status);
+        setCurrentStepIndex(status.currentStep || 0);
 
-      // debugger;
-      if (onboardingStatus) {
-        if (onboardingStatus.isCompleted) {
-          return;
-        }
-        await refreshProgress();
+        // 2) Always refresh using the latest status
+        await refreshProgress(status);
       }
-      // Fetch validation progress
     } catch (error) {
-      console.error("Error fetching onboarding data:", error);
+      console.error("Error loading onboarding:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const refreshProgress = async () => {
+  const refreshProgress = async (status: OnboardingStatus | null) => {
     try {
-      const validateResponse = await fetch("/api/onboarding/validate");
-      if (validateResponse.ok) {
-        const validateData = await validateResponse.json();
-        setProgress(validateData.progress);
+      const data = await onboardingApi.validate();
+      if (!data) return;
 
-        // Update steps with validation status
-        const updatedSteps = getDefaultSteps().map((step) => ({
-          ...step,
-          isCompleted: validateData.stepStatus[step.id] || false,
-          isSkipped: onboardingStatus?.skippedSteps.includes(step.id) || false,
-        }));
-        setSteps(updatedSteps);
-      }
+      setProgress(data.progress);
+      console.log(data.progress, "data.progress");
+
+      // SAFELY MAP STEPS
+      const updatedSteps = getDefaultSteps().map((step) => ({
+        ...step,
+        isCompleted: data.stepStatus[step.id] || false,
+        isSkipped: status?.skippedSteps.includes(step.id) || false,
+      }));
+
+      setSteps(updatedSteps);
     } catch (error) {
       console.error("Error refreshing progress:", error);
     }
   };
 
-  const updateOnboardingStatus = async (updates: Partial<OnboardingStatus>) => {
+  const updateOnboardingStatus = async (
+    updates: Partial<OnboardingStatus>
+  ) => {
     try {
-      const response = await fetch("/api/onboarding/status", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updates),
-      });
+      const updatedStatus = await onboardingApi.updateStatus(updates);
+      if (!updatedStatus) return;
 
-      if (response.ok) {
-        const data = await response.json();
-        setOnboardingStatus(data.onboardingStatus);
-        await refreshProgress();
-      }
+      setOnboardingStatus(updatedStatus);
+
+      // REFRESH WITH NEWEST STATUS
+      await refreshProgress(updatedStatus);
     } catch (error) {
-      console.error("Error updating onboarding status:", error);
+      console.error("Error updating status:", error);
     }
   };
 
   const completeStep = async (stepId: string) => {
     if (!onboardingStatus) return;
 
-    const updatedCompletedSteps = [...onboardingStatus.completedSteps];
-    if (!updatedCompletedSteps.includes(stepId)) {
-      updatedCompletedSteps.push(stepId);
-    }
+    const updated = {
+      ...onboardingStatus,
+      completedSteps: Array.from(
+        new Set([...onboardingStatus.completedSteps, stepId])
+      ),
+      skippedSteps: onboardingStatus.skippedSteps.filter((x) => x !== stepId),
+    };
 
-    const updatedSkippedSteps = onboardingStatus.skippedSteps.filter(
-      (id) => id !== stepId
-    );
-
-    await updateOnboardingStatus({
-      completedSteps: updatedCompletedSteps,
-      skippedSteps: updatedSkippedSteps,
-    });
+    await updateOnboardingStatus(updated);
   };
 
   const skipStep = async (stepId: string) => {
     if (!onboardingStatus) return;
 
-    const updatedSkippedSteps = [...onboardingStatus.skippedSteps];
-    if (!updatedSkippedSteps.includes(stepId)) {
-      updatedSkippedSteps.push(stepId);
-    }
+    const updated = {
+      ...onboardingStatus,
+      skippedSteps: Array.from(
+        new Set([...onboardingStatus.skippedSteps, stepId])
+      ),
+      completedSteps: onboardingStatus.completedSteps.filter(
+        (x) => x !== stepId
+      ),
+    };
 
-    const updatedCompletedSteps = onboardingStatus.completedSteps.filter(
-      (id) => id !== stepId
-    );
-
-    await updateOnboardingStatus({
-      completedSteps: updatedCompletedSteps,
-      skippedSteps: updatedSkippedSteps,
-    });
+    await updateOnboardingStatus(updated);
   };
 
   const validateStep = async (stepId: string): Promise<boolean> => {
-    try {
-      const response = await fetch("/api/onboarding/validate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ step: stepId }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        return data.isValid;
-      }
-      return false;
-    } catch (error) {
-      console.error("Error validating step:", error);
-      return false;
-    }
+    return await onboardingApi.validateStep(stepId);
   };
 
   const doNotShowAgain = async () => {
-    await updateOnboardingStatus({
-      doNotShowAgain: true,
-    });
+    await updateOnboardingStatus({ doNotShowAgain: true });
     setIsOpen(false);
   };
 
@@ -255,14 +231,11 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
 };
 
 export const useOnboarding = () => {
-  const context = useContext(OnboardingContext);
-  if (context === undefined) {
-    throw new Error("useOnboarding must be used within an OnboardingProvider");
-  }
-  return context;
+  const ctx = useContext(OnboardingContext);
+  if (!ctx) throw new Error("useOnboarding must be used within provider");
+  return ctx;
 };
 
-// Define default steps - you can import these from a separate file
 import {
   Globe,
   Bot,

@@ -18,16 +18,15 @@ import {
   useGlobalEmailNotificationSettings,
   useUpdateGlobalEmailNotificationSettings,
 } from "@/hooks/useGlobalEmailNotificationSettings";
-
-interface GlobalEmailNotificationSettingsDialogProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-}
+import EmailNotificationSettingsSkeleton from "./email-notification-settings-skeleton";
 
 export function GlobalEmailNotificationSettingsDialog({
   isOpen,
   onOpenChange,
-}: GlobalEmailNotificationSettingsDialogProps) {
+}: {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const allNotificationTypes: EmailNotificationType[] = useMemo(
     () => [
       "mentions",
@@ -87,7 +86,7 @@ export function GlobalEmailNotificationSettingsDialog({
       await updateSettings(localSettings);
       await refetch();
     } catch {
-      // error handled by hook
+      // handled by hook
     }
   };
 
@@ -110,43 +109,6 @@ export function GlobalEmailNotificationSettingsDialog({
     );
   };
 
-  if (loading) {
-    return (
-      <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <DialogContent className="p-0 overflow-hidden flex flex-col sm:max-w-lg">
-          <DialogHeader className="px-6 py-4 pr-12">
-            <DialogTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5" />
-              Global Email Notification Settings
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin" />
-            <span className="ml-2">Loading settings...</span>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
-  if (error) {
-    return (
-      <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <DialogContent className="p-0 overflow-hidden flex flex-col sm:max-w-lg">
-          <DialogHeader className="px-6 py-4 pr-12">
-            <DialogTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5" />
-              Global Email Notification Settings
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex items-center justify-center py-8 text-red-600">
-            <span>Error loading settings: {error}</span>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="p-0 overflow-hidden flex flex-col sm:max-w-lg">
@@ -163,43 +125,58 @@ export function GlobalEmailNotificationSettingsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col h-full">
-          <div className="space-y-4 flex-1 overflow-y-auto px-6 py-4 max-h-[400px]">
-            {allNotificationTypes.map((type) => (
-              <EmailNotificationToggle
-                key={type}
-                type={type}
-                enabled={localSettings[type]}
-                source="global-user"
-                onToggle={handleToggle}
-                showSource={false}
-              />
-            ))}
+        {loading ? (
+          <EmailNotificationSettingsSkeleton />
+        ) : error ? (
+          <div className="flex items-center justify-center py-8 text-red-600">
+            <span>Error loading settings: {error}</span>
           </div>
+        ) : (
+          <>
+            <div className="space-y-4 flex-1 overflow-y-auto px-6 py-4 max-h-[400px]">
+              {allNotificationTypes.map((type) => (
+                <EmailNotificationToggle
+                  key={type}
+                  type={type}
+                  enabled={localSettings[type]}
+                  source="global-user"
+                  onToggle={handleToggle}
+                  showSource={false}
+                  disabled={updating}
+                />
+              ))}
+            </div>
 
-          <div className="flex justify-between items-center border-t bg-background px-6 py-4 sticky bottom-0 z-10 gap-4">
-            <Button
-              variant="outline"
-              onClick={handleReset}
-              disabled={updating || !hasChanges()}
-            >
-              Reset
-            </Button>
-            <div className="flex gap-3">
+            <div className="flex justify-between items-center border-t bg-background px-6 py-4 sticky bottom-0 z-10 gap-4">
               <Button
                 variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={updating}
+                onClick={handleReset}
+                disabled={updating || !hasChanges()}
               >
-                Cancel
+                Reset
               </Button>
-              <Button onClick={handleSave} disabled={updating || !hasChanges()}>
-                {updating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                Save Changes
-              </Button>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  disabled={updating}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={handleSave}
+                  disabled={updating || !hasChanges()}
+                >
+                  {updating && (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  )}
+                  Save Changes
+                </Button>
+              </div>
             </div>
-          </div>
-        </div>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

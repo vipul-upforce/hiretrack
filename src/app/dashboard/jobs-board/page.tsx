@@ -27,8 +27,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-// import withAuthGuard from "@/components/withAuthGuard";
-// import { NextPage } from "next";
 import KanbanColumn from "./components/kanban-column";
 import { Button } from "@/components/ui/button";
 import { Mail, Settings2 } from "lucide-react";
@@ -55,7 +53,7 @@ import {
   isAfter,
   isSameDay,
 } from "date-fns";
-// import { GlobalEmailNotificationSettingsDialog } from "@/components/ui/GlobalEmailNotificationSettingsDialog"; // Import the new dialog
+import JobsSkeleton from "./components/jobs-board-skeleton";
 
 interface User {
   role: string;
@@ -77,11 +75,7 @@ function JobCustomFieldsDialog({
   onClose: () => void;
 }) {
   const context = useContext(CustomFieldsContext);
-  const {
-    setStepName,
-    customFields,
-    selecteFormIdTarget,
-  } = context;
+  const { setStepName, customFields, selecteFormIdTarget } = context;
   const [hasAutoSelected, setHasAutoSelected] = useState(false);
   // Auto-select job position form when dialog opens
   useEffect(() => {
@@ -188,17 +182,19 @@ function KanbanPage() {
     return "board";
   });
 
-  const [statusFilters, setStatusFilters] = useState<StatusFilterValue[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("jobs-board-status-filters");
-      try {
-        return saved ? JSON.parse(saved) : [];
-      } catch {
-        return [];
+  const [statusFilters, setStatusFilters] = useState<StatusFilterValue[]>(
+    () => {
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem("jobs-board-status-filters");
+        try {
+          return saved ? JSON.parse(saved) : [];
+        } catch {
+          return [];
+        }
       }
+      return [];
     }
-    return [];
-  });
+  );
 
   const [dateFilters, setDateFilters] = useState<DateFilterValue[]>(() => {
     if (typeof window !== "undefined") {
@@ -213,20 +209,11 @@ function KanbanPage() {
   });
 
   const [sortBy, setSortBy] = useState<SortOption>("date-desc");
-  const [sortField, setSortField] = useState<string | null>("tracking.createdAt");
+  const [sortField, setSortField] = useState<string | null>(
+    "tracking.createdAt"
+  );
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [searchQuery, setSearchQuery] = useState("");
-  // useEffect(() => {
-  //   (async () => {
-  //     const token = Cookies.get("token");
-  //     if (token) {
-  //       const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-  //       if (decryptedResponse.success && decryptedResponse.user) {
-  //         setUser(decryptedResponse.user);
-  //       }
-  //     }
-  //   })();
-  // }, []);
 
   useEffect(() => {
     if (user) {
@@ -302,14 +289,20 @@ function KanbanPage() {
   // Save status filters to localStorage when they change
   useEffect(() => {
     if (typeof window !== "undefined") {
-      localStorage.setItem("jobs-board-status-filters", JSON.stringify(statusFilters));
+      localStorage.setItem(
+        "jobs-board-status-filters",
+        JSON.stringify(statusFilters)
+      );
     }
   }, [statusFilters]);
 
   // Save date filters to localStorage when they change
   useEffect(() => {
     if (typeof window !== "undefined") {
-      localStorage.setItem("jobs-board-date-filters", JSON.stringify(dateFilters));
+      localStorage.setItem(
+        "jobs-board-date-filters",
+        JSON.stringify(dateFilters)
+      );
     }
   }, [dateFilters]);
 
@@ -326,23 +319,26 @@ function KanbanPage() {
   const filteredAndSortedJobs = useMemo(() => {
     if (!jobs || viewMode === "board") return [];
 
-    let filtered = jobs.filter(
-      (job) => showArchived ? job.isDeleted : !job.isDeleted
+    let filtered = jobs.filter((job) =>
+      showArchived ? job.isDeleted : !job.isDeleted
     );
 
     // Apply search query filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter((job) =>
-        job.title.toLowerCase().includes(query) ||
-        job.description?.toLowerCase().includes(query) ||
-        job.skills?.some(skill => skill.toLowerCase().includes(query))
+      filtered = filtered.filter(
+        (job) =>
+          job.title.toLowerCase().includes(query) ||
+          job.description?.toLowerCase().includes(query) ||
+          job.skills?.some((skill) => skill.toLowerCase().includes(query))
       );
     }
 
     // Apply status filters (OR logic - show if matches any selected status)
     if (statusFilters.length > 0) {
-      filtered = filtered.filter((job) => statusFilters.includes(job.status as StatusFilterValue));
+      filtered = filtered.filter((job) =>
+        statusFilters.includes(job.status as StatusFilterValue)
+      );
     }
 
     // Apply date filters (OR logic - show if matches any selected date range)
@@ -357,11 +353,20 @@ function KanbanPage() {
             case "today":
               return isSameDay(createdDate, now);
             case "week":
-              return isAfter(createdDate, startOfWeek(now)) || isSameDay(createdDate, startOfWeek(now));
+              return (
+                isAfter(createdDate, startOfWeek(now)) ||
+                isSameDay(createdDate, startOfWeek(now))
+              );
             case "month":
-              return isAfter(createdDate, startOfMonth(now)) || isSameDay(createdDate, startOfMonth(now));
+              return (
+                isAfter(createdDate, startOfMonth(now)) ||
+                isSameDay(createdDate, startOfMonth(now))
+              );
             case "quarter":
-              return isAfter(createdDate, startOfQuarter(now)) || isSameDay(createdDate, startOfQuarter(now));
+              return (
+                isAfter(createdDate, startOfQuarter(now)) ||
+                isSameDay(createdDate, startOfQuarter(now))
+              );
             default:
               return false;
           }
@@ -408,7 +413,16 @@ function KanbanPage() {
     }
 
     return filtered;
-  }, [jobs, viewMode, showArchived, searchQuery, statusFilters, dateFilters, sortField, sortDirection]);
+  }, [
+    jobs,
+    viewMode,
+    showArchived,
+    searchQuery,
+    statusFilters,
+    dateFilters,
+    sortField,
+    sortDirection,
+  ]);
 
   const onDragEnd = async (result: any) => {
     const { destination, source, draggableId } = result;
@@ -531,7 +545,7 @@ function KanbanPage() {
     }
   };
 
-  if (isLoading) return <LoaderSkeleton />;
+  if (isLoading) return <JobsSkeleton />;
 
   if (error) return <div>Error loading jobs</div>;
 

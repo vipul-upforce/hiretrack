@@ -432,7 +432,7 @@ export default function LoginFormContent({
         // Use the organizationId from the first element of the orgResponse.data array
         const organizationId = orgResponse?.data?.[0]?.organizationId;
         if (!organizationId) {
-          console.error("No organizationId found in orgResponse.data[0]");
+          console.log("No organizationId found in orgResponse.data[0]");
           return;
         }
 
@@ -652,11 +652,14 @@ export default function LoginFormContent({
               Smart Hiring
               <br />
               <span
-                className="bg-clip-text text-transparent"
+                className="text-transparent"
                 style={{
-                  background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
+                  backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
                   WebkitBackgroundClip: "text",
                   backgroundClip: "text",
+                  display: "inline-block",
+                  backgroundRepeat: "no-repeat",
+                  backgroundSize: "100%",
                 }}
               >
                 Made Simple

@@ -6,6 +6,7 @@ import { ShareFieldsSelection } from "@/app/dashboard/jobs/[id]/components/Dialo
 import autoTable from "jspdf-autotable";
 import fs from "fs";
 import path from "path";
+import { JSDOM } from "jsdom";
 
 // Helper function to convert hex to RGB
 function hexToRgb(hex: string): [number, number, number] {
@@ -19,49 +20,51 @@ function hexToRgb(hex: string): [number, number, number] {
 
   return [r, g, b];
 }
-
-// Helper function to strip HTML tags and convert to plain text
-function stripHTML(html: string): string {
-  if (!html) return "";
-  // Remove HTML tags
-  let text = html.replace(/<[^>]*>/g, " ");
-  // Decode HTML entities
-  text = text
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
-  // Normalize whitespace
-  text = text.replace(/\s+/g, " ").trim();
-  return text;
-}
-
 // Helper function to parse HTML and extract structured content
-function parseHTMLContent(html: string): {
-  text: string;
-  isBulletList: boolean;
-  items: string[];
-} {
-  if (!html) return { text: "", isBulletList: false, items: [] };
+const removeUnsupportedEmojis = (text: string) => {
+  if (!text) return "";
+  return text
+    .replace(/\p{Extended_Pictographic}/gu, "")
+    .replace(/\uFE0F|\u200D/g, "");
+};
 
-  // Check if it's a list
-  const hasUL = html.includes("<ul") || html.includes("<ol");
-  if (hasUL) {
-    const items: string[] = [];
-    const liMatches = html.match(/<li[^>]*>(.*?)<\/li>/gi);
-    if (liMatches) {
-      liMatches.forEach((li) => {
-        const text = stripHTML(li);
-        if (text) items.push(text);
+function parseHTMLContent(html: string) {
+  if (!html) return [];
+
+  const dom = new JSDOM(html);
+  const document = dom.window.document;
+
+  const result: {
+    type: "heading" | "paragraph" | "list";
+    text?: string;
+    items?: string[];
+  }[] = [];
+
+  document.body.childNodes.forEach((node) => {
+    if (node.nodeName.startsWith("H")) {
+      result.push({
+        type: "heading",
+        text: removeUnsupportedEmojis(node.textContent?.trim() || ""),
+      });
+    } else if (node.nodeName === "P") {
+      result.push({
+        type: "paragraph",
+        text: removeUnsupportedEmojis(node.textContent?.trim() || ""),
+      });
+    } else if (node.nodeName === "UL" || node.nodeName === "OL") {
+      const items: string[] = [];
+      node.childNodes.forEach((li) => {
+        if (li.textContent)
+          items.push(removeUnsupportedEmojis(li.textContent.trim()));
+      });
+      result.push({
+        type: "list",
+        items,
       });
     }
-    return { text: "", isBulletList: true, items };
-  }
+  });
 
-  // Otherwise just strip HTML
-  return { text: stripHTML(html), isBulletList: false, items: [] };
+  return result;
 }
 
 // Helper function to load image and convert to base64
@@ -421,12 +424,12 @@ export async function POST(req: NextRequest) {
       if (selection.currentCTC && candidate.currentCTC)
         addKeyValue(
           "Current CTC",
-          `₹ ${candidate.currentCTC.toLocaleString()}`
+          `${candidate.currentCTC.toLocaleString()} LPA`
         );
       if (selection.expectedCTC && candidate.expectedCTC)
         addKeyValue(
           "Expected CTC",
-          `₹ ${candidate.expectedCTC.toLocaleString()}`
+          `${candidate.expectedCTC.toLocaleString()} LPA`
         );
       if (selection.noticePeriod)
         addKeyValue("Notice Period", `${candidate.noticePeriod} days`);
@@ -490,6 +493,7 @@ export async function POST(req: NextRequest) {
       (selection.overallScore ||
         selection.experienceScore ||
         selection.skillsScore ||
+        selection.affordability ||
         selection.strengths ||
         selection.areasForImprovement ||
         selection.recommendation ||
@@ -501,7 +505,8 @@ export async function POST(req: NextRequest) {
       if (
         selection.overallScore ||
         selection.experienceScore ||
-        selection.skillsScore
+        selection.skillsScore ||
+        selection.affordability
       ) {
         const scoreData: any[] = [];
         if (selection.overallScore)
@@ -513,6 +518,11 @@ export async function POST(req: NextRequest) {
           ]);
         if (selection.skillsScore && candidate.scores.skills)
           scoreData.push(["Skills Match", `${candidate.scores.skills}/10`]);
+        if (selection.affordability && candidate.scores.affordability)
+          scoreData.push([
+            "affordability Match",
+            `${candidate.scores.affordability}/10`,
+          ]);
 
         if (scoreData.length > 0) {
           checkNewPage(20 + scoreData.length * 8);
@@ -589,32 +599,58 @@ export async function POST(req: NextRequest) {
       yPosition += 3;
     }
 
-    // Job & Status
     if (selection.jobDetails || selection.status) {
       addSectionHeader("JOB DETAILS");
+      doc.setFont("helvetica", "normal");
 
       if (selection.jobDetails && candidate.jobId) {
         addKeyValue("Position", (candidate.jobId as any).title);
 
         if ((candidate.jobId as any).description) {
-          yPosition += 3;
-          // Modern subsection label
-          doc.setFontSize(8);
+          yPosition += 2;
+          doc.setFontSize(9);
           doc.setFont("helvetica", "bold");
           doc.setTextColor(subtextColor[0], subtextColor[1], subtextColor[2]);
           doc.text("JOB DESCRIPTION", leftMargin, yPosition);
-          yPosition += 6;
+          yPosition += 8;
 
-          // Parse HTML description
-          const parsed = parseHTMLContent((candidate.jobId as any).description);
+          // --- Parse and render structured job description ---
+          const parsedSections = parseHTMLContent(
+            (candidate.jobId as any).description
+          );
+          console.log(parsedSections, "Parsed Job Description >>>>>>>>>");
 
-          if (parsed.isBulletList && parsed.items.length > 0) {
-            parsed.items.forEach((item) => {
-              addBullet(item);
-            });
-          } else if (parsed.text) {
-            addText(parsed.text, 10, "normal");
-          }
+          parsedSections.forEach((section) => {
+            switch (section.type) {
+              case "heading":
+                yPosition += 3;
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(10);
+                doc.setTextColor(0, 0, 0); // black for headings
+                doc.text(section.text || "", leftMargin, yPosition);
+                yPosition += 7;
+                break;
+
+              case "paragraph":
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(8);
+                doc.setTextColor(60, 60, 60);
+                addText(section.text || "", 10, "normal");
+                yPosition += 2;
+                break;
+
+              case "list":
+                section.items?.forEach((item: string) => {
+                  const cleanText = removeUnsupportedEmojis(item.trim());
+                  addBullet(cleanText);
+                });
+                yPosition += 2;
+                break;
+
+              default:
+                break;
+            }
+          });
         }
 
         if ((candidate.jobId as any).skills?.length > 0) {
@@ -623,12 +659,12 @@ export async function POST(req: NextRequest) {
             (candidate.jobId as any).skills.join(", ")
           );
         }
-      }
 
-      if (selection.status) {
-        addKeyValue("Application Status", candidate.status.toUpperCase());
+        if (selection.status) {
+          addKeyValue("Application Status", candidate.status.toUpperCase());
+        }
+        yPosition += 3;
       }
-      yPosition += 3;
     }
 
     // Assignment - only show if there's actual interview data
@@ -708,20 +744,52 @@ export async function POST(req: NextRequest) {
         yPosition += 3;
       }
     }
-
-    // Tags - only show if there are valid tag names
+    // Tags - only show if there are valid tag titles
     if (selection.tags && candidate.tags?.length > 0) {
-      const tagNames = candidate.tags
-        .map((tag: any) => tag?.name)
-        .filter((name: string) => name && name.trim())
-        .join(", ");
+      const validTags = candidate.tags.filter(
+        (tag: any) => tag?.title && tag.title.trim()
+      );
 
-      if (tagNames) {
+      if (validTags.length > 0) {
         addSectionHeader("TAGS");
-        addText(tagNames, 10, "normal");
-        yPosition += 3;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+
+        let xTag = leftMargin;
+        const tagHeight = 7;
+        const paddingX = 2;
+        const paddingY = 2;
+
+        validTags.forEach((tag: any) => {
+          const text = tag.title.trim();
+          const textWidth = doc.getTextWidth(text) + paddingX * 2;
+          const boxWidth = textWidth + 1;
+
+          // Wrap to next line if reaching end of page width
+          if (xTag + boxWidth > doc.internal.pageSize.width - 20) {
+            yPosition += tagHeight + 2;
+            xTag = leftMargin;
+          }
+
+          // Draw tag background with rounded corners
+          doc.setFillColor(tag.color || "#d9d9d9");
+          doc.roundedRect(xTag, yPosition, boxWidth, tagHeight, 2, 2, "F");
+
+          // Draw tag text
+          doc.setTextColor(255, 255, 255);
+          doc.text(text, xTag + paddingX, yPosition + tagHeight - paddingY - 1);
+
+          // Move X for next tag
+          xTag += boxWidth + 3;
+        });
+
+        // Reset color and spacing
+        doc.setTextColor(0, 0, 0);
+        yPosition += tagHeight + 4;
       }
+      yPosition += 3;
     }
+    console.log(candidate.customFields, "candidate date >>>>>>>>>");
 
     // Custom Fields - only show if there are valid fields with values
     if (selection.customFields && candidate.customFields) {
@@ -738,13 +806,122 @@ export async function POST(req: NextRequest) {
 
       if (validFields.length > 0) {
         addSectionHeader("ADDITIONAL INFORMATION");
+        doc.setFontSize(10);
 
         validFields.forEach(([key, value]) => {
-          const displayValue =
-            typeof value === "object" ? JSON.stringify(value) : String(value);
-          addKeyValue(key, displayValue);
+          yPosition += 3;
+
+          // ✅ 1. Custom Attachments (modern pill style)
+          if (
+            Array.isArray(value) &&
+            typeof value[0] === "object" &&
+            value[0].base64
+          ) {
+            addKeyValue(key, ""); // draws the key label with the muted dot
+            yPosition -= 4;
+            let startX = leftMargin;
+            const maxWidth = doc.internal.pageSize.width - leftMargin - 10;
+            const boxHeight = 8;
+
+            value.forEach((file: any) => {
+              const fileURL = `${baseUrl}${file.base64}`;
+              const displayText = file.name || "Attachment";
+
+              const textWidth = doc.getTextWidth(displayText) + 14;
+              const boxWidth = Math.min(textWidth, 80);
+
+              if (startX + boxWidth > maxWidth) {
+                startX = leftMargin;
+                yPosition += boxHeight + 2;
+              }
+
+              const boxY = yPosition - 4;
+
+              doc.setDrawColor(220, 220, 220);
+              doc.setFillColor(245, 245, 245);
+              doc.roundedRect(
+                startX,
+                boxY,
+                boxWidth,
+                boxHeight,
+                1.5,
+                1.5,
+                "FD"
+              );
+
+              doc.setFont("helvetica", "bold");
+              doc.setTextColor(0, 0, 0);
+              doc.textWithLink(displayText, startX + 5, yPosition + 1.5, {
+                url: fileURL,
+              });
+
+              startX += boxWidth + 4;
+            });
+
+            yPosition += boxHeight + 4;
+          }
+
+          // ✅ 2. Multi-select / Checkbox style (modern rounded “button” look)
+          // ✅ 2. Multi-select / Checkbox style (modern rounded “button” look)
+          else if (Array.isArray(value)) {
+            addKeyValue(key, ""); // draws the key label
+
+            // 🔧 Reduce vertical spacing between label and boxes
+            yPosition -= 4; // adjust upward for tighter alignment
+
+            const items = value as string[];
+            let startX = leftMargin;
+            const maxWidth = doc.internal.pageSize.width - leftMargin - 10;
+            const boxHeight = 7;
+
+            items.forEach((item) => {
+              const text = item.trim();
+              if (!text) return;
+
+              const textWidth = doc.getTextWidth(text) + 12;
+              const boxWidth = Math.min(textWidth, 70);
+
+              if (startX + boxWidth > maxWidth) {
+                startX = leftMargin;
+                yPosition += boxHeight + 2;
+              }
+
+              const boxY = yPosition - 4;
+
+              // Light rounded box background (same style as attachments)
+              doc.setDrawColor(220, 220, 220);
+              doc.setFillColor(245, 245, 245);
+              doc.roundedRect(
+                startX,
+                boxY,
+                boxWidth,
+                boxHeight,
+                1.5,
+                1.5,
+                "FD"
+              );
+
+              // Text inside box
+              doc.setFont("helvetica", "normal");
+              doc.setTextColor(0, 0, 0);
+              doc.text(text, startX + 5, yPosition + 0.1);
+
+              startX += boxWidth + 4;
+            });
+
+            yPosition += boxHeight + 4;
+          }
+
+          // ✅ 3. Normal text/number/date fields (simple key-value style)
+          else {
+            const displayValue = String(value);
+            addKeyValue(key, displayValue, 0);
+          }
+
+          yPosition += 2;
         });
-        yPosition += 3;
+
+        yPosition += 6;
       }
     }
 

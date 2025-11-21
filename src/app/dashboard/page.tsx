@@ -1,15 +1,12 @@
 "use client";
 import { useCallback, useEffect, useState, useRef } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import Cookies from "js-cookie";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import type { OrgInfo } from "@/lib/models/user";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import DashboardLoader from "./components/dashboard-loader";
 import ActionItems from "@/components/actionitems";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { Search, Bell, Calendar, TrendingUp, Clock } from "lucide-react";
+import { Search, Bell } from "lucide-react";
 import { RenderTodaysInterviews } from "./components/RenderTodaysInterviews";
 import { RenderInterviewerAssignments } from "./components/RenderInterviewerAssignments";
 import { MultiSelect } from "@/components/ui/multi-select";
@@ -18,24 +15,15 @@ import { useSSE } from "@/hooks/useSSE";
 import { Candidate } from "@/types/candidate";
 import { ITag } from "@/lib/models/organization";
 import { useSelector } from "react-redux";
-import DashboardCardLoader from "./components/DashboardCardLoader";
 import RecentActivities from "./components/RecentActivities";
-import {
-  useMarkNotificationAsReadMutation,
-} from "@/lib/features/notifications/notificationsApi";
+import { useMarkNotificationAsReadMutation } from "@/lib/features/notifications/notificationsApi";
 import { useNotificationsContext } from "@/contexts/NotificationsContext";
 import { useLazyFetchCandidateByIdQuery } from "@/lib/features/candidate/candidateApi";
 import { CandidateDetailsDialog } from "./jobs/[id]/components/Dialogs/candidate-details-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-// import useRoles from "@/hooks/useRoles";
-interface User {
-  name: string;
-  email: string;
-  role: string;
-  organizationInfo: OrgInfo;
-  id?: string;
-}
+import DashboardCards from "./components/DashboardCards";
+import { DashboardSkeleton } from "@/components/skeletons/dashboard-skeleton";
 
 export interface Assignment {
   id: string;
@@ -139,7 +127,6 @@ export default function DashboardPage() {
     null
   );
   const [isCandidateDialogOpen, setIsCandidateDialogOpen] = useState(false);
-  const [markAsRead] = useMarkNotificationAsReadMutation();
   const [fetchCandidateById] = useLazyFetchCandidateByIdQuery();
   const [isActivitiesSidebarOpen, setIsActivitiesSidebarOpen] = useState(() => {
     // Load preference from localStorage on initial render
@@ -160,6 +147,7 @@ export default function DashboardPage() {
   const isInterviewer = user?.role === "interviewer";
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef(false);
+  const [markAsRead] = useMarkNotificationAsReadMutation();
 
   const role = useRoles();
   const { candidates: sseCandidates } = useSSE(role || "", () => {}, null);
@@ -188,73 +176,6 @@ export default function DashboardPage() {
     endOfWeek.setHours(23, 59, 59, 999);
     return assignmentDate >= startOfWeek && assignmentDate <= endOfWeek;
   };
-  // const role = useRoles();
-  // const { candidates: sseCandidates } = useSSE(
-  //   role || "",
-  //   setSelectedEvent,
-  //   selectedEvent
-  // );
-
-  // const fetchAssignmentsNoReload = useCallback(
-  //   async (page = currentPage, isAppend = false) => {
-  //     if (loadingRef.current) return;
-
-  //     loadingRef.current = true;
-  //     // if (!isAppend) {
-  //     //   setIsLoading(true);
-  //     // } else {
-  //     //   setIsLoadingMore(true);
-  //     // }
-
-  //     try {
-  //       const params = new URLSearchParams({
-  //         isPagination: "true",
-  //         page: page.toString(),
-  //         limit: itemsPerPage.toString(),
-  //         filterValue: filterText.toString(),
-  //         assignedTo: selectedAssignedTo,
-  //       });
-
-  //       const response = await fetch(
-  //         `/api/candidates/assignments?${params.toString()}`
-  //       );
-  //       if (!response.ok) {
-  //         const errorData = await response.json();
-  //         throw new Error(errorData.error || "Failed to fetch assignments");
-  //       }
-
-  //       const data = await response.json();
-  //       const newAssignments = data[0]?.data || [];
-  //       setAssignmentsCounts({
-  //         totalInterviews: data[0]?.totalInterviews || 0,
-  //         todaysInterviews: data[0]?.todaysInterviews || 0,
-  //         thisweeksInterviews: data[0]?.thisweeksInterviews || 0,
-  //       });
-  //       setAssignedInterviewers([...(data[0]?.assignmentCount || [])]);
-
-  //       // Update assignments state
-  //       if (isAppend) {
-  //         setAssignments((prev) => [...prev, ...newAssignments]);
-  //       } else {
-  //         setAssignments(newAssignments);
-  //       }
-
-  //       // Update pagination state
-  //       if (newAssignments.length < itemsPerPage) {
-  //         setHasMoreData(false);
-  //       } else {
-  //         setHasMoreData(true);
-  //       }
-  //     } catch (error) {
-  //       console.error("Error fetching assignments:", error);
-  //     } finally {
-  //       setIsLoading(false);
-  //       setIsLoadingMore(false);
-  //       loadingRef.current = false;
-  //     }
-  //   },
-  //   [filterText, selectedAssignedTo, itemsPerPage, currentPage]
-  // );
 
   const fetchAssignments = useCallback(
     async (page = 1, isAppend = false) => {
@@ -293,7 +214,7 @@ export default function DashboardPage() {
         } else {
           setAssignments(data[0]?.data);
         }
-        // debugger;
+
         if (data[0]?.data?.length < itemsPerPage) {
           setHasMoreData(false);
         } else {
@@ -339,7 +260,6 @@ export default function DashboardPage() {
 
       observerRef.current = new IntersectionObserver(
         (entries) => {
-          // debugger;
           if (entries[0].isIntersecting && hasMoreData) {
             loadMoreData();
           }
@@ -355,22 +275,7 @@ export default function DashboardPage() {
     [isLoadingMore, hasMoreData, loadMoreData]
   );
 
-  // const checkUser = async () => {
-
-  //   if (user) {
-  //     const decryptedResponse = await verifyAndDecryptJWTToken(String(user));
-  //     if (decryptedResponse.success && decryptedResponse.user) {
-  //       setUser(decryptedResponse.user);
-  //     }
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   checkUser();
-  // }, []);
-
   useEffect(() => {
-    // debugger;
     setCurrentPage(1);
     setHasMoreData(true);
     setAssignments([]);
@@ -404,50 +309,6 @@ export default function DashboardPage() {
       assignmentDate.getFullYear() === today.getFullYear()
     );
   });
-
-  // useEffect(() => {
-  //   if (sseCandidates && sseCandidates.length > 0) {
-  //     setAssignments((prevAssignments) => {
-  //       let updatedAssignments: Candidate[] | Assignment[] = [
-  //         ...prevAssignments,
-  //       ];
-  //       (sseCandidates as Candidate[] | Assignment[]).forEach(
-  //         (sseCandidate) => {
-  //           // debugger;
-  //           const candidateId = sseCandidate._id;
-  //           const existingIndex = updatedAssignments.findIndex(
-  //             (assignment) => (assignment._id || assignment.id) === candidateId
-  //           );
-
-  //           if (!sseCandidate.assignment) {
-  //             if (existingIndex !== -1) {
-  //               updatedAssignments = updatedAssignments.filter(
-  //                 (_, index) => index !== existingIndex
-  //               );
-  //             }
-  //           } else {
-  //             if (existingIndex !== -1) {
-  //               updatedAssignments[existingIndex] = {
-  //                 ...updatedAssignments[existingIndex],
-  //                 ...sseCandidate,
-  //               };
-  //             } else {
-  //               updatedAssignments.push(sseCandidate);
-  //             }
-  //           }
-  //         }
-  //       );
-
-  //       setAssignmentsCounts({
-  //         totalInterviews: updatedAssignments.length,
-  //         todaysInterviews: updatedAssignments.filter(isToday).length,
-  //         thisweeksInterviews: updatedAssignments.filter(isThisWeek).length,
-  //       });
-
-  //       return updatedAssignments;
-  //     });
-  //   }
-  // }, [sseCandidates]);
 
   useEffect(() => {
     if (sseCandidates && sseCandidates.length > 0) {
@@ -597,9 +458,15 @@ export default function DashboardPage() {
 
   // Notification handlers
   const handleNotificationClick = async (notification: any) => {
+    if (!notification.isRead) {
+      markAsRead(notification._id);
+    }
+
     // For candidate-related and meeting notifications, open dialog
     if (
       (notification.relatedEntity === "candidate" ||
+        notification.relatedEntity === "followup" ||
+        notification.relatedEntity === "checklist" ||
         notification.relatedEntity === "meeting") &&
       notification.relatedId
     ) {
@@ -644,12 +511,12 @@ export default function DashboardPage() {
                   placeholder="Search assignments..."
                   value={searchText}
                   onChange={(e) => {
-                    const value = e.target.value;
-                    const sanitizedValue = value.replace(
-                      /[/\\*+?|{}[\]()^$]/g,
-                      ""
-                    );
-                    setSearchText(sanitizedValue);
+                    // Sanitize the input first to prevenet special characters and then remove leading spaces.
+                    let value = e.target.value;
+                    value = value.replace(/[/\\*+?|{}[\]()^$]/g, "");
+                    value = value.replace(/\s{2,}/g, " ");
+                    if (value.length > 1) value = value.trimStart();
+                    setSearchText(value);
                   }}
                   className="max-w-lg w-96"
                   onKeyPress={(e) => {
@@ -705,68 +572,11 @@ export default function DashboardPage() {
               : "w-full"
           }`}
         >
-          {isLoading ? (
-            <DashboardLoader />
+          {isLoading || !assignments ? (
+            <DashboardSkeleton role={user?.role} />
           ) : (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-                {/* Total Interviews */}
-                <Card className="relative overflow-hidden border-l-4 border-l-primary hover:shadow-md transition-shadow">
-                  <CardContent className="p-4 relative">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <p className="text-xs font-medium text-muted-foreground mb-1">
-                          Total Interviews
-                        </p>
-                        <p className="text-2xl font-bold tracking-tight">
-                          {assignmentsCounts?.totalInterviews || 0}
-                        </p>
-                      </div>
-                      <div className="p-2 bg-primary/10 rounded-lg">
-                        <Calendar className="h-5 w-5 text-primary" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* This Week */}
-                <Card className="relative overflow-hidden border-l-4 border-l-blue-500 hover:shadow-md transition-shadow">
-                  <CardContent className="p-4 relative">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <p className="text-xs font-medium text-muted-foreground mb-1">
-                          Interviews This Week
-                        </p>
-                        <p className="text-2xl font-bold tracking-tight">
-                          {assignmentsCounts?.thisweeksInterviews || 0}
-                        </p>
-                      </div>
-                      <div className="p-2 bg-blue-500/10 rounded-lg">
-                        <TrendingUp className="h-5 w-5 text-blue-500" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Today */}
-                <Card className="relative overflow-hidden border-l-4 border-l-green-500 hover:shadow-md transition-shadow">
-                  <CardContent className="p-4 relative">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <p className="text-xs font-medium text-muted-foreground mb-1">
-                          Interviews Today
-                        </p>
-                        <p className="text-2xl font-bold tracking-tight">
-                          {assignmentsCounts?.todaysInterviews || 0}
-                        </p>
-                      </div>
-                      <div className="p-2 bg-green-500/10 rounded-lg">
-                        <Clock className="h-5 w-5 text-green-500" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+              <DashboardCards assignmentsCounts={assignmentsCounts} />
 
               {shouldShowAssignments ? (
                 <div>
@@ -826,33 +636,6 @@ export default function DashboardPage() {
                       Today's Interviews
                     </h2>
                     {todayAssignments?.length > 0 ? (
-                      // <RenderTodaysInterviews
-                      //   todayAssignments={
-                      //     sseCandidates.length > 0
-                      //       ? ([
-                      //           ...sseCandidates.filter((candidate) => {
-                      //             // debugger;
-                      //             return (
-                      //               candidate.assignment &&
-                      //               typeof candidate.assignment.interviewerId ===
-                      //                 "object" &&
-                      //               "_id" in candidate.assignment.interviewerId &&
-                      //               candidate.assignment.interviewerId._id.toString() ===
-                      //                 user?.id?.toString()
-                      //             );
-                      //           }),
-
-                      //           ...todayAssignments.filter(
-                      //             (older) =>
-                      //               older.assignment &&
-                      //               !sseCandidates.some(
-                      //                 (latest) => latest._id === older._id
-                      //               )
-                      //           ),
-                      //         ] as (Candidate & Assignment)[])
-                      //       : todayAssignments
-                      //   }
-                      // />
                       <RenderTodaysInterviews
                         todayAssignments={
                           sseCandidates.length > 0
@@ -920,7 +703,6 @@ export default function DashboardPage() {
                             sseCandidates.length > 0
                               ? ([
                                   ...sseCandidates.filter((candidate) => {
-                                    // debugger;
                                     return (
                                       candidate.assignment &&
                                       typeof candidate.assignment

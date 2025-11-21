@@ -12,6 +12,7 @@ import {
   Clock,
   Users,
   ShieldCheck,
+  HardDrive,
 } from "lucide-react";
 
 const WelcomeStep: React.FC = () => {
@@ -50,12 +51,24 @@ const WelcomeStep: React.FC = () => {
         "Configure your organization's timezone for proper scheduling",
     },
     {
+      icon: HardDrive,
+      title: "File Storage",
+      description:
+        "Configure cloud storage to manage resumes and media files securely",
+    },
+    {
       icon: Users,
       title: "Team Management",
       description: "Invite team members and set up user roles",
     },
+    {
+      icon: Palette,
+      title: "Custom Fields",
+      description:
+        "Create custom form fields for jobs, applications, and candidate data",
+    },
   ];
-
+  
   return (
     <div className="space-y-4 max-w-4xl mx-auto">
       <div className="text-center space-y-2">

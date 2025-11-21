@@ -18,6 +18,7 @@ import {
   useJobEmailNotificationSettings,
   useUpdateJobEmailNotificationSettings,
 } from "@/hooks/useEmailNotificationSettings";
+import EmailNotificationSettingsSkeleton from "./email-notification-settings-skeleton";
 
 interface JobEmailNotificationSettingsDialogProps {
   isOpen: boolean;
@@ -32,7 +33,6 @@ export function JobEmailNotificationSettingsDialog({
   jobId,
   jobTitle,
 }: JobEmailNotificationSettingsDialogProps) {
-  // Dynamically list all notification types from the toggle definition
   const allNotificationTypes: EmailNotificationType[] = useMemo(
     () => [
       "mentions",
@@ -74,14 +74,11 @@ export function JobEmailNotificationSettingsDialog({
   const { updateSettings, loading: updating } =
     useUpdateJobEmailNotificationSettings();
 
-  // Initialize or refresh local settings
   useEffect(() => {
     if (settings?.currentJobSettings) {
-      // Use saved per-job settings
       setLocalSettings(settings.currentJobSettings);
     } else if (settings?.effectiveSettings) {
-      // Build from effective settings
-      const effective: Record<EmailNotificationType, boolean> = {
+      const effective = {
         ...Object.fromEntries(allNotificationTypes.map((t) => [t, true])),
       } as Record<EmailNotificationType, boolean>;
 
@@ -148,43 +145,6 @@ export function JobEmailNotificationSettingsDialog({
     });
   };
 
-  if (loading) {
-    return (
-      <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <DialogContent className="p-0 overflow-hidden flex flex-col sm:max-w-lg">
-          <DialogHeader className="px-6 py-4 pr-12">
-            <DialogTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5" />
-              Job Email Notification Settings
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin" />
-            <span className="ml-2">Loading settings...</span>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
-  if (error) {
-    return (
-      <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <DialogContent className="p-0 overflow-hidden flex flex-col sm:max-w-lg">
-          <DialogHeader className="px-6 py-4 pr-12">
-            <DialogTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5" />
-              Job Email Notification Settings
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex items-center justify-center py-8 text-red-600">
-            <span>Error loading settings: {error}</span>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="p-0 overflow-hidden flex flex-col sm:max-w-lg">
@@ -197,49 +157,63 @@ export function JobEmailNotificationSettingsDialog({
             Configure email notification preferences for &ldquo;{jobTitle}
             &rdquo;
             <span className="block mt-1 text-sm text-muted-foreground">
-              These settings will override your global settings for this
-              specific job
+              These settings will override your global preferences for this job
             </span>
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col h-full">
-          <div className="space-y-4 flex-1 overflow-y-auto px-6 py-4 max-h-[400px]">
-            {allNotificationTypes.map((type) => (
-              <EmailNotificationToggle
-                key={type}
-                type={type}
-                enabled={localSettings[type]}
-                source="job-level"
-                onToggle={handleToggle}
-                showSource={true}
-              />
-            ))}
+        {loading ? (
+          <EmailNotificationSettingsSkeleton />
+        ) : error ? (
+          <div className="flex items-center justify-center py-8 text-red-500">
+            <span>Error loading settings: {error}</span>
           </div>
+        ) : (
+          <>
+            <div className="space-y-4 flex-1 overflow-y-auto px-6 py-4 max-h-[70vh] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+              {allNotificationTypes.map((type) => (
+                <EmailNotificationToggle
+                  key={type}
+                  type={type}
+                  enabled={localSettings[type]}
+                  source="job-level"
+                  onToggle={handleToggle}
+                  showSource={true}
+                  disabled={updating}
+                />
+              ))}
+            </div>
 
-          <div className="flex justify-between items-center border-t bg-background px-6 py-4 sticky bottom-0 z-10 gap-4">
-            <Button
-              variant="outline"
-              onClick={handleReset}
-              disabled={updating || !hasChanges()}
-            >
-              Reset
-            </Button>
-            <div className="flex gap-3">
+            <div className="flex justify-between items-center border-t bg-background px-6 py-4 sticky bottom-0 z-10 gap-4">
               <Button
                 variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={updating}
+                onClick={handleReset}
+                disabled={updating || !hasChanges()}
               >
-                Cancel
+                Reset
               </Button>
-              <Button onClick={handleSave} disabled={updating || !hasChanges()}>
-                {updating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                Save Changes
-              </Button>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  disabled={updating}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={handleSave}
+                  disabled={updating || !hasChanges()}
+                >
+                  {updating && (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  )}
+                  Save Changes
+                </Button>
+              </div>
             </div>
-          </div>
-        </div>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

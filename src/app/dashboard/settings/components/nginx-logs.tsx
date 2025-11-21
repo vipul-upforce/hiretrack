@@ -7,6 +7,7 @@ import {
 } from "@/lib/features/settings/settingsApi";
 import NginxLogsSkeleton from "./nginx-logs-skeleton";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useDebounce } from "@/hooks/useDebounce";
 
 type Props = {
   searchQuery: string;
@@ -25,6 +26,17 @@ export function NginxLogs({ searchQuery, setSearchQuery, onError }: Props) {
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const linesPerLoad = 100;
   const logContainerRef = useRef<HTMLDivElement>(null);
+  const [rawSearch, setRawSearch] = useState(searchQuery);
+  const debouncedSearchQuery = useDebounce(rawSearch, 700);
+
+  useEffect(() => {
+    setSearchQuery(debouncedSearchQuery);
+    setOffset(0);
+    setTotalLines(0);
+    if (debouncedSearchQuery === "") {
+      setFileContent([]);
+    }
+  }, [debouncedSearchQuery, setSearchQuery]);
 
   const {
     data: nginxData,
@@ -187,13 +199,11 @@ export function NginxLogs({ searchQuery, setSearchQuery, onError }: Props) {
                   <input
                     type="text"
                     placeholder="Search logs..."
-                    value={searchQuery}
+                    value={rawSearch}
                     onChange={(e) => {
-                      if (e.target.value !== "(" && e.target.value !== ")") {
-                        setSearchQuery(e.target.value);
-                        setOffset(0);
-                        setTotalLines(0);
-                        setFileContent([]);
+                      const v = e.target.value;
+                      if (v !== "(" && v !== ")") {
+                        setRawSearch(v);
                       }
                     }}
                     className="border rounded-lg px-4 py-2 text-sm w-full max-w-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background"

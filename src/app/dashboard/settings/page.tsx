@@ -19,19 +19,11 @@ import {
   Tags,
   Shield,
   Settings as SettingsIcon,
-  Users,
   Lock,
   MessageSquare,
   Palette,
-  Zap,
-  Server,
-  Key,
-  Bell,
   Archive,
-  Monitor,
-  FolderOpen,
   UserCheck,
-  Cog,
   Sparkles,
   ExternalLink,
   Calendar,
@@ -236,7 +228,7 @@ function Settings() {
                     }}
                   >
                     <CardHeader className="pb-3 relative">
-                      <div className="flex items-start gap-3">
+                      <div className="flex gap-3 items-center">
                         <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700">
                           <option.icon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                         </div>

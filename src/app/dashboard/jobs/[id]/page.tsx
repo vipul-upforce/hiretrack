@@ -5,7 +5,6 @@ import {
   Droppable,
   DroppableProvided,
 } from "@hello-pangea/dnd";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { CreateCandidateDialog } from "./components/Dialogs/create-candidate-dialog";
 import { CreateLaneDialog } from "./components/Dialogs/create-lane-dialog";
@@ -24,10 +23,7 @@ import {
   useGetJobLanesQuery,
 } from "@/lib/features/lane/laneApi";
 import { useGetJobLaneConfigQuery } from "@/lib/features/checklist/checklistApi";
-import { User } from "@/lib/features/users/usersApi";
-import Cookies from "js-cookie";
 import { Breadcrumb } from "./components/Utils/breadcrumb";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { Checkbox } from "@/components/ui/checkbox";
 import { KanbanColumn } from "./components/Lanes/KanbanColumn";
 import { useKanbanBoard } from "./hooks/useKanbanBoard";
@@ -44,7 +40,6 @@ import { Button } from "@/components/ui/button";
 import {
   Settings2,
   BarChart3,
-  MoreVertical,
   MoreHorizontal,
   Plus,
   Edit,
@@ -56,12 +51,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CustomFieldsContext } from "@/Custom_Fields/Context";
-import CustomFieldDialog from "@/Custom_Fields/Components/Common/CustomFieldDialog";
-import Stepper from "@/Custom_Fields/Components/Stepper";
-import CustomFieldForm from "@/Custom_Fields/Components/Form/CustomFieldForm";
-import { useContext } from "react";
-import { Badge } from "@/components/ui/badge";
 import { JobAnalyticsModal } from "../../jobs-board/components/JobAnalyticsModal";
 import { JobEmailNotificationSettingsDialog } from "@/components/dialogs/JobEmailNotificationSettingsDialog";
 import ChecklistRemarksDialog from "./components/Dialogs/checklist-remarks-dialog";
@@ -255,38 +244,6 @@ export default function JobProgressPage() {
 
     return Array.from(candidateMap.values());
   }, [candidatesFromQuery, sseCandidates]);
-
-  // useEffect(() => {
-  //   console.log("Loading states:", {
-  //     isJobLoading,
-  //     isCandidatesLoading,
-  //     isLanesLoading,
-  //     jobError,
-  //   });
-  //   console.log("Data:", { job, candidatesFromQuery, lanes });
-  //   console.log("scrollRef.current:", scrollRef.current);
-  // }, [
-  //   isJobLoading,
-  //   isCandidatesLoading,
-  //   isLanesLoading,
-  //   jobError,
-  //   job,
-  //   candidatesFromQuery,
-  //   lanes,
-  //   scrollRef,
-  // ]);
-
-  // useEffect(() => {
-  //   // const token = Cookies.get("token");
-  //   if (user) {
-  //     verifyAndDecryptJWTToken(token).then((decryptedResponse) => {
-  //       console.log("User fetch result:", decryptedResponse);
-  //       if (decryptedResponse.success && decryptedResponse.user) {
-  //         setUser(decryptedResponse.user);
-  //       }
-  //     });
-  //   }
-  // }, []);
 
   useEffect(() => {
     if (!isDialogOpen) {
@@ -487,17 +444,6 @@ export default function JobProgressPage() {
     }
   }, [isLaneEditOpen]);
 
-  // useEffect(() => {
-  //   const token = Cookies.get("token");
-  //   if (token) {
-  //     verifyAndDecryptJWTToken(token).then((decryptedResponse) => {
-  //       if (decryptedResponse.success && decryptedResponse.user) {
-  //         setUser(decryptedResponse.user);
-  //       }
-  //     });
-  //   }
-  // }, []);
-
   useEffect(() => {
     if (!isDialogOpen) {
       setDroppedFileData(null);
@@ -506,82 +452,7 @@ export default function JobProgressPage() {
 
   // Fallback UI
   if (isJobLoading || isCandidatesLoading || isLanesLoading || !lanes) {
-    return (
-      <>
-        <div
-          className="h-screen flex flex-col overflow-hidden"
-          style={{ width: "100%" }}
-        >
-          <div className="flex-shrink-0  border-b ">
-            <div className="mt-2 px-3 border-b ">
-              <div className="flex flex-row items-center justify-between py-3">
-                <div className="font-semibold text-lg">
-                  <Skeleton className="w-40 h-[18px] rounded-lg" />
-                </div>
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-2">
-                    {/* <Checkbox
-                      id="showArchived"
-                      checked={showArchived}
-                      onCheckedChange={(checked) =>
-                        setShowArchived(checked as boolean)
-                      }
-                    />
-                    <label
-                      htmlFor="showArchived"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Show Archived
-                    </label> */}
-                    <Skeleton className="w-16 h-8 rounded-lg" />
-                    <Button variant="outline">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Lane
-                    </Button>
-                    <Button variant="primary">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Candidate
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className=" flex my-3 gap-3 px-3">
-              <Skeleton className="w-[400px] h-[30px] rounded-lg" />
-              <Skeleton className="w-[400px] h-[30px] rounded-lg" />
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-hidden px-4 pb-2">
-            <DragDropContext
-              onDragStart={(start) => {
-                setIsDndDragging(true);
-              }}
-              onDragUpdate={(update) => {
-                // No prevalidation needed - using client-side validation
-              }}
-              onDragEnd={(result: any) => {
-                setIsDndDragging(false);
-                onDragEnd(result);
-              }}
-            >
-              <Droppable droppableId="lanes" direction="horizontal" type="lane">
-                {(provided: DroppableProvided) => (
-                  <div
-                    {...provided.droppableProps}
-                    ref={mergeRefs([provided.innerRef, scrollRef])}
-                    className="h-full flex gap-0.5 overflow-x-auto"
-                  >
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
-            </DragDropContext>
-          </div>
-          <LoaderSkeleton />
-        </div>
-      </>
-    );
+    return <LoaderSkeleton />;
   }
 
   if (jobError) {
@@ -601,14 +472,6 @@ export default function JobProgressPage() {
           />
 
           <div className="flex gap-2">
-            {/* <Button
-                    variant="outline"
-                    onClick={() => setIsAnalyticsOpen(true)}
-                    className="flex items-center gap-2"
-                  >
-                    <BarChart3 className="h-4 w-4" />
-                    Analytics
-                  </Button> */}
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="h-9">
