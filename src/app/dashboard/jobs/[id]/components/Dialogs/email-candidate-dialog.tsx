@@ -28,8 +28,6 @@ import {
   Edit,
 } from "lucide-react";
 import { toast } from "sonner";
-import Cookies from "js-cookie";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import {
   Select,
   SelectContent,
@@ -102,11 +100,7 @@ export function EmailCandidateDialog({
   const [organizationName, setOrganizationName] = useState("");
 
   useEffect(() => {
-    // Get current user's email for reply-to field and fetch templates
     (async () => {
-      // const token = Cookies.get("auth_token");
-      // if (token) {
-      // const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
       if (user) {
         // const user = decryptedResponse.user;
         setUserEmail(user.email);

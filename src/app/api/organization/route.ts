@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Settings } from "@/lib/mongodb";
-import { Organization, User } from "@/lib/mongodb";
+import connectToDatabase, { Settings,Organization, User } from "@/lib/mongodb";
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
-import { verifyAndDecryptToken } from "../../../../middleware";
+import { getAuthenticatedUser } from  "@/app/actions/auth";
 import path from "path";
 import fs from "fs/promises";
 import { apiRateLimiter } from "@/lib/rateLimiter";
@@ -25,19 +24,8 @@ export async function POST(req: NextRequest) {
   await connectToDatabase();
   let createdOrg = null;
   let admin = null;
-  let organizationId = "";
-  const token = req.cookies.get("auth_token");
-  const orgId = req.cookies.get("org_id")?.value;
-  if (token?.value) {
-    const decryptedResponse = await verifyAndDecryptToken(
-      String(token?.value),
-      orgId
-    );
-    const userData = decryptedResponse.user;
-    if (decryptedResponse.success) {
-      organizationId = userData.organizationId || "";
-    }
-  }
+  const userData = await getAuthenticatedUser(req);
+  const organizationId = userData?.organizationId || "";
   try {
     const { name, adminData } = await req.json();
 
@@ -225,76 +213,89 @@ export function OPTIONS() {
   return NextResponse.json({ message: "Method Not Allowed" }, { status: 405 });
 }
 
-const handleChekOrg = async(req: NextRequest) => {
-  // let organizationId;
-
-  // if (token?.value) {
-  //   const decryptedResponse = await verifyAndDecryptToken(String(token?.value));
-  //   const userData = decryptedResponse.user;
-  //   if (decryptedResponse.success) {
-  //     organizationId = userData.organizationId || "";
-  //   }
-  // }
-
+const handleChekOrg = async (req: NextRequest) => {
   try {
     await connectToDatabase();
+    
     if (!Settings) {
       return NextResponse.json(
         { error: "Settings model not found" },
         { status: 500 }
       );
     }
-    // if (organizationId != "") {
-    //   const settings = await Settings.find({
-    //     organizationId: String(organizationId),
-    //   });
-    //   console.log("✅✅✅ ", settings);
-    //   if (settings[0].multipleOrg !== false) {
-    //     return {
-    //       allow: true,
-    //     };
-    //   }
-    //   return {
-    //     allow: false,
-    //   };
-    // } else {
-    const settings = await Settings.find(
-      {},
-      {
-        fileStorage: 0,
-        mailConfig: 0,
-        gemini: 0,
-        aiProviders: 0,
-        emailTemplates: 0,
-        googleCalendar: 0,
-        twoFA: 0,
-      }
-    );
-    // console.log("⛔⛔⛔ ", settings);
-    if (settings.length > 1 || settings.length === 0) {
-      return NextResponse.json({
-        allow: true,
-        data: settings,
-      });
-    } else if (settings.length === 1 && settings[0].multipleOrg !== false) {
-      return NextResponse.json({
-        allow: true,
-        data: settings,
-      });
+
+    // Get pagination parameters from query string
+    const searchParams = req.nextUrl.searchParams;
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || "30", 10);
+    const skip = (page - 1) * limit;
+
+    // Validate pagination parameters
+    if (page < 1 || limit < 1 || limit > 100) {
+      return NextResponse.json(
+        { error: "Invalid pagination parameters. Page must be >= 1, limit must be between 1 and 100." },
+        { status: 400 }
+      );
     }
+
+    // Fetch settings with pagination and optimized projection
+    const [settings, totalCount] = await Promise.all([
+      Settings.find(
+        {},
+        {
+          fileStorage: 0,
+          mailConfig: 0,
+          gemini: 0,
+          aiProviders: 0,
+          emailTemplates: 0,
+          googleCalendar: 0,
+          twoFA: 0,
+        }
+      )
+        .skip(skip)
+        .limit(limit)
+        .lean()
+        .exec(),
+      Settings.countDocuments({}),
+    ]);
+
+    // Calculate pagination metadata
+    const totalPages = Math.ceil(totalCount / limit);
+    const hasNextPage = page < totalPages;
+    const hasPreviousPage = page > 1;
+
+    // Determine if multiple orgs are allowed
+    let allow = false;
+    if (settings.length > 1 || settings.length === 0) {
+      allow = true;
+    } else if (settings.length === 1 && settings[0].multipleOrg !== false) {
+      allow = true;
+    }
+
     return NextResponse.json({
-      allow: false,
+      allow,
       data: settings,
+      pagination: {
+        page,
+        limit,
+        total: totalCount,
+        totalPages,
+        hasNextPage,
+        hasPreviousPage,
+      },
     });
-    // }
   } catch (error) {
-    console.error("Organization API error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Internal server error",
+      },
       { status: 500 }
     );
   }
-}
+};
 
 //!!! THIS IMPLIES RESTRICT ACCESS TO REGISTER/ORG PAGE
 export async function GET(req: NextRequest) {

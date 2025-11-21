@@ -1,27 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect, { Settings } from "@/lib/mongodb";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import connectToDatabase, { Settings } from "@/lib/mongodb";
+import {
+  getAuthenticatedUser,
+} from "@/app/actions/auth";
 
 export async function GET(req: NextRequest) {
   try {
-    await dbConnect();
-    let organizationId = "";
-    const token = req.cookies.get("auth_token");
-    const orgId = req.cookies.get("org_id")?.value;
-    if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value),
-        orgId
-      );
-      const userData = decryptedResponse.user;
-      if (decryptedResponse.success) {
-        organizationId = userData.organizationId || "";
-        if (userData.role !== "admin") {
-          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-      }
-    }
+    await connectToDatabase();
 
+    const userData = await getAuthenticatedUser(req, "admin");
+    if (!userData) {
+      return NextResponse.json(
+        { message: "Unauthorised Access" },
+        { status: 401 }
+      );
+    }
     if (!Settings) {
       return NextResponse.json(
         { error: "Settings Model Not Found" },
@@ -30,7 +23,7 @@ export async function GET(req: NextRequest) {
     }
     const settings = await Settings.findOne({
       // organizationId: userData.organizationId,
-      organizationId: organizationId,
+      organizationId: userData?.organizationId || "",
     });
 
     if (!settings) {
@@ -55,22 +48,13 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    await dbConnect();
-    let organizationId = "";
-    const token = req.cookies.get("auth_token");
-    const orgId = req.cookies.get("org_id")?.value;
-    if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value),
-        orgId
+    await connectToDatabase();
+    const userData = await getAuthenticatedUser(req, "admin");
+    if (!userData) {
+      return NextResponse.json(
+        { message: "Unauthorised Access" },
+        { status: 401 }
       );
-      const userData = decryptedResponse.user;
-      if (decryptedResponse.success) {
-        organizationId = userData.organizationId || "";
-        if (userData.role !== "admin") {
-          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-      }
     }
 
     if (!Settings) {
@@ -86,7 +70,7 @@ export async function PUT(req: NextRequest) {
     const updatedUser = await Settings.findOneAndUpdate(
       {
         // organizationId: userData.organizationId,
-        organizationId: organizationId,
+        organizationId: userData?.organizationId || "",
       },
       { timeZone: timeZoneSetting },
       {

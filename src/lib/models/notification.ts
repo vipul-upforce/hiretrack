@@ -174,5 +174,14 @@ notificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 
 notificationSchema.index({ organizationId: 1, recipientId: 1, createdAt: -1 }); // Main query pattern
 notificationSchema.index({ organizationId: 1, recipientId: 1, isRead: 1 }); // Unread count
 notificationSchema.index({ organizationId: 1, relatedEntity: 1, relatedId: 1 }); // Related entity queries
-
+// 5. Notifications - Organization + Recipient + Read status
+notificationSchema.index(
+  { 
+    organizationId: 1, 
+    recipientId: 1, 
+    isRead: 1, 
+    createdAt: -1 
+  },
+  { name: "idx_notification_org_recipient_read", background: true }
+);
 export default notificationSchema;

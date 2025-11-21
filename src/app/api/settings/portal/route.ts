@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { Organization, Settings } from "@/lib/mongodb";
 import { handleSingleFile } from "@/lib/fileUtils";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 import path from "path";
 import fs from "fs";
 import https from "https";
@@ -192,23 +192,15 @@ const handleGetPortalData = async (req: NextRequest) => {
     let isAuthenticated = false;
 
     // Try to get organization from auth token
-    const token = req.cookies.get("auth_token");
-    const orgId = req.cookies.get("org_id")?.value;
-    if (token?.value) {
-      try {
-        const decryptedResponse = await verifyAndDecryptToken(
-          String(token?.value),
-          orgId
-        );
-        const userData = decryptedResponse.user;
-        if (decryptedResponse.success) {
-          organizationId = userData.organizationId || "";
-          isAuthenticated = true;
-        }
-      } catch (error) {
-        // Token verification failed, continue as anonymous user
-        console.log("Token verification failed, serving as anonymous user");
+    try {
+      const userData = await getAuthenticatedUser(req);
+      if (userData) {
+        organizationId = userData.organizationId || "";
+        isAuthenticated = true;
       }
+    } catch {
+      // Token verification failed, continue as anonymous user
+      console.log("Token verification failed, serving as anonymous user");
     }
 
     let settings = null;
@@ -222,7 +214,7 @@ const handleGetPortalData = async (req: NextRequest) => {
           portalConfigs: 1,
           smtpConfigs: 1,
         }
-      );
+      ).lean().exec();
     } else {
       // Anonymous user - get default organization settings
       // Try to find a default organization or the first available one
@@ -233,7 +225,7 @@ const handleGetPortalData = async (req: NextRequest) => {
           {
             portalConfigs: 1,
           }
-        );
+        ).lean().exec();
       }
     }
 
@@ -290,21 +282,11 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    await connectToDatabase();
-
-    const token = req.cookies.get("auth_token")?.value;
-    const orgId = req.cookies.get("org_id")?.value;
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const decryptedResponse = await verifyAndDecryptToken(token, orgId);
-    if (!decryptedResponse.success) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const userData = decryptedResponse.user;
-    if (userData.role !== "admin") {
+    const [userData] = await Promise.all([
+      getAuthenticatedUser(req, "admin"),
+      connectToDatabase(),
+    ]);
+    if (!userData) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

@@ -11,7 +11,7 @@ import { ICandidate } from "@/lib/models/candidate";
 import mongoose from "mongoose";
 import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
 import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 import { NotificationService } from "@/lib/notifications/notificationService"; // Import if needed
 import { NotificationType } from "@/lib/services/emailDecisionEngine";
 
@@ -20,22 +20,17 @@ export async function POST(req: NextRequest) {
     const { candidateId } = await req.json();
 
     // Get user information from token
-    let senderEmail;
-    let senderUserId;
-    let senderName;
-    const token = req.cookies.get("auth_token");
-    const orgId = req.cookies.get("org_id")?.value;
-    if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value),
-        orgId
+
+    const user = await getAuthenticatedUser(req);
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
       );
-      if (decryptedResponse.success && decryptedResponse.user) {
-        senderEmail = decryptedResponse.user.email;
-        senderUserId = decryptedResponse.user.id;
-        senderName = decryptedResponse.user.name;
-      }
     }
+    const senderEmail = user.email;
+    const senderUserId = user.id;
+    const senderName = user.name;
     if (!Candidate || !User) {
       throw new Error("Database not connected");
     }

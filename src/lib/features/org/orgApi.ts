@@ -1,4 +1,5 @@
 import { ITag } from "@/lib/models/organization";
+import { runIfCookiePresent } from "@/lib/utils/queryGuards";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 export interface CreateAdminRequest {
@@ -134,11 +135,16 @@ export const orgApi = createApi({
       }),
     }),
     updateCustomFields: builder.mutation({
-      query: (data) => ({
-        url: "/organization/cs",
-        method: "POST",
-        body: data,
-      }),
+      queryFn: (data, _api, _extraOptions, baseQuery) =>
+        runIfCookiePresent(
+          baseQuery,
+          () => ({
+            url: "/organization/cs",
+            method: "POST",
+            body: data,
+          
+          })
+        ),
     }),
     getCustomFields: builder.query({
       query: (orgId) => ({
@@ -169,7 +175,7 @@ export const orgApi = createApi({
         body: data,
       }),
     }),
-    sendUnassignMail: builder.mutation<{ message: string }, any>({
+    sendUnassignMail: builder.mutation<{ message: string }, Record<string, unknown>>({
       query: (data) => ({
         url: `/event-mail`,
         method: "PUT",

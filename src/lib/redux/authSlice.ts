@@ -1,5 +1,4 @@
-import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 
 interface AuthState {
   user: any;

@@ -28,7 +28,6 @@ import {
 import { useTestConnection } from "@/hooks/use-test-connection";
 import * as jose from "jose";
 import CryptoJS from "crypto-js";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { useDispatch, useSelector } from "react-redux";
 import { updateUser as updateUserInState } from "@/lib/redux/authSlice";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -95,17 +94,6 @@ export default function FileStorageOptions({
     } catch {}
   };
 
-  // useEffect(() => {
-  //   (async () => {
-  //     const token = Cookies.get("token");
-  //     if (token) {
-  //       const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-  //       if (decryptedResponse.success && decryptedResponse.user) {
-  //         setuser(decryptedResponse.user);
-  //       }
-  //     }
-  //   })();
-  // }, []);
 
   const initialValues = {
     storageType: data?.fileStorage?.storageType || "local",

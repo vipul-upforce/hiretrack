@@ -1,7 +1,7 @@
 import { createTransport, TransportOptions } from "nodemailer";
 import { Resend } from "resend";
 import { Ismtp } from "@/lib/models/settings";
-import dbConnect, { EmailHistory } from "@/lib/mongodb";
+import connectToDatabase, { EmailHistory } from "@/lib/mongodb";
 import mongoose from "mongoose";
 
 interface EmailOptions {
@@ -147,7 +147,7 @@ export async function sendMail(
     // If context with emailHistoryId is provided, update the history record
     if (context && "emailHistoryId" in context) {
       try {
-        await dbConnect();
+        await connectToDatabase();
         const history = await EmailHistory.findById(context.emailHistoryId);
 
         if (history) {

@@ -26,7 +26,6 @@ import { FileUpload } from "@/components/ui/file-upload";
 import { MentionTextarea } from "@/components/ui/mention-textarea";
 import { Rating } from "@mui/material";
 import Cookies from "js-cookie";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import ConfirmationDialog from "./ConfirmationDialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -102,18 +101,6 @@ export function AssignCandidateDialog({
     onSuccess,
   });
   const { sanitizeFiles } = useSanitizeFiles();
-
-  // useEffect(() => {
-  //   (async () => {
-  //     const token = Cookies.get("token");
-  //     if (token) {
-  //       const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-  //       if (decryptedResponse.success && decryptedResponse.user) {
-  //         setUser(decryptedResponse.user);
-  //       }
-  //     }
-  //   })();
-  // }, []);
 
   useEffect(() => {
     if (isOpen) {

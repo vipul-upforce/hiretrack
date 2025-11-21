@@ -4,8 +4,6 @@ import { useEffect, useState, useRef } from "react";
 import { File as FileIcon, Pencil, X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RenameFileDialog } from "./rename-file-dialog";
-import Cookies from "js-cookie";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { useSelector } from "react-redux";
 
 interface MobileFileUploadProps {

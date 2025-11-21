@@ -96,6 +96,25 @@ export const jobSchema = new mongoose.Schema({
   },
 });
 
+// Performance indexes for optimized queries
+// Index for organization-based queries with status filtering
+jobSchema.index(
+  { organizationId: 1, status: 1, isDeleted: 1 },
+  { name: "idx_job_org_status_deleted", background: true }
+);
+
+// Index for organization + status + created date sorting
+jobSchema.index(
+  { organizationId: 1, status: 1, "tracking.createdAt": -1 },
+  { name: "idx_job_org_status_created", background: true }
+);
+
+// Index for published jobs lookup
+jobSchema.index(
+  { organizationId: 1, status: 1, isPublished: 1, isDeleted: 1 },
+  { name: "idx_job_org_status_published", background: true }
+);
+
 export interface IJob extends Document<mongoose.Types.ObjectId> {
   organizationId: Schema.Types.ObjectId;
   title: string;

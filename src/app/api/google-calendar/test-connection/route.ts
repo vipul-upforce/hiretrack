@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { Settings } from "@/lib/mongodb";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 import { createOAuth2Client } from "@/lib/google-calendar/config";
 import { decryptText } from "@/lib/encryption";
 import { google } from "googleapis";
@@ -32,88 +32,22 @@ async function getSettingsModel() {
 }
 
 export async function POST(req: NextRequest) {
-  console.log("🚀 POST /api/google-calendar/test-connection called");
 
   // Wrap everything in a super-safe try-catch
   try {
-    console.log("🔍 Testing Google Calendar connection - Starting");
-
-    // Step 1: Connect to database
-    console.log("📊 Connecting to database...");
-    await connectToDatabase();
-    console.log("✅ Database connected");
-
-    // Step 2: Verify user
-    console.log("🔐 Verifying user token...");
-    let organizationId = "";
-    const token = req.cookies.get("auth_token");
-    const orgId = req.cookies.get("org_id")?.value;
-    if (!token?.value) {
-      console.log("❌ No token provided");
+    const [userData, settings] = await Promise.all([
+      getAuthenticatedUser(req),
+      getSettingsModel(),
+    ]); 
+    if (!userData) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "No token provided",
-        },
+        { error: "Unauthorized" },
         { status: 401 }
       );
     }
-
-    try {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token.value),
-        orgId
-      );
-      if (!decryptedResponse.success) {
-        console.log("❌ Invalid token:", decryptedResponse);
-        return NextResponse.json(
-          {
-            success: false,
-            error: "Invalid token",
-          },
-          { status: 401 }
-        );
-      }
-
-      organizationId = decryptedResponse.user?.organizationId || "";
-      console.log("✅ User verified, organizationId:", organizationId);
-    } catch (tokenError) {
-      console.error("❌ Token verification failed:", tokenError);
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Token verification failed",
-          details:
-            tokenError instanceof Error
-              ? tokenError.message
-              : "Unknown token error",
-        },
-        { status: 401 }
-      );
-    }
-
-    // Step 3: Get Google Calendar settings
-    console.log("⚙️ Fetching Google Calendar settings...");
-
-    let settings;
-    try {
-      const SettingsModel = await getSettingsModel();
-      settings = await SettingsModel.findOne({ organizationId });
-    } catch (modelError) {
-      console.error(
-        "❌ Failed to get Settings model or query database:",
-        modelError
-      );
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Database access failed",
-          details: `Unable to access Settings model: ${modelError instanceof Error ? modelError.message : "Unknown database error"}`,
-          lastTestedAt: new Date().toISOString(),
-        },
-        { status: 500 }
-      );
-    }
+    const organizationId = userData.organizationId;
+   
+    
     if (!settings) {
       console.log("❌ No settings found for organization:", organizationId);
       return NextResponse.json(

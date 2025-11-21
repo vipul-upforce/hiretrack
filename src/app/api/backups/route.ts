@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs/promises";
 import path from "path";
-import { auth } from "@/lib/auth";
 import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 
 export async function GET(req: NextRequest) {
   try {
     const backupsDir = path.join(process.cwd(), "..", "backups");
     // console.log("BACKUPDS DI:R: ", backupsDir);
-    const cookie = await auth(req);
-    const userData = cookie?.user;
-    console.log("userdata: ", userData);
-
+    const session = await getAuthenticatedUser(req,"admin");
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const entries = await fs.readdir(backupsDir, { withFileTypes: true });
     // console.log("BACKUPDS Entries ", entries);
     // const settings = await Settings?.find({

@@ -9,8 +9,6 @@ import { Separator } from "@/components/ui/separator";
 import { NotificationItem } from "@/components/ui/notifications/NotificationItem";
 import { CandidateDetailsDialog } from "../jobs/[id]/components/Dialogs/candidate-details-dialog";
 import { useLazyFetchCandidateByIdQuery } from "@/lib/features/candidate/candidateApi";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
-import Cookies from "js-cookie";
 import {
   Bell,
   BellOff,
@@ -85,17 +83,6 @@ export default function NotificationsPage() {
   const [markAllAsRead] = useMarkAllNotificationsAsReadMutation();
   const [fetchCandidateById] = useLazyFetchCandidateByIdQuery();
 
-  // Get user info
-  // useEffect(() => {
-  //   const token = Cookies.get("token");
-  //   if (token) {
-  //     verifyAndDecryptJWTToken(token).then((decryptedResponse) => {
-  //       if (decryptedResponse.success && decryptedResponse.user) {
-  //         setUser(decryptedResponse.user);
-  //       }
-  //     });
-  //   }
-  // }, []);
 
   const handleNotificationClick = async (notification: any) => {
     // Mark as read if not already read

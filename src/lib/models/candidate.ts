@@ -496,4 +496,73 @@ export const candidateSchema = new Schema(
   }
 );
 
+// Performance indexes for optimized queries
+// Index for job-based queries with sorting (primary use case)
+candidateSchema.index(
+  { jobId: 1, "tracking.createdAt": -1 },
+  { name: "idx_jobId_createdAt", background: true }
+);
+
+// Index for organization-based queries with filtering and sorting
+candidateSchema.index(
+  { organizationId: 1, "tracking.createdAt": -1, isDeleted: 1 },
+  { name: "idx_orgId_createdAt_deleted", background: true }
+);
+
+// Index for organization + job queries
+candidateSchema.index(
+  { organizationId: 1, jobId: 1, "tracking.createdAt": -1 },
+  { name: "idx_orgId_jobId_createdAt", background: true }
+);
+
+// Index for status filtering with organization
+candidateSchema.index(
+  { organizationId: 1, status: 1, isDeleted: 1 },
+  { name: "idx_orgId_status_deleted", background: true }
+);
+
+// Index for interviewer assignment queries
+candidateSchema.index(
+  { "assignment.interviewerId": 1, organizationId: 1, "assignment.assignedAt": -1 },
+  { name: "idx_assignment_interviewer_org", background: true, sparse: true }
+);
+
+// Index for follow-up queries
+candidateSchema.index(
+  { "followUp.userId": 1, "followUp.date": -1 },
+  { name: "idx_followUp_userId_date", background: true, sparse: true }
+);
+
+// Index for email lookups (unique constraint if needed)
+candidateSchema.index({ email: 1 }, { name: "idx_email", background: true });
+
+// Index for organization-wide candidate queries with jobId
+candidateSchema.index(
+  { organizationId: 1, jobId: 1, status: 1, isDeleted: 1 },
+  { name: "idx_orgId_jobId_status_deleted", background: true }
+);
+// CRITICAL MISSING INDEXES:
+
+// 1. Candidates - Assignment time queries (used in assignments route)
+candidateSchema.index(
+  { 
+    "assignment.interviewerId": 1, 
+    "assignment.time": 1,
+    organizationId: 1,
+    isDeleted: 1 
+  },
+  { name: "idx_assignment_interviewer_time_org", background: true, sparse: true }
+);
+
+// 2. Candidates - Job + Status + Date range (analytics)
+candidateSchema.index(
+  { 
+    jobId: 1, 
+    status: 1, 
+    "tracking.createdAt": -1,
+    isDeleted: 1 
+  },
+  { name: "idx_job_status_created_deleted", background: true }
+);
+
 // export const Candidate = mongoose.model('Candidate', candidateSchema);
