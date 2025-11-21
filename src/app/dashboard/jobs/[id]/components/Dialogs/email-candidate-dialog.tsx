@@ -330,8 +330,8 @@ export function EmailCandidateDialog({
         setSelectedTemplate("none");
         setContentMode("rich");
       }, 2000);
-    } catch (error: any) {
-      const errorMsg = error.message || "Failed to send email";
+    } catch (error: unknown) {
+      const errorMsg = error instanceof Error ? error.message : "Failed to send email";
       setEmailError(errorMsg);
       toast.error(errorMsg);
     } finally {

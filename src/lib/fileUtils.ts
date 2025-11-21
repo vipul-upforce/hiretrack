@@ -456,9 +456,9 @@ export async function uploadFileToProvider(
     }
 
     return { success: true, url, fileName };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error uploading file to provider:", error);
-    return { success: false, error: error.message || "Upload failed" };
+    return { success: false, error: error instanceof Error ? error.message : "Upload failed" };
   }
 }
 
@@ -508,8 +508,8 @@ export async function getFileFromProvider(
       default:
         return { success: false, error: "Unknown storage provider" };
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error getting file from provider:", error);
-    return { success: false, error: error.message || "Failed to get file" };
+    return { success: false, error: error instanceof Error ? error.message : "Failed to get file" };
   }
 }

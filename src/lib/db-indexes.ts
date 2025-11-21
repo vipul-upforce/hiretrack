@@ -212,12 +212,12 @@ export async function checkAnalyticsIndexes(connection: mongoose.Connection): Pr
         exists: indexExists,
         stats
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       results.push({
         collection: indexDef.collection,
         indexName: indexDef.options?.name || 'unnamed',
         exists: false,
-        error: error.message
+        error: error instanceof Error ? error.message : "Unknown error"
       });
     }
   }
@@ -280,11 +280,11 @@ export async function validateQueryPerformance(connection: mongoose.Connection):
           executionTimeMillis: explainResult.executionStats?.executionTimeMillis
         }
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       results.push({
         name: testQuery.name,
         collection: testQuery.collection,
-        error: error.message
+        error: error instanceof Error ? error.message : "Unknown error"
       });
     }
   }
