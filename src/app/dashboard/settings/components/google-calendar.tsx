@@ -445,6 +445,7 @@ export default function GoogleCalendarSettings({
             {!isConnected && (
               <Button
                 onClick={handleSaveCredentials}
+                variant="primary"
                 disabled={
                   !formData.clientId || !formData.clientSecret || isUpdating
                 }
@@ -497,7 +498,7 @@ export default function GoogleCalendarSettings({
                   onClick={handleConnect}
                   disabled={!isConfigured}
                   className="flex-1"
-                  variant="default"
+                  variant="primary"
                 >
                   <Calendar className="mr-2 h-4 w-4" />
                   Connect Google Calendar
