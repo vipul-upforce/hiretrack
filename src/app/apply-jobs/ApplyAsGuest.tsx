@@ -34,6 +34,7 @@ import { candidateSchema } from "../dashboard/jobs/[id]/schemas/candidate-schema
 import { useApplyHandler } from "./useApplyHandler";
 import { TermsConfirmationDialog } from "@/components/TermsConfirmationDialog";
 import { User } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 
 // New function to store application status in localStorage
 const storeGuestApplication = (jobId: string, candidateId: string) => {
@@ -418,7 +419,7 @@ export function ApplyAsGuestDialog({
         description: errorMessage,
         variant: "destructive",
       });
-    }finally{
+    } finally {
       setIsSubmittingApplication(false);
     }
   };
@@ -615,26 +616,13 @@ export function ApplyAsGuestDialog({
                   <Button
                     type={Object.keys(errors).length == 0 ? "button" : "submit"}
                     onClick={handleApply}
+                    variant="primary"
                     disabled={isSubmitting || isSubmittingApplication}
                     className="flex-1 sm:flex-none transition-all duration-200 hover:shadow-md text-white"
-                    style={{
-                      backgroundColor: primaryColor,
-                      borderColor: primaryColor,
-                    }}
-                    onMouseEnter={(e) => {
-                      const target = e.target as HTMLElement;
-                      target.style.backgroundColor = secondaryColor;
-                      target.style.borderColor = secondaryColor;
-                    }}
-                    onMouseLeave={(e) => {
-                      const target = e.target as HTMLElement;
-                      target.style.backgroundColor = primaryColor;
-                      target.style.borderColor = primaryColor;
-                    }}
                   >
                     {isSubmitting || isSubmittingApplication ? (
                       <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        <Spinner />
                         Saving...
                       </>
                     ) : (
