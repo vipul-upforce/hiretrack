@@ -1,5 +1,5 @@
 "use client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import { useFetchAssignedCandidatesQuery } from "@/lib/features/candidate/candidateApi";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
@@ -498,28 +498,28 @@ export default function CalendarPage() {
             {/* Views */}
             <div className="flex gap-1 border rounded-lg p-1 overflow-hidden">
               <Button
-                variant={calendarView === "dayGridMonth" ? "default" : "ghost"}
+                variant={calendarView === "dayGridMonth" ? "primary" : "ghost"}
                 size="sm"
                 onClick={() => handleViewChange("dayGridMonth")}
               >
                 Month
               </Button>
               <Button
-                variant={calendarView === "timeGridWeek" ? "default" : "ghost"}
+                variant={calendarView === "timeGridWeek" ? "primary" : "ghost"}
                 size="sm"
                 onClick={() => handleViewChange("timeGridWeek")}
               >
                 Week
               </Button>
               <Button
-                variant={calendarView === "timeGridDay" ? "default" : "ghost"}
+                variant={calendarView === "timeGridDay" ? "primary" : "ghost"}
                 size="sm"
                 onClick={() => handleViewChange("timeGridDay")}
               >
                 Day
               </Button>
               <Button
-                variant={calendarView === "listWeek" ? "default" : "ghost"}
+                variant={calendarView === "listWeek" ? "primary" : "ghost"}
                 size="sm"
                 onClick={() => handleViewChange("listWeek")}
               >
