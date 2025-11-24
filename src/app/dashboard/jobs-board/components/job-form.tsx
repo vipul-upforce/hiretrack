@@ -352,7 +352,7 @@ export function JobForm(props: JobFormProps) {
             >
               Cancel
             </Button>
-            <Button type="button" onClick={handleAddLink}>
+            <Button type="button" variant="primary" onClick={handleAddLink}>
               Add
             </Button>
           </DialogFooter>

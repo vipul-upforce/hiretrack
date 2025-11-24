@@ -37,6 +37,7 @@ const CaptchConfigStep: React.FC = () => {
       >
         <CardContent className="p-6">
           <Button
+            variant="primary"
             onClick={() =>
               window.open("/dashboard/settings?config=captcha", "_blank")
             }

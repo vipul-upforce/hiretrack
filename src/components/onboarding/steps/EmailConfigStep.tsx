@@ -101,6 +101,7 @@ const EmailConfigStep: React.FC = () => {
             
             <div className="flex gap-3 pt-4">
               <Button 
+              variant='primary'
                 onClick={handleConfigureEmail}
                 className="flex items-center gap-2"
               >

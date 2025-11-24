@@ -35,6 +35,7 @@ const CustomFieldsStep: React.FC = () => {
       >
         <CardContent className="p-6">
           <Button
+            variant="primary"
             onClick={() =>
               window.open("/dashboard/settings?config=cf", "_blank")
             }
