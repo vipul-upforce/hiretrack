@@ -31,7 +31,7 @@ export const jobDetailsFields: FieldConfig[] = [
 
         </div> */}
         <div
-          className="text-sm break-words whitespace-pre-wrap"
+          className="text-sm break-words px-4 whitespace-pre-wrap"
           dangerouslySetInnerHTML={{
             __html: job?.description || "No description found",
           }}
