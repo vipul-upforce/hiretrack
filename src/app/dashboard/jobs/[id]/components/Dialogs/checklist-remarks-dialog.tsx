@@ -7,6 +7,7 @@ import {
   useGetJobLaneConfigQuery,
 } from "@/lib/features/checklist/checklistApi";
 import { Candidate, CandidateStatus } from "@/types/candidate";
+import { getJobId } from "../../utils/candidateAccessors";
 import React, { useState, useEffect, useContext, useMemo } from "react";
 import Cookies from "js-cookie";
 import { toast } from "@/hooks/use-toast";
@@ -463,7 +464,7 @@ const ChecklistRemarksDialog = ({
   const { user } = useSelector((state: any) => state.auth || {});
   // const customFieldsContext = useContext(CustomFieldsContext);
   const { data: jobLaneConfig } = useGetJobLaneConfigQuery(
-    typeof candidate.jobId === "string" ? candidate.jobId : candidate.jobId._id,
+    getJobId(candidate) || "",
     { skip: !candidate.jobId }
   );
 

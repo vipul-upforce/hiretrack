@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import { Job } from "@/types/job";
 import { Candidate } from "@/types/candidate";
+import { getInterviewerName } from "../utils/candidateAccessors";
 import { useRouter } from "next/navigation";
 import { useFetchJobsQuery } from "@/lib/features/job/jobApi";
 
@@ -107,7 +108,7 @@ export function QuickSelectAndFilter({
             skill.toLowerCase().includes(searchLower)
           ) ||
           candidate.experience.toString().includes(searchLower) ||
-          (candidate.assignment?.interviewerId as any)?.name
+          getInterviewerName(candidate)
             ?.toLowerCase()
             .includes(searchLower) ||
           candidate.location.toLowerCase().includes(searchLower)

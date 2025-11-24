@@ -19,6 +19,7 @@ import {
 import { usePathname } from "next/navigation";
 import { Interviewer } from "@/lib/features/user/userApi";
 import { Candidate } from "@/types/candidate";
+import { getJobId } from "../utils/candidateAccessors";
 
 export const useAssignCandidate = ({
   candidate,
@@ -147,7 +148,7 @@ export const useAssignCandidate = ({
       }
       const updatedHistory = await updateCandidateHistory({
         candidateId: updatedCandidate._id,
-        jobId: candidate.jobId._id || candidate.jobId,
+        jobId: getJobId(candidate) || "",
         newEntry: newHistoryEntry,
       }).unwrap();
 
@@ -251,7 +252,7 @@ export const useAssignCandidate = ({
 
       await updateCandidateHistory({
         candidateId: updatedCandidate._id,
-        jobId: candidate.jobId._id || candidate.jobId,
+        jobId: getJobId(candidate) || "",
         newEntry: newHistoryEntry,
       }).unwrap();
       // sendUnassignEmail({ name: result.name });

@@ -14,6 +14,7 @@ import {
 import { CandidateCard } from "../Candidate/candidate-card";
 import { Candidate } from "@/types/candidate";
 import { LaneOptionsMenu } from "./lanes-options-menu";
+import { getJobId, getTrackingDate } from "../../utils/candidateAccessors";
 import { useState, useMemo, memo, useCallback, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { Virtuoso } from "react-virtuoso";
@@ -160,10 +161,12 @@ const KanbanColumn = memo(function KanbanColumn({
                 ? new Date(candidate.tracking?.createdAt).getTime()
                 : 0;
             case "lastModified":
-              return candidate.updatedAt
-                ? new Date(candidate.updatedAt).getTime()
-                : candidate.createdAt
-                  ? new Date(candidate.createdAt).getTime()
+              const updatedAt = getTrackingDate(candidate, "updatedAt");
+              const createdAt = getTrackingDate(candidate, "createdAt");
+              return updatedAt
+                ? updatedAt.getTime()
+                : createdAt
+                  ? createdAt.getTime()
                   : 0;
             default:
               return "";
@@ -185,10 +188,7 @@ const KanbanColumn = memo(function KanbanColumn({
   const processedCandidates = useMemo(() => {
     // First filter by jobId
     const filtered = column.candidates.filter((candidate) => {
-      const candidateJobId =
-        typeof candidate.jobId === "string"
-          ? candidate.jobId
-          : candidate.jobId?._id?.toString();
+        const candidateJobId = getJobId(candidate)?.toString() || "";
       return candidateJobId === jobId?.toString();
     });
 

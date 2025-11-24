@@ -17,6 +17,7 @@ import {
   useUpdateCandidateHistoryMutation,
 } from "@/lib/features/candidate/candidateApi";
 import { Candidate } from "@/types/candidate";
+import { getJobId } from "../../utils/candidateAccessors";
 import { v4 as uuidv4 } from "uuid";
 import { useParams, usePathname } from "next/navigation";
 import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
@@ -550,7 +551,7 @@ export function EditCandidateDialog({
               <FormUpdater parsedResumeData={parsedResumeData} />
               <div className="flex-1 overflow-y-auto px-6 py-4">
                 <CandidateForm
-                  jobId={candidate.jobId._id || id}
+                  jobId={getJobId(candidate) || id}
                   onFileUpload={async (file: File) => {
                     setFieldValue("resume", file);
                     await handleFileParse(file, setParsedResume);
