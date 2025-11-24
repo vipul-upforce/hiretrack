@@ -17,15 +17,6 @@ import {
   CustomField,
   CustomFieldFormProps,
 } from "@/Custom_Fields/Types/CustomField";
-// import {
-//   AlertDialog,
-//   AlertDialogAction,
-//   AlertDialogContent,
-//   AlertDialogDescription,
-//   AlertDialogFooter,
-//   AlertDialogHeader,
-//   AlertDialogTitle,
-// } from "@/components/ui/alert-dialog";
 import CustomFieldDialog from "../Common/CustomFieldDialog";
 import { toast } from "@/Custom_Fields/hooks/use-toast";
 import { CustomFieldsContext } from "@/Custom_Fields/Context";
@@ -301,29 +292,6 @@ const CustomFieldForm = memo(
         title="Meta Field"
         regular={false}
       >
-        {/* <AlertDialog open={duplicationAlert} onOpenChange={setDuplicationAlert}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Duplication Alert</AlertDialogTitle>
-              <AlertDialogDescription>
-                <p className="text-lg">{dupLabel}</p> This action was not
-                completed because a field with this label already exists in
-                global meta fields.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogAction
-                onClick={() => setDuplicationAlert(false)}
-                className={
-                  "text-blue-500 bg-blue hover:bg-blue hover:text-blue-500/90"
-                }
-              >
-                Okay
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog> */}
-
         <Formik
           initialValues={initialValues}
           validationSchema={validationSchema}
@@ -375,7 +343,7 @@ const CustomFieldForm = memo(
                   <Label htmlFor="fieldType" className="text-lg font-medium">
                     Field Type
                   </Label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mt-3">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mt-3 px-3">
                     {fieldTypes.map((type) => {
                       const IconComponent = fieldTypeIcons[type.value];
                       const isSelected = values.type === type.value;
@@ -867,7 +835,7 @@ const CustomFieldForm = memo(
                 )}
               </div>
 
-              <div className="sticky bottom-0 bg-background border-t border-gray-200 dark:border-gray-600 px-6 py-4 ">
+              <div className="sticky bottom-0 bg-background border-t border-gray-200 dark:border-gray-600 px-6 py-4 pb-0 ">
                 <div className="flex justify-end">
                   <Button
                     type="submit"
