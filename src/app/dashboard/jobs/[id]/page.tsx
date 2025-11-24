@@ -546,13 +546,10 @@ export default function JobProgressPage() {
             // Add a class to the body before drag starts to apply CSS fixes
             document.body.classList.add("dnd-dragging");
           }}
-          onDragStart={(start) => {
+          onDragStart={() => {
             setIsDndDragging(true);
           }}
-          onDragUpdate={(update) => {
-            // No prevalidation needed - using client-side validation
-          }}
-          onDragEnd={(result: any) => {
+          onDragEnd={(result) => {
             // Remove the class when drag ends
             document.body.classList.remove("dnd-dragging");
             setIsDndDragging(false);
