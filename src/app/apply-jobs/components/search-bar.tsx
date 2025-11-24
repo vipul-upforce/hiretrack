@@ -48,7 +48,7 @@ export function SearchBar({
       </div>
       <Button
         onClick={onSearch}
-        className="px-6 py-3 text-sm font-semibold rounded-xl text-white transition-colors"
+        className="px-6 py-3 max-sm:px-4 text-sm font-semibold rounded-xl text-white transition-colors"
         style={{
           backgroundColor: primaryColor,
           borderColor: primaryColor,
@@ -62,8 +62,8 @@ export function SearchBar({
           target.style.backgroundColor = primaryColor;
         }}
       >
-        <Search className="w-4 h-4 mr-2" />
-        Search
+        <Search className="w-4 h-4 mr-2 max-sm:mr-0" />
+        <span className="max-sm:hidden">Search</span>
       </Button>
     </div>
   );

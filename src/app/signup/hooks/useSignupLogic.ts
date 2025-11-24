@@ -39,7 +39,7 @@ export const useSignupLogic = () => {
       try {
         const data = await fetch("/api/organization");
         const allowance = await data.json();
-        setOrganizationId(allowance.data?.[0]?.organizationId);
+        setOrganizationId(allowance.data?.[0]?.organizationId || null);
 
         if (!data.ok && !allowance.allow) {
           router.push("/signup");

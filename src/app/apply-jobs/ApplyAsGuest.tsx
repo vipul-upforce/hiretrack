@@ -350,13 +350,6 @@ export function ApplyAsGuestDialog({
         remarks: [],
       };
 
-      // Debug: Log the candidate data being sent
-      // console.log("Guest candidate data being sent:", candidateData);
-      // console.log("JobId value:", jobId);
-      // console.log("JobId type:", typeof jobId);
-      // console.log("candidateData.jobId:", candidateData.jobId);
-      // console.log("candidateData.jobId._id:", candidateData.jobId._id);
-
       // Step 1: Create the candidate
       const createdCandidate =
         await createGuestCandidate(candidateData).unwrap();
@@ -468,7 +461,7 @@ export function ApplyAsGuestDialog({
             }
           }}
         >
-          {isSendingEmail ? (
+          {isSendingEmail && !hasAlreadyApplied ? (
             <>
               <div
                 className="animate-spin rounded-full h-4 w-4 border-b-2 mr-2"
