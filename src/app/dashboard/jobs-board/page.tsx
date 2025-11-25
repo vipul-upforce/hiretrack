@@ -15,7 +15,6 @@ import {
   useDeleteJobMutation,
 } from "@/lib/features/job/jobApi";
 import { toast } from "@/hooks/use-toast";
-import LoaderSkeleton from "./components/loader-skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
@@ -39,7 +38,7 @@ import { useGetUsersQuery } from "@/lib/features/users/usersApi";
 import { JobEmailNotificationSettingsDialog } from "@/components/dialogs/JobEmailNotificationSettingsDialog";
 import { GlobalEmailNotificationSettingsDialog } from "@/components/dialogs/GlobalEmailNotificationSettingsDialog";
 import { ViewToggle } from "./components/view-toggle";
-import { JobsTableView } from "./components/jobs-table-view";
+import { JobsTableView } from "./components/jobs-table";
 import {
   JobsFilters,
   StatusFilterValue,
