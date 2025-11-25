@@ -193,6 +193,7 @@ export interface ICandidateHistory {
           name: string;
           email: string;
         }
+      | string
       | null;
   };
   attachments: {

@@ -4,16 +4,15 @@ import { promisify } from "util";
 import path from "path";
 import fs from "fs/promises";
 import { existsSync } from "fs";
-import { auth } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 
 const execAsync = promisify(exec);
 
 export async function GET(req: NextRequest) {
-  const session = await auth(req);
-  const organizationId = session?.user.organizationId;
   try {
-    if (!organizationId) {
-      throw new Error("Not Authorized");
+    const user = await getAuthenticatedUser(req, ["admin"]);
+    if (!user) {
+      return NextResponse.json({ message: "Not Authorized" }, { status: 401 });
     }
     const mongoUri = process.env.MONGODB_URI;
     if (!mongoUri) {
@@ -80,13 +79,11 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth(req);
-  const organizationId = session?.user.organizationId;
   try {
-    if (!organizationId) {
+    const user = await getAuthenticatedUser(req, ["admin"]);
+    if (!user) {
       return NextResponse.json({ message: "Not Authorized" }, { status: 401 });
     }
-
     const { fileName } = await req.json();
     // console.log("FILENAME: ", fileName);
     if (!fileName || typeof fileName !== "string") {

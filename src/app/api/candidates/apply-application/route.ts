@@ -1,6 +1,5 @@
 import { getAuthenticatedUser } from "@/app/actions/auth";
 import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
-import { auth } from "@/lib/auth";
 import connectToDatabase, { CandidateAccount, History } from "@/lib/mongodb";
 import { NextRequest, NextResponse } from "next/server";
 

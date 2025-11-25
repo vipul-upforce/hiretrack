@@ -4,8 +4,8 @@ import { promisify } from "util";
 import path from "path";
 import fs from "fs/promises";
 import { existsSync } from "fs";
-import { auth } from "@/lib/auth";
 import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 
 const execAsync = promisify(exec);
 
@@ -63,13 +63,12 @@ async function calculateDirectorySize(dirPath: string): Promise<number> {
 }
 
 export async function GET(req: NextRequest) {
-  const session = await auth(req);
-  const organizationId = session?.user.organizationId;
+ 
   try {
-    if (!organizationId) {
-      throw new Error("Not Authorized");
+    const user = await getAuthenticatedUser(req, ["admin"]);
+    if (!user) {
+      return NextResponse.json({ message: "Not Authorized" }, { status: 401 });
     }
-
     const assetsRoot = path.join(process.cwd(), "..", "assets");
     const timestamp = Date.now().toString();
     const archiveFileName = `assets-${timestamp}.tar.gz`;
@@ -141,13 +140,14 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth(req);
-  const organizationId = session?.user.organizationId;
+
   try {
-    if (!organizationId) {
+
+    const user = await getAuthenticatedUser(req, ["admin"]);
+    if (!user) {
       return NextResponse.json({ message: "Not Authorized" }, { status: 401 });
     }
-
+    const organizationId = user.organizationId;
     const assetsRoot = path.join(process.cwd(), "..", "assets");
 
     // Check if assets directory exists

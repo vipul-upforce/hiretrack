@@ -1,31 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
 import { Organization } from "@/lib/mongodb";
-import { auth } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 
 export async function GET(req: NextRequest) {
-  await connectToDatabase();
-  const user = await auth(req);
-  const { searchParams } = new URL(req.url);
-  const orgId = searchParams?.get("organizationId");
-
-  if (!orgId) {
-    return NextResponse.json(
-      { error: "organizationId is required" },
-      { status: 400 }
-    );
-  }
-  if (!user || (user.user.role !== "admin" && user?.user.role !== "hr")) {
-    return NextResponse.json({ error: "Not Authorized" }, { status: 401 });
-  }
   try {
+    const { searchParams } = new URL(req.url);
+    const [user] = await Promise.all([
+      getAuthenticatedUser(req, ["admin", "hr"]),
+      connectToDatabase(),
+    ]);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const orgId = searchParams?.get("organizationId");
+    if (!orgId) {
+      return NextResponse.json(
+        { error: "organizationId is required" },
+        { status: 400 }
+      );
+    }
     if (!Organization) {
       return NextResponse.json(
         { error: "Organization not found" },
         { status: 400 }
       );
     }
-    const org = await Organization.findById(orgId);
+    const org = await Organization.findById(orgId).select("tags").lean().exec();
     if (!org) {
       return NextResponse.json(
         { error: "Organization not found" },
@@ -44,22 +45,27 @@ export async function GET(req: NextRequest) {
   }
 }
 export async function PUT(req: NextRequest) {
-  await connectToDatabase();
-  const user = await auth(req);
-  const { searchParams } = new URL(req.url);
-  const orgId = searchParams?.get("organizationId");
-  const tags = await req.json();
 
-  if (!orgId) {
-    return NextResponse.json(
-      { error: "organizationId is required" },
-      { status: 400 }
-    );
-  }
-  if (!user || (user.user.role !== "admin" && user?.user.role !== "hr")) {
-    return NextResponse.json({ error: "Not Authorized" }, { status: 401 });
-  }
+ 
   try {
+    const [user] = await Promise.all([
+      getAuthenticatedUser(req,["admin", "hr"]),
+      connectToDatabase(),
+    ]);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const { searchParams } = new URL(req.url);
+    const orgId = searchParams?.get("organizationId");
+    const tags = await req.json();
+
+    if (!orgId) {
+      return NextResponse.json(
+        { error: "organizationId is required" },
+        { status: 400 }
+      );
+    }
+
     if (!Organization) {
       return NextResponse.json(
         { error: "database not connected" },

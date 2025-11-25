@@ -6,11 +6,11 @@ import connectToDatabase, {
   cvBatch as CVBatch,
 } from "@/lib/mongodb";
 import { handleSingleFile } from "@/lib/fileUtils";
-import { auth } from "@/lib/auth";
 import { AIProviderFactory, ProcessedResumeData } from "@/lib/ai-providers";
 import { decryptProviderKeys } from "@/lib/encryption";
 import { NotificationService } from "@/lib/notifications/notificationService";
 import { Types } from "mongoose";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 
 interface ExtendedProcessedResumeData extends ProcessedResumeData {
   name: string;
@@ -147,14 +147,13 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const authInfo = await auth(request);
-  if (!authInfo?.user) {
+  const user = await getAuthenticatedUser(request);
+  if (!user) {
     return NextResponse.json(
       { error: "User not Authenticated" },
       { status: 401 }
     );
   }
-
   const formData = await request.formData();
   const { searchParams } = new URL(request.url);
   const organizationId = searchParams?.get("organizationId");
@@ -403,8 +402,8 @@ export async function POST(request: NextRequest) {
       batchId: cvBatchInfo._id.toString(),
       successCount: cvBatchInfo.successCount,
       failureCount: cvBatchInfo.failureCount,
-      triggerUserId: authInfo?.user?.id,
-      triggerUserName: authInfo?.user?.name || "Unknown User",
+      triggerUserId: user?.id,
+      triggerUserName: user?.name || "Unknown User",
     });
 
     return NextResponse.json({
@@ -443,14 +442,13 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const authInfo = await auth(request);
-  if (!authInfo?.user) {
+  const user = await getAuthenticatedUser(request);
+  if (!user) {
     return NextResponse.json(
       { error: "User not Authenticated" },
       { status: 401 }
     );
   }
-
   const { searchParams } = new URL(request.url);
   const organizationId = searchParams?.get("organizationId");
 

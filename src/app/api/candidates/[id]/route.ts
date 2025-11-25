@@ -39,8 +39,6 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  let fileStorage = "local";
-  let organizationId;
 
   const updates: IinfoUpdateLog[] = [];
 
@@ -76,8 +74,8 @@ export async function PUT(
         { status: 401 }
       );
     }
-    fileStorage = userData.fileStorage || "local";
-    organizationId = userData.organizationId || "";
+    const fileStorage = userData.fileStorage || "local";
+    const organizationId = userData.organizationId;
     // Validate candidate ID
     if (!id || typeof id !== "string") {
       return NextResponse.json(

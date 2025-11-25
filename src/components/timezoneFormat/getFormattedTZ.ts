@@ -1,7 +1,7 @@
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 import { Settings } from "@/lib/mongodb";
-import { auth } from "@/lib/auth";
 import { NextRequest } from "next/server";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 
 interface TimeZone {
   name: string;
@@ -22,20 +22,17 @@ export async function getFormattedDate(
   try {
     // Get user data from auth (server-side, using cookies)
     // const cookieStore = cookies();
-    const cookies = await auth(req);
-    const userData = cookies?.user;
-    const organizationId = userData?.organizationId;
-
-    if (!organizationId && !directOrganizationId) {
-      throw new Error("User not authenticated or organizationId missing");
+    const user = await getAuthenticatedUser(req);
+    if (!user) {
+      throw new Error("User not authenticated");
     }
-
-    const orgId = organizationId || directOrganizationId;
+    const organizationId = user.organizationId;
+    const orgId = directOrganizationId || organizationId;
 
     // Fetch settings from MongoDB
     const settings: SettingsDoc[] | undefined = await Settings?.find({
       organizationId: orgId,
-    });
+    },{timeZone:1 , organizationId:1}).lean();
 
     if (!settings || settings.length === 0) {
       throw new Error("Settings not found");

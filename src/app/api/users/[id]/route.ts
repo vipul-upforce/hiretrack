@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase,{ User } from "@/lib/mongodb";
-import { auth } from "@/lib/auth";
 import { getAuthenticatedUser, signToken } from "@/app/actions/auth";
 import { setSecureAuthTokens } from "@/lib/secureTokens";
 
