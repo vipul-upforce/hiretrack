@@ -69,6 +69,7 @@ export async function GET(req: NextRequest) {
     if (!user) {
       return NextResponse.json({ message: "Not Authorized" }, { status: 401 });
     }
+    const organizationId = user.organizationId;
     const assetsRoot = path.join(process.cwd(), "..", "assets");
     const timestamp = Date.now().toString();
     const archiveFileName = `assets-${timestamp}.tar.gz`;
