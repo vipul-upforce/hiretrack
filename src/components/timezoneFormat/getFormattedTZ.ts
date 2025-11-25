@@ -30,9 +30,12 @@ export async function getFormattedDate(
     const orgId = directOrganizationId || organizationId;
 
     // Fetch settings from MongoDB
-    const settings: SettingsDoc[] | undefined = await Settings?.find({
-      organizationId: orgId,
-    },{timeZone:1 , organizationId:1}).lean();
+    const settings: SettingsDoc[] | undefined = await Settings?.find(
+      {
+        organizationId: orgId,
+      },
+      { timeZone: 1, organizationId: 1 }
+    ).lean();
 
     if (!settings || settings.length === 0) {
       throw new Error("Settings not found");
