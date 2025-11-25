@@ -131,6 +131,7 @@ export function CreateJobDialog({
       affordability: 25,
       overall: 25,
     },
+    promptForStatusChangeReason: true,
   };
 
   const handleSubmit = async (
