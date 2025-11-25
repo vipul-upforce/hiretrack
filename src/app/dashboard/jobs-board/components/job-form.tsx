@@ -23,7 +23,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-// import { DatePicker } from "@/components/ui/date-picker";
 import { LinkIcon, ChevronDown, ChevronUp, Info } from "lucide-react";
 import RichTextEditor from "@/components/ui/rte/RichTextEditor";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -35,24 +34,6 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-// import { Checkbox } from "@mui/material";
-// import { Checkbox } from "@mui/material";
-
-// export const skillSuggestions = [
-//   "JavaScript",
-//   "TypeScript",
-//   "React",
-//   "Node.js",
-//   "Python",
-//   "Java",
-//   "SQL",
-//   "AWS",
-//   "Docker",
-//   "Kubernetes",
-//   "DevOps",
-//   "Agile",
-//   "Scrum",
-// ];
 
 interface JobFormProps {
   job?: {
@@ -96,9 +77,6 @@ export function JobForm(props: JobFormProps) {
   const handleAddLink = () => {
     try {
       new URL(newLink); // Validate URL
-      // setFieldValue("links", [...values.links, newLink]);
-      // setNewLink("");
-      // setIsLinkDialogOpen(false);
       const updatedLinks = [...values.links, newLink];
       setFieldValue("links", updatedLinks);
       setNewLink("");
@@ -237,30 +215,6 @@ export function JobForm(props: JobFormProps) {
               min="0"
             />
           </div>
-          {/* <div className="space-y-2">
-            <Input
-              id="salary.min"
-              name="salary.min"
-              type="number"
-              value={values.salary?.min || ""}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              placeholder="Minimum Salary in LPA"
-              min="0"
-            />
-          </div>
-          <div className="space-y-2">
-            <Input
-              id="salary.max"
-              name="salary.max"
-              type="number"
-              value={values.salary?.max || ""}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              placeholder="Maximum salary in LPA"
-              min="0"
-            />
-          </div> */}
           <div className=" flex items-center gap-2">
             <Checkbox
               id="salary.isPrivate"
@@ -381,33 +335,8 @@ export function JobForm(props: JobFormProps) {
             const sanitizedFiles = sanitizeFiles(files);
             setFieldValue("files", sanitizedFiles);
           }}
-          // existingFiles={job?.attachments.files} // Remove from UI
         />
       </div>
-
-      {/* <div className="space-y-2">
-        <Label>Images</Label>
-        <FileUpload
-          onFileSelect={(newImages) =>
-            setFieldValue("images", [
-              ...(values.images || []),
-              ...newImages.filter(
-                (file) =>
-                  !(values.images || []).some(
-                    (existingImage) => existingImage.name === file.name
-                  )
-              ),
-            ])
-          }
-          accept={{ "image/*": [".png", ".jpg", ".jpeg"] }}
-          maxFiles={5}
-          files={values.images || []}
-          setter={(files : File[])=>{
-            setFieldValue("images", files)
-          }}
-          // existingFiles={job?.attachments.images}
-        />
-      </div> */}
 
       {role === "admin" && (
         <div className="space-y-2">

@@ -22,7 +22,7 @@ import { scrollToError } from "./edit-job-form";
 interface CreateJobDialogProps {
   onJobCreated: (
     job: JobFormValues & {
-      status: "draft";
+      status: "draft" | "open" | "closed";
       attachments: {
         files: Array<{
           id: string;
@@ -49,42 +49,6 @@ interface CreateJobDialogProps {
   ) => void;
   userRole?: string;
 }
-
-// export const scrollToError = (errors: Record<string, any>) => {
-//   if (!errors || typeof errors !== "object") return;
-
-//   const findFirstKey = (
-//     obj: Record<string, any>,
-//     prefix = ""
-//   ): string | null => {
-//     for (const key in obj) {
-//       if (typeof obj[key] === "string") {
-//         return prefix ? `${prefix}.${key}` : key;
-//       } else if (typeof obj[key] === "object") {
-//         const nested = findFirstKey(
-//           obj[key],
-//           prefix ? `${prefix}.${key}` : key
-//         );
-//         if (nested) return nested;
-//       }
-//     }
-//     return null;
-//   };
-
-//   const firstErrorKey = findFirstKey(errors);
-//   if (!firstErrorKey) return;
-
-//   // Replace dots with escaped selector for nested names (e.g., customFields.name)
-//   const selector = `[name="${firstErrorKey}"], [title="${firstErrorKey}"]`;
-
-//   const element = document.querySelector(selector) as HTMLElement;
-
-//   if (element) {
-//     element.scrollIntoView({ behavior: "smooth", block: "end" });
-//     element.focus?.({ preventScroll: true });
-//   }
-// };
-
 export function CreateJobDialog({
   onJobCreated,
   userRole,
@@ -108,7 +72,6 @@ export function CreateJobDialog({
     _id: "",
     title: "",
     status: "draft",
-    // company: "",
     description: "",
     skills: [] as string[],
     salary: {
@@ -119,7 +82,6 @@ export function CreateJobDialog({
     },
     experience: 0,
     links: [] as string[],
-    // validTill: new Date(),
     files: [] as File[],
     images: [] as File[],
     removedFiles: [] as string[],
@@ -138,8 +100,6 @@ export function CreateJobDialog({
     values: JobFormValues,
     { resetForm, setSubmitting }: FormikHelpers<JobFormValues>
   ) => {
-
-
     const fileNames = values.files.map((file) => file.name);
     const hasDuplicates = new Set(fileNames).size !== fileNames.length;
 
@@ -155,7 +115,7 @@ export function CreateJobDialog({
     try {
       const newJob = {
         ...values,
-        status: "draft" as const,
+        status: values?.status || "draft",
         candidateCount: 0,
         attachments: {
           files:
@@ -224,11 +184,12 @@ export function CreateJobDialog({
           Create Job
         </Button>
       </DialogTrigger>
-      <DialogContent size="2xl" className="max-h-[90vh] p-0 overflow-hidden flex flex-col">
+      <DialogContent
+        size="2xl"
+        className="max-h-[90vh] p-0 overflow-hidden flex flex-col"
+      >
         <DialogHeader className="px-6 py-4 pr-12">
-          <DialogTitle>
-            Create New Job Position
-          </DialogTitle>
+          <DialogTitle>Create New Job Position</DialogTitle>
           <DialogDescription>
             Fill out the form below to create a new job listing.
           </DialogDescription>
