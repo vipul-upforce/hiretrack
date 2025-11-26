@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { VersionInfo } from "../AutoUpdateSettings";
+import { VersionInfo } from "./types";
 
 export interface ChangelogSectionProps {
   changelogVersions: VersionInfo[];

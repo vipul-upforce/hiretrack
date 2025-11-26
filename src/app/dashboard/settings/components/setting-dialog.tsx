@@ -17,8 +17,8 @@ import ManageTagsDialog from "../../jobs/[id]/components/Dialogs/manage-tags-dia
 import GoogleCalendarSettings from "./google-calendar";
 import { useSelector } from "react-redux";
 import { User } from "@/lib/features/org/orgApi";
-import AboutDialog from "./AutoUpdateSettings";
 import { EvaluationSettings } from "./evaluation-settings";
+import AboutDialog from "./about-version";
 import FileStorageOptions from "./file-storage";
 import twoFASettings from "./two-fa";
 import MultipleOrgsConfigs from "./multiple-org";
