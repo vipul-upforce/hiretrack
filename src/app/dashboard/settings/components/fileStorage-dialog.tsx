@@ -8,9 +8,8 @@ import {
   useGetFSConfigsQuery,
   useUpdateFSConfigsMutation,
 } from "@/lib/features/settings/settingsApi";
-import Cookies from "js-cookie";
 import { Input } from "@/components/ui/input";
-import { useEffect, useState } from "react";
+import {  useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import {
   Tooltip,
@@ -28,7 +27,6 @@ import {
 import { useTestConnection } from "@/hooks/use-test-connection";
 import * as jose from "jose";
 import CryptoJS from "crypto-js";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { useDispatch, useSelector } from "react-redux";
 import { updateUser as updateUserInState } from "@/lib/redux/authSlice";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -53,7 +51,6 @@ export default function FileStorageOptions({
 }: {
   onClose: () => void;
 }) {
-  // const [user, setuser] = useState<User | null>(null);
   const { user }: { user: User } = useSelector(
     (state: any) => state.auth || {}
   );
@@ -69,12 +66,8 @@ export default function FileStorageOptions({
     useUpdateFSConfigsMutation();
 
   const signToken = async (payload: unknown, orgId: string) => {
-    // const JWT_SECRET =
-    //   process.env.JWT_SECRET ||
-    //   process.env.NEXT_PUBLIC_JWT_SECRET ||
-    //   "your_jwt_secret_key";
+   
     const JWT_SECRET = generateOrgJwtSecret(orgId);
-    // console.log(JWT_SECRET, "JWT_SECRET-4");
     try {
       // Parse the payload as JSON
       const parsedPayload = payload;
@@ -94,18 +87,6 @@ export default function FileStorageOptions({
       return jwt;
     } catch {}
   };
-
-  // useEffect(() => {
-  //   (async () => {
-  //     const token = Cookies.get("token");
-  //     if (token) {
-  //       const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-  //       if (decryptedResponse.success && decryptedResponse.user) {
-  //         setuser(decryptedResponse.user);
-  //       }
-  //     }
-  //   })();
-  // }, []);
 
   const initialValues = {
     storageType: data?.fileStorage?.storageType || "local",
@@ -192,10 +173,6 @@ export default function FileStorageOptions({
       });
       const updatedUser = { ...user, fileStorage: values.storageType };
       const token = await signToken(updatedUser, user.organizationId);
-      // Cookies.set("token", String(token), {
-      //   expires: 30,
-      //   // maxAge: 30 * 24 * 60 * 60,
-      // });
 
       refetch();
 

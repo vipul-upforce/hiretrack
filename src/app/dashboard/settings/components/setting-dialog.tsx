@@ -7,7 +7,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import SMTPConfigs from "./smtp-configs-dialog";
-import FileStorageOptions from "./fileStorage-dialog";
+import FileStorageOptions from "./file-storage";
 import GeminiConfigs from "./gemini";
 import AIProvidersConfigs from "./ai-providers";
 import MultipleOrgsConfigs from "./multiple-org";
