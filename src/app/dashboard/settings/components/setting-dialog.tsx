@@ -13,7 +13,7 @@ import AIProvidersConfigs from "./ai-providers";
 import MultipleOrgsConfigs from "./MultipleOrgsConfigs";
 import BackupsDialog from "./backups-dialog";
 import AssetsDialog from "./assets-dialog";
-import TimeZoneSelect from "./TimeZone-Dialog";
+import TimeZoneSelect from "./time-zone";
 import EmailTemplateEditor from "./edit-mail-dialog";
 import LogsDialog from "./LogsDialog";
 import ManageTagsDialog from "../../jobs/[id]/components/Dialogs/manage-tags-dialog";
