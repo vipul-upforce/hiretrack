@@ -6,7 +6,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import SMTPConfigs from "./smtp-configs-dialog";
 import GeminiConfigs from "./gemini";
 import AIProvidersConfigs from "./ai-providers";
 import BackupsDialog from "./backups-dialog";
@@ -18,6 +17,7 @@ import GoogleCalendarSettings from "./google-calendar";
 import { useSelector } from "react-redux";
 import { User } from "@/lib/features/org/orgApi";
 import { EvaluationSettings } from "./evaluation-settings";
+import SMTPConfigs from "./mail-config";
 import AboutDialog from "./about-version";
 import FileStorageOptions from "./file-storage";
 import twoFASettings from "./two-fa";
@@ -96,7 +96,9 @@ const SettingDialog = ({
                   ? "max-w-2xl w-[90vw] overflow-visible"
                   : setting.key === "version"
                     ? "max-h-[90vh] w-[100vw] p-0 overflow-hidden flex flex-col"
-                    : "overflow-hidden"
+                    : setting.key === "mail"
+                      ? "max-h-[90vh] w-[60vw] p-0 hide-scrollbar overflow-y-auto flex flex-col"
+                      : "overflow-hidden"
         }`}
       >
         <DialogHeader className="px-6 py-4 pr-12">
