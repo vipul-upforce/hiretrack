@@ -17,7 +17,7 @@ import TimeZoneSelect from "./time-zone";
 import EmailTemplateEditor from "./edit-mail-dialog";
 import LogsDialog from "./LogsDialog";
 import ManageTagsDialog from "../../jobs/[id]/components/Dialogs/manage-tags-dialog";
-import twoFASettings from "./twofa-setting";
+import twoFASettings from "./two-fa";
 import GoogleCalendarSettings from "./google-calendar";
 import { useSelector } from "react-redux";
 import { User } from "@/lib/features/org/orgApi";
