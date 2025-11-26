@@ -7,23 +7,23 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import SMTPConfigs from "./smtp-configs-dialog";
-import FileStorageOptions from "./file-storage";
 import GeminiConfigs from "./gemini";
 import AIProvidersConfigs from "./ai-providers";
-import MultipleOrgsConfigs from "./multiple-org";
 import BackupsDialog from "./backups-dialog";
 import AssetsDialog from "./assets-dialog";
-import TimeZoneSelect from "./time-zone";
 import EmailTemplateEditor from "./edit-mail-dialog";
 import LogsDialog from "./LogsDialog";
 import ManageTagsDialog from "../../jobs/[id]/components/Dialogs/manage-tags-dialog";
-import twoFASettings from "./two-fa";
 import GoogleCalendarSettings from "./google-calendar";
 import { useSelector } from "react-redux";
 import { User } from "@/lib/features/org/orgApi";
-import CaptchaSettings from "./CaptchaSettings";
 import AboutDialog from "./AutoUpdateSettings";
 import { EvaluationSettings } from "./evaluation-settings";
+import FileStorageOptions from "./file-storage";
+import twoFASettings from "./two-fa";
+import MultipleOrgsConfigs from "./multiple-org";
+import TimeZoneSelect from "./time-zone";
+import CaptchaSettings from "./captcha";
 export interface SettingComponentProps {
   onClose: () => void;
   isOpen?: boolean;
