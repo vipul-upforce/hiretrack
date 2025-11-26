@@ -10,7 +10,7 @@ import SMTPConfigs from "./smtp-configs-dialog";
 import FileStorageOptions from "./fileStorage-dialog";
 import GeminiConfigs from "./gemini";
 import AIProvidersConfigs from "./ai-providers";
-import MultipleOrgsConfigs from "./MultipleOrgsConfigs";
+import MultipleOrgsConfigs from "./multiple-org";
 import BackupsDialog from "./backups-dialog";
 import AssetsDialog from "./assets-dialog";
 import TimeZoneSelect from "./time-zone";
