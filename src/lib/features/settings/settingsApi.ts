@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { VersionListResponse } from "@/app/dashboard/settings/components/AutoUpdateSettings";
+import { VersionListResponse } from "@/app/dashboard/settings/components/about-version/types";
 
 // Interface for test connection request
 interface TestConnectionRequest {
