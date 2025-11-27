@@ -1,6 +1,6 @@
 /**
  * Candidate Card Header Component
- * Displays candidate name, tags, action buttons, and dropdown menu
+ * Displays candidate name, job title, status, tags, action buttons, and dropdown menu
  */
 
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,7 @@ import RemarksPopover from "../Remarks/remarks-popover";
 import { formatDistanceToNow } from "date-fns";
 import { getTrackingDate } from "../../utils/candidateAccessors";
 
+// Extend the CandidateCardHeaderProps if jobTitle or status is not already on candidate
 interface CandidateCardHeaderProps {
   candidate: Candidate;
   user: User | null;
@@ -63,7 +64,6 @@ interface CandidateCardHeaderProps {
   handleAssignJob: (candidate: Candidate, e: React.MouseEvent) => void;
   handlePopoverContentClick: (e: React.MouseEvent) => void;
 }
-
 
 export function CandidateCardHeader({
   candidate,
@@ -87,7 +87,19 @@ export function CandidateCardHeader({
 }: CandidateCardHeaderProps) {
   const createdAt = getTrackingDate(candidate, "createdAt");
   const updatedAt = getTrackingDate(candidate, "updatedAt");
-  
+
+  // Guess field names for job and status
+  // If not present on Candidate, you'll need to adjust as per your model
+  const jobTitle: string =
+    candidate.jobId?.title ||
+    candidate.jobDetails?.title ||
+    "-";
+  const status: string =
+    (candidate.status as string) ||
+    (candidate ).currentStatus ||
+    (candidate ).state ||
+    "-";
+
   const formatSmartDate = (date: Date | null | undefined) => {
     if (!date) return "N/A";
     const now = Date.now();
@@ -103,10 +115,16 @@ export function CandidateCardHeader({
 
   return (
     <div className="mb-2 pb-2 border-b border-gray-100 dark:border-gray-800">
-      <div className="flex justify-between items-center pb-2">
-        <div className="flex flex-col justify-center items-center pr-3">
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2">
+      {/* Header row with job title and status */}
+      
+      
+      {/* Main row with name, tags, actions */}
+      <div className="flex justify-between items-center pb-2 mt-1">
+        <div className="flex flex-col justify-center items-center pr-3 h-full" style={{
+    height: "-webkit-fill-available"}}>
+          <div className="flex flex-col h-full">
+          
+            <div className="flex items-center gap-2 h-full">
               {showStar && (
                 <TooltipProvider>
                   <Tooltip>
@@ -138,7 +156,19 @@ export function CandidateCardHeader({
           </div>
           {candidate.tags && <TagsList candidate={candidate} />}
         </div>
-        <div className="flex gap-1.5 flex-shrink-0">
+
+        <div className="flex-col flex justify-center items-center">
+        {/* <div className="flex-shrink-0 ml-2"> */}
+         {/* {onDashboard && <Badge variant="outline" className="text-xs px-2 py-0.5 capitalize min-w-[72px] mb-2" data-testid="candidate-status">
+            {status}
+          </Badge>} */}
+          {onDashboard && <div className="text-xs absolute top-[-16px] right-[-16px] bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-tr-md rounded-bl-md rounded-tl-none rounded-br-none">
+            <p className="font-bold text-xs capitalize">
+            {status}
+            </p>
+          </div>}
+        {/* </div> */}
+        <div className="flex gap-1.5 mt-[1px] flex-shrink-0">
           {/* Add Remarks Button */}
           <Button
             variant="ghost"
@@ -337,7 +367,9 @@ export function CandidateCardHeader({
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+        </div>
       </div>
+      {/* Dates row */}
       <div className="flex justify-between items-center">
         <div className="text-[11px] text-gray-500 capitalize justify-between">
           <p className="leading-tight truncate">
@@ -350,7 +382,16 @@ export function CandidateCardHeader({
           </p>
         </div>
       </div>
+      {onDashboard && <div className="flex-1 min-w-0">
+          <p
+            className="font-semibold text-xs text-gray-700 dark:text-gray-300 leading-snug truncate max-w-full"
+            title={jobTitle}
+            data-testid="job-title"
+          >
+            {jobTitle}
+          </p>
+        </div>}
     </div>
   );
-}
 
+}

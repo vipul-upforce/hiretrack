@@ -118,7 +118,7 @@ const KanbanColumn = memo(function KanbanColumn({
       direction: "asc" | "desc"
     ): Candidate[] => {
       return [...candidates].sort((a, b) => {
-        const getValue = (candidate: Candidate, field: string): any => {
+        const getValue = (candidate: Candidate, field: string): string | number | Date | null | undefined => {
           switch (field) {
             case "name":
               return candidate.name?.toLowerCase() || "";
@@ -209,15 +209,6 @@ const KanbanColumn = memo(function KanbanColumn({
   const handleDragStart = useCallback(() => {
     setSortConfig((prev) => ({ ...prev, enabled: false }));
   }, []);
-
-  // Re-enable sorting after drag ends
-  // const handleDragEnd = useCallback(() => {
-  //   // Small delay to let the drag operation complete
-  //   setTimeout(() => {
-  //     debugger;
-  //     setSortConfig((prev) => ({ ...prev, enabled: true }));
-  //   }, 100);
-  // }, []);
 
   // Memoized event handlers
   const handleViewDetails = useCallback(
@@ -410,7 +401,7 @@ const KanbanColumn = memo(function KanbanColumn({
                       <Virtuoso
                         style={{ height: "100%", scrollbarWidth: "none" }}
                         data={processedCandidates}
-                        increaseViewportBy={{ bottom: 200, top: 100 }}
+                        increaseViewportBy={{ bottom: 250, top: 100 }}
                         scrollerRef={() => scrollerRef}
                         computeItemKey={(index, candidate) => candidate._id}
                         itemContent={(index, candidate) => {

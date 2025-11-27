@@ -61,7 +61,7 @@ export function CandidateCardAssignment({
 
   return (
     <div
-      className="border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-black/70 -mx-4 -mb-4 px-4 py-1.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/70 transition-colors"
+      className="border-t rounded-b-lg border-gray-200 dark:border-gray-800 bg-white dark:bg-black/70 -mx-4 -mb-4 px-4 py-1.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/70 transition-colors"
       onClick={onAssignClick}
     >
       <div className="flex items-center justify-between gap-2 min-h-[20px]">

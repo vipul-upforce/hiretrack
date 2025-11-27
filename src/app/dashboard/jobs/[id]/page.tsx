@@ -80,9 +80,6 @@ interface FilterState {
 
 export default function JobProgressPage() {
   const id = useParams()?.id as string;
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const candidateIdParam = searchParams.get("candidateId");
 
   const [columns, setColumns] = useState<CandidateColumn[]>(
     initialCandidateColumns
@@ -133,9 +130,6 @@ export default function JobProgressPage() {
     isLoading: isJobLoading,
     error: jobError,
   } = useFetchJobByIdQuery(id as string);
-
-  const [promptForStatusChangeReason, setPromptForStatusChangeReason] =
-    useState(job?.promptForStatusChangeReason || false);
 
   // Temporary state for SSE integration (will be replaced by useCandidateState)
   const [tempSelectedCandidate, setTempSelectedCandidate] = useState<Candidate | null>(null);
@@ -681,7 +675,6 @@ export default function JobProgressPage() {
         title="Confirm Setting Change"
         message={`Are you sure you want to ${pendingPromptValue ? "enable" : "disable"} prompting for status change reasons?`}
         onConfirm={async () => {
-          setPromptForStatusChangeReason(pendingPromptValue);
           try {
             await updateJob({
               ...job,
@@ -689,7 +682,6 @@ export default function JobProgressPage() {
             });
           } catch (error) {
             console.error("Failed to update job:", error);
-            setPromptForStatusChangeReason(!pendingPromptValue);
           }
           setIsPromptConfirmOpen(false);
         }}
