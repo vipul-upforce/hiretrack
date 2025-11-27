@@ -7,7 +7,6 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import GeminiConfigs from "./gemini";
-import BackupsDialog from "./backups-dialog";
 import AssetsDialog from "./assets-dialog";
 import EmailTemplateEditor from "./edit-mail-dialog";
 import LogsDialog from "./LogsDialog";
@@ -15,6 +14,7 @@ import ManageTagsDialog from "../../jobs/[id]/components/Dialogs/manage-tags-dia
 import GoogleCalendarSettings from "./google-calendar";
 import { useSelector } from "react-redux";
 import { User } from "@/lib/features/org/orgApi";
+import BackupsDialog from "./backups";
 import { EvaluationSettings } from "./ai-evaluation-settings";
 import AIProvidersConfigs from "./ai-providers";
 import SMTPConfigs from "./mail-config";
