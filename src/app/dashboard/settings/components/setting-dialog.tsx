@@ -7,13 +7,12 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import GeminiConfigs from "./gemini";
-import AssetsDialog from "./assets-dialog";
 import EmailTemplateEditor from "./edit-mail-dialog";
-import LogsDialog from "./LogsDialog";
 import ManageTagsDialog from "../../jobs/[id]/components/Dialogs/manage-tags-dialog";
-import GoogleCalendarSettings from "./google-calendar";
 import { useSelector } from "react-redux";
 import { User } from "@/lib/features/org/orgApi";
+import AssetsDialog from "./assets";
+import GoogleCalendarSettings from "./google-calendar";
 import BackupsDialog from "./backups";
 import { EvaluationSettings } from "./ai-evaluation-settings";
 import AIProvidersConfigs from "./ai-providers";
@@ -43,7 +42,6 @@ const settingComponents: Record<
   assets: AssetsDialog,
   timezone: TimeZoneSelect,
   templates: EmailTemplateEditor,
-  logs: LogsDialog,
   tags: ManageTagsDialog,
   twoFA: twoFASettings,
   captcha: CaptchaSettings,
@@ -84,9 +82,7 @@ const SettingDialog = ({
                 : undefined
         }
         className={`${
-          setting.key === "portal" ||
-          setting.key === "templates" ||
-          setting.key === "logs"
+          setting.key === "portal" || setting.key === "templates"
             ? "max-w-7xl w-[90vw] min-h-[95vh] overflow-hidden flex flex-col"
             : setting.key === "ai-providers"
               ? "max-h-[90vh] p-0 overflow-hidden flex flex-col"

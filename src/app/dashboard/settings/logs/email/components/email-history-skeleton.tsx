@@ -24,7 +24,7 @@ export default function EmailHistorySkeleton() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {Array.from({ length: 8 }).map((_, i) => (
+          {Array.from({ length: 20}).map((_, i) => (
             <TableRow key={i}>
               <TableCell className="space-y-2">
                 <Skeleton className="h-4 w-20" />

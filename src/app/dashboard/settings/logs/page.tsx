@@ -5,13 +5,11 @@ import { useState } from "react";
 import { Home, ChevronRight } from "lucide-react";
 import withAuthGuard from "@/components/withAuthGuard";
 import { Card, CardHeader } from "@/components/ui/card";
-import { useTheme } from "@/components/theme-provider";
-import { NginxLogs } from "../components/nginx-logs";
-import { ServerHistoryLogs } from "../components/server-history-logs";
-import { EmailHistory } from "../components/email-history";
+import { NginxLogs } from "./nginx/nginx-logs";
+import { ServerHistoryLogs } from "./server/server-history-logs";
+import { EmailHistory } from "./email/email-history";
 
 function SystemLogsPage() {
-  const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState<"nginx" | "server" | "emails">(
     "nginx"
   );
