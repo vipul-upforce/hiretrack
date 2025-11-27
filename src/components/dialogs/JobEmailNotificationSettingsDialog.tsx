@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -16,9 +16,17 @@ import {
 } from "@/components/ui/email-notification-toggle";
 import {
   useJobEmailNotificationSettings,
+  useOrganizationEmailNotificationSettings,
   useUpdateJobEmailNotificationSettings,
 } from "@/hooks/useEmailNotificationSettings";
+import { useSelector } from "react-redux";
 import EmailNotificationSettingsSkeleton from "./email-notification-settings-skeleton";
+import {
+  ALL_NOTIFICATION_TYPES,
+  createDefaultNotificationSettings,
+  isAdminOverrideDisabled,
+  resolveNotificationSource,
+} from "@/lib/utils/notificationSettings";
 
 interface JobEmailNotificationSettingsDialogProps {
   isOpen: boolean;
@@ -33,55 +41,51 @@ export function JobEmailNotificationSettingsDialog({
   jobId,
   jobTitle,
 }: JobEmailNotificationSettingsDialogProps) {
-  const allNotificationTypes: EmailNotificationType[] = useMemo(
-    () => [
-      "mentions",
-      "newRemarks",
-      "newApplications",
-      "statusUpdates",
-      "detailsUpdated",
-      "interviewAssignments",
-      "stepCompleted",
-      "meetingScheduled",
-      "meetingUpdated",
-      "meetingCancelled",
-      "meetingInviteAccepted",
-      "meetingInviteDeclined",
-      "meetingInviteTentative",
-      "followupAdded",
-      "followupUpdated",
-      "followupRemoved",
-      "checklistCompleted",
-      "jobCreated",
-      "jobUpdated",
-      "candidateRejected",
-      "interviewCompleted",
-    ],
-    []
-  );
-
   const [localSettings, setLocalSettings] = useState<
     Record<EmailNotificationType, boolean>
-  >(
-    () =>
-      Object.fromEntries(
-        allNotificationTypes.map((type) => [type, true])
-      ) as Record<EmailNotificationType, boolean>
-  );
+  >(createDefaultNotificationSettings);
 
+  const { user: currentUser } = useSelector((state: any) => state.auth || {});
   const { settings, loading, error, refetch } =
     useJobEmailNotificationSettings(jobId);
   const { updateSettings, loading: updating } =
     useUpdateJobEmailNotificationSettings();
 
+  const [adminOverrides, setAdminOverrides] = useState<Record<string, boolean>>(
+    {}
+  );
+  const { settings: organizationSettings } =
+    useOrganizationEmailNotificationSettings();
+  useEffect(() => {
+    if (currentUser?.id && isOpen) {
+      fetchAdminOverrides();
+    }
+  }, [currentUser?.id, isOpen]);
+
+  const fetchAdminOverrides = async () => {
+    try {
+      if (organizationSettings) {
+        setAdminOverrides(
+          organizationSettings.users.find((user) => user._id === currentUser.id)
+            ?.currentOverride || {}
+        );
+        return;
+      }
+    } catch (err) {
+      console.error("Error fetching admin overrides:", err);
+    }
+  };
+  // ✅ NEW FIX — APPLY ADMIN OVERRIDE WHEN organizationSettings LOADS
+  useEffect(() => {
+    if (isOpen && organizationSettings && currentUser?.id) {
+      fetchAdminOverrides();
+    }
+  }, [organizationSettings, isOpen, currentUser?.id]);
   useEffect(() => {
     if (settings?.currentJobSettings) {
       setLocalSettings(settings.currentJobSettings);
     } else if (settings?.effectiveSettings) {
-      const effective = {
-        ...Object.fromEntries(allNotificationTypes.map((t) => [t, true])),
-      } as Record<EmailNotificationType, boolean>;
-
+      const effective = createDefaultNotificationSettings();
       Object.entries(settings.effectiveSettings).forEach(([key, value]) => {
         if (key in effective) {
           effective[key as EmailNotificationType] = value.enabled;
@@ -89,9 +93,14 @@ export function JobEmailNotificationSettingsDialog({
       });
       setLocalSettings(effective);
     }
-  }, [settings, allNotificationTypes]);
+  }, [settings]);
 
   const handleToggle = (type: EmailNotificationType, enabled: boolean) => {
+    // Check if disabled by admin override
+    if (isAdminOverrideDisabled(type, adminOverrides)) {
+      return; // Don't allow toggle if disabled by admin
+    }
+
     setLocalSettings((prev) => ({
       ...prev,
       [type]: enabled,
@@ -111,10 +120,7 @@ export function JobEmailNotificationSettingsDialog({
     if (settings?.currentJobSettings) {
       setLocalSettings(settings.currentJobSettings);
     } else if (settings?.effectiveSettings) {
-      const effective = {
-        ...Object.fromEntries(allNotificationTypes.map((t) => [t, true])),
-      } as Record<EmailNotificationType, boolean>;
-
+      const effective = createDefaultNotificationSettings();
       Object.entries(settings.effectiveSettings).forEach(([key, value]) => {
         if (key in effective) {
           effective[key as EmailNotificationType] = value.enabled;
@@ -122,12 +128,7 @@ export function JobEmailNotificationSettingsDialog({
       });
       setLocalSettings(effective);
     } else {
-      // Default to all enabled
-      setLocalSettings(
-        Object.fromEntries(
-          allNotificationTypes.map((t) => [t, true])
-        ) as Record<EmailNotificationType, boolean>
-      );
+      setLocalSettings(createDefaultNotificationSettings());
     }
   };
 
@@ -138,7 +139,7 @@ export function JobEmailNotificationSettingsDialog({
     const compareSource =
       Object.keys(original).length > 0 ? original : effective;
 
-    return allNotificationTypes.some((key) => {
+    return ALL_NOTIFICATION_TYPES.some((key) => {
       const currentValue = localSettings[key];
       const originalValue = compareSource[key]?.enabled ?? true;
       return currentValue !== originalValue;
@@ -171,17 +172,28 @@ export function JobEmailNotificationSettingsDialog({
         ) : (
           <>
             <div className="space-y-4 flex-1 overflow-y-auto px-6 py-4 max-h-[70vh] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-              {allNotificationTypes.map((type) => (
-                <EmailNotificationToggle
-                  key={type}
-                  type={type}
-                  enabled={localSettings[type]}
-                  source="job-level"
-                  onToggle={handleToggle}
-                  showSource={true}
-                  disabled={updating}
-                />
-              ))}
+              {ALL_NOTIFICATION_TYPES.map((type) => {
+                const isDisabled =
+                  isAdminOverrideDisabled(type, adminOverrides) || updating;
+                const source = resolveNotificationSource(
+                  type,
+                  adminOverrides,
+                  settings?.effectiveSettings,
+                  "job-level"
+                );
+
+                return (
+                  <EmailNotificationToggle
+                    key={type}
+                    type={type}
+                    enabled={localSettings[type]}
+                    source={source}
+                    onToggle={handleToggle}
+                    showSource={true}
+                    disabled={isDisabled}
+                  />
+                );
+              })}
             </div>
 
             <div className="flex justify-between items-center border-t bg-background px-6 py-4 sticky bottom-0 z-10 gap-4">

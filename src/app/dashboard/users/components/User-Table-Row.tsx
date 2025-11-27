@@ -118,7 +118,7 @@ export function UserTableRow({
                   });
                 }
               }}
-              disabled={isUpdating || user.role === "interviewer"}
+              disabled={isUpdating || user.role === "interviewer" || user.isDeleted}
               className={`bg-white dark:bg-black border-gray-200 dark:border-gray-600 ${
                 user.role === "interviewer"
                   ? "opacity-50 cursor-not-allowed"

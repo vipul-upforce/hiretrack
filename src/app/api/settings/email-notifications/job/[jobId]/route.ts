@@ -181,7 +181,6 @@ export async function PUT(
       "followupAdded",
       "followupUpdated",
       "followupRemoved",
-      "checklistCompleted",
       "jobCreated",
       "jobUpdated",
       "userAdded",
@@ -200,6 +199,15 @@ export async function PUT(
 
     // Update job-level settings
     const userId = currentUser._id || currentUser.id;
+    const organizationId = currentUser.organizationId;
+    
+    if (!userId || !organizationId) {
+      return NextResponse.json(
+        { error: "Invalid user data in token" },
+        { status: 401 }
+      );
+    }
+    
     const updatePath = `emailNotificationSettings.jobLevel.${jobId}`;
     const result = await User.findByIdAndUpdate(
       userId,
@@ -216,8 +224,8 @@ export async function PUT(
 
     // Get updated effective settings
     const effectiveSettings = await getUserEffectiveNotificationSettings(
-      currentUser.id,
-      currentUser.organizationId,
+      userId.toString(),
+      organizationId.toString(),
       jobId
     );
 

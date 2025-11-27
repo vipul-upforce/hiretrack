@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import dbConnect, { User } from "@/lib/mongodb";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
 import { getUserEffectiveNotificationSettings } from "@/lib/services/emailDecisionEngine";
+import { DEFAULT_NOTIFICATION_SETTINGS } from "@/lib/constants/notificationDefaults";
 
 interface GlobalEmailNotificationSettings {
   newApplications: boolean;
@@ -20,7 +21,6 @@ interface GlobalEmailNotificationSettings {
   followupAdded: boolean;
   followupUpdated: boolean;
   followupRemoved: boolean;
-  checklistCompleted: boolean;
   jobCreated: boolean;
   jobUpdated: boolean;
   userAdded: boolean;
@@ -70,31 +70,7 @@ export async function GET(request: NextRequest) {
       .select("emailNotificationSettings.global")
       .lean();
 
-    const globalSettings = user?.emailNotificationSettings?.global || {
-      newApplications: true,
-      interviewAssignments: true,
-      statusUpdates: true,
-      newRemarks: true,
-      stepCompleted: true,
-      mentions: true,
-      detailsUpdated: true,
-      meetingScheduled: true,
-      meetingUpdated: true,
-      meetingCancelled: true,
-      meetingInviteAccepted: true,
-      meetingInviteDeclined: true,
-      meetingInviteTentative: true,
-      followupAdded: true,
-      followupUpdated: true,
-      followupRemoved: true,
-      checklistCompleted: true,
-      jobCreated: true,
-      jobUpdated: true,
-      userAdded: true,
-      bulkImportCompleted: true,
-      candidateRejected: true,
-      interviewCompleted: true,
-    };
+    const globalSettings = user?.emailNotificationSettings?.global || DEFAULT_NOTIFICATION_SETTINGS;
 
     // Get effective settings (global level, no jobId)
     const effectiveSettings = await getUserEffectiveNotificationSettings(
@@ -168,7 +144,6 @@ export async function PUT(request: NextRequest) {
       "followupAdded",
       "followupUpdated",
       "followupRemoved",
-      "checklistCompleted",
       "jobCreated",
       "jobUpdated",
       "userAdded",
@@ -252,34 +227,8 @@ export async function DELETE(request: NextRequest) {
     const userId = currentUser._id || currentUser.id;
     const organizationId = currentUser.organizationId;
 
-    const defaultGlobalSettings = {
-      newApplications: true,
-      interviewAssignments: true,
-      statusUpdates: true,
-      newRemarks: true,
-      stepCompleted: true,
-      mentions: true,
-      detailsUpdated: true,
-      meetingScheduled: true,
-      meetingUpdated: true,
-      meetingCancelled: true,
-      meetingInviteAccepted: true,
-      meetingInviteDeclined: true,
-      meetingInviteTentative: true,
-      followupAdded: true,
-      followupUpdated: true,
-      followupRemoved: true,
-      checklistCompleted: true,
-      jobCreated: true,
-      jobUpdated: true,
-      userAdded: true,
-      bulkImportCompleted: true,
-      candidateRejected: true,
-      interviewCompleted: true,
-    };
-
     await User.findByIdAndUpdate(userId, {
-      $set: { "emailNotificationSettings.global": defaultGlobalSettings },
+      $set: { "emailNotificationSettings.global": DEFAULT_NOTIFICATION_SETTINGS },
     });
 
     // Get updated effective settings
@@ -291,7 +240,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "Global email notification settings reset to defaults",
-      globalSettings: defaultGlobalSettings,
+      globalSettings: DEFAULT_NOTIFICATION_SETTINGS,
       effectiveSettings,
     });
   } catch (error) {

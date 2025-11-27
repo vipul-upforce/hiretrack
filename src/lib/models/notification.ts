@@ -18,7 +18,6 @@ export enum NotificationType {
   FOLLOWUP_ADDED = "followupAdded",
   FOLLOWUP_UPDATED = "followupUpdated",
   FOLLOWUP_REMOVED = "followupRemoved",
-  CHECKLIST_COMPLETED = "checklistCompleted",
   JOB_CREATED = "jobCreated",
   JOB_UPDATED = "jobUpdated",
   USER_ADDED = "userAdded",

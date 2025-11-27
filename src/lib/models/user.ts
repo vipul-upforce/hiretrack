@@ -32,7 +32,6 @@ export interface EmailNotificationSettings {
     followupAdded: boolean;
     followupUpdated: boolean;
     followupRemoved: boolean;
-    checklistCompleted: boolean;
     jobCreated: boolean;
     jobUpdated: boolean;
     userAdded: boolean;
@@ -58,7 +57,6 @@ export interface EmailNotificationSettings {
       followupAdded?: boolean;
       followupUpdated?: boolean;
       followupRemoved?: boolean;
-      checklistCompleted?: boolean;
       jobCreated?: boolean;
       jobUpdated?: boolean;
       userAdded?: boolean;
@@ -148,7 +146,6 @@ export const userSchema = new Schema<IUser>(
         followupAdded: { type: Boolean, default: true },
         followupUpdated: { type: Boolean, default: true },
         followupRemoved: { type: Boolean, default: true },
-        checklistCompleted: { type: Boolean, default: true },
         jobCreated: { type: Boolean, default: true },
         jobUpdated: { type: Boolean, default: true },
         userAdded: { type: Boolean, default: true },
@@ -175,7 +172,6 @@ export const userSchema = new Schema<IUser>(
           followupAdded: { type: Boolean },
           followupUpdated: { type: Boolean },
           followupRemoved: { type: Boolean },
-          checklistCompleted: { type: Boolean },
           jobCreated: { type: Boolean },
           jobUpdated: { type: Boolean },
           bulkImportCompleted: { type: Boolean },

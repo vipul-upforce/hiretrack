@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-// import { EmailNotificationType } from "@/components/ui/email-notification-toggle";
 
 // Define the type for global settings to match the schema
 export interface GlobalEmailNotificationSettings {
@@ -22,7 +21,6 @@ export interface GlobalEmailNotificationSettings {
   followupAdded: boolean;
   followupUpdated: boolean;
   followupRemoved: boolean;
-  checklistCompleted: boolean;
   jobCreated: boolean;
   jobUpdated: boolean;
   userAdded: boolean;
@@ -37,6 +35,8 @@ export function useGlobalEmailNotificationSettings() {
     useState<GlobalEmailNotificationSettings | null>(null);
   const [effectiveSettings, setEffectiveSettings] =
     useState<GlobalEmailNotificationSettings | null>(null);
+  const [effectiveSettingsWithSource, setEffectiveSettingsWithSource] =
+    useState<Record<string, { enabled: boolean; source: string }> | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -59,6 +59,11 @@ export function useGlobalEmailNotificationSettings() {
       const data = await response.json();
       setSettings(data.globalSettings);
       setEffectiveSettings(data.effectiveSettings);
+      
+      // Extract email settings with source information
+      if (data.effectiveSettings?.email) {
+        setEffectiveSettingsWithSource(data.effectiveSettings.email);
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Unknown error";
       setError(errorMessage);
@@ -79,6 +84,7 @@ export function useGlobalEmailNotificationSettings() {
   return {
     settings,
     effectiveSettings,
+    effectiveSettingsWithSource,
     loading,
     error,
     refetch: fetchSettings,

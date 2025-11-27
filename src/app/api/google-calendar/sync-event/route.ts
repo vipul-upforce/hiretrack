@@ -3,6 +3,7 @@ import connectToDatabase, {
   Settings,
   Candidate,
   History,
+  User,
   WebhookSubscription,
 } from "@/lib/mongodb";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
@@ -26,6 +27,7 @@ export async function POST(req: NextRequest) {
     let organizationId = "";
     let userId = "";
     let userName = "";
+    let userEmail = "";
     const token = req.cookies.get("auth_token");
     const orgId = req.cookies.get("org_id")?.value;
     if (token?.value) {
@@ -38,6 +40,7 @@ export async function POST(req: NextRequest) {
         organizationId = userData.organizationId || "";
         userId = userData.id || "";
         userName = userData.name || "";
+        userEmail = userData.email || "";
       } else {
         return NextResponse.json({ error: "Invalid token" }, { status: 401 });
       }
@@ -49,7 +52,10 @@ export async function POST(req: NextRequest) {
     const { candidateId } = body;
 
     // Get candidate details
-    const candidate = await Candidate.findById(candidateId).populate("jobId");
+    const candidate = await Candidate.findById(candidateId)
+      .populate("jobId")
+      .populate("assignment.interviewerId")
+      .lean();
     if (!candidate) {
       return NextResponse.json(
         { error: "Candidate not found" },
@@ -133,10 +139,10 @@ export async function POST(req: NextRequest) {
     const updatedResponses = [];
     const historyEntries = [];
     const notificationPromises = [];
-
     for (const attendee of attendees) {
       const attendeeEmail = attendee.email || "";
-      const attendeeName = attendee.displayName || attendeeEmail.split("@")[0];
+      const user = await User.findOne({ email: attendeeEmail }).select("name");
+      const attendeeName = attendee.displayName || user?.name || "";
       const responseStatus = attendee.responseStatus || "needsAction";
 
       // Find previous response for this attendee
@@ -214,12 +220,14 @@ export async function POST(req: NextRequest) {
             candidateName: candidate.name,
             jobId: jobId,
             jobTitle: jobTitle,
+            userEmail: userEmail,
             attendeeEmail: attendeeEmail,
-            attendeeName: attendeeName,
+            attendeeName: attendeeName as string,
             interviewerId:
               candidate.assignment?.interviewerId?._id?.toString() ||
               candidate.assignment?.interviewerId?.toString(),
             interviewerName: candidate.assignment?.interviewerId?.name,
+            interviewerEmail: candidate.assignment?.interviewerId?.email,
             meetingDate: candidate.assignment?.time
               ? new Date(candidate.assignment.time)
               : undefined,

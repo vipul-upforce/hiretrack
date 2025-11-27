@@ -283,7 +283,6 @@ function UsersPage() {
             }}
             userId={selectedEmailSettingsUser._id}
             userName={selectedEmailSettingsUser.name}
-            userRole={selectedEmailSettingsUser.role}
           />
         )}
       </div>

@@ -6,6 +6,7 @@ import mongoose from "mongoose";
 import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
 import { Organization } from "@/lib/models/user";
 import { NotificationType } from "@/lib/services/emailDecisionEngine";
+import { NotificationService } from "@/lib/notifications/notificationService";
 
 // Email queue to track pending emails
 const emailQueue = new Map<
@@ -345,6 +346,35 @@ async function sendQueuedEmail(
     console.warn(
       "No existing history IDs found for status update email, relying on smart notification to create history"
     );
+  }
+  // 📣 IN-APP NOTIFICATIONS INTEGRATED HERE
+  
+  try {
+    if (status === "rejected") {
+      await NotificationService.notifyCandidateRejected({
+        organizationId,
+        candidateId,
+        candidateName,
+        jobId,
+        jobTitle: jobName,
+        triggerUserId: sentBy,
+        triggerUserName: sentByName,
+      });
+    } else {
+      await NotificationService.notifyCandidateStatusUpdated({
+        organizationId,
+        candidateId,
+        candidateName,
+        jobId,
+        jobTitle: jobName,
+        oldStatus: prev_status,
+        newStatus: status,
+        triggerUserId: sentBy,
+        triggerUserName: sentByName,
+      });
+    }
+  } catch (notifyErr) {
+    console.error("Failed to send in-app notification:", notifyErr);
   }
 
   return emailStatus;

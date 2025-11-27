@@ -30,7 +30,6 @@ export type EmailNotificationType =
   | "followupAdded"
   | "followupUpdated"
   | "followupRemoved"
-  | "checklistCompleted"
   | "jobCreated"
   | "jobUpdated"
   | "userAdded"
@@ -116,10 +115,6 @@ const notificationLabels: Record<
     label: "Follow-Up Removed",
     description: "Get notified when a follow-up task is deleted",
   },
-  checklistCompleted: {
-    label: "Checklist Completed",
-    description: "Get notified when a checklist is completed",
-  },
   jobCreated: {
     label: "Job Created",
     description: "Get notified when a new job is created",
@@ -158,7 +153,7 @@ const sourceColors: Record<string, string> = {
 
 const sourceLabels: Record<string, string> = {
   "job-level": "Job Setting",
-  "global-user": "User Setting",
+  "global-user": "Global Setting",
   "admin-override": "Admin Override",
   "org-default": "Default",
 };

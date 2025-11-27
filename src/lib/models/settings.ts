@@ -225,16 +225,96 @@ const settingsSchema = new Schema({
         type: Boolean,
         default: true,
       },
+      detailsUpdated: {
+        type: Boolean,
+        default: true,
+      },
+      meetingScheduled: {
+        type: Boolean,
+        default: true,
+      },
+      meetingUpdated: {
+        type: Boolean,
+        default: true,
+      },
+      meetingCancelled: {
+        type: Boolean,
+        default: true,
+      },
+      meetingInviteAccepted: {
+        type: Boolean,
+        default: true,
+      },
+      meetingInviteDeclined: {
+        type: Boolean,
+        default: true,
+      },
+      meetingInviteTentative: {
+        type: Boolean,
+        default: true,
+      },
+      followupAdded: {
+        type: Boolean,
+        default: true,
+      },
+      followupUpdated: {
+        type: Boolean,
+        default: true,
+      },
+      followupRemoved: {
+        type: Boolean,
+        default: true,
+      },
+      jobCreated: {
+        type: Boolean,
+        default: true,
+      },
+      jobUpdated: {
+        type: Boolean,
+        default: true,
+      },
+      userAdded: {
+        type: Boolean,
+        default: true,
+      },
+      bulkImportCompleted: {
+        type: Boolean,
+        default: true,
+      },
+      candidateRejected: {
+        type: Boolean,
+        default: true,
+      },
+      interviewCompleted: {
+        type: Boolean,
+        default: true,
+      },
     },
     adminOverrides: {
       type: Map,
       of: {
-        newApplications: { type: Boolean },
-        interviewAssignments: { type: Boolean },
-        statusUpdates: { type: Boolean },
-        newRemarks: { type: Boolean },
-        stepCompleted: { type: Boolean },
-        mentions: { type: Boolean },
+        newApplications: { type: Boolean},
+        interviewAssignments: { type: Boolean},
+        statusUpdates: { type: Boolean},
+        newRemarks: { type: Boolean},
+        stepCompleted: { type: Boolean},
+        mentions: { type: Boolean},
+        detailsUpdated: { type: Boolean},
+        meetingScheduled: { type: Boolean},
+        meetingUpdated: { type: Boolean},
+        meetingCancelled: { type: Boolean},
+        meetingInviteAccepted: { type: Boolean},
+        meetingInviteDeclined: { type: Boolean},
+        meetingInviteTentative: { type: Boolean},
+        followupAdded: { type: Boolean},
+        followupUpdated: { type: Boolean},
+        followupRemoved: { type: Boolean},
+        jobCreated: { type: Boolean },
+        jobUpdated: { type: Boolean },
+        userAdded: { type: Boolean },
+        bulkImportCompleted: { type: Boolean },
+        candidateRejected: { type: Boolean },
+        interviewCompleted: { type: Boolean },
       },
       default: new Map(),
     },
@@ -286,6 +366,22 @@ export interface OrganizationEmailNotifications {
     newRemarks: boolean;
     stepCompleted: boolean;
     mentions: boolean;
+    detailsUpdated: boolean;
+    meetingScheduled: boolean;
+    meetingUpdated: boolean;
+    meetingCancelled: boolean;
+    meetingInviteAccepted: boolean;
+    meetingInviteDeclined: boolean;
+    meetingInviteTentative: boolean;
+    followupAdded: boolean;
+    followupUpdated: boolean;
+    followupRemoved: boolean;
+    jobCreated: boolean;
+    jobUpdated: boolean;
+    userAdded: boolean;
+    bulkImportCompleted: boolean;
+    candidateRejected: boolean;
+    interviewCompleted: boolean;
   };
   adminOverrides: {
     [userId: string]: {
@@ -295,6 +391,22 @@ export interface OrganizationEmailNotifications {
       newRemarks?: boolean;
       stepCompleted?: boolean;
       mentions?: boolean;
+      detailsUpdated?: boolean;
+      meetingScheduled?: boolean;
+      meetingUpdated?: boolean;
+      meetingCancelled?: boolean;
+      meetingInviteAccepted?: boolean;
+      meetingInviteDeclined?: boolean;
+      meetingInviteTentative?: boolean;
+      followupAdded?: boolean;
+      followupUpdated?: boolean;
+      followupRemoved?: boolean;
+      jobCreated?: boolean;
+      jobUpdated?: boolean;
+      userAdded?: boolean;
+      bulkImportCompleted?: boolean;
+      candidateRejected?: boolean;
+      interviewCompleted?: boolean;
     };
   };
 }

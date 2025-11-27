@@ -18,7 +18,15 @@ import {
   useGlobalEmailNotificationSettings,
   useUpdateGlobalEmailNotificationSettings,
 } from "@/hooks/useGlobalEmailNotificationSettings";
+import { useSelector } from "react-redux";
 import EmailNotificationSettingsSkeleton from "./email-notification-settings-skeleton";
+import { useOrganizationEmailNotificationSettings } from "@/hooks/useEmailNotificationSettings";
+import {
+  ALL_NOTIFICATION_TYPES,
+  createDefaultNotificationSettings,
+  resolveNotificationSource,
+  isAdminOverrideDisabled,
+} from "@/lib/utils/notificationSettings";
 
 export function GlobalEmailNotificationSettingsDialog({
   isOpen,
@@ -27,47 +35,41 @@ export function GlobalEmailNotificationSettingsDialog({
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const allNotificationTypes: EmailNotificationType[] = useMemo(
-    () => [
-      "mentions",
-      "newRemarks",
-      "newApplications",
-      "statusUpdates",
-      "detailsUpdated",
-      "interviewAssignments",
-      "stepCompleted",
-      "meetingScheduled",
-      "meetingUpdated",
-      "meetingCancelled",
-      "meetingInviteAccepted",
-      "meetingInviteDeclined",
-      "meetingInviteTentative",
-      "followupAdded",
-      "followupUpdated",
-      "followupRemoved",
-      "checklistCompleted",
-      "jobCreated",
-      "jobUpdated",
-      "candidateRejected",
-      "interviewCompleted",
-    ],
-    []
-  );
-
+ 
   const [localSettings, setLocalSettings] = useState<
     Record<EmailNotificationType, boolean>
   >(
     () =>
-      Object.fromEntries(
-        allNotificationTypes.map((type) => [type, true])
-      ) as Record<EmailNotificationType, boolean>
+      createDefaultNotificationSettings()
   );
 
-  const { settings, loading, error, refetch } =
+  const { user: currentUser } = useSelector((state: any) => state.auth || {});
+  const { settings, effectiveSettingsWithSource, loading, error, refetch } =
     useGlobalEmailNotificationSettings();
   const { updateSettings, loading: updating } =
     useUpdateGlobalEmailNotificationSettings();
-
+  const { settings: organizationSettings  } =
+  useOrganizationEmailNotificationSettings();
+  // Fetch admin overrides to check if any notification type is disabled
+  const [adminOverrides, setAdminOverrides] = useState<Record<string, boolean>>({});
+  
+  useEffect(() => {
+    if (currentUser?.id && isOpen) {
+      fetchAdminOverrides();
+    }
+  }, [currentUser?.id, isOpen]);
+  
+  const fetchAdminOverrides = async () => {
+    try {
+      if (organizationSettings) {
+        setAdminOverrides(organizationSettings.users.find((user) => user._id === currentUser.id)?.currentOverride || {});
+        return;
+      }
+    } catch (err) {
+      console.error("Error fetching admin overrides:", err);
+    }
+  };
+  
   useEffect(() => {
     if (settings) {
       setLocalSettings(settings);
@@ -75,6 +77,11 @@ export function GlobalEmailNotificationSettingsDialog({
   }, [settings]);
 
   const handleToggle = (type: EmailNotificationType, enabled: boolean) => {
+    // Check if disabled by admin override
+    if (isAdminOverrideDisabled(type, adminOverrides)) {
+      return; // Don't allow toggle if disabled by admin
+    }
+    
     setLocalSettings((prev) => ({
       ...prev,
       [type]: enabled,
@@ -90,21 +97,18 @@ export function GlobalEmailNotificationSettingsDialog({
     }
   };
 
+
   const handleReset = () => {
     if (settings) {
       setLocalSettings(settings);
     } else {
-      setLocalSettings(
-        Object.fromEntries(
-          allNotificationTypes.map((t) => [t, true])
-        ) as Record<EmailNotificationType, boolean>
-      );
+      setLocalSettings(createDefaultNotificationSettings());
     }
   };
 
   const hasChanges = () => {
     if (!settings) return false;
-    return allNotificationTypes.some(
+    return ALL_NOTIFICATION_TYPES.some(
       (key) => localSettings[key] !== (settings[key] ?? true)
     );
   };
@@ -134,17 +138,22 @@ export function GlobalEmailNotificationSettingsDialog({
         ) : (
           <>
             <div className="space-y-4 flex-1 overflow-y-auto px-6 py-4 max-h-[400px]">
-              {allNotificationTypes.map((type) => (
-                <EmailNotificationToggle
-                  key={type}
-                  type={type}
-                  enabled={localSettings[type]}
-                  source="global-user"
-                  onToggle={handleToggle}
-                  showSource={false}
-                  disabled={updating}
-                />
-              ))}
+              {ALL_NOTIFICATION_TYPES.map((type) => {
+                const isDisabled = isAdminOverrideDisabled(type, adminOverrides) || updating ;
+                const source = resolveNotificationSource(type, adminOverrides, effectiveSettingsWithSource, "global-user");
+                
+                return (
+                  <EmailNotificationToggle
+                    key={type}
+                    type={type}
+                    enabled={localSettings[type]}
+                    source={source}
+                    onToggle={handleToggle}
+                    showSource={true}
+                    disabled={isDisabled}
+                  />
+                );
+              })}
             </div>
 
             <div className="flex justify-between items-center border-t bg-background px-6 py-4 sticky bottom-0 z-10 gap-4">

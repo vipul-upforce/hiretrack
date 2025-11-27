@@ -790,8 +790,6 @@ async function filterRecipientsByNotificationSettings(
     followup_updated: NotificationType.FOLLOWUP_UPDATED,
     followup_removed: NotificationType.FOLLOWUP_REMOVED,
 
-    // checklist
-    checklist_completed: NotificationType.CHECKLIST_COMPLETED,
 
     // jobs
     job_created: NotificationType.JOB_CREATED,
