@@ -56,9 +56,12 @@ export async function sendUnifiedMail(
     await connectToDatabase();
 
     // Get organization settings for mail configuration
-    const settings = (await Settings.findOne({
+    const settings = await Settings.findOne({
       organizationId: options.organizationId,
-    })) as ISettings;
+    })
+      .select("mailConfig")
+      .lean()
+      .exec();
     if (!settings || !settings.mailConfig) {
       return { success: false, error: "Mail configuration not found" };
     }
@@ -192,7 +195,7 @@ export async function sendEventEmailWithHistory(
     // 1. Get organization's mail configuration
     const settings = await Settings.findOne({
       organizationId: new mongoose.Types.ObjectId(organizationId),
-    }).lean();
+    }).select("mailConfig").lean().exec();
 
     if (!settings || !settings.mailConfig) {
       return {

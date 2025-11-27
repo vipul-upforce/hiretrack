@@ -164,7 +164,7 @@ export async function PUT(
       const candidates = await Candidate.find({
         jobId: jobId,
         organizationId: user.organizationId,
-      });
+      }).select("status").lean().exec();
 
       const invalidCandidates = candidates.filter(
         (candidate) => candidate.status && !lanes.includes(candidate.status)

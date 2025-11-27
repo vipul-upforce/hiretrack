@@ -84,13 +84,17 @@ export async function DELETE(
 
     const organizationId = user.organizationId;
     // Check if any candidates are currently in this lane
-    const candidatesInLane = await Candidate.find({
+    // const candidatesInLane = await Candidate.find({
+    //   jobId: jobId,
+    //   organizationId,
+    //   status: laneName,
+    // });
+    const countCandidatesInLane = await Candidate.countDocuments({
       jobId: jobId,
       organizationId,
       status: laneName,
     });
-
-    if (candidatesInLane.length > 0) {
+    if (countCandidatesInLane > 0) {
       if (!migrationLane) {
         const otherLanes = currentLanes.filter((lane) => lane !== laneName);
         return NextResponse.json(

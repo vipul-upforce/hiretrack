@@ -544,7 +544,7 @@ export async function PUT(
               organizationId,
               role: { $in: ["hr", "admin"] },
               $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
-            }).select("email");
+            }).select("email").lean().exec();
 
             const organization = await User?.findOne({
               organizationId,

@@ -18,10 +18,7 @@ export async function GET(request: NextRequest) {
     const organizationId = userData.organizationId;
 
     const [jobs, organization] = await Promise.all([
-      Job.find(
-        { organizationId },
-        { title: 1, status: 1, tracking: 1, isPublished: 1 }
-      ).lean().exec(),
+      Job.find({ organizationId }).lean().exec(),
       Organization.findById(organizationId).lean().exec(),
     ]);
 
