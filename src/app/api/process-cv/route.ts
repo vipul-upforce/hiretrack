@@ -4,6 +4,7 @@ import connectToDatabase, {
   Candidate,
   Settings,
   cvBatch as CVBatch,
+  History,
 } from "@/lib/mongodb";
 import { handleSingleFile } from "@/lib/fileUtils";
 import { AIProviderFactory, ProcessedResumeData } from "@/lib/ai-providers";
@@ -341,7 +342,20 @@ export async function POST(request: NextRequest) {
 
         await candidate.save();
 
-        // Add success item to batch
+        await History?.create({
+          candidateId: candidate._id,
+          jobId: null,
+          history: [
+            {
+              dateTime: new Date(),
+              title: "cv-process batch",
+              previousInterviewer: null,
+              currentInterviewer: null,
+              assignmentBy: user.id,
+            },
+          ],
+        });
+
         cvBatchInfo.items.push({
           filename: file.name,
           candidateId: candidate._id,
@@ -372,11 +386,8 @@ export async function POST(request: NextRequest) {
         });
       }
     }
-    // console.log(cvBatchInfo, "const cvBatchInfo   ==  = = ");
-
+    
     // Update batch status
-
-    // console.log(authInfo, "authInfo ingfooo");
 
     cvBatchInfo.status = "completed";
     cvBatchInfo.completedAt = new Date();

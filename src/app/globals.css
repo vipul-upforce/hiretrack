@@ -21,10 +21,41 @@ body {
   border-radius: 4px;
 }
 
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+  height: 100%;
+  overflow: clip;
+}
+
+::view-transition-new(root) {
+  z-index: 2147483646;
+}
+
+::view-transition-old(root) {
+  z-index: 2147483646;
+}
+
+@layer utilities {
+  .ease-spring {
+    transition-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+}
+
 *::-webkit-scrollbar-thumb {
   background: hsl(var(--muted-foreground) / 0.3);
   border-radius: 4px;
   transition: background-color 0.2s ease;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none; /* Firefox */
 }
 
 *::-webkit-scrollbar-thumb:hover {
@@ -235,9 +266,12 @@ body {
     /* Elevation shadows */
     --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    --shadow-md:
+      0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg:
+      0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl:
+      0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 
     /* Component shadows */
     --button-shadow: var(--shadow-sm);
@@ -328,9 +362,12 @@ body {
     /* Dark mode shadows */
     --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.3);
     --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
-    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.4), 0 8px 10px -6px rgb(0 0 0 / 0.4);
+    --shadow-md:
+      0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+    --shadow-lg:
+      0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+    --shadow-xl:
+      0 20px 25px -5px rgb(0 0 0 / 0.4), 0 8px 10px -6px rgb(0 0 0 / 0.4);
 
     /* Dark state colors */
     --state-hover: rgb(255 255 255 / 0.05);
@@ -355,7 +392,6 @@ body {
 
 /* Design System Utility Classes */
 @layer utilities {
-
   /* Spacing utilities using design system variables */
   .space-xs {
     gap: var(--space-xs);
@@ -488,7 +524,6 @@ body {
 
   /* Mobile-specific dialog adjustments */
   @media (max-width: 640px) {
-
     .dialog-xs,
     .dialog-sm,
     .dialog-md,
@@ -534,7 +569,6 @@ body {
 
   /* Tablet adjustments */
   @media (min-width: 641px) and (max-width: 1024px) {
-
     .dialog-xl,
     .dialog-2xl {
       max-width: 85vw;
@@ -683,7 +717,10 @@ body {
   }
 
   .portal-secondary-hover:hover {
-    background-color: var(--portal-secondary-hover, hsl(var(--secondary-hover)));
+    background-color: var(
+      --portal-secondary-hover,
+      hsl(var(--secondary-hover))
+    );
   }
 
   .text-portal-primary {
@@ -711,8 +748,14 @@ body {
   }
 
   [data-variant="primary"]:hover {
-    background-color: var(--portal-primary-hover, hsl(var(--primary-hover))) !important;
-    border-color: var(--portal-primary-hover, hsl(var(--primary-hover))) !important;
+    background-color: var(
+      --portal-primary-hover,
+      hsl(var(--primary-hover))
+    ) !important;
+    border-color: var(
+      --portal-primary-hover,
+      hsl(var(--primary-hover))
+    ) !important;
     color: white !important;
   }
 
@@ -736,8 +779,14 @@ body {
   }
 
   .dark [data-variant="primary"]:hover {
-    background-color: var(--portal-primary-hover, hsl(var(--primary-hover))) !important;
-    border-color: var(--portal-primary-hover, hsl(var(--primary-hover))) !important;
+    background-color: var(
+      --portal-primary-hover,
+      hsl(var(--primary-hover))
+    ) !important;
+    border-color: var(
+      --portal-primary-hover,
+      hsl(var(--primary-hover))
+    ) !important;
     color: white !important;
   }
 
@@ -750,8 +799,14 @@ body {
   }
 
   [data-variant="info"]:hover {
-    background-color: var(--portal-secondary-hover, hsl(var(--info-hover))) !important;
-    border-color: var(--portal-secondary-hover, hsl(var(--info-hover))) !important;
+    background-color: var(
+      --portal-secondary-hover,
+      hsl(var(--info-hover))
+    ) !important;
+    border-color: var(
+      --portal-secondary-hover,
+      hsl(var(--info-hover))
+    ) !important;
     color: white !important;
   }
 
@@ -775,8 +830,14 @@ body {
   }
 
   .dark [data-variant="info"]:hover {
-    background-color: var(--portal-secondary-hover, hsl(var(--info-hover))) !important;
-    border-color: var(--portal-secondary-hover, hsl(var(--info-hover))) !important;
+    background-color: var(
+      --portal-secondary-hover,
+      hsl(var(--info-hover))
+    ) !important;
+    border-color: var(
+      --portal-secondary-hover,
+      hsl(var(--info-hover))
+    ) !important;
     color: white !important;
   }
 
@@ -788,7 +849,10 @@ body {
 
   /* For cards that might have cursor-pointer */
   .cursor-pointer:hover {
-    border-color: rgba(var(--portal-primary-rgb, 99, 102, 241), 0.25) !important;
+    border-color: rgba(
+      var(--portal-primary-rgb, 99, 102, 241),
+      0.25
+    ) !important;
     transition: border-color 200ms ease-in-out;
   }
 
@@ -798,7 +862,43 @@ body {
   }
 
   .dark .cursor-pointer:hover {
-    border-color: rgba(var(--portal-primary-rgb, 99, 102, 241), 0.35) !important;
+    border-color: rgba(
+      var(--portal-primary-rgb, 99, 102, 241),
+      0.35
+    ) !important;
+  }
+
+  button[role="checkbox"][data-state="checked"] {
+    background-color: var(--portal-primary, hsl(var(--primary))) !important;
+    border-color: transparent !important;
+    border-radius: 18%;
+  }
+
+  button[role="switch"][data-state="checked"] {
+    background-color: var(--portal-primary, hsl(var(--primary))) !important;
+    border-color: var(--portal-primary, hsl(var(--primary))) !important;
+  }
+
+  button[role="switch"][data-state="checked"]:hover {
+    background-color: var(
+      --portal-primary-hover,
+      hsl(var(--primary-hover))
+    ) !important;
+  }
+
+  /* Switch Knob */
+  button[role="switch"][data-state="checked"] > span {
+    background-color: white !important;
+  }
+
+  /* Focus ring on switch only */
+  button[role="switch"]:focus-visible {
+    box-shadow: 0 0 0 2px rgba(var(--portal-primary-rgb, 99, 102, 241), 0.3) !important;
+  }
+
+  /* Dark mode */
+  .dark button[role="switch"][data-state="checked"] {
+    background-color: var(--portal-primary, hsl(var(--primary))) !important;
   }
 
   /* Form Control Theming with Portal Colors */
@@ -810,8 +910,14 @@ body {
   }
 
   input[type="checkbox"]:checked:hover {
-    background-color: var(--portal-primary-hover, hsl(var(--primary-hover))) !important;
-    border-color: var(--portal-primary-hover, hsl(var(--primary-hover))) !important;
+    background-color: var(
+      --portal-primary-hover,
+      hsl(var(--primary-hover))
+    ) !important;
+    border-color: var(
+      --portal-primary-hover,
+      hsl(var(--primary-hover))
+    ) !important;
   }
 
   input[type="checkbox"]:focus {
@@ -826,8 +932,14 @@ body {
   }
 
   input[type="radio"]:checked:hover {
-    background-color: var(--portal-primary-hover, hsl(var(--primary-hover))) !important;
-    border-color: var(--portal-primary-hover, hsl(var(--primary-hover))) !important;
+    background-color: var(
+      --portal-primary-hover,
+      hsl(var(--primary-hover))
+    ) !important;
+    border-color: var(
+      --portal-primary-hover,
+      hsl(var(--primary-hover))
+    ) !important;
   }
 
   input[type="radio"]:focus {
@@ -841,7 +953,10 @@ body {
   }
 
   .switch:checked:hover {
-    background-color: var(--portal-primary-hover, hsl(var(--primary-hover))) !important;
+    background-color: var(
+      --portal-primary-hover,
+      hsl(var(--primary-hover))
+    ) !important;
   }
 
   /* Dark theme adjustments for form controls */
@@ -1089,7 +1204,6 @@ body {
 }
 
 @layer utilities {
-
   #description-marker ol,
   #description-marker ul {
     @apply ms-5;
@@ -1170,7 +1284,7 @@ body {
   }
 
   /* Ensure full screen dialog children also use full height */
-  [data-fullscreen="true"]>div {
+  [data-fullscreen="true"] > div {
     height: 100dvh !important;
     min-height: 100dvh !important;
     display: flex !important;

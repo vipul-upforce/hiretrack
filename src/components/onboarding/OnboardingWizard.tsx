@@ -216,7 +216,8 @@ const OnboardingWizard: React.FC = () => {
               {currentStep < totalSteps - 1 ? (
                 <Button
                   onClick={handleNext}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 text-white"
+                  variant="primary"
+                  className=" text-white"
                 >
                   Next
                   <ChevronRight className="w-4 h-4 ml-2" />

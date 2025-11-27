@@ -123,7 +123,7 @@ const candidateHistory = {
 export const historySchema = new Schema({
   jobId: {
     type: String,
-    required: true,
+    default: null,
   },
   candidateId: {
     type: String,
@@ -230,7 +230,7 @@ export interface ICandidateHistory {
   };
 }
 export interface IHistory {
-  jobId: string;
+  jobId: string | null;
   candidateId: string;
   history: ICandidateHistory[];
 }

@@ -86,10 +86,10 @@ export default function JobModal({
   const salary = (job as JobWithSalary)?.salary;
 
   const hasSalary =
-    salary &&
+    !!salary &&
     !salary.isPrivate &&
-    ((salary.inText && salary.inText.trim() !== "") ||
-      (salary.min && salary.min > 0));
+    ((typeof salary.inText === "string" && salary.inText.trim() !== "") ||
+      (typeof salary.min === "number" && salary.min > 0));
 
   const handleContinue = () => {
     setIsPendingOptionsOpen(true);

@@ -53,7 +53,7 @@ const LoaderSkeletonCalendar = () => (
       <div className="px-4 sm:px-6 pb-6">
         <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] xl:grid-cols-[320px_1fr] gap-4 md:gap-6">
           {/* SIDEBAR */}
-          <Card className="min-h-[500px] h-full border border-border/50">
+          <Card className="min-h-[600px] h-full border border-border/50">
             <CardContent className="p-4 space-y-3">
               <Skeleton className="h-6 w-32" />
               {[...Array(9)].map((_, i) => (
@@ -63,22 +63,26 @@ const LoaderSkeletonCalendar = () => (
           </Card>
 
           {/* CALENDAR */}
-          <Card className="flex flex-col h-full min-h-[500px] border border-border/50">
-            <CardContent className="p-3 sm:p-6 flex-1 min-h-0">
-              {/* Calendar Grid Skeleton */}
-              <div className="grid grid-cols-7 gap-2 h-full">
-                {[...Array(35)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="border border-border/40 rounded-md p-1 h-24 sm:h-28 flex flex-col gap-1"
-                  >
-                    <Skeleton className="h-3 w-6" />
-                    <Skeleton className="h-3 w-20" />
-                    <Skeleton className="h-3 w-16" />
-                  </div>
-                ))}
+          <Card className="flex flex-col min-h-[500px] border border-border/50 px-5">
+            <div className="flex flex-row justify-between my-2 p-3">
+              <div className="flex flex-row gap-3">
+                <Skeleton className="w-32 h-10" />
+                <Skeleton className="w-24 h-10" />
               </div>
-            </CardContent>
+            </div>
+            <Card className="flex flex-col min-h-[500px] border border-border/50">
+              <CardContent className="p sm:p-6 flex-1 min-h-0">
+                {/* Calendar Grid Skeleton */}
+                <div className="grid grid-cols-7 gap-2 h-full">
+                  {[...Array(35)].map((_, i) => (
+                    <Skeleton
+                      key={i}
+                      className="border border-border/40 rounded-md p-1 h-24 sm:h-28 flex flex-col gap-1"
+                    ></Skeleton>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </Card>
         </div>
       </div>

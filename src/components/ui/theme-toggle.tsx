@@ -21,32 +21,80 @@ export function ThemeToggle({
 }: ThemeToggleProps) {
   const { theme, setTheme } = useTheme();
 
-  const toggleTheme = () => {
-    setTheme(theme === "light" ? "dark" : "light");
-  };
+  const toggleTheme = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    const newTheme = theme === "light" ? "dark" : "light";
 
-  const getThemeIcon = () => {
-    return theme === "light" ? (
-      <Sun className="h-4 w-4" />
-    ) : (
-      <Moon className="h-4 w-4" />
-    );
-  };
+    if (
+      !document.startViewTransition ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      setTheme(newTheme);
+      return;
+    }
 
-  const getThemeLabel = () => {
-    return theme === "light" ? "Light" : "Dark";
+    const x = event.clientX;
+    const y = event.clientY;
+
+    const right = window.innerWidth - x;
+    const bottom = window.innerHeight - y;
+    const maxRadius = Math.hypot(Math.max(x, right), Math.max(y, bottom));
+
+    const transition = document.startViewTransition(async () => {
+      setTheme(newTheme);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    transition.ready.then(() => {
+      document.documentElement.animate(
+        {
+          clipPath: [
+            `circle(0px at ${x}px ${y}px)`,
+            `circle(${maxRadius}px at ${x}px ${y}px)`,
+          ],
+        },
+        {
+          duration: 500,
+          easing: "ease-in-out",
+          pseudoElement: "::view-transition-new(root)",
+        }
+      );
+    });
   };
 
   return (
     <Button
       variant={variant}
       size={size}
-      className={cn("gap-2", className)}
+      className={cn("group relative overflow-hidden", className)}
       onClick={toggleTheme}
       aria-label="Toggle theme"
     >
-      {getThemeIcon()}
-      {showLabel && <span>{getThemeLabel()}</span>}
+      <div className="relative flex h-4 w-4 items-center justify-center">
+        <Sun
+          className={cn(
+            "absolute h-[1.2rem] w-[1.2rem] transition-all duration-500 ease-spring",
+            theme === "dark"
+              ? "-rotate-90 scale-0 opacity-0"
+              : "rotate-0 scale-100 opacity-100"
+          )}
+        />
+        <Moon
+          className={cn(
+            "absolute h-[1.2rem] w-[1.2rem] transition-all duration-500 ease-spring",
+            theme === "dark"
+              ? "rotate-0 scale-100 opacity-100"
+              : "rotate-90 scale-0 opacity-0"
+          )}
+        />
+      </div>
+
+      {showLabel && (
+        <span className="ml-2 font-medium transition-all">
+          {theme === "light" ? "Light" : "Dark"}
+        </span>
+      )}
+
+      <span className="absolute inset-0 -z-10 bg-primary/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
     </Button>
   );
 }

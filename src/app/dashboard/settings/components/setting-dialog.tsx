@@ -6,24 +6,24 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import SMTPConfigs from "./smtp-configs-dialog";
-import FileStorageOptions from "./fileStorage-dialog";
 import GeminiConfigs from "./gemini";
-import AIProvidersConfigs from "./ai-providers";
-import MultipleOrgsConfigs from "./MultipleOrgsConfigs";
 import BackupsDialog from "./backups-dialog";
 import AssetsDialog from "./assets-dialog";
-import TimeZoneSelect from "./TimeZone-Dialog";
 import EmailTemplateEditor from "./edit-mail-dialog";
 import LogsDialog from "./LogsDialog";
 import ManageTagsDialog from "../../jobs/[id]/components/Dialogs/manage-tags-dialog";
-import twoFASettings from "./twofa-setting";
 import GoogleCalendarSettings from "./google-calendar";
 import { useSelector } from "react-redux";
 import { User } from "@/lib/features/org/orgApi";
-import CaptchaSettings from "./CaptchaSettings";
-import AboutDialog from "./AutoUpdateSettings";
-import { EvaluationSettings } from "./evaluation-settings";
+import { EvaluationSettings } from "./ai-evaluation-settings";
+import AIProvidersConfigs from "./ai-providers";
+import SMTPConfigs from "./mail-config";
+import AboutDialog from "./about-version";
+import FileStorageOptions from "./file-storage";
+import twoFASettings from "./two-fa";
+import MultipleOrgsConfigs from "./multiple-org";
+import TimeZoneSelect from "./time-zone";
+import CaptchaSettings from "./captcha";
 export interface SettingComponentProps {
   onClose: () => void;
   isOpen?: boolean;
@@ -96,7 +96,9 @@ const SettingDialog = ({
                   ? "max-w-2xl w-[90vw] overflow-visible"
                   : setting.key === "version"
                     ? "max-h-[90vh] w-[100vw] p-0 overflow-hidden flex flex-col"
-                    : "overflow-hidden"
+                    : setting.key === "mail"
+                      ? "max-h-[90vh] w-[60vw] p-0 hide-scrollbar overflow-y-auto flex flex-col"
+                      : "overflow-hidden"
         }`}
       >
         <DialogHeader className="px-6 py-4 pr-12">

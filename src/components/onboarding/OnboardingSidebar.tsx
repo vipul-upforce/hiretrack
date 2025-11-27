@@ -33,13 +33,6 @@ const OnboardingSidebar: React.FC<OnboardingSidebarProps> = ({
     return null;
   }
 
-  // const handleDismiss = (e: React.MouseEvent) => {
-  //   e.stopPropagation();
-  //   doNotShowAgain();
-  //   if (onboardingStatus?.doNotShowAgain) {
-  //     return null;
-  //   }
-  // };
   const handleDismiss = (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowDismissDialog(true); // Show the confirmation dialog
@@ -52,7 +45,7 @@ const OnboardingSidebar: React.FC<OnboardingSidebarProps> = ({
   ) {
     return null;
   }
-  
+
   const handleOpenOnboarding = () => {
     setIsOpen(true);
   };
@@ -101,8 +94,8 @@ const OnboardingSidebar: React.FC<OnboardingSidebarProps> = ({
         className={cn(
           "border-2 transition-all duration-200 cursor-pointer hover:shadow-md",
           isComplete
-            ? "border-green-200 bg-green-50 dark:bg-green-900/10"
-            : "border-blue-200 bg-blue-50 dark:bg-blue-900/10"
+            ? "border-green-300 bg-green-50 dark:bg-green-900/10"
+            : "border-portal-primary bg-[hsl(var(--portal-primary-h),var(--portal-primary-s),var(--portal-primary-l),0.12)] dark:bg-[hsl(var(--portal-primary-h),var(--portal-primary-s),var(--portal-primary-l),0.18)]"
         )}
       >
         <CardContent className="p-3">
@@ -113,14 +106,15 @@ const OnboardingSidebar: React.FC<OnboardingSidebarProps> = ({
                 {isComplete ? (
                   <CheckCircle2 className="h-4 w-4 text-green-500" />
                 ) : (
-                  <Sparkles className="h-4 w-4 text-blue-500" />
+                  <Sparkles className="h-4 w-4 text-portal-primary" />
                 )}
+
                 <span
                   className={cn(
                     "text-xs font-medium",
                     isComplete
                       ? "text-green-700 dark:text-green-300"
-                      : "text-blue-700 dark:text-blue-300"
+                      : "text-portal-primary"
                   )}
                 >
                   {isComplete ? "Setup Complete!" : "Setup Guide"}
@@ -134,7 +128,7 @@ const OnboardingSidebar: React.FC<OnboardingSidebarProps> = ({
                     "text-[10px] px-1.5 py-0.5",
                     isComplete
                       ? "bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-200"
-                      : "bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-200"
+                      : "bg-[hsl(var(--primary)/0.15)] text-portal-primary"
                   )}
                 >
                   {progressPercentage}%
@@ -145,7 +139,7 @@ const OnboardingSidebar: React.FC<OnboardingSidebarProps> = ({
                   onClick={handleDismiss}
                   className="h-4 w-4 p-0 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/20"
                 >
-                  <X className="h-3 w-3" />
+                  <X className="h-3 w-3 text-muted-foreground" />
                 </Button>
               </div>
             </div>
@@ -156,7 +150,7 @@ const OnboardingSidebar: React.FC<OnboardingSidebarProps> = ({
                 value={progressPercentage}
                 className={cn(
                   "h-2",
-                  isComplete ? "bg-green-200" : "bg-blue-200"
+                  isComplete ? "bg-green-200" : "bg-secondary"
                 )}
               />
               <div className="flex justify-between text-[10px] text-muted-foreground">
@@ -177,12 +171,11 @@ const OnboardingSidebar: React.FC<OnboardingSidebarProps> = ({
             <Button
               onClick={handleOpenOnboarding}
               size="sm"
-              variant={isComplete ? "outline" : "default"}
+              variant={isComplete ? "outline" : "primary"}
               className={cn(
                 "w-full h-7 text-xs gap-1.5",
-                isComplete
-                  ? "border-green-300 text-green-700 hover:bg-green-100 dark:border-green-600 dark:text-green-300 dark:hover:bg-green-900/20"
-                  : "bg-blue-600 hover:bg-blue-700 text-white"
+                isComplete &&
+                  "border-green-300 text-green-700 hover:bg-green-100 dark:border-green-600 dark:text-green-300 dark:hover:bg-green-900/20"
               )}
             >
               {isComplete ? (

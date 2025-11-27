@@ -137,7 +137,9 @@ const CategoryCard = memo(
       <CardContent className="p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <Icon className="h-4 w-4 text-primary" />
+            <Icon
+              className="h-4 w-4 text-portal-primary"
+            />
             <h3 className="font-semibold text-sm">{title}</h3>
           </div>
           <div className="flex gap-1">
@@ -685,6 +687,7 @@ export function ShareCandidateDialog({
             Cancel
           </Button>
           <Button
+            variant="primary"
             onClick={handleGeneratePDF}
             disabled={isGenerating || selectedCount === 0}
             className="gap-2"

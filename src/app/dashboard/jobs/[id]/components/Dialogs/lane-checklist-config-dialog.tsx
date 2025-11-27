@@ -578,7 +578,7 @@ export const LaneChecklistConfigDialog = ({
                         </>
                       )}
 
-                      <Button onClick={createNewChecklist}>
+                      <Button onClick={createNewChecklist} variant="primary">
                         <Plus className="h-4 w-4 mr-2" />
                         {filteredTemplates.length > 0
                           ? "Create New Checklist"
