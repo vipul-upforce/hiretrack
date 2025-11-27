@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
   });
 
   try {
-    const settings = await Settings.findOne({ organizationId: organizationId });
+    const settings = await Settings.findOne({ organizationId: organizationId }).select("aiProviders gemini fileStorage").lean().exec();
     if (!settings) {
       return NextResponse.json(
         { error: "Settings not found" },
@@ -220,21 +220,7 @@ export async function POST(request: NextRequest) {
     const apiKey = aiProviders[activeProvider]?.api_key;
 
     // Add debug logging similar to evaluate API
-    console.log(
-      "AI Providers from settings:",
-      JSON.stringify(
-        {
-          activeProvider: aiProviders.activeProvider,
-          hasGeminiKey: !!aiProviders.gemini?.api_key,
-          hasOpenAIKey: !!aiProviders.openai?.api_key,
-          hasAnthropicKey: !!aiProviders.anthropic?.api_key,
-          hasPerplexityKey: !!aiProviders.perplexity?.api_key,
-        },
-        null,
-        2
-      )
-    );
-
+   
     if (!apiKey) {
       return NextResponse.json(
         {

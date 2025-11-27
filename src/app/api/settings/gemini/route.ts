@@ -11,7 +11,6 @@ export async function GET(req: NextRequest) {
     if (!userData) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const organizationId = userData.organizationId ;
 
     if (!Settings) {
       return NextResponse.json(
@@ -20,13 +19,11 @@ export async function GET(req: NextRequest) {
       );
     }
     const settings = await Settings.findOne({
-      // organizationId: userData.organizationId,
-      organizationId: organizationId,
-    });
-    // const settings = await Settings.findOne({
-    //   // organizationId: userData.organizationId,
-    //   organizationId: organizationId,
-    // }).select("gemini").lean().exec();
+      organizationId: userData.organizationId,
+    })
+      .select("gemini")
+      .lean()
+      .exec();
 
     if (!settings) {
       return NextResponse.json(
@@ -64,7 +61,6 @@ export async function PUT(req: NextRequest) {
         { status: 404 }
       );
     }
-
 
     const updatedUser = await Settings.findOneAndUpdate(
       {

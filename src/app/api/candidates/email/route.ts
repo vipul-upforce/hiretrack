@@ -72,10 +72,10 @@ export async function POST(request: NextRequest) {
       Candidate!.findOne({
         _id: candidateId,
         organizationId: user.organizationId,
-      }),
+      }).select("email name jobId").lean().exec(),
       Settings!.findOne({
         organizationId: user.organizationId,
-      }),
+      }).select("mailConfig"),
     ]);
 
     if (!candidate) {

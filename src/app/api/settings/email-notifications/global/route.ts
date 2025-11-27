@@ -47,9 +47,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user's current global settings
+    
     const userId =  currentUser.id;
     const organizationId = currentUser.organizationId;
-
     if (!userId || !organizationId) {
       return NextResponse.json(
         { error: "Invalid user data in token" },

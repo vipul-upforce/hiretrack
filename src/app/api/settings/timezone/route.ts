@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { Settings } from "@/lib/mongodb";
-import {
-  getAuthenticatedUser,
-} from "@/app/actions/auth";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 
 export async function GET(req: NextRequest) {
   try {
@@ -23,8 +21,11 @@ export async function GET(req: NextRequest) {
     }
     const settings = await Settings.findOne({
       // organizationId: userData.organizationId,
-      organizationId: userData?.organizationId || "",
-    });
+      organizationId: userData?.organizationId,
+    })
+      .select("timeZone")
+      .lean()
+      .exec();
 
     if (!settings) {
       return NextResponse.json(

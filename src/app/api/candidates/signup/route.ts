@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
           adminId: 0,
           lanes: 0,
         }
-      );
+      ).lean();
       if (!organizationInfo) {
         return NextResponse.json(
           { error: `Organization "${sanitizedOrgName}" not found` },
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
           adminId: 0,
           lanes: 0,
         }
-      );
+      ).lean();
       if (!organizationInfo) {
         return NextResponse.json(
           { error: "No organizations found in the database" },
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    const existingUser = await User.findOne({ email, organizationId });
+    const existingUser = await User.findOne({ email, organizationId }).lean();
 
     if (existingUser) {
       if (existingUser.isDeleted) {

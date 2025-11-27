@@ -60,7 +60,7 @@ export async function GET(
       validateAndRecordDownload(shareId, userId, ipAddress, userAgent),
       Settings!.findOne({
         organizationId: fileShare.organizationId,
-      }),
+      }).select("fileStorage").lean().exec(),
     ]);
 
     if (!downloadValidation.valid) {

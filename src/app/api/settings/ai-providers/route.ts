@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     }
     const settings = await Settings.findOne({
       organizationId: organizationId,
-    });
+    }).select("aiProviders gemini").lean().exec();
 
     if (!settings) {
       return NextResponse.json(

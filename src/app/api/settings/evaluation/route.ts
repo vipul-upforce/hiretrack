@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 
     const settings = await Settings.findOne({
       organizationId: organizationId,
-    }).lean().exec();
+    }).select("evaluationConfig").lean().exec();
 
     if (!settings) {
       return NextResponse.json(
@@ -103,6 +103,7 @@ export async function PUT(req: NextRequest) {
         new: true,
         runValidators: true,
         upsert: true,
+        select: "evaluationConfig",
       }
     );
 

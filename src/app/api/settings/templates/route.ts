@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const settings = await Settings.findOne({ organizationId: organizationId }).lean().exec();
+    const settings = await Settings.findOne({ organizationId: organizationId }).select("emailTemplates").lean().exec();
 
     if (!settings || !settings.emailTemplates) {
       return NextResponse.json({
@@ -106,6 +106,7 @@ export async function PUT(req: NextRequest) {
         runValidators: true,
         upsert: true,
         strict: false, // Allow fields not in schema temporarily
+        select: "emailTemplates",
       }
     );
 

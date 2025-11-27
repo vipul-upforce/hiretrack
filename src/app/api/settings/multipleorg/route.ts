@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const totalOrgs = await Organization.countDocuments({});
+    const totalOrgs = await Organization.countDocuments({}).lean().exec();
     if (totalOrgs > 1) {
       return NextResponse.json(
         {
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
     const settings = await Settings.findOne({
       // organizationId: userData.organizationId,
       organizationId: organizationId,
-    }).lean().exec();
+    }).select("multipleOrg").lean().exec();
 
     if (!settings) {
       return NextResponse.json(
@@ -96,6 +96,7 @@ export async function PUT(req: NextRequest) {
         new: true,
         runValidators: true,
         upsert: true,
+        select: "multipleOrg",
       }
     );
 

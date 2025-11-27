@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
     } = body;
 
     // Get Google Calendar settings
-    const settings = await Settings.findOne({ organizationId }).lean().exec();
+    const settings = await Settings.findOne({ organizationId }).select("googleCalendar timeZone fileStorage").lean().exec();
     console.log("⚙️ Settings found:", !!settings);
     console.log(
       "🔗 Google Calendar connected:",

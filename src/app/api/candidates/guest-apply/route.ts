@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     }
     console.log(data, "data,application");
 
-    const job = await Job.findById(new mongoose.Types.ObjectId(jobId._id));
+    const job = await Job.findById(new mongoose.Types.ObjectId(jobId._id)).select("title organizationId").lean().exec();
 
     if (!job) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
 
     // console.log("ORGID: ", organizationId);
 
-    const organizationInfo = await Organization?.findById(organizationId);
+    const organizationInfo = await Organization?.findById(organizationId).select("defaultLanes").lean().exec();
 
     if (!organizationInfo) {
       return NextResponse.json(

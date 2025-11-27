@@ -208,10 +208,7 @@ export async function PUT(req: Request) {
   }
 }
 
-// Handle unsupported methods
-export function OPTIONS() {
-  return NextResponse.json({ message: "Method Not Allowed" }, { status: 405 });
-}
+
 
 const handleChekOrg = async (req: NextRequest) => {
   try {

@@ -10,6 +10,12 @@ export async function POST(request: NextRequest) {
       getAuthenticatedUser(request),
       connectToDatabase(),
     ]);
+    if (!user) {
+      return NextResponse.json(
+        { error: "User not authenticated" },
+        { status: 401 }
+      );
+    }
     // Give models a moment to initialize if they haven't already
     let retries = 0;
     while (!CandidateAccount && retries < 5) {
@@ -17,13 +23,6 @@ export async function POST(request: NextRequest) {
       retries++;
     }
     const jobId = request.nextUrl.searchParams?.get("jobid");
-
-    if (!user) {
-      return NextResponse.json(
-        { error: "User not authenticated" },
-        { status: 401 }
-      );
-    }
 
     if (!CandidateAccount) {
       return NextResponse.json({ error: "Model not found" }, { status: 404 });
@@ -74,12 +73,6 @@ export async function GET(request: NextRequest) {
       getAuthenticatedUser(request),
       connectToDatabase(),
     ]);
-    // Give models a moment to initialize if they haven't already
-    let retries = 0;
-    while (!CandidateAccount && retries < 5) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      retries++;
-    }
 
     if (!user) {
       return NextResponse.json(
@@ -88,6 +81,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Give models a moment to initialize if they haven't already
+    let retries = 0;
+    while (!CandidateAccount && retries < 5) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      retries++;
+    }
     if (!CandidateAccount) {
       return NextResponse.json({ error: "Model not found" }, { status: 404 });
     }

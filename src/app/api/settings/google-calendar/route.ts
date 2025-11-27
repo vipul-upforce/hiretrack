@@ -21,8 +21,7 @@ export async function GET(req: NextRequest) {
 
     const settings = await Settings.findOne({
       organizationId: organizationId,
-    });
-    console.log(settings.googleCalendar, "settings in google calendar route");
+    }).select("googleCalendar").lean();
 
     if (!settings) {
       return NextResponse.json(
@@ -32,7 +31,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Return Google Calendar configuration with decrypted credentials
-    const googleCalendar = settings.googleCalendar || {
+    const googleCalendar = settings?.googleCalendar || {
       isConnected: false,
       clientId: "",
       clientSecret: "",
@@ -91,10 +90,6 @@ export async function PUT(req: NextRequest) {
 
     const { clientId, clientSecret } = await req.json();
 
-    // Get existing settings
-    const existingSettings = await Settings.findOne({
-      organizationId: organizationId,
-    });
 
     // Prepare update data
     const updateData: any = {
@@ -118,6 +113,7 @@ export async function PUT(req: NextRequest) {
         new: true,
         runValidators: true,
         upsert: true,
+        select: "googleCalendar",
       }
     );
     if (!updatedSettings) {
@@ -173,6 +169,7 @@ export async function DELETE(req: NextRequest) {
       {
         new: true,
         runValidators: true,
+        select: "googleCalendar",
       }
     );
 

@@ -9,7 +9,7 @@ export async function getMappedEmailTemplate(
 ): Promise<{ emailContent: string; emailSubject: string }> {
   await connectToDatabase();
 
-  const settings = await Settings?.findOne({ organizationId });
+  const settings = await Settings?.findOne({ organizationId }).select("emailTemplates").lean().exec();
 
   if (!settings || !settings.emailTemplates) {
     return {

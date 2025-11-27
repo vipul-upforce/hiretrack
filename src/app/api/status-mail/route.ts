@@ -42,7 +42,7 @@ async function createPendingEmailHistory(data: any, organizationId: string) {
 
   const settings = await Settings.findOne({
     organizationId: new mongoose.Types.ObjectId(organizationId),
-  }).lean();
+  }).select("mailConfig").lean().exec();
 
   const provider = settings?.mailConfig?.mailProvider || "unknown";
   const historyIds: string[] = [];
@@ -236,7 +236,7 @@ async function sendQueuedEmail(
 
   const settings = await Settings.findOne({
     organizationId: new mongoose.Types.ObjectId(organizationId),
-  }).lean();
+  }).select("mailConfig").lean().exec();
   if (!settings || !settings.mailConfig) {
     throw new Error("Mail configuration not found");
   }

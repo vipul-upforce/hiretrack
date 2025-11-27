@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     const settings = await Settings.findOne({
       // organizationId: userData.organizationId,
       organizationId: organizationId,
-    });
+    }).select("fileStorage").lean().exec();
 
     if (!settings) {
       return NextResponse.json(

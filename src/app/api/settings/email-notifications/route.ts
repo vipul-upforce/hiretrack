@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     // Get organization settings
     const settings = await Settings.findOne({
       organizationId: new mongoose.Types.ObjectId(currentUser.organizationId),
-    }).lean();
+    }).select("organizationEmailNotifications").lean();
 
     const orgNotifications = settings?.organizationEmailNotifications || {
       defaultSettings: {

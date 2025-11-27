@@ -214,7 +214,9 @@ const handleGetPortalData = async (req: NextRequest) => {
           portalConfigs: 1,
           smtpConfigs: 1,
         }
-      ).lean().exec();
+      )
+        .lean()
+        .exec();
     } else {
       // Anonymous user - get default organization settings
       // Try to find a default organization or the first available one
@@ -225,7 +227,9 @@ const handleGetPortalData = async (req: NextRequest) => {
           {
             portalConfigs: 1,
           }
-        ).lean().exec();
+        )
+          .lean()
+          .exec();
       }
     }
 
@@ -310,7 +314,11 @@ export async function PUT(req: NextRequest) {
       console.log(`[PUT] Footer HTML length: ${data.portalFooterHtml.length}`);
     }
 
-    const currentSettings = await Settings!.findOne({ organizationId });
+    const currentSettings = await Settings!
+      .findOne({ organizationId })
+      .select("portalConfigs")
+      .lean()
+      .exec();
 
     let uploadedLogo = null;
     let uploadedLogoDark = null;
@@ -621,15 +629,23 @@ export async function PUT(req: NextRequest) {
         currentSettings?.portalConfigs?.secondaryColor ||
         "#8b5cf6",
     };
+    if (
+      data?.portalName &&
+      data?.portalName !== currentSettings?.portalConfigs?.portalName
+    ) {
+      await Organization?.findByIdAndUpdate(organizationId, {
+        name: updatedPortal.portalName,
+      });
+    }
 
-    await Organization?.findByIdAndUpdate(organizationId, {
-      name: updatedPortal.portalName,
-    });
+    // await Organization?.findByIdAndUpdate(organizationId, {
+    //   name: updatedPortal.portalName,
+    // });
 
     const updatedSettings = await Settings?.findOneAndUpdate(
       { organizationId },
       { portalConfigs: updatedPortal },
-      { new: true, runValidators: true, upsert: true }
+      { new: true, runValidators: true, upsert: true, select: "portalConfigs" }
     );
 
     if (!updatedSettings) {

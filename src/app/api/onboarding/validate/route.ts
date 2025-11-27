@@ -110,16 +110,11 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Debug user info first
-    console.log("=== DATABASE QUERY DEBUG ===");
-    console.log("Full user object:", JSON.stringify(user, null, 2));
 
     // Try to find organizationId from various possible locations
-    const orgId =
-      user.organizationId 
+    const orgId = user.organizationId;
 
     if (!orgId) {
-   
       // Return a default response that assumes everything is configured for testing
       return NextResponse.json({
         stepStatus: {
@@ -145,48 +140,12 @@ export async function GET(req: NextRequest) {
     let organization = null;
 
     try {
-    [settings, organization] = await Promise.all([
-      Settings.findOne({ organizationId: orgId }).lean().exec(),
-      Organization.findOne({ _id: orgId }).lean().exec(),
-    ]);
-
-      console.log("Settings found:", !!settings);
-      console.log("Organization found:", !!organization);
-
-      // If not found, try alternative ID formats
-      if (!settings) {
-        console.log("Trying alternative settings queries...");
-        settings = await Settings.findOne({ organizationId: orgId.toString() });
-        console.log("Settings with string ID:", !!settings);
-      }
-
-      if (!organization) {
-        console.log("Trying alternative organization queries...");
-        organization = await Organization.findOne({ _id: orgId.toString() });
-        console.log("Organization with string ID:", !!organization);
-      }
+      [settings, organization] = await Promise.all([
+        Settings.findOne({ organizationId: orgId }).lean().exec(),
+        Organization.findOne({ _id: orgId }).lean().exec(),
+      ]);
     } catch (error) {
       console.error("Database query error:", error);
-    }
-
-    if (settings) {
-      console.log("✅ Settings found!");
-      console.log(
-        "Settings keys:",
-        Object.keys(settings.toObject ? settings.toObject() : settings)
-      );
-
-      const settingsObj = settings.toObject ? settings.toObject() : settings;
-      console.log("Portal configs:", settingsObj.portalConfigs);
-      console.log("AI providers:", settingsObj.aiProviders);
-      console.log("Mail config:", settingsObj.mailConfig);
-      console.log("Google Calendar:", settingsObj.googleCalendar);
-      console.log("Timezone:", settingsObj.timeZone);
-    }
-
-    if (organization) {
-      console.log("✅ Organization found!");
-      console.log("Organization name:", organization.name);
     }
 
     // Count users in organization (would need actual user count query)
@@ -194,7 +153,6 @@ export async function GET(req: NextRequest) {
 
     // If no settings found, return a reasonable default for testing
     if (!settings && !organization) {
-      console.log("No settings or organization found, returning test defaults");
       return NextResponse.json({
         stepStatus: {
           captcha: true,
@@ -226,8 +184,7 @@ export async function GET(req: NextRequest) {
         ](settings, organization, userCount);
       } catch (error) {
         console.error(`Error validating step ${stepKey}:`, error);
-        // For testing, assume configured if validation fails due to data issues
-        stepStatus[stepKey] = stepKey !== "customFields"; // Only customFields might be unconfigured
+        stepStatus[stepKey] = stepKey !== "customFields";
         stepErrors[stepKey] =
           error instanceof Error ? error.message : "Unknown error";
       }
@@ -237,8 +194,6 @@ export async function GET(req: NextRequest) {
     const totalSteps = Object.keys(stepValidators).length;
     const completedCount = Object.values(stepStatus).filter(Boolean).length;
     const progressPercentage = Math.round((completedCount / totalSteps) * 100);
-
-    // console.log("Onboarding validation results:", stepStatus);
 
     return NextResponse.json({
       stepStatus,
@@ -283,12 +238,9 @@ export async function POST(req: NextRequest) {
     console.log("Full user object:", JSON.stringify(user, null, 2));
 
     // Try to find organizationId from various possible locations
-    const orgId =
-      user.organizationId 
+    const orgId = user.organizationId;
 
     if (!orgId) {
-
-
       // Return fallback validation - assume most steps are configured for testing
       const fallbackStatus = {
         captcha: true,

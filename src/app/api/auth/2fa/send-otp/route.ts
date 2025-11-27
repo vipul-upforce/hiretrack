@@ -19,7 +19,7 @@ async function handleSendOtp(req: NextRequest) {
 
     const settings = await Settings.findOne({
       organizationId: new mongoose.Types.ObjectId(organizationId),
-    }).lean();
+    }).select("mailConfig").lean().exec();
     if (!settings || !settings.mailConfig) {
       return NextResponse.json(
         { message: "Mail configuration not found" },

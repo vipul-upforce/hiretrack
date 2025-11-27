@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
     const settings = await Settings.findOne({
       // organizationId: userData.organizationId,
       organizationId: organizationId,
-    });
+    }).select("twoFA").lean().exec();
 
     if (!settings) {
       return NextResponse.json(
@@ -79,7 +79,7 @@ export async function PUT(req: NextRequest) {
 
    
     // Check email configuration before enabling 2FA
-    const settings = await Settings.findOne({ organizationId });
+    const settings = await Settings.findOne({ organizationId }).select("mailConfig").lean().exec();
 
     if (
       enable2FA &&

@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Get all organizations
-    const organizations = await Organization.find({}, { _id: 1, name: 1 });
+    const organizations = await Organization.find({}, { _id: 1, name: 1 }).lean();
 
     if (!organizations || organizations.length === 0) {
       return NextResponse.json({
