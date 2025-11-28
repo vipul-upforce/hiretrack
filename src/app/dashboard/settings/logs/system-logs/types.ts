@@ -1,4 +1,4 @@
-export interface NginxLogsProps {
+export interface SystemLogsResponse {
   searchQuery: string;
   setSearchQuery: (v: string) => void;
   onError?: (msg: string | null) => void;

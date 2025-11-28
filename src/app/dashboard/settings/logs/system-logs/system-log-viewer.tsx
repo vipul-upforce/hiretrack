@@ -3,16 +3,20 @@
 import { LogFileList } from "./components/log-file-list";
 import { LogViewerControls } from "./components/log-viewer-controls";
 import { LogViewer } from "./components/log-viewer";
-import { useNginxLogsLogic } from "./hooks/use-nginx-logs-logic";
-import { NginxLogsProps } from "./types";
-import NginxLogsSkeleton from "./components/nginx-logs-skeleton";
+import { useLogViewerLogic, LogType } from "./hooks/use-log-viewer-logic";
+import { SystemLogsResponse } from "./types";
+import NginxLogsSkeleton from "./components/logs-skeleton";
 
-export function NginxLogs(props: NginxLogsProps) {
+interface SystemLogViewerProps extends SystemLogsResponse {
+  logType: LogType;
+}
+
+export function SystemLogViewer(props: SystemLogViewerProps) {
   const {
-    nginxFiles,
+    files,
     selectedFile,
     fileContent,
-    isNginxAvailable,
+    isAvailable,
     showLn,
     offset,
     totalLines,
@@ -24,7 +28,7 @@ export function NginxLogs(props: NginxLogsProps) {
     setShowLn,
     handleFileSelect,
     handleSearchChange,
-  } = useNginxLogsLogic(props);
+  } = useLogViewerLogic(props);
 
   if (isFilesLoading) return <NginxLogsSkeleton />;
 
@@ -33,11 +37,11 @@ export function NginxLogs(props: NginxLogsProps) {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1 min-h-0">
         {/* File List */}
         <LogFileList
-          files={nginxFiles}
+          files={files}
           selectedFile={selectedFile}
           onSelect={handleFileSelect}
           isLoading={isFilesLoading}
-          isAvailable={isNginxAvailable}
+          isAvailable={isAvailable}
         />
 
         {/* Log Content */}
@@ -55,6 +59,7 @@ export function NginxLogs(props: NginxLogsProps) {
               />
 
               <LogViewer
+                key={`${selectedFile}-${props.logType}`}
                 content={fileContent}
                 searchQuery={props.searchQuery}
                 showLineNumbers={showLn}
@@ -67,7 +72,8 @@ export function NginxLogs(props: NginxLogsProps) {
             </>
           ) : (
             <div className="text-gray-500 dark:text-gray-400 text-sm flex-1 flex items-center justify-center">
-              Select a file to view its contents.
+              Select a {props.logType.toUpperCase()} log file to view its
+              contents.
             </div>
           )}
         </div>

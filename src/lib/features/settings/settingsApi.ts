@@ -88,6 +88,7 @@ export const settingsApi = createApi({
     "AutoUpdate",
     "SystemUpdate",
     "VersionList",
+    "PM2Logs",
   ],
   endpoints: (builder) => ({
     getBackups: builder.query<any, void>({
@@ -305,6 +306,28 @@ export const settingsApi = createApi({
       }),
       keepUnusedDataFor: 300,
     }),
+    getPm2LogFiles: builder.query<{ files: string[] }, void>({
+      query: () => "/pm2-logs",
+      providesTags: ["PM2Logs"],
+      transformResponse: (response: { files: string[] }) => ({
+        files: response.files || [],
+      }),
+      keepUnusedDataFor: 300,
+    }),
+    getPm2LogFileContent: builder.query<
+      { content: string[]; offset: number; totalLines: number },
+      { file: string; offset: number; limit: number; query?: string }
+    >({
+      query: ({ file, offset, limit, query = "" }) => {
+        const params = new URLSearchParams({
+          offset: offset.toString(),
+          limit: limit.toString(),
+          query,
+        });
+        return `/pm2-logs/${file}?${params.toString()}`;
+      },
+      keepUnusedDataFor: 300,
+    }),
     getServerLogs: builder.query<
       { logs: LogEntry[]; offset: number; totalLines: number },
       { offset: number; limit: number; query?: string }
@@ -333,7 +356,6 @@ export const settingsApi = createApi({
       },
       keepUnusedDataFor: 300,
     }),
-
     getEmailHistory: builder.query<
       { emails: EmailHistoryRecord[]; pagination: { total: number } },
       { page: number; limit: number; search?: string; status?: string }
@@ -418,6 +440,8 @@ export const {
   useLazyGetVersionListQuery,
   useGetVersionListQuery,
   useTriggerUpdateMutation,
+  useLazyGetPm2LogFileContentQuery,
+  useGetPm2LogFilesQuery,
 } = settingsApi;
 
 export type { TestConnectionRequest, TestConnectionResponse };
