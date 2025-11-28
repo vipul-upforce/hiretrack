@@ -1,7 +1,6 @@
 import { NextResponse, NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
-import dbConnect, { CandidateAccount, Settings } from "@/lib/mongodb";
-import { User, Organization } from "@/lib/mongodb";
+import connectToDatabase, { CandidateAccount, Settings,User, Organization  } from "@/lib/mongodb";
 import { OneOfMulOrganization } from "@/components/auth/OrganizationDialog";
 import { IUser } from "@/lib/models/user";
 import { IUCandidateAccount } from "@/lib/models/candidateAccount";
@@ -12,7 +11,7 @@ import { UserWithoutCF } from "@/types/login";
 
 async function handleLogin(req: NextRequest) {
   try {
-    await dbConnect();
+    await connectToDatabase();
     const { email, password, orgId } = await req.json();
 
     if (!User || !Organization || !Settings || !CandidateAccount) {

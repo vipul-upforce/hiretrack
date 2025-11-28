@@ -4,34 +4,18 @@ import connectToDatabase, {
   User,
   Candidate,
 } from "@/lib/mongodb";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 
 export async function GET(request: NextRequest) {
   try {
-    // Authenticate user
-    const token = request.cookies.get("auth_token");
-    if (!token) {
+    const [user] = await Promise.all([  
+      getAuthenticatedUser(request, "admin"),
+      connectToDatabase(),
+    ]);
+
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const orgId = request.cookies.get("org_id")?.value;
-    const decryptedResponse = await verifyAndDecryptJWTToken(
-      token.value,
-      orgId
-    );
-    if (!decryptedResponse.success || !decryptedResponse.user) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    const user = decryptedResponse.user;
-
-    // Only admins can view email history
-    if (user.role !== "admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    // Connect to database
-    await connectToDatabase();
 
     // Update pending emails older than 5 minutes to failed
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);

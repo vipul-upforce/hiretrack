@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { User } from "@/lib/mongodb";
-import dbConnect from "@/lib/mongodb";
+import connectToDatabase ,{ User } from "@/lib/mongodb";
 import { signToken } from "@/app/actions/auth";
 import { setSecureAuthTokens } from "@/lib/secureTokens";
 import { loginRateLimiter } from "@/lib/rateLimiter";
 
 async function handleVerifyOtp(req: NextRequest) {
   try {
-    await dbConnect();
+    await connectToDatabase();
     const { email, otp } = await req.json();
 
     if (!email || !otp) {

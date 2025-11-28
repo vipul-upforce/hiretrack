@@ -9,7 +9,7 @@ interface JWTPayload {
   user: string;
 }
 
-export async function verifyAndDecryptToken(token: string, orgId: string) {
+export async function verifyAndDecryptTokenMiddleware(token: string, orgId: string) {
   // const JWT_SECRET =
   //   process.env.JWT_SECRET ||
   //   process.env.NEXT_PUBLIC_JWT_SECRET ||
@@ -76,7 +76,7 @@ export async function middleware(request: NextRequest) {
   const token = httpOnlyToken?.value;
   const orgId = request.cookies.get("org_id")?.value;
   if (token && orgId) {
-    const decryptedResponse = await verifyAndDecryptToken(String(token), orgId);
+    const decryptedResponse = await verifyAndDecryptTokenMiddleware(String(token), orgId);
     if (decryptedResponse.success) {
       userData = decryptedResponse.user as unknown as {
         role: string;
