@@ -11,7 +11,8 @@ interface ResultsHeaderProps {
   onColumnToggle: (column: string, visible: boolean) => void;
   selectedCandidatesCount: number;
   onBulkAssignJob: () => void;
-  onBulkDelete: () => void;
+  onBulkArchive: () => void;
+  onBulkUnarchive: () => void;
 }
 
 export const ResultsHeader = memo(function ResultsHeader({
@@ -22,7 +23,8 @@ export const ResultsHeader = memo(function ResultsHeader({
   onColumnToggle,
   selectedCandidatesCount,
   onBulkAssignJob,
-  onBulkDelete,
+  onBulkArchive,
+  onBulkUnarchive,
 }: ResultsHeaderProps) {
   return (
     <div className="flex justify-between items-center p-4 border-b">
@@ -36,7 +38,8 @@ export const ResultsHeader = memo(function ResultsHeader({
         <BulkActions
           selectedCount={selectedCandidatesCount}
           onAssignJob={onBulkAssignJob}
-          onDelete={onBulkDelete}
+          onArchive={onBulkArchive}
+          onUnarchive={onBulkUnarchive}
         />
         <ColumnToggle
           visibleColumns={visibleColumns}
