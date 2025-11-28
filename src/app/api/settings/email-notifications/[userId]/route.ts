@@ -162,6 +162,7 @@ export async function PUT(
         "bulkImportCompleted",
         "candidateRejected",
         "interviewCompleted",
+        "candidateMoved",
       ];
       for (const key of validKeys) {
         if (global[key] !== undefined && typeof global[key] !== "boolean") {

@@ -121,12 +121,12 @@ export function GlobalEmailNotificationSettingsDialog({
             <Mail className="h-5 w-5" />
             Global Email Notification Settings
           </DialogTitle>
-          <DialogDescription>
-            Configure your default email notification preferences for all jobs.
+            <span className="block mt-1 text-sm text-muted-foreground">
+              Configure your default email notification preferences for all jobs.
+            </span>
             <span className="block mt-1 text-sm text-muted-foreground">
               You can override these settings for specific jobs.
             </span>
-          </DialogDescription>
         </DialogHeader>
 
         {loading ? (

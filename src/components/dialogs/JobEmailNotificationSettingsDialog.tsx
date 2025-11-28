@@ -154,13 +154,11 @@ export function JobEmailNotificationSettingsDialog({
             <Mail className="h-5 w-5" />
             Job Email Notification Settings
           </DialogTitle>
-          <DialogDescription>
+          <span className="block mt-1 text-sm text-muted-foreground">
             Configure email notification preferences for &ldquo;{jobTitle}
-            &rdquo;
-            <span className="block mt-1 text-sm text-muted-foreground">
-              These settings will override your global preferences for this job
-            </span>
-          </DialogDescription>
+            &rdquo; These settings will override your global preferences for
+            this job
+          </span>
         </DialogHeader>
 
         {loading ? (

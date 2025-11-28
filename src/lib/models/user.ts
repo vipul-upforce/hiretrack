@@ -38,6 +38,7 @@ export interface EmailNotificationSettings {
     bulkImportCompleted: boolean;
     candidateRejected: boolean;
     interviewCompleted: boolean;
+    candidateMoved: boolean;
   };
   jobLevel: {
     [jobId: string]: {
@@ -63,6 +64,7 @@ export interface EmailNotificationSettings {
       bulkImportCompleted?: boolean;
       candidateRejected?: boolean;
       interviewCompleted?: boolean;
+      candidateMoved?: boolean;
     };
   };
 }
@@ -152,6 +154,7 @@ export const userSchema = new Schema<IUser>(
         bulkImportCompleted: { type: Boolean, default: true },
         candidateRejected: { type: Boolean, default: true },
         interviewCompleted: { type: Boolean, default: true },
+        candidateMoved: { type: Boolean, default: true },
       },
       jobLevel: {
         type: Map,
@@ -177,6 +180,7 @@ export const userSchema = new Schema<IUser>(
           bulkImportCompleted: { type: Boolean },
           candidateRejected: { type: Boolean },
           interviewCompleted: { type: Boolean },
+          candidateMoved: { type: Boolean },
         },
         default: new Map(),
       },

@@ -24,6 +24,7 @@ export enum NotificationType {
   BULK_IMPORT_COMPLETED = "bulkImportCompleted",
   CANDIDATE_REJECTED = "candidateRejected",
   INTERVIEW_COMPLETED = "interviewCompleted",
+  CANDIDATE_MOVED = "candidateMoved",
 
   // System notifications
   // DEADLINE_REMINDER = 'deadline_reminder',

@@ -470,7 +470,7 @@ export async function POST(req: NextRequest) {
     const emailKey = id;
 
     const candidateDetails = `${req.headers.get("Origin")}/candidate/${id}`;
-
+    
     // Queue data for the email
     const queueData = {
       organizationId,
@@ -487,7 +487,7 @@ export async function POST(req: NextRequest) {
       candidateDetails,
       candidateId: id, // The candidate ID from the request
       jobId: jobId, // Would need to be passed in the request if available
-      sentBy: decryptedResponse?.user._id,
+      sentBy: decryptedResponse?.user.id,
       sentByEmail: decryptedResponse?.user.email,
       sentByName: decryptedResponse?.user.name,
       startTime,

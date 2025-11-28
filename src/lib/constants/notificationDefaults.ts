@@ -26,6 +26,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = {
   bulkImportCompleted: true,
   candidateRejected: true,
   interviewCompleted: true,
+  candidateMoved: true,
 } as const;
 
 /**
@@ -55,6 +56,7 @@ export const VALID_NOTIFICATION_KEYS = [
   "bulkImportCompleted",
   "candidateRejected",
   "interviewCompleted",
+  "candidateMoved",
 ] as const;
 
 export type NotificationKey = typeof VALID_NOTIFICATION_KEYS[number];

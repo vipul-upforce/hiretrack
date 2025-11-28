@@ -27,6 +27,7 @@ export interface GlobalEmailNotificationSettings {
   bulkImportCompleted: boolean;
   candidateRejected: boolean;
   interviewCompleted: boolean;
+  candidateMoved: boolean;
 }
 
 // Hook for getting global email notification settings for the current user

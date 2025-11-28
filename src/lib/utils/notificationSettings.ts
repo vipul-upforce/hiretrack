@@ -31,6 +31,7 @@ export const ALL_NOTIFICATION_TYPES: EmailNotificationType[] = [
   "bulkImportCompleted",
   "candidateRejected",
   "interviewCompleted",
+  "candidateMoved",
 ] as const;
 
 /**

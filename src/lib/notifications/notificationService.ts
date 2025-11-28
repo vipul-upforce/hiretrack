@@ -409,10 +409,12 @@ export class NotificationService {
         "admin",
         "hr",
       ]);
+      console.log(adminHrIds.length, "adminHrIds");
       const filteredAdminHrIds = adminHrIds.filter(
         (id) => id !== params.triggerUserId
       );
 
+      console.log(filteredAdminHrIds.length, "filteredAdminHrIds");
       if (filteredAdminHrIds.length === 0) {
         console.log("No eligible recipients for notification");
         return;
@@ -444,7 +446,7 @@ export class NotificationService {
           organizationId: params.organizationId,
           type: NotificationType.STATUS_UPDATES,
           title: "Candidate Status Updated",
-          message: `${params.candidateName} moved from ${params.oldStatus} to ${params.newStatus}`,
+          message: `The status for ${params.candidateName} has been updated from ${params.oldStatus} to ${params.newStatus}.`,
           relatedEntity: "candidate",
           relatedId: params.candidateId,
           actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
@@ -472,9 +474,8 @@ export class NotificationService {
       );
     }
   }
-
-  /** Notify when candidate is rejected by HR/Admin */
-  static async notifyCandidateRejected(params: {
+   /** Notify when candidate is rejected by HR/Admin */
+   static async notifyCandidateRejected(params: {
     organizationId: string;
     candidateId: string;
     candidateName: string;
@@ -545,6 +546,85 @@ export class NotificationService {
       );
     } catch (error) {
       console.error("Failed to send candidate rejected notification:", error);
+    }
+  }
+
+  /** Notify when candidate is moved from one job to another */
+  static async notifyCandidateMoved(params: {
+    organizationId: string;
+    candidateId: string;
+    candidateName: string;
+    fromJobId: string;
+    fromJobTitle: string;
+    toJobId: string;
+    toJobTitle: string;
+    triggerUserId: string;
+    triggerUserName: string;
+  }) {
+    try {
+      await connectToDatabase();
+      const adminHrIds = await this.getUsersByRole(params.organizationId, [
+        "admin",
+        "hr",
+      ]);
+      const filteredAdminHrIds = adminHrIds.filter(
+        (id) => id !== params.triggerUserId
+      );
+
+      if (filteredAdminHrIds.length === 0) {
+        console.log("No eligible recipients for notification");
+        return;
+      }
+
+      const decisionContexts: NotificationDecisionContext[] =
+        filteredAdminHrIds.map((userId) => ({
+          organizationId: params.organizationId,
+          recipientUserId: userId,
+          notificationType: NotificationType.CANDIDATE_MOVED,
+          jobId: params.toJobId,
+          triggererUserId: params.triggerUserId,
+          isMention: false,
+          notificationCategory: "inApp",
+        }));
+
+      const decisions = await batchCheckNotifications(decisionContexts);
+      const eligibleUserIds = filteredAdminHrIds.filter(
+        (userId, index) => decisions[index].shouldSend
+      );
+
+      if (eligibleUserIds.length === 0) {
+        console.log("No users have enabled CANDIDATE_MOVED notifications");
+        return;
+      }
+
+      await this.createBulkNotifications(
+        {
+          organizationId: params.organizationId,
+          type: NotificationType.CANDIDATE_MOVED,
+          title: `Candidate Moved to ${params.toJobTitle} Job`,
+          message: `${params.candidateName} was moved from ${params.fromJobTitle} to ${params.toJobTitle}`,
+          relatedEntity: "candidate",
+          relatedId: params.candidateId,
+          actionUrl: `/dashboard/jobs/${params.toJobId}?candidateId=${params.candidateId}`,
+          triggerUserId: params.triggerUserId,
+          triggerUserName: params.triggerUserName,
+          priority: "medium",
+          metadata: {
+            candidateName: params.candidateName,
+            fromJobTitle: params.fromJobTitle,
+            fromJobId: params.fromJobId,
+            toJobTitle: params.toJobTitle,
+            toJobId: params.toJobId,
+          },
+        },
+        eligibleUserIds
+      );
+
+      console.log(
+        `Sent candidate moved notifications to ${eligibleUserIds.length} users`
+      );
+    } catch (error) {
+      console.error("Failed to send candidate moved notification:", error);
     }
   }
 

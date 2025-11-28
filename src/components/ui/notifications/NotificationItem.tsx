@@ -50,6 +50,8 @@ const getNotificationIcon = (type: NotificationType) => {
     case NotificationType.FOLLOWUP_UPDATED:
     case NotificationType.FOLLOWUP_REMOVED:
       return <Clock className="h-4 w-4" />;
+    case NotificationType.CANDIDATE_MOVED:
+      return <Briefcase className="h-4 w-4" />;
     // case NotificationType.EMAIL_FAILED:
     //   return <AlertCircle className="h-4 w-4" />;
     default:

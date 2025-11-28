@@ -35,7 +35,8 @@ export type EmailNotificationType =
   | "userAdded"
   | "bulkImportCompleted"
   | "candidateRejected"
-  | "interviewCompleted";
+  | "interviewCompleted"
+  | "candidateMoved";
 
 export interface EmailNotificationToggleProps {
   type: EmailNotificationType;
@@ -138,6 +139,10 @@ const notificationLabels: Record<
   interviewCompleted: {
     label: "Interview Completed",
     description: "Get notified when interviews are completed",
+  },
+  candidateMoved: {
+    label: "Candidate Moved",
+    description: "Get notified when a candidate is moved from one job to another",
   },
 };
 

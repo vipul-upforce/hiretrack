@@ -382,6 +382,7 @@ export interface OrganizationEmailNotifications {
     bulkImportCompleted: boolean;
     candidateRejected: boolean;
     interviewCompleted: boolean;
+    candidateMoved: boolean;
   };
   adminOverrides: {
     [userId: string]: {
@@ -407,6 +408,7 @@ export interface OrganizationEmailNotifications {
       bulkImportCompleted?: boolean;
       candidateRejected?: boolean;
       interviewCompleted?: boolean;
+      candidateMoved?: boolean;
     };
   };
 }

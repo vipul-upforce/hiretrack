@@ -794,6 +794,7 @@ async function filterRecipientsByNotificationSettings(
     // jobs
     job_created: NotificationType.JOB_CREATED,
     job_updated: NotificationType.JOB_UPDATED,
+    candidate_moved: NotificationType.CANDIDATE_MOVED,
 
     // user/org/system
     user_added: NotificationType.USER_ADDED,

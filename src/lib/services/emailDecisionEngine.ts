@@ -40,6 +40,7 @@ export enum NotificationType {
   BULK_IMPORT_COMPLETED = "bulkImportCompleted",
   CANDIDATE_REJECTED = "candidateRejected",
   INTERVIEW_COMPLETED = "interviewCompleted",
+  CANDIDATE_MOVED = "candidateMoved",
 }
 export interface NotificationDecisionContext {
   organizationId: string;
@@ -259,18 +260,18 @@ async function resolveNotificationSetting(
   }
 
   // 2c. Organization Default Settings (fallback)
-  // const defaultEnabled =
-  //   orgSettings?.[orgSettingsKey]?.defaultSettings?.[notificationType] ?? true;
+  const defaultEnabled =
+    orgSettings?.[orgSettingsKey]?.defaultSettings?.[notificationType] ?? true;
 
-  // return {
-  //   shouldSend: defaultEnabled,
-  //   reason: `Organization default ${context.notificationCategory} setting for ${notificationType}`,
-  //   effectiveSettings: {
-  //     source: "org-default",
-  //     enabled: defaultEnabled,
-  //     category: context.notificationCategory,
-  //   },
-  // };
+  return {
+    shouldSend: defaultEnabled,
+    reason: `Organization default ${context.notificationCategory} setting for ${notificationType}`,
+    effectiveSettings: {
+      source: "org-default",
+      enabled: defaultEnabled,
+      category: context.notificationCategory,
+    },
+  };
 }
 
 /**
@@ -470,6 +471,7 @@ export async function getUserEffectiveNotificationSettings(
       NotificationType.BULK_IMPORT_COMPLETED,
       NotificationType.CANDIDATE_REJECTED,
       NotificationType.INTERVIEW_COMPLETED,
+      NotificationType.CANDIDATE_MOVED,
     ];
 
     const email: Record<
@@ -503,8 +505,8 @@ export async function getUserEffectiveNotificationSettings(
         emailContext
       );
       email[type] = {
-        enabled: emailDecision.shouldSend,
-        source: emailDecision.effectiveSettings.source,
+        enabled: emailDecision?.shouldSend,
+        source: emailDecision?.effectiveSettings?.source,
       };
 
       // In-app settings (uses common EmailNotificationSettings)
