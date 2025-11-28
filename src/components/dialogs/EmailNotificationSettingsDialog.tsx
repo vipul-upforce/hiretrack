@@ -4,13 +4,14 @@ import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Loader2, Mail, Shield, Settings } from "lucide-react";
 
 import {
@@ -56,6 +57,7 @@ const createDefaultNotificationSettings = (): Record<
         "userAdded",
         "bulkImportCompleted",
         "candidateRejected",
+        "candidateMoved",
       ] satisfies EmailNotificationType[]
     ).map((type) => [type, true])
   ) as Record<EmailNotificationType, boolean>;
@@ -122,6 +124,22 @@ export function EmailNotificationSettingsDialog({
     return keys.some((type) => adminOverrides[type] !== initialAdminOverrides[type]);
   };
 
+  // Calculate if all notifications are enabled
+  const getAllToggleState = () => {
+    if (notificationTypes.length === 0) return false;
+    return notificationTypes.every((type) => adminOverrides[type] ?? true);
+  };
+
+  const handleAllToggle = (enabled: boolean) => {
+    const newOverrides: Partial<Record<EmailNotificationType, boolean>> = {};
+    notificationTypes.forEach((type) => {
+      newOverrides[type] = enabled;
+    });
+    setAdminOverrides(newOverrides);
+  };
+
+  const allToggleEnabled = getAllToggleState();
+
   const handleSave = async () => {
     try {
       await updateSettings({
@@ -186,6 +204,24 @@ export function EmailNotificationSettingsDialog({
                 </div>
 
                 <Separator />
+
+                {/* All Toggle */}
+                <div className="flex items-center justify-between space-x-4 py-3 px-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 rounded-t-lg mb-2">
+                  <div className="flex-1 space-y-1">
+                    <Label
+                      htmlFor="notification-all"
+                      className="text-sm font-semibold leading-none"
+                    >
+                      All Notifications
+                    </Label>
+                  </div>
+                  <Switch
+                    id="notification-all"
+                    checked={allToggleEnabled}
+                    onCheckedChange={handleAllToggle}
+                    disabled={updating}
+                  />
+                </div>
 
                 {/* Notification Toggles */}
                 <div className="space-y-0">

@@ -4,7 +4,6 @@ import React, { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -14,6 +13,8 @@ import {
   EmailNotificationToggle,
   EmailNotificationType,
 } from "@/components/ui/email-notification-toggle";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   useGlobalEmailNotificationSettings,
   useUpdateGlobalEmailNotificationSettings,
@@ -72,7 +73,9 @@ export function GlobalEmailNotificationSettingsDialog({
   
   useEffect(() => {
     if (settings) {
-      setLocalSettings(settings);
+      // Merge with defaults to ensure all notification types are present
+      const defaults = createDefaultNotificationSettings();
+      setLocalSettings({ ...defaults, ...settings });
     }
   }, [settings]);
 
@@ -113,6 +116,31 @@ export function GlobalEmailNotificationSettingsDialog({
     );
   };
 
+  // Calculate if all notifications are enabled (excluding admin-disabled ones)
+  const getAllToggleState = () => {
+    const toggleableTypes = ALL_NOTIFICATION_TYPES.filter(
+      (type) => !isAdminOverrideDisabled(type, adminOverrides)
+    );
+    if (toggleableTypes.length === 0) return false;
+    return toggleableTypes.every((type) => localSettings[type]);
+  };
+
+  const handleAllToggle = (enabled: boolean) => {
+    const newSettings = { ...localSettings };
+    ALL_NOTIFICATION_TYPES.forEach((type) => {
+      // Only toggle types that aren't disabled by admin override
+      if (!isAdminOverrideDisabled(type, adminOverrides)) {
+        newSettings[type] = enabled;
+      }
+    });
+    setLocalSettings(newSettings);
+  };
+
+  const allToggleEnabled = getAllToggleState();
+  const hasAdminDisabled = ALL_NOTIFICATION_TYPES.some((type) =>
+    isAdminOverrideDisabled(type, adminOverrides)
+  );
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="p-0 overflow-hidden flex flex-col sm:max-w-lg">
@@ -138,6 +166,28 @@ export function GlobalEmailNotificationSettingsDialog({
         ) : (
           <>
             <div className="space-y-4 flex-1 overflow-y-auto px-6 py-4 max-h-[400px]">
+              {/* All Toggle */}
+              <div className="flex items-center justify-between space-x-4 py-3 px-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 rounded-t-lg mb-2">
+                <div className="flex-1 space-y-1">
+                  <Label
+                    htmlFor="notification-all"
+                    className="text-sm font-semibold leading-none"
+                  >
+                    All Notifications
+                  </Label>
+                  {hasAdminDisabled && (
+                    <p className="text-xs text-muted-foreground">
+                      Some notifications are disabled by admin
+                    </p>
+                  )}
+                </div>
+                <Switch
+                  id="notification-all"
+                  checked={allToggleEnabled}
+                  onCheckedChange={handleAllToggle}
+                  disabled={updating}
+                />
+              </div>
               {ALL_NOTIFICATION_TYPES.map((type) => {
                 const isDisabled = isAdminOverrideDisabled(type, adminOverrides) || updating ;
                 const source = resolveNotificationSource(type, adminOverrides, effectiveSettingsWithSource, "global-user");
