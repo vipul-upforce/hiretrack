@@ -601,7 +601,7 @@ export class NotificationService {
         {
           organizationId: params.organizationId,
           type: NotificationType.CANDIDATE_MOVED,
-          title: `Candidate Moved to ${params.toJobTitle} Job`,
+          title: `Candidate Moved`,
           message: `${params.candidateName} was moved from ${params.fromJobTitle} to ${params.toJobTitle}`,
           relatedEntity: "candidate",
           relatedId: params.candidateId,
@@ -625,6 +625,84 @@ export class NotificationService {
       );
     } catch (error) {
       console.error("Failed to send candidate moved notification:", error);
+    }
+  }
+
+  /** Notify when multiple candidates are moved from one job to another */
+  static async notifyBulkCandidateMoved(params: {
+    organizationId: string;
+    candidateIds: string[];
+    toJobId: string;
+    toJobTitle: string;
+    triggerUserId: string;
+    triggerUserName: string;
+  }) {
+    try {
+      await connectToDatabase();
+      const adminHrIds = await this.getUsersByRole(params.organizationId, [
+        "admin",
+        "hr",
+      ]);
+      const filteredAdminHrIds = adminHrIds.filter(
+        (id) => id !== params.triggerUserId
+      );
+
+      if (filteredAdminHrIds.length === 0) {
+        console.log("No eligible recipients for bulk move notification");
+        return;
+      }
+
+      const decisionContexts: NotificationDecisionContext[] =
+        filteredAdminHrIds.map((userId) => ({
+          organizationId: params.organizationId,
+          recipientUserId: userId,
+          notificationType: NotificationType.CANDIDATE_MOVED,
+          jobId: params.toJobId,
+          triggererUserId: params.triggerUserId,
+          isMention: false,
+          notificationCategory: "inApp",
+        }));
+
+      const decisions = await batchCheckNotifications(decisionContexts);
+      const eligibleUserIds = filteredAdminHrIds.filter(
+        (userId, index) => decisions[index].shouldSend
+      );
+
+      if (eligibleUserIds.length === 0) {
+        console.log("No users have enabled CANDIDATE_MOVED notifications");
+        return;
+      }
+
+      const candidateCount = params.candidateIds.length;
+
+      await this.createBulkNotifications(
+        {
+          organizationId: params.organizationId,
+          type: NotificationType.CANDIDATE_MOVED,
+          title: `Candidate Moved`,
+          message: `${candidateCount} candidate${candidateCount > 1 ? 's' : ''} ${candidateCount > 1 ? 'were' : 'was'} moved to ${params.toJobTitle}`,
+          relatedEntity: "job",
+          relatedId: params.toJobId, // Use first candidate ID for action URL
+          actionUrl: `/dashboard/jobs/${params.toJobId}`,
+          triggerUserId: params.triggerUserId,
+          triggerUserName: params.triggerUserName,
+          priority: "medium",
+          metadata: {
+            candidateCount,
+            candidateIds: params.candidateIds,
+            toJobTitle: params.toJobTitle,
+            toJobId: params.toJobId,
+            isBulkMove: true,
+          },
+        },
+        eligibleUserIds
+      );
+
+      console.log(
+        `Sent bulk candidate moved notifications to ${eligibleUserIds.length} users`
+      );
+    } catch (error) {
+      console.error("Failed to send bulk candidate moved notification:", error);
     }
   }
 

@@ -70,6 +70,13 @@ export const jobApi = createApi({
         body: data,
       }),
     }),
+    bulkAssignJob: builder.mutation({
+      query: (data) => ({
+        url: "/jobs/bulk-move",
+        method: "POST",
+        body: data,
+      }),
+    }),
   }),
 });
 
@@ -84,4 +91,5 @@ export const {
   useFetchOpenJobsQuery,
   useFetchOpenJobQuery,
   useAssignJobMutation,
+  useBulkAssignJobMutation,
 } = jobApi;
