@@ -23,14 +23,14 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { CompactCircularScores } from "@/app/dashboard/jobs/[id]/components/Utils/circular-score";
-import { memo, useCallback } from "react";
+import { memo, useCallback, useRef } from "react";
 import type { Candidate } from "@/types/candidate";
 
 interface TableBodyRowsProps {
   candidates: Candidate[];
   visibleColumns: Record<string, boolean>;
   selectedCandidates: string[];
-  onSelectCandidate: (candidateId: string) => void;
+  onSelectCandidate: (candidateId: string, shiftKey?: boolean) => void;
   onViewDetails: (candidate: Candidate) => void;
   onEdit: (candidate: Candidate) => void;
   onAssignInterviewer: (candidate: Candidate) => void;
@@ -87,6 +87,8 @@ export const TableBodyRows = memo(function TableBodyRows({
   onAddRemark,
   onJobClick,
 }: TableBodyRowsProps) {
+  // Track the last mouse event to capture shift key for checkbox clicks
+  const lastMouseEventRef = useRef<MouseEvent | null>(null);
   const handleViewDetails = useCallback(
     (candidate: Candidate, e: React.MouseEvent) => {
       e.stopPropagation();
@@ -153,12 +155,44 @@ export const TableBodyRows = memo(function TableBodyRows({
           <TableRow
             key={candidate._id}
             className="hover:bg-muted/50 cursor-pointer"
+            onMouseDown={(e) => {
+              // Store the mouse event to capture shift key for checkbox clicks
+              lastMouseEventRef.current = e.nativeEvent;
+            }}
+            onClick={(e) => {
+              // Only handle row click if clicking on the row itself, not on interactive elements
+              const target = e.target as HTMLElement;
+              if (
+                !target.closest("button") &&
+                !target.closest("a") &&
+                !target.closest("[role='menuitem']") &&
+                !target.closest("input[type='checkbox']")
+              ) {
+                onSelectCandidate(candidate._id, e.shiftKey);
+              }
+            }}
           >
             {visibleColumns.select && (
-              <TableCell>
+              <TableCell
+                onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => {
+                  // Capture shift key early for checkbox clicks
+                  lastMouseEventRef.current = e.nativeEvent;
+                }}
+              >
                 <Checkbox
                   checked={isSelected}
-                  onCheckedChange={() => onSelectCandidate(candidate._id)}
+                  onCheckedChange={() => {
+                    // Use the stored mouse event to check for shift key
+                    const shiftKey = lastMouseEventRef.current?.shiftKey || false;
+                    onSelectCandidate(candidate._id, shiftKey);
+                    // Clear the ref after use
+                    lastMouseEventRef.current = null;
+                  }}
+                  onClick={(e) => {
+                    // Prevent row click when clicking checkbox
+                    e.stopPropagation();
+                  }}
                   aria-label={`Select ${candidate.name}`}
                 />
               </TableCell>
