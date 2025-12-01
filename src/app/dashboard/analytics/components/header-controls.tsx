@@ -79,7 +79,7 @@ export function HeaderControls({
           </Button>
         ) : (
           // Inline controlled picker box (keeps open until Done/Cancel)
-          <div className="p-3 border rounded-md bg-white shadow-md flex flex-col gap-3 z-10">
+          <div className="p-3 border rounded-md bg-card text-card-foreground shadow-md flex flex-col gap-3 z-10">
             <DatePicker
               value={tempRange}
               onChange={(newRange) => {

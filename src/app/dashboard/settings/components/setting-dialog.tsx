@@ -17,7 +17,7 @@ import BackupsDialog from "./backups";
 import { EvaluationSettings } from "./ai-evaluation-settings";
 import AIProvidersConfigs from "./ai-providers";
 import SMTPConfigs from "./mail-config";
-import AboutDialog from "./about-version";
+import AboutDialog from "./about";
 import FileStorageOptions from "./file-storage";
 import twoFASettings from "./two-fa";
 import MultipleOrgsConfigs from "./multiple-org";
