@@ -59,12 +59,13 @@ export async function GET(request: NextRequest) {
       fromEmail,
       provider,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching email config:", error);
     return NextResponse.json(
       {
         fromEmail: "noreply@hiretrack.com",
         provider: "error",
+        error: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 200 } // Return 200 with fallback values
     );

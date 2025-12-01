@@ -37,19 +37,19 @@ export async function GET(request: NextRequest) {
     const versionData = await response.json();
 
     return NextResponse.json(versionData);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching version list:", error);
 
     // Handle timeout errors
-    if (error.name === "AbortError") {
+    if (error instanceof Error && error.name === "AbortError") {
       return NextResponse.json(
-        { error: "Request timeout - server may be unavailable" },
+        { error: error instanceof Error ? error.message : "Request timeout - server may be unavailable" },
         { status: 408 }
       );
     }
 
     return NextResponse.json(
-      { error: "Internal server error while fetching version list" },
+      { error: error instanceof Error ? error.message : "Internal server error while fetching version list" },
       { status: 500 }
     );
   }

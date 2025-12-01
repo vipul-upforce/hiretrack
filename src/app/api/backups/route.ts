@@ -68,9 +68,9 @@ export async function GET(req: NextRequest) {
     );
 
     return NextResponse.json({ files });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
-      { error: "Could not list backup files", detail: error.message },
+      { error: "Could not list backup files", detail: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 }
     );
   }

@@ -83,10 +83,10 @@ export async function POST(request: NextRequest) {
       success: true,
       files: results,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error uploading files:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to upload files" },
+      { error: error instanceof Error ? error.message : "Failed to upload files" },
       { status: 500 }
     );
   }

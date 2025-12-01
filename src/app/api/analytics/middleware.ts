@@ -220,13 +220,13 @@ export async function withAnalyticsAuth<T>(
     );
 
     return response;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Analytics middleware error:", error);
 
     // Handle specific error types
     if (
-      error.message?.includes("timeout") ||
-      error.message?.includes("maxTimeMS")
+      error instanceof Error && error.message?.includes("timeout") ||
+      error instanceof Error && error.message?.includes("maxTimeMS")
     ) {
       return createAnalyticsErrorResponse(
         "Query timeout - please try a smaller date range or add more filters",
@@ -235,8 +235,8 @@ export async function withAnalyticsAuth<T>(
     }
 
     if (
-      error.message?.includes("memory") ||
-      error.message?.includes("allowDiskUse")
+      error instanceof Error && error.message?.includes("memory") ||
+      error instanceof Error && error.message?.includes("allowDiskUse")
     ) {
       return createAnalyticsErrorResponse(
         "Query too large - please add more filters to reduce data size",

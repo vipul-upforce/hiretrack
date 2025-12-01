@@ -199,13 +199,13 @@ export async function GET(request: NextRequest) {
       );
 
       return NextResponse.json(response);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Candidate funnel analytics error:", error);
 
       // Handle specific error types with better messages
       if (
-        error.message?.includes("timeout") ||
-        error.message?.includes("maxTimeMS")
+        error instanceof Error && error.message?.includes("timeout") ||
+        error instanceof Error && error.message?.includes("maxTimeMS")
       ) {
         return createAnalyticsErrorResponse(
           "Query timeout - please try a smaller date range or add job filters",
@@ -213,7 +213,7 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      if (error.message?.includes("memory")) {
+      if (error instanceof Error && error.message?.includes("memory")) {
         return createAnalyticsErrorResponse(
           "Dataset too large - please add filters to reduce data size",
           413
