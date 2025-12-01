@@ -40,7 +40,7 @@ export function CreateCandidateDialogFooter({
       <Button
         onClick={onApply}
         variant="primary"
-        type={hasErrors ? "button" : "submit"}
+        type="button"
         disabled={isSubmitting || isCreating || isLoading}
         onMouseEnter={(e) => {
           const target = e.target as HTMLElement;
