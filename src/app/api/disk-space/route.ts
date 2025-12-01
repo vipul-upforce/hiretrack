@@ -3,12 +3,100 @@ import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
 
-function getFolderSize(folderPath: string) {
+/**
+ * Recursively calculates the total size of a directory including all files and subdirectories.
+ * This function includes hidden files and folders (those starting with '.').
+ *
+ * @param dirPath - The directory path to calculate size for
+ * @returns Total size in bytes
+ */
+function calculateFolderSizeRecursive(dirPath: string): number {
+  let totalSize = 0;
+
   try {
-    const result = execSync(`du -sh "${folderPath}"`, { encoding: "utf-8" });
-    return result.split("\t")[0];
+    if (!fs.existsSync(dirPath)) {
+      return 0;
+    }
+
+    const stats = fs.statSync(dirPath);
+    if (!stats.isDirectory()) {
+      return stats.size;
+    }
+
+    const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const fullPath = path.join(dirPath, entry.name);
+
+      try {
+        if (entry.isDirectory()) {
+          // Recursively calculate subdirectory size
+          totalSize += calculateFolderSizeRecursive(fullPath);
+        } else if (entry.isFile()) {
+          // Add file size
+          const fileStats = fs.statSync(fullPath);
+          totalSize += fileStats.size;
+        }
+        // Note: symlinks and other special files are handled by entry.isFile() check
+      } catch {
+        // Skip files/folders that can't be accessed (permissions, broken symlinks, etc.)
+        // Continue processing other entries
+        continue;
+      }
+    }
   } catch {
-    return "0M";
+    // If directory can't be read, return 0
+    return 0;
+  }
+
+  return totalSize;
+}
+
+/**
+ * Formats bytes to human-readable size string
+ */
+function formatSize(bytes: number): string {
+  if (bytes === 0) return "0B";
+
+  const kb = bytes / 1024;
+  if (kb < 1024) {
+    return kb.toFixed(2) + " KB";
+  }
+
+  const mb = kb / 1024;
+  if (mb < 1024) {
+    return mb.toFixed(2) + " MB";
+  }
+
+  const gb = mb / 1024;
+  return gb.toFixed(2) + " GB";
+}
+
+/**
+ * Gets folder size using system command (Linux/Mac) or recursive calculation (Windows/fallback)
+ */
+function getFolderSize(folderPath: string): string {
+  try {
+    if (process.platform === "win32") {
+      // On Windows, use recursive calculation
+      const sizeBytes = calculateFolderSizeRecursive(folderPath);
+      return formatSize(sizeBytes);
+    } else {
+      // On Linux/Mac, try using 'du' command first (faster for large directories)
+      // This includes hidden files by default
+      const result = execSync(`du -sb "${folderPath}"`, { encoding: "utf-8" });
+      const sizeBytes = parseInt(result.split("\t")[0], 10);
+      if (!isNaN(sizeBytes)) {
+        return formatSize(sizeBytes);
+      }
+      // Fallback to recursive calculation if du fails
+      const sizeBytesFallback = calculateFolderSizeRecursive(folderPath);
+      return formatSize(sizeBytesFallback);
+    }
+  } catch {
+    // Fallback to recursive calculation on any error
+    const sizeBytes = calculateFolderSizeRecursive(folderPath);
+    return formatSize(sizeBytes);
   }
 }
 
@@ -28,7 +116,7 @@ export async function GET(request: Request) {
 
     const LINUX_PATHS: Record<string, string> = {
       nginx: "/var/log/nginx",
-      pm2: "/.pm2/logs",
+      pm2: "/root/.pm2/logs",
       hiretrack: "/root/.hiretrack",
     };
 
@@ -68,25 +156,35 @@ export async function GET(request: Request) {
         );
       }
 
-      const files = fs
-        .readdirSync(fullPath)
-        .map((file) => {
+      const entries = fs.readdirSync(fullPath, { withFileTypes: true });
+
+      const files = entries
+        .map((entry) => {
           try {
-            const filePath = path.join(fullPath, file);
+            const filePath = path.join(fullPath, entry.name);
             const stats = fs.statSync(filePath);
 
+            let size: string;
+            let rawSize: number;
+
+            if (stats.isDirectory()) {
+              rawSize = calculateFolderSizeRecursive(filePath);
+              size = formatSize(rawSize);
+            } else {
+              rawSize = stats.size;
+              size = formatSize(rawSize);
+            }
+
             return {
-              name: file,
-              // Relative path for the frontend to use in the next request
-              relativePath: path.join(subPath, file),
-              size: (stats.size / 1024 / 1024).toFixed(2) + " MB",
-              rawSize: stats.size,
+              name: entry.name,
+              relativePath: path.join(subPath, entry.name),
+              size,
+              rawSize,
               type: stats.isDirectory() ? "folder" : "file",
-              // For folders, we might not know children count without reading,
-              // but we can leave it undefined or try to read safely
               childrenCount: stats.isDirectory() ? 0 : undefined,
             };
-          } catch (e) {
+          } catch {
+            // Skip files/folders that can't be accessed
             return null;
           }
         })
@@ -100,46 +198,20 @@ export async function GET(request: Request) {
       });
     }
 
-    // 2. Handle Root Folder Stats (Initial View)
+    // Handle Root Folder Stats (Initial View)
     const baseFolders = ["nginx", "pm2", "hiretrack"];
     const result = baseFolders.map((key) => {
       const folderPath = isWindows ? WINDOWS_PATHS[key] : LINUX_PATHS[key];
 
-      let size = "0M";
+      let size = "0B";
       try {
-        if (isWindows) {
-          if (fs.existsSync(folderPath)) {
-            // Simple recursive size for Windows (caution: slow on huge dirs)
-            const getAllFiles = (
-              dirPath: string,
-              arrayOfFiles: string[] = []
-            ) => {
-              const files = fs.readdirSync(dirPath);
-              files.forEach((file) => {
-                const fullPath = path.join(dirPath, file);
-                if (fs.statSync(fullPath).isDirectory()) {
-                  getAllFiles(fullPath, arrayOfFiles);
-                } else {
-                  arrayOfFiles.push(fullPath);
-                }
-              });
-              return arrayOfFiles;
-            };
-
-            const files = fs.readdirSync(folderPath);
-            let total = 0;
-            files.forEach((file) => {
-              try {
-                const stats = fs.statSync(path.join(folderPath, file));
-                total += stats.size;
-              } catch {}
-            });
-            size = (total / 1024 / 1024).toFixed(1) + "M";
-          }
-        } else {
-          size = getFolderSize(folderPath);
-        }
-      } catch {}
+        // Use the unified getFolderSize function which handles both Windows and Linux
+        // and includes all hidden files/folders
+        size = getFolderSize(folderPath);
+      } catch {
+        // If calculation fails, size remains "0B"
+        // Error is silently handled to prevent API failures
+      }
 
       return {
         name: key,
@@ -154,6 +226,7 @@ export async function GET(request: Request) {
       folders: result,
     });
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error("Disk folder read error:", error);
     return NextResponse.json(
       { error: "Failed to retrieve disk usage" },
