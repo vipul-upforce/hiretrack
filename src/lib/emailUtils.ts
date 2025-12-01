@@ -168,9 +168,9 @@ export async function sendMail(
     }
 
     return result;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error sending email:", error);
-    return { success: false, error: error.message || "Failed to send email" };
+    return { success: false, error: error instanceof Error ? error.message : "Failed to send email" };
   }
 }
 
@@ -218,9 +218,9 @@ async function sendSMTPMail(
 
     const result = await transporter.sendMail(mailOptions);
     return { success: true, messageId: result.messageId };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("SMTP error:", error);
-    return { success: false, error: `SMTP error: ${error.message}` };
+    return { success: false, error: `SMTP error: ${error instanceof Error ? error.message : "Unknown error"}` };
   }
 }
 
@@ -261,9 +261,9 @@ async function sendResendMail(
     }
 
     return { success: true, messageId: result.data?.id };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Resend unexpected error:", error);
-    return { success: false, error: `Resend error: ${error.message}` };
+    return { success: false, error: `Resend error: ${error instanceof Error ? error.message : "Unknown error"}` };
   }
 }
 
@@ -312,14 +312,13 @@ async function sendBrevoMail(
       console.error("Brevo API error:", errorData);
       return {
         success: false,
-        error: `Brevo error: ${errorData.message || "Failed to send email"}`,
+        error: `Brevo error: ${errorData.message || (errorData as { error?: string })?.error || (errorData instanceof Error ? errorData.message : "Unknown error")}`,
       };
     }
-
     const result = await response.json();
     return { success: true, messageId: result.messageId };
-  } catch (error: any) {
+    } catch (error: unknown) {
     console.error("Brevo unexpected error:", error);
-    return { success: false, error: `Brevo error: ${error.message}` };
+    return { success: false, error: `Brevo error: ${error instanceof Error ? error.message : "Unknown error"}` };
   }
 }

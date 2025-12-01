@@ -15,6 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AddSpecificCustomFieldButton } from "@/Custom_Fields/Components/AddSpecificCustomFieldButton";
 import { CustomFieldsContext } from "@/Custom_Fields/Context";
 import { useContext, useEffect } from "react";
+import { scrollToError } from "@/lib/formUtils";
 
 interface Job {
   _id: string;
@@ -113,47 +114,6 @@ const convertFileToBase64 = (file: FileOrAttachment): Promise<string> => {
   return Promise.resolve(file.url);
 };
 
-export const scrollToError = (errors: FormikErrors<any>) => {
-  // debugger;
-  if (!errors || Object.keys(errors).length === 0) return;
-
-  const firstErrorKey = Object.keys(errors)[0];
-  if (!firstErrorKey) return;
-
-  let element: HTMLElement | null = null;
-  console.log(errors);
-  if (firstErrorKey === "customFields" && errors.customFields) {
-    // Handle nested customFields errors
-    const customFieldErrors = errors.customFields as Record<string, string>;
-    const cfKey = Object.keys(customFieldErrors)[0];
-    if (cfKey) {
-      // Use name attribute for Formik fields
-      element =
-        (document.querySelector(
-          `[id="customFields.${cfKey}"]`
-        ) as HTMLElement) ||
-        (document.querySelector(`[data-field-name="${cfKey}"]`) as HTMLElement);
-    }
-  } else {
-    // Use name attribute for top-level fields
-    element = document.querySelector(
-      `[name="${firstErrorKey}"]`
-    ) as HTMLElement;
-    if (firstErrorKey === "skills") {
-      element = document.querySelector(
-        `[id="${firstErrorKey}"]`
-      ) as HTMLElement;
-    }
-  }
-
-  if (element) {
-    console.log(element);
-    element.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    element.focus({ preventScroll: true });
-  } else {
-    console.warn(`No element found for error key: ${firstErrorKey}`);
-  }
-};
 export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
   const formName = "Job Position";
   const { validationSchema, getDefaultValues } = useCustomForm(
