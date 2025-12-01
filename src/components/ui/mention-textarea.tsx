@@ -25,6 +25,7 @@ interface MentionTextareaProps {
   organizationId: string;
   currentUserRole: string;
   rows?: number;
+  isRemarkPrivate?: boolean;
 }
 
 export function MentionTextarea({
@@ -37,6 +38,7 @@ export function MentionTextarea({
   organizationId,
   currentUserRole,
   rows = 3,
+  isRemarkPrivate = true,
 }: MentionTextareaProps) {
   const [showMentionPicker, setShowMentionPicker] = useState(false);
   const [mentionPosition, setMentionPosition] = useState(0);
@@ -224,6 +226,7 @@ export function MentionTextarea({
             onSearchQueryChange={setMentionQuery}
             className="w-full"
             position={pickerPosition}
+            isRemarkPrivate={isRemarkPrivate}
           />
         </div>
       )}

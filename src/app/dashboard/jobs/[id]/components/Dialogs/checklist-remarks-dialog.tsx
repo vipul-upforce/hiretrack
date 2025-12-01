@@ -969,6 +969,7 @@ const ChecklistRemarksDialog = ({
                 organizationId={user?.organizationId || ""}
                 currentUserRole={user?.role || ""}
                 rows={4}
+                isRemarkPrivate={isSubRemarkPrivate}
               />
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">

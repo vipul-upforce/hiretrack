@@ -71,6 +71,7 @@ export default function RemarkInputSection({
           organizationId={String(user?.organizationId) || ""}
           currentUserRole={user?.role || ""}
           rows={3}
+          isRemarkPrivate={isSubRemarkPrivate}
         />
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">

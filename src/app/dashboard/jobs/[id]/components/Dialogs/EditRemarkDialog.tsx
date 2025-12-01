@@ -85,6 +85,7 @@ const EditRemarkDialog = ({
             organizationId={user?.organizationId || ""}
             currentUserRole={user?.role || ""}
             rows={5}
+            isRemarkPrivate={editingRemark?.isPrivate ?? true}
           />
           <div className="flex items-center gap-2 mt-2">
             <Label htmlFor="rating">Rating:</Label>
