@@ -56,26 +56,25 @@ const ConfirmAndRemarkDialog = ({
   };
 
   const handleConfirm = () => {
-    // Pass the form data to parent
     onConfirm(remarkDescription.trim(), remarkRating);
     setIsOpen(false);
   };
 
-  //   const isFormValid = remarkDescription.trim().length > 0; // Require at least some text
-
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="overflow-hidden flex flex-col" size="lg">
+      <DialogContent
+        className="p-0 gap-0 overflow-visible flex flex-col"
+        size="lg"
+      >
         <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle>{title}</DialogTitle>
           {message && <DialogDescription>{message}</DialogDescription>}
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto px-6 py-4">
-          <div className="mb-6">
+        <div className="px-6 py-4 space-y-4">
+          <div className="space-y-2">
             <Label htmlFor="remark-textarea">Remark</Label>
             <MentionTextarea
-              // id="remark-textarea"
-              className="min-h-[120px] resize-none focus-visible:ring-offset-1 mt-2"
+              className="min-h-[120px] resize-none focus-visible:ring-offset-1"
               placeholder="Enter your remark here... (Alt+Enter to confirm)"
               value={remarkDescription}
               onChange={setRemarkDescription}
@@ -90,6 +89,7 @@ const ConfirmAndRemarkDialog = ({
               rows={5}
             />
           </div>
+
           <div className="flex items-center gap-2">
             <Label htmlFor="rating">Rating:</Label>
             <Rating
@@ -100,7 +100,8 @@ const ConfirmAndRemarkDialog = ({
             />
           </div>
         </div>
-        <DialogFooter className="px-6 py-4">
+
+        <DialogFooter className="px-6 py-4 bg-background border-t">
           <Button
             variant="outline"
             onClick={handleCancel}
