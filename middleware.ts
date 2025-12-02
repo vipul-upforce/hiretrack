@@ -6,7 +6,9 @@ import { generateOrgJwtSecret } from "@/lib/jwtSecretGenerator";
 // import { log } from "@/lib/logger";
 
 interface JWTPayload {
-  user: string;
+  refresh?: string;
+  iat?: number;
+  exp?: number;
 }
 
 export async function verifyAndDecryptTokenMiddleware(token: string, orgId: string) {
@@ -33,10 +35,10 @@ export async function verifyAndDecryptTokenMiddleware(token: string, orgId: stri
       secretKey
     );
 
-    if (!payload || typeof payload !== "object" || !payload.user) {
+    if (!payload || typeof payload !== "object" || !payload.refresh) {
       throw new Error("Invalid token structure");
     }
-    const bytes = CryptoJS.AES.decrypt(payload.user, JWT_SECRET);
+    const bytes = CryptoJS.AES.decrypt(payload.refresh as string, JWT_SECRET);
     const decryptedData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
 
     return { success: true, user: decryptedData };
@@ -70,7 +72,8 @@ export async function middleware(request: NextRequest) {
   let userData: { role: string } | undefined;
 
   // SECURITY FIX: Check both httpOnly and regular tokens for backward compatibility
-  const httpOnlyToken = request.cookies.get("auth_token");
+  const httpOnlyToken = request.cookies.get("refresh_token");
+  // const httpOnlyToken = request.cookies.get("auth_token");
   // const regularToken = request.cookies.get("token");
 
   const token = httpOnlyToken?.value;

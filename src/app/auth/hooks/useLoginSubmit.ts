@@ -193,6 +193,13 @@ export const useHandleLoginSubmit = ({
         // const token = await signToken(userWithoutCustomFields);
         // Cookies.set("token", String(token), { expires: 30 });
 
+        // Store refresh token if provided in response
+        // Note: The refresh token is also set in httpOnly cookie by the backend
+        // But we store it in localStorage for the interceptor to use
+        if ((response as any).refreshToken) {
+          localStorage.setItem("refresh_token", (response as any).refreshToken);
+        }
+
         const redirectUrl = getRedirectUrl();
         // new Promise(()=>{})
         // setTimeout(()=>{

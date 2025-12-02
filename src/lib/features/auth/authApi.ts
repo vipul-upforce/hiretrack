@@ -71,6 +71,16 @@ export const authApi = createApi({
         body: creds,
       }),
     }),
+    refreshToken: builder.mutation<
+      { message: string; refreshToken: string; licenseValid: boolean },
+      { refreshToken: string }
+    >({
+      query: (creds) => ({
+        url: "/auth/refresh",
+        method: "POST",
+        body: creds,
+      }),
+    }),
   }),
 });
 
@@ -79,4 +89,5 @@ export const {
   useSignupMutation,
   useResetPasswordbyAdminMutation,
   useResetPasswordbyUserMutation,
+  useRefreshTokenMutation,
 } = authApi;

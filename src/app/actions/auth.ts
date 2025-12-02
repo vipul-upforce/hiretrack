@@ -23,11 +23,32 @@ export async function verifyAndDecryptToken(token: string, orgId: string) {
 
     const bytes = CryptoJS.AES.decrypt(decoded.user, JWT_SECRET);
     const decryptedData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
-    return { success: true, user: decryptedData };
+    
+    // Return expiration info
+    const exp = typeof decoded === "object" && "exp" in decoded 
+      ? (decoded.exp as number) * 1000 // Convert to milliseconds
+      : null;
+    
+    return { 
+      success: true, 
+      user: decryptedData,
+      expiresAt: exp,
+      isExpired: exp ? exp < Date.now() : false,
+    };
   } catch (err) {
+    // Check if token is expired
+    if (err instanceof jwt.TokenExpiredError) {
+      return {
+        success: false,
+        error: "Token expired",
+        isExpired: true,
+      };
+    }
+    
     return {
       success: false,
       error: err instanceof Error ? err.message : "Unknown Error Occurred",
+      isExpired: false,
     };
   }
 }
@@ -139,11 +160,12 @@ export async function getAuthenticatedUser(
 }
 
 
-export const signToken = async (payload: unknown, orgId: string) => {
-  // console.log(payload, "payload-1 =-d--d-d");
-  // console.log(orgId, "orgId-1 =-d--d-d");
+export const signToken = async (
+  payload: unknown, 
+  orgId: string, 
+  expiresIn: string = "15m"
+) => {
   const JWT_SECRET = generateOrgJwtSecret(orgId);
-  // console.log(JWT_SECRET, "JWT_SECRET-3 secrate keyt");
 
   if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
 
@@ -152,5 +174,12 @@ export const signToken = async (payload: unknown, orgId: string) => {
     String(JWT_SECRET)
   ).toString();
 
-  return jwt.sign({ user: encryptedPayload }, JWT_SECRET, { expiresIn: "30d" });
+  return jwt.sign({ user: encryptedPayload }, JWT_SECRET, { expiresIn: expiresIn as any});
+};
+
+
+
+// Helper function for access tokens (15 minutes)
+export const signAccessToken = async (payload: unknown, orgId: string) => {
+  return signToken(payload, orgId, "15m");
 };

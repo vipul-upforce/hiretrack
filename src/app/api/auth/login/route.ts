@@ -6,7 +6,9 @@ import { IUser } from "@/lib/models/user";
 import { IUCandidateAccount } from "@/lib/models/candidateAccount";
 import { setSecureAuthTokens, setSecureOrgId } from "@/lib/secureTokens";
 import { emailLoginRateLimiter } from "@/lib/rateLimiter";
-import { signToken } from "@/app/actions/auth";
+import { signAccessToken } from "@/app/actions/auth";
+import { generateRefreshToken, hashRefreshToken, storeRefreshToken, cleanupExpiredTokens } from "@/lib/refreshToken";
+import crypto from "crypto";
 import { UserWithoutCF } from "@/types/login";
 
 async function handleLogin(req: NextRequest) {
@@ -29,8 +31,9 @@ async function handleLogin(req: NextRequest) {
       },
     });
     const candidates = await CandidateAccount.find({ email }).lean();
-    console.log(users, "users");
-    console.log(candidates, "candidates");
+    // Log for debugging (remove console.log if using a logger)
+    // console.log(users, "users");
+    // console.log(candidates, "candidates");
 
     // Check if email exists in either collection
     if (users.length === 0 && candidates.length === 0) {
@@ -38,17 +41,17 @@ async function handleLogin(req: NextRequest) {
     }
 
     if (users.length > 0 && candidates.length > 0) {
-      return await checkMultipleOrgs(orgId, users, candidates, password);
+      return await checkMultipleOrgs(orgId, users, candidates, password, req);
     }
 
     // Check if user exists in User collection
     if (users.length > 0) {
-      return await userLogin(users, orgId, password);
+      return await userLogin(users, orgId, password, req);
     }
 
     // Check if candidate exists
     if (candidates && candidates.length > 0) {
-      return await candidateLogin(candidates, orgId, password);
+      return await candidateLogin(candidates, orgId, password, req);
     }
 
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
@@ -61,7 +64,7 @@ async function handleLogin(req: NextRequest) {
   }
 }
 
-const userLogin = async (users: IUser[], orgId: string, password: string) => {
+const userLogin = async (users: IUser[], orgId: string, password: string, req: NextRequest) => {
   const user = users[0];
   if (orgId) {
     const userInOrg = users.find(
@@ -119,7 +122,7 @@ const userLogin = async (users: IUser[], orgId: string, password: string) => {
       fileStorage: orgSettings?.fileStorage?.storageType,
     };
 
-    const response = returnTokenBasedResponse(user);
+    const response = await returnTokenBasedResponse(user, req);
     return response;
   }
 
@@ -167,14 +170,15 @@ const userLogin = async (users: IUser[], orgId: string, password: string) => {
     organizationInfo: orgInfo,
     fileStorage: fileStorage?.fileStorage?.storageType,
   };
-  const response = returnTokenBasedResponse(tokenObj);
+  const response = await returnTokenBasedResponse(tokenObj, req);
   return response;
 };
 
 const candidateLogin = async (
   candidates: IUCandidateAccount[],
   orgId: string,
-  password: string
+  password: string,
+  req: NextRequest
 ) => {
   const candidate = candidates[0];
   if (orgId) {
@@ -220,7 +224,7 @@ const candidateLogin = async (
       organizationInfo: orgInfo,
       fileStorage: fileStorage?.fileStorage?.storageType,
     };
-    const response = returnTokenBasedResponse(tokenObj);
+    const response = await returnTokenBasedResponse(tokenObj, req);
     return response;
   }
 
@@ -274,7 +278,7 @@ const candidateLogin = async (
     organizationInfo: orgInfo,
     fileStorage: fileStorage?.fileStorage?.storageType,
   };
-  const response = returnTokenBasedResponse(tokenObj);
+  const response = await returnTokenBasedResponse(tokenObj, req);
   return response;
 };
 
@@ -282,7 +286,8 @@ const checkMultipleOrgs = async (
   orgId: string,
   users: IUser[],
   candidates: IUCandidateAccount[],
-  password: string
+  password: string,
+  req: NextRequest
 ) => {
   if (orgId) {
     // Find user and candidate in the specified organization
@@ -405,7 +410,7 @@ const checkMultipleOrgs = async (
         fileStorage: fileStorage?.fileStorage?.storageType,
       };
 
-      const response = await returnTokenBasedResponse(tokenObj);
+      const response = await returnTokenBasedResponse(tokenObj, req);
       return response;
     }
 
@@ -445,7 +450,7 @@ const checkMultipleOrgs = async (
         fileStorage: fileStorage?.fileStorage?.storageType,
       };
 
-      const response = await returnTokenBasedResponse(tokenObj);
+      const response = await returnTokenBasedResponse(tokenObj, req);
       return response;
     }
   }
@@ -510,7 +515,7 @@ const checkMultipleOrgs = async (
   );
 };
 
-const returnTokenBasedResponse = async (obj: any) => {
+const returnTokenBasedResponse = async (obj: any, req?: NextRequest) => {
   const userWithoutCustomFields: UserWithoutCF = {
     ...obj,
   };
@@ -521,31 +526,84 @@ const returnTokenBasedResponse = async (obj: any) => {
     delete userWithoutCustomFields.organizationInfo.customFields;
   }
 
-  const token = await signToken(
+  // Generate short-lived access token (15 minutes)
+  const accessToken = await signAccessToken(
     userWithoutCustomFields,
     obj.organizationId.toString()
   );
 
+  // Generate device info
+  const deviceInfo = req?.headers.get("user-agent") || "Unknown Device";
+  const userId = obj.id || obj._id.toString();
+  const role = obj.role;
+  const isCandidate = role === "candidate";
+  const orgId = obj.organizationId.toString();
+  
+  // Cleanup expired tokens before storing new one (keeps array clean)
+  await cleanupExpiredTokens(userId, isCandidate);
+  
+  // Generate deviceId
+  const deviceId = crypto.randomUUID();
+  
+  // Generate refresh token using JWT (same method as access token)
+  const refreshTokenPayload = {
+    userId: userId,
+    role: role,
+    orgId: orgId,
+    isCandidate: isCandidate,
+    deviceId: deviceId,
+    deviceInfo: deviceInfo,
+  };
+  
+  const refreshToken = generateRefreshToken(refreshTokenPayload, orgId);
+  const refreshTokenHash = hashRefreshToken(refreshToken);
+  
+  // Store hashed refresh token in database
+  await storeRefreshToken(
+    userId,
+    refreshTokenHash,
+    isCandidate,
+    deviceId,
+    deviceInfo,
+    30 // 30 days
+  );
+
   const response = NextResponse.json({
     message: "Logged In Successfully",
-    user: token,
+    user: accessToken,
+    refreshToken: refreshToken, // Return JWT refresh token to client
+    deviceId: deviceId,
   });
-  // SECURITY FIX: Use secure token system with improved security
-  // const resp = setSecureAuthTokens(response, token, {
-  //   expires: 30, // 30 days
-  //   maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
-  // });
-  // Set secure auth token
-  let resp = setSecureAuthTokens(response, token, {
-    expires: 30, // 30 days
-    maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
+
+  // Set short-lived access token in cookie
+  let resp = setSecureAuthTokens(response, accessToken, {
+    expires: 0.0104, // ~15 minutes in days
+    maxAge: 5 * 60, // 15 minutes in seconds
+  });
+
+  // Set refresh token in httpOnly cookie
+  resp.cookies.set("refresh_token", refreshToken, {
+    httpOnly: true,
+    secure: process.env.ENVIRONMENT === "production",
+    sameSite: "strict",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+    path: "/",
+  });
+  
+  // Set device_id cookie
+  resp.cookies.set("device_id", deviceId, {
+    httpOnly: true,
+    secure: process.env.ENVIRONMENT === "production",
+    sameSite: "strict",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+    path: "/",
   });
 
   // Set secure organization ID
   resp = setSecureOrgId(resp, obj.organizationId, {
-    expires: 30, // 30 days
-    maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
-    path: "/", // Consistent with auth token
+    expires: 30,
+    maxAge: 30 * 24 * 60 * 60,
+    path: "/",
   });
 
   return resp;

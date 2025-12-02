@@ -69,6 +69,14 @@ export interface EmailNotificationSettings {
   };
 }
 
+export interface RefreshTokenEntry {
+  token: string;        // Hashed token
+  expiry: Date;
+  deviceId?: string;   // Unique device identifier
+  deviceInfo?: string;  // Browser/device info
+  createdAt: Date;
+}
+
 export interface IUser {
   _id: string;
   organizationId: Organization | string;
@@ -81,6 +89,7 @@ export interface IUser {
   updatedAt: Date;
   resetToken?: string;
   resetTokenExpiry?: Date;
+  refreshTokens?: RefreshTokenEntry[];
   isDeleted?: boolean;
   otpExpires?: Date;
   otp?: number;
@@ -120,6 +129,13 @@ export const userSchema = new Schema<IUser>(
       type: Date,
       required: false,
     },
+    refreshTokens: [{
+      token: { type: String, required: true },
+      expiry: { type: Date, required: true },
+      deviceId: { type: String },
+      deviceInfo: { type: String },
+      createdAt: { type: Date, default: Date.now }
+    }],
     isDeleted: {
       type: Boolean,
       required: false,

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase ,{ User } from "@/lib/mongodb";
-import { signToken } from "@/app/actions/auth";
-import { setSecureAuthTokens } from "@/lib/secureTokens";
+import { signAccessToken } from "@/app/actions/auth";
+import { setSecureAuthTokens, setSecureOrgId } from "@/lib/secureTokens";
 import { loginRateLimiter } from "@/lib/rateLimiter";
+import { generateRefreshToken, hashRefreshToken, storeRefreshToken, cleanupExpiredTokens } from "@/lib/refreshToken";
+import crypto from "crypto";
 
 async function handleVerifyOtp(req: NextRequest) {
   try {
@@ -83,7 +85,8 @@ async function handleVerifyOtp(req: NextRequest) {
 
       const response = await returnTokenBasedResponse(
         userData,
-        userData[0].organizationId
+        userData[0].organizationId,
+        req
       );
       return response;
     } else {
@@ -101,21 +104,84 @@ async function handleVerifyOtp(req: NextRequest) {
   }
 }
 
-const returnTokenBasedResponse = async (obj: any, orgId: string) => {
-  const token = await signToken(obj[0], orgId);
+const returnTokenBasedResponse = async (obj: any, orgId: string, req?: NextRequest) => {
+  // Generate short-lived access token (15 minutes)
+  const accessToken = await signAccessToken(obj[0], orgId);
+
+  // Generate device info
+  const deviceInfo = req?.headers.get("user-agent") || "Unknown Device";
+  const userId = obj[0].id;
+  const role = obj[0].role;
+  const isCandidate = role === "candidate";
+  
+  // Cleanup expired tokens before storing new one (keeps array clean)
+  await cleanupExpiredTokens(userId, isCandidate);
+  
+  // Generate deviceId
+  const deviceId = crypto.randomUUID();
+  
+  // Generate refresh token using JWT (same method as access token)
+  const refreshTokenPayload = {
+    userId: userId,
+    role: role,
+    orgId: orgId,
+    isCandidate: isCandidate,
+    deviceId: deviceId,
+    deviceInfo: deviceInfo,
+  };
+  
+  const refreshToken = generateRefreshToken(refreshTokenPayload, orgId);
+  const refreshTokenHash = hashRefreshToken(refreshToken);
+  
+  // Store hashed refresh token in database
+  await storeRefreshToken(
+    userId,
+    refreshTokenHash,
+    isCandidate,
+    deviceId,
+    deviceInfo,
+    30 // 30 days
+  );
 
   const response = NextResponse.json({
     message: "Logged In Successfully",
-    user: token,
+    user: accessToken,
+    refreshToken: refreshToken, // Return JWT refresh token to client
+    deviceId: deviceId,
   });
 
-  // SECURITY FIX: Use secure token system with improved security
-  setSecureAuthTokens(response, token, {
-    expires: 30, // 30 days
-    maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
+  // Set short-lived access token in cookie
+  let resp = setSecureAuthTokens(response, accessToken, {
+    expires: 0.0104, // ~15 minutes in days
+    maxAge: 15 * 60, // 15 minutes in seconds
   });
 
-  return response;
+  // Set refresh token in httpOnly cookie
+  resp.cookies.set("refresh_token", refreshToken, {
+    httpOnly: true,
+    secure: process.env.ENVIRONMENT === "production",
+    sameSite: "strict",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+    path: "/",
+  });
+  
+  // Set device_id cookie
+  resp.cookies.set("device_id", deviceId, {
+    httpOnly: true,
+    secure: process.env.ENVIRONMENT === "production",
+    sameSite: "strict",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+    path: "/",
+  });
+
+  // Set secure organization ID
+  resp = setSecureOrgId(resp, orgId, {
+    expires: 30,
+    maxAge: 30 * 24 * 60 * 60,
+    path: "/",
+  });
+
+  return resp;
 };
 
 // Export with rate limiting
