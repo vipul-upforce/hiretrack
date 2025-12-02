@@ -196,17 +196,11 @@ export function EmailNotificationSettingsDialog({
         ) : (
           <>
             <div className="flex flex-col h-full">
-              <div className="space-y-4 flex-1 overflow-y-auto px-6 py-4 max-h-[70vh] scrollbar-thin scrollbar-thumb-gray-300">
+              {/* Fixed section below header */}
+              <div className="px-6 py-2 border-b bg-background">
                 {/* Header Badge */}
-                <div className="flex items-center gap-2">
-                  <Settings className="h-4 w-4" />
-                  <Badge variant="outline">Admin Overrides</Badge>
-                </div>
-
-                <Separator />
-
-                {/* All Toggle */}
-                <div className="flex items-center justify-between space-x-4 py-3 px-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 rounded-t-lg mb-2">
+                {/* All Toggle - Fixed below header */}
+                <div className="flex items-center justify-between space-x-4 py-3 px-4 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
                   <div className="flex-1 space-y-1">
                     <Label
                       htmlFor="notification-all"
@@ -222,8 +216,10 @@ export function EmailNotificationSettingsDialog({
                     disabled={updating}
                   />
                 </div>
+              </div>
 
-                {/* Notification Toggles */}
+              {/* Scrollable Notification Toggles */}
+              <div className="flex-1 overflow-y-auto px-6 py-4 max-h-[60vh] scrollbar-thin scrollbar-thumb-gray-300">
                 <div className="space-y-0">
                   {notificationTypes.map((type) => (
                     <EmailNotificationToggle
@@ -240,7 +236,7 @@ export function EmailNotificationSettingsDialog({
               </div>
 
               {/* Footer Buttons */}
-              <div className="flex justify-between items-center border-t bg-background px-6 py-4">
+              <div className="flex justify-between items-center border-t bg-background px-6 py-2">
                 <Button
                   variant="outline"
                   onClick={handleReset}

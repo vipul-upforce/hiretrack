@@ -165,73 +165,83 @@ export function GlobalEmailNotificationSettingsDialog({
           </div>
         ) : (
           <>
-            <div className="space-y-4 flex-1 overflow-y-auto px-6 py-4 max-h-[400px]">
-              {/* All Toggle */}
-              <div className="flex items-center justify-between space-x-4 py-3 px-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 rounded-t-lg mb-2">
-                <div className="flex-1 space-y-1">
-                  <Label
-                    htmlFor="notification-all"
-                    className="text-sm font-semibold leading-none"
-                  >
-                    All Notifications
-                  </Label>
-                  {hasAdminDisabled && (
-                    <p className="text-xs text-muted-foreground">
-                      Some notifications are disabled by admin
-                    </p>
-                  )}
-                </div>
-                <Switch
-                  id="notification-all"
-                  checked={allToggleEnabled}
-                  onCheckedChange={handleAllToggle}
-                  disabled={updating}
-                />
-              </div>
-              {ALL_NOTIFICATION_TYPES.map((type) => {
-                const isDisabled = isAdminOverrideDisabled(type, adminOverrides) || updating ;
-                const source = resolveNotificationSource(type, adminOverrides, effectiveSettingsWithSource, "global-user");
-                
-                return (
-                  <EmailNotificationToggle
-                    key={type}
-                    type={type}
-                    enabled={localSettings[type]}
-                    source={source}
-                    onToggle={handleToggle}
-                    showSource={true}
-                    disabled={isDisabled}
+            <div className="flex flex-col h-full">
+              {/* Fixed section below header */}
+              <div className="px-6 py-2 border-b bg-background">
+                {/* All Toggle - Fixed below header */}
+                <div className="flex items-center justify-between space-x-4 py-3 px-4 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+                  <div className="flex-1 space-y-1">
+                    <Label
+                      htmlFor="notification-all"
+                      className="text-sm font-semibold leading-none"
+                    >
+                      All Notifications
+                    </Label>
+                    {hasAdminDisabled && (
+                      <p className="text-xs text-muted-foreground">
+                        Some notifications are disabled by admin
+                      </p>
+                    )}
+                  </div>
+                  <Switch
+                    id="notification-all"
+                    checked={allToggleEnabled}
+                    onCheckedChange={handleAllToggle}
+                    disabled={updating}
                   />
-                );
-              })}
-            </div>
+                </div>
+              </div>
 
-            <div className="flex justify-between items-center border-t bg-background px-6 py-4 sticky bottom-0 z-10 gap-4">
-              <Button
-                variant="outline"
-                onClick={handleReset}
-                disabled={updating || !hasChanges()}
-              >
-                Reset
-              </Button>
-              <div className="flex gap-3">
+              {/* Scrollable Notification Toggles */}
+              <div className="flex-1 overflow-y-auto px-6 py-4 max-h-[60vh] scrollbar-thin scrollbar-thumb-gray-300">
+                <div className="space-y-0">
+                  {ALL_NOTIFICATION_TYPES.map((type) => {
+                    const isDisabled = isAdminOverrideDisabled(type, adminOverrides) || updating ;
+                    const source = resolveNotificationSource(type, adminOverrides, effectiveSettingsWithSource, "global-user");
+                    
+                    return (
+                      <EmailNotificationToggle
+                        key={type}
+                        type={type}
+                        enabled={localSettings[type]}
+                        source={source}
+                        onToggle={handleToggle}
+                        showSource={true}
+                        disabled={isDisabled}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Footer Buttons */}
+              <div className="flex justify-between items-center border-t bg-background px-6 py-2 gap-4">
                 <Button
                   variant="outline"
-                  onClick={() => onOpenChange(false)}
-                  disabled={updating}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="primary"
-                  onClick={handleSave}
+                  onClick={handleReset}
                   disabled={updating || !hasChanges()}
                 >
-                  {updating && (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  )}
-                  Save Changes
+                  Reset
                 </Button>
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => onOpenChange(false)}
+                    disabled={updating}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onClick={handleSave}
+                    disabled={updating || !hasChanges()}
+                  >
+                    {updating && (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    )}
+                    Save Changes
+                  </Button>
+                </div>
               </div>
             </div>
           </>
