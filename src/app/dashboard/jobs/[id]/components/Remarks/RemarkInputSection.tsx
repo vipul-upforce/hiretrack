@@ -10,6 +10,13 @@ import { Candidate } from "@/types/candidate";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useState } from "react";
 
+interface MentionUser {
+  _id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
 interface RemarkInputSectionProps {
   newRemark: string;
   setNewRemark: (value: string) => void;
@@ -19,7 +26,7 @@ interface RemarkInputSectionProps {
   isSubRemarkPrivate: boolean;
   setIsSubRemarkPrivate: (value: boolean) => void;
   user: User | null;
-  handleAddRemark: () => void;
+  handleAddRemark: (selectedMentionUserIds?: string[]) => void;
   localCandidate: Candidate | null;
   handleRemoveFollowUp: () => void;
   isRemarkSubmitting: boolean;
@@ -42,6 +49,8 @@ export default function RemarkInputSection({
   const hasFollowUp =
     localCandidate?.followUp?.note && localCandidate?.followUp?.note.length > 0;
   const [removeFU, setRemoveFU] = useState(false);
+  const [selectedMentions, setSelectedMentions] = useState<MentionUser[]>([]);
+  
   const handleFollowUpCheckboxChange = (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -64,7 +73,7 @@ export default function RemarkInputSection({
             if (e.altKey && e.key === "Enter") {
               e.preventDefault();
               if (newRemark.trim() && !isRemarkSubmitting) {
-                handleAddRemark();
+                handleAddRemark(selectedMentions.map(m => m._id));
               }
             }
           }}
@@ -72,6 +81,7 @@ export default function RemarkInputSection({
           currentUserRole={user?.role || ""}
           rows={3}
           isRemarkPrivate={isSubRemarkPrivate}
+          onSelectedMentionsChange={setSelectedMentions}
         />
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
@@ -158,7 +168,7 @@ export default function RemarkInputSection({
               variant="primary"
               onClick={() => {
                 removeFU && handleRemoveFollowUp();
-                handleAddRemark();
+                handleAddRemark(selectedMentions.map(m => m._id));
               }}
               disabled={isRemarkSubmitting}
             >

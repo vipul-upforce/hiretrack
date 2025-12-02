@@ -22,10 +22,16 @@ export interface MentionMatchResult {
 
 /**
  * Find users mentioned in text within an organization
+ * @param text - The text to search for mentions
+ * @param organizationId - The organization ID
+ * @param validMentionUserIds - Optional list of user IDs that were selected from the mention picker.
+ *                              For interviewers, only mentions in this list will trigger notifications.
+ *                              For HR and Admin, manually typed mentions will still work.
  */
 export async function findMentionedUsers(
   text: string,
-  organizationId: string
+  organizationId: string,
+  validMentionUserIds?: string[]
 ): Promise<MentionMatchResult> {
   try {
     console.log("🔍 FIND MENTIONED USERS DEBUG:");
@@ -59,7 +65,7 @@ export async function findMentionedUsers(
       role: { $in: ["admin", "hr", "interviewer"] },
       isDeleted: { $ne: true },
     })
-      .select("_id name email")
+      .select("_id name email role")
       .lean();
 
     console.log(
@@ -99,14 +105,27 @@ export async function findMentionedUsers(
 
             if (matchesUserName(firstName, lastName, mention.patterns)) {
               console.log(`    - ✅ MATCH FOUND for user: ${user.name}`);
+              
+              // For interviewers: only include if they were selected from the mention picker
+              // For HR and Admin: allow manually typed mentions
+              const userRole = (user as any).role;
+              const userIdStr = user._id.toString();
+              const isValidMention = validMentionUserIds?.includes(userIdStr);
+              
+              if (userRole === "interviewer" && validMentionUserIds && !isValidMention) {
+                console.log(`    - ⚠️ Interviewer "${user.name}" mentioned manually, skipping notification`);
+                foundMatch = true; // Mark as found to avoid adding to unrecognized
+                continue; // Skip adding to mentionedUsers
+              }
+              
               // Check if user is already in the results (avoid duplicates)
               const alreadyAdded = mentionedUsers.some(
-                (mu) => mu._id === user._id.toString()
+                (mu) => mu._id === userIdStr
               );
 
               if (!alreadyAdded) {
                 mentionedUsers.push({
-                  _id: user._id.toString(),
+                  _id: userIdStr,
                   name: user.name,
                   email: user.email,
                   firstName,

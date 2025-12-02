@@ -571,39 +571,24 @@ export async function PUT(request: NextRequest) {
 
     // Notify users based on isPrivate status
     if (data.newEntry?.remark?.description) {
-      if (data.newEntry.remark.isPrivate === false) {
-        // Notify admin, hr, and interviewers when isPrivate is false
-        await NotificationService.notifyRemarkAdded({
-          organizationId: organizationId,
-          candidateId: data.candidateId,
-          candidateName: candidateData.name,
-          jobId:
-            typeof data.jobId === "string" && data.jobId !== ""
-              ? data.jobId
-              : data.jobId._id || null,
-          jobTitle: data.jobId?.title || "Unknown Job",
-          remarkText: data.newEntry.remark.description,
-          triggerUserId: userData.id,
-          triggerUserName: userData.name || "Unknown User",
-          roles: ["admin", "hr", "interviewer"], // Notify all roles
-        });
-      } else {
-        // Notify only admin and hr when isPrivate is true
-        await NotificationService.notifyRemarkAdded({
-          organizationId: organizationId,
-          candidateId: data.candidateId,
-          candidateName: candidateData.name,
-          jobId:
-            typeof data.jobId === "string" && data.jobId !== ""
-              ? data.jobId
-              : data.jobId._id || null,
-          jobTitle: data.jobId?.title || "Unknown Job",
-          remarkText: data.newEntry.remark.description,
-          triggerUserId: userData.id,
-          triggerUserName: userData.name || "Unknown User",
-          roles: ["admin", "hr"], // Notify only admin and hr
-        });
-      }
+      const selectedMentionUserIds = data.newEntry.remark.selectedMentionUserIds || [];
+      // For both public and private remarks: Always notify HR and Admin
+      // Interviewers are only notified if selected from mention picker (handled by findMentionedUsers)
+      await NotificationService.notifyRemarkAdded({
+        organizationId: organizationId,
+        candidateId: data.candidateId,
+        candidateName: candidateData.name,
+        jobId:
+          typeof data.jobId === "string" && data.jobId !== ""
+            ? data.jobId
+            : data.jobId._id || null,
+        jobTitle: data.jobId?.title || "Unknown Job",
+        remarkText: data.newEntry.remark.description,
+        triggerUserId: userData.id,
+        triggerUserName: userData.name || "Unknown User",
+        roles: ["admin", "hr"], // Always notify HR and Admin for both public and private remarks
+        validMentionUserIds: selectedMentionUserIds, // Interviewers only notified if in this list
+      });
     }
 
     const transformedHistory = (historyData.history || []).map(

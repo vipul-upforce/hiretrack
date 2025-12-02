@@ -384,6 +384,7 @@ export async function sendSmartNotification(
     eventType?: string;
     templateUsed?: string;
     content?: string;
+    validMentionUserIds?: string[]; // User IDs selected from mention picker
   },
   emailContent: {
     subject: string;
@@ -427,7 +428,8 @@ export async function sendSmartNotification(
       try {
         const mentionResult = await findMentionedUsers(
           context.content,
-          organizationId
+          organizationId,
+          context.validMentionUserIds
         );
         mentionedUsers = mentionResult.mentionedUsers.map((u) =>
           u._id.toString()
@@ -570,6 +572,7 @@ export async function sendRemarkNotificationWithMentions(
     candidateProfileLink?: string;
     organizationName?: string;
     recipientName?: string;
+    validMentionUserIds?: string[]; // User IDs selected from mention picker
   },
   potentialRecipients: string[]
 ): Promise<{
@@ -612,6 +615,7 @@ export async function sendRemarkNotificationWithMentions(
       content: remarkContent,
       eventType: "new_remark",
       templateUsed: "remark-notification",
+      validMentionUserIds: context.validMentionUserIds,
     },
     emailContentObj,
     potentialRecipients

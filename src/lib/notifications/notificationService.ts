@@ -298,6 +298,7 @@ export class NotificationService {
     triggerUserId: string;
     triggerUserName: string;
     roles: string[];
+    validMentionUserIds?: string[]; // User IDs selected from mention picker
   }) {
     try {
       await connectToDatabase();
@@ -313,7 +314,8 @@ export class NotificationService {
       try {
         const mentionResult = await findMentionedUsers(
           params.remarkText,
-          params.organizationId
+          params.organizationId,
+          params.validMentionUserIds
         );
         mentionedUserIds = mentionResult.mentionedUsers.map((u) =>
           u._id.toString()

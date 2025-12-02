@@ -107,7 +107,7 @@ export const MentionPicker = forwardRef<
             user.role === "interviewer"
         );
       }
-console.log("roleFilteredUsers", roleFilteredUsers);
+
       // Then filter by search query if provided
       if (!searchQuery) return roleFilteredUsers;
 

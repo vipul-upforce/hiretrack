@@ -53,6 +53,7 @@ const AddRemarksDialog = ({
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
   const [sendStatusMail] = useSendStatusMailMutation();
   const { user } = useSelector((state: any) => state.auth || {});
+  const [selectedMentions, setSelectedMentions] = useState<Array<{_id: string; name: string; email: string; role: string}>>([]);
 
   const handleAddRemark = async () => {
     if (isSubmitting) return;
@@ -91,6 +92,7 @@ const AddRemarksDialog = ({
             name: user.name,
             email: user.email,
           },
+          selectedMentionUserIds: selectedMentions.map(m => m._id),
         };
 
         // debugger;
@@ -198,24 +200,25 @@ const AddRemarksDialog = ({
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1  px-6 py-4 space-y-4">
-          <MentionTextarea
-            placeholder="Add a remark... (Alt+Enter to submit)"
-            className="max-h-80 overflow-y-auto"
-            value={newRemark}
-            onChange={setNewRemark}
-            onKeyDown={(e) => {
-              if (e.altKey && e.key === "Enter") {
-                e.preventDefault();
-                if (newRemark.trim() && !isSubmitting) {
-                  handleAddRemark();
-                }
-              }
-            }}
-            organizationId={user?.organizationId || ""}
-            currentUserRole={user?.role || ""}
-            rows={4}
-            isRemarkPrivate={isSubRemarkPrivate}
-          />
+              <MentionTextarea
+                placeholder="Add a remark... (Alt+Enter to submit)"
+                className="max-h-80 overflow-y-auto"
+                value={newRemark}
+                onChange={setNewRemark}
+                onKeyDown={(e) => {
+                  if (e.altKey && e.key === "Enter") {
+                    e.preventDefault();
+                    if (newRemark.trim() && !isSubmitting) {
+                      handleAddRemark();
+                    }
+                  }
+                }}
+                organizationId={user?.organizationId || ""}
+                currentUserRole={user?.role || ""}
+                rows={4}
+                isRemarkPrivate={isSubRemarkPrivate}
+                onSelectedMentionsChange={setSelectedMentions}
+              />
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
               <Label htmlFor="rating">Ratings:</Label>

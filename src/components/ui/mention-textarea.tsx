@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { User } from "lucide-react";
+import { User, X } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { MentionPicker } from "@/components/ui/mention-picker";
 import { useMentionPicker } from "@/hooks/useMentionPicker";
@@ -26,6 +26,7 @@ interface MentionTextareaProps {
   currentUserRole: string;
   rows?: number;
   isRemarkPrivate?: boolean;
+  onSelectedMentionsChange?: (mentions: MentionUser[]) => void;
 }
 
 export function MentionTextarea({
@@ -39,6 +40,7 @@ export function MentionTextarea({
   currentUserRole,
   rows = 3,
   isRemarkPrivate = true,
+  onSelectedMentionsChange,
 }: MentionTextareaProps) {
   const [showMentionPicker, setShowMentionPicker] = useState(false);
   const [mentionPosition, setMentionPosition] = useState(0);
@@ -135,6 +137,17 @@ export function MentionTextarea({
     }, 0);
   };
 
+  // Handle mention removal
+  const handleMentionRemove = (user: MentionUser) => {
+    // Remove mention from selected mentions
+    removeMention(user._id);
+    
+    // Remove mention text from the textarea value
+    const mentionPattern = new RegExp(`@${user.name}\\s+`, "g");
+    const newText = value.replace(mentionPattern, "");
+    onChange(newText);
+  };
+
   // Handle key events
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (showMentionPicker) {
@@ -167,6 +180,13 @@ export function MentionTextarea({
       clearMentions();
     }
   }, [value, clearMentions]);
+
+  // Notify parent component when selected mentions change
+  useEffect(() => {
+    if (onSelectedMentionsChange) {
+      onSelectedMentionsChange(selectedMentions);
+    }
+  }, [selectedMentions, onSelectedMentionsChange]);
 
   // Recalculate position on window resize and scroll
   useEffect(() => {
@@ -243,6 +263,17 @@ export function MentionTextarea({
               className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary text-xs rounded-full border border-primary/20 hover:bg-primary/15 transition-colors"
             >
               <User className="h-3 w-3" />@{user.name}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleMentionRemove(user);
+                }}
+                className="ml-1 hover:bg-primary/20 rounded-full p-0.5 transition-colors"
+                aria-label={`Remove mention of ${user.name}`}
+              >
+                <X className="h-3 w-3" />
+              </button>
             </span>
           ))}
         </div>
