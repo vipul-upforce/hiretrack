@@ -59,7 +59,6 @@ export function EmailCandidateDialog({
   const [organizationName, setOrganizationName] = useState("");
 
   useEffect(() => {
-    // Get current user's email for reply-to field and fetch templates
     (async () => {
       if (user) {
         setUserEmail(user.email);

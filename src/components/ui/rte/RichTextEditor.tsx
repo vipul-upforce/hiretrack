@@ -23,8 +23,6 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
-  // LinkIcon,
-  // ImageIcon,
   Undo,
   Redo,
   Palette,
@@ -102,15 +100,13 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       Highlight.configure({
         multicolor: true,
       }),
+
       Extension.create({
         name: "customEnterKeymap",
         addKeyboardShortcuts() {
           return {
-            Enter: ({ editor }) => {
-              return editor.commands.setHardBreak();
-            },
             "Shift-Enter": ({ editor }) => {
-              return editor.commands.splitBlock();
+              return editor.commands.setHardBreak();
             },
           };
         },
@@ -151,30 +147,6 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     }
   }, [editor, value]);
 
-  // const addImage = useCallback(() => {
-  //   if (!editor) return
-
-  //   const url = window.prompt("URL")
-  //   if (url) {
-  //     editor.chain().focus().setImage({ src: url }).run()
-  //   }
-  // }, [editor])
-
-  // const setLink = useCallback(() => {
-  //   if (!editor) return
-
-  //   const previousUrl = editor.getAttributes("link").href
-  //   const url = window.prompt("URL", previousUrl)
-
-  //   if (url === null) return
-
-  //   if (url === "") {
-  //     editor.chain().focus().extendMarkRange("link").unsetLink().run()
-  //     return
-  //   }
-  //   editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run()
-  // }, [editor])
-
   const setFontFamily = useCallback(
     (fontFamily: string, fontName: string) => {
       if (!editor) return;
@@ -204,7 +176,6 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     return <div className="h-64 w-full animate-pulse bg-muted rounded-md" />;
   }
 
-  // const hasError = touched && error
   const borderColor = isFocused ? "border-primary" : "border-input";
 
   return (
@@ -371,20 +342,6 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
             <AlignRight className="h-4 w-4" />
           </Toggle>
 
-          {/* <Button
-            variant="ghost"
-            size="sm"
-            onClick={setLink}
-            className={editor.isActive("link") ? "bg-accent text-accent-foreground" : ""}
-            aria-label="Link"
-          >
-            <LinkIcon className="h-4 w-4" />
-          </Button>
-
-          <Button variant="ghost" size="sm" onClick={addImage} aria-label="Image">
-            <ImageIcon className="h-4 w-4" />
-          </Button> */}
-
           <div className="ml-auto flex gap-1">
             <Button
               variant="ghost"
@@ -411,10 +368,11 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
       {!readOnly && maxLength && (
         <p
-          className={`text-right text-sm mt-1 mx-1 ${editor?.getText().length >= maxLength
-            ? "text-red-500"
-            : "text-gray-400"
-            }`}
+          className={`text-right text-sm mt-1 mx-1 ${
+            editor?.getText().length >= maxLength
+              ? "text-red-500"
+              : "text-gray-400"
+          }`}
         >
           {editor?.getText().length || 0} / {maxLength}
         </p>
@@ -429,9 +387,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         name={name}
       />
 
-      {error && (
-        <p className="text-sm text-red-500 mt-1 ml-1">{error}</p>
-      )}
+      {error && <p className="text-sm text-red-500 mt-1 ml-1">{error}</p>}
     </div>
   );
 };

@@ -17,8 +17,6 @@ import {
   useLazyGetCustomFieldsByOrgNameQuery,
   User,
 } from "@/lib/features/org/orgApi";
-import Cookies from "js-cookie";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { usePathname } from "next/navigation";
 import { useSelector } from "react-redux";
 
@@ -55,24 +53,17 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
         pathname?.includes("settings") ||
         pathname?.endsWith("dashboard")
       ) {
-        // const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-        // if (decryptedResponse.success && decryptedResponse.user) {
-        // const userObject = user;
         const orgId = user?.organizationId;
-        // debugger;
         updateCustomFields({
           orgId: orgId,
           customFields: customFields,
         });
-        // }
       }
     }, [customFields, updateCustomFields, pathname]);
 
     const getCustomFields = useCallback(async () => {
       // const token = Cookies.get("token");
       if (user && user.role !== "" && user.role !== "candidate") {
-        // const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-        // if (decryptedResponse.success && decryptedResponse.user) {
         const userObject = user;
         const orgId = userObject.organizationId;
         const data = await getCustomField(orgId);

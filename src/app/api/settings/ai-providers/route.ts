@@ -1,28 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect, { Settings } from "@/lib/mongodb";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import connectToDatabase, { Settings } from "@/lib/mongodb";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 import { decryptProviderKeys, encryptProviderKeys } from "@/lib/encryption";
 import { getDefaultModel } from "@/lib/ai-providers/models-config";
 
 export async function GET(req: NextRequest) {
   try {
-    await dbConnect();
-    let organizationId = "";
-    const token = req.cookies.get("auth_token");
-    const orgId = req.cookies.get("org_id")?.value;
-    if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value),
-        orgId
-      );
-      const userData = decryptedResponse.user;
-      if (decryptedResponse.success) {
-        organizationId = userData.organizationId || "";
-        if (userData.role !== "admin") {
-          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-      }
+    await connectToDatabase();
+    const userData = await getAuthenticatedUser(req, "admin");
+    if (!userData) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const organizationId = userData.organizationId || "";
 
     if (!Settings) {
       return NextResponse.json(
@@ -32,7 +21,7 @@ export async function GET(req: NextRequest) {
     }
     const settings = await Settings.findOne({
       organizationId: organizationId,
-    });
+    }).select("aiProviders gemini").lean().exec();
 
     if (!settings) {
       return NextResponse.json(
@@ -67,7 +56,7 @@ export async function GET(req: NextRequest) {
     };
 
     // Decrypt API keys before sending to client
-    aiProviders = decryptProviderKeys(aiProviders, orgId);
+    aiProviders = decryptProviderKeys(aiProviders, userData.organizationId);
 
     return NextResponse.json({ aiProviders });
   } catch (error) {
@@ -82,23 +71,15 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    await dbConnect();
-    let organizationId = "";
-    const token = req.cookies.get("auth_token");
-    const orgId = req.cookies.get("org_id")?.value;
-    if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value),
-        orgId
-      );
-      const userData = decryptedResponse.user;
-      if (decryptedResponse.success) {
-        organizationId = userData.organizationId || "";
-        if (userData.role !== "admin") {
-          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-      }
+    const [userData, aiProvidersSetting] = await Promise.all([
+      getAuthenticatedUser(req, "admin"),
+      req.json(),
+      connectToDatabase(),
+    ]);
+    if (!userData) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const organizationId = userData.organizationId || "";
 
     if (!Settings) {
       return NextResponse.json(
@@ -107,10 +88,9 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    const aiProvidersSetting = await req.json();
 
     // Encrypt API keys before storing in database
-    const encryptedProviders = encryptProviderKeys(aiProvidersSetting, orgId);
+    const encryptedProviders = encryptProviderKeys(aiProvidersSetting, userData.organizationId);
 
     const updatedUser = await Settings.findOneAndUpdate(
       {

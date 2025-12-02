@@ -91,8 +91,8 @@ export function LivePreview({
             <h3 className="font-semibold">Job Description</h3>
             <p className="text-sm opacity-80 leading-relaxed">
               We are seeking a talented Senior Frontend Developer to join our
-              dynamic team. You will be responsible for creating exceptional user
-              experiences using modern web technologies.
+              dynamic team. You will be responsible for creating exceptional
+              user experiences using modern web technologies.
             </p>
           </div>
 
@@ -105,26 +105,74 @@ export function LivePreview({
                   <label className="text-xs font-medium opacity-70">
                     First Name
                   </label>
-                  <div className="h-9 border rounded bg-background/20 border-white/20" />
+                  <div
+                    className="h-9 border rounded"
+                    style={{
+                      backgroundColor:
+                        theme === "dark"
+                          ? "rgba(255,255,255,0.1)"
+                          : "rgba(0,0,0,0.05)",
+                      borderColor:
+                        theme === "dark"
+                          ? "rgba(255,255,255,0.2)"
+                          : "rgba(0,0,0,0.15)",
+                    }}
+                  />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-medium opacity-70">
                     Last Name
                   </label>
-                  <div className="h-9 border rounded bg-background/20 border-white/20" />
+                  <div
+                    className="h-9 border rounded"
+                    style={{
+                      backgroundColor:
+                        theme === "dark"
+                          ? "rgba(255,255,255,0.1)"
+                          : "rgba(0,0,0,0.05)",
+                      borderColor:
+                        theme === "dark"
+                          ? "rgba(255,255,255,0.2)"
+                          : "rgba(0,0,0,0.15)",
+                    }}
+                  />
                 </div>
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium opacity-70">
                   Email Address
                 </label>
-                <div className="h-9 border rounded bg-background/20 border-white/20" />
+                <div
+                  className="h-9 border rounded"
+                  style={{
+                    backgroundColor:
+                      theme === "dark"
+                        ? "rgba(255,255,255,0.1)"
+                        : "rgba(0,0,0,0.05)",
+                    borderColor:
+                      theme === "dark"
+                        ? "rgba(255,255,255,0.2)"
+                        : "rgba(0,0,0,0.15)",
+                  }}
+                />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium opacity-70">
                   Upload Resume
                 </label>
-                <div className="h-20 border-2 border-dashed rounded bg-background/10 border-white/20 flex items-center justify-center">
+                <div
+                  className="h-20 border-2 border-dashed rounded flex items-center justify-center"
+                  style={{
+                    backgroundColor:
+                      theme === "dark"
+                        ? "rgba(255,255,255,0.1)"
+                        : "rgba(0,0,0,0.05)",
+                    borderColor:
+                      theme === "dark"
+                        ? "rgba(255,255,255,0.2)"
+                        : "rgba(0,0,0,0.15)",
+                  }}
+                >
                   <span className="text-xs opacity-60">
                     Drop files here or click to browse
                   </span>

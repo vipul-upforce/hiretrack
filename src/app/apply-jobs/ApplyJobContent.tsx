@@ -269,7 +269,7 @@ export default function ApplyJobsContent({
     if (data) {
       setAppliedApplications(data.appliedApplications);
     }
-  }, [data]);
+  }, [data, isModalOpen, selectedJob]);
 
   const handleSearch = () => {
     setQueryTitle(searchTerm);
@@ -366,15 +366,13 @@ export default function ApplyJobsContent({
             onLogout={handleLogout}
           />
 
-          {jobs && jobs.length > 0 && (
-            <SearchBar
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-              onSearch={handleSearch}
-              primaryColor={primaryColor}
-              secondaryColor={secondaryColor}
-            />
-          )}
+          <SearchBar
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            onSearch={handleSearch}
+            primaryColor={primaryColor}
+            secondaryColor={secondaryColor}
+          />
 
           <JobGrid
             jobs={jobs}

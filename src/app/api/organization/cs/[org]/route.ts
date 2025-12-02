@@ -23,7 +23,7 @@ export async function GET(
         { status: 400 }
       );
     }
-    const orgInfo = await Organization.findById(org);
+    const orgInfo = await Organization.findById(org).select("customFields").lean().exec();
     return NextResponse.json(orgInfo?.customFields, { status: 200 });
   } catch (error: unknown) {
     if (error instanceof Error) {

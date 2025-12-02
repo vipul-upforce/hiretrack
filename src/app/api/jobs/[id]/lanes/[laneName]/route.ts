@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { Job, Organization, Candidate } from "@/lib/mongodb";
-import { auth } from "@/lib/auth";
 import { broadcastLaneUpdate } from "@/lib/broadcast/broadCastCandidate";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 
 const DEFAULT_LANES = [
   "applied",
@@ -20,19 +20,12 @@ export async function DELETE(
   { params }: { params: { id: string; laneName: string } }
 ) {
   try {
-    await connectToDatabase();
-
-    // Check authentication and permissions
-    const session = await auth(request);
-    if (!session || !session.user?.organizationId) {
+    const [user] = await Promise.all([
+      getAuthenticatedUser(request, ["admin", "hr"]),
+      connectToDatabase(),
+    ]);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (!["admin", "hr"].includes(session.user.role)) {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
     }
 
     if (!Job || !Organization || !Candidate) {
@@ -62,8 +55,11 @@ export async function DELETE(
 
     const job = await Job.findOne({
       _id: jobId,
-      organizationId: session.user.organizationId,
-    });
+      organizationId: user.organizationId,
+    })
+      .select("lanes useCustomLanes organizationId _id")
+      .lean()
+      .exec();
 
     if (!job) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
@@ -74,9 +70,10 @@ export async function DELETE(
     if (job.useCustomLanes && job.lanes) {
       currentLanes = [...job.lanes];
     } else {
-      const organization = await Organization.findById(
-        session.user.organizationId
-      );
+      const organization = await Organization.findById(user.organizationId)
+        .select("defaultLanes")
+        .lean()
+        .exec();
       currentLanes = [...(organization?.defaultLanes || DEFAULT_LANES)];
     }
 
@@ -85,15 +82,19 @@ export async function DELETE(
       return NextResponse.json({ error: "Lane not found" }, { status: 404 });
     }
 
-    const organizationId = session.user.organizationId;
+    const organizationId = user.organizationId;
     // Check if any candidates are currently in this lane
-    const candidatesInLane = await Candidate.find({
+    // const candidatesInLane = await Candidate.find({
+    //   jobId: jobId,
+    //   organizationId,
+    //   status: laneName,
+    // });
+    const countCandidatesInLane = await Candidate.countDocuments({
       jobId: jobId,
       organizationId,
       status: laneName,
     });
-
-    if (candidatesInLane.length > 0) {
+    if (countCandidatesInLane > 0) {
       if (!migrationLane) {
         const otherLanes = currentLanes.filter((lane) => lane !== laneName);
         return NextResponse.json(
@@ -149,19 +150,12 @@ export async function PATCH(
   { params }: { params: { id: string; laneName: string } }
 ) {
   try {
-    await connectToDatabase();
-
-    // Check authentication and permissions
-    const session = await auth(request);
-    if (!session || !session.user?.organizationId) {
+    const [user] = await Promise.all([
+      getAuthenticatedUser(request, ["admin", "hr"]),
+      connectToDatabase(),
+    ]);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (!["admin", "hr"].includes(session.user.role)) {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
     }
 
     if (!Job || !Organization || !Candidate) {
@@ -204,8 +198,8 @@ export async function PATCH(
 
     const job = await Job.findOne({
       _id: jobId,
-      organizationId: session.user.organizationId,
-    });
+      organizationId: user.organizationId,
+    }).select("lanes useCustomLanes organizationId _id").lean().exec();
 
     if (!job) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
@@ -216,9 +210,10 @@ export async function PATCH(
     if (job.useCustomLanes && job.lanes) {
       currentLanes = [...job.lanes];
     } else {
-      const organization = await Organization.findById(
-        session.user.organizationId
-      );
+      const organization = await Organization.findById(user.organizationId)
+        .select("defaultLanes")
+        .lean()
+        .exec();
       currentLanes = [...(organization?.defaultLanes || DEFAULT_LANES)];
     }
 
@@ -239,29 +234,31 @@ export async function PATCH(
     const newLanes = currentLanes.map((lane) =>
       lane === laneName ? newLaneName : lane
     );
+    const organizationId = user.organizationId;
 
-    // Update job
-    const updatedJob = await Job.findByIdAndUpdate(
-      jobId,
-      {
-        $set: {
-          lanes: newLanes,
-          useCustomLanes: true, // Ensure we're using custom lanes after modification
+    const [updatedJob] = await Promise.all([
+      // Update job
+      Job.findByIdAndUpdate(
+        jobId,
+        {
+          $set: {
+            lanes: newLanes,
+            useCustomLanes: true, // Ensure we're using custom lanes after modification
+          },
         },
-      },
-      { new: true }
-    );
+        { new: true }
+      ),
+      // Update all candidates with the old status to the new status
+      Candidate.updateMany(
+        {
+          jobId: jobId,
+          organizationId,
+          status: laneName,
+        },
+        { $set: { status: newLaneName } }
+      ),
+    ]);
 
-    const organizationId = session.user.organizationId;
-    // Update all candidates with the old status to the new status
-    await Candidate.updateMany(
-      {
-        jobId: jobId,
-        organizationId,
-        status: laneName,
-      },
-      { $set: { status: newLaneName } }
-    );
     broadcastLaneUpdate(organizationId, newLanes, jobId);
     return NextResponse.json({
       message: "Lane renamed successfully",

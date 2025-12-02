@@ -4,13 +4,14 @@ import connectToDatabase, {
   Candidate,
   Settings,
   cvBatch as CVBatch,
+  History,
 } from "@/lib/mongodb";
 import { handleSingleFile } from "@/lib/fileUtils";
-import { auth } from "@/lib/auth";
 import { AIProviderFactory, ProcessedResumeData } from "@/lib/ai-providers";
 import { decryptProviderKeys } from "@/lib/encryption";
 import { NotificationService } from "@/lib/notifications/notificationService";
 import { Types } from "mongoose";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 
 interface ExtendedProcessedResumeData extends ProcessedResumeData {
   name: string;
@@ -147,14 +148,13 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const authInfo = await auth(request);
-  if (!authInfo?.user) {
+  const user = await getAuthenticatedUser(request);
+  if (!user) {
     return NextResponse.json(
       { error: "User not Authenticated" },
       { status: 401 }
     );
   }
-
   const formData = await request.formData();
   const { searchParams } = new URL(request.url);
   const organizationId = searchParams?.get("organizationId");
@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
   });
 
   try {
-    const settings = await Settings.findOne({ organizationId: organizationId });
+    const settings = await Settings.findOne({ organizationId: organizationId }).select("aiProviders gemini fileStorage").lean().exec();
     if (!settings) {
       return NextResponse.json(
         { error: "Settings not found" },
@@ -221,21 +221,7 @@ export async function POST(request: NextRequest) {
     const apiKey = aiProviders[activeProvider]?.api_key;
 
     // Add debug logging similar to evaluate API
-    console.log(
-      "AI Providers from settings:",
-      JSON.stringify(
-        {
-          activeProvider: aiProviders.activeProvider,
-          hasGeminiKey: !!aiProviders.gemini?.api_key,
-          hasOpenAIKey: !!aiProviders.openai?.api_key,
-          hasAnthropicKey: !!aiProviders.anthropic?.api_key,
-          hasPerplexityKey: !!aiProviders.perplexity?.api_key,
-        },
-        null,
-        2
-      )
-    );
-
+   
     if (!apiKey) {
       return NextResponse.json(
         {
@@ -356,7 +342,20 @@ export async function POST(request: NextRequest) {
 
         await candidate.save();
 
-        // Add success item to batch
+        await History?.create({
+          candidateId: candidate._id,
+          jobId: null,
+          history: [
+            {
+              dateTime: new Date(),
+              title: "cv-process batch",
+              previousInterviewer: null,
+              currentInterviewer: null,
+              assignmentBy: user.id,
+            },
+          ],
+        });
+
         cvBatchInfo.items.push({
           filename: file.name,
           candidateId: candidate._id,
@@ -387,11 +386,8 @@ export async function POST(request: NextRequest) {
         });
       }
     }
-    // console.log(cvBatchInfo, "const cvBatchInfo   ==  = = ");
-
+    
     // Update batch status
-
-    // console.log(authInfo, "authInfo ingfooo");
 
     cvBatchInfo.status = "completed";
     cvBatchInfo.completedAt = new Date();
@@ -403,8 +399,8 @@ export async function POST(request: NextRequest) {
       batchId: cvBatchInfo._id.toString(),
       successCount: cvBatchInfo.successCount,
       failureCount: cvBatchInfo.failureCount,
-      triggerUserId: authInfo?.user?.id,
-      triggerUserName: authInfo?.user?.name || "Unknown User",
+      triggerUserId: user?.id,
+      triggerUserName: user?.name || "Unknown User",
     });
 
     return NextResponse.json({
@@ -443,14 +439,13 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const authInfo = await auth(request);
-  if (!authInfo?.user) {
+  const user = await getAuthenticatedUser(request);
+  if (!user) {
     return NextResponse.json(
       { error: "User not Authenticated" },
       { status: 401 }
     );
   }
-
   const { searchParams } = new URL(request.url);
   const organizationId = searchParams?.get("organizationId");
 

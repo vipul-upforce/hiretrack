@@ -1,5 +1,5 @@
 // import { Candidate } from "@/lib/mongodb";
-import { auth } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 import { NextRequest, NextResponse } from "next/server";
 
 // Define types for SSE client management
@@ -20,14 +20,10 @@ global.sseClients =
 
 export async function GET(req: NextRequest) {
   // Authenticate user and get organization info
-  const cookie = await auth(req);
-  const user = cookie?.user;
-  if (!user || !user.organizationId) {
-    return new NextResponse("Unauthorized or no organization specified", {
-      status: 401,
-    });
+  const user = await getAuthenticatedUser(req);
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
   const orgId = user.organizationId;
 
   // Initialize organization-specific client map if it doesn't exist
@@ -95,7 +91,6 @@ export async function GET(req: NextRequest) {
 }
 
 // // import { Candidate } from "@/lib/mongodb";
-// import { auth } from "@/lib/auth";
 // import { NextRequest, NextResponse } from "next/server";
 // // import { Candidate } from "../../../server"; // From server.ts
 

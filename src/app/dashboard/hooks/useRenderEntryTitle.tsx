@@ -76,6 +76,8 @@ export function useRenderEntryTitle(interview: ICandidateHistory, localCandidate
               <p>{localCandidate.name} was Archived</p>
             ) : interview.title === "Unarchived" ? (
               <p>{localCandidate.name} was Unarchived</p>
+            ) : interview.title === "cv-process batch" ? (
+              <p>{localCandidate.name} was added from CV Batch Upload</p>
             ) : interview?.previousInterviewer &&
               typeof interview.previousInterviewer === "object" &&
               "name" in interview.previousInterviewer ? (

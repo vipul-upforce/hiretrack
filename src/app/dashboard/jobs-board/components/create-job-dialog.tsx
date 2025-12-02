@@ -22,7 +22,7 @@ import { scrollToError } from "@/lib/formUtils";
 interface CreateJobDialogProps {
   onJobCreated: (
     job: JobFormValues & {
-      status: "draft";
+      status: "draft" | "open" | "closed";
       attachments: {
         files: Array<{
           id: string;
@@ -73,7 +73,6 @@ export function CreateJobDialog({
     _id: "",
     title: "",
     status: "draft",
-    // company: "",
     description: "",
     skills: [] as string[],
     salary: {
@@ -84,7 +83,6 @@ export function CreateJobDialog({
     },
     experience: 0,
     links: [] as string[],
-    // validTill: new Date(),
     files: [] as File[],
     images: [] as File[],
     removedFiles: [] as string[],
@@ -96,14 +94,13 @@ export function CreateJobDialog({
       affordability: 25,
       overall: 25,
     },
+    promptForStatusChangeReason: true,
   };
 
   const handleSubmit = async (
     values: JobFormValues,
     { resetForm, setSubmitting }: FormikHelpers<JobFormValues>
   ) => {
-
-
     const fileNames = values.files.map((file) => file.name);
     const hasDuplicates = new Set(fileNames).size !== fileNames.length;
 
@@ -119,7 +116,7 @@ export function CreateJobDialog({
     try {
       const newJob = {
         ...values,
-        status: "draft" as const,
+        status: values?.status || "draft",
         candidateCount: 0,
         attachments: {
           files:
@@ -188,11 +185,12 @@ export function CreateJobDialog({
           Create Job
         </Button>
       </DialogTrigger>
-      <DialogContent size="2xl" className="max-h-[90vh] p-0 overflow-hidden flex flex-col">
+      <DialogContent
+        size="2xl"
+        className="max-h-[90vh] p-0 overflow-hidden flex flex-col"
+      >
         <DialogHeader className="px-6 py-4 pr-12">
-          <DialogTitle>
-            Create New Job Position
-          </DialogTitle>
+          <DialogTitle>Create New Job Position</DialogTitle>
           <DialogDescription>
             Fill out the form below to create a new job listing.
           </DialogDescription>

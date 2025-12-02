@@ -20,7 +20,6 @@ import { MentionTextarea } from "@/components/ui/mention-textarea";
 import { Label } from "@/components/ui/label";
 import { Rating } from "@mui/material";
 import { Button } from "@/components/ui/button";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { sentStatusMailHandler } from "@/lib/utils";
 import { useSendStatusMailMutation } from "@/lib/features/org/orgApi";
 import { Switch } from "@/components/ui/switch";
@@ -57,11 +56,7 @@ const AddRemarksDialog = ({
 
   const handleAddRemark = async () => {
     if (isSubmitting) return;
-    // const token = Cookies.get("token");
     if (user) {
-      // const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-      // if (decryptedResponse.success && decryptedResponse.user) {
-      // const user = decryptedResponse.user;
       if (!newRemark.trim() || !user?.id) {
         toast({
           title: "Error",

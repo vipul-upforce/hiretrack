@@ -1,20 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect from "@/lib/mongodb";
 // import { User } from '@/models/User';
-import { User } from "@/lib/mongodb";
-import { auth } from "@/lib/auth";
+import connectToDatabase, { User } from "@/lib/mongodb";
 import mongoose from "mongoose";
 import { Organization } from "@/lib/mongodb";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth(req);
+    const [session] = await Promise.all([
+      getAuthenticatedUser(req, "admin"),
+      connectToDatabase(),
+    ]);
 
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    await dbConnect();
 
     // Give models a moment to initialize if they haven't already
     let retries = 0;
@@ -30,27 +30,53 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const nonSystemUsers = await User.find(
+    // const nonSystemUsers = await User.find(
+    //   {
+    //     role: { $ne: "system" },
+    //     organizationId: session.organizationId
+    //   },
+    //   { password: 0 }
+    // ).sort({ createdAt: -1 });
+
+    // // Fetch only the latest system user
+    // const latestSystemUser = await User.findOne(
+    //   {
+    //     role: "system",
+    //     organizationId: session.organizationId
+    //   },
+    //   { password: 0 }
+    // ).sort({ createdAt: -1 });
+
+    if (!mongoose.Types.ObjectId.isValid(session.organizationId)) {
+      return NextResponse.json(
+        { error: "Invalid organization identifier" },
+        { status: 400 }
+      );
+    }
+
+    const orgObjectId = new mongoose.Types.ObjectId(session.organizationId);
+
+    const [aggregated] = await User.aggregate([
+      { $match: { organizationId: orgObjectId } },
+      { $sort: { createdAt: -1 } },
+      { $project: { password: 0 } },
       {
-        role: { $ne: "system" },
-        organizationId: session.user.organizationId
+        $facet: {
+          nonSystem: [{ $match: { role: { $ne: "system" } } }],
+          latestSystem: [
+            { $match: { role: "system" } },
+            { $limit: 1 }
+          ],
+        },
       },
-      { password: 0 }
-    ).sort({ createdAt: -1 });
-
-    // Fetch only the latest system user
-    const latestSystemUser = await User.findOne(
       {
-        role: "system",
-        organizationId: session.user.organizationId
+        $project: {
+          result: { $concatArrays: ["$nonSystem", "$latestSystem"] },
+        },
       },
-      { password: 0 }
-    ).sort({ createdAt: -1 });
+    ]);
 
-    const result = [...nonSystemUsers];
-    if (latestSystemUser) result.push(latestSystemUser);
-
-    return NextResponse.json(result);
+    return NextResponse.json(aggregated?.result ?? []);
   } catch (error: unknown) {
     return NextResponse.json(
       {
@@ -64,7 +90,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PUT(req: Request) {
-  await dbConnect();
+  await connectToDatabase();
 
   // Give models a moment to initialize if they haven't already
   let retries = 0;
@@ -88,7 +114,7 @@ export async function PUT(req: Request) {
         { status: 500 }
       );
     }
-    const organization = await Organization.findById(organizationId);
+    const organization = await Organization.findById(organizationId).exec();
     if (!organization) {
       return NextResponse.json(
         { error: "Organization not found" },

@@ -168,11 +168,11 @@ export async function createFileShare(options: FileShareOptions): Promise<FileSh
   }
 }
 
-export async function getFileShare(shareId: string): Promise<IFileShare | null> {
+export async function getFileShare(shareId: string) {
   try {
     await connectToDatabase();
-    const fileShare = await FileShare!.findOne({ shareId });
-    return fileShare;
+    const fileShare = await FileShare!.findOne({ shareId }).select("originalFileName organizationId storagePath storageProvider isPublic  mimeType").lean().exec();
+    return fileShare || null;
   } catch (error) {
     console.error("Error getting file share:", error);
     return null;

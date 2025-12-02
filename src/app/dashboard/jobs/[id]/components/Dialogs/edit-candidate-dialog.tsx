@@ -26,10 +26,8 @@ import { useContext, useEffect, useState } from "react";
 import { Resume } from "@/lib/redux/types";
 import { parseResumeFromPdf } from "@/lib/parse-resume-from-pdf";
 import FormUpdater from "../Utils/FormUpdater";
-import Cookies from "js-cookie";
 import { useSendMailMutation } from "@/lib/features/org/orgApi";
 import { sentAssignmentMail } from "@/lib/utils";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import { useApplyHandler } from "@/app/apply-jobs/useApplyHandler";
 import { AddSpecificCustomFieldButton } from "@/Custom_Fields/Components/AddSpecificCustomFieldButton";
@@ -132,15 +130,6 @@ export function EditCandidateDialog({
     setSelectedFormId,
   } = useContext(CustomFieldsContext);
   useEffect(() => {
-    // (async () => {
-    //   const token = Cookies.get("token");
-    //   if (token) {
-    //     const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-    //     if (decryptedResponse.success && decryptedResponse.user) {
-    //       setuser(decryptedResponse.user);
-    //     }
-    //   }
-    // })();
     setStepName("Candidate");
     if (customFields) {
       const candidateForm = Object.entries(customFields).find(

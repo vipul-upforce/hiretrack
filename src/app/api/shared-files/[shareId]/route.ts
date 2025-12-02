@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import connectToDatabase, { Settings } from "@/lib/mongodb";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { getFileShare, validateAndRecordDownload } from "@/lib/fileShareUtils";
 import { getFileFromProvider } from "@/lib/fileUtils";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 
 export async function GET(
   request: NextRequest,
@@ -19,11 +19,13 @@ export async function GET(
       );
     }
 
-    // Connect to database
     await connectToDatabase();
 
-    // Get file share
-    const fileShare = await getFileShare(shareId);
+    const [fileShare, authenticatedUser] = await Promise.all([
+      getFileShare(shareId),
+      getAuthenticatedUser(request),
+    ]);
+
     if (!fileShare) {
       console.log(`File share not found for shareId: ${shareId}`);
       return NextResponse.json({ error: "File not found" }, { status: 404 });
@@ -33,51 +35,17 @@ export async function GET(
       `Found file share: ${fileShare.originalFileName}, storage: ${fileShare.storageProvider}, path: ${fileShare.storagePath}`
     );
 
-    // Check if authentication is required
-    let userId: string | undefined;
-
     // Temporary fix: Allow public access to all shared files for now
-    // This resolves the immediate issue with email attachments
     // TODO: Debug why isPublic is not being set correctly
     const allowPublicAccess = true;
+    const isPublicAccess = allowPublicAccess || fileShare.isPublic;
+    const userId = authenticatedUser?.id;
 
-    if (!allowPublicAccess && !fileShare.isPublic) {
-      const token = request.cookies.get("auth_token");
-      const orgId = request.cookies.get("org_id")?.value;
-      if (!token) {
-        return NextResponse.json(
-          { error: "Authentication required" },
-          { status: 401 }
-        );
-      }
-
-      const decryptedResponse = await verifyAndDecryptJWTToken(
-        token.value,
-        orgId
+    if (!isPublicAccess && !authenticatedUser) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
       );
-      if (!decryptedResponse.success || !decryptedResponse.user) {
-        return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-      }
-
-      userId = decryptedResponse.user.id;
-    } else {
-      // Try to get user ID from token if available for tracking (optional)
-      const token = request.cookies.get("auth_token");
-      const orgId = request.cookies.get("org_id")?.value;
-
-      if (token) {
-        try {
-          const decryptedResponse = await verifyAndDecryptJWTToken(
-            token.value,
-            orgId
-          );
-          if (decryptedResponse.success && decryptedResponse.user) {
-            userId = decryptedResponse.user.id;
-          }
-        } catch (error) {
-          // Ignore token verification errors for public access
-        }
-      }
     }
 
     // Get client IP and user agent for tracking
@@ -88,13 +56,12 @@ export async function GET(
       "unknown";
     const userAgent = headersList.get("user-agent") || "unknown";
 
-    // Validate and record download
-    const downloadValidation = await validateAndRecordDownload(
-      shareId,
-      userId,
-      ipAddress,
-      userAgent
-    );
+    const [downloadValidation, settings] = await Promise.all([
+      validateAndRecordDownload(shareId, userId, ipAddress, userAgent),
+      Settings!.findOne({
+        organizationId: fileShare.organizationId,
+      }).select("fileStorage").lean().exec(),
+    ]);
 
     if (!downloadValidation.valid) {
       return NextResponse.json(
@@ -103,10 +70,6 @@ export async function GET(
       );
     }
 
-    // Get organization settings for file storage
-    const settings = await Settings!.findOne({
-      organizationId: fileShare.organizationId,
-    });
     if (!settings) {
       return NextResponse.json(
         { error: "Organization settings not found" },

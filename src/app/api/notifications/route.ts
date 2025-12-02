@@ -1,22 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { Notification } from "@/lib/mongodb";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
-
+import { getAuthenticatedUser } from "@/app/actions/auth";
 export async function GET(request: NextRequest) {
   try {
-    // Check authentication
-    const token = request.headers.get("cookie")?.match(/token=([^;]+)/)?.[1];
-    const orgId = request.cookies.get("org_id")?.value;
-    if (!token) {
+    const [user] = await Promise.all([
+      getAuthenticatedUser(request),
+      connectToDatabase()
+    ]);
+
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const decryptedResponse = await verifyAndDecryptJWTToken(token, orgId);
-    if (!decryptedResponse.success || !decryptedResponse.user) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    const user = decryptedResponse.user;
     const { searchParams } = new URL(request.url);
 
     // Parse query parameters
@@ -26,7 +20,6 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get("type");
     const priority = searchParams.get("priority");
 
-    await connectToDatabase();
     if (!Notification) {
       return NextResponse.json(
         { error: "Notification Model not found" },
@@ -55,15 +48,14 @@ export async function GET(request: NextRequest) {
     // Calculate pagination
     const skip = (page - 1) * limit;
 
-    // Get notifications with pagination
-    const notifications = await Notification.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
-
-    // Get total count for pagination info
-    const totalCount = await Notification.countDocuments(query);
+    const [notifications, totalCount] = await Promise.all([
+      Notification.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Notification.countDocuments(query),
+    ]);
     const totalPages = Math.ceil(totalCount / limit);
 
     return NextResponse.json({

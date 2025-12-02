@@ -1,3 +1,4 @@
+import { runIfCookiePresent } from "@/lib/utils/queryGuards";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 export interface Interviewer {
@@ -11,7 +12,15 @@ export const userApi = createApi({
   baseQuery: fetchBaseQuery({ baseUrl: "/api" }),
   endpoints: (builder) => ({
     fetchInterviewers: builder.query<Interviewer[], void>({
-      query: () => "/users/interviewers",
+      queryFn: (_arg, _api, _extraOptions, baseQuery) =>
+        runIfCookiePresent<Interviewer[]>(
+          baseQuery,
+          () => ({
+            url: `/users/interviewers`,
+            method: "GET",
+          }),
+          { emptyResponse: [] }
+        ),
     }),
   }),
 });

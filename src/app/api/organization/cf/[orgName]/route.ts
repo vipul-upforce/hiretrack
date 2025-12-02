@@ -18,7 +18,7 @@ const handleGetOrganization = async (
         { status: 400 }
       );
     }
-    const orgInfo = await Organization.findOne({ name: orgName }).lean();
+    const orgInfo = await Organization.findOne({ name: orgName }).select("customFields").lean().exec();
 
     if (!orgInfo) {
       return NextResponse.json(
