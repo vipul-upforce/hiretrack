@@ -40,11 +40,6 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
       user?.organizationInfo?.name ||
       "HireTrack";
     document.title = title;
-    console.log("###title>>>>>>>>>>>> ", title);
-    console.log("#portalSettings>>>>>>>>>>>> ", portalSettings);
-    console.log("#uriOrgName>>>>>>>>>>>> ", uriOrgName);
-    console.log("#user>>>>>>>>>>>> ", user);
-    console.log("#isHydrated>>>>>>>>>>>> ", isHydrated);
 
     const faviconUrl = portalSettings?.portalFavicon?.url || "/favicon.png";
     let favicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement;

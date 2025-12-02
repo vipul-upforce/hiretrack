@@ -3,6 +3,7 @@ import {
   useUpdateCandidateMutation,
 } from "@/lib/features/candidate/candidateApi";
 import { Candidate } from "@/types/candidate";
+import { getTrackingDate } from "../../utils/candidateAccessors";
 import { useState } from "react";
 import Cookies from "js-cookie";
 import { toast } from "@/hooks/use-toast";
@@ -146,8 +147,10 @@ const AddRemarksDialog = ({
         }).unwrap();
         // debugger;
         const wasUpdatedRecently =
-          candidate.updatedAt &&
-          Date.now() - new Date(candidate.updatedAt).getTime() <= 20 * 1000; // 20 seconds
+          (() => {
+            const updatedAt = getTrackingDate(candidate, "updatedAt");
+            return updatedAt && Date.now() - updatedAt.getTime() <= 20 * 1000; // 20 seconds
+          })();
 
         const updatedCandidate = await updateCandidate(updateData).unwrap();
         if (wasUpdatedRecently) {

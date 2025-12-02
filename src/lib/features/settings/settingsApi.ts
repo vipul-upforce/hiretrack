@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { VersionListResponse } from "@/app/dashboard/settings/components/about-version/types";
+import { VersionListResponse } from "@/app/dashboard/settings/components/about/types";
 
 // Interface for test connection request
 interface TestConnectionRequest {
@@ -14,6 +14,34 @@ interface TestConnectionRequest {
     user?: string;
     pass?: string;
   };
+}
+
+export interface DiskFolderItem {
+  name: string;
+  relativePath: string; // Added this
+  size: string;
+  rawSize: number;
+  type: "file" | "folder";
+  childrenCount?: number;
+}
+
+export interface DiskFolder {
+  name: string;
+  path: string;
+  size: string;
+  type: "folder";
+}
+
+export interface DiskSpaceResponse {
+  success: boolean;
+  folders: DiskFolder[];
+}
+
+export interface DiskFolderDetailResponse {
+  success: boolean;
+  root: string;
+  currentPath: string;
+  files: DiskFolderItem[];
 }
 
 // Interface for test connection response
@@ -57,6 +85,13 @@ export interface LogEntry {
   attachments: any[];
 }
 
+type SystemLogsResponse = {
+  path: string;
+  files: string[];
+  sizeBytes: number;
+  size: string; // e.g. "33.3 MB"
+};
+
 // Interface for EmailHistoryRecord
 export interface EmailHistoryRecord {
   _id: string;
@@ -88,6 +123,8 @@ export const settingsApi = createApi({
     "AutoUpdate",
     "SystemUpdate",
     "VersionList",
+    "DiskSpace",
+    "PM2Logs",
   ],
   endpoints: (builder) => ({
     getBackups: builder.query<any, void>({
@@ -297,12 +334,40 @@ export const settingsApi = createApi({
         body: { email, selectedOrgId },
       }),
     }),
-    getNginxLogFiles: builder.query<{ files: string[] }, void>({
+    getNginxLogFiles: builder.query<SystemLogsResponse, void>({
       query: () => "/nginx-logs",
       providesTags: ["NginxLogs"],
-      transformResponse: (response: { files: string[] }) => ({
+      transformResponse: (response: SystemLogsResponse) => ({
+        path: response.path,
         files: response.files || [],
+        sizeBytes: response.sizeBytes || 0,
+        size: response.size || "0 MB",
       }),
+      keepUnusedDataFor: 300,
+    }),
+    getPm2LogFiles: builder.query<SystemLogsResponse, void>({
+      query: () => "/pm2-logs",
+      providesTags: ["PM2Logs"],
+      transformResponse: (response: SystemLogsResponse) => ({
+        path: response.path,
+        files: response.files || [],
+        sizeBytes: response.sizeBytes || 0,
+        size: response.size || "0 MB",
+      }),
+      keepUnusedDataFor: 300,
+    }),
+    getPm2LogFileContent: builder.query<
+      { content: string[]; offset: number; totalLines: number },
+      { file: string; offset: number; limit: number; query?: string }
+    >({
+      query: ({ file, offset, limit, query = "" }) => {
+        const params = new URLSearchParams({
+          offset: offset.toString(),
+          limit: limit.toString(),
+          query,
+        });
+        return `/pm2-logs/${file}?${params.toString()}`;
+      },
       keepUnusedDataFor: 300,
     }),
     getServerLogs: builder.query<
@@ -333,7 +398,6 @@ export const settingsApi = createApi({
       },
       keepUnusedDataFor: 300,
     }),
-
     getEmailHistory: builder.query<
       { emails: EmailHistoryRecord[]; pagination: { total: number } },
       { page: number; limit: number; search?: string; status?: string }
@@ -365,6 +429,21 @@ export const settingsApi = createApi({
     getVersionList: builder.query<VersionListResponse, void>({
       query: () => `/version/list`,
       providesTags: ["VersionList"],
+    }),
+
+    getDiskSpace: builder.query<DiskSpaceResponse, void>({
+      query: () => `/disk-space`,
+      providesTags: ["DiskSpace"],
+    }),
+    getDiskFolderDetails: builder.query<
+      DiskFolderDetailResponse,
+      { root: string; path?: string }
+    >({
+      query: ({ root, path = "" }) =>
+        `/disk-space?root=${root}&path=${encodeURIComponent(path)}`,
+      providesTags: (result, error, arg) => [
+        { type: "DiskSpace", id: `${arg.root}-${arg.path}` },
+      ],
     }),
 
     triggerUpdate: builder.mutation<TriggerUpdateResponse, void>({
@@ -418,6 +497,10 @@ export const {
   useLazyGetVersionListQuery,
   useGetVersionListQuery,
   useTriggerUpdateMutation,
+  useGetDiskSpaceQuery,
+  useGetDiskFolderDetailsQuery,
+  useLazyGetPm2LogFileContentQuery,
+  useGetPm2LogFilesQuery,
 } = settingsApi;
 
 export type { TestConnectionRequest, TestConnectionResponse };

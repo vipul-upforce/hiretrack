@@ -234,21 +234,21 @@ const testBrevoConnection = async (credentials: {
         responseData.message || responseData.error || "Unknown API error";
       throw new Error(`Brevo API error (${response.status}): ${errorMessage}`);
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Brevo connection test failed:", error);
 
     let errorMessage = "Unknown error occurred";
     let statusCode = 400;
 
     if (error) {
-      errorMessage = error.message;
+      errorMessage = error instanceof Error ? error.message : "Unknown error";
     }
 
-    if (error.name === "TypeError" && error.message.includes("fetch")) {
+    if (error instanceof Error && error.name === "TypeError" && error.message.includes("fetch")) {
       errorMessage = "Network error: Unable to connect to Brevo API";
       statusCode = 503;
     }
-    if (error.name === "AbortError") {
+    if (error instanceof Error && error.name === "AbortError") {
       errorMessage = "Request timeout: Brevo API took too long to respond";
       statusCode = 408;
     }
@@ -258,7 +258,7 @@ const testBrevoConnection = async (credentials: {
         success: false,
         message: errorMessage,
         error:
-          process.env.ENVIRONMENT === "development" ? error.message : undefined,
+          process.env.ENVIRONMENT === "development" ? error instanceof Error ? error.message : "Unknown error" : undefined,
       },
       { status: statusCode }
     );

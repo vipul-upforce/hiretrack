@@ -418,10 +418,10 @@ export class EnhancedAnalyticsMiddleware {
       });
 
       return response;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Enhanced analytics middleware error:", error);
       this.logSecurityEvent("MIDDLEWARE_ERROR", null, request, {
-        error: error.message,
+        error: error instanceof Error ? error.message : "Unknown error",
       });
       return this.createSecureErrorResponse("Internal server error", 500);
     }

@@ -242,7 +242,8 @@ export const defaultTemplates: EmailTemplate[] = [
   {
     id: "interview-assignment",
     name: "Interview Assignment Event",
-    subject: "Interview Assigned - {{candidateName}} for {{jobTitle}}",
+    subject:
+      "Interview Scheduled: {{candidateName}} for the {{jobTitle}} Position — Assigned to {{interviewerName}}",
     isDefault: true,
     content: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
@@ -300,7 +301,8 @@ export const defaultTemplates: EmailTemplate[] = [
   {
     id: "status-update",
     name: "Status Update Notification",
-    subject: "Application Status Update - {{jobTitle}}",
+    subject:
+      "Application Status Update for {{jobTitle}} position | {{candidateName}}",
     isDefault: true,
     content: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
@@ -340,7 +342,7 @@ export const defaultTemplates: EmailTemplate[] = [
   {
     id: "new-remark",
     name: "New Remark Added",
-    subject: "New Feedback Added - {{candidateName}}",
+    subject: "New Remark Added for {{candidateName}} by {{reviewerName}} for {{jobTitle}} position",
     isDefault: true,
     content: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
@@ -383,7 +385,8 @@ export const defaultTemplates: EmailTemplate[] = [
   {
     id: "step-completed",
     name: "Step Completed",
-    subject: "Interview Step Completed - {{candidateName}}",
+    subject:
+      "Interview Step Completed — {{candidateName}} | Step {{stepName}} completed by {{completedBy}}",
     isDefault: true,
     content: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">

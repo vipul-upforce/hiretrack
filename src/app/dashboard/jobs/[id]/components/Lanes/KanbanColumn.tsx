@@ -14,6 +14,7 @@ import {
 import { CandidateCard } from "../Candidate/candidate-card";
 import { Candidate } from "@/types/candidate";
 import { LaneOptionsMenu } from "./lanes-options-menu";
+import { getJobId, getTrackingDate } from "../../utils/candidateAccessors";
 import { useState, useMemo, memo, useCallback, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { Virtuoso } from "react-virtuoso";
@@ -117,7 +118,7 @@ const KanbanColumn = memo(function KanbanColumn({
       direction: "asc" | "desc"
     ): Candidate[] => {
       return [...candidates].sort((a, b) => {
-        const getValue = (candidate: Candidate, field: string): any => {
+        const getValue = (candidate: Candidate, field: string): string | number | Date | null | undefined => {
           switch (field) {
             case "name":
               return candidate.name?.toLowerCase() || "";
@@ -160,10 +161,12 @@ const KanbanColumn = memo(function KanbanColumn({
                 ? new Date(candidate.tracking?.createdAt).getTime()
                 : 0;
             case "lastModified":
-              return candidate.updatedAt
-                ? new Date(candidate.updatedAt).getTime()
-                : candidate.createdAt
-                  ? new Date(candidate.createdAt).getTime()
+              const updatedAt = getTrackingDate(candidate, "updatedAt");
+              const createdAt = getTrackingDate(candidate, "createdAt");
+              return updatedAt
+                ? updatedAt.getTime()
+                : createdAt
+                  ? createdAt.getTime()
                   : 0;
             default:
               return "";
@@ -185,10 +188,7 @@ const KanbanColumn = memo(function KanbanColumn({
   const processedCandidates = useMemo(() => {
     // First filter by jobId
     const filtered = column.candidates.filter((candidate) => {
-      const candidateJobId =
-        typeof candidate.jobId === "string"
-          ? candidate.jobId
-          : candidate.jobId?._id?.toString();
+        const candidateJobId = getJobId(candidate)?.toString() || "";
       return candidateJobId === jobId?.toString();
     });
 
@@ -209,15 +209,6 @@ const KanbanColumn = memo(function KanbanColumn({
   const handleDragStart = useCallback(() => {
     setSortConfig((prev) => ({ ...prev, enabled: false }));
   }, []);
-
-  // Re-enable sorting after drag ends
-  // const handleDragEnd = useCallback(() => {
-  //   // Small delay to let the drag operation complete
-  //   setTimeout(() => {
-  //     debugger;
-  //     setSortConfig((prev) => ({ ...prev, enabled: true }));
-  //   }, 100);
-  // }, []);
 
   // Memoized event handlers
   const handleViewDetails = useCallback(
@@ -410,7 +401,7 @@ const KanbanColumn = memo(function KanbanColumn({
                       <Virtuoso
                         style={{ height: "100%", scrollbarWidth: "none" }}
                         data={processedCandidates}
-                        increaseViewportBy={{ bottom: 200, top: 100 }}
+                        increaseViewportBy={{ bottom: 250, top: 100 }}
                         scrollerRef={() => scrollerRef}
                         computeItemKey={(index, candidate) => candidate._id}
                         itemContent={(index, candidate) => {

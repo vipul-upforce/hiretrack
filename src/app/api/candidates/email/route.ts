@@ -267,25 +267,25 @@ export async function POST(request: NextRequest) {
         message: "Email sent successfully",
         emailHistoryId: emailHistory._id,
       });
-    } catch (emailError: any) {
+    } catch (emailError: unknown) {
       // Update email history with failure
       await EmailHistory!.updateOne(
         { _id: emailHistory._id },
         {
           status: "failed",
-          error: emailError.message || "Failed to send email",
+          error: emailError instanceof Error ? emailError.message : "Failed to send email",
         }
       );
 
       return NextResponse.json(
-        { error: "Failed to send email", details: emailError.message },
+        { error: "Failed to send email", details: emailError instanceof Error ? emailError.message : "Failed to send email" },
         { status: 500 }
       );
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in send email to candidate:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to process email request" },
+      { error: error instanceof Error ? error.message : "Failed to process email request" },
       { status: 500 }
     );
   }
