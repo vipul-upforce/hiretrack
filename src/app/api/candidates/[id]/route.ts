@@ -515,87 +515,6 @@ export async function PUT(
     //   updateObj.$set.scores = data.scores;
     // }
 
-    if (
-      "remarks" in data &&
-      Array.isArray(data.remarks) &&
-      data.remarks.length > 0
-    ) {
-      const existingRemarks = existingCandidate.remarks || [];
-      if (JSON.stringify(existingRemarks) !== JSON.stringify(data.remarks)) {
-        updateObj.$set.remarks = data.remarks;
-        if (
-          data.remarks.length > existingRemarks.length &&
-          organizationId &&
-          User
-        ) {
-          const latestRemark = data.remarks[data.remarks.length - 1];
-
-          if (latestRemark?.description) {
-            const users = await User.find({
-              organizationId,
-              role: { $in: ["hr", "admin"] },
-              $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
-            }).select("email");
-
-            const organization = await User?.findOne({
-              organizationId,
-            }).populate({
-              path: "organizationId",
-              select: "name", // populate only organization name
-            });
-            // console.log(organization, "remark-organization");
-
-            const emailList = [undefined, ...users.map((user) => user.email)];
-            const remark_adder = userData?.name || "user";
-            const remark_for = data.name || existingCandidate.name;
-            const remark = latestRemark.description.trim();
-            const rating = latestRemark.rating || "None";
-            const candidateDetails = `${request.headers.get("origin")}/candidate/${data._id}`;
-            const remarkDate = (await getFormattedDate(
-              request,
-              latestRemark.date,
-              false,
-              organizationId
-            )) as string;
-            // console.log("⛔⛔⛔ APLPICTION DATE: ", remarkDate);
-
-            const organizationName =
-              typeof organization?.organizationId === "object"
-                ? organization.organizationId.name
-                : "";
-
-            if (emailList.length > 0 && remark !== "") {
-              // Use sendRemarkNotificationWithMentions for proper mention detection
-              const { sendRemarkNotificationWithMentions } = await import(
-                "@/lib/unifiedEmailService"
-              );
-
-              await sendRemarkNotificationWithMentions(
-                organizationId,
-                remark,
-                {
-                  triggererUserId: userData.id.toString(),
-                  triggererEmail: userData.email,
-                  triggererName: userData.name,
-                  jobId: data?.jobId?._id?.toString(),
-                  candidateId: data._id.toString(),
-                  candidateName: remark_for,
-                  jobTitle: data?.jobId?.title || "Unknown Position", // Assuming jobId has a title field
-                  reviewerName: remark_adder,
-                  remarkDate: remarkDate,
-                  rating: rating,
-                  candidateProfileLink: candidateDetails,
-                  organizationName: organizationName,
-                  recipientName: emailList[0] || "", // Placeholder; see notes for dynamic handling
-                },
-                emailList as string[]
-              );
-            }
-          }
-        }
-      }
-    }
-
     fieldsToTrack.forEach((key) => {
       if (
         key in data &&
@@ -813,8 +732,8 @@ export async function PUT(
         if ("assignment" in data) {
           const oldAssignment = existingCandidate.assignment;
           const newAssignment = data.assignment;
-          // console.log(newAssignment, "newAssignmentin assinment notification");
-          // console.log(oldAssignment, "oldAssignmentin assinment notification");
+          console.log(newAssignment, "newAssignmentin assinment notification");
+          console.log(oldAssignment, "oldAssignmentin assinment notification");
           if (newAssignment) {
             // If assignment is new or interviewer changed
             if (
@@ -826,9 +745,14 @@ export async function PUT(
                 newAssignment.interviewerId
               ).select("_id name email");
               console.log(interviewer, "interviewerin assinment notification");
-
+ 
               if (newAssignment && interviewer) {
-                if (!newAssignment.time && !oldAssignment) {
+                if (
+                  !newAssignment.time &&
+                  (!oldAssignment || !oldAssignment.time) &&
+                  oldAssignment?.interviewerId?.toString() !== newAssignment.interviewerId
+                ) { 
+                  console.log("notifyCandidateAssigned");
                   await NotificationService.notifyCandidateAssigned({
                     organizationId: organizationId,
                     candidateId: updatedCandidate._id.toString(),
@@ -846,7 +770,9 @@ export async function PUT(
                 }
 
                 if (newAssignment && newAssignment.time) {
-                  if (!oldAssignment || !oldAssignment.time) {
+                  if (newAssignment.interviewerId !== oldAssignment?.interviewerId?.toString()
+                  && (!oldAssignment || !oldAssignment.time)) {
+                    console.log("notifyMeetingScheduled");
                     await NotificationService.notifyMeetingScheduled({
                       organizationId: organizationId,
                       candidateId: updatedCandidate._id.toString(),
@@ -862,7 +788,10 @@ export async function PUT(
                       triggerUserId: userData?.id,
                       triggerUserName: userData?.name,
                     });
-                  } else if (oldAssignment.time !== newAssignment.time) {
+                  } else if (oldAssignment
+                     && newAssignment
+                     && newAssignment.interviewerId === oldAssignment?.interviewerId?.toString()) {
+                    console.log("notifyMeetingUpdated");
                     await NotificationService.notifyMeetingUpdated({
                       organizationId: organizationId,
                       candidateId: updatedCandidate._id.toString(),

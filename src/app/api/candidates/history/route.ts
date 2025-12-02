@@ -3,6 +3,7 @@ import connectToDatabase, {
   Candidate,
   History,
   JobLaneConfig,
+  User,
 } from "@/lib/mongodb";
 import {
   Attachments,
@@ -22,6 +23,8 @@ import {
 } from "@/lib/utils/checklistVisibility";
 import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { NotificationService } from "@/lib/notifications/notificationService";
+import { sendRemarkNotificationWithMentions } from "@/lib/unifiedEmailService";
+import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
 
 export async function POST(request: NextRequest) {
   //Getting the history data
@@ -571,9 +574,9 @@ export async function PUT(request: NextRequest) {
 
     // Notify users based on isPrivate status
     if (data.newEntry?.remark?.description) {
-      const selectedMentionUserIds = data.newEntry.remark.selectedMentionUserIds || [];
-      // For both public and private remarks: Always notify HR and Admin
-      // Interviewers are only notified if selected from mention picker (handled by findMentionedUsers)
+      const selectedMentionUserIds =
+        data.newEntry.remark.selectedMentionUserIds || [];
+
       await NotificationService.notifyRemarkAdded({
         organizationId: organizationId,
         candidateId: data.candidateId,
@@ -586,9 +589,54 @@ export async function PUT(request: NextRequest) {
         remarkText: data.newEntry.remark.description,
         triggerUserId: userData.id,
         triggerUserName: userData.name || "Unknown User",
-        roles: ["admin", "hr"], // Always notify HR and Admin for both public and private remarks
-        validMentionUserIds: selectedMentionUserIds, // Interviewers only notified if in this list
+        roles: ["admin", "hr"],
+        validMentionUserIds: selectedMentionUserIds,
       });
+
+      // ⭐ INSERTED EMAIL NOTIFICATION BLOCK HERE ⭐
+      try {
+        const organizationId = userData.organizationId;
+        const users = await User.find({
+          organizationId: organizationId,
+          role: { $in: ["hr", "admin"] },
+          $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
+        }).select("email");
+        const remarkDate = (await getFormattedDate(
+          request,
+          data.newEntry.remark.date,
+          false,
+          userData.organizationId
+        )) as string;
+        const remark = data.newEntry.remark.description || "";
+        const remark_for = candidateData?.name || "";
+        const remark_adder = userData.name;
+        const rating = data.newEntry?.remark?.rating || null;
+        const candidateProfileLink = `${process.env.NEXT_PUBLIC_APP_URL}/candidate/${data.candidateId}`;
+        const organizationName = userData.organizationInfo?.name || "HireTrack";
+        const emailList = users.map((user) => user.email);
+        await sendRemarkNotificationWithMentions(
+          organizationId,
+          remark,
+          {
+            triggererUserId: userData.id.toString(),
+            triggererEmail: userData.email,
+            triggererName: userData.name,
+            jobId: data?.jobId?._id?.toString?.() || data?.jobId?.toString(),
+            candidateId: data.candidateId.toString(),
+            candidateName: remark_for,
+            jobTitle: data?.jobId?.title || "Unknown Position",
+            reviewerName: remark_adder,
+            remarkDate,
+            rating,
+            candidateProfileLink,
+            organizationName,
+            recipientName: emailList[0] || "",
+          },
+          emailList as string[]
+        );
+      } catch (err) {
+        console.error("Email remark notification failed:", err);
+      }
     }
 
     const transformedHistory = (historyData.history || []).map(
