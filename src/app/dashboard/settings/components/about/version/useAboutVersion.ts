@@ -7,7 +7,7 @@ import {
   useLazyGetVersionListQuery,
   useTriggerUpdateMutation,
 } from "@/lib/features/settings/settingsApi";
-import { AboutValues, VersionListResponse, VersionInfo } from "./types";
+import { AboutValues, VersionListResponse, VersionInfo } from "./../types";
 import { FormikHelpers } from "formik";
 
 interface UseAboutVersionProps {

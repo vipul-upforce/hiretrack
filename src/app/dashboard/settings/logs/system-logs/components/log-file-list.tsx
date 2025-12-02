@@ -1,9 +1,12 @@
+import { HardDrive } from "lucide-react";
+
 interface LogFileListProps {
   files: string[];
   selectedFile: string | null;
   onSelect: (file: string) => void;
   isLoading: boolean;
   isAvailable: boolean;
+  totalStorage: string | null;
 }
 
 export function LogFileList({
@@ -12,12 +15,22 @@ export function LogFileList({
   onSelect,
   isLoading,
   isAvailable,
+  totalStorage,
 }: LogFileListProps) {
   return (
     <div className="col-span-1 flex flex-col min-h-0">
-      <h3 className="font-bold text-sm mb-2 flex-shrink-0">
-        Log Files ({files.length})
+      <h3 className="font-bold text-sm mb-2 flex-shrink-0 flex items-center justify-between">
+        <span>Log Files ({files.length})</span>
+
+        {totalStorage && (
+          <span className="text-xs flex items-center gap-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-[3px] rounded-md">
+            <HardDrive className="w-3 h-3 opacity-80" />
+            <span className="opacity-80">Total Size:</span>
+            <strong className="font-semibold">{totalStorage}</strong>
+          </span>
+        )}
       </h3>
+
       <div className="flex-1 overflow-y-auto min-h-0">
         {isLoading ? (
           <div className="text-gray-500 text-sm">Loading files...</div>

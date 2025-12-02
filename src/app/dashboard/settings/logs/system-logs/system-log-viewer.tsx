@@ -28,6 +28,7 @@ export function SystemLogViewer(props: SystemLogViewerProps) {
     setShowLn,
     handleFileSelect,
     handleSearchChange,
+    totalStorage,
   } = useLogViewerLogic(props);
 
   if (isFilesLoading) return <NginxLogsSkeleton />;
@@ -38,6 +39,7 @@ export function SystemLogViewer(props: SystemLogViewerProps) {
         {/* File List */}
         <LogFileList
           files={files}
+          totalStorage={totalStorage}
           selectedFile={selectedFile}
           onSelect={handleFileSelect}
           isLoading={isFilesLoading}

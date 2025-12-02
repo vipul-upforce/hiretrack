@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { CheckCircle, Download, Loader2 } from "lucide-react";
-import { VersionListResponse } from "./types";
+import { VersionListResponse } from "../types";
 
 export interface UpdateSettingsSectionProps {
   values: {

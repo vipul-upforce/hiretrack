@@ -48,10 +48,8 @@ export function AssignCandidateDialog({
   const [cancelNotes, setCancelNotes] = useState("");
   const [isCancelling, setIsCancelling] = useState(false);
 
-  const { user: reduxUser } = useSelector(
-    (state: any) => state.auth || {}
-  );
-  
+  const { user: reduxUser } = useSelector((state: any) => state.auth || {});
+
   // Cast Redux user to schema User type
   const user: User | null = reduxUser
     ? {
@@ -380,38 +378,45 @@ export function AssignCandidateDialog({
           open={showCancelMeetDialog}
           onOpenChange={setShowCancelMeetDialog}
         >
-          <DialogContent className="sm:max-w-md p-6">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Trash2 className="h-5 w-5 text-red-500" />
+          <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden flex flex-col gap-0">
+            <DialogHeader className="p-6 pb-4 flex flex-col gap-2 border-b">
+              <DialogTitle className="flex items-center gap-2 text-destructive">
+                <Trash2 className="h-5 w-5" />
                 Cancel Google Meet
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-muted-foreground/90">
                 Are you sure you want to cancel this Google Meet? This action
-                cannot be undone.
+                cannot be undone and attendees will be notified.
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="cancelNotes" className="text-sm font-medium">
-                  Cancellation Notes (Optional)
+            <div className="p-6 space-y-4">
+              <div className="space-y-2">
+                <Label
+                  htmlFor="cancelNotes"
+                  className="text-sm font-semibold text-foreground"
+                >
+                  Cancellation Notes{" "}
+                  <span className="text-muted-foreground font-normal">
+                    (Optional)
+                  </span>
                 </Label>
                 <Textarea
                   id="cancelNotes"
                   placeholder="Reason for cancellation, rescheduling information, or other notes..."
                   value={cancelNotes}
                   onChange={(e) => setCancelNotes(e.target.value)}
-                  className="mt-1"
+                  className="min-h-[60px] resize-y focus-visible:ring-offset-1"
                   rows={3}
                 />
               </div>
             </div>
 
-            <DialogFooter className="flex gap-2">
+            <DialogFooter className="p-6 pt-0 flex gap-3 sm:justify-end bg-background">
               <Button
                 type="button"
                 variant="outline"
+                className="mt-2 sm:mt-0"
                 onClick={() => {
                   setShowCancelMeetDialog(false);
                   setCancelNotes("");
@@ -453,8 +458,17 @@ export function AssignCandidateDialog({
                   }
                 }}
               >
-                <Trash2 className="h-4 w-4 mr-2" />
-                {isCancelling ? "Cancelling..." : "Cancel Meeting"}
+                {isCancelling ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Cancelling...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Cancel Meeting
+                  </>
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>

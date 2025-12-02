@@ -29,6 +29,7 @@ export function useLogViewerLogic({
 }: UseLogViewerLogicProps) {
   const [isInitialFileLoading, setIsInitialFileLoading] = useState(false);
   const [logFiles, setLogFiles] = useState<string[]>([]);
+  const [totalStorage, setTotalStorage] = useState<string>();
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<string[]>([]);
   const [isAvailable, setIsAvailable] = useState(false);
@@ -109,6 +110,7 @@ export function useLogViewerLogic({
     if (activeData?.files) {
       setIsAvailable(activeData.files.length > 0);
       setLogFiles(activeData.files);
+      setTotalStorage(activeData.size);
       if (!selectedFile && activeData.files.length > 0) {
         setSelectedFile(activeData.files[0]);
       }
@@ -247,5 +249,6 @@ export function useLogViewerLogic({
     setShowLn,
     handleFileSelect,
     handleSearchChange,
+    totalStorage,
   };
 }
