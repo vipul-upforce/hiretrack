@@ -8,6 +8,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  CardDescription,
   CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,7 @@ import {
   CreateOrgResponse,
   useCreateOrgMutation,
 } from "@/lib/features/org/orgApi";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Building2, User, Mail, Lock } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import ReCAPTCHA from "react-google-recaptcha";
 import withAuthGuard from "@/components/withAuthGuard";
@@ -37,27 +38,21 @@ interface OrgFormValues {
 
 const OrgSchema = Yup.object().shape({
   name: Yup.string()
-    .required("Organization Name is required")
     .trim()
     .matches(/^(?!\s+$).*/, "Organization Name cannot be only spaces")
     .min(2, "Organization Name must be at least 2 characters")
     .max(20, "Organization name must be 20 characters or fewer")
     .required("Organization Name is required"),
   fullName: Yup.string()
-    .required("Admin Name is required")
     .trim()
     .matches(/^(?!\s+$).*/, "Admin name cannot be only spaces")
     .min(2, "Admin Name must be at least 2 characters long")
     .max(20, "Admin name must be 20 characters or fewer")
     .required("Admin Name is required"),
   email: Yup.string()
-    .required("Email is required")
-    .trim("Email cannot be only spaces")
-    // .matches(/^[a-z0-9][a-z0-9._%+-]*@[a-z0-9.-]+\.[a-z]{2,}$/, "Invalid Email"),
-    .matches(
-      /^[a-z0-9][a-z0-9._%+-]*@[a-z0-9.-]+\.[a-z]{2,}$/,
-      "Invalid Email"
-    ),
+    .trim()
+    .matches(/^[a-z0-9][a-z0-9._%+-]*@[a-z0-9.-]+\.[a-z]{2,}$/, "Invalid Email")
+    .required("Email is required"),
   password: Yup.string()
     .min(6, "Password must be at least 6 characters.")
     .matches(/[a-z]/, "Password must include at least one lowercase letter")
@@ -86,11 +81,8 @@ function OrgRegisterPage() {
   const [organizationId, setOrganizationId] = useState<string | null>(null);
 
   // Fetch CAPTCHA configuration
-  const {
-    data: captchaConfig,
-    isLoading: isCaptchaLoading,
-    error: captchaError,
-  } = useGetCaptchaConfigsQuery(undefined);
+  const { data: captchaConfig } = useGetCaptchaConfigsQuery(undefined);
+
   useEffect(() => {
     async function checkAllowance() {
       const data = await fetch("/api/organization");
@@ -104,7 +96,8 @@ function OrgRegisterPage() {
     }
 
     checkAllowance();
-  }, []);
+  }, [router]);
+
   // Decrypt siteKey when captchaConfig is available
   useEffect(() => {
     const decryptSiteKey = async () => {
@@ -134,20 +127,19 @@ function OrgRegisterPage() {
     values: OrgFormValues,
     { setStatus }: { setStatus: (message: string) => void }
   ) => {
-    if (!captcha && captchaConfig?.captcha['enableCaptcha']) { 
+    if (!captcha && captchaConfig?.captcha["enableCaptcha"]) {
       toast({
         title: "Error",
         description: "Captcha not verified. Please try again",
         variant: "default",
       });
+      return;
     }
-    //firstly check the license
+
     try {
       const response = await fetch("/api/license-validate", {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
       });
       const data = await response.json();
       if (!data.valid) {
@@ -164,16 +156,17 @@ function OrgRegisterPage() {
       });
       return;
     }
+
     try {
       const { name, email, fullName, password, role } = values;
       const adminData = { email, name: fullName, password, role };
 
-      // Create the admin
       const orgResponse: CreateOrgResponse = await createOrg({
         name,
         lanes,
         adminData,
       }).unwrap();
+
       if (orgResponse.organization) {
         toast({
           title: "Success",
@@ -186,17 +179,12 @@ function OrgRegisterPage() {
       }
     } catch (err: unknown) {
       let errorMessage = "An unknown error occurred";
-
       if (err instanceof Error) {
         errorMessage = err.message;
       } else if (typeof err === "object" && err !== null && "data" in err) {
         const errorObj = err as { data?: { error?: string } };
-        if (
-          errorObj.data &&
-          typeof errorObj.data === "object" &&
-          "error" in errorObj.data
-        ) {
-          errorMessage = errorObj.data.error || errorMessage;
+        if (errorObj.data?.error) {
+          errorMessage = errorObj.data.error;
         }
       }
       setStatus(errorMessage);
@@ -209,12 +197,18 @@ function OrgRegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-2xl text-center">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-background relative overflow-hidden">
+      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-primary/5 blur-[100px]" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-blue-500/5 blur-[100px]" />
+
+      <Card className="w-full max-w-md border-border/50 shadow-xl backdrop-blur-sm z-10">
+        <CardHeader className="space-y-1 text-center">
+          <CardTitle className="text-2xl font-bold">
             Register Organization
           </CardTitle>
+          <CardDescription>
+            Create your workspace and admin account
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Formik
@@ -234,15 +228,18 @@ function OrgRegisterPage() {
                   <Label htmlFor="name">Organization Name</Label>
                   <Field name="name">
                     {({ field }: FieldProps) => (
-                      <Input
-                        {...field}
-                        id="name"
-                        type="text"
-                        disabled={isSubmitting}
-                        className={
-                          errors.name && touched.name ? "border-red-500" : ""
-                        }
-                      />
+                      <div className="relative">
+                        <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          {...field}
+                          id="name"
+                          placeholder="Acme Inc."
+                          disabled={isSubmitting}
+                          className={`pl-10 ${
+                            errors.name && touched.name ? "border-red-500" : ""
+                          }`}
+                        />
+                      </div>
                     )}
                   </Field>
                   {errors.name && touched.name && (
@@ -256,17 +253,20 @@ function OrgRegisterPage() {
                   <Label htmlFor="fullName">Admin Full Name</Label>
                   <Field name="fullName">
                     {({ field }: FieldProps) => (
-                      <Input
-                        {...field}
-                        id="fullName"
-                        type="text"
-                        disabled={isSubmitting}
-                        className={
-                          errors.fullName && touched.fullName
-                            ? "border-red-500"
-                            : ""
-                        }
-                      />
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          {...field}
+                          id="fullName"
+                          placeholder="John Doe"
+                          disabled={isSubmitting}
+                          className={`pl-10 ${
+                            errors.fullName && touched.fullName
+                              ? "border-red-500"
+                              : ""
+                          }`}
+                        />
+                      </div>
                     )}
                   </Field>
                   {errors.fullName && touched.fullName && (
@@ -280,15 +280,21 @@ function OrgRegisterPage() {
                   <Label htmlFor="email">Admin Email</Label>
                   <Field name="email">
                     {({ field }: FieldProps) => (
-                      <Input
-                        {...field}
-                        id="email"
-                        type="email"
-                        disabled={isSubmitting}
-                        className={
-                          errors.email && touched.email ? "border-red-500" : ""
-                        }
-                      />
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          {...field}
+                          id="email"
+                          type="email"
+                          placeholder="admin@example.com"
+                          disabled={isSubmitting}
+                          className={`pl-10 ${
+                            errors.email && touched.email
+                              ? "border-red-500"
+                              : ""
+                          }`}
+                        />
+                      </div>
                     )}
                   </Field>
                   {errors.email && touched.email && (
@@ -298,117 +304,126 @@ function OrgRegisterPage() {
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="password">Admin Password</Label>
-                  <div className="relative">
-                    <Field name="password">
-                      {({ field }: FieldProps) => (
-                        <Input
-                          {...field}
-                          id="password"
-                          type={showPassword ? "text" : "password"}
-                          disabled={isSubmitting}
-                          className={
-                            errors.password && touched.password
-                              ? "border-red-500"
-                              : ""
-                          }
-                        />
-                      )}
-                    </Field>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {!showPassword ? (
-                        <EyeOff className="h-4 w-4 text-gray-500" />
-                      ) : (
-                        <Eye className="h-4 w-4 text-gray-500" />
-                      )}
-                    </Button>
-                  </div>
-                  {errors.password && touched.password && (
-                    <div className="text-red-500 text-xs mt-1">
-                      {errors.password}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <div className="relative">
+                      <Field name="password">
+                        {({ field }: FieldProps) => (
+                          <>
+                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              {...field}
+                              id="password"
+                              type={showPassword ? "text" : "password"}
+                              disabled={isSubmitting}
+                              className={`pl-10 pr-10 ${
+                                errors.password && touched.password
+                                  ? "border-red-500"
+                                  : ""
+                              }`}
+                            />
+                          </>
+                        )}
+                      </Field>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </Button>
                     </div>
-                  )}
+                    {errors.password && touched.password && (
+                      <div className="text-red-500 text-xs mt-1">
+                        {errors.password}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Confirm</Label>
+                    <div className="relative">
+                      <Field name="confirmPassword">
+                        {({ field }: FieldProps) => (
+                          <>
+                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              {...field}
+                              id="confirmPassword"
+                              type={showConfirmPassword ? "text" : "password"}
+                              disabled={isSubmitting}
+                              className={`pl-10 pr-10 ${
+                                errors.confirmPassword &&
+                                touched.confirmPassword
+                                  ? "border-red-500"
+                                  : ""
+                              }`}
+                            />
+                          </>
+                        )}
+                      </Field>
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                        onClick={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </Button>
+                    </div>
+                    {errors.confirmPassword && touched.confirmPassword && (
+                      <div className="text-red-500 text-xs mt-1">
+                        {errors.confirmPassword}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm Password</Label>
-                  <div className="relative">
-                    <Field name="confirmPassword">
-                      {({ field }: FieldProps) => (
-                        <Input
-                          {...field}
-                          id="confirmPassword"
-                          type={showConfirmPassword ? "text" : "password"}
-                          disabled={isSubmitting}
-                          className={
-                            errors.confirmPassword && touched.confirmPassword
-                              ? "border-red-500"
-                              : ""
-                          }
-                        />
-                      )}
-                    </Field>
-
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() =>
-                        setShowConfirmPassword(!showConfirmPassword)
-                      }
-                    >
-                      {!showConfirmPassword ? (
-                        <EyeOff className="h-4 w-4 text-gray-500" />
-                      ) : (
-                        <Eye className="h-4 w-4 text-gray-500" />
-                      )}
-                    </Button>
-                  </div>
-                  {errors.confirmPassword && touched.confirmPassword && (
-                    <div className="text-red-500 text-xs mt-1">
-                      {errors.confirmPassword}
-                    </div>
-                  )}
-                </div>
-                {/* 
-                <ReCAPTCHA
-                  sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
-                  onChange={(token) => {
-                    token && setCaptcha(token);
-                  }}
-                /> */}
-                {/* Conditionally render CAPTCHA if enabled and siteKey is available */}
                 {captchaConfig?.captcha?.enableCaptcha && decryptedSiteKey && (
-                  <div className="flex justify-center">
-                    <div className="recaptcha-container">
+                  <div className="flex justify-center pt-2">
+                    <div className="recaptcha-container transform scale-90">
                       <ReCAPTCHA
                         sitekey={decryptedSiteKey}
-                        onChange={(token) => setCaptcha(token)}
+                        onChange={(token) => setCaptcha(token ?? undefined)}
                       />
                     </div>
                   </div>
                 )}
-                <CardFooter className="px-0 pt-6 flex-col space-y-4">
+
+                <CardFooter className="px-0 pt-4">
                   <Button
                     type="submit"
                     className="w-full"
-                    // disabled={isSubmitting || !captcha}
+                    variant="primary"
                     disabled={
                       isSubmitting ||
+                      isOrgLoading ||
                       (captchaConfig?.captcha?.enableCaptcha && !captcha)
                     }
                   >
-                    {isSubmitting || isOrgLoading
-                      ? "Registering..."
-                      : "Register Organization"}
+                    {isSubmitting || isOrgLoading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        <span>Registering...</span>
+                      </div>
+                    ) : (
+                      "Register Organization"
+                    )}
                   </Button>
                 </CardFooter>
               </Form>
