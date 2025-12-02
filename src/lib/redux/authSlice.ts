@@ -1,8 +1,25 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
-
+import { EmailNotificationSettings, IUser, Organization, OrgInfo } from "@/lib/models/user";
+export interface ILocalUser {
+  id: string;
+  organizationId: Organization |string;
+  organizationInfo?: OrgInfo;
+  name: string;
+  email: string;
+  role: string;
+  password: string;
+  createdAt: Date;
+  updatedAt: Date;
+  resetToken?: string;
+  resetTokenExpiry?: Date;
+  isDeleted?: boolean;
+  otpExpires?: Date;
+  otp?: number;
+  emailNotificationSettings?: EmailNotificationSettings;
+}
 interface AuthState {
-  user: any;
+  user: ILocalUser | null;
   isAuthenticated: boolean;
   loading: boolean;
   error: string | null;

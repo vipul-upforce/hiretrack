@@ -421,11 +421,11 @@ export function SearchResults({
                 ? `Candidate ${candidate.name} restored successfully`
                 : `Candidate ${candidate.name} deleted successfully`,
             });
-          } catch (error: any) {
+          } catch (error: unknown) {
             toast({
               title: "Error",
               description:
-                error?.data?.error ||
+                typeof error === "object" && error !== null && "data" in error && (error.data as { error?: string })?.error ||
                 `Failed to ${isRestore ? "restore" : "delete"} candidate ${candidate.name}`,
               variant: "destructive",
             });

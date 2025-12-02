@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { FormikProps } from "formik";
+import { scrollToError } from "@/lib/formUtils";
 
 export const useApplyHandler = <T extends Record<string, any>>() => {
   const formikRef = useRef<FormikProps<T>>(null);
@@ -30,24 +31,10 @@ export const useApplyHandler = <T extends Record<string, any>>() => {
       }
     }
 
-    formik.setTouched(touched as any, true);
+    formik.setTouched(touched, true);
 
-    const firstErrorKey = Object.keys(errors)[0];
-    if (firstErrorKey) {
-      if (firstErrorKey === "customFields") {
-        if (!errors.customFields) return;
-        const cfKey = Object.keys(errors.customFields)[0];
-        const el = document.querySelector(`[id="${firstErrorKey}.${cfKey}"]`);
-        if (el) {
-          el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-          (el as HTMLElement)?.focus();
-        }
-        
-        return;
-      }
-      const el = document.querySelector(`[id="${firstErrorKey}"]`);
-      el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      (el as HTMLElement)?.focus();
+    if (Object.keys(errors).length > 0) {
+      scrollToError(errors);
       return;
     }
 
