@@ -515,6 +515,17 @@ export async function PUT(
     //   updateObj.$set.scores = data.scores;
     // }
 
+    if (
+      "remarks" in data &&
+      Array.isArray(data.remarks) &&
+      data.remarks.length > 0
+    ) {
+      const existingRemarks = existingCandidate.remarks || [];
+      if (JSON.stringify(existingRemarks) !== JSON.stringify(data.remarks)) {
+        updateObj.$set.remarks = data.remarks;
+      }
+    }
+
     fieldsToTrack.forEach((key) => {
       if (
         key in data &&
@@ -732,8 +743,8 @@ export async function PUT(
         if ("assignment" in data) {
           const oldAssignment = existingCandidate.assignment;
           const newAssignment = data.assignment;
-          console.log(newAssignment, "newAssignmentin assinment notification");
-          console.log(oldAssignment, "oldAssignmentin assinment notification");
+          // console.log(newAssignment, "newAssignmentin assinment notification");
+          // console.log(oldAssignment, "oldAssignmentin assinment notification");
           if (newAssignment) {
             // If assignment is new or interviewer changed
             if (
@@ -745,7 +756,7 @@ export async function PUT(
                 newAssignment.interviewerId
               ).select("_id name email");
               console.log(interviewer, "interviewerin assinment notification");
- 
+
               if (newAssignment && interviewer) {
                 if (
                   !newAssignment.time &&
@@ -771,8 +782,8 @@ export async function PUT(
 
                 if (newAssignment && newAssignment.time) {
                   if (newAssignment.interviewerId !== oldAssignment?.interviewerId?.toString()
-                  && (!oldAssignment || !oldAssignment.time)) {
-                    console.log("notifyMeetingScheduled");
+                    && (!oldAssignment || !oldAssignment.time)) {
+                      console.log("notifyMeetingScheduled");
                     await NotificationService.notifyMeetingScheduled({
                       organizationId: organizationId,
                       candidateId: updatedCandidate._id.toString(),
@@ -789,9 +800,9 @@ export async function PUT(
                       triggerUserName: userData?.name,
                     });
                   } else if (oldAssignment
-                     && newAssignment
-                     && newAssignment.interviewerId === oldAssignment?.interviewerId?.toString()) {
-                    console.log("notifyMeetingUpdated");
+                    && newAssignment
+                    && newAssignment.interviewerId === oldAssignment?.interviewerId?.toString()) {
+                   console.log("notifyMeetingUpdated");
                     await NotificationService.notifyMeetingUpdated({
                       organizationId: organizationId,
                       candidateId: updatedCandidate._id.toString(),
