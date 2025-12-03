@@ -14,50 +14,17 @@ import { Formik, Form } from "formik";
 import { candidateSchema } from "../../schemas/candidate-schema";
 import { useState, useEffect } from "react";
 import { CandidateForm } from "../Candidate/candidate-form";
-import {
-  useApplicationEventMailMutation,
-  useCreateCandidateMutation,
-  useEvaluateCandidateMutation,
-  useUpdateAppliedApplicationMutation,
-  useUpdateCandidateHistoryMutation,
-} from "@/lib/features/candidate/candidateApi";
-import { v4 as uuidv4 } from "uuid";
 import useCustomForm, {
   CustomFieldValues,
 } from "@/Custom_Fields/hooks/useCustomForm";
-import { ICandidateHistory } from "@/lib/models/history";
 import { Resume } from "@/lib/redux/types";
 import FormUpdater from "../Utils/FormUpdater";
 import { useApplyHandler } from "@/app/apply-jobs/useApplyHandler";
 import { TermsConfirmationDialog } from "@/components/TermsConfirmationDialog";
 import { useSelector } from "react-redux";
-// New function to call the evaluate API
-async function evaluateCandidate(
-  candidateId: string,
-  evaluateCandidateMutation: ReturnType<typeof useEvaluateCandidateMutation>[0]
-) {
-  try {
-    const result = await evaluateCandidateMutation({ candidateId }).unwrap();
-    return result;
-  } catch {
-    return null;
-  }
-}
-
-//event mail handler function
-async function sendAppliedEventMail(
-  candidateId: string,
-  applicationEventMailMutation: ReturnType<
-    typeof useApplicationEventMailMutation
-  >[0]
-) {
-  try {
-    const resp = await applicationEventMailMutation({ candidateId }).unwrap();
-    return resp;
-  } catch {
-    return null;
-  }
-}
+import { CreateCandidateDialogHeader } from "./create-candidate-components/CreateCandidateDialogHeader";
+import { CreateCandidateDialogFooter } from "./create-candidate-components/CreateCandidateDialogFooter";
+import { useCreateCandidateSubmission } from "./create-candidate-components/useCreateCandidateSubmission";
 
 interface User {
   id: string;
@@ -161,17 +128,7 @@ export function CreateCandidateDialog({
   secondaryColor,
   // isCreating,
 }: CreateCandidateDialogProps) {
-  const { toast } = useToast();
   const { formikRef, handleApply } = useApplyHandler<any>();
-  const [createCandidate, { isLoading: isAdding }] =
-    useCreateCandidateMutation();
-  const [evaluateCandidateMutation, { isLoading: isEvaluating }] =
-    useEvaluateCandidateMutation();
-  const [applicationEventMailMutation, { isLoading: isSendingEmail }] =
-    useApplicationEventMailMutation();
-  const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
-  const [updateAppliedApplication, { isLoading }] =
-    useUpdateAppliedApplicationMutation();
   const [parsedResumeData, setParsedResume] = useState<Resume | null>(null);
   const formName = "Candidate";
   const { validationSchema, initialValues: inits } = useCustomForm(
@@ -185,21 +142,29 @@ export function CreateCandidateDialog({
   const { user }: { user: User } = useSelector(
     (state: any) => state.auth || {}
   );
-  const [isCreating, setIsCreating] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [showTermsDialog, setShowTermsDialog] = useState(false);
   const [pendingFormValues, setPendingFormValues] =
     useState<CandidateFormValues | null>(null);
-  const [isSmallScreen, setIsSmallScreen] = useState(false);
   const [isLargeViewport, setIsLargeViewport] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
-  const [isFormSubmitting, setIsFormSubmitting] = useState(false);
+
+  const {
+    submitCandidate,
+    isCreating,
+    isFormSubmitting,
+    isLoading: isSubmissionLoading,
+  } = useCreateCandidateSubmission({
+    jobId,
+    parsedResumeData,
+    user,
+    onSuccess: () => setIsOpen(false),
+  });
 
   useEffect(() => {
     setIsClient(true);
 
     const checkScreenSize = () => {
-      setIsSmallScreen(window.innerWidth < 1024);
       const isLarge = window.innerWidth >= 1300 && window.innerHeight >= 1000;
       setIsLargeViewport(isLarge);
     };
@@ -233,8 +198,7 @@ export function CreateCandidateDialog({
   const handleTermsConfirm = () => {
     if (pendingFormValues) {
       setShowTermsDialog(false);
-      // debugger;
-      actualSubmit(pendingFormValues);
+      submitCandidate(pendingFormValues);
       setPendingFormValues(null);
     }
   };
@@ -247,216 +211,8 @@ export function CreateCandidateDialog({
       setShowTermsDialog(true);
     } else {
       // Admin/HR users bypass terms dialog and submit directly
-      actualSubmit(values);
+      submitCandidate(values);
     }
-  };
-
-  const actualSubmit = async (values: CandidateFormValues) => {
-    const fileNames = values.attachments.map((file) => file.name);
-    const hasDuplicates = new Set(fileNames).size !== fileNames.length;
-
-    if (hasDuplicates) {
-      toast({
-        title: "Alert",
-        description:
-          "Duplicate file names found! Please rename before submitting.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setIsFormSubmitting(true);
-      const hasOnlySpaces = Object.entries(values).some((value) => {
-        if (typeof value[1] === "string") {
-          return value[1].length > 0 && value[1].trim() === "";
-        }
-        return false;
-      });
-
-      if (hasOnlySpaces) {
-        toast({
-          title: "Validation Error",
-          description: "Fields cannot contain only spaces",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const resumeBase64 = values.resume
-        ? await convertFileToBase64(values.resume)
-        : null;
-
-      const attachmentsBase64 = await Promise.all(
-        values.attachments.map((file) => convertFileToBase64(file))
-      );
-
-      const candidateData = {
-        ...values,
-        jobId: {
-          _id: jobId,
-          title: "",
-          description: "",
-        },
-        currentCTC: Number(parseFloat(String(values.currentCTC)).toFixed(2)),
-        expectedCTC: Number(parseFloat(String(values.expectedCTC)).toFixed(2)),
-        experience: Number(parseFloat(String(values.experience)).toFixed(2)),
-        relevantExperience: Number(
-          parseFloat(String(values.relevantExperience)).toFixed(2)
-        ),
-        noticePeriod: Number(
-          parseFloat(String(values.noticePeriod)).toFixed(0)
-        ),
-        email: values.email || parsedResumeData?.profile?.email,
-        ...(values.assignee && values.time
-          ? {
-              assignee: values.assignee === "-1" ? "" : values.assignee,
-              time: values.time,
-            }
-          : {}),
-        resume: resumeBase64
-          ? {
-              id: uuidv4(),
-              name: values.resume?.name || "",
-              url: resumeBase64, // Using base64 as URL for now; adjust if backend changes
-              type: "pdf",
-              size: values.resume?.size || 0,
-            }
-          : undefined,
-        attachments: attachmentsBase64.map((base64, index) => ({
-          id: uuidv4(),
-          name: values.attachments[index].name,
-          url: base64,
-          type: values.attachments[index].type,
-          size: values.attachments[index].size,
-        })),
-        remarks: [],
-      };
-
-      // Debug: Log the candidate data being sent
-      // console.log("Candidate data being sent:", candidateData);
-      // console.log("JobId value:", jobId);
-
-      // Step 1: Create the candidate
-      setIsCreating(true);
-
-      const createdCandidate = await createCandidate(candidateData).unwrap();
-      const candidateId = createdCandidate._id;
-
-      // Always attempt evaluation if resume is PDF - server will check page limits
-      if (values.resume && values.resume.type === "application/pdf") {
-        try {
-          evaluateCandidate(candidateId, evaluateCandidateMutation);
-        } catch (evalError) {
-          console.warn(
-            "AI evaluation failed or was skipped by server:",
-            evalError
-          );
-          // Continue with submission even if evaluation fails
-        }
-      }
-
-      // Step 3: Handle additional updates (if applicable)
-      if (user?.role === "candidate" || user?.role === "") {
-        // sendAppliedEventMail(candidateId, applicationEventMailMutation);
-        try {
-          await updateAppliedApplication({ id: jobId });
-        } catch (error: unknown) {
-          toast({
-            title: "Failed",
-            description: `${error instanceof Error ? error.message : "Unknown Error Occurred"}`,
-          });
-        }
-      }
-
-      if (createdCandidate?.assignment?.interviewerId) {
-        const newHistoryEntry: ICandidateHistory = {
-          dateTime: new Date().toISOString() || "",
-          title:
-            typeof createdCandidate?.assignment?.interviewerId === "object" &&
-            createdCandidate?.assignment?.interviewerId?.name
-              ? `Assigned to ${createdCandidate.assignment.interviewerId.name} : Assigned by ${user!.name}`
-              : "",
-          currentInterviewer:
-            typeof createdCandidate?.assignment?.interviewerId === "object" &&
-            createdCandidate?.assignment?.interviewerId
-              ? Object(createdCandidate.assignment.interviewerId._id)
-              : null,
-          previousInterviewer: null,
-          assignmentBy: user && user.id,
-          note: {
-            description: "",
-            date: "",
-            rating: 0,
-            userId: null,
-          },
-          attachments:
-            createdCandidate.attachments?.map((attachment) => ({
-              id: attachment.id,
-              name: attachment.name,
-              url: attachment.url,
-              type: attachment.type,
-              size: attachment.size,
-            })) || [],
-        };
-        await updateCandidateHistory({
-          candidateId: createdCandidate._id,
-          jobId: candidateData.jobId,
-          newEntry: newHistoryEntry,
-        }).unwrap();
-      }
-
-      setIsOpen(false);
-      if (user?.role === "candidate" || user?.role === "") {
-        sendAppliedEventMail(candidateId, applicationEventMailMutation);
-      }
-      // toast({
-      //   title: "Success",
-      //   description: "Candidate added successfully",
-      // });
-    } catch (error) {
-      console.error("Create candidate error:", error);
-
-      let errorMessage =
-        "Failed to create candidate due to an unexpected error.";
-
-      // Handle RTK Query error format
-      if (typeof error === "object" && error !== null) {
-        if ("data" in error) {
-          const errorData = (error as { data?: any }).data;
-          if (errorData?.error) {
-            errorMessage = errorData.error;
-          } else if (errorData?.message) {
-            errorMessage = errorData.message;
-          } else if (typeof errorData === "string") {
-            errorMessage = errorData;
-          }
-        } else if (
-          "message" in error &&
-          typeof (error as any).message === "string"
-        ) {
-          errorMessage = (error as any).message;
-        }
-      }
-
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      setIsFormSubmitting(false);
-    }
-    setIsCreating(false);
-  };
-
-  const convertFileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (error) => reject(error);
-    });
   };
 
   return (
@@ -465,13 +221,7 @@ export function CreateCandidateDialog({
         {user && (user.role === "candidate" || user?.role === "") ? (
           <button
             type="button"
-            disabled={
-              isSendingEmail ||
-              isCreating ||
-              isLoading ||
-              isAdding ||
-              isEvaluating
-            }
+            disabled={isSubmissionLoading || isCreating}
             onMouseEnter={(e) => {
               const target = e.target as HTMLElement;
               target.style.backgroundColor = secondaryColor;
@@ -483,11 +233,7 @@ export function CreateCandidateDialog({
             style={{ backgroundColor: primaryColor }}
             className="inline-flex justify-center w-full rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
           >
-            {isSendingEmail ||
-            isCreating ||
-            isLoading ||
-            isEvaluating ||
-            isAdding
+            {isSubmissionLoading || isCreating
               ? "Processing..."
               : "Apply Now"}
           </button>
@@ -525,34 +271,13 @@ export function CreateCandidateDialog({
             : undefined
         }
       >
-        {/* Maximize/Minimize Button - Always visible */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className={`absolute z-[100] h-7 w-7 text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md ${!isLargeViewport ? "hidden" : ""}`}
-          style={{ top: "calc(1rem - 5px)", right: "calc(3.5rem - 20px)" }}
-          onClick={() => setIsMaximized(!isMaximized)}
-          title={isMaximized ? "Restore" : "Maximize"}
-          type="button"
-        >
-          {isMaximized ? (
-            <Minimize className="h-4 w-4" />
-          ) : (
-            <Maximize className="h-4 w-4" />
-          )}
-        </Button>
-        <DialogHeader className="flex-shrink-0 px-6 py-4 border-b text-left">
-          <DialogTitle className="text-left text-xl font-bold text-gray-900 dark:text-white">
-            {user && (user.role === "candidate" || user?.role === "")
-              ? "Add Application"
-              : "Add New Candidate"}
-          </DialogTitle>
-          {jobTitle && (
-            <p className="text-left text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Applying for: {jobTitle}
-            </p>
-          )}
-        </DialogHeader>
+        <CreateCandidateDialogHeader
+          userRole={user?.role}
+          jobTitle={jobTitle}
+          isLargeViewport={isLargeViewport}
+          isMaximized={isMaximized}
+          onToggleMaximize={() => setIsMaximized(!isMaximized)}
+        />
         <Formik
           innerRef={formikRef}
           key={resetForm.toString()}
@@ -588,40 +313,17 @@ export function CreateCandidateDialog({
                   }}
                 />
               </div>
-              <div className="flex-shrink-0 flex justify-end bottom-0 space-x-2 border-t bg-background px-6 py-4 sticky z-999">
-                <Button
-                  type="button"
-                  className="inline-flex justify-center rounded-md border border-transparent bg-gray-100 hover:bg-gray-200 px-4 py-2 text-sm font-medium text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => {
-                    // scrollToErrorMassage(errors);
-                    handleApply();
-                  }}
-                  variant="primary"
-                  type={Object.keys(errors).length == 0 ? "button" : "submit"}
-                  disabled={isSubmitting || isCreating || isLoading}
-                  onMouseEnter={(e) => {
-                    const target = e.target as HTMLElement;
-                    target.style.backgroundColor = secondaryColor;
-                  }}
-                  // className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                  onMouseLeave={(e) => {
-                    const target = e.target as HTMLElement;
-                    target.style.backgroundColor = primaryColor;
-                  }}
-                  style={{ backgroundColor: primaryColor }}
-                >
-                  {isSubmitting || isFormSubmitting
-                    ? "Saving..."
-                    : user && (user.role === "candidate" || user?.role === "")
-                      ? "Apply"
-                      : "Add Candidate"}
-                </Button>
-              </div>
+              <CreateCandidateDialogFooter
+                userRole={user?.role}
+                isSubmitting={isSubmitting}
+                isCreating={isCreating}
+                isLoading={isSubmissionLoading}
+                primaryColor={primaryColor}
+                secondaryColor={secondaryColor}
+                onCancel={() => setIsOpen(false)}
+                onApply={handleApply}
+                hasErrors={Object.keys(errors).length > 0}
+              />
             </Form>
           )}
         </Formik>
@@ -634,7 +336,7 @@ export function CreateCandidateDialog({
           setPendingFormValues(null);
         }}
         onConfirm={handleTermsConfirm}
-        isLoading={isCreating || isAdding || isEvaluating || isSendingEmail}
+        isLoading={isCreating || isSubmissionLoading}
       />
     </Dialog>
   );

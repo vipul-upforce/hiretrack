@@ -238,7 +238,7 @@ async function updateEmailHistoryStatus(
       { $set: updateData }
     );
   } catch {
-    // Silently fail - history update shouldn't break email sending
+    console.error("Failed to update email history status:", error);
   }
 }
 

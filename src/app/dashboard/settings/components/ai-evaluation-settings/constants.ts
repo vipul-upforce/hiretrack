@@ -64,6 +64,4 @@ CRITICAL INSTRUCTIONS FOR CONSISTENCY:
 - Base scores ONLY on evidence in CV - do not make charitable assumptions
 - Be critical and objective - most candidates are average, not exceptional
 - Provide specific evidence in notes to justify each score
-
-Available placeholders:
-{{JOB_TITLE}}, {{JOB_DESCRIPTION}}, {{EXPERIENCE}}, {{CTC_RANGE}}, {{JOB_SALARY}}, {{REQUIRED_SKILLS}}, {{CANDIDATE_CURRENT_CTC}}, {{CANDIDATE_EXPECTED_CTC}}`;
+`;

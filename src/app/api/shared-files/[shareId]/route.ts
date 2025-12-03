@@ -101,10 +101,10 @@ export async function GET(
     response.headers.set("Cache-Control", "private, max-age=3600");
 
     return response;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error downloading file:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to download file" },
+      { error: error instanceof Error ? error.message : "Failed to download file" },
       { status: 500 }
     );
   }

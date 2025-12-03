@@ -17,6 +17,7 @@ import {
   useUpdateCandidateHistoryMutation,
 } from "@/lib/features/candidate/candidateApi";
 import { Candidate } from "@/types/candidate";
+import { getJobId } from "../../utils/candidateAccessors";
 import { v4 as uuidv4 } from "uuid";
 import { useParams, usePathname } from "next/navigation";
 import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
@@ -32,6 +33,8 @@ import { useApplyHandler } from "@/app/apply-jobs/useApplyHandler";
 import { AddSpecificCustomFieldButton } from "@/Custom_Fields/Components/AddSpecificCustomFieldButton";
 import { CustomFieldsContext } from "@/Custom_Fields/Context";
 import { useSelector } from "react-redux";
+import { EditCandidateDialogHeader } from "./edit-candidate-components/EditCandidateDialogHeader";
+import { EditCandidateDialogFooter } from "./edit-candidate-components/EditCandidateDialogFooter";
 
 interface EditCandidateDialogProps {
   candidate: Candidate;
@@ -88,32 +91,6 @@ const isFetchBaseQueryError = (
     typeof error.data.error === "string"
   );
 };
-
-// export const scrollToErrorMassage = async (errors: FormikErrors<any>) => {
-//   // const formik = formikRef.current;
-//   // if (!formik) return;
-
-//   // debugger;
-//   // const errors = await formik.validateForm();
-//   console.log("🛴🛴🛴🛴 ", errors);
-//   const firstErrorKey = Object.keys(errors)[0];
-//   if (firstErrorKey) {
-//     // debugger;
-//     if (firstErrorKey === "customFields") {
-//       if (!errors.customFields) return;
-//       const cfKey = Object.keys(errors.customFields)[0];
-//       const el = document.querySelector(`[id='${firstErrorKey}.${cfKey}']`);
-//       el?.scrollIntoView({ behavior: "smooth", block: "center" });
-//       (el as HTMLElement)?.focus();
-//       return;
-//     }
-//     const el = document.querySelector(`[id='${firstErrorKey}']`);
-//     console.log("ELEMENT: ", el);
-//     el?.scrollIntoView({ behavior: "smooth", block: "center" });
-//     (el as HTMLElement)?.focus();
-//     return;
-//   }
-// };
 
 export function EditCandidateDialog({
   candidate,
@@ -508,25 +485,11 @@ export function EditCandidateDialog({
             : {}
         }
       >
-        {/* Maximize/Minimize Button - Always visible */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className={`absolute z-[100] h-7 w-7 text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md ${!isLargeViewport ? "hidden" : ""}`}
-          style={{ top: "calc(1rem - 5px)", right: "calc(3.5rem - 20px)" }}
-          onClick={() => setIsMaximized(!isMaximized)}
-          title={isMaximized ? "Restore" : "Maximize"}
-          type="button"
-        >
-          {isMaximized ? (
-            <Minimize className="h-4 w-4" />
-          ) : (
-            <Maximize className="h-4 w-4" />
-          )}
-        </Button>
-        <DialogHeader className="px-6 py-4 pr-12">
-          <DialogTitle>Edit Candidate</DialogTitle>
-        </DialogHeader>
+        <EditCandidateDialogHeader
+          isLargeViewport={isLargeViewport}
+          isMaximized={isMaximized}
+          onToggleMaximize={() => setIsMaximized(!isMaximized)}
+        />
         <Formik
           innerRef={formikRef}
           initialValues={initialValues}
@@ -539,7 +502,7 @@ export function EditCandidateDialog({
               <FormUpdater parsedResumeData={parsedResumeData} />
               <div className="flex-1 overflow-y-auto px-6 py-4">
                 <CandidateForm
-                  jobId={candidate.jobId._id || id}
+                  jobId={getJobId(candidate) || id}
                   onFileUpload={async (file: File) => {
                     setFieldValue("resume", file);
                     await handleFileParse(file, setParsedResume);
@@ -574,9 +537,7 @@ export function EditCandidateDialog({
 
                   <Button
                     onClick={() => {
-                      // debugger;
                       handleApply();
-                      // scrollToErrorMassage(errors);
                     }}
                     type={Object.keys(errors).length == 0 ? "button" : "submit"}
                     variant="primary"

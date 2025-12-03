@@ -33,6 +33,9 @@ import ConfirmationDialog from "./components/Dialogs/ConfirmationDialog";
 import NoDataFound from "@/app/not-found";
 import EditLaneDialog from "./components/Lanes/edit-lane-dialog";
 import { useSSE } from "@/hooks/useSSE";
+import { useNormalizedCandidates } from "./hooks/useNormalizedCandidates";
+import { useCandidateState } from "./hooks/useCandidateState";
+import { getInterviewerName } from "./utils/candidateAccessors";
 import { mergeRefs } from "react-merge-refs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { QuickSelectAndFilter } from "./components/QuickSelectAndFilter";
@@ -77,19 +80,10 @@ interface FilterState {
 
 export default function JobProgressPage() {
   const id = useParams()?.id as string;
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const candidateIdParam = searchParams.get("candidateId");
 
   const [columns, setColumns] = useState<CandidateColumn[]>(
     initialCandidateColumns
   );
-  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(
-    null
-  );
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  // const [user, setUser] = useState<User | null>(null);
-  const [openRemarksFor, setOpenRemarksFor] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [candidateToDelete, setCandidateToDelete] = useState<string | null>(
@@ -131,26 +125,54 @@ export default function JobProgressPage() {
     isDragging,
   } = useDragToScroll<HTMLDivElement>();
 
-  const { candidates: sseCandidates, lanes: updatedLanes } = useSSE(
-    user?.role || "",
-    setSelectedCandidate,
-    selectedCandidate,
-    id
-  );
-
   const {
     data: job,
     isLoading: isJobLoading,
     error: jobError,
   } = useFetchJobByIdQuery(id as string);
 
-  const [promptForStatusChangeReason, setPromptForStatusChangeReason] =
-    useState(job?.promptForStatusChangeReason || false);
+  // Temporary state for SSE integration (will be replaced by useCandidateState)
+  const [tempSelectedCandidate, setTempSelectedCandidate] = useState<Candidate | null>(null);
+
+  // Use normalized candidates hook (replaces manual merging)
   const {
-    data: candidatesFromQuery,
+    candidates: normalizedCandidates,
     isLoading: isCandidatesLoading,
     refetch,
-  } = useFetchCandidatesQuery(id as string);
+  } = useNormalizedCandidates({
+    jobId: id,
+    role: user?.role || "",
+    setSelectedCandidate: setTempSelectedCandidate,
+    selectedCandidate: tempSelectedCandidate,
+  });
+
+  // Use candidate state hook (consolidates UI state)
+  const {
+    selectedCandidate,
+    setSelectedCandidate,
+    isDetailsOpen,
+    setIsDetailsOpen,
+    openRemarksFor,
+    setOpenRemarksFor,
+  } = useCandidateState({
+    jobId: id,
+    candidates: normalizedCandidates,
+  });
+
+  // Sync temp selected candidate with state hook
+  useEffect(() => {
+    if (tempSelectedCandidate && tempSelectedCandidate._id !== selectedCandidate?._id) {
+      setSelectedCandidate(tempSelectedCandidate);
+    }
+  }, [tempSelectedCandidate, selectedCandidate, setSelectedCandidate]);
+
+  // Get SSE lanes separately (still needed for lane updates)
+  const { lanes: updatedLanes } = useSSE(
+    user?.role || "",
+    setSelectedCandidate,
+    selectedCandidate,
+    id
+  );
   const [updateJob, { isLoading }] = useUpdateJobMutation();
   // NEW: Use job-specific lanes with fallback to user lanes
   const {
@@ -231,19 +253,8 @@ export default function JobProgressPage() {
     // promptForStatusChangeReason,
   });
 
-  // Merge candidatesFromQuery and sseCandidates
-  const mergedCandidates = useMemo(() => {
-    const candidateMap = new Map<string, Candidate>(
-      candidatesFromQuery?.map((c) => [c._id, c]) || []
-    );
-
-    // Update or add candidates from SSE
-    sseCandidates.forEach((sseCandidate) => {
-      candidateMap.set(sseCandidate._id, sseCandidate);
-    });
-
-    return Array.from(candidateMap.values());
-  }, [candidatesFromQuery, sseCandidates]);
+  // Use normalized candidates (already merged and normalized)
+  const mergedCandidates = normalizedCandidates;
 
   // useEffect(() => {
   //   console.log("Loading states:", {
@@ -273,34 +284,9 @@ export default function JobProgressPage() {
     }
   }, [isDialogOpen]);
 
-  // Handle candidateId URL parameter to auto-open candidate dialog
-  useEffect(() => {
-    if (candidateIdParam && candidatesFromQuery && !selectedCandidate) {
-      const candidate = candidatesFromQuery.find(
-        (c) => c._id === candidateIdParam
-      );
-      if (candidate) {
-        setSelectedCandidate(candidate);
-        setIsDetailsOpen(true);
-      }
-    }
-  }, [candidateIdParam, candidatesFromQuery, selectedCandidate]);
-
-  // Handle candidate details dialog close - clean up URL parameter
-  const handleCandidateDialogClose = (open: boolean) => {
-    setIsDetailsOpen(open);
-    if (!open && candidateIdParam) {
-      // Remove candidateId parameter from URL when dialog is closed
-      const params = new URLSearchParams(searchParams.toString());
-      params.delete("candidateId");
-      const newUrl = params.toString() ? `?${params.toString()}` : "";
-      router.replace(`/dashboard/jobs/${id}${newUrl}`, { scroll: false });
-    }
-  };
-
   // Combine candidates from useFetchCandidatesQuery and useSSE
   useEffect(() => {
-    if (candidatesFromQuery && lanes) {
+    if (normalizedCandidates && lanes) {
       let currentCandidates = [...mergedCandidates];
 
       // Apply filter conditions if they exist
@@ -578,13 +564,10 @@ export default function JobProgressPage() {
             // Add a class to the body before drag starts to apply CSS fixes
             document.body.classList.add("dnd-dragging");
           }}
-          onDragStart={(start) => {
+          onDragStart={() => {
             setIsDndDragging(true);
           }}
-          onDragUpdate={(update) => {
-            // No prevalidation needed - using client-side validation
-          }}
-          onDragEnd={(result: any) => {
+          onDragEnd={(result) => {
             // Remove the class when drag ends
             document.body.classList.remove("dnd-dragging");
             setIsDndDragging(false);
@@ -666,7 +649,7 @@ export default function JobProgressPage() {
       <CandidateDetailsDialog
         candidate={selectedCandidate}
         isOpen={isDetailsOpen}
-        onOpenChange={handleCandidateDialogClose}
+        onOpenChange={setIsDetailsOpen}
         onUpdate={handleCandidateUpdate}
       />
 
@@ -716,7 +699,6 @@ export default function JobProgressPage() {
         title="Confirm Setting Change"
         message={`Are you sure you want to ${pendingPromptValue ? "enable" : "disable"} prompting for status change reasons?`}
         onConfirm={async () => {
-          setPromptForStatusChangeReason(pendingPromptValue);
           try {
             await updateJob({
               ...job,
@@ -724,7 +706,6 @@ export default function JobProgressPage() {
             });
           } catch (error) {
             console.error("Failed to update job:", error);
-            setPromptForStatusChangeReason(!pendingPromptValue);
           }
           setIsPromptConfirmOpen(false);
         }}

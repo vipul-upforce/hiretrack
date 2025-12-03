@@ -103,7 +103,7 @@ export async function DELETE(
 ) {
   try {
     const [decoded] = await Promise.all([
-      getAuthenticatedUser(req, "admin"),
+      getAuthenticatedUser(req, ["admin","hr"]),
       connectToDatabase(),
     ]);
     if (!decoded) {

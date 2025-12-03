@@ -15,7 +15,7 @@ export async function GET(
   try {
     await connectToDatabase();
 
-    const mapping = await FileUrlMapping?.findOne({ fileId }).select("realUrl").lean();
+    const mapping = await FileUrlMapping?.findOne({ fileId });
 
     if (!mapping) {
       return NextResponse.json({ error: "File not found" }, { status: 404 });

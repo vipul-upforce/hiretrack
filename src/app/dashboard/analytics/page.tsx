@@ -15,7 +15,6 @@ import type { User } from "@/lib/features/org/orgApi"
 import type { Filters } from "./components/types"
 
 export default function AnalyticsPage() {
-  // Helper function to safely convert date values to Date objects
   const toDate = (dateValue: any): Date | null => {
     if (!dateValue) return null
     if (dateValue instanceof Date) return dateValue
@@ -32,7 +31,6 @@ export default function AnalyticsPage() {
     return null
   }
 
-  // State Management
   const [dateRange, setDateRange] = useState<Date[] | null>(() => {
     const now = new Date()
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
@@ -46,7 +44,6 @@ export default function AnalyticsPage() {
 
   const { user }: { user: User } = useSelector((state: any) => state.auth || {})
 
-  // Memoize filters to prevent object recreation on every render
   const filters = useMemo(() => {
     if (!dateRange || dateRange.length !== 2) return {}
 
@@ -58,7 +55,6 @@ export default function AnalyticsPage() {
     } as Filters
   }, [dateRange?.[0], dateRange?.[1]])
 
-  // Get analytics data using hooks
   const {
     data: funnelData,
     loading: funnelLoading,

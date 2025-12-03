@@ -83,10 +83,10 @@ export async function GET(request: NextRequest) {
         totalEmails: totalCount,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching email history:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to fetch email history" },
+      { error: error instanceof Error ? error.message : "Failed to fetch email history" },
       { status: 500 }
     );
   }

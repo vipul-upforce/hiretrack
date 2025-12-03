@@ -43,12 +43,12 @@ export async function POST(request: NextRequest) {
       pid: childProcess.pid,
       homeDir,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in update endpoint:", error);
     return NextResponse.json(
       {
         success: false,
-        error: "Internal server error while initiating update",
+        error: error instanceof Error ? error.message : "Internal server error while initiating update",
       },
       { status: 500 }
     );
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
 //       pid: child.pid,
 //       note: "You can monitor progress via ~/.myapp/logs/installer-run.log",
 //     });
-//   } catch (error: any) {
+//   } catch (error: unknown) {
 //     console.error("❌ Error launching update:", error);
 //     return NextResponse.json(
 //       { success: false, error: error.message || "Failed to start update process" },

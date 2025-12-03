@@ -5,7 +5,7 @@ import { getAuthenticatedUser } from "@/app/actions/auth";
 export async function GET(req: NextRequest) {
   try {
     const [userData] = await Promise.all([
-      getAuthenticatedUser(req, "admin"),
+      getAuthenticatedUser(req, ["admin", "hr"]),
       connectToDatabase(),
     ]);
     if (!userData) {

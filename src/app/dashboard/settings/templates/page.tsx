@@ -11,7 +11,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import EmailTemplateSkeleton from "../components/email-template-skeleton";
+import EmailTemplateSkeleton from "./components/email-template-skeleton";
 import { useEmailTemplates } from "./hooks/useEmailTemplate";
 import { AddTemplateDialog } from "./components/add-template-dialog";
 import { TemplateHeader } from "./components/template-header";

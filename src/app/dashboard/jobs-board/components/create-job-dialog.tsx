@@ -17,7 +17,7 @@ import { useState } from "react";
 import { JobForm } from "./job-form";
 import CustomFields from "@/Custom_Fields/Components/CustomFields";
 import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
-import { scrollToError } from "./edit-job-form";
+import { scrollToError } from "@/lib/formUtils";
 
 interface CreateJobDialogProps {
   onJobCreated: (
@@ -49,6 +49,7 @@ interface CreateJobDialogProps {
   ) => void;
   userRole?: string;
 }
+
 export function CreateJobDialog({
   onJobCreated,
   userRole,

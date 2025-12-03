@@ -83,12 +83,12 @@ export async function POST(request: NextRequest) {
           });
           created++;
           
-        } catch (error: any) {
+        } catch (error: unknown) {
           results.push({
             collection: indexDef.collection,
             name: indexDef.name,
             status: 'failed',
-            error: error.message
+            error: error instanceof Error ? error.message : "Unknown error"
           });
           failed++;
         }
@@ -106,12 +106,12 @@ export async function POST(request: NextRequest) {
         results
       });
       
-    } catch (error:any) {
+    } catch (error: unknown) {
       console.error("Index creation error:", error);
       return NextResponse.json({
         success: false,
         error: "Failed to create indexes",
-        details: error.message
+        details: error instanceof Error ? error.message : "Unknown error"
       }, { status: 500 });
     }
   });
@@ -152,10 +152,10 @@ export async function GET(request: NextRequest) {
               keys: idx.key
             }))
           });
-        } catch (error:any) {
+        } catch (error: unknown) {
           indexInfo.push({
             collection: collectionName,
-            error: error.message
+            error: error instanceof Error ? error.message : "Unknown error"
           });
         }
       }
@@ -165,10 +165,10 @@ export async function GET(request: NextRequest) {
         indexInfo
       });
       
-    } catch (error:any) {
+    } catch (error: unknown) {
       return NextResponse.json({
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : "Unknown error"
       }, { status: 500 });
     }
   });
