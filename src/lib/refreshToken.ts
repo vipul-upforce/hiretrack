@@ -16,7 +16,7 @@ export interface RefreshTokenPayload {
  * Generate a secure refresh token using JWT (same method as access token)
  * - Encrypts payload with AES
  * - Signs with JWT
- * - Expires in 30 days
+ * - Expires in 7 days
  */
 export function generateRefreshToken(
   payload: RefreshTokenPayload,
@@ -31,8 +31,8 @@ export function generateRefreshToken(
     JWT_SECRET
   ).toString();
 
-  // Sign with JWT (30 days expiration)
-  return jwt.sign({ refresh: encryptedPayload }, JWT_SECRET, { expiresIn: "30d" });
+  // Sign with JWT (7 days expiration)
+  return jwt.sign({ refresh: encryptedPayload }, JWT_SECRET, { expiresIn: "7d" });
 }
 
 /**
@@ -103,7 +103,7 @@ export async function storeRefreshToken(
   isCandidate: boolean = false,
   deviceId?: string,
   deviceInfo?: string,
-  expiryDays: number = 30
+  expiryDays: number = 7
 ): Promise<string> {
   const expiry = new Date();
   expiry.setDate(expiry.getDate() + expiryDays);
@@ -262,7 +262,7 @@ export async function updateRefreshToken(
   isCandidate: boolean = false
 ): Promise<void> {
   const newExpiry = new Date();
-  newExpiry.setDate(newExpiry.getDate() + 30); // 30 days
+  newExpiry.setDate(newExpiry.getDate() + 7); // 7 days
 
   if (isCandidate) {
     await CandidateAccount.findByIdAndUpdate(

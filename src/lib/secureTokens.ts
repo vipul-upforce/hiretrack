@@ -24,8 +24,8 @@ export function setSecureAuthTokens(
   options: SecureTokenOptions = {}
 ) {
   const {
-    maxAge = 30 * 24 * 60 * 60, // 30 days in seconds
-    expires = 30, // 30 days (legacy format)
+    maxAge = 7 * 24 * 60 * 60, // 7 days in seconds
+    expires = 7, // 7 days (legacy format)
     domain,
     path = "/",
   } = options;
@@ -136,8 +136,8 @@ export function setSecureOrgId(
   options: SecureOrgIdOptions = {}
 ) {
   const {
-    maxAge = 30 * 24 * 60 * 60, // 30 days in seconds
-    expires = 30, // 30 days (legacy format)
+    maxAge = 7 * 24 * 60 * 60, // 7 days in seconds
+    expires = 7, // 7 days (legacy format)
     domain,
     path = "/",
   } = options;

@@ -29,7 +29,7 @@ export const signAccessToken = (payload: any, orgId: string) => {
 
 // Keep long-lived token for backward compatibility (if needed)
 export const signLongLivedToken = (payload: any, orgId: string) => {
-  return signToken(payload, orgId, "30d"); // 30 days
+  return signToken(payload, orgId, "7d"); // 7 days
 };
 
 export const verifyToken = (token: string) => {

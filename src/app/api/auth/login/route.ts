@@ -565,7 +565,7 @@ const returnTokenBasedResponse = async (obj: any, req?: NextRequest) => {
     isCandidate,
     deviceId,
     deviceInfo,
-    30 // 30 days
+    7 // 7 days
   );
 
   const response = NextResponse.json({
@@ -586,7 +586,7 @@ const returnTokenBasedResponse = async (obj: any, req?: NextRequest) => {
     httpOnly: true,
     secure: process.env.ENVIRONMENT === "production",
     sameSite: "strict",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 7 * 24 * 60 * 60, // 7 days
     path: "/",
   });
   
@@ -595,14 +595,14 @@ const returnTokenBasedResponse = async (obj: any, req?: NextRequest) => {
     httpOnly: true,
     secure: process.env.ENVIRONMENT === "production",
     sameSite: "strict",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 7 * 24 * 60 * 60, // 7 days
     path: "/",
   });
 
   // Set secure organization ID
   resp = setSecureOrgId(resp, obj.organizationId, {
-    expires: 30,
-    maxAge: 30 * 24 * 60 * 60,
+    expires: 7,
+    maxAge: 7 * 24 * 60 * 60,
     path: "/",
   });
 
