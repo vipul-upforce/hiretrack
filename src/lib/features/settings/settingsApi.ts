@@ -19,7 +19,7 @@ interface TestConnectionRequest {
 
 export interface DiskFolderItem {
   name: string;
-  relativePath: string; // Added this
+  relativePath: string;
   size: string;
   rawSize: number;
   type: "file" | "folder";
@@ -33,8 +33,21 @@ export interface DiskFolder {
   type: "folder";
 }
 
+export interface DiskStats {
+  total: string;
+  free: string;
+  used: string;
+  percentUsed: string;
+  raw: {
+    total: number;
+    free: number;
+    used: number;
+  };
+}
+
 export interface DiskSpaceResponse {
   success: boolean;
+  diskStats?: DiskStats;
   folders: DiskFolder[];
 }
 
