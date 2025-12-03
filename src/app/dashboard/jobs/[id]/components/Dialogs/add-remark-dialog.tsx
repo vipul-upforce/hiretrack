@@ -145,16 +145,19 @@ const AddRemarksDialog = ({
           jobId: candidate.jobId,
           newEntry: newHistoryEntry,
         }).unwrap();
-        // debugger;
-        const wasUpdatedRecently =
-          (() => {
-            const updatedAt = getTrackingDate(candidate, "updatedAt");
-            return updatedAt && Date.now() - updatedAt.getTime() <= 20 * 1000; // 20 seconds
-          })();
-
         const updatedCandidate = await updateCandidate(updateData).unwrap();
+        
+        // Send status mail if status was recently updated (within 20 seconds)
+        // This handles the case where remark dialog was opened after status update
+        const updatedAt = getTrackingDate(candidate, "updatedAt");
+        const wasUpdatedRecently =
+          updatedAt && Date.now() - updatedAt.getTime() <= 20 * 1000;
+
         if (wasUpdatedRecently) {
-          await sentStatusMailHandler(updatedCandidate, sendStatusMail);
+          await sentStatusMailHandler(updatedCandidate, sendStatusMail, {
+            remark: newRemark.trim(),
+            rating: remarkRating,
+          });
         }
         // sentRemarkMail(result, sendEmail);
 

@@ -82,56 +82,42 @@ export const sentAssignmentMail = async (
     }
   }
 };
+/**
+ * Sends status update email notification
+ * @param result - Candidate with optional prev_status
+ * @param sendStatusMail - Status mail mutation function
+ * @param options - Optional remark and rating to include in email
+ */
 export const sentStatusMailHandler = async (
   result: Candidate & { prev_status?: string },
-  sendStatusMail: ReturnType<typeof useSendStatusMailMutation>[0]
+  sendStatusMail: ReturnType<typeof useSendStatusMailMutation>[0],
+  options?: {
+    remark?: string;
+    rating?: number | string;
+  }
 ) => {
-  const latestRemark =
-    result.remarks && result.remarks.length > 0
-      ? result.remarks[result.remarks.length - 1]
-      : null;
-  // console.log("#$$$$$$$$$$$ ", result.prev_status);
-  // console.log(result, "result");
+  const jobName =
+    result.jobId &&
+    typeof result.jobId !== "string" &&
+    (result.jobId as unknown as IJob).title
+      ? (result.jobId as unknown as IJob).title
+      : "Unknown Job";
 
   const reqBody: IScheduledStatusMailRequest = {
     id: result._id,
-    // email:
-    //   typeof result.assignment?.interviewerId === "object"
-    //     ? result.assignment.interviewerId.email
-    //     : "",
-
-    eventTitle: "Status Updated for " + result.name,
+    eventTitle: `Status Updated for ${result.name}`,
     prev_status: result.prev_status || "",
     startTime: new Date().toISOString(),
     endTime: new Date().toISOString(),
     jobId: result.jobId._id,
-    jobName:
-      result.jobId &&
-      typeof result.jobId !== "string" &&
-      (result.jobId as unknown as IJob).title
-        ? (result.jobId as unknown as IJob).title
-        : "Unknown Job",
-    // interviewerName:
-    //   latestRemark && typeof latestRemark.userId === "object"
-    //     ? latestRemark.userId.name
-    //     : "",
-
+    jobName,
     candidateName: result.name,
     status: result.status,
-    remark: latestRemark?.description || "No Remark",
-    rating: latestRemark?.rating?.toString() || "No rating",
+    remark: options?.remark ?? "",
+    rating: options?.rating?.toString() ?? "",
   };
 
-  // console.log("#$$$$$$$$$$$ ", reqBody);
-
-  const { error } = await sendStatusMail(reqBody);
-  if (error) {
-    // toast({
-    //   title: "Error",
-    //   description: "Email not sent.",
-    //   variant: "destructive",
-    // });
-  }
+  await sendStatusMail(reqBody);
 };
 // export const sentRemarkMail = async (
 //   result: Candidate,
