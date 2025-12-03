@@ -137,6 +137,15 @@ export function JobEmailNotificationSettingsDialog({
     }
   };
 
+  // Filter out notification types that should be hidden in job-level settings
+  const HIDDEN_NOTIFICATION_TYPES: EmailNotificationType[] = [
+    "userAdded",
+    "bulkImportCompleted",
+  ];
+  const visibleNotificationTypes = ALL_NOTIFICATION_TYPES.filter(
+    (type) => !HIDDEN_NOTIFICATION_TYPES.includes(type)
+  );
+
   const hasChanges = () => {
     if (!settings) return false;
     const original = settings.currentJobSettings || {};
@@ -144,7 +153,7 @@ export function JobEmailNotificationSettingsDialog({
     const compareSource =
       Object.keys(original).length > 0 ? original : effective;
 
-    return ALL_NOTIFICATION_TYPES.some((key) => {
+    return visibleNotificationTypes.some((key) => {
       const currentValue = localSettings[key];
       const originalValue = compareSource[key]?.enabled ?? true;
       return currentValue !== originalValue;
@@ -153,7 +162,7 @@ export function JobEmailNotificationSettingsDialog({
 
   // Calculate if all notifications are enabled (excluding admin-disabled ones)
   const getAllToggleState = () => {
-    const toggleableTypes = ALL_NOTIFICATION_TYPES.filter(
+    const toggleableTypes = visibleNotificationTypes.filter(
       (type) => !isAdminOverrideDisabled(type, adminOverrides)
     );
     if (toggleableTypes.length === 0) return false;
@@ -162,7 +171,7 @@ export function JobEmailNotificationSettingsDialog({
 
   const handleAllToggle = (enabled: boolean) => {
     const newSettings = { ...localSettings };
-    ALL_NOTIFICATION_TYPES.forEach((type) => {
+    visibleNotificationTypes.forEach((type) => {
       // Only toggle types that aren't disabled by admin override
       if (!isAdminOverrideDisabled(type, adminOverrides)) {
         newSettings[type] = enabled;
@@ -172,7 +181,7 @@ export function JobEmailNotificationSettingsDialog({
   };
 
   const allToggleEnabled = getAllToggleState();
-  const hasAdminDisabled = ALL_NOTIFICATION_TYPES.some((type) =>
+  const hasAdminDisabled = visibleNotificationTypes.some((type) =>
     isAdminOverrideDisabled(type, adminOverrides)
   );
 
@@ -222,7 +231,7 @@ export function JobEmailNotificationSettingsDialog({
                   disabled={updating}
                 />
               </div>
-              {ALL_NOTIFICATION_TYPES.map((type) => {
+              {visibleNotificationTypes.map((type) => {
                 const isDisabled =
                   isAdminOverrideDisabled(type, adminOverrides) || updating;
                 const source = resolveNotificationSource(
