@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import dbConnect, { CandidateAccount, Organization, User } from "@/lib/mongodb";
+import connectToDatabase, { CandidateAccount, Organization, User } from "@/lib/mongodb";
 import { validateInput, VALIDATION_PATTERNS, MAX_LENGTHS, sanitizeString } from "@/lib/inputValidation";
 
 export async function POST(req: NextRequest) {
   try {
-    await dbConnect();
+    await connectToDatabase();
     const requestData = await req.json();
     
     // SECURITY FIX: Validate candidate signup input
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
           adminId: 0,
           lanes: 0,
         }
-      );
+      ).lean();
       if (!organizationInfo) {
         return NextResponse.json(
           { error: `Organization "${sanitizedOrgName}" not found` },
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
           adminId: 0,
           lanes: 0,
         }
-      );
+      ).lean();
       if (!organizationInfo) {
         return NextResponse.json(
           { error: "No organizations found in the database" },
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    const existingUser = await User.findOne({ email, organizationId });
+    const existingUser = await User.findOne({ email, organizationId }).lean();
 
     if (existingUser) {
       if (existingUser.isDeleted) {

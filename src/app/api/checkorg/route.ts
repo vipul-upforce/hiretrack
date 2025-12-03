@@ -3,13 +3,8 @@ import { apiRateLimiter } from "@/lib/rateLimiter";
 import { NextRequest, NextResponse } from "next/server";
 
 async function checkOrgInDatabase(organizationId: string) {
-  const organization = await Organization?.findOne({ _id: organizationId });
-  // console.log("🙂🙂🙂 org: ", organization);
-  if (organization?.name) {
-    return true;
-  } else {
-    return false;
-  }
+  const organization = await Organization?.findOne({ _id: organizationId }).select("name").lean();
+  return organization?.name ? true : false;
 }
 
 const handleGetChekOrg = async (req: NextRequest) => {

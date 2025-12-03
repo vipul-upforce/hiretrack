@@ -10,45 +10,31 @@ import {
   FileAttachment,
   handleFileAttachments,
 } from "@/lib/fileUtils";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 import { v4 as uuidv4 } from "uuid";
-import { auth } from "@/lib/auth";
 import mongoose, { Types } from "mongoose";
 import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
 import { ICandidate } from "@/lib/models/candidate";
 import { ICandidateHistory } from "@/lib/models/history";
 import {
   filterChecklistResponses,
-  getUserRole,
 } from "@/lib/utils/checklistVisibility";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { NotificationService } from "@/lib/notifications/notificationService";
+import { UserRole } from "@/lib/models/JobLaneConfig";
 import { sendRemarkNotificationWithMentions } from "@/lib/unifiedEmailService";
 import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
 
 export async function POST(request: NextRequest) {
   //Getting the history data
   try {
-    // Get and verify user authentication
-    const token = request.cookies.get("auth_token")?.value;
-    if (!token) {
+    const [userData, data] = await Promise.all([
+      getAuthenticatedUser(request),
+      request.json(),
+      connectToDatabase(),
+    ]);
+    if (!userData) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    // Get org ID from cookies
-    const orgId = request.cookies.get("org_id")?.value;
-    const decryptedResponse = await verifyAndDecryptJWTToken(token, orgId);
-    if (!decryptedResponse.success || !decryptedResponse.user) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    const decoded = decryptedResponse.user;
-    const userRole = getUserRole(decoded.role);
-    if (!userRole) {
-      return NextResponse.json({ error: "Invalid user role" }, { status: 403 });
-    }
-
-    await connectToDatabase();
-    const data = await request.json();
 
     if (!History) {
       return NextResponse.json(
@@ -63,16 +49,21 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-
-    const historyEntry = await History.findOne({
-      jobId: data.jobId,
-      candidateId: data.candidateId,
-    })
-      .populate("history.currentInterviewer", "_id name email")
-      .populate("history.previousInterviewer", "_id name email")
-      .populate("history.assignmentBy", "_id name email")
-      .populate("history.note.userId", "_id name email")
-      .lean();
+    const populateFields = [
+      { path: "history.currentInterviewer", select: "_id name email" },
+      { path: "history.previousInterviewer", select: "_id name email" },
+      { path: "history.assignmentBy", select: "_id name email" },
+      { path: "history.note.userId", select: "_id name email" },
+    ];
+    const [historyEntry, laneConfig] = await Promise.all([
+      History.findOne({
+        jobId: data.jobId,
+        candidateId: data.candidateId,
+      })
+        .populate(populateFields)
+        .lean(),
+      JobLaneConfig.findOne({ jobId: data.jobId }).lean().exec(),
+    ]);
 
     if (!historyEntry) {
       return NextResponse.json(
@@ -80,9 +71,6 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       );
     }
-
-    // Get job lane configuration to filter checklist responses based on user role
-    const laneConfig = await JobLaneConfig.findOne({ jobId: data.jobId });
 
     // Filter checklist responses in history based on user role visibility
     const filteredHistory = historyEntry.history.map((entry: any) => {
@@ -112,7 +100,7 @@ export async function POST(request: NextRequest) {
       const filteredResponses = filterChecklistResponses(
         entry.checklistForm.responses,
         checklistFields,
-        userRole
+        userData.role as UserRole
       );
 
       return {
@@ -288,22 +276,16 @@ export async function POST(request: NextRequest) {
 // }
 export async function PATCH(request: NextRequest) {
   try {
-    await connectToDatabase();
-
-    const data = await request.json();
-    const { id, description, isPrivate, rating } = data;
-    const { user } = (await auth(request)) || {};
-
-    if (!id || typeof description !== "string") {
-      return NextResponse.json(
-        { error: "Invalid input: id and description are required" },
-        { status: 400 }
-      );
-    }
-
-    if (!user || !["admin", "hr", "interviewer"].includes(user.role)) {
+    const [userData, data] = await Promise.all([
+      getAuthenticatedUser(request),
+      request.json(),
+      connectToDatabase(),
+    ]);
+    if (!userData) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const { id, description, isPrivate, rating } = data;
+    const user = userData;
 
     if (!History) {
       throw new Error("Database not connected");
@@ -441,8 +423,15 @@ export async function PUT(request: NextRequest) {
     );
   }
   try {
-    await connectToDatabase();
+    const [userData] = await Promise.all([
+      getAuthenticatedUser(request),
+      connectToDatabase(),
+    ]);
     let data = await request.json();
+    if (!userData) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     // data = { ...data, id: uuidv4() };
     if (data?.newEntry?.remark?.description) {
       // console.log("⏹️⏹️⏹️⏹️ ", data);
@@ -460,23 +449,9 @@ export async function PUT(request: NextRequest) {
       };
       // console.log("⏭️⏭️⏭️⏭️ ", data);
     }
-    let fileStorage = "local";
-    let organizationId;
-    let userData;
 
-    const token = request.cookies.get("auth_token");
-    const orgId = request.cookies.get("org_id")?.value;
-    if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value),
-        orgId
-      );
-      userData = decryptedResponse.user;
-      if (decryptedResponse.success) {
-        fileStorage = userData.fileStorage || "local";
-        organizationId = userData.organizationId || "";
-      }
-    }
+    const fileStorage = userData.fileStorage || "local";
+    const organizationId = userData.organizationId;
     // Extracted history saving feature
     if (!data || !data.jobId || !data.candidateId) {
       return NextResponse.json(
@@ -514,52 +489,36 @@ export async function PUT(request: NextRequest) {
     }
 
     const candidateId = new Types.ObjectId(data.candidateId);
-    const candidateData = await Candidate.findById(candidateId)
-      .populate([
-        {
-          path: "assignment.interviewerId",
-          select: "_id name email",
-        },
-        {
-          path: "remarks.userId",
-          select: "name email",
-        },
-        {
-          path: "jobId",
-          select: "title description ",
-        },
-        {
-          path: "followUp.userId",
-          select: "name _id email",
-        },
-      ])
-      .lean();
-    // const candidateDataJSON = candidateData?.toObject();
-
-    const historyEntry = await History?.findOneAndUpdate(
-      { jobId: data.jobId, candidateId: data.candidateId },
-      { $push: { history: data.newEntry } },
-      { upsert: true, new: true, runValidators: true }
-    );
-
-    // console.log("🎊🎊🎊 DATA>JOBID: ", data.jobId);
     const jobId = new Types.ObjectId(
       typeof data.jobId === "object" && "_id" in data.jobId
         ? data.jobId._id
         : data.jobId || ""
     );
-    const historyData = await History.findOne({
-      candidateId: candidateId,
-      jobId: jobId,
-    })
-      .populate("history.currentInterviewer", "_id name email")
-      .populate("history.previousInterviewer", "_id name email")
-      .populate("history.assignmentBy", "_id name email")
-      .populate("history.note.userId", "_id name email")
-      .lean();
-    // console.log("$⌛⌛⌛⌛⌛ CANDIDATEDATA: ", historyData);
-    // const hisotryJSON = historyData?.toObject();
-    if (!historyEntry || !historyData) {
+
+    const populateHistoryFields = [
+      { path: "history.currentInterviewer", select: "_id name email" },
+      { path: "history.previousInterviewer", select: "_id name email" },
+      { path: "history.assignmentBy", select: "_id name email" },
+      { path: "history.note.userId", select: "_id name email" },
+    ];
+    const populateCandidateFields = [
+      { path: "assignment.interviewerId", select: "_id name email" },
+      { path: "remarks.userId", select: "name email" },
+      { path: "jobId", select: "title description" },
+      { path: "followUp.userId", select: "name _id email" },
+    ];
+    const [candidateData, historyEntry] = await Promise.all([
+      Candidate.findById(candidateId).populate(populateCandidateFields).lean(),
+      History?.findOneAndUpdate(
+        { jobId: data.jobId, candidateId: data.candidateId },
+        { $push: { history: data.newEntry } },
+        { upsert: true, new: true, runValidators: true }
+      )
+        .populate(populateHistoryFields)
+        .lean(),
+    ]);
+ 
+    if (!historyEntry) {
       return NextResponse.json(
         { error: "No Assignment History Found" },
         { status: 404 }
@@ -639,7 +598,7 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    const transformedHistory = (historyData.history || []).map(
+    const transformedHistory = (historyEntry.history || []).map(
       (historyItem: any) => {
         if (historyItem.checklistForm?.responses) {
           return {

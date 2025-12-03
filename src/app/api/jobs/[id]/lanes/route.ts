@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { Job, Organization, Candidate } from "@/lib/mongodb";
-import { auth } from "@/lib/auth";
 import { isValidObjectId } from "mongoose";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 const DEFAULT_LANES = [
   "applied",
   "screening",
@@ -17,11 +17,12 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    await connectToDatabase();
-
-    // Check authentication
-    const session = await auth(request);
-    if (!session || !session.user?.organizationId) {
+    const [user, { id: jobId }] = await Promise.all([
+      getAuthenticatedUser(request, ["admin", "hr"]),
+      params,
+      connectToDatabase(),
+    ]);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -32,7 +33,6 @@ export async function GET(
       );
     }
 
-    const { id: jobId } = await params;
 
     // Validate ObjectId
     if (!isValidObjectId(jobId)) {
@@ -41,23 +41,23 @@ export async function GET(
     // Find the job
     const job = await Job.findOne({
       _id: jobId,
-      organizationId: session.user.organizationId,
-    });
+      organizationId: user.organizationId,
+    }).select("lanes useCustomLanes organizationId title _id").lean().exec();
 
     if (!job) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 
     let lanes;
-    let useCustomLanes = job.useCustomLanes || false;
+    const useCustomLanes = Boolean(job.useCustomLanes || false);
 
     if (useCustomLanes && job.lanes) {
       lanes = job.lanes;
     } else {
       // Get organization default lanes
       const organization = await Organization.findById(
-        session.user.organizationId
-      );
+        user.organizationId
+      ).select("lanes defaultLanes").lean().exec();
       lanes =
         organization?.lanes || organization?.defaultLanes || DEFAULT_LANES;
     }
@@ -87,23 +87,13 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    await connectToDatabase();
-
-    // Check authentication and permissions
-    const session = await auth(request);
-    if (!session || !session.user?.organizationId) {
+    const [user, { id: jobId }] = await Promise.all([
+      getAuthenticatedUser(request, ["admin", "hr"]),
+      params,
+      connectToDatabase(),
+    ]);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Only admin and HR can modify job lanes
-    if (!["admin", "hr"].includes(session.user.role)) {
-      return NextResponse.json(
-        {
-          error:
-            "Insufficient permissions. Only admin and HR can manage job lanes.",
-        },
-        { status: 403 }
-      );
     }
 
     if (!Job || !Candidate) {
@@ -113,14 +103,13 @@ export async function PUT(
       );
     }
 
-    const { id: jobId } = await params;
     const body = await request.json();
     const { lanes, useCustomLanes } = body;
 
     // Find the job
     const job = await Job.findOne({
       _id: jobId,
-      organizationId: session.user.organizationId,
+      organizationId: user.organizationId,
     });
 
     if (!job) {
@@ -174,8 +163,8 @@ export async function PUT(
       // Check if any candidates would have invalid statuses after this change
       const candidates = await Candidate.find({
         jobId: jobId,
-        organizationId: session.user.organizationId,
-      });
+        organizationId: user.organizationId,
+      }).select("status").lean().exec();
 
       const invalidCandidates = candidates.filter(
         (candidate) => candidate.status && !lanes.includes(candidate.status)
@@ -222,8 +211,8 @@ export async function PUT(
       effectiveLanes = updatedJob.lanes;
     } else {
       const organization = await Organization.findById(
-        session.user.organizationId
-      );
+        user.organizationId
+      ).select("lanes defaultLanes _id").lean().exec();
       effectiveLanes =
         organization?.lanes || organization?.defaultLanes || DEFAULT_LANES;
     }
@@ -249,21 +238,14 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    await connectToDatabase();
-
-    // Check authentication and permissions
-    const session = await auth(request);
-    if (!session || !session.user?.organizationId) {
+    const [user, { id: jobId }] = await Promise.all([
+      getAuthenticatedUser(request, ["admin", "hr"]),
+      params,
+      connectToDatabase(),
+    ]);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    if (!["admin", "hr"].includes(session.user.role)) {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
-    }
-
     if (!Job || !Organization) {
       return NextResponse.json(
         { error: "Database not connected" },
@@ -271,7 +253,6 @@ export async function POST(
       );
     }
 
-    const { id: jobId } = await params;
     const body = await request.json();
     const { laneName, position } = body;
 
@@ -296,7 +277,7 @@ export async function POST(
 
     const job = await Job.findOne({
       _id: jobId,
-      organizationId: session.user.organizationId,
+      organizationId: user.organizationId,
     });
 
     if (!job) {
@@ -309,8 +290,8 @@ export async function POST(
       currentLanes = [...job.lanes];
     } else {
       const organization = await Organization.findById(
-        session.user.organizationId
-      );
+        user.organizationId
+      ).select("lanes defaultLanes").lean().exec();
       currentLanes = [
         ...(organization?.lanes || organization?.defaultLanes || DEFAULT_LANES),
       ];

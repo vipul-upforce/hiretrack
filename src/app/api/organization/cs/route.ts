@@ -1,17 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
 import { Organization } from "@/lib/mongodb";
-import { auth } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 
 // Handle POST request
 export async function POST(req: NextRequest) {
-  await connectToDatabase();
-  const user = await auth(req);
-  if (!user) {
-    return NextResponse.json({ error: "Not Authorized" }, { status: 401 });
-  }
+
   try {
-    const { orgId, customFields } = await req.json();
+   const [user, data] = await Promise.all([
+    getAuthenticatedUser(req),
+    req.json(),
+    connectToDatabase(),
+   ]);
+   if (!user) {
+    return NextResponse.json({ error: "Not Authorized" }, { status: 401 });
+   }
+   if (!data) {
+    return NextResponse.json({ error: "Invalid data" }, { status: 400 });
+   }
+   const { orgId, customFields } = data;
+
     if (!Organization) {
       return NextResponse.json(
         { error: "Organization not found" },

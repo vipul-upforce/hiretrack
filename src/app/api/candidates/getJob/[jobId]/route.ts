@@ -17,7 +17,7 @@ export async function GET(
     }
     const candidates = await Candidate.find({ jobId: jobId }).sort({
       "tracking.createdAt": -1,
-    });
+    }).lean().exec();
 
     return NextResponse.json(candidates);
   } catch (error: unknown) {

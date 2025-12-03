@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendSmartNotification } from "@/lib/unifiedEmailService";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 import { Settings, User, EmailHistory } from "@/lib/mongodb";
 import mongoose from "mongoose";
 import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
@@ -28,54 +28,36 @@ async function resolveSentByToObjectId(
   organizationId: string,
   fromEmail: string
 ): Promise<string> {
-  let sentById: string;
-
+  // Fast path: if sentBy is already a valid ObjectId string, return it
   if (typeof sentBy === "object" && sentBy?._id) {
-    sentById = sentBy._id.toString();
-  } else if (
+    return sentBy._id.toString();
+  }
+  
+  if (
     typeof sentBy === "string" &&
     mongoose.Types.ObjectId.isValid(sentBy)
   ) {
-    sentById = sentBy;
-  } else if (sentBy === "system") {
-    // Create or get system user
-    const systemUser = await User.findOneAndUpdate(
-      {
-        email: fromEmail,
-        organizationId: new mongoose.Types.ObjectId(organizationId),
-      },
-      {
-        $setOnInsert: {
-          name: "HireTrack System",
-          email: fromEmail,
-          role: "system",
-          organizationId: new mongoose.Types.ObjectId(organizationId),
-        },
-      },
-      { upsert: true, new: true }
-    );
-    sentById = systemUser._id.toString();
-  } else {
-    // Fallback to system user
-    const systemUser = await User.findOneAndUpdate(
-      {
-        email: fromEmail,
-        organizationId: new mongoose.Types.ObjectId(organizationId),
-      },
-      {
-        $setOnInsert: {
-          name: "HireTrack System",
-          email: fromEmail,
-          role: "system",
-          organizationId: new mongoose.Types.ObjectId(organizationId),
-        },
-      },
-      { upsert: true, new: true }
-    );
-    sentById = systemUser._id.toString();
+    return sentBy;
   }
 
-  return sentById;
+  // Create or get system user (optimized with select)
+  const systemUser = await User.findOneAndUpdate(
+    {
+      email: fromEmail,
+      organizationId: new mongoose.Types.ObjectId(organizationId),
+    },
+    {
+      $setOnInsert: {
+        name: "HireTrack System",
+        email: fromEmail,
+        role: "system",
+        organizationId: new mongoose.Types.ObjectId(organizationId),
+      },
+    },
+    { upsert: true, new: true, select: "_id" }
+  ).lean();
+
+  return systemUser._id.toString();
 }
 
 // Create pending email history entries
@@ -84,7 +66,6 @@ async function createPendingEmailHistory(data: any, organizationId: string) {
     email,
     emailList,
     interviewerName,
-    candidateName,
     sentBy,
     sentByEmail,
     sentByName,
@@ -92,9 +73,13 @@ async function createPendingEmailHistory(data: any, organizationId: string) {
     jobId,
   } = data;
 
+  // Optimize: Fetch settings with only needed fields first
   const settings = await Settings.findOne({
     organizationId: new mongoose.Types.ObjectId(organizationId),
-  }).lean();
+  })
+    .select("mailConfig.resend_from mailConfig.brevo_from mailConfig.smtp_from mailConfig.mailProvider")
+    .lean()
+    .exec();
 
   const fromEmail =
     settings?.mailConfig?.resend_from ||
@@ -103,19 +88,19 @@ async function createPendingEmailHistory(data: any, organizationId: string) {
     "system@hiretrack.com";
 
   const provider = settings?.mailConfig?.mailProvider || "unknown";
+
+  // Resolve sentBy after we have fromEmail
+  const resolvedSentById = await resolveSentByToObjectId(
+    sentBy,
+    sentByEmail,
+    sentByName,
+    organizationId,
+    fromEmail
+  );
   const historyIds: string[] = [];
 
   try {
-    // Resolve sentBy to valid ObjectId
-    const resolvedSentById = await resolveSentByToObjectId(
-      sentBy,
-      sentByEmail,
-      sentByName,
-      organizationId,
-      fromEmail
-    );
-
-    // Get email content for history (this might be expensive, consider caching)
+    // Get email content for history
     const { emailContent, emailSubject } = await getMappedEmailTemplate(
       "interview-assignment",
       {
@@ -165,16 +150,26 @@ async function createPendingEmailHistory(data: any, organizationId: string) {
 
     historyIds.push(interviewerHistory._id.toString());
 
-    // Create history records for BCC recipients (HR/Admins) - PENDING
-    const hrHistoryPromises = emailList.map(async (hrEmail: string) => {
-      try {
-        const hrUser = await User.findOne({
-          email: hrEmail,
+    // Optimize: Batch fetch all HR users in a single query instead of individual lookups
+    const hrUsers = emailList.length > 0
+      ? await User.find({
+          email: { $in: emailList },
           organizationId: new mongoose.Types.ObjectId(organizationId),
         })
-          .select("_id name")
-          .lean();
+          .select("_id name email")
+          .lean()
+          .exec()
+      : [];
 
+    // Create a map for fast lookup
+    const hrUserMap = new Map(
+      hrUsers.map((user) => [user.email, user])
+    );
+
+    // Create history records for BCC recipients (HR/Admins) - PENDING (batched)
+    const hrHistoryPromises = emailList.map(async (hrEmail: string) => {
+      try {
+        const hrUser = hrUserMap.get(hrEmail);
         const hrHistory = await EmailHistory.create({
           organizationId: new mongoose.Types.ObjectId(organizationId),
           sentBy: new mongoose.Types.ObjectId(resolvedSentById),
@@ -190,7 +185,7 @@ async function createPendingEmailHistory(data: any, organizationId: string) {
           bcc: [],
           replyTo: sentByEmail,
           attachments: [],
-          status: "pending", // Mark as pending
+          status: "pending",
           sentAt: undefined,
           error: undefined,
           provider,
@@ -204,11 +199,7 @@ async function createPendingEmailHistory(data: any, organizationId: string) {
         });
 
         return hrHistory._id.toString();
-      } catch (error) {
-        console.error(
-          `Failed to create pending history for ${hrEmail}:`,
-          error
-        );
+      } catch {
         return null;
       }
     });
@@ -217,8 +208,7 @@ async function createPendingEmailHistory(data: any, organizationId: string) {
     historyIds.push(...hrHistoryIds.filter((id) => id !== null));
 
     return historyIds;
-  } catch (error) {
-    console.error("Failed to create pending email history:", error);
+  } catch {
     return [];
   }
 }
@@ -247,11 +237,7 @@ async function updateEmailHistoryStatus(
       { _id: { $in: historyIds.map((id) => new mongoose.Types.ObjectId(id)) } },
       { $set: updateData }
     );
-
-    console.log(
-      `Updated ${historyIds.length} email history entries to ${status}`
-    );
-  } catch (error) {
+  } catch {
     console.error("Failed to update email history status:", error);
   }
 }
@@ -269,7 +255,6 @@ function scheduleEmail(
       ...existingItem,
       data,
     });
-    console.log("🟢🟢THE MAP-updated: ", emailQueue);
     return { success: true, message: "Email data updated" };
   }
 
@@ -280,11 +265,9 @@ function scheduleEmail(
         await sendQueuedEmail(
           queueItem.data,
           req,
-          queueItem.historyIds,
-          queueItem.senderEmail
+          queueItem.historyIds
         );
       } catch (error) {
-        console.error(`Failed to send email for ${key}:`, error);
         // Update history to failed status
         if (queueItem.historyIds.length > 0) {
           await updateEmailHistoryStatus(
@@ -314,8 +297,7 @@ function scheduleEmail(
 async function sendQueuedEmail(
   data: any,
   req: NextRequest,
-  historyIds?: string[],
-  senderEmail?: string
+  historyIds?: string[]
 ) {
   const {
     organizationId,
@@ -337,9 +319,14 @@ async function sendQueuedEmail(
     dashboardLink,
   } = data;
 
+  // Optimize: Fetch settings first, then resolve sentBy with correct fromEmail
   const settings = await Settings.findOne({
     organizationId: new mongoose.Types.ObjectId(organizationId),
-  }).lean();
+  })
+    .select("mailConfig timeZone.offset timeZone.name")
+    .lean()
+    .exec();
+
   if (!settings || !settings.mailConfig) {
     throw new Error("Mail configuration not found");
   }
@@ -350,7 +337,7 @@ async function sendQueuedEmail(
     settings.mailConfig.smtp_from ||
     "system@hiretrack.com";
 
-  // Resolve sentBy to valid ObjectId
+  // Resolve sentBy with correct fromEmail
   const resolvedSentById = await resolveSentByToObjectId(
     sentBy,
     sentByEmail,
@@ -359,22 +346,23 @@ async function sendQueuedEmail(
     fromEmail
   );
 
-  const startDateString = startTime
-    ? ((await getFormattedDate(req, new Date(startTime))) as string) +
-      " " +
-      settings.timeZone.offset +
-      " " +
-      settings.timeZone.name
-    : "N/A";
-  const startDate = startTime
-    ? ((await getFormattedDate(req, new Date(startTime), true)) as Date)
-    : null;
-  const endDateString = endTime
-    ? await getFormattedDate(req, new Date(endTime))
-    : "N/A";
-  const endDate = endTime
-    ? ((await getFormattedDate(req, new Date(endTime), true)) as Date)
-    : null;
+  // Optimize: Format dates in parallel
+  const [startDateString, startDate, endDateString, endDate] = await Promise.all([
+    startTime
+      ? getFormattedDate(req, new Date(startTime)).then(
+          (date) => `${date} ${settings.timeZone?.offset || ""} ${settings.timeZone?.name || ""}`
+        )
+      : Promise.resolve("N/A"),
+    startTime
+      ? getFormattedDate(req, new Date(startTime), true).then((date) => date as Date)
+      : Promise.resolve(null),
+    endTime
+      ? getFormattedDate(req, new Date(endTime))
+      : Promise.resolve("N/A"),
+    endTime
+      ? getFormattedDate(req, new Date(endTime), true).then((date) => date as Date)
+      : Promise.resolve(null),
+  ]);
   const formattedStartTime = startDate
     ? startDate.toISOString().replace(/-|:|\.\d+/g, "")
     : "N/A";
@@ -382,8 +370,6 @@ async function sendQueuedEmail(
     ? endDate.toISOString().replace(/-|:|\.\d+/g, "")
     : "N/A";
 
-  console.log("START TIME: BEFORE: : ", startTime);
-  console.log("DATE TO BE RECORDED in EMail: ", startDateString, endDateString);
   const eventDescription: string = `<div><strong>Job Name:</strong> ${
     jobName || "N/A"
   }<br>
@@ -405,17 +391,23 @@ async function sendQueuedEmail(
     eventDescription || ""
   )}`;
 
+  // Optimize: Fetch organization first, then template with organization name
   const organization = await User?.findOne({
     organizationId,
-  }).populate({
-    path: "organizationId",
-    select: "name",
-  });
+  })
+    .select("organizationId")
+    .populate({
+      path: "organizationId",
+      select: "name",
+    })
+    .lean();
+
   const organizationName =
     typeof organization?.organizationId === "object"
       ? organization.organizationId.name
       : "";
 
+  // Fetch email template with organization name
   const { emailContent, emailSubject } = await getMappedEmailTemplate(
     "interview-assignment",
     {
@@ -464,10 +456,6 @@ async function sendQueuedEmail(
       emailStatus.status !== 200 ? emailStatus.message : undefined,
       { subject: emailSubject, body: emailContent }
     );
-  } else {
-    console.warn(
-      "No existing history IDs found, relying on sendSmartNotificationEmail to handle history"
-    );
   }
 
   return emailStatus;
@@ -475,48 +463,65 @@ async function sendQueuedEmail(
 
 export async function PUT(req: NextRequest) {
   try {
-    let organizationId;
-    const data = await req.json();
-    const token = req.cookies.get("auth_token");
-    const orgId = req.cookies.get("org_id")?.value;
-    let decryptedResponse;
-    if (token?.value) {
-      decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value),
-        orgId
-      );
-      const userData = decryptedResponse.user;
-      if (decryptedResponse.success) {
-        organizationId = userData.organizationId || "";
-      }
-    }
-    console.log(data, "data,-- stap cmpleted");
+    // Optimize: Authenticate and parse request in parallel
+    const [user, data] = await Promise.all([
+      getAuthenticatedUser(req),
+      req.json(),
+    ]);
 
-    if (!organizationId) {
+    if (!user) {
       return NextResponse.json(
-        { error: "Organization ID is missing." },
-        { status: 400 }
+        { error: "Unauthorized" },
+        { status: 401 }
       );
     }
-    if (!User) {
-      throw new Error("Database not connected");
-    }
+
+    const organizationId = user.organizationId;
     const latestRemark = data.feedback;
     const newDate = data.dateTime;
-    const completionDate = (await getFormattedDate(
-      req,
-      newDate,
-      false,
-      organizationId
-    )) as string;
-    const organization = await User?.findOne({
-      organizationId,
-    })
-      .populate({
-        path: "organizationId",
-        select: "name defaultLanes", // populate only organization name
+
+    // Optimize: Fetch all required data in parallel
+    const [completionDate, organization, settings, hrUsers] = await Promise.all([
+      getFormattedDate(req, newDate, false, organizationId).then(
+        (date) => date as string
+      ),
+      User?.findOne({
+        organizationId,
       })
-      .lean();
+        .select("organizationId")
+        .populate({
+          path: "organizationId",
+          select: "name defaultLanes",
+        })
+        .lean(),
+      Settings.findOne({
+        organizationId: new mongoose.Types.ObjectId(organizationId),
+      })
+        .select("mailConfig.resend_from mailConfig.brevo_from mailConfig.smtp_from")
+        .lean()
+        .exec(),
+      User.find({
+        organizationId: new mongoose.Types.ObjectId(organizationId),
+        role: { $in: ["hr", "admin"] },
+        $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
+      })
+        .select("email")
+        .lean()
+        .exec(),
+    ]);
+
+    if (!settings || !settings.mailConfig) {
+      return NextResponse.json(
+        { error: "Mail configuration not found" },
+        { status: 500 }
+      );
+    }
+
+    const fromEmail =
+      settings.mailConfig.resend_from ||
+      settings.mailConfig.brevo_from ||
+      settings.mailConfig.smtp_from ||
+      "system@hiretrack.com";
 
     const isOrganization = (obj: any): obj is Organization => {
       return (
@@ -535,69 +540,49 @@ export async function PUT(req: NextRequest) {
             organization.organizationId.defaultLanes.indexOf(data.status) + 1
           ] || "N/A"
         : "N/A";
+
     const candidateDetails = `${req.headers.get("Origin")}/candidate/${data.candidateId}`;
 
-    const { emailContent, emailSubject } = await getMappedEmailTemplate(
-      "step-completed",
-      {
-        candidateName: data.name,
-        completedBy: decryptedResponse?.user.name,
-        candidateProfileLink: candidateDetails,
-        jobTitle: data.title,
-        organizationName: decryptedResponse?.user.organizationInfo.name,
-        stepName: data?.status,
-        feedback: latestRemark?.description || "N/A",
-        rating: latestRemark?.rating || "N/A",
-        completionDate: completionDate,
-        recipientName: "",
-        nextStep: nextSteps,
-      },
-      organizationId
-    );
+    // Resolve sentBy and fetch email template in parallel
+    const [resolvedSentById, emailTemplate] = await Promise.all([
+      resolveSentByToObjectId(
+        user.id || "system",
+        user.email || fromEmail,
+        user.name || "HireTrack System",
+        organizationId,
+        fromEmail
+      ),
+      getMappedEmailTemplate(
+        "step-completed",
+        {
+          candidateName: data.name,
+          completedBy: user.name,
+          candidateProfileLink: candidateDetails,
+          jobTitle: data.title,
+          organizationName:
+            typeof organization?.organizationId === "object"
+              ? organization.organizationId.name
+              : user?.organizationInfo?.name || "",
+          stepName: data?.status,
+          feedback: latestRemark?.description || "N/A",
+          rating: latestRemark?.rating || "N/A",
+          completionDate: completionDate,
+          recipientName: "",
+          nextStep: nextSteps,
+        },
+        organizationId
+      ),
+    ]);
 
-    const settings = await Settings.findOne({
-      organizationId: new mongoose.Types.ObjectId(organizationId),
-    }).lean();
-    if (!settings || !settings.mailConfig) {
-      return NextResponse.json(
-        { error: "Mail configuration not found" },
-        { status: 500 }
-      );
-    }
-
-    const fromEmail =
-      settings.mailConfig.resend_from ||
-      settings.mailConfig.brevo_from ||
-      settings.mailConfig.smtp_from ||
-      "system@hiretrack.com";
-
-    const users = await User.find({
-      organizationId: new mongoose.Types.ObjectId(organizationId),
-      role: { $in: ["hr", "admin"] },
-      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
-    })
-      .select("email")
-      .lean();
-
-    // Resolve sentBy to valid ObjectId
-    const resolvedSentById = await resolveSentByToObjectId(
-      decryptedResponse?.user?._id || "system",
-      decryptedResponse?.user?.email || fromEmail,
-      decryptedResponse?.user?.name || "HireTrack System",
-      organizationId,
-      fromEmail
-    );
-    console.log(resolvedSentById, "resolvedSentById");
-
-    const emailList = users.map((user) => user.email);
+    const { emailContent, emailSubject } = emailTemplate;
+    const emailList = hrUsers.map((hrUser) => hrUser.email);
     const emailStatus = await sendSmartNotification(
       organizationId,
-      // "stepCompleted",
       NotificationType.STEP_COMPLETED,
       {
-        triggererUserId: resolvedSentById, // Use resolved ObjectId
-        triggererEmail: decryptedResponse?.user?.email || fromEmail,
-        triggererName: decryptedResponse?.user?.name || "HireTrack System",
+        triggererUserId: resolvedSentById,
+        triggererEmail: user.email || fromEmail,
+        triggererName: user.name || "HireTrack System",
         candidateId: data.candidateId,
         jobId: data.jobId,
         templateUsed: "step-completed",
@@ -650,22 +635,15 @@ export async function POST(req: NextRequest) {
     const candidateDetailsPage = `${req.headers.get("origin")}/candidate/${id}`;
     const dashboardLink = `${req.headers.get("origin")}/dashboard`; // Added dashboard link
 
-    let organizationId;
-    const token = req.cookies.get("auth_token");
-    let decryptedResponse;
-    let senderEmail;
-    const orgId = req.cookies.get("org_id")?.value;
-    if (token?.value) {
-      decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value),
-        orgId
+    const userData = await getAuthenticatedUser(req);
+    if (!userData) {
+      return NextResponse.json(
+        { message: "Unauthorised Access" },
+        { status: 401 }
       );
-      const userData = decryptedResponse.user;
-      if (decryptedResponse.success) {
-        organizationId = userData.organizationId || "";
-        senderEmail = userData.email || "";
-      }
     }
+    const organizationId = userData.organizationId;
+    const senderEmail = userData.email;
 
     if (!organizationId) {
       return NextResponse.json(
@@ -693,17 +671,24 @@ export async function POST(req: NextRequest) {
       throw new Error("Database not connected");
     }
 
-    const users = await User.find({
-      organizationId: new mongoose.Types.ObjectId(organizationId),
-      role: { $in: ["hr", "admin"] },
-      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
-    })
-      .select("email")
-      .lean();
+    // Optimize: Fetch users and settings in parallel
+    const [hrUsers, settings] = await Promise.all([
+      User.find({
+        organizationId: new mongoose.Types.ObjectId(organizationId),
+        role: { $in: ["hr", "admin"] },
+        $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
+      })
+        .select("email")
+        .lean()
+        .exec(),
+      Settings.findOne({
+        organizationId: new mongoose.Types.ObjectId(organizationId),
+      })
+        .select("mailConfig.resend_from mailConfig.brevo_from mailConfig.smtp_from")
+        .lean()
+        .exec(),
+    ]);
 
-    const settings = await Settings.findOne({
-      organizationId: new mongoose.Types.ObjectId(organizationId),
-    }).lean();
     if (!settings || !settings.mailConfig) {
       return NextResponse.json(
         { error: "Mail configuration not found" },
@@ -717,14 +702,14 @@ export async function POST(req: NextRequest) {
       settings.mailConfig.smtp_from ||
       "system@hiretrack.com";
 
-    const emailList = users.map((user) => user.email);
+    const emailList = hrUsers.map((user) => user.email);
     const emailKey = id;
 
     // Resolve sentBy to valid ObjectId before queuing
     const resolvedSentById = await resolveSentByToObjectId(
-      decryptedResponse?.user?._id || "system",
-      decryptedResponse?.user?.email || fromEmail,
-      decryptedResponse?.user?.name || "HireTrack System",
+      userData?.id || "system",
+      userData?.email || fromEmail,
+      userData?.name || "HireTrack System",
       organizationId,
       fromEmail
     );
@@ -743,8 +728,8 @@ export async function POST(req: NextRequest) {
       emailList,
       candidateDetailsPage,
       sentBy: resolvedSentById, // Use resolved ObjectId (string)
-      sentByEmail: decryptedResponse?.user?.email || fromEmail,
-      sentByName: decryptedResponse?.user?.name || "HireTrack System",
+      sentByEmail: userData?.email || fromEmail,
+      sentByName: userData?.name || "HireTrack System",
       candidateId: id,
       jobId: jobId,
       dashboardLink,
@@ -754,8 +739,7 @@ export async function POST(req: NextRequest) {
       const emailStatus = await sendQueuedEmail(
         queueData,
         req,
-        undefined,
-        senderEmail
+        undefined
       );
 
       if (emailStatus.status === 200) {
@@ -803,24 +787,13 @@ export async function POST(req: NextRequest) {
 // ⛔⛔⛔ for debug only
 export async function GET(req: NextRequest) {
   try {
-    const token = req.cookies.get("auth_token");
-    const orgId = req.cookies.get("org_id")?.value;
-    if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value),
-        orgId
+    const userData = await getAuthenticatedUser(req, "admin");
+    if (!userData) {
+      return NextResponse.json(
+        { message: "Unauthorised Access" },
+        { status: 401 }
       );
-      if (
-        !decryptedResponse.success ||
-        decryptedResponse.user.role !== "admin"
-      ) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-      }
-    } else {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    // Return queue status (only for admin users)
     const queueStatus = Array.from(emailQueue.entries()).map(
       ([key, value]) => ({
         key,

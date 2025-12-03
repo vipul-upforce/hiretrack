@@ -358,6 +358,12 @@ const settingsSchema = new Schema({
   },
 });
 
+// Performance index for organization-based queries
+settingsSchema.index(
+  { organizationId: 1 },
+  { name: "idx_settings_orgId", background: true, unique: true }
+);
+
 export interface OrganizationEmailNotifications {
   defaultSettings: {
     newApplications: boolean;

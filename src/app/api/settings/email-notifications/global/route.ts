@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect, { User } from "@/lib/mongodb";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import connectToDatabase, { User } from "@/lib/mongodb";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 import { getUserEffectiveNotificationSettings } from "@/lib/services/emailDecisionEngine";
 import { DEFAULT_NOTIFICATION_SETTINGS } from "@/lib/constants/notificationDefaults";
 
@@ -35,30 +35,21 @@ interface GlobalEmailNotificationSettings {
  */
 export async function GET(request: NextRequest) {
   try {
-    await dbConnect();
-
-    // Get current user from token
-    const token = request.cookies.get("auth_token")?.value;
-
-    if (!token) {
+    const [currentUser] = await Promise.all([
+      getAuthenticatedUser(request),
+      connectToDatabase(),
+    ]);
+    if (!currentUser) {
       return NextResponse.json(
         { error: "Authentication required" },
         { status: 401 }
       );
     }
 
-    const orgId = request.cookies.get("org_id")?.value;
-    const authResult = await verifyAndDecryptToken(token, orgId);
-    if (!authResult.success) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    const currentUser = authResult.user;
-
     // Get user's current global settings
-    const userId = currentUser._id || currentUser.id;
+    
+    const userId =  currentUser.id;
     const organizationId = currentUser.organizationId;
-
     if (!userId || !organizationId) {
       return NextResponse.json(
         { error: "Invalid user data in token" },
@@ -98,25 +89,15 @@ export async function GET(request: NextRequest) {
  */
 export async function PUT(request: NextRequest) {
   try {
-    await dbConnect();
 
-    // Get current user from token
-    const token = request.cookies.get("auth_token")?.value;
-    if (!token) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
+    const [currentUser, body] = await Promise.all([
+      getAuthenticatedUser(request),
+      request.json(),
+      connectToDatabase(),
+    ]);
+    if (!currentUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const orgId = request.cookies.get("org_id")?.value;
-    const authResult = await verifyAndDecryptToken(token, orgId);
-    if (!authResult.success) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    const currentUser = authResult.user;
-
-    const body = await request.json();
     const { settings }: { settings: GlobalEmailNotificationSettings } = body;
 
     // Validate settings
@@ -162,7 +143,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Update global settings
-    const userId = currentUser._id || currentUser.id;
+    const userId =  currentUser.id;
     const organizationId = currentUser.organizationId;
 
     const result = await User.findByIdAndUpdate(
@@ -205,26 +186,18 @@ export async function PUT(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
-    await dbConnect();
 
-    // Get current user from token
-    const token = request.cookies.get("auth_token")?.value;
-    if (!token) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
+    const [currentUser] = await Promise.all([
+      getAuthenticatedUser(request),
+       connectToDatabase()
+      ,
+    ]);
+    if (!currentUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const orgId = request.cookies.get("org_id")?.value;
-    const authResult = await verifyAndDecryptToken(token, orgId);
-    if (!authResult.success) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    const currentUser = authResult.user;
 
     // Reset global settings to defaults
-    const userId = currentUser._id || currentUser.id;
+    const userId = currentUser.id;
     const organizationId = currentUser.organizationId;
 
     await User.findByIdAndUpdate(userId, {

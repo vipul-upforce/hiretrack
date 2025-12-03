@@ -1,27 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect, { Settings } from "@/lib/mongodb";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import connectToDatabase, { Settings } from "@/lib/mongodb";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 
 export async function GET(req: NextRequest) {
   try {
-    await dbConnect();
-    let organizationId;
-    let role;
-    let userData;
-    const token = req.cookies.get("auth_token");
-    const orgId = req.cookies.get("org_id")?.value;
-    if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value),
-        orgId
-      );
-      userData = decryptedResponse.user;
-      if (decryptedResponse.success) {
-        organizationId = userData.organizationId;
-        role = userData.role;
-      }
-    }
-    if (!userData || role !== "admin") {
+    const [userData] = await Promise.all([
+      getAuthenticatedUser(req, "admin"),
+      connectToDatabase(),
+    ]);
+    if (!userData) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     if (!Settings) {
@@ -30,7 +17,12 @@ export async function GET(req: NextRequest) {
         { status: 404 }
       );
     }
-    const settings = await Settings.findOne({ organizationId: organizationId });
+    const settings = await Settings.findOne({
+      organizationId: userData.organizationId,
+    })
+      .select("mailConfig")
+      .lean()
+      .exec();
 
     if (!settings) {
       return NextResponse.json({
@@ -57,21 +49,12 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    await dbConnect();
-    let userData;
-    const token = req.cookies.get("auth_token");
-    const orgId = req.cookies.get("org_id")?.value;
-    if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value),
-        orgId
-      );
-      if (decryptedResponse.success) {
-        userData = decryptedResponse.user;
-      }
-    }
-
-    if (!userData || userData.role !== "admin") {
+    const [userData, mailConfig] = await Promise.all([
+      getAuthenticatedUser(req, "admin"),
+      req.json(),
+      connectToDatabase(),
+    ]);
+    if (!userData) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -81,8 +64,6 @@ export async function PUT(req: NextRequest) {
         { status: 404 }
       );
     }
-
-    const mailConfig = await req.json();
 
     let mailConfigObj;
 

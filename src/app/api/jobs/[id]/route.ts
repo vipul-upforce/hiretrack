@@ -3,7 +3,7 @@ import connectToDatabase from "@/lib/mongodb";
 import { Job } from "@/lib/mongodb";
 import { Candidate } from "@/lib/mongodb";
 import { handleFileAttachments, handleCustomFieldFiles } from "@/lib/fileUtils";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 import { NotificationService } from "@/lib/notifications/notificationService";
 
 export async function GET(
@@ -16,7 +16,7 @@ export async function GET(
     if (!Job) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
-    const job = await Job.findById(id);
+    const job = await Job.findById(id).lean().exec();
 
     if (!job) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
@@ -39,24 +39,20 @@ export async function PUT(
   let triggerUserId = "";
   let triggerUserName = "";
   try {
-    await connectToDatabase();
-    const data = await request.json();
-    const { id } = await params;
-    const token = request.cookies.get("auth_token");
-    const orgId = request.cookies.get("org_id")?.value;
-    let userData;
-    if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value),
-        orgId
-      );
-      if (decryptedResponse.success) {
-        userData = decryptedResponse.user;
-        fileStorage = userData.fileStorage || "local";
-        organizationId = userData.organizationId || "";
-        triggerUserId = userData.id || "";
-        triggerUserName = userData.name || "";
-      }
+    const [userData, data, { id }] = await Promise.all([
+      getAuthenticatedUser(request, ["admin", "hr"]),
+      request.json(),
+      params,
+      connectToDatabase(),
+    ]);
+    if (userData) {
+      fileStorage = userData.fileStorage || "local";
+      organizationId = userData.organizationId ;
+      triggerUserId = userData.id || "";
+      triggerUserName = userData.name || "";
+    }
+    else {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     if (!data || Object.keys(data).length === 0) {
@@ -126,13 +122,19 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await connectToDatabase();
-    const { id } = await params;
+    const [userData, { id }] = await Promise.all([
+      getAuthenticatedUser(request, ["admin", "hr"]),
+      params,
+      connectToDatabase(),
+    ]);
+    if (!userData) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     if (!Job || !Candidate) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
     // First, find the job to ensure it exists
-    const job = await Job.findById(id);
+    const job = await Job.findById(id).lean().exec();
     if (!job) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }

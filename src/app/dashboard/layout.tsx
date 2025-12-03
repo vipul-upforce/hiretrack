@@ -284,7 +284,6 @@ export default function DashboardLayout({
   const generate_share_org = async (e: React.FormEvent) => {
     e.preventDefault();
     let parsedUser = user;
-
     if (parsedUser) {
       let url;
       if (hasMultipleOrgs) {

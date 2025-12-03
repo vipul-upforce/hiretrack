@@ -1,4 +1,4 @@
-import dbConnect, { User } from "@/lib/mongodb";
+import connectToDatabase, { User } from "@/lib/mongodb";
 import {
   extractMentions,
   matchesUserName,
@@ -49,7 +49,7 @@ export async function findMentionedUsers(
       return { mentionedUsers: [], unrecognizedMentions: [] };
     }
 
-    await dbConnect();
+    await connectToDatabase();
 
     const mentions = extractMentions(text);
     console.log("  - Extracted mentions:", JSON.stringify(mentions, null, 2));
@@ -234,7 +234,7 @@ export async function validateAndSuggestMentions(
   }[];
 }> {
   try {
-    await dbConnect();
+    await connectToDatabase();
 
     const mentions = extractMentions(text);
     const orgUsers = await User.find({

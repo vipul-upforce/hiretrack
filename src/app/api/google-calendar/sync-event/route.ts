@@ -6,7 +6,7 @@ import connectToDatabase, {
   User,
   WebhookSubscription,
 } from "@/lib/mongodb";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 import { createOAuth2Client } from "@/lib/google-calendar/config";
 import { decryptText } from "@/lib/encryption";
 import { google } from "googleapis";
@@ -20,33 +20,17 @@ interface SyncEventRequest {
 
 export async function POST(req: NextRequest) {
   try {
-    console.log("🔄 Starting Google Calendar event sync");
-    await connectToDatabase();
-
-    // Verify user
-    let organizationId = "";
-    let userId = "";
-    let userName = "";
-    let userEmail = "";
-    const token = req.cookies.get("auth_token");
-    const orgId = req.cookies.get("org_id")?.value;
-    if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value),
-        orgId
+    const [userData] = await Promise.all([
+      getAuthenticatedUser(req, ["admin", "hr", "interviewer"]),
+      connectToDatabase(),
+    ]);
+    if (!userData) {
+      return NextResponse.json(
+        { message: "Unauthorised Access" },
+        { status: 401 }
       );
-      const userData = decryptedResponse.user;
-      if (decryptedResponse.success) {
-        organizationId = userData.organizationId || "";
-        userId = userData.id || "";
-        userName = userData.name || "";
-        userEmail = userData.email || "";
-      } else {
-        return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-      }
-    } else {
-      return NextResponse.json({ error: "No token provided" }, { status: 401 });
     }
+    const organizationId = userData.organizationId;
 
     const body: SyncEventRequest = await req.json();
     const { candidateId } = body;
@@ -97,12 +81,12 @@ export async function POST(req: NextRequest) {
     // Decrypt credentials
     const clientSecret = decryptText(
       settings.googleCalendar.clientSecret,
-      orgId
+      organizationId
     );
-    const accessToken = decryptText(settings.googleCalendar.accessToken, orgId);
+    const accessToken = decryptText(settings.googleCalendar.accessToken, organizationId);
     const refreshToken = decryptText(
       settings.googleCalendar.refreshToken,
-      orgId
+      organizationId
     );
 
     // Create OAuth2 client
@@ -220,7 +204,7 @@ export async function POST(req: NextRequest) {
             candidateName: candidate.name,
             jobId: jobId,
             jobTitle: jobTitle,
-            userEmail: userEmail,
+            userEmail: userData.email,
             attendeeEmail: attendeeEmail,
             attendeeName: attendeeName as string,
             interviewerId:

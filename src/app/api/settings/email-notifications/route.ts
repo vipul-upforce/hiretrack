@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect, { User, Settings } from "@/lib/mongodb";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import connectToDatabase, { User, Settings } from "@/lib/mongodb";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 import mongoose from "mongoose";
 import { EmailNotificationSettings } from "@/lib/models/user";
 import { OrganizationEmailNotifications } from "@/lib/models/settings";
@@ -15,29 +15,21 @@ import {
  */
 export async function GET(request: NextRequest) {
   try {
-    await dbConnect();
+    await connectToDatabase();
 
     // Get user from token
-    const token = request.cookies.get("auth_token")?.value;
-    if (!token) {
+    const currentUser = await getAuthenticatedUser(request, "admin");
+    if (!currentUser) {
       return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
+        { error: "Admin access required" },
+        { status: 403 }
       );
     }
-
-    const orgId = request.cookies.get("org_id")?.value;
-    const authResult = await verifyAndDecryptToken(token, orgId);
-    if (!authResult.success) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    const currentUser = authResult.user;
 
     // Get organization settings
     const settings = await Settings.findOne({
       organizationId: new mongoose.Types.ObjectId(currentUser.organizationId),
-    }).lean();
+    }).select("organizationEmailNotifications").lean();
 
     const orgNotifications = settings?.organizationEmailNotifications || {
       defaultSettings: DEFAULT_NOTIFICATION_SETTINGS,
@@ -92,33 +84,18 @@ export async function GET(request: NextRequest) {
  */
 export async function PUT(request: NextRequest) {
   try {
-    await dbConnect();
-
-    // Get user from token
-    const token = request.cookies.get("auth_token")?.value;
-    if (!token) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
-    const orgId = request.cookies.get("org_id")?.value;
-    const authResult = await verifyAndDecryptToken(token, orgId);
-    if (!authResult.success) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    const currentUser = authResult.user;
-
-    // Only admins can update organization settings
-    if (currentUser.role !== "admin") {
+    const [currentUser, body] = await Promise.all([
+      getAuthenticatedUser(request, "admin"),
+      request.json(),
+      connectToDatabase(),
+    ]);
+    if (!currentUser) {
       return NextResponse.json(
         { error: "Admin access required" },
         { status: 403 }
       );
     }
 
-    const body = await request.json();
     const { defaultSettings, adminOverrides } = body;
 
     // Validate default settings

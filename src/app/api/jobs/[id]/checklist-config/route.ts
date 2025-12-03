@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { JobLaneConfig, Job } from "@/lib/mongodb";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
-import {
-  IJobLaneConfig,
-  ILaneConfig,
-  IChecklist,
-} from "@/lib/models/JobLaneConfig";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 
 // GET - Get job lane configuration with checklists
 export async function GET(
@@ -13,50 +8,29 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const token = req.cookies.get("auth_token")?.value;
-    if (!token) {
+    const [user, { id }] = await Promise.all([
+      getAuthenticatedUser(req, ["admin", "hr"]),
+      params,
+      connectToDatabase(),
+    ]);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    const orgId = req.cookies.get("org_id")?.value;
-    const decryptedResponse = await verifyAndDecryptJWTToken(token, orgId);
-    if (!decryptedResponse.success || !decryptedResponse.user) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-    const decoded = decryptedResponse.user;
-
-    // Get the user ID from the decoded token (could be _id, id, or userId)
-    const userId = decoded._id || decoded.id || decoded.userId;
-    if (!userId) {
-      console.error("No user ID found in decoded token:", decoded);
-      return NextResponse.json(
-        { error: "Invalid user ID in token" },
-        { status: 401 }
-      );
-    }
-
-    // Check if user is admin or HR
-    if (!["admin", "hr"].includes(decoded.role)) {
-      return NextResponse.json(
-        { error: "Only admin and HR can configure checklists" },
-        { status: 403 }
-      );
-    }
-
-    await connectToDatabase();
-    const { id } = await params;
-    // Verify job exists and user has access
-    const job = await Job!.findById(id);
-    if (!job) {
-      return NextResponse.json({ error: "Job not found" }, { status: 404 });
-    }
-
-    if (job.organizationId.toString() !== decoded.organizationId) {
-      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
     // Get job lane configuration
-    const config = await JobLaneConfig!.findOne({ jobId: id });
 
+    const [job, config] = await Promise.all([
+      Job!
+        .findOne({ _id: id, organizationId: user.organizationId })
+        .select("_id organizationId")
+        .lean()
+        .exec(),
+      JobLaneConfig!.findOne({ jobId: id }).lean().exec(),
+    ]);
+    // Verify job exists and user has access
+    if (!job) {
+      return NextResponse.json({ error: "Job not found" }, { status: 404 });
+    }
     return NextResponse.json({
       success: true,
       data: config || { jobId: id, laneConfigs: [] },
@@ -76,50 +50,24 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const token = req.cookies.get("auth_token")?.value;
-    if (!token) {
+    const [user, { id }, { laneConfigs }] = await Promise.all([
+      getAuthenticatedUser(req, ["admin", "hr"]),
+      params,
+      req.json(),
+      connectToDatabase(),
+    ]);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const orgId = req.cookies.get("org_id")?.value;
-    const decryptedResponse = await verifyAndDecryptJWTToken(token, orgId);
-    if (!decryptedResponse.success || !decryptedResponse.user) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-    const decoded = decryptedResponse.user;
-
-    // Get the user ID from the decoded token (could be _id, id, or userId)
-    const userId = decoded._id || decoded.id || decoded.userId;
-    if (!userId) {
-      console.error("No user ID found in decoded token:", decoded);
-      return NextResponse.json(
-        { error: "Invalid user ID in token" },
-        { status: 401 }
-      );
-    }
-
-    // Check if user is admin or HR
-    if (!["admin", "hr"].includes(decoded.role)) {
-      return NextResponse.json(
-        { error: "Only admin and HR can configure checklists" },
-        { status: 403 }
-      );
-    }
-
-    await connectToDatabase();
-
-    const { id } = await params;
     // Verify job exists and user has access
-    const job = await Job!.findById(id);
+    const job = await Job!
+      .findOne({ _id: id, organizationId: user?.organizationId })
+      .select("_id organizationId")
+      .lean()
+      .exec();
     if (!job) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
-
-    if (job.organizationId.toString() !== decoded.organizationId) {
-      return NextResponse.json({ error: "Access denied" }, { status: 403 });
-    }
-
-    const body = await req.json();
-    const { laneConfigs } = body;
 
     // Validate lane configs
     if (!Array.isArray(laneConfigs)) {
@@ -134,11 +82,11 @@ export async function POST(
       const processed = { ...laneConfig };
 
       if (processed.incomingChecklist) {
-        processed.incomingChecklist.createdBy = userId;
+        processed.incomingChecklist.createdBy = user.id;
       }
 
       if (processed.outgoingChecklist) {
-        processed.outgoingChecklist.createdBy = userId;
+        processed.outgoingChecklist.createdBy = user.id;
       }
 
       return processed;
@@ -175,40 +123,12 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const token = req.cookies.get("auth_token")?.value;
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const orgId = req.cookies.get("org_id")?.value;
-    const decryptedResponse = await verifyAndDecryptJWTToken(token, orgId);
-    if (!decryptedResponse.success || !decryptedResponse.user) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-    const decoded = decryptedResponse.user;
-
-    // Get the user ID from the decoded token (could be _id, id, or userId)
-    const userId = decoded._id || decoded.id || decoded.userId;
-    if (!userId) {
-      console.error("No user ID found in decoded token:", decoded);
-      return NextResponse.json(
-        { error: "Invalid user ID in token" },
-        { status: 401 }
-      );
-    }
-
-    // Check if user is admin or HR
-    if (!["admin", "hr"].includes(decoded.role)) {
-      return NextResponse.json(
-        { error: "Only admin and HR can configure checklists" },
-        { status: 403 }
-      );
-    }
-
-    await connectToDatabase();
-
-    const body = await req.json();
-    const { laneId, laneConfig } = body;
+    const [user, { laneId, laneConfig }, { id }] = await Promise.all([
+      getAuthenticatedUser(req, ["admin", "hr"]),
+      req.json(),
+      params,
+      connectToDatabase(),
+    ]);
 
     if (!laneId || !laneConfig) {
       return NextResponse.json(
@@ -216,8 +136,11 @@ export async function PATCH(
         { status: 400 }
       );
     }
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    const { id } = await params;
+    const userId = user.id;
 
     // Verify job exists and user has access
     const job = await Job!.findById(id);
@@ -225,7 +148,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 
-    if (job.organizationId.toString() !== decoded.organizationId) {
+    if (job.organizationId.toString() !== user.organizationId) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
@@ -293,37 +216,15 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const token = req.cookies.get("auth_token")?.value;
-    const orgId = req.cookies.get("org_id")?.value;
-    if (!token) {
+    
+    const [user,{id}] = await Promise.all([
+      getAuthenticatedUser(req, ["admin", "hr"]),
+      params,
+      connectToDatabase(),
+    ]);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const decryptedResponse = await verifyAndDecryptJWTToken(token, orgId);
-    if (!decryptedResponse.success || !decryptedResponse.user) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-    const decoded = decryptedResponse.user;
-
-    // Get the user ID from the decoded token (could be _id, id, or userId)
-    const userId = decoded._id || decoded.id || decoded.userId;
-    if (!userId) {
-      console.error("No user ID found in decoded token:", decoded);
-      return NextResponse.json(
-        { error: "Invalid user ID in token" },
-        { status: 401 }
-      );
-    }
-
-    // Check if user is admin or HR
-    if (!["admin", "hr"].includes(decoded.role)) {
-      return NextResponse.json(
-        { error: "Only admin and HR can configure checklists" },
-        { status: 403 }
-      );
-    }
-
-    await connectToDatabase();
 
     const { searchParams } = new URL(req.url);
     const laneId = searchParams.get("laneId");
@@ -336,14 +237,13 @@ export async function DELETE(
       );
     }
 
-    const { id } = await params;
     // Verify job exists and user has access
     const job = await Job!.findById(id);
     if (!job) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 
-    if (job.organizationId.toString() !== decoded.organizationId) {
+    if (job.organizationId.toString() !== user.organizationId) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 

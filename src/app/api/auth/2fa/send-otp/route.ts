@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendEventEmailWithHistory } from "@/lib/unifiedEmailService";
 import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
-import { Settings, User } from "@/lib/mongodb";
-import dbConnect from "@/lib/mongodb";
+import connectToDatabase,{ Settings, User } from "@/lib/mongodb";
 import mongoose from "mongoose";
 import { otpRateLimiter } from "@/lib/rateLimiter";
 
 async function handleSendOtp(req: NextRequest) {
   try {
-    await dbConnect();
+    await connectToDatabase();
     const { email, organizationId } = await req.json();
 
     if (!email || !organizationId) {
@@ -20,7 +19,7 @@ async function handleSendOtp(req: NextRequest) {
 
     const settings = await Settings.findOne({
       organizationId: new mongoose.Types.ObjectId(organizationId),
-    }).lean();
+    }).select("mailConfig").lean().exec();
     if (!settings || !settings.mailConfig) {
       return NextResponse.json(
         { message: "Mail configuration not found" },
