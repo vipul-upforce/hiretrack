@@ -1,7 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
+import { getAuthenticatedUser } from "@/app/actions/auth";
+import { logsRateLimiter } from "@/lib/rateLimiter";
 
 /**
  * Recursively calculates the total size of a directory including all files and subdirectories.
@@ -100,8 +102,12 @@ function getFolderSize(folderPath: string): string {
   }
 }
 
-export async function GET(request: Request) {
+async function getDiskSpace(request: NextRequest) {
   try {
+    const user = await getAuthenticatedUser(request, "admin");
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const { searchParams } = new URL(request.url);
     const rootKey = searchParams.get("root");
     const subPath = searchParams.get("path") || "";
@@ -233,4 +239,9 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
+}
+
+
+export async function GET(request: NextRequest) {
+  return logsRateLimiter(request, getDiskSpace);
 }

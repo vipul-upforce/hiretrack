@@ -1,7 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import { execSync } from "child_process";
+import { getAuthenticatedUser } from "@/app/actions/auth";
+import { logsRateLimiter } from "@/lib/rateLimiter";
 
 function getFolderSizeWin(folderPath: string): number {
   let total = 0;
@@ -21,7 +23,11 @@ function getFolderSizeWin(folderPath: string): number {
   return total;
 }
 
-export async function GET() {
+async function getPM2Logs(req: NextRequest) {
+  const user = await getAuthenticatedUser(req, "admin");
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const isLinux = process.platform === "linux";
 
   const logDir = isLinux
@@ -64,4 +70,8 @@ export async function GET() {
       { status: 500 }
     );
   }
+}
+
+export async function GET(req: NextRequest) {
+  return logsRateLimiter(req, getPM2Logs);
 }
