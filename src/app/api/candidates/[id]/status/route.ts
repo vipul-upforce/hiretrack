@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { Job } from "@/lib/mongodb";
 import { Candidate } from "@/lib/mongodb";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { NotificationService } from "@/lib/notifications/notificationService";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 
 export async function PATCH(
   request: NextRequest,
@@ -10,21 +10,19 @@ export async function PATCH(
 ) {
   try {
     // Check authentication
-    const token = request.headers.get("cookie")?.match(/token=([^;]+)/)?.[1];
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    const orgId = request.cookies.get("org_id")?.value;
-    const decryptedResponse = await verifyAndDecryptJWTToken(token, orgId);
-    if (!decryptedResponse.success || !decryptedResponse.user) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
 
-    const userData = decryptedResponse.user;
-
-    await connectToDatabase();
-    const { status } = await request.json();
-    const { id } = await params;
+    const [userData, { id }, { status }] = await Promise.all([
+      getAuthenticatedUser(request),
+      params,
+      request.json(),
+      connectToDatabase(),
+    ]);
+    if (!userData) {
+      return NextResponse.json(
+        { message: "Unauthorised Access" },
+        { status: 401 }
+      );
+    }
 
     if (!Candidate || !Job) {
       return NextResponse.json({ error: "Models not found" }, { status: 400 });
@@ -66,19 +64,19 @@ export async function PATCH(
     // Trigger notification if status actually changed
     if (oldStatus !== status && oldStatus && status) {
       try {
-        const jobInfo = updatedCandidate.jobId as any;
+        const jobInfo = updatedCandidate.jobId as Record<string, unknown>;
         await NotificationService.notifyCandidateStatusUpdated({
-          organizationId: userData.organizationId,
+          organizationId: userData?.organizationId,
           candidateId: updatedCandidate._id.toString(),
           candidateName: updatedCandidate.name,
           jobId:
             jobInfo?._id?.toString() ||
             updatedCandidate.jobId?.toString() ||
             "",
-          jobTitle: jobInfo?.title || "Unknown Job",
+          jobTitle: jobInfo?.title as string || "Unknown Job",
           oldStatus,
           newStatus: status,
-          triggerUserId: userData._id,
+          triggerUserId: userData.id,
           triggerUserName: userData.name,
         });
         // console.log("Status updatesss notifyyy  ===== = ");

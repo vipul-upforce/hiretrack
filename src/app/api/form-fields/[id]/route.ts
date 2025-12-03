@@ -11,7 +11,7 @@ export async function PUT(
     const body = await request.json();
     const { id } = await params;
     const updatedField = await FormField.findByIdAndUpdate(id, body, {
-      new: true,
+      new: true,lean : true,
     });
 
     if (!updatedField) {

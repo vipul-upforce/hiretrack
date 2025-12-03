@@ -73,8 +73,8 @@ export const MentionPicker = forwardRef<
       try {
         const users = await userCacheService.getUsers(organizationId);
         setUsers(users);
-      } catch {
-        // Error loading users - silently fail
+      } catch (error) {
+        console.error("Failed to load users:", error);
       } finally {
         setLoading(false);
       }

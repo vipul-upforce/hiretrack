@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { Settings, Candidate, History } from "@/lib/mongodb";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 import { createOAuth2Client } from "@/lib/google-calendar/config";
 import { decryptText } from "@/lib/encryption";
 import { google } from "googleapis";
@@ -16,31 +16,24 @@ interface UpdateMeetRequest {
 
 export async function PUT(req: NextRequest) {
   try {
-    await connectToDatabase();
+    // Optimize: Parallelize authentication, database connection, and request parsing
+    const [userData, , body] = await Promise.all([
+      getAuthenticatedUser(req, ["admin", "hr", "interviewer"]),
+      connectToDatabase(),
+      req.json(),
+    ]);
 
-    // Verify user
-    let organizationId = "";
-    const token = req.cookies.get("auth_token");
-    const orgId = req.cookies.get("org_id")?.value;
-    if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value),
-        orgId
+    if (!userData) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
       );
-      const userData = decryptedResponse.user;
-      if (decryptedResponse.success) {
-        organizationId = userData.organizationId || "";
-      } else {
-        return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-      }
-    } else {
-      return NextResponse.json({ error: "No token provided" }, { status: 401 });
     }
 
-    const body: UpdateMeetRequest = await req.json();
-    const { candidateId, eventId, scheduledTime, duration, guests } = body;
+    const organizationId = userData.organizationId;
+    const orgId = userData.organizationId;
+    const { candidateId, eventId, scheduledTime, duration, guests } = body as UpdateMeetRequest;
 
-    // Get Google Calendar settings
     if (!Settings) {
       return NextResponse.json(
         { error: "Settings model not available" },
@@ -48,7 +41,12 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    const settings = await Settings.findOne({ organizationId });
+    // Optimize: Fetch only needed fields from Settings
+    const settings = await Settings.findOne({ organizationId })
+      .select("googleCalendar timeZone.name")
+      .lean()
+      .exec();
+
     if (!settings?.googleCalendar?.isConnected) {
       return NextResponse.json(
         { error: "Google Calendar is not connected" },
@@ -94,7 +92,11 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
     // Prepare update data
-    const updateData: any = {};
+    const updateData: {
+      start?: { dateTime: string; timeZone: string };
+      end?: { dateTime: string; timeZone: string };
+      attendees?: Array<{ email: string }>;
+    } = {};
 
     if (scheduledTime && duration) {
       const startDateTime = new Date(scheduledTime);
@@ -158,7 +160,7 @@ export async function PUT(req: NextRequest) {
     // Update candidate record if candidateId is provided
     if (candidateId && Candidate) {
       try {
-        const updateFields: any = {};
+        const updateFields: Record<string, unknown> = {};
         if (updatedEvent.hangoutLink) {
           updateFields["assignment.googleMeet.meetingLink"] =
             updatedEvent.hangoutLink;
@@ -194,8 +196,6 @@ export async function PUT(req: NextRequest) {
       message: "Google Meet updated successfully",
     });
   } catch (error) {
-    console.error("Google Meet update error:", error);
-
     if (error instanceof Error && error.message.includes("invalid_grant")) {
       return NextResponse.json(
         {
@@ -217,30 +217,17 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    await connectToDatabase();
-
-    // Verify user
-    let organizationId = "";
-    let userData: any = null;
-
-    const token = req.cookies.get("auth_token");
-    const orgId = req.cookies.get("org_id")?.value;
-    if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value),
-        orgId
+    const [userData] = await Promise.all([
+      getAuthenticatedUser(req, ["admin", "hr", "interviewer"]),
+      connectToDatabase(),
+    ]);
+    if (!userData) {
+      return NextResponse.json(
+        { message: "Unauthorised Access" },
+        { status: 401 }
       );
-      userData = decryptedResponse.user;
-
-      if (decryptedResponse.success) {
-        organizationId = userData.organizationId || "";
-      } else {
-        return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-      }
-    } else {
-      return NextResponse.json({ error: "No token provided" }, { status: 401 });
     }
-
+    const organizationId = userData.organizationId;
     const { searchParams } = new URL(req.url);
     const eventId = searchParams.get("eventId");
     const candidateId = searchParams.get("candidateId");
@@ -252,7 +239,6 @@ export async function DELETE(req: NextRequest) {
         { status: 400 }
       );
     }
-    // Get Google Calendar settings
     if (!Settings) {
       return NextResponse.json(
         { error: "Settings model not available" },
@@ -260,7 +246,12 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    const settings = await Settings.findOne({ organizationId });
+    // Optimize: Fetch only needed fields from Settings
+    const settings = await Settings.findOne({ organizationId })
+      .select("googleCalendar timeZone.name")
+      .lean()
+      .exec();
+
     if (!settings?.googleCalendar?.isConnected) {
       return NextResponse.json(
         { error: "Google Calendar is not connected" },
@@ -271,12 +262,12 @@ export async function DELETE(req: NextRequest) {
     // Decrypt credentials
     const clientSecret = decryptText(
       settings.googleCalendar.clientSecret,
-      orgId
+      organizationId 
     );
-    const accessToken = decryptText(settings.googleCalendar.accessToken, orgId);
+    const accessToken = decryptText(settings.googleCalendar.accessToken, organizationId);
     const refreshToken = decryptText(
       settings.googleCalendar.refreshToken,
-      orgId
+      organizationId
     );
 
     // Create OAuth2 client
@@ -296,56 +287,67 @@ export async function DELETE(req: NextRequest) {
     // Create calendar instance
     const calendar = google.calendar({ version: "v3", auth: oauth2Client });
 
-    // If cancel notes are provided, update the event description before deletion
-    if (cancelNotes.trim()) {
-      try {
-        const existingEvent = await calendar.events.get({
-          calendarId: "primary",
-          eventId: eventId,
-        });
+    // Optimize: Cancel event and clear candidate data in parallel where possible
+    const cancelEventPromise = cancelNotes.trim()
+      ? (async () => {
+          try {
+            const existingEvent = await calendar.events.get({
+              calendarId: "primary",
+              eventId: eventId,
+            });
 
-        const updatedDescription = `${existingEvent.data.description || ""}\n\n--- MEETING CANCELLED ---\nReason: ${cancelNotes}\nCancelled on: ${new Date().toISOString()}`;
+            const updatedDescription = `${existingEvent.data.description || ""}\n\n--- MEETING CANCELLED ---\nReason: ${cancelNotes}\nCancelled on: ${new Date().toISOString()}`;
 
-        await calendar.events.patch({
+            await calendar.events.patch({
+              calendarId: "primary",
+              eventId: eventId,
+              requestBody: {
+                description: updatedDescription,
+                status: "cancelled",
+              },
+              sendUpdates: "all",
+            });
+          } catch (error) {
+            console.error("Failed to cancel event:", error);
+          }
+        })()
+      : calendar.events.patch({
           calendarId: "primary",
           eventId: eventId,
           requestBody: {
-            description: updatedDescription,
             status: "cancelled",
           },
           sendUpdates: "all",
         });
-      } catch (error) {
-        console.error("Failed to update event before cancellation:", error);
-      }
-    } else {
-      // Just cancel without notes
-      await calendar.events.patch({
-        calendarId: "primary",
-        eventId: eventId,
-        requestBody: {
-          status: "cancelled",
-        },
-        sendUpdates: "all",
-      });
-    }
 
-    // Clear Google Meet data from candidate record
-    if (candidateId && Candidate) {
-      try {
-        await Candidate.findByIdAndUpdate(candidateId, {
+    // Clear Google Meet data from candidate record (can run in parallel with event cancellation)
+    const clearCandidatePromise = candidateId && Candidate
+      ? Candidate.findByIdAndUpdate(candidateId, {
           $unset: { "assignment.googleMeet": "" },
-        });
-      } catch (error) {
-        console.error("Failed to update candidate record:", error);
-      }
-    }
+        })
+          .lean()
+          .exec()
+          .catch((error) => {
+            console.error("Failed to clear candidate record:", error);
+          })
+      : Promise.resolve(null);
 
-    // After cancelling the Google Meet in your DELETE handler:
+    // Wait for both operations
+    await Promise.all([cancelEventPromise, clearCandidatePromise]);
+
+    // Fetch candidate for notification (only if needed)
     if (candidateId) {
+      // Optimize: Fetch only needed fields with optimized populate
       const candidate = await Candidate.findById(candidateId)
-        .populate("jobId")
-        .populate("assignment.interviewerId")
+        .select("_id name jobId assignment.interviewerId")
+        .populate({
+          path: "jobId",
+          select: "_id title",
+        })
+        .populate({
+          path: "assignment.interviewerId",
+          select: "_id name",
+        })
         .lean();
 
       if (candidate) {
@@ -423,8 +425,6 @@ export async function DELETE(req: NextRequest) {
       message: "Google Meet cancelled successfully",
     });
   } catch (error) {
-    console.error("Google Meet cancellation error:", error);
-
     if (error instanceof Error && error.message.includes("invalid_grant")) {
       return NextResponse.json(
         {

@@ -27,7 +27,7 @@ export async function GET(request: Request) {
     if (moduleType) query.moduleType = moduleType;
     if (isPermanent) query.isPermanent = isPermanent === "true";
 
-    const fields = await FormField.find(query);
+    const fields = await FormField.find(query).lean().exec();
     return NextResponse.json(fields);
   } catch (error: unknown) {
     if (error instanceof Error) {

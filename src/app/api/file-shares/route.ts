@@ -1,33 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { Settings } from "@/lib/mongodb";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { createFileShare, validateAttachments } from "@/lib/fileShareUtils";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 
 export async function POST(request: NextRequest) {
   try {
-    // Authenticate user
-    const token = request.cookies.get("auth_token");
-    if (!token) {
+    
+    // Parse request body
+    const [user, data] = await Promise.all([
+      getAuthenticatedUser(request, ["admin", "hr", "interviewer"]),
+      request.json(),
+      connectToDatabase(),
+    ]);
+   
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const orgId = request.cookies.get("org_id")?.value;
-    const decryptedResponse = await verifyAndDecryptJWTToken(
-      token.value,
-      orgId
-    );
-    if (!decryptedResponse.success || !decryptedResponse.user) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    const user = decryptedResponse.user;
-
-    // Check role - candidates cannot upload files
-    if (user.role === "candidate") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    // Parse request body
-    const data = await request.json();
     const { files, shareOptions } = data;
 
     if (!files || !Array.isArray(files) || files.length === 0) {
@@ -41,12 +29,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Connect to database
-    await connectToDatabase();
+    
 
     // Get organization settings for file storage
     const settings = await Settings!.findOne({
       organizationId: user.organizationId,
-    });
+    }).select("fileStorage").lean().exec();
     if (!settings) {
       return NextResponse.json(
         { error: "Organization settings not found" },

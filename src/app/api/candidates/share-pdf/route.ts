@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect, { Candidate, Settings } from "@/lib/mongodb";
+import connectToDatabase, { Candidate, Settings } from "@/lib/mongodb";
 import { jsPDF } from "jspdf";
 import { PDFDocument } from "pdf-lib";
 import { ShareFieldsSelection } from "@/app/dashboard/jobs/[id]/components/Dialogs/share-candidate-dialog";
@@ -145,7 +145,7 @@ async function loadImageAsBase64(
 
 export async function POST(req: NextRequest) {
   try {
-    await dbConnect();
+    await connectToDatabase();
 
     const { candidateId, selection } = (await req.json()) as {
       candidateId: string;

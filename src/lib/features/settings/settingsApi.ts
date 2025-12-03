@@ -1,3 +1,4 @@
+// import { VersionListResponse } from "@/app/dashboard/settings/components/about-version/types";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { VersionListResponse } from "@/app/dashboard/settings/components/about/types";
 

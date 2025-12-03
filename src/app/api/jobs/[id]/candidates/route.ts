@@ -1,44 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { Candidate } from "@/lib/mongodb";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 import { ICandidate } from "@/lib/models/candidate";
 import { ProjectionType } from "mongoose";
-// import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await connectToDatabase();
-    let role = "";
-    const token = _request.cookies.get("auth_token");
-    const orgId = _request.cookies.get("org_id")?.value;
-    if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value),
-        orgId
+    // Resolve params and authenticate in parallel
+    const [{ id }, userData] = await Promise.all([
+      params,
+      getAuthenticatedUser(_request, ["interviewer", "admin", "hr"]),
+    ]);
+
+    // Handle authentication errors
+    if (!userData) {
+      return NextResponse.json(
+        { message: "Unauthorised Access" },
+        { status: 401 }
       );
-      const userData = decryptedResponse.user;
-      if (decryptedResponse.success) {
-        role = userData.role;
-      }
     }
 
-    if (role === "candidate") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // Validate job ID
+    if (!id || typeof id !== "string") {
+      return NextResponse.json(
+        { error: "Invalid job ID" },
+        { status: 400 }
+      );
     }
 
-    const { id } = await params;
+    // Connect to database
+    await connectToDatabase();
+
     if (!Candidate) {
       return NextResponse.json(
-        { error: "Candidate not found" },
-        { status: 404 }
+        { error: "Database model not available" },
+        { status: 500 }
       );
     }
-    let candidates = null;
     const projection: ProjectionType<ICandidate> =
-      role === "interviewer"
+      userData?.role === "interviewer"
         ? {
             currentCTC: 0,
             expectedCTC: 0,
@@ -46,8 +49,9 @@ export async function GET(
           }
         : {};
 
-    candidates = await Candidate.find({ jobId: id }, projection)
-      .populate("remarks.userId", "name email")
+    // Optimize populate: combine all into single array, remove duplicates
+    // Use lean() for better performance with plain objects
+    const candidates = await Candidate.find({ jobId: id }, projection)
       .populate([
         {
           path: "assignment.interviewerId",
@@ -63,17 +67,21 @@ export async function GET(
         },
         {
           path: "jobId",
-          select: "title description ",
+          select: "title description",
         },
       ])
-      .lean();
-
-    // /api/candidates/[id]/history for individual candidate history
+      .sort({ "tracking.createdAt": -1 }) // Consistent sorting
+      .lean()
+      .exec();
 
     return NextResponse.json(candidates);
   } catch (error) {
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error ? error.message : "Internal server error",
+      },
+      { status: 500 }
+    );
   }
 }

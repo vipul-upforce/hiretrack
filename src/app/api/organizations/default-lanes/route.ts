@@ -1,40 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { Organization } from "@/lib/mongodb";
-import { auth } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 
 const DEFAULT_LANES = [
   "applied",
-  "screening", 
+  "screening",
   "shortlisted",
   "processing",
   "accepted",
-  "rejected"
+  "rejected",
 ];
 
 const DEFAULT_RESTRICTIONS = {
   nonEditable: ["applied", "accepted", "rejected"],
-  nonDeletable: ["applied", "accepted", "rejected"]
+  nonDeletable: ["applied", "accepted", "rejected"],
 };
+
+async function getOrganizationLanes(orgId: string) {
+  const org = await Organization.findById(orgId, {
+    defaultLanes: 1,
+    laneRestrictions: 1,
+  }).lean();
+
+  return org || null;
+}
 
 // GET /api/organizations/default-lanes - Fetch organization default lanes
 export async function GET(request: NextRequest) {
   try {
-    await connectToDatabase();
-
-    // Check authentication
-    const session = await auth(request);
-    if (!session || !session.user?.organizationId || session.user.role === "candidate") {
+    const [user] = await Promise.all([
+      getAuthenticatedUser(request, ["admin", "hr", "interviewer"]),
+      connectToDatabase(),
+    ]);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (!Organization) {
-      return NextResponse.json(
-        { error: "Database not connected" },
-        { status: 400 }
-      );
-    }
-
-    const organization = await Organization.findById(session.user.organizationId);
+    const organization = await getOrganizationLanes(user.organizationId);
     if (!organization) {
       return NextResponse.json(
         { error: "Organization not found" },
@@ -46,7 +48,6 @@ export async function GET(request: NextRequest) {
       defaultLanes: organization.defaultLanes || DEFAULT_LANES,
       laneRestrictions: organization.laneRestrictions || DEFAULT_RESTRICTIONS,
     });
-
   } catch (error) {
     console.error("Get default lanes error:", error);
     return NextResponse.json(
@@ -59,27 +60,12 @@ export async function GET(request: NextRequest) {
 // PUT /api/organizations/default-lanes - Update organization default lanes
 export async function PUT(request: NextRequest) {
   try {
-    await connectToDatabase();
-
-    // Check authentication and permissions
-    const session = await auth(request);
-    if (!session || !session.user?.organizationId) {
+    const [user] = await Promise.all([
+      getAuthenticatedUser(request, ["admin", "hr"]),
+      connectToDatabase(),
+    ]);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Only admin and HR can modify default lanes
-    if (!["admin", "hr"].includes(session.user.role)) {
-      return NextResponse.json(
-        { error: "Insufficient permissions. Only admin and HR can manage default lanes." },
-        { status: 403 }
-      );
-    }
-
-    if (!Organization) {
-      return NextResponse.json(
-        { error: "Database not connected" },
-        { status: 400 }
-      );
     }
 
     const body = await request.json();
@@ -98,7 +84,9 @@ export async function PUT(request: NextRequest) {
     for (const lane of defaultLanes) {
       if (typeof lane !== "string" || !validLaneNameRegex.test(lane)) {
         return NextResponse.json(
-          { error: `Invalid lane name: ${lane}. Only alphanumeric characters, spaces, hyphens, and underscores allowed.` },
+          {
+            error: `Invalid lane name: ${lane}. Only alphanumeric characters, spaces, hyphens, and underscores allowed.`,
+          },
           { status: 400 }
         );
       }
@@ -109,7 +97,9 @@ export async function PUT(request: NextRequest) {
     for (const requiredLane of requiredLanes) {
       if (!defaultLanes.includes(requiredLane)) {
         return NextResponse.json(
-          { error: `Required lane '${requiredLane}' must be included in default lanes` },
+          {
+            error: `Required lane '${requiredLane}' must be included in default lanes`,
+          },
           { status: 400 }
         );
       }
@@ -126,15 +116,19 @@ export async function PUT(request: NextRequest) {
 
     // Update organization
     const updatedOrganization = await Organization.findByIdAndUpdate(
-      session.user.organizationId,
-      { 
-        $set: { 
+      user.organizationId,
+      {
+        $set: {
           defaultLanes: defaultLanes,
           // Ensure lane restrictions are set
-          laneRestrictions: DEFAULT_RESTRICTIONS
-        } 
+          laneRestrictions: DEFAULT_RESTRICTIONS,
+        },
       },
-      { new: true }
+      {
+        new: true,
+        projection: { defaultLanes: 1, laneRestrictions: 1 },
+        lean: true,
+      }
     );
 
     if (!updatedOrganization) {
@@ -149,7 +143,6 @@ export async function PUT(request: NextRequest) {
       defaultLanes: updatedOrganization.defaultLanes,
       laneRestrictions: updatedOrganization.laneRestrictions,
     });
-
   } catch (error) {
     console.error("Update default lanes error:", error);
     return NextResponse.json(
@@ -162,28 +155,13 @@ export async function PUT(request: NextRequest) {
 // POST /api/organizations/default-lanes - Add a new default lane
 export async function POST(request: NextRequest) {
   try {
-    await connectToDatabase();
-
-    // Check authentication and permissions
-    const session = await auth(request);
-    if (!session || !session.user?.organizationId) {
+    const [user] = await Promise.all([
+      getAuthenticatedUser(request, ["admin", "hr"]),
+      connectToDatabase(),
+    ]);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    if (!["admin", "hr"].includes(session.user.role)) {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
-    }
-
-    if (!Organization) {
-      return NextResponse.json(
-        { error: "Database not connected" },
-        { status: 400 }
-      );
-    }
-
     const body = await request.json();
     const { laneName, position } = body;
 
@@ -198,12 +176,15 @@ export async function POST(request: NextRequest) {
     const validLaneNameRegex = /^[a-zA-Z0-9\s\-_]+$/;
     if (!validLaneNameRegex.test(laneName)) {
       return NextResponse.json(
-        { error: "Invalid lane name. Only alphanumeric characters, spaces, hyphens, and underscores allowed." },
+        {
+          error:
+            "Invalid lane name. Only alphanumeric characters, spaces, hyphens, and underscores allowed.",
+        },
         { status: 400 }
       );
     }
 
-    const organization = await Organization.findById(session.user.organizationId);
+    const organization = await getOrganizationLanes(user.organizationId);
     if (!organization) {
       return NextResponse.json(
         { error: "Organization not found" },
@@ -223,7 +204,11 @@ export async function POST(request: NextRequest) {
 
     // Add lane at specified position or at the end
     const newLanes = [...currentLanes];
-    if (typeof position === "number" && position >= 0 && position <= newLanes.length) {
+    if (
+      typeof position === "number" &&
+      position >= 0 &&
+      position <= newLanes.length
+    ) {
       newLanes.splice(position, 0, laneName);
     } else {
       newLanes.push(laneName);
@@ -231,16 +216,18 @@ export async function POST(request: NextRequest) {
 
     // Update organization
     const updatedOrganization = await Organization.findByIdAndUpdate(
-      session.user.organizationId,
+      user.organizationId,
       { $set: { defaultLanes: newLanes } },
       { new: true }
-    );
+    )
+      .select("defaultLanes")
+      .lean()
+      .exec();
 
     return NextResponse.json({
       message: "Default lane added successfully",
       defaultLanes: updatedOrganization.defaultLanes,
     });
-
   } catch (error) {
     console.error("Add default lane error:", error);
     return NextResponse.json(
@@ -253,28 +240,13 @@ export async function POST(request: NextRequest) {
 // DELETE /api/organizations/default-lanes - Delete a default lane
 export async function DELETE(request: NextRequest) {
   try {
-    await connectToDatabase();
-
-    // Check authentication and permissions
-    const session = await auth(request);
-    if (!session || !session.user?.organizationId) {
+    const [user] = await Promise.all([
+      getAuthenticatedUser(request, ["admin", "hr"]),
+      connectToDatabase(),
+    ]);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    if (!["admin", "hr"].includes(session.user.role)) {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
-    }
-
-    if (!Organization) {
-      return NextResponse.json(
-        { error: "Database not connected" },
-        { status: 400 }
-      );
-    }
-
     const body = await request.json();
     const { laneName } = body;
 
@@ -286,7 +258,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const organization = await Organization.findById(session.user.organizationId);
+    const organization = await getOrganizationLanes(user.organizationId);
     if (!organization) {
       return NextResponse.json(
         { error: "Organization not found" },
@@ -298,10 +270,7 @@ export async function DELETE(request: NextRequest) {
 
     // Check if lane exists
     if (!currentLanes.includes(laneName)) {
-      return NextResponse.json(
-        { error: "Lane not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Lane not found" }, { status: 404 });
     }
 
     // Check if lane is restricted
@@ -314,20 +283,23 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Remove lane from the list
-    const newLanes = currentLanes.filter(lane => lane !== laneName);
+    const newLanes = currentLanes.filter((lane) => lane !== laneName);
 
     // Update organization
     const updatedOrganization = await Organization.findByIdAndUpdate(
-      session.user.organizationId,
+      user.organizationId,
       { $set: { defaultLanes: newLanes } },
-      { new: true }
+      {
+        new: true,
+        projection: { defaultLanes: 1 },
+        lean: true,
+      }
     );
 
     return NextResponse.json({
       message: "Default lane deleted successfully",
       defaultLanes: updatedOrganization.defaultLanes,
     });
-
   } catch (error) {
     console.error("Delete default lane error:", error);
     return NextResponse.json(
