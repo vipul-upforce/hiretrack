@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { formatFileSize } from "@/components/ui/file-upload";
 import { toast } from "@/hooks/use-toast";
 import { FolderIcon, Loader, LucideDownload } from "lucide-react";
-import { useFetchAssetsMetadataQuery } from "@/lib/features/settings/settingsApi"; // adjust path
+import { useFetchAssetsMetadataQuery } from "@/lib/features/settings/settingsApi";
 import { useState } from "react";
+import AssetsLoadingSkeleton from "./loading-skeleton";
 
 interface AssetMetadata {
   name: string;
@@ -19,7 +20,7 @@ export default function AssetsDialog() {
   const { data, isLoading, isFetching, isError, error, refetch } =
     useFetchAssetsMetadataQuery(undefined);
 
-  const [downLoading, setDownloading] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const assetsMetadata: AssetMetadata | null = data?.data || null;
 
   const archiveAssets = async () => {
@@ -31,14 +32,12 @@ export default function AssetsDialog() {
         throw new Error(error.message || "Failed to create assets archive");
       }
 
-      // Extract the file name from the Content-Disposition header
       const contentDisposition = res.headers.get("Content-Disposition");
       const fileNameMatch = contentDisposition?.match(/filename="(.+)"/);
       const fileName = fileNameMatch
         ? fileNameMatch[1]
         : `assets-${Date.now()}.tar.gz`;
 
-      // Convert response to blob and trigger download
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -54,7 +53,6 @@ export default function AssetsDialog() {
         description: "Assets archive has been downloaded.",
       });
 
-      // refetch metadata after successful download
       refetch();
     } catch (err) {
       console.error("Failed to archive assets:", err);
@@ -68,27 +66,7 @@ export default function AssetsDialog() {
     }
   };
 
-  if (isLoading || isFetching) {
-    return (
-      <div className="flex-1 overflow-y-auto px-6 py-4 animate-pulse">
-        <div className="mb-4">
-          <div className="flex items-center space-x-2">
-            <div className="h-4 w-4 bg-gray-300 dark:bg-gray-700 rounded" />
-
-            <div className="w-full flex items-center justify-between pr-4">
-              <div className="flex flex-col gap-2 w-full max-w-[200px]">
-                <div className="h-4 w-32 bg-gray-200 dark:bg-gray-800 rounded" />
-                <div className="h-3 w-24 bg-gray-200 dark:bg-gray-800 rounded" />
-                <div className="h-3 w-28 bg-gray-200 dark:bg-gray-800 rounded" />
-              </div>
-
-              <div className="h-8 w-8 bg-gray-300 dark:bg-gray-700 rounded" />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (isLoading || isFetching) return <AssetsLoadingSkeleton />;
 
   if (isError) {
     return (
@@ -119,10 +97,10 @@ export default function AssetsDialog() {
               <Button
                 variant="ghost"
                 onClick={archiveAssets}
-                className="text-xs text-blue-500 hover:underline"
-                disabled={downLoading}
+                className="text-xs text-portal-primary hover:underline"
+                disabled={downloading}
               >
-                {downLoading ? (
+                {downloading ? (
                   <Loader className="w-4 h-4 animate-spin" />
                 ) : (
                   <LucideDownload className="w-4 h-4" />

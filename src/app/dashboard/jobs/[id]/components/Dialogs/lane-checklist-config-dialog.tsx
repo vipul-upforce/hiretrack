@@ -211,7 +211,7 @@ export const LaneChecklistConfigDialog = ({
   };
 
   const loadFromTemplate = (templateId: string) => {
-    const template = templates?.find((t) => t._id === templateId);
+    const template = templates?.find((t) => t._id.toString() === templateId.toString());
     if (!template) return;
 
     const checklistFromTemplate: IChecklist = {

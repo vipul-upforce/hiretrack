@@ -3,7 +3,6 @@ import { MentionTextarea } from "@/components/ui/mention-textarea";
 import { Rating } from "@mui/material";
 import { Switch } from "@/components/ui/switch";
 import { Eye, EyeOff } from "lucide-react";
-import { User } from "@/lib/features/users/usersApi";
 import { ILocalUser } from "@/lib/redux/authSlice";
 
 interface ChecklistRemarksSectionProps {
@@ -36,7 +35,7 @@ export function ChecklistRemarksSection({
       <h3 className="text-sm font-semibold">Remarks (Optional)</h3>
       <MentionTextarea
         placeholder="Add a remark... (Alt+Enter to submit)"
-        className="min-h-[100px]"
+        className="min-h-[100px] max-h-80 overflow-y-auto"
         value={newRemark}
         onChange={setNewRemark}
         onKeyDown={(e) => {
@@ -51,7 +50,7 @@ export function ChecklistRemarksSection({
         currentUserRole={user?.role || ""}
         rows={4}
       />
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center relative z-10">
         <div className="flex items-center gap-2">
           <Label htmlFor="rating">Rating:</Label>
           <Rating
@@ -97,4 +96,3 @@ export function ChecklistRemarksSection({
     </div>
   );
 }
-

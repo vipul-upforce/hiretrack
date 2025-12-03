@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Settings, Candidate } from "@/lib/mongodb";
+import connectToDatabase, { Settings, Candidate, History } from "@/lib/mongodb";
 import { getAuthenticatedUser } from "@/app/actions/auth";
 import { createOAuth2Client } from "@/lib/google-calendar/config";
 import { decryptText } from "@/lib/encryption";
@@ -356,7 +356,9 @@ export async function DELETE(req: NextRequest) {
           typeof candidate.jobId !== "string" &&
           "_id" in candidate.jobId
             ? candidate.jobId._id.toString()
-            : "";
+            : candidate.jobId
+              ? candidate.jobId.toString()
+              : "";
 
         const jobTitle =
           candidate.jobId &&
@@ -364,6 +366,37 @@ export async function DELETE(req: NextRequest) {
           "title" in candidate.jobId
             ? candidate.jobId.title
             : "Unknown Job";
+
+        if (History) {
+          try {
+            const historyEntry = {
+              dateTime: new Date().toISOString(),
+              title: "Google Meet Cancelled",
+              assignmentBy: userData?.id,
+              previousInterviewer: candidate.assignment.interviewerId,
+              currentInterviewer: candidate.assignment.interviewerId,
+              note: {
+                userId: userData?.id,
+                description: cancelNotes
+                  ? `Google Meet Cancelled. Reason: ${cancelNotes}`
+                  : "Google Meet Cancelled.",
+              },
+            };
+
+            await History.findOneAndUpdate(
+              {
+                candidateId: candidate._id,
+                jobId: jobId,
+              },
+              {
+                $push: { history: historyEntry },
+              },
+              { upsert: true, new: true }
+            );
+          } catch (historyError) {
+            console.error("Failed to save cancellation history:", historyError);
+          }
+        }
 
         await NotificationService.notifyMeetingCancelled({
           organizationId,

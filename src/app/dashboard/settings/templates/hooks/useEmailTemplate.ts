@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { toast } from "sonner";
 import {
   useGetMailTemplatesQuery,
   useUpdateMailTemplatesMutation,
 } from "@/lib/features/settings/settingsApi";
 import { EmailTemplate, MailTemplatePayload } from "./../types";
 import { defaultTemplates, templateVariables } from "./../constants";
+import { useToast } from "@/hooks/use-toast";
 
 export const useEmailTemplates = () => {
   const [loading, setLoading] = useState(false);
@@ -23,6 +23,7 @@ export const useEmailTemplates = () => {
     error,
   } = useGetMailTemplatesQuery(undefined);
   const [updateMailTemplates] = useUpdateMailTemplatesMutation();
+  const { toast } = useToast();
 
   // Custom template management
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -45,9 +46,10 @@ export const useEmailTemplates = () => {
     try {
       for (const template of templates) {
         if (!template.subject.trim() || !template.content.trim()) {
-          toast.error(
-            `Template "${template.name}" has empty subject or content`
-          );
+          toast({
+            title: `Template "${template.name}" has empty subject or content`,
+            variant: "destructive",
+          });
           setSaving(false);
           return;
         }
@@ -65,12 +67,21 @@ export const useEmailTemplates = () => {
 
       try {
         await updateMailTemplates(templatesPayload).unwrap();
-        toast.success("Email templates saved successfully");
+        toast({
+          title: "Email templates saved successfully",
+          variant: "default",
+        });
       } catch (error) {
-        toast.error("Failed to save email templates");
+        toast({
+          title: "Failed to save email templates",
+          variant: "destructive",
+        });
       }
     } catch (error) {
-      toast.error("An error occurred while saving");
+      toast({
+        title: "An error occurred while saving",
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
@@ -96,9 +107,9 @@ export const useEmailTemplates = () => {
       setTemplates((prev) =>
         prev.map((template) => (template.id === id ? resetTemplate : template))
       );
-      toast.success("Template reset to default");
+      toast({ title: "Template reset to default", variant: "default" });
     } else {
-      toast.error("Default template not found");
+      toast({ title: "Default template not found", variant: "destructive" });
     }
   };
 
@@ -145,13 +156,16 @@ export const useEmailTemplates = () => {
       }));
     }
 
-    toast.success(`Variable {{${variable}}} inserted`);
+    toast({ variant: "default", title: `Variable {{${variable}}} inserted` });
   };
 
   const addCustomTemplate = async () => {
     setLoading(true);
     if (!newTemplate.name.trim() || !newTemplate.subject.trim()) {
-      toast.error("Please fill in template name and subject");
+      toast({
+        variant: "destructive",
+        title: "Please fill in template name and subject",
+      });
       setLoading(false);
       return;
     }
@@ -196,9 +210,15 @@ export const useEmailTemplates = () => {
 
     try {
       await updateMailTemplates(templatesPayload).unwrap();
-      toast.success("Custom template added and saved successfully");
+      toast({
+        variant: "default",
+        title: "Custom template added and saved successfully",
+      });
     } catch (error) {
-      toast.error("Failed to save custom template");
+      toast({
+        variant: "destructive",
+        title: "Failed to save custom template",
+      });
       // Optionally revert the template addition if saving fails
       setTemplates((prev) => prev.filter((t) => t.id !== templateId));
       setSelectedTemplate(templates[0]?.id || "job-application-hr");
@@ -211,7 +231,10 @@ export const useEmailTemplates = () => {
 
     const template = templates.find((t) => t.id === templateToDelete);
     if (template?.isDefault) {
-      toast.error("Cannot delete default templates");
+      toast({
+        variant: "destructive",
+        title: "Cannot delete default templates",
+      });
       return;
     }
 
@@ -237,9 +260,15 @@ export const useEmailTemplates = () => {
 
     try {
       await updateMailTemplates(templatesPayload).unwrap();
-      toast.success("Custom template deleted successfully");
+      toast({
+        variant: "default",
+        title: "Custom template deleted successfully",
+      });
     } catch (error) {
-      toast.error("Failed to delete custom template");
+      toast({
+        variant: "destructive",
+        title: "Failed to delete custom template",
+      });
       // Optionally revert the deletion if saving fails
       setTemplates(templates);
       setSelectedTemplate(templateToDelete);
@@ -300,7 +329,10 @@ export const useEmailTemplates = () => {
 
     if (error) {
       console.error("Failed to load email templates:", error);
-      toast.error("Failed to load email templates");
+      toast({
+        variant: "destructive",
+        title: "Failed to load email templates",
+      });
       setTemplates([...defaultTemplates]);
     }
   }, [templateData, error]);
@@ -355,9 +387,10 @@ export const useEmailTemplates = () => {
       (variable) => !(variable in sampleData)
     );
     if (missingVariables.length > 0) {
-      toast.warning(
-        `Missing sample data for variables: ${missingVariables.join(", ")}`
-      );
+      toast({
+        variant: "destructive",
+        title: `Missing sample data for variables: ${missingVariables.join(", ")}`,
+      });
     }
 
     let previewContent = content;

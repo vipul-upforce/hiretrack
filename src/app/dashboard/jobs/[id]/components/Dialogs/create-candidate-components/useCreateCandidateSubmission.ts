@@ -104,6 +104,12 @@ export function useCreateCandidateSubmission({
   const [isFormSubmitting, setIsFormSubmitting] = useState(false);
 
   const submitCandidate = async (values: CandidateFormValues) => {
+    console.log("submitCandidate", isFormSubmitting, isCreating);
+    // Prevent duplicate submissions
+    if (isFormSubmitting || isCreating) {
+      return;
+    }
+
     const fileNames = values.attachments.map((file) => file.name);
     const hasDuplicates = new Set(fileNames).size !== fileNames.length;
 
@@ -132,6 +138,7 @@ export function useCreateCandidateSubmission({
           description: "Fields cannot contain only spaces",
           variant: "destructive",
         });
+        setIsFormSubmitting(false);
         return;
       }
 
