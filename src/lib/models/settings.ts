@@ -289,6 +289,10 @@ const settingsSchema = new Schema({
         type: Boolean,
         default: true,
       },
+      candidateMoved: {
+        type: Boolean,
+        default: true,
+      },
     },
     adminOverrides: {
       type: Map,
@@ -315,6 +319,7 @@ const settingsSchema = new Schema({
         bulkImportCompleted: { type: Boolean },
         candidateRejected: { type: Boolean },
         interviewCompleted: { type: Boolean },
+        candidateMoved: { type: Boolean },
       },
       default: new Map(),
     },

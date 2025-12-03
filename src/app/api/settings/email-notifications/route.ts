@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     await connectToDatabase();
 
     // Get user from token
-    const currentUser = await getAuthenticatedUser(request, "admin");
+    const currentUser = await getAuthenticatedUser(request,["admin", "hr"]);
     if (!currentUser) {
       return NextResponse.json(
         { error: "Admin access required" },
