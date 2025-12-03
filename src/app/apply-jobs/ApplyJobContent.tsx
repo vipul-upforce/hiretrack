@@ -238,7 +238,7 @@ export default function ApplyJobsContent({
     if (user) {
       try {
         if (user.organizationInfo && user.organizationInfo.name) {
-          setOrgName(user.organizationInfo.name);
+          setOrgName(urlOrgName || user.organizationInfo.name);
           setUserLoggedIn(true);
         } else {
           setOrgName(urlOrgName || "");
