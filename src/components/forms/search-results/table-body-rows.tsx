@@ -23,8 +23,9 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { CompactCircularScores } from "@/app/dashboard/jobs/[id]/components/Utils/circular-score";
-import { memo, useCallback, useRef } from "react";
+import { memo, useCallback, useRef, useState, useEffect } from "react";
 import type { Candidate } from "@/types/candidate";
+import { cn } from "@/lib/utils";
 
 interface TableBodyRowsProps {
   candidates: Candidate[];
@@ -89,6 +90,31 @@ export const TableBodyRows = memo(function TableBodyRows({
 }: TableBodyRowsProps) {
   // Track the last mouse event to capture shift key for checkbox clicks
   const lastMouseEventRef = useRef<MouseEvent | null>(null);
+  // Track if Shift key is currently pressed for visual feedback
+  const [isShiftPressed, setIsShiftPressed] = useState(false);
+
+  // Track Shift key state for visual feedback
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Shift") {
+        setIsShiftPressed(true);
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === "Shift") {
+        setIsShiftPressed(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, []);
   const handleViewDetails = useCallback(
     (candidate: Candidate, e: React.MouseEvent) => {
       e.stopPropagation();
@@ -179,22 +205,32 @@ export const TableBodyRows = memo(function TableBodyRows({
                   // Capture shift key early for checkbox clicks
                   lastMouseEventRef.current = e.nativeEvent;
                 }}
+                className="relative"
               >
-                <Checkbox
-                  checked={isSelected}
-                  onCheckedChange={() => {
-                    // Use the stored mouse event to check for shift key
-                    const shiftKey = lastMouseEventRef.current?.shiftKey || false;
-                    onSelectCandidate(candidate._id, shiftKey);
-                    // Clear the ref after use
-                    lastMouseEventRef.current = null;
-                  }}
-                  onClick={(e) => {
-                    // Prevent row click when clicking checkbox
-                    e.stopPropagation();
-                  }}
-                  aria-label={`Select ${candidate.name}`}
-                />
+                <div
+                  className={cn(
+                    "inline-flex items-center justify-center rounded-md p-1 transition-all duration-150",
+                    "hover:ring-2 hover:ring-primary/30 hover:ring-offset-1",
+                    isShiftPressed &&
+                      "ring-2 ring-primary/50 ring-offset-1 bg-primary/5"
+                  )}
+                >
+                  <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={() => {
+                      // Use the stored mouse event to check for shift key
+                      const shiftKey = lastMouseEventRef.current?.shiftKey || false;
+                      onSelectCandidate(candidate._id, shiftKey);
+                      // Clear the ref after use
+                      lastMouseEventRef.current = null;
+                    }}
+                    onClick={(e) => {
+                      // Prevent row click when clicking checkbox
+                      e.stopPropagation();
+                    }}
+                    aria-label={`Select ${candidate.name}`}
+                  />
+                </div>
               </TableCell>
             )}
             {visibleColumns.name && (
