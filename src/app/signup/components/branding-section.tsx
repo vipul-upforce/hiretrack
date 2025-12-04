@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import React from "react";
-import Image from "next/image";
-import { motion } from "framer-motion";
-import { Sparkles } from "lucide-react";
+import React from 'react';
+import Image from 'next/image';
+import { motion } from 'framer-motion';
+import { Sparkles } from 'lucide-react';
 
 interface BrandingSectionProps {
   logoUrl: string;
@@ -13,13 +13,13 @@ interface BrandingSectionProps {
   secondaryColor: string;
 }
 
-export const BrandingSection = ({
+export function BrandingSection({
   logoUrl,
   portalName,
   portalError,
   primaryColor,
   secondaryColor,
-}: BrandingSectionProps) => {
+}: BrandingSectionProps) {
   return (
     <motion.div
       initial={{ opacity: 0, x: -50 }}
@@ -34,7 +34,7 @@ export const BrandingSection = ({
             {logoUrl && (
               <Image
                 src={logoUrl}
-                alt={portalName || (portalError ? "HireTrack" : "")}
+                alt={portalName || (portalError ? 'HireTrack' : '')}
                 fill
                 className="object-contain"
                 priority
@@ -50,8 +50,8 @@ export const BrandingSection = ({
             className="bg-clip-text text-transparent"
             style={{
               background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
-              WebkitBackgroundClip: "text",
-              backgroundClip: "text",
+              WebkitBackgroundClip: 'text',
+              backgroundClip: 'text',
             }}
           >
             Talent Pool
@@ -65,7 +65,7 @@ export const BrandingSection = ({
       </div>
 
       <div className="flex flex-wrap gap-3 justify-center lg:justify-start">
-        {["Fast Apply", "Profile Matching", "Career Growth"].map(
+        {['Fast Apply', 'Profile Matching', 'Career Growth'].map(
           (feature, index) => (
             <motion.div
               key={feature}
@@ -77,9 +77,9 @@ export const BrandingSection = ({
               <Sparkles className="w-4 h-4" style={{ color: primaryColor }} />
               <span className="text-xs sm:text-sm">{feature}</span>
             </motion.div>
-          )
+          ),
         )}
       </div>
     </motion.div>
   );
-};
+}

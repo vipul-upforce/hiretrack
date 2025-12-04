@@ -1,9 +1,9 @@
-import React from "react";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Paperclip, X, Upload } from "lucide-react";
-import { FileAttachment } from "./types";
-import { toast } from "sonner";
+import React from 'react';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Paperclip, X, Upload } from 'lucide-react';
+import { toast } from 'sonner';
+import { FileAttachment } from './types';
 
 interface EmailAttachmentsProps {
   attachments: FileAttachment[];
@@ -20,9 +20,9 @@ export const EmailAttachments: React.FC<EmailAttachmentsProps> = ({
   sending,
 }) => {
   const formatFileSize = (bytes: number): string => {
-    if (bytes < 1024) return bytes + " B";
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -45,7 +45,7 @@ export const EmailAttachments: React.FC<EmailAttachmentsProps> = ({
         file,
         fileName: file.name,
         fileSize: file.size,
-        mimeType: file.type || "application/octet-stream",
+        mimeType: file.type || 'application/octet-stream',
       });
     }
 
@@ -54,7 +54,7 @@ export const EmailAttachments: React.FC<EmailAttachmentsProps> = ({
     }
 
     // Clear the input so the same file can be selected again
-    e.target.value = "";
+    e.target.value = '';
   };
 
   const removeAttachment = (index: number) => {
@@ -62,13 +62,17 @@ export const EmailAttachments: React.FC<EmailAttachmentsProps> = ({
   };
 
   function cn(...classes: (string | boolean | undefined)[]) {
-    return classes.filter(Boolean).join(" ");
+    return classes.filter(Boolean).join(' ');
   }
 
   return (
     <div className="space-y-2">
       <Label>
-        Attachments ({attachments.length}/{MAX_ATTACHMENTS})
+        Attachments (
+        {attachments.length}
+        /
+        {MAX_ATTACHMENTS}
+        )
       </Label>
 
       {attachments.length > 0 && (
@@ -82,7 +86,9 @@ export const EmailAttachments: React.FC<EmailAttachmentsProps> = ({
                 <Paperclip className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm truncate">{att.fileName}</span>
                 <span className="text-xs text-muted-foreground">
-                  ({formatFileSize(att.fileSize)})
+                  (
+                  {formatFileSize(att.fileSize)}
+                  )
                 </span>
               </div>
               <Button
@@ -111,10 +117,10 @@ export const EmailAttachments: React.FC<EmailAttachmentsProps> = ({
         <label
           htmlFor="file-upload"
           className={cn(
-            "inline-flex items-center gap-2 px-4 py-2 border rounded-md cursor-pointer",
-            "hover:bg-accent hover:text-accent-foreground",
-            attachments.length >= MAX_ATTACHMENTS &&
-              "opacity-50 cursor-not-allowed"
+            'inline-flex items-center gap-2 px-4 py-2 border rounded-md cursor-pointer',
+            'hover:bg-accent hover:text-accent-foreground',
+            attachments.length >= MAX_ATTACHMENTS
+              && 'opacity-50 cursor-not-allowed',
           )}
         >
           <Upload className="h-4 w-4" />
@@ -125,4 +131,3 @@ export const EmailAttachments: React.FC<EmailAttachmentsProps> = ({
     </div>
   );
 };
-

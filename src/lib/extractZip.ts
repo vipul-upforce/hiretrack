@@ -1,7 +1,7 @@
-import JSZip from "jszip";
+import JSZip from 'jszip';
 
 export async function extractFromZip(
-  zipBuffer: ArrayBuffer
+  zipBuffer: ArrayBuffer,
 ): Promise<Buffer[]> {
   const zip = new JSZip();
   const contents = await zip.loadAsync(zipBuffer);
@@ -9,9 +9,9 @@ export async function extractFromZip(
 
   for (const [filename, file] of Object.entries(contents.files)) {
     if (!file.dir) {
-      const extension = filename.split(".").pop()?.toLowerCase();
-      if (["pdf", "doc", "docx"].includes(extension || "")) {
-        const content = await file.async("nodebuffer");
+      const extension = filename.split('.').pop()?.toLowerCase();
+      if (['pdf', 'doc', 'docx'].includes(extension || '')) {
+        const content = await file.async('nodebuffer');
         files.push(content);
       }
     }

@@ -1,5 +1,6 @@
-"use client";
-import { Button } from "@/components/ui/button";
+'use client';
+
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -8,23 +9,23 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+} from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Settings, Trash2, Plus } from "lucide-react";
-import { RenderFieldInFilter } from "@/Custom_Fields/Components/CustomFields/RenderFieldInFilter";
-import type { CustomField } from "@/Custom_Fields/Types/CustomField";
-import type { Dayjs } from "dayjs";
-import type { SearchFilter } from "../candidate-search";
-import { useToast } from "@/hooks/use-toast";
+} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Settings, Trash2, Plus } from 'lucide-react';
+import { RenderFieldInFilter } from '@/Custom_Fields/Components/CustomFields/RenderFieldInFilter';
+import type { CustomField } from '@/Custom_Fields/Types/CustomField';
+import type { Dayjs } from 'dayjs';
+import { useToast } from '@/hooks/use-toast';
+import type { SearchFilter } from '../candidate-search';
 
 interface CustomFieldsDialogProps {
   isOpen: boolean;
@@ -59,10 +60,9 @@ export function CustomFieldsDialog({
 
   const removeInvalidFields = () => {
     const valid = cols.filter(
-      (col) =>
-        typeof col.fieldId === "string" &&
-        col.fieldId.trim() !== "" &&
-        col.value !== ""
+      (col) => typeof col.fieldId === 'string'
+        && col.fieldId.trim() !== ''
+        && col.value !== '',
     );
 
     setCols(valid);
@@ -104,7 +104,7 @@ export function CustomFieldsDialog({
             <div className="grid grid-cols-[200px_1fr_2px_0px] gap-4 mb-4">
               <Label className="font-semibold">Field</Label>
               <Label className="font-semibold">Value</Label>
-              <div></div>
+              <div />
             </div>
 
             <div className="space-y-4 p-2">
@@ -124,12 +124,10 @@ export function CustomFieldsDialog({
                     <Select
                       key={index}
                       value={col.fieldId as string}
-                      onValueChange={(fieldId) =>
-                        updateSelectedMetaFields(
+                      onValueChange={(fieldId) => updateSelectedMetaFields(
                           fieldId as string,
-                          col.id as string
-                        )
-                      }
+                          col.id as string,
+                      )}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select field" />
@@ -137,7 +135,7 @@ export function CustomFieldsDialog({
                       <SelectContent>
                         {metaFields?.map((field) => (
                           <SelectItem key={field.id} value={field.id}>
-                            {field.label.split(" |||||(")[0]}
+                            {field.label.split(' |||||(')[0]}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -157,12 +155,8 @@ export function CustomFieldsDialog({
                             | [Dayjs, Dayjs]
                             | undefined
                         }
-                        onChange={(value) =>
-                          updateColValue(col.id as string, value as string)
-                        }
-                        onBlur={(value) =>
-                          updateColValue(col.id as string, value as string)
-                        }
+                        onChange={(value) => updateColValue(col.id as string, value as string)}
+                        onBlur={(value) => updateColValue(col.id as string, value as string)}
                       />
                     </div>
                     <Button
@@ -190,44 +184,45 @@ export function CustomFieldsDialog({
                 ...cols,
                 {
                   id: Math.random().toString(),
-                  fieldId: "",
-                  value: "",
-                  type: "",
+                  fieldId: '',
+                  value: '',
+                  type: '',
                 },
               ]);
             }}
           >
-            Add Fields <Plus className="h-4 w-4" />
+            Add Fields
+            {' '}
+            <Plus className="h-4 w-4" />
           </Button>
           <Button
             type="button"
             variant="outline"
             onClick={() => {
               const hasInvalid = cols.some(
-                (col) =>
-                  !col.fieldId ||
-                  (typeof col.fieldId === "string" &&
-                    col.fieldId.trim() === "") ||
-                  col.value === "" ||
-                  col.value === undefined
+                (col) => !col.fieldId
+                  || (typeof col.fieldId === 'string'
+                    && col.fieldId.trim() === '')
+                  || col.value === ''
+                  || col.value === undefined,
               );
 
               if (hasInvalid) {
                 toast({
-                  variant: "destructive",
-                  title: "Incomplete Filter",
-                  description: "Please choose both a field and a value.",
+                  variant: 'destructive',
+                  title: 'Incomplete Filter',
+                  description: 'Please choose both a field and a value.',
                 });
                 return;
               }
 
               const trimmedValues = {
                 ...values,
-                name: values.name?.trim() || "",
-                location: values.location?.trim() || "",
+                name: values.name?.trim() || '',
+                location: values.location?.trim() || '',
                 customFields: values.customFields,
-                createdAfter: values.createdAfter || "",
-                createdBefore: values.createdBefore || "",
+                createdAfter: values.createdAfter || '',
+                createdBefore: values.createdBefore || '',
               };
 
               handleSearch(trimmedValues);
@@ -242,7 +237,7 @@ export function CustomFieldsDialog({
             variant="outline"
             onClick={() => {
               setCols([]);
-              setFieldValue("customFields", {});
+              setFieldValue('customFields', {});
             }}
             disabled={cols.length === 0}
           >

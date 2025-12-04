@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { LogFileList } from "./components/log-file-list";
-import { LogViewerControls } from "./components/log-viewer-controls";
-import { LogViewer } from "./components/log-viewer";
-import { useLogViewerLogic, LogType } from "./hooks/use-log-viewer-logic";
-import { SystemLogsResponse } from "./types";
-import NginxLogsSkeleton from "./components/logs-skeleton";
+import { LogFileList } from './components/log-file-list';
+import { LogViewerControls } from './components/log-viewer-controls';
+import { LogViewer } from './components/log-viewer';
+import { useLogViewerLogic, LogType } from './hooks/use-log-viewer-logic';
+import { SystemLogsResponse } from './types';
+import NginxLogsSkeleton from './components/logs-skeleton';
 
 interface SystemLogViewerProps extends SystemLogsResponse {
   logType: LogType;
@@ -74,7 +74,11 @@ export function SystemLogViewer(props: SystemLogViewerProps) {
             </>
           ) : (
             <div className="text-gray-500 dark:text-gray-400 text-sm flex-1 flex items-center justify-center">
-              Select a {props.logType.toUpperCase()} log file to view its
+              Select a
+              {' '}
+              {props.logType.toUpperCase()}
+              {' '}
+              log file to view its
               contents.
             </div>
           )}

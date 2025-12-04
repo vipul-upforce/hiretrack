@@ -1,10 +1,10 @@
-import { Button } from "@/components/ui/button";
-import { Calendar, Eye } from "lucide-react";
+import { Button } from '@/components/ui/button';
+import { Calendar, Eye } from 'lucide-react';
 import {
   formatDate,
   formatTime,
-} from "@/app/dashboard/jobs/[id]/hooks/dateTimeFormatting";
-import { LogEntry } from "../types";
+} from '@/app/dashboard/jobs/[id]/hooks/dateTimeFormatting';
+import { LogEntry } from '../types';
 
 interface LogsMobileListProps {
   logs: LogEntry[];
@@ -30,12 +30,12 @@ export function LogsMobileList({
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="font-medium text-pretty">{renderTitle(log)}</div>
-              {log.note?.description &&
-                typeof log.note.description === "string" && (
+              {log.note?.description
+                && typeof log.note.description === 'string' && (
                   <div className="text-xs text-muted-foreground line-clamp-2 mt-1">
                     {log.note.description}
                   </div>
-                )}
+              )}
             </div>
             <Button
               variant="ghost"
@@ -54,20 +54,20 @@ export function LogsMobileList({
             <div className="flex flex-col">
               <span className="text-xs text-muted-foreground">Candidate</span>
               <span className="font-medium truncate">
-                {log.candidateData?.name || "Unknown"}
+                {log.candidateData?.name || 'Unknown'}
               </span>
               <span className="text-xs text-muted-foreground truncate">
-                {log.candidateData?.email || "—"}
+                {log.candidateData?.email || '—'}
               </span>
             </div>
 
             <div className="flex flex-col">
               <span className="text-xs text-muted-foreground">Job</span>
               <span className="font-medium truncate">
-                {log.jobData?.title || "—"}
+                {log.jobData?.title || '—'}
               </span>
               <span className="text-xs text-muted-foreground truncate">
-                {(log.jobData?.skills || []).slice(0, 3).join(", ") || "—"}
+                {(log.jobData?.skills || []).slice(0, 3).join(', ') || '—'}
               </span>
             </div>
 

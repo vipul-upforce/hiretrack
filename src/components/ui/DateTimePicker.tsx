@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { DatePicker } from "./date-picker";
-import type { Dayjs } from "dayjs";
-import dayjs from "dayjs";
+import * as React from 'react';
+import type { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
+import { DatePicker } from './date-picker';
 
 export function DateTimePicker({
   value,
   onChange,
   onBlur,
-  placeholder = "MM/DD/YYYY hh:mm aa",
+  placeholder = 'MM/DD/YYYY hh:mm aa',
   allowClear = true,
   portalContainer,
 }: {
@@ -22,10 +22,7 @@ export function DateTimePicker({
 }) {
   // Convert Dayjs to Date for the new DatePicker
   // const dateValue = value ? value.toDate() : null;
-  const dateValue = React.useMemo(() => {
-    return value ? value.toDate() : null;
-  }, [value?.valueOf()]); // Use valueOf() to compare actual timestamp
-
+  const dateValue = React.useMemo(() => (value ? value.toDate() : null), [value?.valueOf()]); // Use valueOf() to compare actual timestamp
 
   // const handleDateChange = (date: any) => {
   //   let normalizedDate: Date | null = null;
@@ -49,8 +46,8 @@ export function DateTimePicker({
   const handleDateChange = React.useCallback((date: any) => {
     let normalizedDate: Date | null = null;
 
-    if (date && typeof date === "object") {
-      if ("toDate" in date) {
+    if (date && typeof date === 'object') {
+      if ('toDate' in date) {
         normalizedDate = date.toDate();
       } else if (date instanceof Date) {
         normalizedDate = date;
@@ -58,8 +55,8 @@ export function DateTimePicker({
     }
 
     // Convert to Dayjs
-    const newDayjsValue = normalizedDate && !isNaN(normalizedDate.getTime()) 
-      ? dayjs(normalizedDate) 
+    const newDayjsValue = normalizedDate && !isNaN(normalizedDate.getTime())
+      ? dayjs(normalizedDate)
       : null;
 
     // Only call onChange if the value actually changed
@@ -76,8 +73,8 @@ export function DateTimePicker({
       value={dateValue}
       onChange={handleDateChange}
       placeholder={placeholder}
-      showTimePicker={true}
-      showNowButton={true}
+      showTimePicker
+      showNowButton
       timePickerPosition="right"
       format="MM/DD/YYYY hh:mm A"
     />

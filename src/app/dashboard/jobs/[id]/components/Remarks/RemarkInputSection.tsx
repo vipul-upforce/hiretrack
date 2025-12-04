@@ -1,14 +1,14 @@
-import { MentionTextarea } from "@/components/ui/mention-textarea";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Eye, EyeOff } from "lucide-react";
-import Rating from "@mui/material/Rating";
+import { MentionTextarea } from '@/components/ui/mention-textarea';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Eye, EyeOff } from 'lucide-react';
+import Rating from '@mui/material/Rating';
 
-import { User } from "@/lib/features/users/usersApi";
-import { Candidate } from "@/types/candidate";
-import { Checkbox } from "@/components/ui/checkbox";
-import { useState } from "react";
+import { User } from '@/lib/features/users/usersApi';
+import { Candidate } from '@/types/candidate';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useState } from 'react';
 
 interface RemarkInputSectionProps {
   newRemark: string;
@@ -39,11 +39,10 @@ export default function RemarkInputSection({
   localCandidate,
   handleRemoveFollowUp,
 }: RemarkInputSectionProps) {
-  const hasFollowUp =
-    localCandidate?.followUp?.note && localCandidate?.followUp?.note.length > 0;
+  const hasFollowUp = localCandidate?.followUp?.note && localCandidate?.followUp?.note.length > 0;
   const [removeFU, setRemoveFU] = useState(false);
   const handleFollowUpCheckboxChange = (
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     if (event.target.checked && hasFollowUp) {
       // handleRemoveFollowUp();
@@ -61,15 +60,15 @@ export default function RemarkInputSection({
           value={newRemark}
           onChange={setNewRemark}
           onKeyDown={(e) => {
-            if (e.altKey && e.key === "Enter") {
+            if (e.altKey && e.key === 'Enter') {
               e.preventDefault();
               if (newRemark.trim() && !isRemarkSubmitting) {
                 handleAddRemark();
               }
             }
           }}
-          organizationId={String(user?.organizationId) || ""}
-          currentUserRole={user?.role || ""}
+          organizationId={String(user?.organizationId) || ''}
+          currentUserRole={user?.role || ''}
           rows={3}
         />
         <div className="flex justify-between items-center">
@@ -79,24 +78,24 @@ export default function RemarkInputSection({
               name="half-rating"
               value={remarkRating}
               onChange={(e, value) => {
-                setRemarkRating(value ? value : null);
-                setRemarkRatingHistory(value ? value : null);
+                setRemarkRating(value || null);
+                setRemarkRatingHistory(value || null);
               }}
               defaultValue={0}
               precision={0.5}
               sx={{
-                "& .MuiRating-iconEmpty": {
-                  color: "rgb(156 163 175)", // gray-400 for light mode
+                '& .MuiRating-iconEmpty': {
+                  color: 'rgb(156 163 175)', // gray-400 for light mode
                 },
-                "& .MuiRating-iconFilled": {
-                  color: "#f59e0b", // amber-500
+                '& .MuiRating-iconFilled': {
+                  color: '#f59e0b', // amber-500
                 },
-                "& .MuiRating-iconHover": {
-                  color: "#d97706", // amber-600
+                '& .MuiRating-iconHover': {
+                  color: '#d97706', // amber-600
                 },
-                "@media (prefers-color-scheme: dark)": {
-                  "& .MuiRating-iconEmpty": {
-                    color: "rgb(156 163 175)", // gray-400 for dark mode
+                '@media (prefers-color-scheme: dark)': {
+                  '& .MuiRating-iconEmpty': {
+                    color: 'rgb(156 163 175)', // gray-400 for dark mode
                   },
                 },
               }}
@@ -104,29 +103,27 @@ export default function RemarkInputSection({
           </div>
           <div className="flex flex-row items-center justify-evenly">
             <div className="flex items-center justify-between px-2 py-2">
-              {(user?.role === "admin" || user?.role === "hr") &&
-                hasFollowUp && (
-                  <>
-                    <div className="flex flex-row items-center justify-center space-x-2">
-                      <Checkbox
-                        onCheckedChange={(checked) => {
-                          if (checked && hasFollowUp) {
-                            setRemoveFU(true);
-                          } else {
-                            setRemoveFU(false);
-                          }
-                        }}
-                        aria-label="Remove follow-up"
-                      />
-                      <Label htmlFor="followup-checkbox" className="text-sm">
-                        Remove Follow-up
-                      </Label>
-                    </div>
-                  </>
-                )}
+              {(user?.role === 'admin' || user?.role === 'hr')
+                && hasFollowUp && (
+                  <div className="flex flex-row items-center justify-center space-x-2">
+                    <Checkbox
+                      onCheckedChange={(checked) => {
+                        if (checked && hasFollowUp) {
+                          setRemoveFU(true);
+                        } else {
+                          setRemoveFU(false);
+                        }
+                      }}
+                      aria-label="Remove follow-up"
+                    />
+                    <Label htmlFor="followup-checkbox" className="text-sm">
+                      Remove Follow-up
+                    </Label>
+                  </div>
+              )}
             </div>
             <div className="flex items-center justify-between px-2 py-2">
-              {(user?.role === "admin" || user?.role === "hr") && (
+              {(user?.role === 'admin' || user?.role === 'hr') && (
                 <>
                   <div className="flex items-center space-x-2">
                     {isSubRemarkPrivate ? (
@@ -138,15 +135,13 @@ export default function RemarkInputSection({
                       htmlFor="privacy-toggle"
                       className="text-sm text-gray-700 dark:text-gray-300"
                     >
-                      {isSubRemarkPrivate ? "Private" : "Public"}
+                      {isSubRemarkPrivate ? 'Private' : 'Public'}
                     </Label>
                   </div>
                   <Switch
                     id="privacy-toggle-submit"
                     checked={isSubRemarkPrivate}
-                    onCheckedChange={() =>
-                      setIsSubRemarkPrivate(!isSubRemarkPrivate)
-                    }
+                    onCheckedChange={() => setIsSubRemarkPrivate(!isSubRemarkPrivate)}
                     className="w-8 h-4 drop-shadow-lg border border-1 border-solid ml-2"
                   />
                 </>
@@ -161,7 +156,7 @@ export default function RemarkInputSection({
               }}
               disabled={isRemarkSubmitting}
             >
-              {isRemarkSubmitting ? "Submitting..." : "Add Remark"}
+              {isRemarkSubmitting ? 'Submitting...' : 'Add Remark'}
             </Button>
           </div>
         </div>

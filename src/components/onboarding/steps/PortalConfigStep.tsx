@@ -1,17 +1,19 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import React, { useState, useEffect } from 'react';
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Globe,
   ExternalLink,
   Settings,
   CheckCircle2,
   XCircle,
-} from "lucide-react";
-import { useOnboarding } from "../OnboardingProvider";
+} from 'lucide-react';
+import { useOnboarding } from '../OnboardingProvider';
 
 const PortalConfigStep: React.FC = () => {
   const [isConfigured, setIsConfigured] = useState(false);
@@ -25,10 +27,10 @@ const PortalConfigStep: React.FC = () => {
   const checkConfiguration = async () => {
     try {
       setIsChecking(true);
-      const isValid = await validateStep("portal");
+      const isValid = await validateStep('portal');
       setIsConfigured(isValid);
     } catch (error) {
-      console.error("Error checking portal configuration:", error);
+      console.error('Error checking portal configuration:', error);
       setIsConfigured(false);
     } finally {
       setIsChecking(false);
@@ -36,14 +38,14 @@ const PortalConfigStep: React.FC = () => {
   };
 
   const handleConfigurePortal = () => {
-    window.open("/dashboard/settings/portal", "_blank");
+    window.open('/dashboard/settings/portal', '_blank');
   };
 
   const configurationItems = [
-    "Company/Portal name",
-    "Custom logo and favicon",
-    "Brand colors and theme",
-    "Custom header/footer content",
+    'Company/Portal name',
+    'Custom logo and favicon',
+    'Brand colors and theme',
+    'Custom header/footer content',
   ];
 
   return (
@@ -65,7 +67,7 @@ const PortalConfigStep: React.FC = () => {
 
       {/* Status Card */}
       <Card
-        className={`border-2 ${isConfigured ? "border-green-500/30 bg-green-50/50 dark:border-green-500/20 dark:bg-green-900/10" : "border-border"}`}
+        className={`border-2 ${isConfigured ? 'border-green-500/30 bg-green-50/50 dark:border-green-500/20 dark:bg-green-900/10' : 'border-border'}`}
       >
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
@@ -80,14 +82,14 @@ const PortalConfigStep: React.FC = () => {
               )}
             </CardTitle>
             <Badge
-              variant={isConfigured ? "default" : "secondary"}
+              variant={isConfigured ? 'default' : 'secondary'}
               className={
                 isConfigured
-                  ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                  : ""
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                  : ''
               }
             >
-              {isConfigured ? "Configured" : "Not Set"}
+              {isConfigured ? 'Configured' : 'Not Set'}
             </Badge>
           </div>
         </CardHeader>
@@ -126,7 +128,7 @@ const PortalConfigStep: React.FC = () => {
                 onClick={checkConfiguration}
                 disabled={isChecking}
               >
-                {isChecking ? "Checking..." : "Refresh Status"}
+                {isChecking ? 'Checking...' : 'Refresh Status'}
               </Button>
             </div>
           </div>

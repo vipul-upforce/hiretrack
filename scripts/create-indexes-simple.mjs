@@ -11,7 +11,7 @@ async function createIndexes() {
   try {
     console.log('🔄 Connecting to database...');
     const connection = await connectToDatabase();
-    const db = connection.connection.db;
+    const {db} = connection.connection;
     
     console.log('✅ Connected to database');
     

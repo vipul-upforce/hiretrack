@@ -1,16 +1,16 @@
-import React from "react";
-import { FileText, Send } from "lucide-react";
+import React from 'react';
+import { FileText, Send } from 'lucide-react';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import { EmailTemplate } from "../types";
-import { templateVariables } from "../constants";
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import { EmailTemplate } from '../types';
+import { templateVariables } from '../constants';
 
 interface TemplateSidebarProps {
   currentTemplate: EmailTemplate;
@@ -25,7 +25,7 @@ export const TemplateSidebar: React.FC<TemplateSidebarProps> = ({
 
   const copyToClipboard = (variable: string) => {
     navigator.clipboard.writeText(`{{${variable}}}`);
-    toast.success("Variable copied to clipboard");
+    toast.success('Variable copied to clipboard');
   };
 
   return (
@@ -74,8 +74,8 @@ export const TemplateSidebar: React.FC<TemplateSidebarProps> = ({
             <div className="font-medium">Template Usage</div>
             <div className="text-muted-foreground mt-1">
               {currentTemplate.isDefault
-                ? "This template is automatically sent when candidates apply for positions."
-                : "This is a custom template for manual emails to candidates."}
+                ? 'This template is automatically sent when candidates apply for positions.'
+                : 'This is a custom template for manual emails to candidates.'}
             </div>
           </div>
           <div>

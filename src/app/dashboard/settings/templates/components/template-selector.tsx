@@ -1,16 +1,16 @@
-import React from "react";
-import { Plus, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import React from 'react';
+import { Plus, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { EmailTemplate } from "../types";
+} from '@/components/ui/select';
+import { EmailTemplate } from '../types';
 
 interface TemplateSelectorProps {
   templates: EmailTemplate[];

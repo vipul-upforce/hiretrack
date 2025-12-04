@@ -1,24 +1,26 @@
-"use client";
+'use client';
 
-import { Draggable, DraggableProvided } from "@hello-pangea/dnd";
-import { Candidate } from "@/types/candidate";
-import { useEffect, useRef, useState, memo, useCallback, useMemo } from "react";
-import dayjs from "dayjs";
-import { useSelector } from "react-redux";
-import { User } from "@/lib/features/users/usersApi";
-import { useToast } from "@/hooks/use-toast";
-import { useRemarkHandlers } from "../../hooks/useRemarkHandlers";
-import { useUnassignHandlers } from "../../hooks/useUnassignHandlers";
-import { cn } from "@/lib/utils";
-import { followUpSepretorPatternRegex } from "@/lib/constants";
-import { CandidateCardHeader } from "./CandidateCardHeader";
-import { CandidateCardFollowUp } from "./CandidateCardFollowUp";
-import { CandidateCardInfo } from "./CandidateCardInfo";
-import { CandidateCardSkills } from "./CandidateCardSkills";
-import { CandidateCardCustomFields } from "./CandidateCardCustomFields";
-import { CandidateCardScores } from "./CandidateCardScores";
-import { CandidateCardAssignment } from "./CandidateCardAssignment";
-import { CandidateCardDialogs } from "./CandidateCardDialogs";
+import { Draggable, DraggableProvided } from '@hello-pangea/dnd';
+import { Candidate } from '@/types/candidate';
+import {
+  useEffect, useRef, useState, memo, useCallback, useMemo,
+} from 'react';
+import dayjs from 'dayjs';
+import { useSelector } from 'react-redux';
+import { User } from '@/lib/features/users/usersApi';
+import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
+import { followUpSepretorPatternRegex } from '@/lib/constants';
+import { useRemarkHandlers } from '../../hooks/useRemarkHandlers';
+import { useUnassignHandlers } from '../../hooks/useUnassignHandlers';
+import { CandidateCardHeader } from './CandidateCardHeader';
+import { CandidateCardFollowUp } from './CandidateCardFollowUp';
+import { CandidateCardInfo } from './CandidateCardInfo';
+import { CandidateCardSkills } from './CandidateCardSkills';
+import { CandidateCardCustomFields } from './CandidateCardCustomFields';
+import { CandidateCardScores } from './CandidateCardScores';
+import { CandidateCardAssignment } from './CandidateCardAssignment';
+import { CandidateCardDialogs } from './CandidateCardDialogs';
 
 interface CandidateCardProps {
   candidate: Candidate;
@@ -38,7 +40,7 @@ interface CandidateCardProps {
   onAddRemarkClick?: (candidate: Candidate) => void;
 }
 
-const CandidateCard = memo(function CandidateCard({
+const CandidateCard = memo(({
   candidate,
   index,
   onViewDetails,
@@ -54,7 +56,7 @@ const CandidateCard = memo(function CandidateCard({
   onFollowUpClick,
   onAddRemarkClick,
   isPending = false,
-}: CandidateCardProps) {
+}: CandidateCardProps) => {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const { user } = useSelector((state: any) => state.auth || {});
   const [removeFUOpen, setRemoveFUOpenLocal] = useState(false);
@@ -109,7 +111,7 @@ const CandidateCard = memo(function CandidateCard({
     async () => refetch(),
     undefined,
     undefined,
-    undefined
+    undefined,
   );
 
   const { isLoading, handleUnassign, confirmUnassign } = useUnassignHandlers(
@@ -119,10 +121,9 @@ const CandidateCard = memo(function CandidateCard({
     () => {},
     () => {},
     undefined,
-    undefined
+    undefined,
   );
-  const [candidateToAssignJob, setCandidateToAssignJob] =
-    useState<Candidate | null>(null);
+  const [candidateToAssignJob, setCandidateToAssignJob] = useState<Candidate | null>(null);
   const [isAssignJobOpen, setIsAssignJobOpen] = useState(false);
   const onAddRemarkOpenChange = () => {
     // debugger;
@@ -137,9 +138,9 @@ const CandidateCard = memo(function CandidateCard({
 
       if (!localCandidate.assignment?.googleMeet?.eventId) {
         toast({
-          title: "Sync Failed",
-          description: "No event ID found for this meeting.",
-          variant: "destructive",
+          title: 'Sync Failed',
+          description: 'No event ID found for this meeting.',
+          variant: 'destructive',
         });
         return;
       }
@@ -147,10 +148,10 @@ const CandidateCard = memo(function CandidateCard({
       setIsSyncing(true);
 
       try {
-        const response = await fetch("/api/google-calendar/sync-event", {
-          method: "POST",
+        const response = await fetch('/api/google-calendar/sync-event', {
+          method: 'POST',
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             candidateId: localCandidate._id,
@@ -176,35 +177,34 @@ const CandidateCard = memo(function CandidateCard({
           }
 
           toast({
-            title: "Sync Successful",
+            title: 'Sync Successful',
             description:
               syncData.data.notificationsSent > 0
                 ? `Updated attendee responses. ${syncData.data.notificationsSent} notifications sent.`
                 : syncData.data.changesDetected
-                  ? "Attendee responses updated successfully."
-                  : "Attendee responses are up to date.",
+                  ? 'Attendee responses updated successfully.'
+                  : 'Attendee responses are up to date.',
           });
         } else {
-          throw new Error("Sync failed");
+          throw new Error('Sync failed');
         }
       } catch (error) {
-        console.error("Sync error:", error);
+        console.error('Sync error:', error);
         toast({
-          title: "Sync Failed",
-          description: "Unable to sync attendee responses. Please try again.",
-          variant: "destructive",
+          title: 'Sync Failed',
+          description: 'Unable to sync attendee responses. Please try again.',
+          variant: 'destructive',
         });
       } finally {
         setIsSyncing(false);
       }
     },
-    [localCandidate._id, localCandidate.assignment?.googleMeet?.eventId, toast]
+    [localCandidate._id, localCandidate.assignment?.googleMeet?.eventId, toast],
   );
 
   // Calculate average score across all categories - memoized for performance
   const { averageScore, showStar, showRedFlag } = useMemo(() => {
-    if (!localCandidate.scores)
-      return { averageScore: 0, showStar: false, showRedFlag: false };
+    if (!localCandidate.scores) return { averageScore: 0, showStar: false, showRedFlag: false };
 
     const scores = [
       localCandidate.scores.overall,
@@ -213,8 +213,7 @@ const CandidateCard = memo(function CandidateCard({
       localCandidate.scores.affordability,
     ].filter((score) => score !== undefined && score >= 0);
 
-    if (scores.length === 0)
-      return { averageScore: 0, showStar: false, showRedFlag: false };
+    if (scores.length === 0) return { averageScore: 0, showStar: false, showRedFlag: false };
 
     const avg = scores.reduce((sum, score) => sum + score, 0) / scores.length;
     return {
@@ -230,49 +229,47 @@ const CandidateCard = memo(function CandidateCard({
       try {
         await navigator.clipboard.writeText(text);
         toast({
-          title: "Copied!",
+          title: 'Copied!',
           description: `${label} copied to clipboard`,
           duration: 2000,
         });
       } catch (err) {
         toast({
-          title: "Failed to copy",
-          description: "Could not copy to clipboard",
-          variant: "destructive",
+          title: 'Failed to copy',
+          description: 'Could not copy to clipboard',
+          variant: 'destructive',
           duration: 2000,
         });
       }
     },
-    [toast]
+    [toast],
   );
 
   useEffect(() => {
     if (isAddingFollowUp) {
       console.log(
         localCandidate?.followUp?.note,
-        "localCandidate?.followUp?.note"
+        'localCandidate?.followUp?.note',
       );
 
       const parts = localCandidate?.followUp?.note
         ? localCandidate.followUp.note
-            .split(followUpSepretorPatternRegex)
-            .map((p) => p.trim())
-            .filter(Boolean)
+          .split(followUpSepretorPatternRegex)
+          .map((p) => p.trim())
+          .filter(Boolean)
         : [];
-      console.log(parts, "Parts --=  ");
+      console.log(parts, 'Parts --=  ');
 
       const followUpParts = parts.filter((p) => {
-        if (p.endsWith("has completed the last step.")) {
+        if (p.endsWith('has completed the last step.')) {
           setMADFollowup(p);
           return false;
-        } else {
-          return true;
         }
+        return true;
       });
 
       // use the most recent follow-up note for editing, or empty string
-      const userNote =
-        followUpParts.length > 0 ? followUpParts[followUpParts.length - 1] : "";
+      const userNote = followUpParts.length > 0 ? followUpParts[followUpParts.length - 1] : '';
       setNewFollowUp(userNote);
 
       if (localCandidate?.followUp?.date) {
@@ -369,7 +366,7 @@ const CandidateCard = memo(function CandidateCard({
       copyToClipboard,
       isSyncing,
       handleSyncAttendeeResponses,
-    ]
+    ],
   );
 
   return (
@@ -377,24 +374,24 @@ const CandidateCard = memo(function CandidateCard({
       {onDashboard ? (
         <div
           className={cn(
-            "bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg p-4 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 h-full hover:border-gray-300 dark:hover:border-gray-700 w-[420px] flex-shrink-0",
-            className
+            'bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg p-4 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 h-full hover:border-gray-300 dark:hover:border-gray-700 w-[420px] flex-shrink-0',
+            className,
           )}
           onClick={useCallback(
             (e) => {
               // Check if click target is a button or inside a dropdown/interactive element
               const target = e.target as HTMLElement;
               if (
-                target.closest("button") ||
-                target.closest('[role="menuitem"]') ||
-                target.closest("[data-radix-collection-item]") ||
-                target.closest("[data-radix-popper-content]") ||
-                target.closest("[data-state]") ||
-                target.closest(
-                  ".cursor-pointer:not(.bg-white):not(.dark\\:bg-black)"
-                ) ||
-                target.closest("a") ||
-                target.tagName === "BUTTON"
+                target.closest('button')
+                || target.closest('[role="menuitem"]')
+                || target.closest('[data-radix-collection-item]')
+                || target.closest('[data-radix-popper-content]')
+                || target.closest('[data-state]')
+                || target.closest(
+                  '.cursor-pointer:not(.bg-white):not(.dark\\:bg-black)',
+                )
+                || target.closest('a')
+                || target.tagName === 'BUTTON'
               ) {
                 return; // Don't open details if clicking on interactive elements
               }
@@ -402,7 +399,7 @@ const CandidateCard = memo(function CandidateCard({
               // Always open details when clicking on card content
               onViewDetails(localCandidate);
             },
-            [onViewDetails, localCandidate]
+            [onViewDetails, localCandidate],
           )}
         >
           {renderCardContent}
@@ -415,9 +412,9 @@ const CandidateCard = memo(function CandidateCard({
               {...provided.draggableProps}
               {...provided.dragHandleProps}
               className={cn(
-                "bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg p-4 shadow-sm cursor-grab active:cursor-grabbing relative overflow-visible hover:shadow-md transition-all duration-200 hover:border-gray-300 dark:hover:border-gray-700",
-                isPending && "opacity-50",
-                className
+                'bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg p-4 shadow-sm cursor-grab active:cursor-grabbing relative overflow-visible hover:shadow-md transition-all duration-200 hover:border-gray-300 dark:hover:border-gray-700',
+                isPending && 'opacity-50',
+                className,
               )}
               onClick={useCallback(
                 (e) => {
@@ -427,16 +424,16 @@ const CandidateCard = memo(function CandidateCard({
                   // Check if click target is a button or inside a dropdown/interactive element
                   const target = e.target as HTMLElement;
                   if (
-                    target.closest("button") ||
-                    target.closest('[role="menuitem"]') ||
-                    target.closest("[data-radix-collection-item]") ||
-                    target.closest("[data-radix-popper-content]") ||
-                    target.closest("[data-state]") ||
-                    target.closest(
-                      ".cursor-pointer:not(.bg-white):not(.dark\\:bg-black)"
-                    ) ||
-                    target.closest("a") ||
-                    target.tagName === "BUTTON"
+                    target.closest('button')
+                    || target.closest('[role="menuitem"]')
+                    || target.closest('[data-radix-collection-item]')
+                    || target.closest('[data-radix-popper-content]')
+                    || target.closest('[data-state]')
+                    || target.closest(
+                      '.cursor-pointer:not(.bg-white):not(.dark\\:bg-black)',
+                    )
+                    || target.closest('a')
+                    || target.tagName === 'BUTTON'
                   ) {
                     return; // Don't open details if clicking on interactive elements
                   }
@@ -444,7 +441,7 @@ const CandidateCard = memo(function CandidateCard({
                   // Always open details when clicking on card content
                   onViewDetails(localCandidate);
                 },
-                [onViewDetails, localCandidate]
+                [onViewDetails, localCandidate],
               )}
             >
               {renderCardContent}

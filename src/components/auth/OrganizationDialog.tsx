@@ -1,16 +1,16 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Label } from "@radix-ui/react-label";
-import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Label } from '@radix-ui/react-label';
+import { LoginFormValues } from '@/types/login';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 // import { LoginFormValues } from "@/app/auth/login/page";
-import { LoginFormValues } from "@/types/login";
 
 export interface OneOfMulOrganization {
   orgId: string;
@@ -31,7 +31,7 @@ const OrganizationDialog: React.FC<OrganizationDialogProps> = ({
   setSelectedOrgId,
 }) => {
   const [loadingOrg, setLoadingOrg] = useState<string | null>(null);
-  const [selectedOrgId, setSelectedOrgIdLocal] = useState<string>("");
+  const [selectedOrgId, setSelectedOrgIdLocal] = useState<string>('');
 
   const handleContinue = () => {
     // debugger;
@@ -54,7 +54,7 @@ const OrganizationDialog: React.FC<OrganizationDialogProps> = ({
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           <Label>Select your organization</Label>
-          <hr></hr>
+          <hr />
           <div className="space-y-2 max-h-[40vh] overflow-y-auto">
             <RadioGroup
               value={selectedOrgId}
@@ -67,7 +67,7 @@ const OrganizationDialog: React.FC<OrganizationDialogProps> = ({
                   onClick={() => setSelectedOrgIdLocal(org.orgId)}
                   className={`flex items-center space-x-3 p-3 border rounded-md cursor-pointer 
                               hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors 
-                              ${selectedOrgId === org.orgId ? "border-primary" : ""}`}
+                              ${selectedOrgId === org.orgId ? 'border-primary' : ''}`}
                 >
                   <RadioGroupItem
                     value={org.orgId}
@@ -83,7 +83,7 @@ const OrganizationDialog: React.FC<OrganizationDialogProps> = ({
                       {org.name}
                     </Label>
                     <span className="text-xs text-gray-500">
-                      {org.isCandidate ? "Candidate Account" : "User Account"}
+                      {org.isCandidate ? 'Candidate Account' : 'User Account'}
                     </span>
                   </div>
                 </div>
@@ -106,7 +106,7 @@ const OrganizationDialog: React.FC<OrganizationDialogProps> = ({
               onClick={handleContinue}
               disabled={!!loadingOrg || !selectedOrgId}
             >
-              {loadingOrg ? "Selecting..." : "Continue"}
+              {loadingOrg ? 'Selecting...' : 'Continue'}
             </Button>
           </div>
         </div>

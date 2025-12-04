@@ -1,22 +1,20 @@
-import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { History, Organization } from "@/lib/mongodb";
-import { Candidate } from "@/lib/mongodb";
-import { handleCustomFieldFiles, handleSingleFile } from "@/lib/fileUtils";
-import { handleFileAttachments } from "@/lib/fileUtils";
-import mongoose from "mongoose";
-import { Job } from "@/lib/mongodb"; // Add import for Job model
-import { Attachment } from "../route";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { History, Organization, Candidate } from '@/lib/mongodb';
+import { handleCustomFieldFiles, handleSingleFile, handleFileAttachments } from '@/lib/fileUtils';
+import mongoose from 'mongoose';
+import { Job } from '@/lib/mongodb'; // Add import for Job model
 import {
   validateInput,
   VALIDATION_PATTERNS,
   MAX_LENGTHS,
   sanitizeString,
-} from "@/lib/inputValidation";
-import { NotificationService } from "@/lib/notifications/notificationService";
+} from '@/lib/inputValidation';
+import { NotificationService } from '@/lib/notifications/notificationService';
 // import { sendSmartNotification } from "@/lib/unifiedEmailService";
-import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
-import { NotificationType } from "@/lib/services/emailDecisionEngine";
-import { sendSmartNotification } from "@/lib/unifiedEmailService";
+import { getMappedEmailTemplate } from '@/app/actions/getMappedEmailTemplate';
+import { NotificationType } from '@/lib/services/emailDecisionEngine';
+import { sendSmartNotification } from '@/lib/unifiedEmailService';
+import { Attachment } from '../route';
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,49 +25,47 @@ export async function POST(request: NextRequest) {
     const validation = validateInput(data, {
       jobId: {
         required: true,
-        type: "object",
-        customValidator: (value) => {
-          return (
-            value &&
-            typeof value._id === "string" &&
-            /^[0-9a-fA-F]{24}$/.test(value._id)
-          );
-        },
+        type: 'object',
+        customValidator: (value) => (
+          value
+            && typeof value._id === 'string'
+            && /^[0-9a-fA-F]{24}$/.test(value._id)
+        ),
       },
       name: {
         required: true,
-        type: "string",
+        type: 'string',
         maxLength: MAX_LENGTHS.name,
         pattern: VALIDATION_PATTERNS.safeString,
         sanitize: true,
       },
       email: {
         required: true,
-        type: "email",
+        type: 'email',
         maxLength: MAX_LENGTHS.email,
       },
       contact: {
         required: true,
-        type: "string",
+        type: 'string',
         maxLength: 20,
         pattern: VALIDATION_PATTERNS.contact,
       },
       dateTime: {
-        type: "string",
+        type: 'string',
         maxLength: 50,
       },
       customFields: {
-        type: "object",
+        type: 'object',
       },
     });
 
     if (!validation.isValid) {
       return NextResponse.json(
         {
-          error: "Invalid application data",
+          error: 'Invalid application data',
           details: validation.errors,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -77,7 +73,7 @@ export async function POST(request: NextRequest) {
     if (data.name) data.name = sanitizeString(data.name);
     if (data.customFields) {
       Object.keys(data.customFields).forEach((key) => {
-        if (typeof data.customFields[key] === "string") {
+        if (typeof data.customFields[key] === 'string') {
           data.customFields[key] = sanitizeString(data.customFields[key]);
         }
       });
@@ -85,54 +81,52 @@ export async function POST(request: NextRequest) {
 
     const { jobId, dateTime } = data;
     if (!Job) {
-      throw new Error("Database not connected");
+      throw new Error('Database not connected');
     }
     if (!jobId) {
       return NextResponse.json(
-        { error: "Job ID is required" },
-        { status: 400 }
+        { error: 'Job ID is required' },
+        { status: 400 },
       );
     }
-    console.log(data, "data,application");
+    console.log(data, 'data,application');
 
-    const job = await Job.findById(new mongoose.Types.ObjectId(jobId._id)).select("title organizationId").lean().exec();
+    const job = await Job.findById(new mongoose.Types.ObjectId(jobId._id)).select('title organizationId').lean().exec();
 
     if (!job) {
-      return NextResponse.json({ error: "Job not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Job not found' }, { status: 404 });
     }
 
-    const organizationId = job.organizationId;
+    const { organizationId } = job;
 
     // console.log("ORGID: ", organizationId);
 
-    const organizationInfo = await Organization?.findById(organizationId).select("defaultLanes").lean().exec();
+    const organizationInfo = await Organization?.findById(organizationId).select('defaultLanes').lean().exec();
 
     if (!organizationInfo) {
       return NextResponse.json(
-        { error: "Organization not found" },
-        { status: 404 }
+        { error: 'Organization not found' },
+        { status: 404 },
       );
     }
 
-    const fileStorage = "local";
+    const fileStorage = 'local';
     const candidateStatus = (
-      organizationInfo.defaultLanes || ["applied"]
-    ).includes("applied")
-      ? "applied"
-      : (organizationInfo.defaultLanes || ["applied"])[0];
+      organizationInfo.defaultLanes || ['applied']
+    ).includes('applied')
+      ? 'applied'
+      : (organizationInfo.defaultLanes || ['applied'])[0];
 
     if (data.attachments) {
-      const images = data.attachments.filter((attachment: Attachment) =>
-        attachment.type.startsWith("image")
-      );
+      const images = data.attachments.filter((attachment: Attachment) => attachment.type.startsWith('image'));
       const files = data.attachments.filter(
-        (attachment: Attachment) => !attachment.type.startsWith("image")
+        (attachment: Attachment) => !attachment.type.startsWith('image'),
       );
       data.attachments = { images, files };
       const { files: f, images: i } = await handleFileAttachments(
         data.attachments,
         fileStorage,
-        String(organizationId)
+        String(organizationId),
       );
       data.attachments = [...f, ...i];
     }
@@ -141,7 +135,7 @@ export async function POST(request: NextRequest) {
       data.resume = await handleSingleFile(
         data.resume,
         fileStorage,
-        String(organizationId)
+        String(organizationId),
       );
     }
 
@@ -149,14 +143,14 @@ export async function POST(request: NextRequest) {
       const cs = await handleCustomFieldFiles(
         data.customFields,
         fileStorage,
-        String(organizationId)
+        String(organizationId),
       );
       data.customFields = cs;
     }
 
     const candidateData = {
       jobId: data.jobId,
-      organizationId: organizationId,
+      organizationId,
       name: data.name,
       location: data.location,
       experience: data.experience,
@@ -172,27 +166,27 @@ export async function POST(request: NextRequest) {
         createdAt: new Date(),
         updatedAt: new Date(),
       },
-      ...(data.assignment && data.assignment.interviewerId !== "-1"
+      ...(data.assignment && data.assignment.interviewerId !== '-1'
         ? {
-            assignment: {
-              interviewerId: data.assignment.interviewerId,
-              assignedAt: new Date(),
-              ...(data.assignment.time && {
-                time: new Date(data.assignment.time),
-              }),
-            },
-          }
+          assignment: {
+            interviewerId: data.assignment.interviewerId,
+            assignedAt: new Date(),
+            ...(data.assignment.time && {
+              time: new Date(data.assignment.time),
+            }),
+          },
+        }
         : null),
       ...(data.resume
         ? {
-            resume: {
-              id: data.resume.id,
-              name: data.resume.name,
-              url: data.resume.url,
-              type: data.resume.type,
-              size: data.resume.size,
-            },
-          }
+          resume: {
+            id: data.resume.id,
+            name: data.resume.name,
+            url: data.resume.url,
+            type: data.resume.type,
+            size: data.resume.size,
+          },
+        }
         : null),
       attachments: (data.attachments || []).map((attachment: Attachment) => ({
         id: attachment.id,
@@ -202,14 +196,14 @@ export async function POST(request: NextRequest) {
         size: attachment.size,
       })),
       customFields: data.customFields || {},
-      email: data.email || "",
-      source: "guest-apply",
+      email: data.email || '',
+      source: 'guest-apply',
     };
 
     if (!Candidate) {
       return NextResponse.json(
-        { error: "Candidate model not found" },
-        { status: 500 }
+        { error: 'Candidate model not found' },
+        { status: 500 },
       );
     }
 
@@ -217,7 +211,7 @@ export async function POST(request: NextRequest) {
 
     // Populate the interviewer details before sending response
     if (candidate.assignment && candidate.assignment.interviewerId) {
-      await candidate.populate("assignment.interviewerId", "name email");
+      await candidate.populate('assignment.interviewerId', 'name email');
     }
 
     // console.log("✅✅✅ DATETIME: ", dateTime);
@@ -229,8 +223,8 @@ export async function POST(request: NextRequest) {
       jobId,
       history: [
         {
-          dateTime: dateTime,
-          title: "Self Applied",
+          dateTime,
+          title: 'Self Applied',
           previousInterviewer: null,
           currentInterviewer: null,
           assignmentBy: null,
@@ -240,7 +234,7 @@ export async function POST(request: NextRequest) {
 
     // Trigger notification for candidate application (guest apply)
     try {
-      console.log("🔔 Triggering guest candidate applied notification:", {
+      console.log('🔔 Triggering guest candidate applied notification:', {
         organizationId: organizationId.toString(),
         candidateId: candidate._id.toString(),
         candidateName: candidateData.name,
@@ -253,29 +247,29 @@ export async function POST(request: NextRequest) {
         candidateName: candidateData.name,
         candidateEmail: candidateData.email,
         jobId: jobId._id,
-        jobTitle: job.title || "Unknown Job",
+        jobTitle: job.title || 'Unknown Job',
         // No trigger user for guest applications
       });
 
       // Send email notification to admin and HR users
       try {
         const { emailContent, emailSubject } = await getMappedEmailTemplate(
-          "job-application-hr",
+          'job-application-hr',
           {
-            jobTitle: job.title || "Unknown Job",
+            jobTitle: job.title || 'Unknown Job',
             candidateName: candidateData.name,
             candidateEmail: candidateData.email,
-            candidatePhone: candidateData.contact || "N/A",
+            candidatePhone: candidateData.contact || 'N/A',
             applicationDate: new Date().toLocaleDateString(),
             dashboardLink: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/jobs/${jobId._id}?candidateId=${candidate._id}`,
           },
-          organizationId.toString()
+          organizationId.toString(),
         );
 
         // Get admin and HR user IDs for email notification
         const adminHrIds = await NotificationService.getUsersByRole(
           organizationId.toString(),
-          ["admin", "hr"]
+          ['admin', 'hr'],
         );
 
         if (adminHrIds.length > 0) {
@@ -286,40 +280,40 @@ export async function POST(request: NextRequest) {
             {
               jobId: jobId._id,
               candidateId: candidate._id.toString(),
-              eventType: "job_application",
-              templateUsed: "job-application-hr",
+              eventType: 'job_application',
+              templateUsed: 'job-application-hr',
             },
             {
               subject: emailSubject,
               html: emailContent,
             },
-            adminHrIds
+            adminHrIds,
           );
-          console.log("✅ Guest email notification sent successfully");
+          console.log('✅ Guest email notification sent successfully');
         }
       } catch (emailError) {
         console.error(
-          "❌ Failed to send guest email notification:",
-          emailError
+          '❌ Failed to send guest email notification:',
+          emailError,
         );
         // Don't fail the API call if email notification fails
       }
 
-      console.log("✅ Guest notification sent successfully");
+      console.log('✅ Guest notification sent successfully');
     } catch (notificationError) {
-      console.error("❌ Failed to send guest notification:", notificationError);
+      console.error('❌ Failed to send guest notification:', notificationError);
       // Don't fail the API call if notification fails
     }
 
     return NextResponse.json(candidate, { status: 201 });
   } catch (error: unknown) {
-    console.error("Error in guest apply API:", error);
+    console.error('Error in guest apply API:', error);
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     return NextResponse.json(
-      { error: "An unknown error occurred" },
-      { status: 500 }
+      { error: 'An unknown error occurred' },
+      { status: 500 },
     );
   }
 }

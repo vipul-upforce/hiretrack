@@ -1,6 +1,6 @@
-import { CustomFieldsContext } from "@/Custom_Fields/Context";
-import { useContext, useEffect, useMemo } from "react";
-import JobSpecificCustomFieldFormWrapper from "./JobSpecificCustomFIeldFormWrapper";
+import { CustomFieldsContext } from '@/Custom_Fields/Context';
+import { useContext, useEffect, useMemo } from 'react';
+import JobSpecificCustomFieldFormWrapper from './JobSpecificCustomFIeldFormWrapper';
 
 export default function JobSpecificCustomFieldForm({
   isOpen,
@@ -31,7 +31,7 @@ export default function JobSpecificCustomFieldForm({
       const candidateForm = customFields[formId];
       if (candidateForm) {
         setSelectedFormId({
-          formId: formId,
+          formId,
           formName: candidateForm.formName,
           fields: candidateForm.fields,
         });
@@ -45,17 +45,17 @@ export default function JobSpecificCustomFieldForm({
       return initialValue;
     }
     return {
-      id: "",
-      label: "",
-      type: "text",
+      id: '',
+      label: '',
+      type: 'text',
       options: [],
-      persistance: "permanent",
-      defaultValue: "",
+      persistance: 'permanent',
+      defaultValue: '',
       required: false,
       private: false,
       privateInt: false,
       showOnCard: false,
-      jobId: jobId, // Add jobId to make it job-specific
+      jobId, // Add jobId to make it job-specific
     };
   }, [initialValue, jobId]);
 

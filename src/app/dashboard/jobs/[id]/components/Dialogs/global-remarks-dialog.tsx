@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { Candidate } from "@/types/candidate";
-import { useState, useEffect } from "react";
-import AddRemarksDialog from "./add-remark-dialog";
+import { Candidate } from '@/types/candidate';
+import { useState, useEffect } from 'react';
+import AddRemarksDialog from './add-remark-dialog';
 
 interface GlobalRemarksDialogProps {
   openRemarksFor: string | null;
@@ -11,12 +11,12 @@ interface GlobalRemarksDialogProps {
   refetch: () => void;
 }
 
-export const GlobalRemarksDialog = ({
+export function GlobalRemarksDialog({
   openRemarksFor,
   setOpenRemarksFor,
   candidates,
   refetch,
-}: GlobalRemarksDialogProps) => {
+}: GlobalRemarksDialogProps) {
   const [candidate, setCandidate] = useState<Candidate | null>(null);
 
   // Find the candidate when openRemarksFor changes
@@ -42,4 +42,4 @@ export const GlobalRemarksDialog = ({
       refetch={refetch}
     />
   );
-};
+}

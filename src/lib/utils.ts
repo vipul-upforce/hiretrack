@@ -1,13 +1,13 @@
-import { Candidate } from "@/types/candidate";
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { Candidate } from '@/types/candidate';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 import {
   IScheduledMailRequest,
   IScheduledStatusMailRequest,
   useSendMailMutation,
   useSendStatusMailMutation,
-} from "./features/org/orgApi";
-import { IJob } from "./models/job";
+} from './features/org/orgApi';
+import { IJob } from './models/job';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -15,35 +15,35 @@ export function cn(...inputs: ClassValue[]) {
 
 export const sentAssignmentMail = async (
   result: Candidate,
-  sendEmail: ReturnType<typeof useSendMailMutation>[0]
+  sendEmail: ReturnType<typeof useSendMailMutation>[0],
 ) => {
-  //sending mail to assignmee after successfully updating candidate
+  // sending mail to assignmee after successfully updating candidate
   if (result.assignment) {
     const reqBody: IScheduledMailRequest = {
       id: result._id,
       email:
-        typeof result.assignment.interviewerId === "object"
+        typeof result.assignment.interviewerId === 'object'
           ? result.assignment.interviewerId.email
-          : "",
+          : '',
       eventTitle:
-        result.jobId &&
-        typeof result.jobId !== "string" &&
-        (result.jobId as unknown as IJob).title
-          ? "Interview for " + (result.jobId as unknown as IJob).title
-          : "Interview for Unknown Position",
+        result.jobId
+        && typeof result.jobId !== 'string'
+        && (result.jobId as unknown as IJob).title
+          ? `Interview for ${(result.jobId as unknown as IJob).title}`
+          : 'Interview for Unknown Position',
       startTime: result.assignment?.time,
       endTime: result.assignment?.time,
       jobId: result.jobId._id,
       jobName:
-        result.jobId &&
-        typeof result.jobId !== "string" &&
-        (result.jobId as unknown as IJob).title
+        result.jobId
+        && typeof result.jobId !== 'string'
+        && (result.jobId as unknown as IJob).title
           ? (result.jobId as unknown as IJob).title
-          : "Unknown Job",
+          : 'Unknown Job',
       interviewerName:
-        typeof result.assignment.interviewerId === "object"
+        typeof result.assignment.interviewerId === 'object'
           ? result.assignment.interviewerId.name
-          : "",
+          : '',
       candidateName: result.name,
       status: result.status,
     };
@@ -59,12 +59,11 @@ export const sentAssignmentMail = async (
 };
 export const sentStatusMailHandler = async (
   result: Candidate & { prev_status?: string },
-  sendStatusMail: ReturnType<typeof useSendStatusMailMutation>[0]
+  sendStatusMail: ReturnType<typeof useSendStatusMailMutation>[0],
 ) => {
-  const latestRemark =
-    result.remarks && result.remarks.length > 0
-      ? result.remarks[result.remarks.length - 1]
-      : null;
+  const latestRemark = result.remarks && result.remarks.length > 0
+    ? result.remarks[result.remarks.length - 1]
+    : null;
   // console.log("#$$$$$$$$$$$ ", result.prev_status);
   // console.log(result, "result");
 
@@ -75,17 +74,17 @@ export const sentStatusMailHandler = async (
     //     ? result.assignment.interviewerId.email
     //     : "",
 
-    eventTitle: "Status Updated for " + result.name,
-    prev_status: result.prev_status || "",
+    eventTitle: `Status Updated for ${result.name}`,
+    prev_status: result.prev_status || '',
     startTime: new Date().toISOString(),
     endTime: new Date().toISOString(),
     jobId: result.jobId._id,
     jobName:
-      result.jobId &&
-      typeof result.jobId !== "string" &&
-      (result.jobId as unknown as IJob).title
+      result.jobId
+      && typeof result.jobId !== 'string'
+      && (result.jobId as unknown as IJob).title
         ? (result.jobId as unknown as IJob).title
-        : "Unknown Job",
+        : 'Unknown Job',
     // interviewerName:
     //   latestRemark && typeof latestRemark.userId === "object"
     //     ? latestRemark.userId.name
@@ -93,8 +92,8 @@ export const sentStatusMailHandler = async (
 
     candidateName: result.name,
     status: result.status,
-    remark: latestRemark?.description || "No Remark",
-    rating: latestRemark?.rating?.toString() || "No rating",
+    remark: latestRemark?.description || 'No Remark',
+    rating: latestRemark?.rating?.toString() || 'No rating',
   };
 
   // console.log("#$$$$$$$$$$$ ", reqBody);
@@ -146,9 +145,9 @@ export const sentStatusMailHandler = async (
 // };
 export const sentUnAssignmentMail = async (
   result: Candidate,
-  sendUnassignEmail: (data: { name: string }) => Promise<{ error?: string }>
+  sendUnassignEmail: (data: { name: string }) => Promise<{ error?: string }>,
 ) => {
-  //sending mail to assignmee after successfully updating candidate
+  // sending mail to assignmee after successfully updating candidate
   // console.log("UYIUYUYU outrside conditions");
   // if (result.assignment) {
   const reqBody = {
@@ -165,11 +164,11 @@ export const sentUnAssignmentMail = async (
     // startTime: result.assignment?.time,
     // endTime: result.assignment?.time,
     jobName:
-      result.jobId &&
-      typeof result.jobId !== "string" &&
-      (result.jobId as unknown as IJob).title
+      result.jobId
+      && typeof result.jobId !== 'string'
+      && (result.jobId as unknown as IJob).title
         ? (result.jobId as unknown as IJob).title
-        : "Unknown Job",
+        : 'Unknown Job',
     // interviewerName:
     //   typeof result.assignment.interviewerId === "object"
     //     ? result.assignment.interviewerId.name

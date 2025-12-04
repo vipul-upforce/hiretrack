@@ -1,18 +1,18 @@
-import { DropResult } from "@hello-pangea/dnd";
-import { toast } from "@/hooks/use-toast";
-import { Candidate, CandidateColumn, CandidateStatus } from "@/types/candidate";
-import { User } from "@/lib/features/users/usersApi";
-import { useState } from "react";
+import { DropResult } from '@hello-pangea/dnd';
+import { toast } from '@/hooks/use-toast';
+import { Candidate, CandidateColumn, CandidateStatus } from '@/types/candidate';
+import { User } from '@/lib/features/users/usersApi';
+import { useState } from 'react';
 import {
   useUpdateCandidateMutation,
   useDeleteCandidateMutation,
-} from "@/lib/features/candidate/candidateApi";
-import { useUpdateLanesMutation } from "@/lib/features/lane/laneApi";
-import { useSendStatusMailMutation } from "@/lib/features/org/orgApi";
-import { useValidateCandidateChecklistMutation } from "@/lib/features/checklist/checklistApi";
-import { sentStatusMailHandler } from "@/lib/utils";
-import { useClientSideChecklistValidation } from "./useClientSideChecklistValidation";
-import { Job } from "@/types/job";
+} from '@/lib/features/candidate/candidateApi';
+import { useUpdateLanesMutation } from '@/lib/features/lane/laneApi';
+import { useSendStatusMailMutation } from '@/lib/features/org/orgApi';
+import { useValidateCandidateChecklistMutation } from '@/lib/features/checklist/checklistApi';
+import { sentStatusMailHandler } from '@/lib/utils';
+import { Job } from '@/types/job';
+import { useClientSideChecklistValidation } from './useClientSideChecklistValidation';
 
 interface UseCandidateProps {
   columns: CandidateColumn[];
@@ -74,13 +74,13 @@ export const useCandidate = ({
   // Initialize client-side checklist validation
   const { validateCompleteMovement } = useClientSideChecklistValidation(
     jobLaneConfig,
-    user?.role
+    user?.role,
   );
 
   // Function to complete a pending move (move card and update database)
   const completePendingMove = async (candidateId: string) => {
     const pendingMove = pendingMoves.find(
-      (pm) => pm.candidateId === candidateId
+      (pm) => pm.candidateId === candidateId,
     );
     if (!pendingMove) return;
 
@@ -90,10 +90,10 @@ export const useCandidate = ({
       const prevColumns = columns;
       const newColumns = [...prevColumns];
       const sourceColumnIndex = newColumns.findIndex(
-        (col) => col.id === pendingMove.sourceLaneId
+        (col) => col.id === pendingMove.sourceLaneId,
       );
       const targetColumnIndex = newColumns.findIndex(
-        (col) => col.id === pendingMove.targetLaneId
+        (col) => col.id === pendingMove.targetLaneId,
       );
 
       if (sourceColumnIndex >= 0 && targetColumnIndex >= 0) {
@@ -102,11 +102,11 @@ export const useCandidate = ({
 
         // Find and remove candidate from source
         const candidateToMove = sourceColumn.candidates.find(
-          (c) => c._id === candidateId
+          (c) => c._id === candidateId,
         );
         if (candidateToMove) {
           const newSourceCandidates = sourceColumn.candidates.filter(
-            (candidate) => candidate._id !== candidateId
+            (candidate) => candidate._id !== candidateId,
           );
 
           // Add candidate to target with updated status
@@ -142,22 +142,20 @@ export const useCandidate = ({
           ...updatedCandidate,
           prev_status: pendingMove.sourceLaneId,
         },
-        sendStatusMail
+        sendStatusMail,
       );
 
       // Remove from pending moves
-      setPendingMoves((prev) =>
-        prev.filter((pm) => pm.candidateId !== candidateId)
-      );
+      setPendingMoves((prev) => prev.filter((pm) => pm.candidateId !== candidateId));
 
       // Refetch to ensure consistency
       await refetch();
     } catch (error) {
       // If database update fails, don't move the card
       toast({
-        title: "Error",
-        description: "Failed to update candidate status",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to update candidate status',
+        variant: 'destructive',
       });
     }
   };
@@ -165,42 +163,42 @@ export const useCandidate = ({
   // Function to cancel a pending move (just remove from pending moves)
   const cancelPendingMove = (candidateId: string) => {
     const pendingMove = pendingMoves.find(
-      (pm) => pm.candidateId === candidateId
+      (pm) => pm.candidateId === candidateId,
     );
     if (!pendingMove) return;
 
     // For mandatory checklists, the card was never moved, so just remove from pending
-    setPendingMoves((prev) =>
-      prev.filter((pm) => pm.candidateId !== candidateId)
-    );
+    setPendingMoves((prev) => prev.filter((pm) => pm.candidateId !== candidateId));
   };
 
   const updateLanesOrder = async (newColumns: CandidateColumn[]) => {
     const lansArray = newColumns.map((column) => column.id);
     try {
       await updateLanes({
-        userId: user?.id || "",
+        userId: user?.id || '',
         lanes: lansArray,
       }).unwrap();
     } catch (error: unknown) {
       if (error instanceof Error) {
         toast({
-          title: "Error",
+          title: 'Error',
           description: error.message,
-          variant: "destructive",
+          variant: 'destructive',
         });
       }
     }
   };
 
   const onDragEnd = async (result: DropResult) => {
-    const { destination, source, type, draggableId } = result;
+    const {
+      destination, source, type, draggableId,
+    } = result;
 
     if (!destination) {
       return;
     }
 
-    if (type === "lane") {
+    if (type === 'lane') {
       const newColumns = [...columns];
       const [removed] = newColumns.splice(source.index, 1);
       newColumns.splice(destination.index, 0, removed);
@@ -218,34 +216,33 @@ export const useCandidate = ({
 
     const sourceColumn = columns.find((col) => col.id === source.droppableId);
     const destColumn = columns.find(
-      (col) => col.id === destination.droppableId
+      (col) => col.id === destination.droppableId,
     );
 
     if (!sourceColumn || !destColumn) return;
 
     const newColumns = [...columns];
     const sourceColumnIndex = columns.findIndex(
-      (col) => col.id === source.droppableId
+      (col) => col.id === source.droppableId,
     );
     const destColumnIndex = columns.findIndex(
-      (col) => col.id === destination.droppableId
+      (col) => col.id === destination.droppableId,
     );
     if (sourceColumnIndex === destColumnIndex) {
       return;
     }
 
     const newSourceCandidates = [...sourceColumn.candidates];
-    const newDestCandidates =
-      source.droppableId === destination.droppableId
-        ? newSourceCandidates
-        : [...destColumn.candidates];
+    const newDestCandidates = source.droppableId === destination.droppableId
+      ? newSourceCandidates
+      : [...destColumn.candidates];
 
     // Find the candidate by ID instead of using the index
     const sourceIndex = newSourceCandidates.findIndex(
-      (c) => c._id === draggableId
+      (c) => c._id === draggableId,
     );
     if (sourceIndex === -1) {
-      console.error("Could not find candidate with ID:", draggableId);
+      console.error('Could not find candidate with ID:', draggableId);
       return;
     }
 
@@ -275,16 +272,16 @@ export const useCandidate = ({
     if (source.droppableId !== destination.droppableId) {
       try {
         // Add a class to prevent flicker during the critical update phase
-        document.body.classList.add("dnd-updating");
+        document.body.classList.add('dnd-updating');
 
         // Get the candidate being moved by ID instead of index
         // This ensures we get the correct candidate regardless of sorting
         const candidate = sourceColumn.candidates.find(
-          (c) => c._id === draggableId
+          (c) => c._id === draggableId,
         );
         if (!candidate) {
-          console.error("Candidate not found for drag operation");
-          document.body.classList.remove("dnd-updating");
+          console.error('Candidate not found for drag operation');
+          document.body.classList.remove('dnd-updating');
           return;
         }
 
@@ -292,7 +289,7 @@ export const useCandidate = ({
         const validationResult = validateCompleteMovement(
           candidate,
           source.droppableId,
-          destination.droppableId
+          destination.droppableId,
         );
 
         // Handle movement based on checklist requirements
@@ -300,7 +297,7 @@ export const useCandidate = ({
           const validationInfo = {
             ...dragInfo,
             checklist:
-              "checklist" in validationResult.validation
+              'checklist' in validationResult.validation
                 ? validationResult.validation.checklist
                 : null,
             isMandatory: validationResult.validation.isMandatory,
@@ -329,11 +326,10 @@ export const useCandidate = ({
             setOpenRemarksFor(JSON.stringify(validationInfo));
             // }
             return; // Exit early, don't update database
-          } else {
-            // For OPTIONAL checklists: Move the card optimistically
-            setColumns(newColumns);
-            // Continue to database update below
           }
+          // For OPTIONAL checklists: Move the card optimistically
+          setColumns(newColumns);
+          // Continue to database update below
 
           // Show dialog with checklist for optional checklists
           // if (promptForStatusChangeReason) {
@@ -358,19 +354,19 @@ export const useCandidate = ({
             ...updatedCandidate,
             prev_status: source.droppableId,
           },
-          sendStatusMail
+          sendStatusMail,
         );
       } catch (error) {
         // Revert on error
         setColumns([...columns]);
         toast({
-          title: "Error",
-          description: "Failed to validate or update candidate status",
-          variant: "destructive",
+          title: 'Error',
+          description: 'Failed to validate or update candidate status',
+          variant: 'destructive',
         });
       } finally {
         // Always remove the updating class
-        document.body.classList.remove("dnd-updating");
+        document.body.classList.remove('dnd-updating');
       }
       await refetch();
     } else {
@@ -382,16 +378,14 @@ export const useCandidate = ({
   const handleCandidateUpdate = (updatedCandidate: Candidate) => {
     const newColumns = columns.map((column) => ({
       ...column,
-      candidates: column.candidates.map((candidate) =>
-        candidate._id === updatedCandidate._id ? updatedCandidate : candidate
-      ),
+      candidates: column.candidates.map((candidate) => (candidate._id === updatedCandidate._id ? updatedCandidate : candidate)),
     }));
     setColumns(newColumns);
   };
 
   const handleFileDrop = async (file: File) => {
     setIsDialogOpen(true);
-    if (file.type === "application/pdf") {
+    if (file.type === 'application/pdf') {
       setDroppedFileData(file);
     }
   };
@@ -411,21 +405,21 @@ export const useCandidate = ({
 
       setSelectedCandidate(null);
       toast({
-        title: "Success",
-        description: `Candidate ${selectedCandidate?.isDeleted ? "Unarchived" : "Archived"} successfully`,
+        title: 'Success',
+        description: `Candidate ${selectedCandidate?.isDeleted ? 'Unarchived' : 'Archived'} successfully`,
       });
     } catch (error: unknown) {
       if (error instanceof Error) {
         toast({
-          title: "Error",
+          title: 'Error',
           description: error.message,
-          variant: "destructive",
+          variant: 'destructive',
         });
       } else {
         toast({
-          title: "Error",
-          description: "Failed to update candidate status",
-          variant: "destructive",
+          title: 'Error',
+          description: 'Failed to update candidate status',
+          variant: 'destructive',
         });
       }
     } finally {

@@ -1,19 +1,19 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, {
   Candidate,
   JobLaneConfig,
   Job,
-} from "@/lib/mongodb";
+} from '@/lib/mongodb';
 import {
   filterChecklistByRole,
-} from "@/lib/utils/checklistVisibility";
-import { getAuthenticatedUser } from "@/app/actions/auth";
-import { UserRole } from "@/lib/models/JobLaneConfig";
+} from '@/lib/utils/checklistVisibility';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+import { UserRole } from '@/lib/models/JobLaneConfig';
 
 // POST - Validate if candidate can move to a new lane based on checklist requirements
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const [userData, { id }, body] = await Promise.all([
@@ -24,48 +24,46 @@ export async function POST(
     ]);
     if (!userData) {
       return NextResponse.json(
-        { message: "Unauthorised Access" },
-        { status: 401 }
+        { message: 'Unauthorised Access' },
+        { status: 401 },
       );
     }
 
     // Check if models are initialized
     if (!Candidate || !Job || !JobLaneConfig) {
-      console.error("Models not initialized:", {
+      console.error('Models not initialized:', {
         Candidate: !!Candidate,
         Job: !!Job,
         JobLaneConfig: !!JobLaneConfig,
       });
       return NextResponse.json(
-        { error: "Database models not initialized" },
-        { status: 500 }
+        { error: 'Database models not initialized' },
+        { status: 500 },
       );
     }
-
-
 
     const { currentLane, targetLane, movementType } = body;
 
     if (!currentLane || !targetLane || !movementType) {
       return NextResponse.json(
-        { error: "Current lane, target lane, and movement type are required" },
-        { status: 400 }
+        { error: 'Current lane, target lane, and movement type are required' },
+        { status: 400 },
       );
     }
 
     // Get candidate
-    const candidate = await Candidate!.findById(id).select("_id jobId checklistData").lean().exec();
+    const candidate = await Candidate!.findById(id).select('_id jobId checklistData').lean().exec();
     if (!candidate) {
       return NextResponse.json(
-        { error: "Candidate not found" },
-        { status: 404 }
+        { error: 'Candidate not found' },
+        { status: 404 },
       );
     }
 
     // Get job configuration
     const job = await Job!.findById(candidate.jobId);
     if (!job) {
-      return NextResponse.json({ error: "Job not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Job not found' }, { status: 404 });
     }
 
     // Get job lane configuration
@@ -83,10 +81,10 @@ export async function POST(
     let checklistToValidate = null;
     let laneToCheck = null;
 
-    if (movementType === "outgoing") {
+    if (movementType === 'outgoing') {
       // Moving out of current lane - check outgoing checklist
       laneToCheck = laneConfig.laneConfigs.find(
-        (lc) => lc.laneId === currentLane
+        (lc) => lc.laneId === currentLane,
       );
       if (laneToCheck?.outgoingChecklist) {
         checklistToValidate = laneToCheck.outgoingChecklist;
@@ -94,7 +92,7 @@ export async function POST(
     } else {
       // Moving into target lane - check incoming checklist
       laneToCheck = laneConfig.laneConfigs.find(
-        (lc) => lc.laneId === targetLane
+        (lc) => lc.laneId === targetLane,
       );
       if (laneToCheck?.incomingChecklist) {
         checklistToValidate = laneToCheck.incomingChecklist;
@@ -113,7 +111,7 @@ export async function POST(
     const filteredChecklist = filterChecklistByRole(
       checklistToValidate,
       userRole,
-      "form"
+      'form',
     );
 
     // If no fields are visible to this user, skip checklist entirely
@@ -122,7 +120,7 @@ export async function POST(
         success: true,
         canMove: true,
         requiresChecklist: false,
-        message: "No checklist fields visible to current user role",
+        message: 'No checklist fields visible to current user role',
       });
     }
 
@@ -139,15 +137,13 @@ export async function POST(
     }
 
     // For mandatory checklist, check if already completed
-    let candidateChecklistData =
-      (candidate.checklistData &&
-        candidate.checklistData[laneToCheck.laneId]) ||
-      {};
+    const candidateChecklistData = (candidate.checklistData
+        && candidate.checklistData[laneToCheck.laneId])
+      || {};
     // const candidateChecklistData = candidate.checklistData?.get?.(laneToCheck.laneId);
-    const checklistData =
-      movementType === "outgoing"
-        ? candidateChecklistData?.outgoing
-        : candidateChecklistData?.incoming;
+    const checklistData = movementType === 'outgoing'
+      ? candidateChecklistData?.outgoing
+      : candidateChecklistData?.incoming;
 
     if (checklistData && checklistData.checklistId === checklistToValidate.id) {
       // Checklist already completed
@@ -166,22 +162,22 @@ export async function POST(
       requiresChecklist: true,
       checklist: filteredChecklist,
       isMandatory: true,
-      message: "This checklist must be completed before moving the candidate",
+      message: 'This checklist must be completed before moving the candidate',
     });
   } catch (error) {
-    console.error("Error validating checklist:", error);
-    console.error("Validation error details:", {
-      message: error instanceof Error ? error.message : "Unknown error",
+    console.error('Error validating checklist:', error);
+    console.error('Validation error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
       candidateId: params.id,
-      error: error,
+      error,
     });
     return NextResponse.json(
       {
-        error: "Failed to validate checklist",
-        details: error instanceof Error ? error.message : "Unknown error",
+        error: 'Failed to validate checklist',
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

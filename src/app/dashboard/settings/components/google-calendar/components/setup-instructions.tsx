@@ -1,5 +1,5 @@
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ExternalLink, Info } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { ExternalLink, Info } from 'lucide-react';
 
 export function SetupInstructions() {
   return (
@@ -10,19 +10,24 @@ export function SetupInstructions() {
         <p>To enable Google Calendar integration:</p>
         <ol className="list-decimal list-inside space-y-1 ml-2">
           <li>
-            Go to{" "}
+            Go to
+            {' '}
             <a
               href="https://console.cloud.google.com"
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-500 hover:underline inline-flex items-center gap-1"
             >
-              Google Cloud Console <ExternalLink className="h-3 w-3" />
+              Google Cloud Console
+              {' '}
+              <ExternalLink className="h-3 w-3" />
             </a>
           </li>
           <li>Create a new project or select existing one</li>
           <li>
-            <strong>Enable Google Calendar API</strong> in API Library
+            <strong>Enable Google Calendar API</strong>
+            {' '}
+            in API Library
           </li>
           <li>Go to Credentials → Create Credentials → OAuth 2.0 Client IDs</li>
           <li>Set Application Type to &quot;Web application&quot;</li>
@@ -40,21 +45,31 @@ export function SetupInstructions() {
           </div>
           <ul className="list-disc list-inside space-y-1 ml-2 dark:text-amber-300">
             <li>
-              <strong>Enable Google Calendar API</strong> in API Library
+              <strong>Enable Google Calendar API</strong>
+              {' '}
+              in API Library
             </li>
             <li>
-              <strong>Set OAuth consent screen</strong> to External (unless
+              <strong>Set OAuth consent screen</strong>
+              {' '}
+              to External (unless
               internal org)
             </li>
             <li>
-              <strong>Add test users</strong> if using external consent screen
+              <strong>Add test users</strong>
+              {' '}
+              if using external consent screen
             </li>
             <li>
-              <strong>Copy redirect URI exactly</strong> (no extra
+              <strong>Copy redirect URI exactly</strong>
+              {' '}
+              (no extra
               spaces/characters)
             </li>
             <li>
-              <strong>Ensure scopes include:</strong> Calendar, Calendar Events,
+              <strong>Ensure scopes include:</strong>
+              {' '}
+              Calendar, Calendar Events,
               Email
             </li>
           </ul>

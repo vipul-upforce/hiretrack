@@ -1,12 +1,11 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { CustomScrollbar } from "@/components/ui/custom-scrollbar";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { NotificationItem } from "./NotificationItem";
+import * as React from 'react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { CustomScrollbar } from '@/components/ui/custom-scrollbar';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import {
   ChevronLeft,
   ChevronRight,
@@ -15,8 +14,9 @@ import {
   Check,
   CheckCheck,
   ExternalLink,
-} from "lucide-react";
-import { INotification } from "@/lib/models/notification";
+} from 'lucide-react';
+import { INotification } from '@/lib/models/notification';
+import { NotificationItem } from './NotificationItem';
 
 interface NotificationDropdownProps {
   notifications: INotification[];
@@ -82,8 +82,8 @@ export function NotificationDropdown({
   return (
     <div
       className={cn(
-        "w-80 h-[450px] bg-popover border rounded-md shadow-lg flex flex-col ml-2",
-        className
+        'w-80 h-[450px] bg-popover border rounded-md shadow-lg flex flex-col ml-2',
+        className,
       )}
     >
       {/* Header */}
@@ -161,7 +161,18 @@ export function NotificationDropdown({
         <div className="flex-shrink-0 border-t">
           <div className="flex items-center justify-between p-3">
             <div className="text-xs text-muted-foreground">
-              Page {currentPage} of {totalPages} ({totalCount} total)
+              Page
+              {' '}
+              {currentPage}
+              {' '}
+              of
+              {' '}
+              {totalPages}
+              {' '}
+              (
+              {totalCount}
+              {' '}
+              total)
             </div>
 
             <div className="flex items-center gap-1">

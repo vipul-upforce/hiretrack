@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Palette, ExternalLink, CheckCircle2 } from "lucide-react";
-import { useOnboarding } from "../OnboardingProvider";
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Palette, ExternalLink, CheckCircle2 } from 'lucide-react';
+import { useOnboarding } from '../OnboardingProvider';
 
 const CustomFieldsStep: React.FC = () => {
   const [isConfigured, setIsConfigured] = useState(false);
   const { validateStep } = useOnboarding();
 
   useEffect(() => {
-    validateStep("customFields").then(setIsConfigured);
+    validateStep('customFields').then(setIsConfigured);
   }, [validateStep]);
 
   return (
@@ -31,14 +31,12 @@ const CustomFieldsStep: React.FC = () => {
       </div>
 
       <Card
-        className={`border-2 ${isConfigured ? "border-green-500/30 bg-green-50/50 dark:border-green-500/20 dark:bg-green-900/10" : "border-border"}`}
+        className={`border-2 ${isConfigured ? 'border-green-500/30 bg-green-50/50 dark:border-green-500/20 dark:bg-green-900/10' : 'border-border'}`}
       >
         <CardContent className="p-6">
           <Button
             variant="primary"
-            onClick={() =>
-              window.open("/dashboard/settings?config=cf", "_blank")
-            }
+            onClick={() => window.open('/dashboard/settings?config=cf', '_blank')}
             className="flex items-center gap-2"
           >
             Configure Custom Fields

@@ -1,18 +1,18 @@
-import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Organization, Settings } from "@/lib/mongodb";
-import { validateQueryParams, MAX_LENGTHS } from "@/lib/inputValidation";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { Organization, Settings } from '@/lib/mongodb';
+import { validateQueryParams, MAX_LENGTHS } from '@/lib/inputValidation';
 
 export async function GET(req: NextRequest) {
   try {
     // SECURITY FIX: Validate query parameters
     const validation = validateQueryParams(req.nextUrl.searchParams, {
       limit: {
-        type: "number",
+        type: 'number',
         min: 1,
         max: 100,
       },
       search: {
-        type: "string",
+        type: 'string',
         maxLength: MAX_LENGTHS.mediumText,
         sanitize: true,
       },
@@ -20,8 +20,8 @@ export async function GET(req: NextRequest) {
 
     if (!validation.isValid) {
       return NextResponse.json(
-        { error: "Invalid query parameters", details: validation.errors },
-        { status: 400 }
+        { error: 'Invalid query parameters', details: validation.errors },
+        { status: 400 },
       );
     }
 
@@ -29,8 +29,8 @@ export async function GET(req: NextRequest) {
 
     if (!Organization || !Settings) {
       return NextResponse.json(
-        { error: "Database models not found" },
-        { status: 500 }
+        { error: 'Database models not found' },
+        { status: 500 },
       );
     }
 
@@ -48,25 +48,25 @@ export async function GET(req: NextRequest) {
       organizations.map(async (org) => {
         const settings = await Settings.findOne(
           { organizationId: org._id.toString() },
-          { "portalConfigs.portalName": 1 }
+          { 'portalConfigs.portalName': 1 },
         );
 
         return {
           id: org._id.toString(),
           name:
-            settings?.portalConfigs?.portalName || org.name || "Unnamed Portal",
+            settings?.portalConfigs?.portalName || org.name || 'Unnamed Portal',
         };
-      })
+      }),
     );
 
     return NextResponse.json({
       portals: portalList,
     });
   } catch (error) {
-    console.error("Orgs API error:", error);
+    console.error('Orgs API error:', error);
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+      { error: 'Internal server error' },
+      { status: 500 },
     );
   }
 }

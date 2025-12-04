@@ -1,19 +1,19 @@
-import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Organization } from "@/lib/mongodb";
-import { getAuthenticatedUser } from "@/app/actions/auth";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { Organization } from '@/lib/mongodb';
+import { getAuthenticatedUser } from '@/app/actions/auth';
 
 const DEFAULT_LANES = [
-  "applied",
-  "screening",
-  "shortlisted",
-  "processing",
-  "accepted",
-  "rejected",
+  'applied',
+  'screening',
+  'shortlisted',
+  'processing',
+  'accepted',
+  'rejected',
 ];
 
 const DEFAULT_RESTRICTIONS = {
-  nonEditable: ["applied", "accepted", "rejected"],
-  nonDeletable: ["applied", "accepted", "rejected"],
+  nonEditable: ['applied', 'accepted', 'rejected'],
+  nonDeletable: ['applied', 'accepted', 'rejected'],
 };
 
 async function getOrganizationLanes(orgId: string) {
@@ -29,18 +29,18 @@ async function getOrganizationLanes(orgId: string) {
 export async function GET(request: NextRequest) {
   try {
     const [user] = await Promise.all([
-      getAuthenticatedUser(request, ["admin", "hr", "interviewer"]),
+      getAuthenticatedUser(request, ['admin', 'hr', 'interviewer']),
       connectToDatabase(),
     ]);
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const organization = await getOrganizationLanes(user.organizationId);
     if (!organization) {
       return NextResponse.json(
-        { error: "Organization not found" },
-        { status: 404 }
+        { error: 'Organization not found' },
+        { status: 404 },
       );
     }
 
@@ -49,10 +49,10 @@ export async function GET(request: NextRequest) {
       laneRestrictions: organization.laneRestrictions || DEFAULT_RESTRICTIONS,
     });
   } catch (error) {
-    console.error("Get default lanes error:", error);
+    console.error('Get default lanes error:', error);
     return NextResponse.json(
-      { error: "Failed to fetch default lanes" },
-      { status: 500 }
+      { error: 'Failed to fetch default lanes' },
+      { status: 500 },
     );
   }
 }
@@ -61,11 +61,11 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const [user] = await Promise.all([
-      getAuthenticatedUser(request, ["admin", "hr"]),
+      getAuthenticatedUser(request, ['admin', 'hr']),
       connectToDatabase(),
     ]);
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -74,33 +74,33 @@ export async function PUT(request: NextRequest) {
     // Validation
     if (!Array.isArray(defaultLanes) || defaultLanes.length === 0) {
       return NextResponse.json(
-        { error: "defaultLanes must be a non-empty array of strings" },
-        { status: 400 }
+        { error: 'defaultLanes must be a non-empty array of strings' },
+        { status: 400 },
       );
     }
 
     // Validate lane names
     const validLaneNameRegex = /^[a-zA-Z0-9\s\-_]+$/;
     for (const lane of defaultLanes) {
-      if (typeof lane !== "string" || !validLaneNameRegex.test(lane)) {
+      if (typeof lane !== 'string' || !validLaneNameRegex.test(lane)) {
         return NextResponse.json(
           {
             error: `Invalid lane name: ${lane}. Only alphanumeric characters, spaces, hyphens, and underscores allowed.`,
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
 
     // Ensure required lanes are present
-    const requiredLanes = ["applied", "accepted", "rejected"];
+    const requiredLanes = ['applied', 'accepted', 'rejected'];
     for (const requiredLane of requiredLanes) {
       if (!defaultLanes.includes(requiredLane)) {
         return NextResponse.json(
           {
             error: `Required lane '${requiredLane}' must be included in default lanes`,
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -109,8 +109,8 @@ export async function PUT(request: NextRequest) {
     const uniqueLanes = [...new Set(defaultLanes)];
     if (uniqueLanes.length !== defaultLanes.length) {
       return NextResponse.json(
-        { error: "Duplicate lane names are not allowed" },
-        { status: 400 }
+        { error: 'Duplicate lane names are not allowed' },
+        { status: 400 },
       );
     }
 
@@ -119,7 +119,7 @@ export async function PUT(request: NextRequest) {
       user.organizationId,
       {
         $set: {
-          defaultLanes: defaultLanes,
+          defaultLanes,
           // Ensure lane restrictions are set
           laneRestrictions: DEFAULT_RESTRICTIONS,
         },
@@ -128,26 +128,26 @@ export async function PUT(request: NextRequest) {
         new: true,
         projection: { defaultLanes: 1, laneRestrictions: 1 },
         lean: true,
-      }
+      },
     );
 
     if (!updatedOrganization) {
       return NextResponse.json(
-        { error: "Organization not found" },
-        { status: 404 }
+        { error: 'Organization not found' },
+        { status: 404 },
       );
     }
 
     return NextResponse.json({
-      message: "Default lanes updated successfully",
+      message: 'Default lanes updated successfully',
       defaultLanes: updatedOrganization.defaultLanes,
       laneRestrictions: updatedOrganization.laneRestrictions,
     });
   } catch (error) {
-    console.error("Update default lanes error:", error);
+    console.error('Update default lanes error:', error);
     return NextResponse.json(
-      { error: "Failed to update default lanes" },
-      { status: 500 }
+      { error: 'Failed to update default lanes' },
+      { status: 500 },
     );
   }
 }
@@ -156,20 +156,20 @@ export async function PUT(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const [user] = await Promise.all([
-      getAuthenticatedUser(request, ["admin", "hr"]),
+      getAuthenticatedUser(request, ['admin', 'hr']),
       connectToDatabase(),
     ]);
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const body = await request.json();
     const { laneName, position } = body;
 
     // Validation
-    if (!laneName || typeof laneName !== "string") {
+    if (!laneName || typeof laneName !== 'string') {
       return NextResponse.json(
-        { error: "Lane name is required and must be a string" },
-        { status: 400 }
+        { error: 'Lane name is required and must be a string' },
+        { status: 400 },
       );
     }
 
@@ -178,17 +178,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "Invalid lane name. Only alphanumeric characters, spaces, hyphens, and underscores allowed.",
+            'Invalid lane name. Only alphanumeric characters, spaces, hyphens, and underscores allowed.',
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const organization = await getOrganizationLanes(user.organizationId);
     if (!organization) {
       return NextResponse.json(
-        { error: "Organization not found" },
-        { status: 404 }
+        { error: 'Organization not found' },
+        { status: 404 },
       );
     }
 
@@ -197,17 +197,17 @@ export async function POST(request: NextRequest) {
     // Check if lane already exists
     if (currentLanes.includes(laneName)) {
       return NextResponse.json(
-        { error: "Lane already exists" },
-        { status: 400 }
+        { error: 'Lane already exists' },
+        { status: 400 },
       );
     }
 
     // Add lane at specified position or at the end
     const newLanes = [...currentLanes];
     if (
-      typeof position === "number" &&
-      position >= 0 &&
-      position <= newLanes.length
+      typeof position === 'number'
+      && position >= 0
+      && position <= newLanes.length
     ) {
       newLanes.splice(position, 0, laneName);
     } else {
@@ -218,21 +218,21 @@ export async function POST(request: NextRequest) {
     const updatedOrganization = await Organization.findByIdAndUpdate(
       user.organizationId,
       { $set: { defaultLanes: newLanes } },
-      { new: true }
+      { new: true },
     )
-      .select("defaultLanes")
+      .select('defaultLanes')
       .lean()
       .exec();
 
     return NextResponse.json({
-      message: "Default lane added successfully",
+      message: 'Default lane added successfully',
       defaultLanes: updatedOrganization.defaultLanes,
     });
   } catch (error) {
-    console.error("Add default lane error:", error);
+    console.error('Add default lane error:', error);
     return NextResponse.json(
-      { error: "Failed to add default lane" },
-      { status: 500 }
+      { error: 'Failed to add default lane' },
+      { status: 500 },
     );
   }
 }
@@ -241,28 +241,28 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const [user] = await Promise.all([
-      getAuthenticatedUser(request, ["admin", "hr"]),
+      getAuthenticatedUser(request, ['admin', 'hr']),
       connectToDatabase(),
     ]);
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const body = await request.json();
     const { laneName } = body;
 
     // Validation
-    if (!laneName || typeof laneName !== "string") {
+    if (!laneName || typeof laneName !== 'string') {
       return NextResponse.json(
-        { error: "Lane name is required and must be a string" },
-        { status: 400 }
+        { error: 'Lane name is required and must be a string' },
+        { status: 400 },
       );
     }
 
     const organization = await getOrganizationLanes(user.organizationId);
     if (!organization) {
       return NextResponse.json(
-        { error: "Organization not found" },
-        { status: 404 }
+        { error: 'Organization not found' },
+        { status: 404 },
       );
     }
 
@@ -270,15 +270,15 @@ export async function DELETE(request: NextRequest) {
 
     // Check if lane exists
     if (!currentLanes.includes(laneName)) {
-      return NextResponse.json({ error: "Lane not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Lane not found' }, { status: 404 });
     }
 
     // Check if lane is restricted
-    const restrictedLanes = ["applied", "accepted", "rejected"];
+    const restrictedLanes = ['applied', 'accepted', 'rejected'];
     if (restrictedLanes.includes(laneName)) {
       return NextResponse.json(
         { error: `Cannot delete restricted lane: ${laneName}` },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -293,18 +293,18 @@ export async function DELETE(request: NextRequest) {
         new: true,
         projection: { defaultLanes: 1 },
         lean: true,
-      }
+      },
     );
 
     return NextResponse.json({
-      message: "Default lane deleted successfully",
+      message: 'Default lane deleted successfully',
       defaultLanes: updatedOrganization.defaultLanes,
     });
   } catch (error) {
-    console.error("Delete default lane error:", error);
+    console.error('Delete default lane error:', error);
     return NextResponse.json(
-      { error: "Failed to delete default lane" },
-      { status: 500 }
+      { error: 'Failed to delete default lane' },
+      { status: 500 },
     );
   }
 }

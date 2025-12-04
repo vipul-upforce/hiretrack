@@ -1,12 +1,13 @@
-"use client";
-import * as React from "react";
-import { Button } from "@/components/ui/button";
-import { Bell } from "lucide-react";
-import { NotificationBadge } from "./NotificationBadge";
-import { NotificationDropdown } from "./NotificationDropdown";
-import { cn } from "@/lib/utils";
-import { INotification } from "@/lib/models/notification";
-import { useRouter } from "next/navigation";
+'use client';
+
+import * as React from 'react';
+import { Button } from '@/components/ui/button';
+import { Bell } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { INotification } from '@/lib/models/notification';
+import { useRouter } from 'next/navigation';
+import { NotificationDropdown } from './NotificationDropdown';
+import { NotificationBadge } from './NotificationBadge';
 
 interface NotificationButtonProps {
   notifications: INotification[];
@@ -23,13 +24,13 @@ interface NotificationButtonProps {
   onPageChange?: (page: number) => void;
   className?: string;
   buttonVariant?:
-    | "default"
-    | "destructive"
-    | "outline"
-    | "secondary"
-    | "ghost"
-    | "link";
-  buttonSize?: "default" | "sm" | "lg" | "icon";
+    | 'default'
+    | 'destructive'
+    | 'outline'
+    | 'secondary'
+    | 'ghost'
+    | 'link';
+  buttonSize?: 'default' | 'sm' | 'lg' | 'icon';
   fetchNotifications: () => void;
 }
 
@@ -47,8 +48,8 @@ export function NotificationButton({
   onNotificationClick,
   onPageChange,
   className,
-  buttonVariant = "ghost",
-  buttonSize = "icon",
+  buttonVariant = 'ghost',
+  buttonSize = 'icon',
   fetchNotifications,
 }: NotificationButtonProps) {
   const dropdownRef = React.useRef<HTMLDivElement>(null);
@@ -59,29 +60,29 @@ export function NotificationButton({
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node) &&
-        buttonRef.current &&
-        !buttonRef.current.contains(event.target as Node)
+        dropdownRef.current
+        && !dropdownRef.current.contains(event.target as Node)
+        && buttonRef.current
+        && !buttonRef.current.contains(event.target as Node)
       ) {
         onOpenChange(false);
       }
     };
 
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+      if (event.key === 'Escape') {
         onOpenChange(false);
       }
     };
 
     if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      document.addEventListener("keydown", handleEscape);
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEscape);
     }
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
     };
   }, [isOpen, onOpenChange]);
 
@@ -107,7 +108,7 @@ export function NotificationButton({
   };
 
   const handleViewAll = () => {
-    router.push("/dashboard/notifications");
+    router.push('/dashboard/notifications');
     onOpenChange(false);
   };
 
@@ -124,9 +125,9 @@ export function NotificationButton({
         variant={buttonVariant}
         size={buttonSize}
         className={cn(
-          "relative",
-          buttonSize === "icon" && "h-8 w-8 rounded-full",
-          className
+          'relative',
+          buttonSize === 'icon' && 'h-8 w-8 rounded-full',
+          className,
         )}
         onClick={() => {
           onOpenChange(!isOpen);
@@ -134,7 +135,7 @@ export function NotificationButton({
             fetchNotifications();
           }
         }}
-        aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
+        aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
       >
         <Bell className="h-4 w-4" />
         <NotificationBadge count={unreadCount} />
@@ -144,7 +145,7 @@ export function NotificationButton({
         <div
           ref={dropdownRef}
           className="absolute right-0 top-full mt-2 z-50"
-          style={{ transform: "translateX(280px) translateY(-495px)" }}
+          style={{ transform: 'translateX(280px) translateY(-495px)' }}
         >
           <NotificationDropdown
             notifications={notifications}

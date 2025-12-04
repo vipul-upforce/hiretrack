@@ -1,10 +1,11 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { File, Download } from "lucide-react";
-import { DialogTitle } from "@radix-ui/react-dialog";
+import { useState } from 'react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { File, Download } from 'lucide-react';
+import { DialogTitle } from '@radix-ui/react-dialog';
+
 interface PDFViewerProps {
   files: Array<{
     name: string;
@@ -26,27 +27,27 @@ export function PDFViewer({ files }: PDFViewerProps) {
 
   const downloadFile = async (url: string, filename: string) => {
     if (!url || !filename) {
-      console.error("Invalid URL or filename provided");
+      console.error('Invalid URL or filename provided');
       return;
     }
 
     try {
       // Fetch the file as a blob
       const response = await fetch(url, {
-        method: "GET",
-        mode: "cors",
-        credentials: "same-origin",
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'same-origin',
       });
 
       if (!response.ok) {
         throw new Error(
-          `Failed to fetch file: ${response.status} ${response.statusText}`
+          `Failed to fetch file: ${response.status} ${response.statusText}`,
         );
       }
 
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
+      const link = document.createElement('a');
       link.href = blobUrl;
       link.download = filename;
 
@@ -57,7 +58,7 @@ export function PDFViewer({ files }: PDFViewerProps) {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
-      console.error("Download failed:", error);
+      console.error('Download failed:', error);
     }
   };
 
@@ -97,7 +98,8 @@ export function PDFViewer({ files }: PDFViewerProps) {
                 </p>
                 {file.size && (
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {Math.round(file.size / 1024)}KB
+                    {Math.round(file.size / 1024)}
+                    KB
                   </p>
                 )}
               </div>
@@ -116,11 +118,11 @@ export function PDFViewer({ files }: PDFViewerProps) {
 
       <Dialog open={!!selectedFile} onOpenChange={() => setSelectedFile(null)}>
         <DialogContent className="sm:max-w-[80vw] xl:max-w-[50vw] h-[90vh] p-0 flex flex-col justify-start">
-          <DialogTitle></DialogTitle>
+          <DialogTitle />
           <div
             className="pl-4 border-b border-gray-200 dark:border-gray-700 shrink-0 bg-white dark:bg-black"
             style={{
-              display: "contents",
+              display: 'contents',
             }}
           >
             <div className="flex items-center gap-2 pl-4 py-3">
@@ -134,10 +136,10 @@ export function PDFViewer({ files }: PDFViewerProps) {
               className="absolute right-12 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
               onClick={() => {
                 // debugger;
-                selectedFile &&
-                  downloadFile(
+                selectedFile
+                  && downloadFile(
                     selectedFile.url || selectedFile.base64,
-                    selectedFile.name
+                    selectedFile.name,
                   );
               }}
             >
@@ -146,7 +148,7 @@ export function PDFViewer({ files }: PDFViewerProps) {
           </div>
 
           <div className="flex-1 overflow-auto">
-            {selectedFile?.type.startsWith("image/") ? (
+            {selectedFile?.type.startsWith('image/') ? (
               <div className="flex items-center justify-center min-h-full p-4">
                 <img
                   src={selectedFile.url || selectedFile.base64}

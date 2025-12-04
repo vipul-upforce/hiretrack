@@ -1,45 +1,46 @@
-"use client";
+'use client';
+
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "@/hooks/use-toast";
-import React, { useState, useEffect } from "react";
-import { DropResult } from "@hello-pangea/dnd";
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { toast } from '@/hooks/use-toast';
+import React, { useState, useEffect } from 'react';
+import { DropResult } from '@hello-pangea/dnd';
 import {
   Plus,
   ClipboardCheck,
   ArrowRight,
   ArrowLeft,
   Save,
-} from "lucide-react";
+} from 'lucide-react';
 import {
   useGetJobLaneConfigQuery,
   useUpdateLaneConfigMutation,
   useGetChecklistTemplatesQuery,
   useCreateChecklistTemplateMutation,
-} from "@/lib/features/checklist/checklistApi";
+} from '@/lib/features/checklist/checklistApi';
 import {
   IChecklistField,
   IChecklist,
-} from "@/lib/models/JobLaneConfig";
-import { useSelector } from "react-redux";
+} from '@/lib/models/JobLaneConfig';
+import { useSelector } from 'react-redux';
 
 // Import new sub-components
-import { FieldConfigDialog } from "./lane-checklist-config-components/FieldConfigDialog";
-import { ChecklistFieldList } from "./lane-checklist-config-components/ChecklistFieldList";
-import { ChecklistEmptyState } from "./lane-checklist-config-components/ChecklistEmptyState";
-import { ChecklistHeader } from "./lane-checklist-config-components/ChecklistHeader";
-import { ChecklistBasicInfo } from "./lane-checklist-config-components/ChecklistBasicInfo";
-import { SaveTemplateDialog } from "./lane-checklist-config-components/SaveTemplateDialog";
-import { TemplateSelector } from "./lane-checklist-config-components/TemplateSelector";
+import { FieldConfigDialog } from './lane-checklist-config-components/FieldConfigDialog';
+import { ChecklistFieldList } from './lane-checklist-config-components/ChecklistFieldList';
+import { ChecklistEmptyState } from './lane-checklist-config-components/ChecklistEmptyState';
+import { ChecklistHeader } from './lane-checklist-config-components/ChecklistHeader';
+import { ChecklistBasicInfo } from './lane-checklist-config-components/ChecklistBasicInfo';
+import { SaveTemplateDialog } from './lane-checklist-config-components/SaveTemplateDialog';
+import { TemplateSelector } from './lane-checklist-config-components/TemplateSelector';
 
 interface LaneChecklistConfigDialogProps {
   isOpen: boolean;
@@ -47,19 +48,19 @@ interface LaneChecklistConfigDialogProps {
   jobId: string;
   laneId: string;
   laneName: string;
-  initialTab?: "incoming" | "outgoing";
+  initialTab?: 'incoming' | 'outgoing';
 }
 
-export const LaneChecklistConfigDialog = ({
+export function LaneChecklistConfigDialog({
   isOpen,
   onOpenChange,
   jobId,
   laneId,
   laneName,
-  initialTab = "incoming",
-}: LaneChecklistConfigDialogProps) => {
-  const [activeTab, setActiveTab] = useState<"incoming" | "outgoing">(
-    initialTab
+  initialTab = 'incoming',
+}: LaneChecklistConfigDialogProps) {
+  const [activeTab, setActiveTab] = useState<'incoming' | 'outgoing'>(
+    initialTab,
   );
   const [incomingChecklist, setIncomingChecklist] = useState<
     IChecklist | undefined
@@ -70,7 +71,7 @@ export const LaneChecklistConfigDialog = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFieldDialogOpen, setIsFieldDialogOpen] = useState(false);
   const [editingField, setEditingField] = useState<IChecklistField | null>(
-    null
+    null,
   );
   const [isEditMode, setIsEditMode] = useState(false);
 
@@ -81,8 +82,8 @@ export const LaneChecklistConfigDialog = ({
 
   // Template-related state
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
-  const [templateName, setTemplateName] = useState("");
-  const [templateDescription, setTemplateDescription] = useState("");
+  const [templateName, setTemplateName] = useState('');
+  const [templateDescription, setTemplateDescription] = useState('');
 
   const { user } = useSelector((state: any) => state.auth || {});
 
@@ -90,7 +91,7 @@ export const LaneChecklistConfigDialog = ({
   useEffect(() => {
     if (laneConfig && isOpen) {
       const existingLaneConfig = laneConfig.laneConfigs.find(
-        (lc) => lc.laneId === laneId
+        (lc) => lc.laneId === laneId,
       );
       if (existingLaneConfig) {
         setIncomingChecklist(existingLaneConfig.incomingChecklist);
@@ -116,12 +117,10 @@ export const LaneChecklistConfigDialog = ({
     }
   }, [initialTab]);
 
-  const getCurrentChecklist = () => {
-    return activeTab === "incoming" ? incomingChecklist : outgoingChecklist;
-  };
+  const getCurrentChecklist = () => (activeTab === 'incoming' ? incomingChecklist : outgoingChecklist);
 
   const setCurrentChecklist = (checklist: IChecklist | undefined) => {
-    if (activeTab === "incoming") {
+    if (activeTab === 'incoming') {
       setIncomingChecklist(checklist);
     } else {
       setOutgoingChecklist(checklist);
@@ -132,7 +131,7 @@ export const LaneChecklistConfigDialog = ({
     const newChecklist: IChecklist = {
       id: `checklist_${Date.now()}`,
       name: `${laneName} ${activeTab} checklist`,
-      description: "",
+      description: '',
       fields: [],
       isMandatory: false,
       createdBy: null as any, // Will be set by API
@@ -162,9 +161,7 @@ export const LaneChecklistConfigDialog = ({
       // Update existing field
       setCurrentChecklist({
         ...currentChecklist,
-        fields: currentChecklist.fields.map((field) =>
-          field.id === editingField.id ? fieldData : field
-        ),
+        fields: currentChecklist.fields.map((field) => (field.id === editingField.id ? fieldData : field)),
       });
     } else {
       // Add new field
@@ -217,7 +214,7 @@ export const LaneChecklistConfigDialog = ({
     const checklistFromTemplate: IChecklist = {
       id: `checklist_${Date.now()}`,
       name: template.name,
-      description: template.description || "",
+      description: template.description || '',
       fields: template.fields.map((field) => ({
         ...field,
         id: `field_${Date.now()}_${field.id}`,
@@ -230,7 +227,7 @@ export const LaneChecklistConfigDialog = ({
 
     setCurrentChecklist(checklistFromTemplate);
     toast({
-      title: "Template Loaded",
+      title: 'Template Loaded',
       description: `Loaded template: ${template.name}`,
     });
   };
@@ -258,25 +255,25 @@ export const LaneChecklistConfigDialog = ({
       }).unwrap();
 
       toast({
-        title: "Template Saved",
+        title: 'Template Saved',
         description: `Template "${templateName}" saved successfully`,
       });
 
       setIsTemplateDialogOpen(false);
-      setTemplateName("");
-      setTemplateDescription("");
+      setTemplateName('');
+      setTemplateDescription('');
     } catch (error) {
       toast({
-        title: "Error",
+        title: 'Error',
         description:
-          typeof error === "object" &&
-          "data" in error &&
-          (error as any).data &&
-          typeof (error as any).data == "object" &&
-          "error" in (error as any).data
+          typeof error === 'object'
+          && 'data' in error
+          && (error as any).data
+          && typeof (error as any).data === 'object'
+          && 'error' in (error as any).data
             ? ((error as any).data.error as string)
-            : "Failed to save template",
-        variant: "destructive",
+            : 'Failed to save template',
+        variant: 'destructive',
       });
     }
   };
@@ -285,21 +282,20 @@ export const LaneChecklistConfigDialog = ({
     const currentChecklist = getCurrentChecklist();
     if (!currentChecklist || currentChecklist.fields.length === 0) {
       toast({
-        title: "No Content",
-        description: "Please add some fields before saving as template",
-        variant: "destructive",
+        title: 'No Content',
+        description: 'Please add some fields before saving as template',
+        variant: 'destructive',
       });
       return;
     }
 
     setTemplateName(currentChecklist.name);
-    setTemplateDescription(currentChecklist.description || "");
+    setTemplateDescription(currentChecklist.description || '');
     setIsTemplateDialogOpen(true);
   };
 
   // Get filtered templates for current tab
-  const filteredTemplates =
-    templates?.filter((t) => t.type === activeTab) || [];
+  const filteredTemplates = templates?.filter((t) => t.type === activeTab) || [];
 
   const handleSave = async () => {
     if (isSubmitting) return;
@@ -321,17 +317,17 @@ export const LaneChecklistConfigDialog = ({
       }).unwrap();
 
       toast({
-        title: "Success",
-        description: "Lane checklist configuration saved successfully",
+        title: 'Success',
+        description: 'Lane checklist configuration saved successfully',
       });
 
       onOpenChange(false);
       await refetch();
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to save checklist configuration",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to save checklist configuration',
+        variant: 'destructive',
       });
     } finally {
       setIsSubmitting(false);
@@ -355,7 +351,9 @@ export const LaneChecklistConfigDialog = ({
         <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle className="flex items-center gap-2">
             <ClipboardCheck className="h-5 w-5" />
-            Configure Checklists - {laneName}
+            Configure Checklists -
+            {' '}
+            {laneName}
           </DialogTitle>
         </DialogHeader>
 
@@ -364,11 +362,11 @@ export const LaneChecklistConfigDialog = ({
           <div className="px-6 pb-4">
             <div className="flex space-x-1 bg-muted p-1 rounded-lg">
               <button
-                onClick={() => setActiveTab("incoming")}
+                onClick={() => setActiveTab('incoming')}
                 className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  activeTab === "incoming"
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
+                  activeTab === 'incoming'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 <ArrowRight className="h-4 w-4" />
@@ -380,11 +378,11 @@ export const LaneChecklistConfigDialog = ({
                 )}
               </button>
               <button
-                onClick={() => setActiveTab("outgoing")}
+                onClick={() => setActiveTab('outgoing')}
                 className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  activeTab === "outgoing"
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
+                  activeTab === 'outgoing'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 <ArrowLeft className="h-4 w-4" />
@@ -400,11 +398,13 @@ export const LaneChecklistConfigDialog = ({
 
           <div className="px-6 space-y-6">
             {/* Template Selection */}
-            {currentChecklist && currentChecklist.fields.length > 0 && <TemplateSelector
+            {currentChecklist && currentChecklist.fields.length > 0 && (
+            <TemplateSelector
               filteredTemplates={filteredTemplates}
               onLoadFromTemplate={loadFromTemplate}
               currentChecklist={currentChecklist}
-            />}
+            />
+            )}
 
             {/* Checklist Configuration */}
             {!currentChecklist ? (
@@ -424,9 +424,7 @@ export const LaneChecklistConfigDialog = ({
                   {/* Basic Info */}
                   <ChecklistBasicInfo
                     checklist={currentChecklist}
-                    onChange={(updates) =>
-                      setCurrentChecklist({ ...currentChecklist!, ...updates })
-                    }
+                    onChange={(updates) => setCurrentChecklist({ ...currentChecklist!, ...updates })}
                   />
 
                   <Separator />
@@ -475,7 +473,7 @@ export const LaneChecklistConfigDialog = ({
             variant="primary"
           >
             <Save className="h-4 w-4 mr-2" />
-            {isSubmitting ? "Saving..." : "Save Configuration"}
+            {isSubmitting ? 'Saving...' : 'Save Configuration'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -506,4 +504,4 @@ export const LaneChecklistConfigDialog = ({
       />
     </Dialog>
   );
-};
+}

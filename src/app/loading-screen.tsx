@@ -1,10 +1,11 @@
-"use client";
-import React from "react";
-import { AnimatedGridPattern } from "./auth/login/LoginFormContent";
-import { cx } from "@/lib/cx";
-import { motion } from "framer-motion";
+'use client';
 
-const LoadingScreen = () => {
+import React from 'react';
+import { cx } from '@/lib/cx';
+import { motion } from 'framer-motion';
+import { AnimatedGridPattern } from './auth/login/LoginFormContent';
+
+function LoadingScreen() {
   return (
     <div className="min-h-screen w-full bg-background relative overflow-hidden flex items-center justify-center p-4">
       {/* Animated Background for loading state */}
@@ -15,8 +16,8 @@ const LoadingScreen = () => {
           duration={3}
           repeatDelay={1}
           className={cx(
-            "[mask-image:radial-gradient(500px_circle_at_center,white,transparent)]",
-            "inset-x-0 inset-y-[-30%] h-[200%] skew-y-12"
+            '[mask-image:radial-gradient(500px_circle_at_center,white,transparent)]',
+            'inset-x-0 inset-y-[-30%] h-[200%] skew-y-12',
           )}
         />
       </div>
@@ -41,6 +42,6 @@ const LoadingScreen = () => {
       </motion.div>
     </div>
   );
-};
+}
 
 export default LoadingScreen;

@@ -1,12 +1,14 @@
-"use client";
+'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from "react";
-import { User } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
-import { MentionPicker } from "@/components/ui/mention-picker";
-import { useMentionPicker } from "@/hooks/useMentionPicker";
-import { userCacheService } from "@/lib/services/userCache";
-import { cn } from "@/lib/utils";
+import React, {
+  useState, useRef, useEffect, useCallback,
+} from 'react';
+import { User } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { MentionPicker } from '@/components/ui/mention-picker';
+import { useMentionPicker } from '@/hooks/useMentionPicker';
+import { userCacheService } from '@/lib/services/userCache';
+import { cn } from '@/lib/utils';
 
 interface MentionUser {
   _id: string;
@@ -31,7 +33,7 @@ export function MentionTextarea({
   value,
   onChange,
   onKeyDown,
-  placeholder = "Add a remark... (Alt+Enter to submit)",
+  placeholder = 'Add a remark... (Alt+Enter to submit)',
   className,
   disabled = false,
   organizationId,
@@ -40,14 +42,14 @@ export function MentionTextarea({
 }: MentionTextareaProps) {
   const [showMentionPicker, setShowMentionPicker] = useState(false);
   const [mentionPosition, setMentionPosition] = useState(0);
-  const [mentionQuery, setMentionQuery] = useState("");
-  const [pickerPosition, setPickerPosition] = useState<"bottom" | "top">(
-    "bottom"
+  const [mentionQuery, setMentionQuery] = useState('');
+  const [pickerPosition, setPickerPosition] = useState<'bottom' | 'top'>(
+    'bottom',
   );
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const mentionPickerRef = useRef<{
-    handleKeyDown: (e: React.KeyboardEvent) => void;
-  }>(null);
+    handleKeyDown:(e: React.KeyboardEvent) => void;
+      }>(null);
   const {
     selectedMentions,
     addMention,
@@ -57,12 +59,11 @@ export function MentionTextarea({
   } = useMentionPicker();
 
   // Don't show mention picker for interviewers
-  const shouldShowMentionPicker =
-    currentUserRole === "admin" || currentUserRole === "hr";
+  const shouldShowMentionPicker = currentUserRole === 'admin' || currentUserRole === 'hr';
 
   // Calculate optimal position for mention picker
   const calculatePickerPosition = useCallback(() => {
-    if (!textareaRef.current) return "bottom";
+    if (!textareaRef.current) return 'bottom';
 
     const textareaRect = textareaRef.current.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
@@ -72,11 +73,11 @@ export function MentionTextarea({
 
     // If there's not enough space below but enough space above, show on top
     if (spaceBelow < pickerHeight && spaceAbove > pickerHeight) {
-      return "top";
+      return 'top';
     }
 
     // Default to bottom
-    return "bottom";
+    return 'bottom';
   }, []);
 
   // Handle text change and detect @ mentions
@@ -90,12 +91,12 @@ export function MentionTextarea({
 
     // Check if user typed @
     const textBeforeCursor = newValue.substring(0, cursorPosition);
-    const lastAtIndex = textBeforeCursor.lastIndexOf("@");
+    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
 
     if (lastAtIndex !== -1) {
       const textAfterAt = textBeforeCursor.substring(lastAtIndex + 1);
       // Only show mention picker if there's no space after @
-      if (!textAfterAt.includes(" ") && !textAfterAt.includes("\n")) {
+      if (!textAfterAt.includes(' ') && !textAfterAt.includes('\n')) {
         const position = calculatePickerPosition();
         setPickerPosition(position);
         setShowMentionPicker(true);
@@ -116,18 +117,17 @@ export function MentionTextarea({
     onChange(newText);
     addMention(user);
     setShowMentionPicker(false);
-    setMentionQuery("");
+    setMentionQuery('');
 
     // Focus back to textarea
     setTimeout(() => {
       if (textareaRef.current) {
         textareaRef.current.focus();
         // Position cursor after the mention
-        const newCursorPosition =
-          newText.indexOf(`@${user.name} `) + `@${user.name} `.length;
+        const newCursorPosition = newText.indexOf(`@${user.name} `) + `@${user.name} `.length;
         textareaRef.current.setSelectionRange(
           newCursorPosition,
-          newCursorPosition
+          newCursorPosition,
         );
       }
     }, 0);
@@ -137,7 +137,7 @@ export function MentionTextarea({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (showMentionPicker) {
       // Handle mention picker keyboard navigation
-      if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter") {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter') {
         e.preventDefault();
         // Forward the event to the MentionPicker
         if (mentionPickerRef.current) {
@@ -146,9 +146,9 @@ export function MentionTextarea({
         return;
       }
 
-      if (e.key === "Escape") {
+      if (e.key === 'Escape') {
         setShowMentionPicker(false);
-        setMentionQuery("");
+        setMentionQuery('');
         return;
       }
     }
@@ -182,11 +182,11 @@ export function MentionTextarea({
       }
     };
 
-    window.addEventListener("resize", handleResize);
-    window.addEventListener("scroll", handleScroll, true); // Use capture to catch all scroll events
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('scroll', handleScroll, true); // Use capture to catch all scroll events
     return () => {
-      window.removeEventListener("resize", handleResize);
-      window.removeEventListener("scroll", handleScroll, true);
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleScroll, true);
     };
   }, [showMentionPicker, calculatePickerPosition]);
 
@@ -198,7 +198,7 @@ export function MentionTextarea({
         onChange={handleTextChange}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        className={cn("resize-none", className)}
+        className={cn('resize-none', className)}
         disabled={disabled}
         rows={rows}
       />
@@ -207,8 +207,8 @@ export function MentionTextarea({
       {shouldShowMentionPicker && showMentionPicker && (
         <div
           className={cn(
-            "absolute left-0 z-[9999] w-full max-w-sm transition-all duration-200 ease-in-out",
-            pickerPosition === "top" ? "bottom-full mb-1" : "top-full mt-1"
+            'absolute left-0 z-[9999] w-full max-w-sm transition-all duration-200 ease-in-out',
+            pickerPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1',
           )}
         >
           <MentionPicker
@@ -239,7 +239,9 @@ export function MentionTextarea({
               key={user._id}
               className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary text-xs rounded-full border border-primary/20 hover:bg-primary/15 transition-colors"
             >
-              <User className="h-3 w-3" />@{user.name}
+              <User className="h-3 w-3" />
+              @
+              {user.name}
             </span>
           ))}
         </div>

@@ -1,11 +1,11 @@
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import React from "react";
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import React from 'react';
 
-const InterviewAssignmentSkeleton = () => {
+function InterviewAssignmentSkeleton() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between"> 
+        <div className="flex items-center justify-between">
           <div>
             <div className="h-6 w-56 bg-muted rounded animate-pulse mb-2" />
             <div className="h-4 w-72 bg-muted rounded animate-pulse" />
@@ -53,6 +53,6 @@ const InterviewAssignmentSkeleton = () => {
       </CardContent>
     </Card>
   );
-};
+}
 
 export default InterviewAssignmentSkeleton;

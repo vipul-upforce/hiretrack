@@ -1,24 +1,24 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Loader2, Mail } from "lucide-react";
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Loader2, Mail } from 'lucide-react';
 import {
   EmailNotificationToggle,
   EmailNotificationType,
-} from "@/components/ui/email-notification-toggle";
+} from '@/components/ui/email-notification-toggle';
 import {
   useJobEmailNotificationSettings,
   useUpdateJobEmailNotificationSettings,
-} from "@/hooks/useEmailNotificationSettings";
-import EmailNotificationSettingsSkeleton from "./email-notification-settings-skeleton";
+} from '@/hooks/useEmailNotificationSettings';
+import EmailNotificationSettingsSkeleton from './email-notification-settings-skeleton';
 
 interface JobEmailNotificationSettingsDialogProps {
   isOpen: boolean;
@@ -35,44 +35,43 @@ export function JobEmailNotificationSettingsDialog({
 }: JobEmailNotificationSettingsDialogProps) {
   const allNotificationTypes: EmailNotificationType[] = useMemo(
     () => [
-      "mentions",
-      "newRemarks",
-      "newApplications",
-      "statusUpdates",
-      "detailsUpdated",
-      "interviewAssignments",
-      "stepCompleted",
-      "meetingScheduled",
-      "meetingUpdated",
-      "meetingCancelled",
-      "meetingInviteAccepted",
-      "meetingInviteDeclined",
-      "meetingInviteTentative",
-      "followupAdded",
-      "followupUpdated",
-      "followupRemoved",
-      "checklistCompleted",
-      "jobCreated",
-      "jobUpdated",
-      "candidateRejected",
-      "interviewCompleted",
+      'mentions',
+      'newRemarks',
+      'newApplications',
+      'statusUpdates',
+      'detailsUpdated',
+      'interviewAssignments',
+      'stepCompleted',
+      'meetingScheduled',
+      'meetingUpdated',
+      'meetingCancelled',
+      'meetingInviteAccepted',
+      'meetingInviteDeclined',
+      'meetingInviteTentative',
+      'followupAdded',
+      'followupUpdated',
+      'followupRemoved',
+      'checklistCompleted',
+      'jobCreated',
+      'jobUpdated',
+      'candidateRejected',
+      'interviewCompleted',
     ],
-    []
+    [],
   );
 
   const [localSettings, setLocalSettings] = useState<
     Record<EmailNotificationType, boolean>
   >(
-    () =>
-      Object.fromEntries(
-        allNotificationTypes.map((type) => [type, true])
-      ) as Record<EmailNotificationType, boolean>
+    () => Object.fromEntries(
+      allNotificationTypes.map((type) => [type, true]),
+    ) as Record<EmailNotificationType, boolean>,
   );
 
-  const { settings, loading, error, refetch } =
-    useJobEmailNotificationSettings(jobId);
-  const { updateSettings, loading: updating } =
-    useUpdateJobEmailNotificationSettings();
+  const {
+    settings, loading, error, refetch,
+  } = useJobEmailNotificationSettings(jobId);
+  const { updateSettings, loading: updating } = useUpdateJobEmailNotificationSettings();
 
   useEffect(() => {
     if (settings?.currentJobSettings) {
@@ -125,8 +124,8 @@ export function JobEmailNotificationSettingsDialog({
       // Default to all enabled
       setLocalSettings(
         Object.fromEntries(
-          allNotificationTypes.map((t) => [t, true])
-        ) as Record<EmailNotificationType, boolean>
+          allNotificationTypes.map((t) => [t, true]),
+        ) as Record<EmailNotificationType, boolean>,
       );
     }
   };
@@ -135,8 +134,7 @@ export function JobEmailNotificationSettingsDialog({
     if (!settings) return false;
     const original = settings.currentJobSettings || {};
     const effective = settings.effectiveSettings || {};
-    const compareSource =
-      Object.keys(original).length > 0 ? original : effective;
+    const compareSource = Object.keys(original).length > 0 ? original : effective;
 
     return allNotificationTypes.some((key) => {
       const currentValue = localSettings[key];
@@ -154,7 +152,8 @@ export function JobEmailNotificationSettingsDialog({
             Job Email Notification Settings
           </DialogTitle>
           <DialogDescription>
-            Configure email notification preferences for &ldquo;{jobTitle}
+            Configure email notification preferences for &ldquo;
+            {jobTitle}
             &rdquo;
             <span className="block mt-1 text-sm text-muted-foreground">
               These settings will override your global preferences for this job
@@ -166,7 +165,10 @@ export function JobEmailNotificationSettingsDialog({
           <EmailNotificationSettingsSkeleton />
         ) : error ? (
           <div className="flex items-center justify-center py-8 text-red-500">
-            <span>Error loading settings: {error}</span>
+            <span>
+              Error loading settings:
+              {error}
+            </span>
           </div>
         ) : (
           <>
@@ -178,7 +180,7 @@ export function JobEmailNotificationSettingsDialog({
                   enabled={localSettings[type]}
                   source="job-level"
                   onToggle={handleToggle}
-                  showSource={true}
+                  showSource
                   disabled={updating}
                 />
               ))}

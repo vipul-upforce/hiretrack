@@ -32,14 +32,14 @@ export const onboardingApi = {
   // Get onboarding status
   async getStatus(): Promise<OnboardingStatus | null> {
     try {
-      const response = await fetch("/api/onboarding/status", {
-        credentials: "include",
+      const response = await fetch('/api/onboarding/status', {
+        credentials: 'include',
       });
       if (!response.ok) return null;
       const data: StatusResponse = await response.json();
       return data.onboardingStatus;
     } catch (error) {
-      console.error("Error fetching onboarding status:", error);
+      console.error('Error fetching onboarding status:', error);
       return null;
     }
   },
@@ -47,17 +47,17 @@ export const onboardingApi = {
   // Update onboarding status
   async updateStatus(updates: Partial<OnboardingStatus>): Promise<OnboardingStatus | null> {
     try {
-      const response = await fetch("/api/onboarding/status", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
+      const response = await fetch('/api/onboarding/status', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(updates),
       });
       if (!response.ok) return null;
       const data: StatusResponse = await response.json();
       return data.onboardingStatus;
     } catch (error) {
-      console.error("Error updating onboarding status:", error);
+      console.error('Error updating onboarding status:', error);
       return null;
     }
   },
@@ -65,14 +65,14 @@ export const onboardingApi = {
   // Validate onboarding steps
   async validate(): Promise<ValidateResponse | null> {
     try {
-      const response = await fetch("/api/onboarding/validate", {
-        credentials: "include",
+      const response = await fetch('/api/onboarding/validate', {
+        credentials: 'include',
       });
       if (!response.ok) return null;
       const data: ValidateResponse = await response.json();
       return data;
     } catch (error) {
-      console.error("Error validating onboarding:", error);
+      console.error('Error validating onboarding:', error);
       return null;
     }
   },
@@ -80,17 +80,17 @@ export const onboardingApi = {
   // Validate specific step
   async validateStep(stepId: string): Promise<boolean> {
     try {
-      const response = await fetch("/api/onboarding/validate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
+      const response = await fetch('/api/onboarding/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ step: stepId }),
       });
       if (!response.ok) return false;
       const data: { isValid: boolean } = await response.json();
       return data.isValid;
     } catch (error) {
-      console.error("Error validating step:", error);
+      console.error('Error validating step:', error);
       return false;
     }
   },
@@ -98,14 +98,14 @@ export const onboardingApi = {
   // Get current user
   async getCurrentUser(): Promise<{ user: any } | null> {
     try {
-      const response = await fetch("/api/auth/me", {
-        credentials: "include",
+      const response = await fetch('/api/auth/me', {
+        credentials: 'include',
       });
       if (!response.ok) return null;
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error("Error fetching current user:", error);
+      console.error('Error fetching current user:', error);
       return null;
     }
   },

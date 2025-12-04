@@ -1,7 +1,7 @@
-import { memo } from "react";
-import { QuickFilters } from "./quick-filters";
-import { ColumnToggle } from "./column-toggle";
-import { BulkActions } from "./bulk-actions";
+import { memo } from 'react';
+import { QuickFilters } from './quick-filters';
+import { ColumnToggle } from './column-toggle';
+import { BulkActions } from './bulk-actions';
 
 interface ResultsHeaderProps {
   activeFilters: string[];
@@ -14,7 +14,7 @@ interface ResultsHeaderProps {
   onBulkDelete: () => void;
 }
 
-export const ResultsHeader = memo(function ResultsHeader({
+export const ResultsHeader = memo(({
   activeFilters,
   onFilterToggle,
   onClearAllFilters,
@@ -23,28 +23,26 @@ export const ResultsHeader = memo(function ResultsHeader({
   selectedCandidatesCount,
   onBulkAssignJob,
   onBulkDelete,
-}: ResultsHeaderProps) {
-  return (
-    <div className="flex justify-between items-center p-4 border-b">
-      <QuickFilters
-        activeFilters={activeFilters}
-        onFilterToggle={onFilterToggle}
-        onClearAll={onClearAllFilters}
+}: ResultsHeaderProps) => (
+  <div className="flex justify-between items-center p-4 border-b">
+    <QuickFilters
+      activeFilters={activeFilters}
+      onFilterToggle={onFilterToggle}
+      onClearAll={onClearAllFilters}
+    />
+
+    <div className="flex items-center gap-2">
+      <BulkActions
+        selectedCount={selectedCandidatesCount}
+        onAssignJob={onBulkAssignJob}
+        onDelete={onBulkDelete}
       />
-
-      <div className="flex items-center gap-2">
-        <BulkActions
-          selectedCount={selectedCandidatesCount}
-          onAssignJob={onBulkAssignJob}
-          onDelete={onBulkDelete}
-        />
-        <ColumnToggle
-          visibleColumns={visibleColumns}
-          onColumnToggle={onColumnToggle}
-        />
-      </div>
+      <ColumnToggle
+        visibleColumns={visibleColumns}
+        onColumnToggle={onColumnToggle}
+      />
     </div>
-  );
-});
+  </div>
+));
 
-ResultsHeader.displayName = "ResultsHeader";
+ResultsHeader.displayName = 'ResultsHeader';

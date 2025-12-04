@@ -1,4 +1,4 @@
-import { FormikErrors } from "formik";
+import { FormikErrors } from 'formik';
 
 /**
  * Scrolls to and focuses the first error field in a form.
@@ -12,9 +12,9 @@ import { FormikErrors } from "formik";
 export const scrollToError = (
   errors: FormikErrors<any>,
   options?: {
-    scrollBlock?: "nearest" | "center" | "start" | "end";
+    scrollBlock?: 'nearest' | 'center' | 'start' | 'end';
     preventScrollOnFocus?: boolean;
-  }
+  },
 ): void => {
   if (!errors || Object.keys(errors).length === 0) {
     return;
@@ -25,25 +25,24 @@ export const scrollToError = (
     return;
   }
 
-  const scrollBlock = options?.scrollBlock ?? "nearest";
+  const scrollBlock = options?.scrollBlock ?? 'nearest';
   const preventScrollOnFocus = options?.preventScrollOnFocus ?? true;
 
   let element: HTMLElement | null = null;
 
   // Handle nested customFields errors
-  if (firstErrorKey === "customFields" && errors.customFields) {
+  if (firstErrorKey === 'customFields' && errors.customFields) {
     const customFieldErrors = errors.customFields as Record<string, any>;
     const cfKey = Object.keys(customFieldErrors)[0];
     if (cfKey) {
       // Try multiple selector strategies for custom fields
-      element =
-        (document.querySelector(
-          `[id="customFields.${cfKey}"]`
-        ) as HTMLElement) ||
-        (document.querySelector(
-          `[id="${firstErrorKey}.${cfKey}"]`
-        ) as HTMLElement) ||
-        (document.querySelector(`[data-field-name="${cfKey}"]`) as HTMLElement);
+      element = (document.querySelector(
+        `[id="customFields.${cfKey}"]`,
+      ) as HTMLElement)
+        || (document.querySelector(
+          `[id="${firstErrorKey}.${cfKey}"]`,
+        ) as HTMLElement)
+        || (document.querySelector(`[data-field-name="${cfKey}"]`) as HTMLElement);
     }
   } else {
     // Handle top-level fields
@@ -53,18 +52,15 @@ export const scrollToError = (
     // Fallback to name attribute if id not found
     if (!element) {
       element = document.querySelector(
-        `[name="${firstErrorKey}"]`
+        `[name="${firstErrorKey}"]`,
       ) as HTMLElement;
     }
   }
 
   if (element) {
-    element.scrollIntoView({ behavior: "smooth", block: scrollBlock });
+    element.scrollIntoView({ behavior: 'smooth', block: scrollBlock });
     element.focus({ preventScroll: preventScrollOnFocus });
   } else {
     console.warn(`No element found for error key: ${firstErrorKey}`);
   }
 };
-
-
-

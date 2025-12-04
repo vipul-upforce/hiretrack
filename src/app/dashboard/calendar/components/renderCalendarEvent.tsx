@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
-import { Video, Copy, ExternalLink } from "lucide-react";
-import { CustomCalendarEvent, CandidateAssignment, Job } from "../page"; // Import types from parent
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+import { Video, Copy, ExternalLink } from 'lucide-react';
+import { CustomCalendarEvent, CandidateAssignment, Job } from '../page'; // Import types from parent
 
 interface EventDetailsProps {
   event: CustomCalendarEvent;
@@ -36,12 +36,12 @@ export function RenderEvent({
                 <h3 className="font-semibold text-lg">
                   {event.extendedProps.candidate.name}
                 </h3>
-                {typeof event.extendedProps.candidate.jobId !== "string" &&
-                  (event.extendedProps.candidate.jobId as Job)?.title && (
+                {typeof event.extendedProps.candidate.jobId !== 'string'
+                  && (event.extendedProps.candidate.jobId as Job)?.title && (
                     <p className="text-sm text-muted-foreground capitalize">
                       {(event.extendedProps.candidate.jobId as Job).title}
                     </p>
-                  )}
+                )}
               </div>
 
               <div className="space-y-2">
@@ -58,11 +58,11 @@ export function RenderEvent({
                     <span className="text-sm text-muted-foreground">Date:</span>
                     <span className="text-sm font-medium">
                       {new Date(
-                        event.extendedProps.candidate.assignment.time
-                      ).toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
+                        event.extendedProps.candidate.assignment.time,
+                      ).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
                       })}
                     </span>
                   </div>
@@ -92,7 +92,7 @@ export function RenderEvent({
                           onClick={(e) => {
                             e.stopPropagation();
                             navigator.clipboard.writeText(
-                              event.extendedProps.candidate.assignment?.googleMeet?.meetingLink || ""
+                              event.extendedProps.candidate.assignment?.googleMeet?.meetingLink || '',
                             );
                           }}
                           className="p-1 text-blue-500 hover:text-blue-600 transition-colors"
@@ -130,8 +130,8 @@ export function RenderEvent({
                 )}
               </div>
 
-              {typeof event.extendedProps.candidate.jobId !== "string" &&
-                (event.extendedProps.candidate.jobId as Job)?.skills?.length > 0 && (
+              {typeof event.extendedProps.candidate.jobId !== 'string'
+                && (event.extendedProps.candidate.jobId as Job)?.skills?.length > 0 && (
                   <div>
                     {(event.extendedProps.candidate.jobId as Job).skills.map(
                       (skill: string, skillIndex: number) => (
@@ -142,10 +142,10 @@ export function RenderEvent({
                         >
                           {skill}
                         </Badge>
-                      )
+                      ),
                     )}
                   </div>
-                )}
+              )}
             </div>
           </ScrollArea>
           {hasMultipleEventsToday && <hr className="my-4" />}

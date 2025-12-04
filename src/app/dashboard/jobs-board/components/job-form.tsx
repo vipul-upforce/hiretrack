@@ -1,39 +1,41 @@
-"use client";
+'use client';
 
-import { useFormikContext } from "formik";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { ChipInput } from "@/components/ui/chip-input";
-import { FileUpload } from "@/components/ui/file-upload";
-import { Button } from "@/components/ui/button";
-import { JobFormValues } from "../schemas/job-schema";
-import { toast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useFormikContext } from 'formik';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { ChipInput } from '@/components/ui/chip-input';
+import { FileUpload } from '@/components/ui/file-upload';
+import { Button } from '@/components/ui/button';
+import { toast } from '@/hooks/use-toast';
+import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { LinkIcon, ChevronDown, ChevronUp, Info } from "lucide-react";
-import RichTextEditor from "@/components/ui/rte/RichTextEditor";
-import { Checkbox } from "@/components/ui/checkbox";
-import { useSanitizeFiles } from "@/hooks/useSanitizeFiles";
-import useRoles from "@/hooks/useRoles";
+} from '@/components/ui/select';
+import {
+  LinkIcon, ChevronDown, ChevronUp, Info,
+} from 'lucide-react';
+import RichTextEditor from '@/components/ui/rte/RichTextEditor';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useSanitizeFiles } from '@/hooks/useSanitizeFiles';
+import useRoles from '@/hooks/useRoles';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+} from '@/components/ui/collapsible';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { JobFormValues } from '../schemas/job-schema';
 
 interface JobFormProps {
   job?: {
@@ -42,14 +44,14 @@ interface JobFormProps {
         id: string;
         name: string;
         url: string;
-        type: "pdf";
+        type: 'pdf';
         size: number;
       }>;
       images: Array<{
         id: string;
         name: string;
         url: string;
-        type: "image";
+        type: 'image';
         size: number;
       }>;
     };
@@ -69,7 +71,7 @@ export function JobForm(props: JobFormProps) {
     setFieldTouched,
   } = useFormikContext<JobFormValues>();
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
-  const [newLink, setNewLink] = useState("");
+  const [newLink, setNewLink] = useState('');
   const [showWeights, setShowWeights] = useState(false);
   const { sanitizeFiles } = useSanitizeFiles();
   const role = useRoles();
@@ -78,16 +80,16 @@ export function JobForm(props: JobFormProps) {
     try {
       new URL(newLink); // Validate URL
       const updatedLinks = [...values.links, newLink];
-      setFieldValue("links", updatedLinks);
-      setNewLink("");
+      setFieldValue('links', updatedLinks);
+      setNewLink('');
       setIsLinkDialogOpen(false);
-      console.log("Link added:", newLink);
-      console.log("Updated links:", updatedLinks);
+      console.log('Link added:', newLink);
+      console.log('Updated links:', updatedLinks);
     } catch {
       toast({
-        title: "Invalid URL",
-        description: "Please enter a valid URL (e.g., https://example.com)",
-        variant: "destructive",
+        title: 'Invalid URL',
+        description: 'Please enter a valid URL (e.g., https://example.com)',
+        variant: 'destructive',
       });
     }
   };
@@ -96,7 +98,9 @@ export function JobForm(props: JobFormProps) {
     <div className="space-y-4 pt-0">
       <div className="space-y-2">
         <Label htmlFor="title" className="font-semibold">
-          Job Title <span className="text-red-500">*</span>
+          Job Title
+          {' '}
+          <span className="text-red-500">*</span>
         </Label>
         <Input
           id="title"
@@ -113,11 +117,13 @@ export function JobForm(props: JobFormProps) {
 
       <div className="space-y-2">
         <Label htmlFor="status" className="font-semibold">
-          Status <span className="text-red-500">*</span>
+          Status
+          {' '}
+          <span className="text-red-500">*</span>
         </Label>
         <Select
           value={values.status}
-          onValueChange={(value) => setFieldValue("status", value)}
+          onValueChange={(value) => setFieldValue('status', value)}
         >
           <SelectTrigger>
             <SelectValue placeholder="Select status" />
@@ -135,7 +141,9 @@ export function JobForm(props: JobFormProps) {
 
       <div className="space-y-2">
         <Label htmlFor="description" className="font-semibold">
-          Description <span className="text-red-500">*</span>
+          Description
+          {' '}
+          <span className="text-red-500">*</span>
         </Label>
         <RichTextEditor
           id="description"
@@ -143,9 +151,9 @@ export function JobForm(props: JobFormProps) {
           placeholder="Enter job description..."
           className="min-h-[100px] p-3"
           maxLength={10000}
-          value={values?.description || ""}
-          onChange={(val) => setFieldValue("description", val)}
-          onBlur={() => setFieldTouched("description", true)} // ✅ fixed
+          value={values?.description || ''}
+          onChange={(val) => setFieldValue('description', val)}
+          onBlur={() => setFieldTouched('description', true)} // ✅ fixed
         />
         {errors.description && touched.description && (
           <p className="text-sm text-red-500">{String(errors.description)}</p>
@@ -154,21 +162,22 @@ export function JobForm(props: JobFormProps) {
 
       <div className="space-y-2" id="skills">
         <Label className="font-semibold">
-          Required Skills (Hit Enter to add){" "}
+          Required Skills (Hit Enter to add)
+          {' '}
           <span className="text-red-500">*</span>
         </Label>
         <ChipInput
           value={values.skills}
           onChange={(newSkills) => {
-            setFieldValue("skills", newSkills);
+            setFieldValue('skills', newSkills);
             // setFieldTouched("skills", true);
           }}
           placeholder="Add skills..."
           onSuggestionClick={(suggestion) => {
             if (!values.skills.includes(suggestion)) {
               const newSkills = [...values.skills, suggestion];
-              setFieldValue("skills", newSkills);
-              setFieldTouched("skills", true);
+              setFieldValue('skills', newSkills);
+              setFieldTouched('skills', true);
             }
           }}
         />
@@ -180,7 +189,9 @@ export function JobForm(props: JobFormProps) {
 
       <div className="space-y-2">
         <Label htmlFor="experience" className="font-semibold">
-          Experience (years) <span className="text-red-500">*</span>
+          Experience (years)
+          {' '}
+          <span className="text-red-500">*</span>
         </Label>
         <Input
           id="experience"
@@ -190,7 +201,7 @@ export function JobForm(props: JobFormProps) {
           value={values.experience}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
             const value = parseFloat(e.target.value);
-            setFieldValue("experience", value && !isNaN(value) ? value : "");
+            setFieldValue('experience', value && !isNaN(value) ? value : '');
           }}
           onBlur={handleBlur}
           placeholder="e.g., 5"
@@ -208,7 +219,7 @@ export function JobForm(props: JobFormProps) {
               id="salary.inText"
               name="salary.inText"
               type="text"
-              value={values.salary?.inText || ""}
+              value={values.salary?.inText || ''}
               onChange={handleChange}
               onBlur={handleBlur}
               placeholder="Enter salary or salary range"
@@ -220,7 +231,7 @@ export function JobForm(props: JobFormProps) {
               id="salary.isPrivate"
               checked={values.salary?.isPrivate === true}
               onCheckedChange={(checked) => {
-                setFieldValue("salary.isPrivate", checked);
+                setFieldValue('salary.isPrivate', checked);
               }}
               onBlur={handleBlur}
             />
@@ -245,7 +256,7 @@ export function JobForm(props: JobFormProps) {
                 onClick={() => {
                   const newLinks = [...values.links];
                   newLinks.splice(index, 1);
-                  setFieldValue("links", newLinks);
+                  setFieldValue('links', newLinks);
                 }}
               >
                 ×
@@ -257,7 +268,7 @@ export function JobForm(props: JobFormProps) {
             variant="outline"
             onClick={() => {
               setIsLinkDialogOpen(true);
-              setFieldTouched("links", true);
+              setFieldTouched('links', true);
             }}
           >
             Add Link
@@ -272,7 +283,7 @@ export function JobForm(props: JobFormProps) {
         open={isLinkDialogOpen}
         onOpenChange={(open) => {
           setIsLinkDialogOpen(open);
-          setNewLink("");
+          setNewLink('');
         }}
       >
         <DialogContent>
@@ -290,7 +301,7 @@ export function JobForm(props: JobFormProps) {
                 value={newLink}
                 onChange={(e) => setNewLink(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") {
+                  if (e.key === 'Enter') {
                     e.preventDefault();
                     handleAddLink();
                   }
@@ -318,13 +329,12 @@ export function JobForm(props: JobFormProps) {
         <FileUpload
           onFileSelect={(newFiles) => {
             const sanitizedFiles = sanitizeFiles(newFiles);
-            setFieldValue("files", [
+            setFieldValue('files', [
               ...(values.files || []),
               ...sanitizedFiles.filter(
-                (file) =>
-                  !(values.files || []).some(
-                    (existingFile) => existingFile.name === file.name
-                  )
+                (file) => !(values.files || []).some(
+                  (existingFile) => existingFile.name === file.name,
+                ),
               ),
             ]);
           }}
@@ -333,19 +343,19 @@ export function JobForm(props: JobFormProps) {
           files={values.files || []}
           setter={(files: File[]) => {
             const sanitizedFiles = sanitizeFiles(files);
-            setFieldValue("files", sanitizedFiles);
+            setFieldValue('files', sanitizedFiles);
           }}
         />
       </div>
 
-      {role === "admin" && (
+      {role === 'admin' && (
         <div className="space-y-2">
           <div className=" flex items-center gap-2">
             <Checkbox
               id="promptForStatusChangeReason"
               checked={values.promptForStatusChangeReason === true}
               onCheckedChange={(checked) => {
-                setFieldValue("promptForStatusChangeReason", checked);
+                setFieldValue('promptForStatusChangeReason', checked);
               }}
               onBlur={handleBlur}
             />
@@ -356,7 +366,7 @@ export function JobForm(props: JobFormProps) {
         </div>
       )}
 
-      {role === "admin" && (
+      {role === 'admin' && (
         <div className="space-y-2 border-t pt-4">
           <Collapsible open={showWeights} onOpenChange={setShowWeights}>
             <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
@@ -394,7 +404,7 @@ export function JobForm(props: JobFormProps) {
                     value={values.evaluationWeights?.skills ?? 25}
                     onChange={(e) => {
                       const value = parseInt(e.target.value) || 0;
-                      setFieldValue("evaluationWeights.skills", value);
+                      setFieldValue('evaluationWeights.skills', value);
                     }}
                     onBlur={handleBlur}
                     placeholder="25"
@@ -417,7 +427,7 @@ export function JobForm(props: JobFormProps) {
                     value={values.evaluationWeights?.experience ?? 25}
                     onChange={(e) => {
                       const value = parseInt(e.target.value) || 0;
-                      setFieldValue("evaluationWeights.experience", value);
+                      setFieldValue('evaluationWeights.experience', value);
                     }}
                     onBlur={handleBlur}
                     placeholder="25"
@@ -440,7 +450,7 @@ export function JobForm(props: JobFormProps) {
                     value={values.evaluationWeights?.affordability ?? 25}
                     onChange={(e) => {
                       const value = parseInt(e.target.value) || 0;
-                      setFieldValue("evaluationWeights.affordability", value);
+                      setFieldValue('evaluationWeights.affordability', value);
                     }}
                     onBlur={handleBlur}
                     placeholder="25"
@@ -463,7 +473,7 @@ export function JobForm(props: JobFormProps) {
                     value={values.evaluationWeights?.overall ?? 25}
                     onChange={(e) => {
                       const value = parseInt(e.target.value) || 0;
-                      setFieldValue("evaluationWeights.overall", value);
+                      setFieldValue('evaluationWeights.overall', value);
                     }}
                     onBlur={handleBlur}
                     placeholder="25"
@@ -475,12 +485,15 @@ export function JobForm(props: JobFormProps) {
               </div>
 
               <div className="text-sm text-muted-foreground">
-                Total: {
-                  (values.evaluationWeights?.skills ?? 25) +
-                  (values.evaluationWeights?.experience ?? 25) +
-                  (values.evaluationWeights?.affordability ?? 25) +
-                  (values.evaluationWeights?.overall ?? 25)
-                }% (will be normalized to 100%)
+                Total:
+                {' '}
+                {
+                  (values.evaluationWeights?.skills ?? 25)
+                  + (values.evaluationWeights?.experience ?? 25)
+                  + (values.evaluationWeights?.affordability ?? 25)
+                  + (values.evaluationWeights?.overall ?? 25)
+                }
+                % (will be normalized to 100%)
               </div>
             </CollapsibleContent>
           </Collapsible>

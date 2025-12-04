@@ -1,10 +1,10 @@
-import { signToken } from "@/app/actions/auth";
-import { INotification } from "@/lib/models/notification";
+import { signToken } from '@/app/actions/auth';
+import { INotification } from '@/lib/models/notification';
 
 export async function broadcastNotification(
   orgId: string,
   recipientId: string,
-  notification: INotification
+  notification: INotification,
 ) {
   const orgClients = global.sseNotificationClients?.get(orgId);
   if (!orgClients) return;
@@ -15,12 +15,12 @@ export async function broadcastNotification(
   orgClients.forEach((client) => {
     if (client.userId !== recipientId) return;
     try {
-      const data = `data: ${JSON.stringify({ type: "notification", notification: encoded })}\n\n`;
+      const data = `data: ${JSON.stringify({ type: 'notification', notification: encoded })}\n\n`;
       client.controller.enqueue(encoder.encode(data));
     } catch (error) {
       console.error(
         `Failed to send notification to client ${client.id}:`,
-        error
+        error,
       );
     }
   });
@@ -28,7 +28,7 @@ export async function broadcastNotification(
 
 export async function broadcastNotifications(
   orgId: string,
-  notifications: INotification[]
+  notifications: INotification[],
 ) {
   if (!notifications.length) return;
   const encoder = new TextEncoder();
@@ -47,12 +47,12 @@ export async function broadcastNotifications(
     orgClients.forEach((client) => {
       if (client.userId !== recipientId) return;
       try {
-        const data = `data: ${JSON.stringify({ type: "notifications", notifications: encoded })}\n\n`;
+        const data = `data: ${JSON.stringify({ type: 'notifications', notifications: encoded })}\n\n`;
         client.controller.enqueue(encoder.encode(data));
       } catch (error) {
         console.error(
           `Failed to send notifications to client ${client.id}:`,
-          error
+          error,
         );
       }
     });
@@ -62,13 +62,13 @@ export async function broadcastNotifications(
 export function broadcastNotificationCount(
   orgId: string,
   recipientId: string,
-  count: number
+  count: number,
 ) {
   const orgClients = global.sseNotificationClients?.get(orgId);
   if (!orgClients) return;
 
   const encoder = new TextEncoder();
-  const payload = `data: ${JSON.stringify({ type: "notificationCountUpdated", count })}\n\n`;
+  const payload = `data: ${JSON.stringify({ type: 'notificationCountUpdated', count })}\n\n`;
   orgClients.forEach((client) => {
     if (client.userId !== recipientId) return;
     try {

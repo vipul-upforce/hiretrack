@@ -1,6 +1,6 @@
-import mongoose, { Schema } from "mongoose";
-import { CustomFieldFile } from "../fileUtils";
-import { ITag } from "./organization";
+import mongoose, { Schema } from 'mongoose';
+import { CustomFieldFile } from '../fileUtils';
+import { ITag } from './organization';
 
 export interface FollowUp {
   note: string;
@@ -66,7 +66,7 @@ export interface ICandidate {
       attendeeResponses?: Array<{
         email: string;
         name?: string;
-        responseStatus: "needsAction" | "accepted" | "declined" | "tentative";
+        responseStatus: 'needsAction' | 'accepted' | 'declined' | 'tentative';
         comment?: string;
         lastUpdated: Date;
         notificationSent?: boolean;
@@ -179,7 +179,7 @@ export const candidateSchema = new Schema(
   {
     jobId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Job",
+      ref: 'Job',
       required: false,
     },
     organizationId: String,
@@ -197,7 +197,7 @@ export const candidateSchema = new Schema(
       id: String,
       name: String,
       url: String,
-      type: { type: String, default: "pdf" },
+      type: { type: String, default: 'pdf' },
       size: Number,
     },
     remarks: [
@@ -219,7 +219,7 @@ export const candidateSchema = new Schema(
         },
         userId: {
           type: Schema.Types.ObjectId,
-          ref: "User",
+          ref: 'User',
           required: true,
         },
       },
@@ -233,7 +233,7 @@ export const candidateSchema = new Schema(
       },
       userId: {
         type: Schema.Types.ObjectId,
-        ref: "User",
+        ref: 'User',
       },
     },
     tags: [
@@ -251,22 +251,22 @@ export const candidateSchema = new Schema(
         id: String,
         name: String,
         url: String,
-        type: { type: String, default: "pdf" },
+        type: { type: String, default: 'pdf' },
         size: Number,
       },
     ],
     status: {
       type: String,
       validate: {
-        validator: async function (status: string) {
+        async validator(status: string) {
           // Skip validation if no status is provided
           if (!status) return true;
 
           // Get the job for this candidate
           if (!this.jobId) return true; // Allow if no job assigned
 
-          const Job = mongoose.model("Job");
-          const Organization = mongoose.model("Organization");
+          const Job = mongoose.model('Job');
+          const Organization = mongoose.model('Organization');
 
           try {
             const job = await Job.findById(this.jobId);
@@ -275,29 +275,28 @@ export const candidateSchema = new Schema(
             // Check if job uses custom lanes
             if (job.useCustomLanes && job.lanes) {
               return job.lanes.includes(status);
-            } else {
-              // Use organization default lanes
-              const organization = await Organization.findById(
-                job.organizationId
-              );
-              if (!organization) return true;
-
-              const defaultLanes = organization.defaultLanes || [
-                "applied",
-                "screening",
-                "shortlisted",
-                "processing",
-                "accepted",
-                "rejected",
-              ];
-              return defaultLanes.includes(status);
             }
+            // Use organization default lanes
+            const organization = await Organization.findById(
+              job.organizationId,
+            );
+            if (!organization) return true;
+
+            const defaultLanes = organization.defaultLanes || [
+              'applied',
+              'screening',
+              'shortlisted',
+              'processing',
+              'accepted',
+              'rejected',
+            ];
+            return defaultLanes.includes(status);
           } catch (error) {
-            console.warn("Lane validation error:", error);
+            console.warn('Lane validation error:', error);
             return true; // Allow if validation fails to prevent blocking operations
           }
         },
-        message: "Status must be a valid lane for this job",
+        message: 'Status must be a valid lane for this job',
       },
     },
     tracking: {
@@ -308,7 +307,7 @@ export const candidateSchema = new Schema(
     assignment: {
       interviewerId: {
         type: Schema.Types.ObjectId,
-        ref: "User",
+        ref: 'User',
       },
       assignedAt: Date,
       time: Date,
@@ -325,28 +324,29 @@ export const candidateSchema = new Schema(
               id: String,
               name: String,
               url: String,
-              type: { type: String, default: "pdf" },
+              type: { type: String, default: 'pdf' },
               size: Number,
             },
           ],
           default: undefined,
         },
-        attendeeResponses: {type: [
-          {
-            email: String,
-            name: String,
-            responseStatus: {
-              type: String,
-              enum: ["needsAction", "accepted", "declined", "tentative"],
-              default: "needsAction",
+        attendeeResponses: {
+          type: [
+            {
+              email: String,
+              name: String,
+              responseStatus: {
+                type: String,
+                enum: ['needsAction', 'accepted', 'declined', 'tentative'],
+                default: 'needsAction',
+              },
+              comment: String,
+              lastUpdated: Date,
+              notificationSent: Boolean,
             },
-            comment: String,
-            lastUpdated: Date,
-            notificationSent: Boolean,
-          },
-        ],
-        default: undefined,
-      },
+          ],
+          default: undefined,
+        },
         lastSyncedAt: Date,
       },
     },
@@ -364,8 +364,12 @@ export const candidateSchema = new Schema(
       skills: { type: Number, min: 0, max: 10 },
       affordability: { type: Number, min: 0, max: 10 },
       education: { type: Number, min: 0, max: 10 },
-      projects: { type: Number, min: 0, max: 10, default: 0 },
-      certifications: { type: Number, min: 0, max: 10, default: 0 },
+      projects: {
+        type: Number, min: 0, max: 10, default: 0,
+      },
+      certifications: {
+        type: Number, min: 0, max: 10, default: 0,
+      },
       strengths: [String],
       areas_for_improvement: [String],
       recommendation: String,
@@ -445,7 +449,7 @@ export const candidateSchema = new Schema(
           completedAt: Date,
           completedBy: {
             type: Schema.Types.ObjectId,
-            ref: "User",
+            ref: 'User',
           },
           responses: {
             type: Map,
@@ -468,7 +472,7 @@ export const candidateSchema = new Schema(
           completedAt: Date,
           completedBy: {
             type: Schema.Types.ObjectId,
-            ref: "User",
+            ref: 'User',
           },
           responses: {
             type: Map,
@@ -493,76 +497,78 @@ export const candidateSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Performance indexes for optimized queries
 // Index for job-based queries with sorting (primary use case)
 candidateSchema.index(
-  { jobId: 1, "tracking.createdAt": -1 },
-  { name: "idx_jobId_createdAt", background: true }
+  { jobId: 1, 'tracking.createdAt': -1 },
+  { name: 'idx_jobId_createdAt', background: true },
 );
 
 // Index for organization-based queries with filtering and sorting
 candidateSchema.index(
-  { organizationId: 1, "tracking.createdAt": -1, isDeleted: 1 },
-  { name: "idx_orgId_createdAt_deleted", background: true }
+  { organizationId: 1, 'tracking.createdAt': -1, isDeleted: 1 },
+  { name: 'idx_orgId_createdAt_deleted', background: true },
 );
 
 // Index for organization + job queries
 candidateSchema.index(
-  { organizationId: 1, jobId: 1, "tracking.createdAt": -1 },
-  { name: "idx_orgId_jobId_createdAt", background: true }
+  { organizationId: 1, jobId: 1, 'tracking.createdAt': -1 },
+  { name: 'idx_orgId_jobId_createdAt', background: true },
 );
 
 // Index for status filtering with organization
 candidateSchema.index(
   { organizationId: 1, status: 1, isDeleted: 1 },
-  { name: "idx_orgId_status_deleted", background: true }
+  { name: 'idx_orgId_status_deleted', background: true },
 );
 
 // Index for interviewer assignment queries
 candidateSchema.index(
-  { "assignment.interviewerId": 1, organizationId: 1, "assignment.assignedAt": -1 },
-  { name: "idx_assignment_interviewer_org", background: true, sparse: true }
+  { 'assignment.interviewerId': 1, organizationId: 1, 'assignment.assignedAt': -1 },
+  { name: 'idx_assignment_interviewer_org', background: true, sparse: true },
 );
 
 // Index for follow-up queries
 candidateSchema.index(
-  { "followUp.userId": 1, "followUp.date": -1 },
-  { name: "idx_followUp_userId_date", background: true, sparse: true }
+  { 'followUp.userId': 1, 'followUp.date': -1 },
+  { name: 'idx_followUp_userId_date', background: true, sparse: true },
 );
 
 // Index for email lookups (unique constraint if needed)
-candidateSchema.index({ email: 1 }, { name: "idx_email", background: true });
+candidateSchema.index({ email: 1 }, { name: 'idx_email', background: true });
 
 // Index for organization-wide candidate queries with jobId
 candidateSchema.index(
-  { organizationId: 1, jobId: 1, status: 1, isDeleted: 1 },
-  { name: "idx_orgId_jobId_status_deleted", background: true }
+  {
+    organizationId: 1, jobId: 1, status: 1, isDeleted: 1,
+  },
+  { name: 'idx_orgId_jobId_status_deleted', background: true },
 );
 // CRITICAL MISSING INDEXES:
 
 // 1. Candidates - Assignment time queries (used in assignments route)
 candidateSchema.index(
-  { 
-    "assignment.interviewerId": 1, 
-    "assignment.time": 1,
+  {
+    'assignment.interviewerId': 1,
+    'assignment.time': 1,
     organizationId: 1,
-    isDeleted: 1 
+    isDeleted: 1,
   },
-  { name: "idx_assignment_interviewer_time_org", background: true, sparse: true }
+  { name: 'idx_assignment_interviewer_time_org', background: true, sparse: true },
 );
 
 // 2. Candidates - Job + Status + Date range (analytics)
 candidateSchema.index(
-  { 
-    jobId: 1, 
-    status: 1, 
-    "tracking.createdAt": -1,
-    isDeleted: 1 
+  {
+    jobId: 1,
+    status: 1,
+    'tracking.createdAt': -1,
+    isDeleted: 1,
   },
-  { name: "idx_job_status_created_deleted", background: true }
+  { name: 'idx_job_status_created_deleted', background: true },
 );
 
 // export const Candidate = mongoose.model('Candidate', candidateSchema);

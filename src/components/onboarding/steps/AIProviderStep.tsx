@@ -1,10 +1,14 @@
-"use client";
+'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Bot, ExternalLink, Settings, CheckCircle2, XCircle, Zap } from 'lucide-react';
+import {
+  Bot, ExternalLink, Settings, CheckCircle2, XCircle, Zap,
+} from 'lucide-react';
 import { useOnboarding } from '../OnboardingProvider';
 
 const AIProviderStep: React.FC = () => {
@@ -33,17 +37,17 @@ const AIProviderStep: React.FC = () => {
   };
 
   const aiProviders = [
-    { name: "Google Gemini", description: "Fast and cost-effective AI processing" },
-    { name: "OpenAI GPT", description: "Industry-leading language models" },
-    { name: "Anthropic Claude", description: "Advanced reasoning and analysis" },
-    { name: "Perplexity", description: "Research-focused AI with web access" }
+    { name: 'Google Gemini', description: 'Fast and cost-effective AI processing' },
+    { name: 'OpenAI GPT', description: 'Industry-leading language models' },
+    { name: 'Anthropic Claude', description: 'Advanced reasoning and analysis' },
+    { name: 'Perplexity', description: 'Research-focused AI with web access' },
   ];
 
   const features = [
-    "Automatic resume parsing and data extraction",
-    "Intelligent candidate scoring and ranking", 
-    "Skills and experience matching",
-    "Candidate evaluation insights"
+    'Automatic resume parsing and data extraction',
+    'Intelligent candidate scoring and ranking',
+    'Skills and experience matching',
+    'Candidate evaluation insights',
   ];
 
   return (
@@ -52,7 +56,7 @@ const AIProviderStep: React.FC = () => {
         <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 rounded-full flex items-center justify-center mx-auto border border-border/50">
           <Bot className="w-6 h-6 text-blue-600 dark:text-blue-400" />
         </div>
-        
+
         <div>
           <h2 className="text-xl font-bold text-foreground mb-1">
             AI Provider Configuration
@@ -77,8 +81,8 @@ const AIProviderStep: React.FC = () => {
                 <XCircle className="w-5 h-5 text-muted-foreground" />
               )}
             </CardTitle>
-            <Badge variant={isConfigured ? "default" : "secondary"} className={isConfigured ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" : ""}>
-              {isConfigured ? "Active" : "Not Configured"}
+            <Badge variant={isConfigured ? 'default' : 'secondary'} className={isConfigured ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : ''}>
+              {isConfigured ? 'Active' : 'Not Configured'}
             </Badge>
           </div>
         </CardHeader>
@@ -99,10 +103,10 @@ const AIProviderStep: React.FC = () => {
                 ))}
               </div>
             </div>
-            
+
             <div className="flex gap-3 pt-4">
-              <Button 
-              variant='primary'
+              <Button
+                variant="primary"
                 onClick={handleConfigureAI}
                 className="flex items-center gap-2"
               >
@@ -110,13 +114,13 @@ const AIProviderStep: React.FC = () => {
                 Configure AI Providers
                 <ExternalLink className="w-3 h-3" />
               </Button>
-              
-              <Button 
+
+              <Button
                 variant="outline"
                 onClick={checkConfiguration}
                 disabled={isChecking}
               >
-                {isChecking ? "Checking..." : "Refresh Status"}
+                {isChecking ? 'Checking...' : 'Refresh Status'}
               </Button>
             </div>
           </div>

@@ -1,56 +1,54 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { ILane } from "@/lib/models/Lane";
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { ILane } from '@/lib/models/Lane';
 
 export const laneApi = createApi({
-  reducerPath: "laneApi",
-  baseQuery: fetchBaseQuery({ baseUrl: "/api" }),
-  tagTypes: ["Lane"],
+  reducerPath: 'laneApi',
+  baseQuery: fetchBaseQuery({ baseUrl: '/api' }),
+  tagTypes: ['Lane'],
   endpoints: (builder) => ({
     getLanes: builder.query({
       query: ({ userId, jobId }: { userId?: string; jobId?: string }) => {
         const params = new URLSearchParams();
-        if (userId) params.append("userId", userId);
-        if (jobId) params.append("jobId", jobId);
+        if (userId) params.append('userId', userId);
+        if (jobId) params.append('jobId', jobId);
         return `lanes?${params.toString()}`;
       },
-      providesTags: ["Lane"],
+      providesTags: ['Lane'],
     }),
     // NEW: Get job-specific lanes
     getJobLanes: builder.query({
       query: (jobId: string) => `jobs/${jobId}/lanes`,
-      providesTags: ["Lane"],
+      providesTags: ['Lane'],
     }),
     updateLanes: builder.mutation<ILane, { userId: string; lanes: string[] }>({
       query: (data) => ({
-        url: "lanes",
-        method: "PUT",
+        url: 'lanes',
+        method: 'PUT',
         body: data,
       }),
-      invalidatesTags: ["Lane"],
+      invalidatesTags: ['Lane'],
     }),
     editLane: builder.mutation<
       ILane,
       { organizationId: string; prevLaneId: string; newLaneId: string }
     >({
       query: (data) => ({
-        url: `lanes/${data.prevLaneId || ""}`,
-        method: "PATCH",
+        url: `lanes/${data.prevLaneId || ''}`,
+        method: 'PATCH',
         body: data,
       }),
-      invalidatesTags: ["Lane"],
+      invalidatesTags: ['Lane'],
     }),
     deleteLane: builder.mutation<
       void,
       { laneId: string; organizationId: string | object }
     >({
-      query: ({ organizationId, laneId }) => {
-        return {
-          url: `lanes/${laneId}`,
-          method: "DELETE",
-          body: { organizationId },
-        };
-      },
-      invalidatesTags: ["Lane"],
+      query: ({ organizationId, laneId }) => ({
+        url: `lanes/${laneId}`,
+        method: 'DELETE',
+        body: { organizationId },
+      }),
+      invalidatesTags: ['Lane'],
     }),
     // NEW: Delete job-specific lane
     deleteJobLane: builder.mutation<
@@ -62,9 +60,9 @@ export const laneApi = createApi({
         body: {
           migrationLane,
         },
-        method: "DELETE",
+        method: 'DELETE',
       }),
-      invalidatesTags: ["Lane"],
+      invalidatesTags: ['Lane'],
     }),
     // NEW: Rename job-specific lane
     renameJobLane: builder.mutation<
@@ -73,47 +71,47 @@ export const laneApi = createApi({
     >({
       query: ({ jobId, laneName, newLaneName }) => ({
         url: `jobs/${jobId}/lanes/${laneName}`,
-        method: "PATCH",
+        method: 'PATCH',
         body: { newLaneName },
       }),
-      invalidatesTags: ["Lane"],
+      invalidatesTags: ['Lane'],
     }),
   }),
 });
 
 // Default Lanes
 export const defaultLanesApi = createApi({
-  reducerPath: "defaultLanesApi",
-  baseQuery: fetchBaseQuery({ baseUrl: "/api/organizations" }),
-  tagTypes: ["DefaultLanes"],
+  reducerPath: 'defaultLanesApi',
+  baseQuery: fetchBaseQuery({ baseUrl: '/api/organizations' }),
+  tagTypes: ['DefaultLanes'],
   endpoints: (builder) => ({
     getDefaultLanes: builder.query({
-      query: () => `default-lanes`,
-      providesTags: ["DefaultLanes"],
+      query: () => 'default-lanes',
+      providesTags: ['DefaultLanes'],
     }),
     updateDefaultLanes: builder.mutation({
       query: (defaultLanes) => ({
-        url: `default-lanes`,
-        method: "PUT",
+        url: 'default-lanes',
+        method: 'PUT',
         body: { defaultLanes },
       }),
-      invalidatesTags: ["DefaultLanes"],
+      invalidatesTags: ['DefaultLanes'],
     }),
     addDefaultLane: builder.mutation({
       query: (laneName) => ({
-        url: `default-lanes`,
-        method: "POST",
+        url: 'default-lanes',
+        method: 'POST',
         body: { laneName },
       }),
-      invalidatesTags: ["DefaultLanes"],
+      invalidatesTags: ['DefaultLanes'],
     }),
     deleteDefaultLane: builder.mutation({
       query: (laneName) => ({
-        url: `default-lanes`,
-        method: "DELETE",
+        url: 'default-lanes',
+        method: 'DELETE',
         body: { laneName },
       }),
-      invalidatesTags: ["DefaultLanes"],
+      invalidatesTags: ['DefaultLanes'],
     }),
   }),
 });
@@ -124,7 +122,6 @@ export const {
   useAddDefaultLaneMutation,
   useDeleteDefaultLaneMutation,
 } = defaultLanesApi;
-
 
 export const {
   useGetLanesQuery,

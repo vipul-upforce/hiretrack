@@ -1,22 +1,21 @@
-import { NextResponse } from "next/server";
-import connectToDatabase from "@/lib/mongodb";
-import { Candidate } from "@/lib/mongodb";
+import { NextResponse } from 'next/server';
+import connectToDatabase, { Candidate } from '@/lib/mongodb';
 
 export async function GET(
   _request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await connectToDatabase();
     const { id } = await params;
     if (!Candidate) {
       return NextResponse.json(
-        { error: "Candidate Model Not Found" },
-        { status: 404 }
+        { error: 'Candidate Model Not Found' },
+        { status: 404 },
       );
     }
     const candidates = await Candidate.find({ jobId: id }).sort({
-      "tracking.createdAt": -1,
+      'tracking.createdAt': -1,
     }).lean().exec();
 
     return NextResponse.json(candidates);

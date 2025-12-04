@@ -1,7 +1,10 @@
-"use client";
-import { MetricsCardsGrid } from "./metrics-cards-grid";
-import { QuickInsightsSection } from "./quick-insights-section";
-import type { FunnelData, JobData, InterviewData, TrendsData } from "../types";
+'use client';
+
+import { MetricsCardsGrid } from './metrics-cards-grid';
+import { QuickInsightsSection } from './quick-insights-section';
+import type {
+  FunnelData, JobData, InterviewData, TrendsData,
+} from '../types';
 
 interface OverviewTabProps {
   funnelData: FunnelData;

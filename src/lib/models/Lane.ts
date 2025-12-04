@@ -1,4 +1,4 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema } from 'mongoose';
 
 export interface ILane {
   userId: string;
@@ -19,7 +19,7 @@ export const laneSchema = new mongoose.Schema<ILane>({
   order: { type: Number, default: 0 },
   organizationId: {
     type: Schema.Types.ObjectId,
-    ref: "Organization",
+    ref: 'Organization',
   },
 });
 

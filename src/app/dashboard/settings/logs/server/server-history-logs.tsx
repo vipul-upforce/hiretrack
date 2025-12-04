@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { CandidateDetailsDialog } from "@/app/dashboard/jobs/[id]/components/Dialogs/candidate-details-dialog";
-import { ServerHistoryLogsProps } from "./types";
-import { useServerLogsLogic } from "./hooks/use-server-logs-logic";
-import { FilterBar } from "./components/filter-bar";
-import { LogsLoadingState } from "./components/logs-loading-state";
-import { LogsEmptyState } from "./components/logs-empty-state";
-import { LogsMobileList } from "./components/logs-mobile-list";
-import { LogsDesktopTable } from "./components/logs-desktop-table";
-import { LogsPagination } from "./components/logs-pagination";
+import { CandidateDetailsDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/candidate-details-dialog';
+import { ServerHistoryLogsProps } from './types';
+import { useServerLogsLogic } from './hooks/use-server-logs-logic';
+import { FilterBar } from './components/filter-bar';
+import { LogsLoadingState } from './components/logs-loading-state';
+import { LogsEmptyState } from './components/logs-empty-state';
+import { LogsMobileList } from './components/logs-mobile-list';
+import { LogsDesktopTable } from './components/logs-desktop-table';
+import { LogsPagination } from './components/logs-pagination';
 
 export function ServerHistoryLogs(props: ServerHistoryLogsProps) {
   const {

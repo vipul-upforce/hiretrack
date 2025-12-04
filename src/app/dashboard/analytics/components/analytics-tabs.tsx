@@ -1,24 +1,27 @@
-"use client";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+'use client';
+
+import {
+  Tabs, TabsContent, TabsList, TabsTrigger,
+} from '@/components/ui/tabs';
 import {
   HomeIcon,
   GitBranchIcon,
   BriefcaseIcon,
   MessageSquareIcon,
   ActivityIcon,
-} from "lucide-react";
-import { OverviewTab } from "./overview/overview-tab";
-import { CandidateFunnelChart } from "./candidate-funnel/CandidateFunnelChart";
-import { JobPerformanceChart } from "./job-performance/JobPerformanceChart";
-import { InterviewAssignmentChart } from "./interview-assignment/InterviewAssignmentChart";
-import { ApplicationTrendsChart } from "./trends/ApplicationTrendsChart";
+} from 'lucide-react';
+import { OverviewTab } from './overview/overview-tab';
+import { CandidateFunnelChart } from './candidate-funnel/CandidateFunnelChart';
+import { JobPerformanceChart } from './job-performance/JobPerformanceChart';
+import { InterviewAssignmentChart } from './interview-assignment/InterviewAssignmentChart';
+import { ApplicationTrendsChart } from './trends/ApplicationTrendsChart';
 import type {
   FunnelData,
   JobData,
   InterviewData,
   TrendsData,
   Filters,
-} from "./types";
+} from './types';
 
 interface AnalyticsTabsProps {
   activeTab: string;

@@ -1,17 +1,16 @@
-import { ErrorMessage, useFormikContext } from "formik";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { FORM_FIELDS } from "../constants";
-import { SMTPFormValues } from "../types";
+import { ErrorMessage, useFormikContext } from 'formik';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { FORM_FIELDS } from '../constants';
+import { SMTPFormValues } from '../types';
 
-export const DynamicInputs = () => {
-  const { values, handleChange, handleBlur } =
-    useFormikContext<SMTPFormValues>();
+export function DynamicInputs() {
+  const { values, handleChange, handleBlur } = useFormikContext<SMTPFormValues>();
 
   return (
     <>
       {FORM_FIELDS.filter(
-        (field) => field.condition === values.mailProvider
+        (field) => field.condition === values.mailProvider,
       ).map(({ label, name, placeholder }) => (
         <div key={name} className="space-y-2">
           <Label htmlFor={name}>{label}</Label>
@@ -32,4 +31,4 @@ export const DynamicInputs = () => {
       ))}
     </>
   );
-};
+}

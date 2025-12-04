@@ -1,5 +1,5 @@
-import { IEmailTemplate } from "@/app/dashboard/settings/components/types";
-import { Schema, Document } from "mongoose";
+import { IEmailTemplate } from '@/app/dashboard/settings/components/types';
+import { Schema, Document } from 'mongoose';
 
 const fileMetaSchema = new Schema(
   {
@@ -9,7 +9,7 @@ const fileMetaSchema = new Schema(
     type: { type: String, default: null },
     size: { type: Number, required: true },
   },
-  { _id: false, strict: true }
+  { _id: false, strict: true },
 );
 
 const templateSchema = new Schema(
@@ -19,35 +19,35 @@ const templateSchema = new Schema(
     subject: { type: String, required: true },
     html: { type: String, required: true },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const settingsSchema = new Schema({
   organizationId: { type: String, required: true },
   multipleOrg: { type: Boolean, default: false, required: true }, // Fixed typo: "requred" -> "required"
   fileStorage: {
-    storageType: { type: String, default: "" },
-    cloudinaryCloudName: { type: String, default: "" },
-    cloudinaryApiSecret: { type: String, default: "" },
-    cloudinaryApiKey: { type: String, default: "" },
-    awsRegion: { type: String, default: "" },
-    awsAccessKeyId: { type: String, default: "" },
-    awsSecretAccessKey: { type: String, default: "" },
-    awsBucketName: { type: String, default: "" },
+    storageType: { type: String, default: '' },
+    cloudinaryCloudName: { type: String, default: '' },
+    cloudinaryApiSecret: { type: String, default: '' },
+    cloudinaryApiKey: { type: String, default: '' },
+    awsRegion: { type: String, default: '' },
+    awsAccessKeyId: { type: String, default: '' },
+    awsSecretAccessKey: { type: String, default: '' },
+    awsBucketName: { type: String, default: '' },
   },
   mailConfig: {
-    mailProvider: { type: String, default: "" },
-    smtp_host: { type: String, default: "" },
-    smtp_port: { type: String, default: "" },
-    smtp_user: { type: String, default: "" },
-    smtp_password: { type: String, default: "" },
-    smtp_from: { type: String, default: "" },
-    resend_api_key: { type: String, default: "" },
-    resend_from: { type: String, default: "" },
-    resend_reply_to: { type: String, default: "" },
-    brevo_api_key: { type: String, default: "" },
-    brevo_from: { type: String, default: "" },
-    brevo_reply_to: { type: String, default: "" },
+    mailProvider: { type: String, default: '' },
+    smtp_host: { type: String, default: '' },
+    smtp_port: { type: String, default: '' },
+    smtp_user: { type: String, default: '' },
+    smtp_password: { type: String, default: '' },
+    smtp_from: { type: String, default: '' },
+    resend_api_key: { type: String, default: '' },
+    resend_from: { type: String, default: '' },
+    resend_reply_to: { type: String, default: '' },
+    brevo_api_key: { type: String, default: '' },
+    brevo_from: { type: String, default: '' },
+    brevo_reply_to: { type: String, default: '' },
   },
   portalConfigs: {
     portalLogo: {
@@ -72,42 +72,42 @@ const settingsSchema = new Schema({
     },
     portalName: {
       type: String,
-      default: "",
+      default: '',
     },
     primaryColor: {
       type: String,
-      default: "#6366f1",
+      default: '#6366f1',
     },
     secondaryColor: {
       type: String,
-      default: "#8b5cf6",
+      default: '#8b5cf6',
     },
   },
   aiProviders: {
     activeProvider: {
       type: String,
-      enum: ["gemini", "openai", "anthropic", "perplexity"],
-      default: "gemini",
+      enum: ['gemini', 'openai', 'anthropic', 'perplexity'],
+      default: 'gemini',
     },
     gemini: {
-      api_key: { type: String, default: "" },
-      model: { type: String, default: "gemini-1.5-flash" },
-      customModel: { type: String, default: "" },
+      api_key: { type: String, default: '' },
+      model: { type: String, default: 'gemini-1.5-flash' },
+      customModel: { type: String, default: '' },
     },
     openai: {
-      api_key: { type: String, default: "" },
-      model: { type: String, default: "gpt-4o-mini" },
-      customModel: { type: String, default: "" },
+      api_key: { type: String, default: '' },
+      model: { type: String, default: 'gpt-4o-mini' },
+      customModel: { type: String, default: '' },
     },
     anthropic: {
-      api_key: { type: String, default: "" },
-      model: { type: String, default: "claude-3-5-sonnet-20241022" },
-      customModel: { type: String, default: "" },
+      api_key: { type: String, default: '' },
+      model: { type: String, default: 'claude-3-5-sonnet-20241022' },
+      customModel: { type: String, default: '' },
     },
     perplexity: {
-      api_key: { type: String, default: "" },
-      model: { type: String, default: "sonar-pro" },
-      customModel: { type: String, default: "" },
+      api_key: { type: String, default: '' },
+      model: { type: String, default: 'sonar-pro' },
+      customModel: { type: String, default: '' },
     },
   },
   timeZone: {
@@ -136,19 +136,19 @@ const settingsSchema = new Schema({
     },
     clientId: {
       type: String,
-      default: "",
+      default: '',
     },
     clientSecret: {
       type: String,
-      default: "",
+      default: '',
     },
     accessToken: {
       type: String,
-      default: "",
+      default: '',
     },
     refreshToken: {
       type: String,
-      default: "",
+      default: '',
     },
     expiryDate: {
       type: Number,
@@ -156,7 +156,7 @@ const settingsSchema = new Schema({
     },
     connectedEmail: {
       type: String,
-      default: "",
+      default: '',
     },
   },
   onboardingStatus: {
@@ -192,11 +192,11 @@ const settingsSchema = new Schema({
     },
     siteKey: {
       type: String,
-      default: "",
+      default: '',
     },
     secretKey: {
       type: String,
-      default: "",
+      default: '',
     },
   },
   organizationEmailNotifications: {
@@ -281,7 +281,7 @@ const settingsSchema = new Schema({
 // Performance index for organization-based queries
 settingsSchema.index(
   { organizationId: 1 },
-  { name: "idx_settings_orgId", background: true, unique: true }
+  { name: 'idx_settings_orgId', background: true, unique: true },
 );
 
 export interface OrganizationEmailNotifications {
@@ -366,7 +366,7 @@ export interface Ifs {
 }
 
 export interface IAIProviders {
-  activeProvider: "gemini" | "openai" | "anthropic" | "perplexity";
+  activeProvider: 'gemini' | 'openai' | 'anthropic' | 'perplexity';
   gemini: {
     api_key: string;
     model: string;

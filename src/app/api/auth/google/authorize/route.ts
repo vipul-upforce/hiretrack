@@ -1,12 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Settings } from "@/lib/mongodb";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { Settings } from '@/lib/mongodb';
+import { verifyAndDecryptToken } from '@/app/actions/auth';
 import {
   createOAuth2Client,
   getAuthUrl,
   getRedirectUri,
-} from "@/lib/google-calendar/config";
-import { decryptText } from "@/lib/encryption";
+} from '@/lib/google-calendar/config';
+import { decryptText } from '@/lib/encryption';
 
 export async function GET(req: NextRequest) {
   try {
@@ -25,24 +25,24 @@ export async function GET(req: NextRequest) {
         </html>
       `,
         {
-          headers: { "Content-Type": "text/html" },
-        }
+          headers: { 'Content-Type': 'text/html' },
+        },
       );
     }
 
     // Verify user is admin
-    let organizationId = "";
-    const token = req.cookies.get("auth_token");
-    const orgId = req.cookies.get("org_id")?.value;
+    let organizationId = '';
+    const token = req.cookies.get('auth_token');
+    const orgId = req.cookies.get('org_id')?.value;
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
         String(token?.value),
-        orgId
+        orgId,
       );
       const userData = decryptedResponse.user;
       if (decryptedResponse.success) {
-        organizationId = userData.organizationId || "";
-        if (userData.role !== "admin" && userData.role !== "hr") {
+        organizationId = userData.organizationId || '';
+        if (userData.role !== 'admin' && userData.role !== 'hr') {
           return new NextResponse(
             `
             <html>
@@ -55,8 +55,8 @@ export async function GET(req: NextRequest) {
             </html>
           `,
             {
-              headers: { "Content-Type": "text/html" },
-            }
+              headers: { 'Content-Type': 'text/html' },
+            },
           );
         }
       } else {
@@ -72,8 +72,8 @@ export async function GET(req: NextRequest) {
           </html>
         `,
           {
-            headers: { "Content-Type": "text/html" },
-          }
+            headers: { 'Content-Type': 'text/html' },
+          },
         );
       }
     } else {
@@ -89,16 +89,16 @@ export async function GET(req: NextRequest) {
         </html>
       `,
         {
-          headers: { "Content-Type": "text/html" },
-        }
+          headers: { 'Content-Type': 'text/html' },
+        },
       );
     }
 
     // Get Google Calendar settings
     const settings = await Settings.findOne({ organizationId });
     if (
-      !settings?.googleCalendar?.clientId ||
-      !settings?.googleCalendar?.clientSecret
+      !settings?.googleCalendar?.clientId
+      || !settings?.googleCalendar?.clientSecret
     ) {
       return new NextResponse(
         `
@@ -112,15 +112,15 @@ export async function GET(req: NextRequest) {
         </html>
       `,
         {
-          headers: { "Content-Type": "text/html" },
-        }
+          headers: { 'Content-Type': 'text/html' },
+        },
       );
     }
 
     // Decrypt client secret
     const clientSecret = decryptText(
       settings.googleCalendar.clientSecret,
-      orgId
+      orgId,
     );
 
     // Create OAuth2 client
@@ -133,8 +133,8 @@ export async function GET(req: NextRequest) {
 
     const oauth2Client = createOAuth2Client({
       clientId: settings.googleCalendar.clientId,
-      clientSecret: clientSecret,
-      redirectUri: redirectUri,
+      clientSecret,
+      redirectUri,
     });
 
     // Generate auth URL with state parameter for security
@@ -142,18 +142,17 @@ export async function GET(req: NextRequest) {
       JSON.stringify({
         organizationId,
         timestamp: Date.now(),
-      })
-    ).toString("base64");
+      }),
+    ).toString('base64');
 
-    const authUrl = getAuthUrl(oauth2Client) + `&state=${state}`;
+    const authUrl = `${getAuthUrl(oauth2Client)}&state=${state}`;
     // console.log("Generated auth URL:", authUrl);
 
     // Redirect to Google OAuth consent screen
     return NextResponse.redirect(authUrl);
   } catch (error) {
-    console.error("Google Calendar authorization error:", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "Authorization failed";
+    console.error('Google Calendar authorization error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Authorization failed';
     return new NextResponse(
       `
       <html>
@@ -169,8 +168,8 @@ export async function GET(req: NextRequest) {
       </html>
     `,
       {
-        headers: { "Content-Type": "text/html" },
-      }
+        headers: { 'Content-Type': 'text/html' },
+      },
     );
   }
 }

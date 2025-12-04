@@ -1,10 +1,10 @@
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from '@/components/ui/popover';
 import {
   Copy,
   Tag,
@@ -19,15 +19,15 @@ import {
   IndianRupee,
   AlertCircle,
   FileDown,
-} from "lucide-react";
-import { CandidateStatusBadge } from "../Utils/candidate-status-badge";
-import { Candidate } from "@/types/candidate";
-import { formatDate, formatTime } from "../../hooks/dateTimeFormatting";
-import { User as UserType } from "@/lib/features/users/usersApi";
-import TagsDialog from "../Dialogs/tags-dialog";
-import TagsList from "@/components/ui/tagsList";
-import { useRef, useState } from "react";
-import { ShareCandidateDialog } from "../Dialogs/share-candidate-dialog";
+} from 'lucide-react';
+import { Candidate } from '@/types/candidate';
+import { User as UserType } from '@/lib/features/users/usersApi';
+import TagsList from '@/components/ui/tagsList';
+import { useRef, useState } from 'react';
+import TagsDialog from '../Dialogs/tags-dialog';
+import { formatDate, formatTime } from '../../hooks/dateTimeFormatting';
+import { CandidateStatusBadge } from '../Utils/candidate-status-badge';
+import { ShareCandidateDialog } from '../Dialogs/share-candidate-dialog';
 
 interface DetailsDialogHeaderProps {
   candidate: Candidate;
@@ -53,7 +53,7 @@ export default function DetailsDialogHeader({
 
   const handleDownloadCV = () => {
     if (candidate.resume?.url) {
-      const link = document.createElement("a");
+      const link = document.createElement('a');
       link.href = candidate.resume.url;
       link.download = `${candidate.name}_Resume.pdf`;
       document.body.appendChild(link);
@@ -63,7 +63,7 @@ export default function DetailsDialogHeader({
   };
 
   const handleInterviewerClick = () => {
-    if (user?.role == "interviewer") {
+    if (user?.role == 'interviewer') {
       return; // Prevent action for interviewer users
     }
     if (onAssignClick) {
@@ -83,14 +83,14 @@ export default function DetailsDialogHeader({
                 variant="ghost"
                 size="icon"
                 className="ml-1 h-5 w-5"
-                onClick={() => handleCandidateInfoCopy(candidate.name || "")}
+                onClick={() => handleCandidateInfoCopy(candidate.name || '')}
                 title="Copy Name"
               >
                 <Copy size={12} />
                 <span className="sr-only">Copy Name</span>
               </Button>
               {candidate.isDeleted ? (
-                <Badge className={`bg-red-500`}>Archived</Badge>
+                <Badge className="bg-red-500">Archived</Badge>
               ) : null}
             </div>
             {candidate.email && (
@@ -102,9 +102,7 @@ export default function DetailsDialogHeader({
                     variant="ghost"
                     size="icon"
                     className="ml-1 h-5 w-5"
-                    onClick={() =>
-                      handleCandidateInfoCopy(candidate.email || "")
-                    }
+                    onClick={() => handleCandidateInfoCopy(candidate.email || '')}
                     title="Copy Email"
                   >
                     <Copy size={12} />
@@ -119,9 +117,7 @@ export default function DetailsDialogHeader({
                       variant="ghost"
                       size="icon"
                       className="ml-1 h-5 w-5"
-                      onClick={() =>
-                        handleCandidateInfoCopy(candidate.contact || "")
-                      }
+                      onClick={() => handleCandidateInfoCopy(candidate.contact || '')}
                       title="Copy Contact Number"
                     >
                       <Copy size={12} />
@@ -130,8 +126,8 @@ export default function DetailsDialogHeader({
                   </div>
                 )}
                 <div className="flex items-center gap-1">
-                  {(user?.role === "admin" || user?.role === "hr") && (
-                    <Popover modal={true}>
+                  {(user?.role === 'admin' || user?.role === 'hr') && (
+                    <Popover modal>
                       <PopoverTrigger asChild>
                         <Button
                           variant="ghost"
@@ -171,7 +167,7 @@ export default function DetailsDialogHeader({
                       <span className="sr-only">Download CV</span>
                     </Button>
                   )}
-                  {(user?.role === "admin" || user?.role === "hr") && (
+                  {(user?.role === 'admin' || user?.role === 'hr') && (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -194,47 +190,52 @@ export default function DetailsDialogHeader({
                   {candidate.location}
                 </span>
               )}
-              {(candidate.relevantExperience !== undefined ||
-                candidate.experience !== undefined) && (
+              {(candidate.relevantExperience !== undefined
+                || candidate.experience !== undefined) && (
                 <span className="text-sm font-normal text-gray-600 dark:text-gray-400 flex items-center gap-1">
                   <Briefcase size={12} />
-                  Exp:{" "}
-                  {candidate.relevantExperience !== undefined &&
-                    `${candidate.relevantExperience}y Rel`}
-                  {candidate.relevantExperience !== undefined &&
-                    candidate.experience !== undefined &&
-                    ", "}
-                  {candidate.experience !== undefined &&
-                    `${candidate.experience}y Total`}
+                  Exp:
+                  {' '}
+                  {candidate.relevantExperience !== undefined
+                    && `${candidate.relevantExperience}y Rel`}
+                  {candidate.relevantExperience !== undefined
+                    && candidate.experience !== undefined
+                    && ', '}
+                  {candidate.experience !== undefined
+                    && `${candidate.experience}y Total`}
                 </span>
               )}
               {candidate.noticePeriod !== undefined && (
                 <span className="text-sm font-normal text-gray-600 dark:text-gray-400 flex items-center gap-1">
                   <AlertCircle size={12} />
-                  Notice: {candidate.noticePeriod}d
+                  Notice:
+                  {' '}
+                  {candidate.noticePeriod}
+                  d
                 </span>
               )}
-              {((candidate.currentCTC !== undefined &&
-                candidate.currentCTC !== null) ||
-                (candidate.expectedCTC !== undefined &&
-                  candidate.expectedCTC !== null)) &&
-                user?.role !== "interviewer" && (
+              {((candidate.currentCTC !== undefined
+                && candidate.currentCTC !== null)
+                || (candidate.expectedCTC !== undefined
+                  && candidate.expectedCTC !== null))
+                && user?.role !== 'interviewer' && (
                   <span className="text-sm font-normal text-gray-600 dark:text-gray-400 flex items-center gap-1">
                     <IndianRupee size={12} />
-                    Salary:{" "}
-                    {candidate.currentCTC !== undefined &&
-                      candidate.currentCTC !== null &&
-                      `${candidate.currentCTC}L Cur`}
-                    {candidate.currentCTC !== undefined &&
-                      candidate.currentCTC !== null &&
-                      candidate.expectedCTC !== undefined &&
-                      candidate.expectedCTC !== null &&
-                      ", "}
-                    {candidate.expectedCTC !== undefined &&
-                      candidate.expectedCTC !== null &&
-                      `${candidate.expectedCTC}L Exp`}
+                    Salary:
+                    {' '}
+                    {candidate.currentCTC !== undefined
+                      && candidate.currentCTC !== null
+                      && `${candidate.currentCTC}L Cur`}
+                    {candidate.currentCTC !== undefined
+                      && candidate.currentCTC !== null
+                      && candidate.expectedCTC !== undefined
+                      && candidate.expectedCTC !== null
+                      && ', '}
+                    {candidate.expectedCTC !== undefined
+                      && candidate.expectedCTC !== null
+                      && `${candidate.expectedCTC}L Exp`}
                   </span>
-                )}
+              )}
             </div>
           </div>
 
@@ -249,11 +250,11 @@ export default function DetailsDialogHeader({
               </p>
 
               {/* Interview Details */}
-              {candidate?.assignment &&
-                candidate.assignment.interviewerId &&
-                typeof candidate.assignment.interviewerId === "object" &&
-                candidate.assignment.interviewerId._id &&
-                candidate.assignment.interviewerId.name && (
+              {candidate?.assignment
+                && candidate.assignment.interviewerId
+                && typeof candidate.assignment.interviewerId === 'object'
+                && candidate.assignment.interviewerId._id
+                && candidate.assignment.interviewerId.name && (
                   <div className="mt-2">
                     <div
                       className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded px-2 py-1 min-w-[250px] cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors duration-200"
@@ -276,13 +277,16 @@ export default function DetailsDialogHeader({
                           className="text-blue-600 dark:text-blue-400"
                         />
                         <span className="text-blue-700 dark:text-blue-300">
-                          {formatDate(candidate?.assignment?.time)} •{" "}
+                          {formatDate(candidate?.assignment?.time)}
+                          {' '}
+                          •
+                          {' '}
                           {formatTime(candidate?.assignment?.time)}
                         </span>
                       </div>
                     </div>
                   </div>
-                )}
+              )}
             </div>
           </div>
         </div>

@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useMemo } from "react";
-import { skipToken } from "@reduxjs/toolkit/query";
-import type { FetchBaseQueryError } from "@reduxjs/toolkit/query";
-import type { SerializedError } from "@reduxjs/toolkit";
+import { useMemo } from 'react';
+import { skipToken } from '@reduxjs/toolkit/query';
+import type { FetchBaseQueryError } from '@reduxjs/toolkit/query';
+import type { SerializedError } from '@reduxjs/toolkit';
 import type {
   AssignmentData,
   FunnelData as FunnelStage,
@@ -13,13 +13,12 @@ import type {
   GeographicData,
   ActivityData,
   CustomFieldData,
-} from "@/app/api/analytics/types";
+} from '@/app/api/analytics/types';
 import {
   AnalyticsFilters,
   SerializedAnalyticsFilters,
   useFetchAnalyticsQuery,
-} from "@/lib/features/analytics/analyticsApi";
-export type { AnalyticsFilters } from "@/lib/features/analytics/analyticsApi";
+} from '@/lib/features/analytics/analyticsApi';
 
 import type {
   JobSummary,
@@ -27,7 +26,9 @@ import type {
   FunnelSummary,
   InterviewSummary,
   TrendsSummary,
-} from "../components/types";
+} from '../components/types';
+
+export type { AnalyticsFilters } from '@/lib/features/analytics/analyticsApi';
 
 type FetchAnalyticsHookResult = ReturnType<typeof useFetchAnalyticsQuery>;
 
@@ -100,7 +101,7 @@ export interface UseAnalyticsResult<T> {
   loading: boolean;
   error: string | null;
   lastFetch: Date | null;
-  refetch: FetchAnalyticsHookResult["refetch"];
+  refetch: FetchAnalyticsHookResult['refetch'];
 }
 
 export interface UseAnalyticsOptions {
@@ -137,14 +138,14 @@ export function useAnalytics<T = unknown>({
     shouldSkip || !queryArgs ? skipToken : queryArgs,
     refetchInterval
       ? {
-          pollingInterval: refetchInterval,
-        }
-      : undefined
+        pollingInterval: refetchInterval,
+      }
+      : undefined,
   );
 
   const normalizedError = useMemo(
     () => formatError(queryResult.error),
-    [queryResult.error]
+    [queryResult.error],
   );
 
   const lastFetch = useMemo(() => {
@@ -172,10 +173,10 @@ export function useAnalytics<T = unknown>({
 
 export function useCandidateFunnel(
   filters?: AnalyticsFilters,
-  organizationId?: string
+  organizationId?: string,
 ) {
   return useAnalytics<CandidateFunnelAnalytics>({
-    endpoint: "candidate-funnel",
+    endpoint: 'candidate-funnel',
     filters,
     organizationId,
   });
@@ -183,10 +184,10 @@ export function useCandidateFunnel(
 
 export function useJobPerformance(
   filters?: AnalyticsFilters,
-  organizationId?: string
+  organizationId?: string,
 ) {
   return useAnalytics<JobPerformanceAnalytics>({
-    endpoint: "job-performance",
+    endpoint: 'job-performance',
     filters,
     organizationId,
   });
@@ -194,10 +195,10 @@ export function useJobPerformance(
 
 export function useInterviewAssignments(
   filters?: AnalyticsFilters,
-  organizationId?: string
+  organizationId?: string,
 ) {
   return useAnalytics<InterviewAssignmentAnalytics>({
-    endpoint: "interview-assignments",
+    endpoint: 'interview-assignments',
     filters,
     organizationId,
   });
@@ -205,27 +206,26 @@ export function useInterviewAssignments(
 
 export function useApplicationTrends(
   filters?: AnalyticsFilters,
-  organizationId?: string
+  organizationId?: string,
 ) {
   return useAnalytics<ApplicationTrendsAnalytics>({
-    endpoint: "application-trends",
+    endpoint: 'application-trends',
     filters,
     organizationId,
   });
 }
 
-
 function formatError(
-  error: FetchBaseQueryError | SerializedError | undefined
+  error: FetchBaseQueryError | SerializedError | undefined,
 ): string | null {
   if (!error) {
     return null;
   }
 
-  if ("status" in error) {
+  if ('status' in error) {
     const errorData = error.data as { message?: string; error?: string } | string | undefined;
 
-    if (typeof errorData === "string") {
+    if (typeof errorData === 'string') {
       return errorData;
     }
 
@@ -233,16 +233,16 @@ function formatError(
       return errorData.message ?? errorData.error ?? null;
     }
 
-    return typeof error.status === "number"
+    return typeof error.status === 'number'
       ? `Analytics API error: ${error.status}`
-      : "Analytics API error";
+      : 'Analytics API error';
   }
 
-  return error.message ?? "Unknown error";
+  return error.message ?? 'Unknown error';
 }
 
 function serializeFilters(
-  filters?: AnalyticsFilters
+  filters?: AnalyticsFilters,
 ): SerializedAnalyticsFilters | undefined {
   if (!filters) {
     return undefined;

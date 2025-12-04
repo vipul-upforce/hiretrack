@@ -1,61 +1,60 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { Loader2, Mail, Settings } from "lucide-react";
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, Mail, Settings } from 'lucide-react';
 import {
   EmailNotificationToggle,
   EmailNotificationType,
-} from "@/components/ui/email-notification-toggle";
+} from '@/components/ui/email-notification-toggle';
 import {
   useUserEmailNotificationSettings,
   useUpdateUserEmailNotificationSettings,
   UserEmailSettings,
-} from "@/hooks/useEmailNotificationSettings";
-import EmailNotificationSettingsSkeleton from "./email-notification-settings-skeleton";
+} from '@/hooks/useEmailNotificationSettings';
+import EmailNotificationSettingsSkeleton from './email-notification-settings-skeleton';
 
 // Generate default settings automatically for all notification types
 const createDefaultNotificationSettings = (): Record<
   EmailNotificationType,
   boolean
-> =>
-  Object.fromEntries(
-    (
+> => Object.fromEntries(
+  (
       [
-        "newApplications",
-        "interviewAssignments",
-        "statusUpdates",
-        "newRemarks",
-        "stepCompleted",
-        "mentions",
-        "detailsUpdated",
-        "meetingScheduled",
-        "meetingUpdated",
-        "meetingCancelled",
-        "meetingInviteAccepted",
-        "meetingInviteDeclined",
-        "meetingInviteTentative",
-        "interviewCompleted",
-        "followupAdded",
-        "followupUpdated",
-        "followupRemoved",
-        "checklistCompleted",
-        "jobCreated",
-        "jobUpdated",
-        "userAdded",
-        "bulkImportCompleted",
+        'newApplications',
+        'interviewAssignments',
+        'statusUpdates',
+        'newRemarks',
+        'stepCompleted',
+        'mentions',
+        'detailsUpdated',
+        'meetingScheduled',
+        'meetingUpdated',
+        'meetingCancelled',
+        'meetingInviteAccepted',
+        'meetingInviteDeclined',
+        'meetingInviteTentative',
+        'interviewCompleted',
+        'followupAdded',
+        'followupUpdated',
+        'followupRemoved',
+        'checklistCompleted',
+        'jobCreated',
+        'jobUpdated',
+        'userAdded',
+        'bulkImportCompleted',
       ] satisfies EmailNotificationType[]
-    ).map((type) => [type, true])
-  ) as Record<EmailNotificationType, boolean>;
+  ).map((type) => [type, true]),
+) as Record<EmailNotificationType, boolean>;
 
 interface EmailNotificationSettingsDialogProps {
   isOpen: boolean;
@@ -79,10 +78,10 @@ export function EmailNotificationSettingsDialog({
     jobLevel: {},
   });
 
-  const { settings, loading, error, refetch } =
-    useUserEmailNotificationSettings(userId, jobId);
-  const { updateSettings, loading: updating } =
-    useUpdateUserEmailNotificationSettings();
+  const {
+    settings, loading, error, refetch,
+  } = useUserEmailNotificationSettings(userId, jobId);
+  const { updateSettings, loading: updating } = useUpdateUserEmailNotificationSettings();
 
   // Initialize local settings when data loads
   useEffect(() => {
@@ -184,7 +183,7 @@ export function EmailNotificationSettingsDialog({
   };
 
   const notificationTypes = Object.keys(
-    createDefaultNotificationSettings()
+    createDefaultNotificationSettings(),
   ) as EmailNotificationType[];
 
   const hasChanges = () => {
@@ -197,10 +196,9 @@ export function EmailNotificationSettingsDialog({
 
       if (jobId && settings.jobLevel?.[jobId]) {
         // Job-specific settings take precedence
-        originalValue =
-          settings.jobLevel[jobId][type]?.enabled ??
-          settings.global?.[type]?.enabled ??
-          true;
+        originalValue = settings.jobLevel[jobId][type]?.enabled
+          ?? settings.global?.[type]?.enabled
+          ?? true;
       } else {
         // Fallback to global settings
         originalValue = settings.global?.[type]?.enabled ?? true;
@@ -219,12 +217,17 @@ export function EmailNotificationSettingsDialog({
             Email Notification Settings
           </DialogTitle>
           <DialogDescription>
-            Configure global email notification preferences for {userName} (
-            {userRole})
+            Configure global email notification preferences for
+            {' '}
+            {userName}
+            {' '}
+            (
+            {userRole}
+            )
             {jobId && (
-              <span className="block mt-1 text-sm text-muted-foreground">
-                Job-specific settings will override these global settings
-              </span>
+            <span className="block mt-1 text-sm text-muted-foreground">
+              Job-specific settings will override these global settings
+            </span>
             )}
           </DialogDescription>
         </DialogHeader>
@@ -233,66 +236,67 @@ export function EmailNotificationSettingsDialog({
           <EmailNotificationSettingsSkeleton />
         ) : error ? (
           <div className="flex items-center justify-center py-8 text-red-500">
-            <span>Failed to load settings: {error}</span>
+            <span>
+              Failed to load settings:
+              {error}
+            </span>
           </div>
         ) : (
-          <>
-            <div className="flex flex-col h-full">
-              <div className="space-y-4 flex-1 overflow-y-auto px-6 py-4 max-h-[70vh] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-                <div className="flex items-center gap-2">
-                  <Settings className="h-4 w-4" />
-                  <Badge variant="outline">
-                    {jobId ? "Job-Specific Settings" : "Global Settings"}
-                  </Badge>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-0">
-                  {notificationTypes.map((type) => (
-                    <EmailNotificationToggle
-                      key={type}
-                      type={type}
-                      enabled={getCurrentSettings()[type]}
-                      source="global-user"
-                      onToggle={handleToggle}
-                      disabled={updating}
-                      showSource={true}
-                    />
-                  ))}
-                </div>
+          <div className="flex flex-col h-full">
+            <div className="space-y-4 flex-1 overflow-y-auto px-6 py-4 max-h-[70vh] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+              <div className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                <Badge variant="outline">
+                  {jobId ? 'Job-Specific Settings' : 'Global Settings'}
+                </Badge>
               </div>
 
-              <div className="flex justify-between items-center border-t bg-background px-6 py-4 sticky bottom-0 z-10 gap-4">
-                <Button
-                  variant="outline"
-                  onClick={handleReset}
-                  disabled={updating || !hasChanges()}
-                >
-                  Reset
-                </Button>
-                <div className="flex gap-3">
-                  <Button
-                    variant="outline"
-                    onClick={() => onOpenChange(false)}
+              <Separator />
+
+              <div className="space-y-0">
+                {notificationTypes.map((type) => (
+                  <EmailNotificationToggle
+                    key={type}
+                    type={type}
+                    enabled={getCurrentSettings()[type]}
+                    source="global-user"
+                    onToggle={handleToggle}
                     disabled={updating}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    variant="primary"
-                    onClick={handleSave}
-                    disabled={updating || !hasChanges()}
-                  >
-                    {updating && (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    )}
-                    Save Changes
-                  </Button>
-                </div>
+                    showSource
+                  />
+                ))}
               </div>
             </div>
-          </>
+
+            <div className="flex justify-between items-center border-t bg-background px-6 py-4 sticky bottom-0 z-10 gap-4">
+              <Button
+                variant="outline"
+                onClick={handleReset}
+                disabled={updating || !hasChanges()}
+              >
+                Reset
+              </Button>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  disabled={updating}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={handleSave}
+                  disabled={updating || !hasChanges()}
+                >
+                  {updating && (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  )}
+                  Save Changes
+                </Button>
+              </div>
+            </div>
+          </div>
         )}
       </DialogContent>
     </Dialog>

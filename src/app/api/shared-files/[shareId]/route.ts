@@ -1,21 +1,21 @@
-import { NextRequest, NextResponse } from "next/server";
-import { headers } from "next/headers";
-import connectToDatabase, { Settings } from "@/lib/mongodb";
-import { getFileShare, validateAndRecordDownload } from "@/lib/fileShareUtils";
-import { getFileFromProvider } from "@/lib/fileUtils";
-import { getAuthenticatedUser } from "@/app/actions/auth";
+import { NextRequest, NextResponse } from 'next/server';
+import { headers } from 'next/headers';
+import connectToDatabase, { Settings } from '@/lib/mongodb';
+import { getFileShare, validateAndRecordDownload } from '@/lib/fileShareUtils';
+import { getFileFromProvider } from '@/lib/fileUtils';
+import { getAuthenticatedUser } from '@/app/actions/auth';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { shareId: string } }
+  { params }: { params: { shareId: string } },
 ) {
   try {
     const { shareId } = await params;
 
     if (!shareId) {
       return NextResponse.json(
-        { error: "Share ID not provided" },
-        { status: 400 }
+        { error: 'Share ID not provided' },
+        { status: 400 },
       );
     }
 
@@ -28,11 +28,11 @@ export async function GET(
 
     if (!fileShare) {
       console.log(`File share not found for shareId: ${shareId}`);
-      return NextResponse.json({ error: "File not found" }, { status: 404 });
+      return NextResponse.json({ error: 'File not found' }, { status: 404 });
     }
 
     console.log(
-      `Found file share: ${fileShare.originalFileName}, storage: ${fileShare.storageProvider}, path: ${fileShare.storagePath}`
+      `Found file share: ${fileShare.originalFileName}, storage: ${fileShare.storageProvider}, path: ${fileShare.storagePath}`,
     );
 
     // Temporary fix: Allow public access to all shared files for now
@@ -43,37 +43,36 @@ export async function GET(
 
     if (!isPublicAccess && !authenticatedUser) {
       return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
+        { error: 'Authentication required' },
+        { status: 401 },
       );
     }
 
     // Get client IP and user agent for tracking
     const headersList = await headers();
-    const ipAddress =
-      headersList.get("x-forwarded-for") ||
-      headersList.get("x-real-ip") ||
-      "unknown";
-    const userAgent = headersList.get("user-agent") || "unknown";
+    const ipAddress = headersList.get('x-forwarded-for')
+      || headersList.get('x-real-ip')
+      || 'unknown';
+    const userAgent = headersList.get('user-agent') || 'unknown';
 
     const [downloadValidation, settings] = await Promise.all([
       validateAndRecordDownload(shareId, userId, ipAddress, userAgent),
       Settings!.findOne({
         organizationId: fileShare.organizationId,
-      }).select("fileStorage").lean().exec(),
+      }).select('fileStorage').lean().exec(),
     ]);
 
     if (!downloadValidation.valid) {
       return NextResponse.json(
         { error: downloadValidation.error },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
     if (!settings) {
       return NextResponse.json(
-        { error: "Organization settings not found" },
-        { status: 404 }
+        { error: 'Organization settings not found' },
+        { status: 404 },
       );
     }
 
@@ -81,7 +80,7 @@ export async function GET(
     const fileResult = await getFileFromProvider(
       fileShare.storagePath,
       settings.fileStorage,
-      fileShare.organizationId.toString()
+      fileShare.organizationId.toString(),
     );
 
     if (!fileResult.success) {
@@ -92,20 +91,20 @@ export async function GET(
     const response = new NextResponse(fileResult.buffer as BodyInit);
 
     // Set headers
-    response.headers.set("Content-Type", fileShare.mimeType);
+    response.headers.set('Content-Type', fileShare.mimeType);
     response.headers.set(
-      "Content-Disposition",
-      `attachment; filename="${fileShare.originalFileName}"`
+      'Content-Disposition',
+      `attachment; filename="${fileShare.originalFileName}"`,
     );
-    response.headers.set("Content-Length", fileShare.fileSize.toString());
-    response.headers.set("Cache-Control", "private, max-age=3600");
+    response.headers.set('Content-Length', fileShare.fileSize.toString());
+    response.headers.set('Cache-Control', 'private, max-age=3600');
 
     return response;
   } catch (error: unknown) {
-    console.error("Error downloading file:", error);
+    console.error('Error downloading file:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to download file" },
-      { status: 500 }
+      { error: error instanceof Error ? error.message : 'Failed to download file' },
+      { status: 500 },
     );
   }
 }

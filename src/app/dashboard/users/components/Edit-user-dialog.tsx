@@ -1,29 +1,31 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@radix-ui/react-label";
-import { Input } from "@/components/ui/input";
+} from '@/components/ui/dialog';
+import { Label } from '@radix-ui/react-label';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Formik, Form, ErrorMessage, Field } from "formik";
-import { Checkbox } from "@/components/ui/checkbox";
-import { useToast } from "@/hooks/use-toast";
-import { useUpdateUserMutation } from "@/lib/features/users/usersApi";
-import { userFormVaidationSchema } from "../schemas/userFormValidation.schema";
-import { useDispatch, useSelector } from "react-redux";
-import { updateUser as updateUserInState } from "@/lib/redux/authSlice";
-import { useState } from "react";
+} from '@/components/ui/select';
+import {
+  Formik, Form, ErrorMessage, Field,
+} from 'formik';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useToast } from '@/hooks/use-toast';
+import { useUpdateUserMutation } from '@/lib/features/users/usersApi';
+import { useDispatch, useSelector } from 'react-redux';
+import { updateUser as updateUserInState } from '@/lib/redux/authSlice';
+import { useState } from 'react';
+import { userFormVaidationSchema } from '../schemas/userFormValidation.schema';
 
 interface SelectedUser {
   id?: string;
@@ -70,27 +72,27 @@ export function EditUserDialog({
             ...values,
             email: values.email.toLowerCase().trim(),
             name: values.name.trim(),
-          })
+          }),
         );
       }
 
-      toast({ title: "Success", description: "User updated successfully" });
+      toast({ title: 'Success', description: 'User updated successfully' });
       onOpenChange(false);
       onSuccess();
     } catch (error: unknown) {
       toast({
-        title: "Error",
+        title: 'Error',
         description:
-          "Error: " +
-          (typeof error === "object" &&
-          error !== null &&
-          "data" in error &&
-          typeof error.data === "object" &&
-          error.data &&
-          "error" in error.data
-            ? (error.data as { error: string }).error
-            : "Unknown error"),
-        variant: "destructive",
+          `Error: ${
+            typeof error === 'object'
+          && error !== null
+          && 'data' in error
+          && typeof error.data === 'object'
+          && error.data
+          && 'error' in error.data
+              ? (error.data as { error: string }).error
+              : 'Unknown error'}`,
+        variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
@@ -153,12 +155,12 @@ export function EditUserDialog({
                   className="text-red-500 text-sm"
                 />
               </div>
-              {values.role !== "system" && (
+              {values.role !== 'system' && (
                 <div>
                   <Label>Role</Label>
                   <Select
                     value={values.role}
-                    onValueChange={(value) => setFieldValue("role", value)}
+                    onValueChange={(value) => setFieldValue('role', value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select Role" />
@@ -177,14 +179,14 @@ export function EditUserDialog({
                 </div>
               )}
 
-              {values.role !== "system" && (
+              {values.role !== 'system' && (
                 <div>
                   <Label className="flex flex-row items-center">
                     <Checkbox
                       id="isDeleted"
                       checked={values.isDeleted}
                       onCheckedChange={(checked) => {
-                        setFieldValue("isDeleted", checked);
+                        setFieldValue('isDeleted', checked);
                       }}
                     />
                     <p className="ml-2">Deactivate user</p>
@@ -199,7 +201,7 @@ export function EditUserDialog({
                   onClick={() => handleSubmit()}
                   variant="primary"
                 >
-                  {isUpdating && isLoading ? "Updating..." : "Update User"}
+                  {isUpdating && isLoading ? 'Updating...' : 'Update User'}
                 </Button>
               </div>
             </Form>

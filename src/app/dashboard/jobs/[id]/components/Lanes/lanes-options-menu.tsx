@@ -1,5 +1,8 @@
-"use client";
-import { useState, useCallback, useEffect } from "react";
+'use client';
+
+import {
+  useState, useCallback, useEffect, ReactNode,
+} from 'react';
 import {
   MoreVertical,
   Edit,
@@ -9,22 +12,21 @@ import {
   SortDesc,
   X,
   ClipboardCheck,
-} from "lucide-react";
+} from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { ReactNode } from "react";
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface LaneOptionsMenuProps {
   laneId: string;
   laneName: string;
   onEdit: (id: string) => void;
-  onSort: (field: string, direction: "asc" | "desc") => void;
+  onSort: (field: string, direction: 'asc' | 'desc') => void;
   handleDeleteLane: () => void;
   setLaneToDelete: (laneId: string) => void;
   setLaneToEdit: (laneId: string) => void;
@@ -45,29 +47,33 @@ interface SortField {
   value: string;
 }
 
-const MenuItem = ({ icon, label, onClick, className = "" }: MenuItemProps) => (
-  <button
-    className={cn(
-      "flex items-center justify-between w-full px-2 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700",
-      className
-    )}
-    onClick={onClick}
-  >
-    {icon}
-    <span>{label}</span>
-  </button>
-);
+function MenuItem({
+  icon, label, onClick, className = '',
+}: MenuItemProps) {
+  return (
+    <button
+      className={cn(
+        'flex items-center justify-between w-full px-2 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700',
+        className,
+      )}
+      onClick={onClick}
+    >
+      {icon}
+      <span>{label}</span>
+    </button>
+  );
+}
 
 const SORT_FIELDS: SortField[] = [
-  { label: "Date Created", value: "createdAt" },
-  { label: "Last Modified Date", value: "lastModified" },
-  { label: "Assignment Date", value: "assignmentDate" },
-  { label: "Experience", value: "experience" },
-  { label: "Overall AI Score", value: "aiScore" },
-  { label: "Current CTC", value: "ctc" },
-  { label: "Expected CTC", value: "expectedCtc" },
-  { label: "Notice Period", value: "noticePeriod" },
-  { label: "Name ", value: "name" },
+  { label: 'Date Created', value: 'createdAt' },
+  { label: 'Last Modified Date', value: 'lastModified' },
+  { label: 'Assignment Date', value: 'assignmentDate' },
+  { label: 'Experience', value: 'experience' },
+  { label: 'Overall AI Score', value: 'aiScore' },
+  { label: 'Current CTC', value: 'ctc' },
+  { label: 'Expected CTC', value: 'expectedCtc' },
+  { label: 'Notice Period', value: 'noticePeriod' },
+  { label: 'Name ', value: 'name' },
 ];
 
 export function LaneOptionsMenu({
@@ -83,9 +89,8 @@ export function LaneOptionsMenu({
   setIsOpen,
 }: LaneOptionsMenuProps) {
   const [showSortMenu, setShowSortMenu] = useState(false);
-  const [selectedSortField, setSelectedSortField] =
-    useState<string>("createdAt");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [selectedSortField, setSelectedSortField] = useState<string>('createdAt');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   // console.log(laneId, "laneId");
 
   const storageKey = `lane-sort-${laneId}`;
@@ -102,7 +107,7 @@ export function LaneOptionsMenu({
   }, [storageKey, onSort]);
 
   // 🟢 Save sort preferences whenever they change
-  const saveSortPreferences = (field: string, direction: "asc" | "desc") => {
+  const saveSortPreferences = (field: string, direction: 'asc' | 'desc') => {
     localStorage.setItem(storageKey, JSON.stringify({ field, direction }));
   };
 
@@ -117,22 +122,22 @@ export function LaneOptionsMenu({
       saveSortPreferences(field, sortDirection);
       onSort(field, sortDirection);
     },
-    [sortDirection, onSort]
+    [sortDirection, onSort],
   );
 
   const handleSortDirection = useCallback(
-    (direction: "asc" | "desc") => {
+    (direction: 'asc' | 'desc') => {
       setSortDirection(direction);
       saveSortPreferences(selectedSortField, direction);
       onSort(selectedSortField, direction);
     },
-    [selectedSortField, onSort]
+    [selectedSortField, onSort],
   );
 
   const menuItems = [
     {
       icon: <Edit className="mr-2 h-4 w-4" />,
-      label: "Edit",
+      label: 'Edit',
       onClick: () => {
         onEdit(laneId);
         setLaneToEdit(laneId);
@@ -141,26 +146,26 @@ export function LaneOptionsMenu({
     },
     ...(onConfigureChecklist
       ? [
-          {
-            icon: <ClipboardCheck className="mr-2 h-4 w-4" />,
-            label: "Checklists",
-            onClick: () => {
-              onConfigureChecklist(laneId, laneName);
-              setIsOpen(false);
-            },
+        {
+          icon: <ClipboardCheck className="mr-2 h-4 w-4" />,
+          label: 'Checklists',
+          onClick: () => {
+            onConfigureChecklist(laneId, laneName);
+            setIsOpen(false);
           },
-        ]
+        },
+      ]
       : []),
     {
       icon: <ArrowUpDown className="mr-2 h-4 w-4" />,
-      label: "Sort",
+      label: 'Sort',
       onClick: () => {
         setShowSortMenu(!showSortMenu);
       },
     },
     {
       icon: <Trash2 className="mr-2 h-4 w-4" />,
-      label: "Delete",
+      label: 'Delete',
       onClick: () => {
         handleDeleteLane();
         setLaneToDelete(laneId);
@@ -174,8 +179,8 @@ export function LaneOptionsMenu({
       <DropdownMenuTrigger
         asChild
         className={cn(
-          "p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-600 transition-colors overflow-x-visible",
-          isOpen ? "bg-gray-200 dark:bg-gray-700" : ""
+          'p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-600 transition-colors overflow-x-visible',
+          isOpen ? 'bg-gray-200 dark:bg-gray-700' : '',
         )}
       >
         <Button
@@ -187,20 +192,18 @@ export function LaneOptionsMenu({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-40 overflow-visible ">
-        {
-          <>
-            {menuItems.map((item, index) => (
-              <div key={item.label}>
-                {index > 0 && <DropdownMenuSeparator />}
-                <MenuItem
-                  icon={item.icon}
-                  label={item.label}
-                  onClick={item.onClick}
-                />
-              </div>
-            ))}
-          </>
-        }
+        <>
+          {menuItems.map((item, index) => (
+            <div key={item.label}>
+              {index > 0 && <DropdownMenuSeparator />}
+              <MenuItem
+                icon={item.icon}
+                label={item.label}
+                onClick={item.onClick}
+              />
+            </div>
+          ))}
+        </>
         {showSortMenu && (
           <div className="w-64 animate-fade-in-right absolute top-0 bg-white dark:bg-gray-900 border border-1 dark:border-gray-800 rounded-lg shadow-xl p-4 overflow-x-hidden sort-menu pb-0 ">
             <div className="flex items-center justify-between ">
@@ -222,10 +225,10 @@ export function LaneOptionsMenu({
                 <button
                   key={field.value}
                   className={cn(
-                    "flex items-center px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-left transition-colors justify-between text-gray-600 dark:text-gray-300 ",
+                    'flex items-center px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-left transition-colors justify-between text-gray-600 dark:text-gray-300 ',
                     selectedSortField === field.value
-                      ? "bg-gray-100 dark:bg-gray-800 font-semibold"
-                      : ""
+                      ? 'bg-gray-100 dark:bg-gray-800 font-semibold'
+                      : '',
                   )}
                   onClick={() => {
                     handleSortFieldSelect(field.value);
@@ -237,36 +240,36 @@ export function LaneOptionsMenu({
                   {/* {selectedSortField === field.value && (
                       <ChevronRight className="ml-auto h-4 w-4" />
                     )} */}
-                  {sortDirection === "asc" &&
-                    field.value === selectedSortField && (
+                  {sortDirection === 'asc'
+                    && field.value === selectedSortField && (
                       <Button
                         className="w-8 h-8 rounded-full border dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 bg-white dark:bg-gray-900 "
-                        variant={"outline"}
+                        variant="outline"
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleSortDirection("desc");
+                          handleSortDirection('desc');
                         }}
-                        aria-pressed={sortDirection === "asc"}
+                        aria-pressed={sortDirection === 'asc'}
                       >
                         <SortAsc />
                       </Button>
-                    )}
-                  {sortDirection === "desc" &&
-                    field.value === selectedSortField && (
+                  )}
+                  {sortDirection === 'desc'
+                    && field.value === selectedSortField && (
                       <Button
                         className="w-8 h-8 rounded-full dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 bg-white dark:bg-gray-900"
-                        variant={"outline"}
+                        variant="outline"
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleSortDirection("asc");
+                          handleSortDirection('asc');
                         }}
-                        aria-pressed={sortDirection === "desc"}
+                        aria-pressed={sortDirection === 'desc'}
                       >
                         <SortDesc />
                       </Button>
-                    )}
+                  )}
                 </button>
               ))}
             </div>

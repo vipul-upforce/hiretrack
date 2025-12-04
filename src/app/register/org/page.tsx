@@ -1,8 +1,10 @@
-"use client";
+'use client';
 
-import { useRouter } from "next/navigation";
-import { Formik, Form, Field, FieldProps } from "formik";
-import * as Yup from "yup";
+import { useRouter } from 'next/navigation';
+import {
+  Formik, Form, Field, FieldProps,
+} from 'formik';
+import * as Yup from 'yup';
 import {
   Card,
   CardContent,
@@ -10,22 +12,24 @@ import {
   CardTitle,
   CardDescription,
   CardFooter,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useToast } from "@/hooks/use-toast";
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useToast } from '@/hooks/use-toast';
 import {
   CreateOrgResponse,
   useCreateOrgMutation,
-} from "@/lib/features/org/orgApi";
-import { Eye, EyeOff, Building2, User, Mail, Lock } from "lucide-react";
-import React, { useEffect, useState } from "react";
-import ReCAPTCHA from "react-google-recaptcha";
-import withAuthGuard from "@/components/withAuthGuard";
-import { useGetCaptchaConfigsQuery } from "@/lib/features/settings/settingsApi";
-import { getDecodedCaptcha } from "@/hooks/useSSE";
+} from '@/lib/features/org/orgApi';
+import {
+  Eye, EyeOff, Building2, User, Mail, Lock,
+} from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import ReCAPTCHA from 'react-google-recaptcha';
+import withAuthGuard from '@/components/withAuthGuard';
+import { useGetCaptchaConfigsQuery } from '@/lib/features/settings/settingsApi';
+import { getDecodedCaptcha } from '@/hooks/useSSE';
 
 interface OrgFormValues {
   name: string;
@@ -33,39 +37,39 @@ interface OrgFormValues {
   email: string;
   password: string;
   confirmPassword: string;
-  role: "admin";
+  role: 'admin';
 }
 
 const OrgSchema = Yup.object().shape({
   name: Yup.string()
     .trim()
-    .matches(/^(?!\s+$).*/, "Organization Name cannot be only spaces")
-    .min(2, "Organization Name must be at least 2 characters")
-    .max(20, "Organization name must be 20 characters or fewer")
-    .required("Organization Name is required"),
+    .matches(/^(?!\s+$).*/, 'Organization Name cannot be only spaces')
+    .min(2, 'Organization Name must be at least 2 characters')
+    .max(20, 'Organization name must be 20 characters or fewer')
+    .required('Organization Name is required'),
   fullName: Yup.string()
     .trim()
-    .matches(/^(?!\s+$).*/, "Admin name cannot be only spaces")
-    .min(2, "Admin Name must be at least 2 characters long")
-    .max(20, "Admin name must be 20 characters or fewer")
-    .required("Admin Name is required"),
+    .matches(/^(?!\s+$).*/, 'Admin name cannot be only spaces')
+    .min(2, 'Admin Name must be at least 2 characters long')
+    .max(20, 'Admin name must be 20 characters or fewer')
+    .required('Admin Name is required'),
   email: Yup.string()
     .trim()
-    .matches(/^[a-z0-9][a-z0-9._%+-]*@[a-z0-9.-]+\.[a-z]{2,}$/, "Invalid Email")
-    .required("Email is required"),
+    .matches(/^[a-z0-9][a-z0-9._%+-]*@[a-z0-9.-]+\.[a-z]{2,}$/, 'Invalid Email')
+    .required('Email is required'),
   password: Yup.string()
-    .min(6, "Password must be at least 6 characters.")
-    .matches(/[a-z]/, "Password must include at least one lowercase letter")
-    .matches(/[A-Z]/, "Password must include at least one uppercase letter")
-    .matches(/\d/, "Password must include at least one number")
+    .min(6, 'Password must be at least 6 characters.')
+    .matches(/[a-z]/, 'Password must include at least one lowercase letter')
+    .matches(/[A-Z]/, 'Password must include at least one uppercase letter')
+    .matches(/\d/, 'Password must include at least one number')
     .matches(
       /[@$!%*?&]/,
-      "Password must include at least one special character (@$!%*?&)"
+      'Password must include at least one special character (@$!%*?&)',
     )
-    .required("Password is required"),
+    .required('Password is required'),
   confirmPassword: Yup.string()
-    .oneOf([Yup.ref("password")], "Passwords do not match")
-    .required("Please confirm your password"),
+    .oneOf([Yup.ref('password')], 'Passwords do not match')
+    .required('Please confirm your password'),
 });
 
 const lanes: string[] = [];
@@ -85,13 +89,13 @@ function OrgRegisterPage() {
 
   useEffect(() => {
     async function checkAllowance() {
-      const data = await fetch("/api/organization");
+      const data = await fetch('/api/organization');
       const allowance = await data.json();
 
       setOrganizationId(allowance.data?.[0]?.organizationId);
 
       if (!allowance.allow) {
-        router.push("/auth/login");
+        router.push('/auth/login');
       }
     }
 
@@ -104,7 +108,7 @@ function OrgRegisterPage() {
       if (captchaConfig?.captcha?.siteKey) {
         const decrypted = await getDecodedCaptcha(
           captchaConfig.captcha.siteKey,
-          organizationId
+          organizationId,
         );
         if (decrypted) {
           setDecryptedSiteKey(decrypted);
@@ -115,31 +119,31 @@ function OrgRegisterPage() {
   }, [captchaConfig, organizationId]);
 
   const initialValues: OrgFormValues = {
-    name: "",
-    fullName: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    role: "admin",
+    name: '',
+    fullName: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    role: 'admin',
   };
 
   const handleSubmit = async (
     values: OrgFormValues,
-    { setStatus }: { setStatus: (message: string) => void }
+    { setStatus }: { setStatus: (message: string) => void },
   ) => {
-    if (!captcha && captchaConfig?.captcha["enableCaptcha"]) {
+    if (!captcha && captchaConfig?.captcha.enableCaptcha) {
       toast({
-        title: "Error",
-        description: "Captcha not verified. Please try again",
-        variant: "default",
+        title: 'Error',
+        description: 'Captcha not verified. Please try again',
+        variant: 'default',
       });
       return;
     }
 
     try {
-      const response = await fetch("/api/license-validate", {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/license-validate', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
       });
       const data = await response.json();
       if (!data.valid) {
@@ -147,19 +151,23 @@ function OrgRegisterPage() {
       }
     } catch (e: unknown) {
       toast({
-        title: "Error",
+        title: 'Error',
         description:
           e instanceof Error
             ? e.message
-            : "License not verified. Please contact support or try re-installing the platform.",
-        variant: "destructive",
+            : 'License not verified. Please contact support or try re-installing the platform.',
+        variant: 'destructive',
       });
       return;
     }
 
     try {
-      const { name, email, fullName, password, role } = values;
-      const adminData = { email, name: fullName, password, role };
+      const {
+        name, email, fullName, password, role,
+      } = values;
+      const adminData = {
+        email, name: fullName, password, role,
+      };
 
       const orgResponse: CreateOrgResponse = await createOrg({
         name,
@@ -169,19 +177,19 @@ function OrgRegisterPage() {
 
       if (orgResponse.organization) {
         toast({
-          title: "Success",
-          description: "Admin account created successfully",
-          variant: "default",
+          title: 'Success',
+          description: 'Admin account created successfully',
+          variant: 'default',
         });
-        router.push("/auth/login");
+        router.push('/auth/login');
       } else {
-        throw new Error("Failed to create admin");
+        throw new Error('Failed to create admin');
       }
     } catch (err: unknown) {
-      let errorMessage = "An unknown error occurred";
+      let errorMessage = 'An unknown error occurred';
       if (err instanceof Error) {
         errorMessage = err.message;
-      } else if (typeof err === "object" && err !== null && "data" in err) {
+      } else if (typeof err === 'object' && err !== null && 'data' in err) {
         const errorObj = err as { data?: { error?: string } };
         if (errorObj.data?.error) {
           errorMessage = errorObj.data.error;
@@ -189,9 +197,9 @@ function OrgRegisterPage() {
       }
       setStatus(errorMessage);
       toast({
-        title: "Error",
+        title: 'Error',
         description: errorMessage,
-        variant: "destructive",
+        variant: 'destructive',
       });
     }
   };
@@ -216,12 +224,14 @@ function OrgRegisterPage() {
             validationSchema={OrgSchema}
             onSubmit={handleSubmit}
           >
-            {({ errors, touched, isSubmitting, status }) => (
+            {({
+              errors, touched, isSubmitting, status,
+            }) => (
               <Form className="space-y-4">
                 {status && (
-                  <Alert variant="destructive">
-                    <AlertDescription>{status}</AlertDescription>
-                  </Alert>
+                <Alert variant="destructive">
+                  <AlertDescription>{status}</AlertDescription>
+                </Alert>
                 )}
 
                 <div className="space-y-2">
@@ -236,16 +246,16 @@ function OrgRegisterPage() {
                           placeholder="Acme Inc."
                           disabled={isSubmitting}
                           className={`pl-10 ${
-                            errors.name && touched.name ? "border-red-500" : ""
-                          }`}
+                errors.name && touched.name ? 'border-red-500' : ''
+              }`}
                         />
                       </div>
                     )}
                   </Field>
                   {errors.name && touched.name && (
-                    <div className="text-red-500 text-xs mt-1">
-                      {errors.name}
-                    </div>
+                  <div className="text-red-500 text-xs mt-1">
+                    {errors.name}
+                  </div>
                   )}
                 </div>
 
@@ -261,18 +271,18 @@ function OrgRegisterPage() {
                           placeholder="John Doe"
                           disabled={isSubmitting}
                           className={`pl-10 ${
-                            errors.fullName && touched.fullName
-                              ? "border-red-500"
-                              : ""
-                          }`}
+                errors.fullName && touched.fullName
+                  ? 'border-red-500'
+                  : ''
+              }`}
                         />
                       </div>
                     )}
                   </Field>
                   {errors.fullName && touched.fullName && (
-                    <div className="text-red-500 text-xs mt-1">
-                      {errors.fullName}
-                    </div>
+                  <div className="text-red-500 text-xs mt-1">
+                    {errors.fullName}
+                  </div>
                   )}
                 </div>
 
@@ -289,18 +299,18 @@ function OrgRegisterPage() {
                           placeholder="admin@example.com"
                           disabled={isSubmitting}
                           className={`pl-10 ${
-                            errors.email && touched.email
-                              ? "border-red-500"
-                              : ""
-                          }`}
+                errors.email && touched.email
+                  ? 'border-red-500'
+                  : ''
+              }`}
                         />
                       </div>
                     )}
                   </Field>
                   {errors.email && touched.email && (
-                    <div className="text-red-500 text-xs mt-1">
-                      {errors.email}
-                    </div>
+                  <div className="text-red-500 text-xs mt-1">
+                    {errors.email}
+                  </div>
                   )}
                 </div>
 
@@ -311,19 +321,19 @@ function OrgRegisterPage() {
                       <Field name="password">
                         {({ field }: FieldProps) => (
                           <>
-                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                              {...field}
-                              id="password"
-                              type={showPassword ? "text" : "password"}
-                              disabled={isSubmitting}
-                              className={`pl-10 pr-10 ${
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  {...field}
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  disabled={isSubmitting}
+                  className={`pl-10 pr-10 ${
                                 errors.password && touched.password
-                                  ? "border-red-500"
-                                  : ""
+                                  ? 'border-red-500'
+                                  : ''
                               }`}
-                            />
-                          </>
+                />
+              </>
                         )}
                       </Field>
                       <Button
@@ -336,14 +346,14 @@ function OrgRegisterPage() {
                         {showPassword ? (
                           <EyeOff className="h-4 w-4 text-muted-foreground" />
                         ) : (
-                          <Eye className="h-4 w-4 text-muted-foreground" />
+              <Eye className="h-4 w-4 text-muted-foreground" />
                         )}
                       </Button>
                     </div>
                     {errors.password && touched.password && (
-                      <div className="text-red-500 text-xs mt-1">
-                        {errors.password}
-                      </div>
+                    <div className="text-red-500 text-xs mt-1">
+                      {errors.password}
+                    </div>
                     )}
                   </div>
 
@@ -353,20 +363,20 @@ function OrgRegisterPage() {
                       <Field name="confirmPassword">
                         {({ field }: FieldProps) => (
                           <>
-                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                              {...field}
-                              id="confirmPassword"
-                              type={showConfirmPassword ? "text" : "password"}
-                              disabled={isSubmitting}
-                              className={`pl-10 pr-10 ${
-                                errors.confirmPassword &&
-                                touched.confirmPassword
-                                  ? "border-red-500"
-                                  : ""
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  {...field}
+                  id="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  disabled={isSubmitting}
+                  className={`pl-10 pr-10 ${
+                                errors.confirmPassword
+                                && touched.confirmPassword
+                                  ? 'border-red-500'
+                                  : ''
                               }`}
-                            />
-                          </>
+                />
+              </>
                         )}
                       </Field>
 
@@ -375,34 +385,32 @@ function OrgRegisterPage() {
                         variant="ghost"
                         size="icon"
                         className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                        onClick={() =>
-                          setShowConfirmPassword(!showConfirmPassword)
-                        }
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                       >
                         {showConfirmPassword ? (
                           <EyeOff className="h-4 w-4 text-muted-foreground" />
                         ) : (
-                          <Eye className="h-4 w-4 text-muted-foreground" />
+              <Eye className="h-4 w-4 text-muted-foreground" />
                         )}
                       </Button>
                     </div>
                     {errors.confirmPassword && touched.confirmPassword && (
-                      <div className="text-red-500 text-xs mt-1">
-                        {errors.confirmPassword}
-                      </div>
+                    <div className="text-red-500 text-xs mt-1">
+                      {errors.confirmPassword}
+                    </div>
                     )}
                   </div>
                 </div>
 
                 {captchaConfig?.captcha?.enableCaptcha && decryptedSiteKey && (
-                  <div className="flex justify-center pt-2">
-                    <div className="recaptcha-container transform scale-90">
-                      <ReCAPTCHA
-                        sitekey={decryptedSiteKey}
-                        onChange={(token) => setCaptcha(token ?? undefined)}
-                      />
-                    </div>
+                <div className="flex justify-center pt-2">
+                  <div className="recaptcha-container transform scale-90">
+                    <ReCAPTCHA
+                      sitekey={decryptedSiteKey}
+                      onChange={(token) => setCaptcha(token ?? undefined)}
+                    />
                   </div>
+                </div>
                 )}
 
                 <CardFooter className="px-0 pt-4">
@@ -411,9 +419,9 @@ function OrgRegisterPage() {
                     className="w-full"
                     variant="primary"
                     disabled={
-                      isSubmitting ||
-                      isOrgLoading ||
-                      (captchaConfig?.captcha?.enableCaptcha && !captcha)
+                      isSubmitting
+                      || isOrgLoading
+                      || (captchaConfig?.captcha?.enableCaptcha && !captcha)
                     }
                   >
                     {isSubmitting || isOrgLoading ? (
@@ -422,7 +430,7 @@ function OrgRegisterPage() {
                         <span>Registering...</span>
                       </div>
                     ) : (
-                      "Register Organization"
+                      'Register Organization'
                     )}
                   </Button>
                 </CardFooter>
@@ -437,7 +445,7 @@ function OrgRegisterPage() {
 
 export default withAuthGuard(OrgRegisterPage, {
   requiredRoles: [],
-  fallbackPath: "/auth/login",
+  fallbackPath: '/auth/login',
   checkAllowance: true,
   allowAuthenticated: true,
 });

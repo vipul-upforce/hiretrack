@@ -1,6 +1,6 @@
-import { Resume } from "@/lib/redux/types";
-import { useFormikContext } from "formik";
-import { useEffect } from "react";
+import { Resume } from '@/lib/redux/types';
+import { useFormikContext } from 'formik';
+import { useEffect } from 'react';
 
 type WorkExperience = {
   company: string;
@@ -13,42 +13,41 @@ type WorkExperience = {
 const parseDate = (dateStr: string): Date | null => {
   const currentDate = new Date();
   const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
   const monthAbbr = monthNames.map((m) => m.slice(0, 3));
 
   // Handle "Present"
-  if (dateStr.includes("Present")) return currentDate;
+  if (dateStr.includes('Present')) return currentDate;
 
   // Match full month names, abbreviations, and spacing inconsistencies
   const dateRegex = new RegExp(
-    `(${monthNames.join("|")}|${monthAbbr.join("|")})\\s?\\d{0,2},?\\s?(\\d{4})`,
-    "i"
+    `(${monthNames.join('|')}|${monthAbbr.join('|')})\\s?\\d{0,2},?\\s?(\\d{4})`,
+    'i',
   );
   const match = dateStr.match(dateRegex);
 
   if (match) {
-    const month =
-      monthNames.findIndex(
-        (m) => m.toLowerCase() === match[1].toLowerCase()
-      ) !== -1
-        ? monthNames.findIndex(
-            (m) => m.toLowerCase() === match[1].toLowerCase()
-          )
-        : monthAbbr.findIndex(
-            (m) => m.toLowerCase() === match[1].toLowerCase()
-          );
+    const month = monthNames.findIndex(
+      (m) => m.toLowerCase() === match[1].toLowerCase(),
+    ) !== -1
+      ? monthNames.findIndex(
+        (m) => m.toLowerCase() === match[1].toLowerCase(),
+      )
+      : monthAbbr.findIndex(
+        (m) => m.toLowerCase() === match[1].toLowerCase(),
+      );
 
     const year = parseInt(match[2], 10);
 
@@ -60,14 +59,14 @@ const parseDate = (dateStr: string): Date | null => {
 
 // Calculate total experience in years
 const calculateTotalExperience = (
-  workExperiences: WorkExperience[]
+  workExperiences: WorkExperience[],
 ): number => {
   let totalDays = 0;
 
   workExperiences.forEach(({ date }) => {
-    const [startStr, endStr] = date.split("-");
+    const [startStr, endStr] = date.split('-');
     const startDate = parseDate(startStr.trim());
-    const endDate = parseDate(endStr?.trim() || "Present");
+    const endDate = parseDate(endStr?.trim() || 'Present');
 
     if (startDate && endDate) {
       const differenceInMilliseconds = endDate.getTime() - startDate.getTime();
@@ -90,81 +89,78 @@ type FormValues = {
   experience: number;
 };
 
-const FormUpdater = ({
+function FormUpdater({
   parsedResumeData,
 }: {
   parsedResumeData: Resume | null;
-}) => {
-  const { values, setFieldValue, validateForm, setTouched } =
-    useFormikContext<FormValues>();
+}) {
+  const {
+    values, setFieldValue, validateForm, setTouched,
+  } = useFormikContext<FormValues>();
 
   useEffect(() => {
     if (parsedResumeData && parsedResumeData.profile) {
       const { profile } = parsedResumeData;
       if (!values.name && profile.name) {
-        setFieldValue("name", undefined);
+        setFieldValue('name', undefined);
         setTouched({ name: false });
       }
       if (!values.email && profile.email) {
-        setFieldValue("email", undefined);
+        setFieldValue('email', undefined);
         setTouched({ email: false });
       }
       if (!values.contact && profile.contact) {
-        setFieldValue("contact", undefined);
+        setFieldValue('contact', undefined);
         setTouched({ contact: false });
       }
 
       if (!values.location && profile.location) {
-        setFieldValue("location", undefined);
+        setFieldValue('location', undefined);
         setTouched({ location: false });
       }
 
       if (
-        values.skills.length === 0 &&
-        parsedResumeData.skills?.descriptions.length > 0
+        values.skills.length === 0
+        && parsedResumeData.skills?.descriptions.length > 0
       ) {
         // Simple validation function - the heavy lifting is now done in the extraction
         const isValidSkill = (skill: string) => {
           const trimmed = skill.trim();
           return (
-            trimmed.length >= 2 &&
-            trimmed.length <= 30 &&
-            trimmed.split(/\s+/).length <= 3 &&
-            /[a-zA-Z]/.test(trimmed) &&
-            !/^[\d\W_]+$/.test(trimmed)
+            trimmed.length >= 2
+            && trimmed.length <= 30
+            && trimmed.split(/\s+/).length <= 3
+            && /[a-zA-Z]/.test(trimmed)
+            && !/^[\d\W_]+$/.test(trimmed)
           );
         };
 
         const splitSkills = [
           ...new Set([
             ...parsedResumeData.skills.featuredSkills
-              .flatMap((desc) =>
-                desc.skill
-                  .replace(/^[^:]+:/, "")
-                  ?.split(/[,|;\/]+/)
-                  .map((skill) => skill.trim())
-                  .filter(isValidSkill)
-              )
+              .flatMap((desc) => desc.skill
+                .replace(/^[^:]+:/, '')
+                ?.split(/[,|;\/]+/)
+                .map((skill) => skill.trim())
+                .filter(isValidSkill))
               .filter(Boolean),
             ...parsedResumeData.skills.descriptions
-              .flatMap((desc) =>
-                desc
-                  .replace(/^[^:]+:/, "")
-                  ?.split(/[,|;\/]+/)
-                  .map((skill) => skill.trim())
-                  .filter(isValidSkill)
-              )
+              .flatMap((desc) => desc
+                .replace(/^[^:]+:/, '')
+                ?.split(/[,|;\/]+/)
+                .map((skill) => skill.trim())
+                .filter(isValidSkill))
               .filter(Boolean),
           ]),
         ].slice(0, 20);
 
-        setFieldValue("skills", splitSkills);
+        setFieldValue('skills', splitSkills);
         setTouched({ skills: true });
       }
 
       if (!values.experience && parsedResumeData.workExperiences.length > 0) {
         const exp = calculateTotalExperience(parsedResumeData.workExperiences);
-        setFieldValue("experience", exp);
+        setFieldValue('experience', exp);
         setTouched({ experience: true });
       }
     }
@@ -173,6 +169,6 @@ const FormUpdater = ({
   }, [parsedResumeData, setFieldValue]);
 
   return null; // This component doesn't render anything
-};
+}
 
 export default FormUpdater;

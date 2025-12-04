@@ -1,11 +1,14 @@
-"use client";
-import { Label } from "@/components/ui/label";
-import type React from "react";
+'use client';
 
-import { Input } from "@/components/ui/input";
-import { CardContent, CardHeader, CardTitle, Card } from "@/components/ui/card";
-import { ChevronDown, ChevronRight, Filter } from "lucide-react";
-import type { SearchFilter } from "../candidate-search";
+import { Label } from '@/components/ui/label';
+import type React from 'react';
+
+import { Input } from '@/components/ui/input';
+import {
+  CardContent, CardHeader, CardTitle, Card,
+} from '@/components/ui/card';
+import { ChevronDown, ChevronRight, Filter } from 'lucide-react';
+import type { SearchFilter } from '../candidate-search';
 
 interface SalaryExperienceSectionProps {
   values: SearchFilter;
@@ -66,16 +69,16 @@ export function SalaryExperienceSection({
                     placeholder="Min"
                     type="number"
                     step="0.01"
-                    value={values.minExpectedCTC || ""}
+                    value={values.minExpectedCTC || ''}
                     onChange={handleChange}
                     onBlur={handleBlur}
                     className={
-                      hasError("minExpectedCTC") ? "border-destructive" : ""
+                      hasError('minExpectedCTC') ? 'border-destructive' : ''
                     }
                   />
-                  {hasError("minExpectedCTC") && (
+                  {hasError('minExpectedCTC') && (
                     <p className="text-xs text-destructive">
-                      {getErrorMessage("minExpectedCTC")}
+                      {getErrorMessage('minExpectedCTC')}
                     </p>
                   )}
                 </div>
@@ -86,16 +89,16 @@ export function SalaryExperienceSection({
                     placeholder="Max"
                     type="number"
                     step="0.01"
-                    value={values.maxExpectedCTC || ""}
+                    value={values.maxExpectedCTC || ''}
                     onChange={handleChange}
                     onBlur={handleBlur}
                     className={
-                      hasError("maxExpectedCTC") ? "border-destructive" : ""
+                      hasError('maxExpectedCTC') ? 'border-destructive' : ''
                     }
                   />
-                  {hasError("maxExpectedCTC") && (
+                  {hasError('maxExpectedCTC') && (
                     <p className="text-xs text-destructive">
-                      {getErrorMessage("maxExpectedCTC")}
+                      {getErrorMessage('maxExpectedCTC')}
                     </p>
                   )}
                 </div>
@@ -113,16 +116,16 @@ export function SalaryExperienceSection({
                     placeholder="Min"
                     type="number"
                     step="0.01"
-                    value={values.minCurrentCTC || ""}
+                    value={values.minCurrentCTC || ''}
                     onChange={handleChange}
                     onBlur={handleBlur}
                     className={
-                      hasError("minCurrentCTC") ? "border-destructive" : ""
+                      hasError('minCurrentCTC') ? 'border-destructive' : ''
                     }
                   />
-                  {hasError("minCurrentCTC") && (
+                  {hasError('minCurrentCTC') && (
                     <p className="text-xs text-destructive">
-                      {getErrorMessage("minCurrentCTC")}
+                      {getErrorMessage('minCurrentCTC')}
                     </p>
                   )}
                 </div>
@@ -133,16 +136,16 @@ export function SalaryExperienceSection({
                     placeholder="Max"
                     type="number"
                     step="0.01"
-                    value={values.maxCurrentCTC || ""}
+                    value={values.maxCurrentCTC || ''}
                     onChange={handleChange}
                     onBlur={handleBlur}
                     className={
-                      hasError("maxCurrentCTC") ? "border-destructive" : ""
+                      hasError('maxCurrentCTC') ? 'border-destructive' : ''
                     }
                   />
-                  {hasError("maxCurrentCTC") && (
+                  {hasError('maxCurrentCTC') && (
                     <p className="text-xs text-destructive">
-                      {getErrorMessage("maxCurrentCTC")}
+                      {getErrorMessage('maxCurrentCTC')}
                     </p>
                   )}
                 </div>
@@ -162,16 +165,16 @@ export function SalaryExperienceSection({
                     placeholder="Min"
                     type="number"
                     step="0.01"
-                    value={values.minExperience || ""}
+                    value={values.minExperience || ''}
                     onChange={handleChange}
                     onBlur={handleBlur}
                     className={
-                      hasError("minExperience") ? "border-destructive" : ""
+                      hasError('minExperience') ? 'border-destructive' : ''
                     }
                   />
-                  {hasError("minExperience") && (
+                  {hasError('minExperience') && (
                     <p className="text-xs text-destructive">
-                      {getErrorMessage("minExperience")}
+                      {getErrorMessage('minExperience')}
                     </p>
                   )}
                 </div>
@@ -182,16 +185,16 @@ export function SalaryExperienceSection({
                     placeholder="Max"
                     type="number"
                     step="0.01"
-                    value={values.maxExperience || ""}
+                    value={values.maxExperience || ''}
                     onChange={handleChange}
                     onBlur={handleBlur}
                     className={
-                      hasError("maxExperience") ? "border-destructive" : ""
+                      hasError('maxExperience') ? 'border-destructive' : ''
                     }
                   />
-                  {hasError("maxExperience") && (
+                  {hasError('maxExperience') && (
                     <p className="text-xs text-destructive">
-                      {getErrorMessage("maxExperience")}
+                      {getErrorMessage('maxExperience')}
                     </p>
                   )}
                 </div>

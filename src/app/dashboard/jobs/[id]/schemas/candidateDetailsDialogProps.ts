@@ -1,4 +1,4 @@
-import { Candidate } from "@/types/candidate";
+import { Candidate } from '@/types/candidate';
 
 export interface CandidateDetailsDialogProps {
   candidate: Candidate | null;

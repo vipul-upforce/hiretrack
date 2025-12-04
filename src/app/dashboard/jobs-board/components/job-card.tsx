@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { Draggable } from "@hello-pangea/dnd";
-import { Job } from "@/types/job";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Draggable } from '@hello-pangea/dnd';
+import { Job } from '@/types/job';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Info,
   Trash2,
@@ -15,31 +15,30 @@ import {
   Edit,
   AlertTriangle,
   BarChart3,
-} from "lucide-react";
+  Mail,
+} from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from '@/components/ui/tooltip';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import ConfirmationDialog from "../../jobs/[id]/components/Dialogs/ConfirmationDialog";
-import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
-import CustomFieldBadge from "../../jobs/[id]/components/Candidate/CustomFieldBadge";
-import { formatDistanceToNow } from "date-fns";
-import { JobAnalyticsModal } from "./JobAnalyticsModal";
-import { useEffect } from "react";
-import AttachmentsPopover from "../../jobs/[id]/components/Remarks/attachments-popover";
-import { useSelector } from "react-redux";
-import { User } from "@/lib/features/org/orgApi";
-import { Mail } from "lucide-react";
+} from '@/components/ui/dropdown-menu';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import useCustomForm from '@/Custom_Fields/hooks/useCustomForm';
+import { formatDistanceToNow } from 'date-fns';
+import { useSelector } from 'react-redux';
+import { User } from '@/lib/features/org/orgApi';
+import ConfirmationDialog from '../../jobs/[id]/components/Dialogs/ConfirmationDialog';
+import CustomFieldBadge from '../../jobs/[id]/components/Candidate/CustomFieldBadge';
+import { JobAnalyticsModal } from './JobAnalyticsModal';
+import AttachmentsPopover from '../../jobs/[id]/components/Remarks/attachments-popover';
 
 interface JobCardProps {
   job: Job;
@@ -52,7 +51,7 @@ interface JobCardProps {
   onEmailSettingsClick?: (job: Job) => void;
 }
 
-const JobCard = ({
+function JobCard({
   job,
   index,
   setSelectedJob,
@@ -61,14 +60,14 @@ const JobCard = ({
   handleDeleteClick,
   setDuplicate,
   onEmailSettingsClick,
-}: JobCardProps) => {
+}: JobCardProps) {
   const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
-  const [organizationId, setOrganizationId] = useState<string>("");
-  const { formNameObject } = useCustomForm("Job Position");
+  const [organizationId, setOrganizationId] = useState<string>('');
+  const { formNameObject } = useCustomForm('Job Position');
   const router = useRouter();
   const { user }: { user: User } = useSelector(
-    (state: any) => state.auth || {}
+    (state: any) => state.auth || {},
   );
 
   // Get user's organization ID
@@ -79,7 +78,7 @@ const JobCard = ({
           setOrganizationId(user.organizationId);
         }
       } catch (error) {
-        console.error("Error getting user organization:", error);
+        console.error('Error getting user organization:', error);
       }
     };
 
@@ -102,9 +101,9 @@ const JobCard = ({
               // Check if click target is a button or inside a dropdown
               const target = e.target as HTMLElement;
               if (
-                target.closest("button") ||
-                target.closest('[role="menuitem"]') ||
-                target.closest("[data-radix-collection-item]")
+                target.closest('button')
+                || target.closest('[role="menuitem"]')
+                || target.closest('[data-radix-collection-item]')
               ) {
                 return; // Don't navigate if clicking on buttons or menu items
               }
@@ -120,7 +119,7 @@ const JobCard = ({
               </h3>
               <div className="flex items-center gap-1">
                 {/* Warning Icon for Unpublished Jobs in Open Lane */}
-                {!job.isPublished && job.status === "open" && (
+                {!job.isPublished && job.status === 'open' && (
                   <TooltipProvider>
                     <Tooltip delayDuration={0}>
                       <TooltipTrigger asChild>
@@ -138,7 +137,7 @@ const JobCard = ({
                 )}
 
                 {/* Analytics Icon */}
-                {user?.role === "admin" && (
+                {user?.role === 'admin' && (
                   <TooltipProvider>
                     <Tooltip delayDuration={0}>
                       <TooltipTrigger asChild>
@@ -283,14 +282,16 @@ const JobCard = ({
               {/* Candidates Count */}
               <div className="flex items-center gap-2.5 text-sm">
                 <div className="h-4 w-4 flex items-center justify-center">
-                  <div className="w-2 h-2 bg-gray-400 dark:bg-white0 rounded-full"></div>
+                  <div className="w-2 h-2 bg-gray-400 dark:bg-white0 rounded-full" />
                 </div>
                 <div className="flex flex-col min-w-0 flex-1">
                   <span className="text-xs text-gray-500 dark:text-gray-500 uppercase tracking-wide truncate">
                     Candidates
                   </span>
                   <span className="text-gray-900 dark:text-gray-100 font-semibold truncate">
-                    {job.candidateCount} applicants
+                    {job.candidateCount}
+                    {' '}
+                    applicants
                   </span>
                 </div>
               </div>
@@ -299,14 +300,16 @@ const JobCard = ({
               {(job.experience || job.experience === 0) && (
                 <div className="flex items-center gap-2.5 text-sm">
                   <div className="h-4 w-4 flex items-center justify-center">
-                    <div className="w-2 h-2 bg-gray-400 dark:bg-white0 rounded-full"></div>
+                    <div className="w-2 h-2 bg-gray-400 dark:bg-white0 rounded-full" />
                   </div>
                   <div className="flex flex-col min-w-0 flex-1">
                     <span className="text-xs text-gray-500 dark:text-gray-500 uppercase tracking-wide truncate">
                       Experience Required
                     </span>
                     <span className="text-gray-900 dark:text-gray-100 font-semibold truncate">
-                      {job.experience} years
+                      {job.experience}
+                      {' '}
+                      years
                     </span>
                   </div>
                 </div>
@@ -317,7 +320,7 @@ const JobCard = ({
                 <div className="space-y-2">
                   <div className="flex items-center gap-2.5">
                     <div className="h-4 w-4 flex items-center justify-center">
-                      <div className="w-2 h-2 bg-gray-400 dark:bg-white0 rounded-full"></div>
+                      <div className="w-2 h-2 bg-gray-400 dark:bg-white0 rounded-full" />
                     </div>
                     <span className="text-xs text-gray-500 dark:text-gray-500 uppercase tracking-wide font-medium truncate">
                       Skills Required
@@ -339,7 +342,10 @@ const JobCard = ({
                         variant="secondary"
                         className="text-xs px-2.5 py-1 bg-gray-200 text-gray-700 border border-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:border-gray-500 font-medium flex-shrink-0"
                       >
-                        +{job.skills.length - 4} more
+                        +
+                        {job.skills.length - 4}
+                        {' '}
+                        more
                       </Badge>
                     )}
                   </div>
@@ -348,19 +354,19 @@ const JobCard = ({
             </div>
 
             {/* Custom Fields */}
-            {job.customFields &&
-              Object.entries(job.customFields).filter(([key, value]) => {
+            {job.customFields
+              && Object.entries(job.customFields).filter(([key, value]) => {
                 const field = formNameObject?.fields.find(
-                  (f) => f.label === key
+                  (f) => f.label === key,
                 );
                 if (field?.jobId && field.jobId !== job._id) {
                   return false;
                 }
                 return (
-                  field?.showOnCard &&
-                  value != null &&
-                  value !== "" &&
-                  (!Array.isArray(value) || value.length > 0)
+                  field?.showOnCard
+                  && value != null
+                  && value !== ''
+                  && (!Array.isArray(value) || value.length > 0)
                 );
                 // return field?.showOnCard;
               }).length > 0 && (
@@ -368,71 +374,72 @@ const JobCard = ({
                   {Object.entries(job.customFields)
                     .filter(([key, value]) => {
                       const field = formNameObject?.fields.find(
-                        (f) => f.label === key
+                        (f) => f.label === key,
                       );
                       if (field?.jobId && field.jobId !== job._id) {
                         return false;
                       }
                       // return field?.showOnCard;
                       return (
-                        field?.showOnCard &&
-                        value != null &&
-                        value !== "" &&
-                        (!Array.isArray(value) || value.length > 0)
+                        field?.showOnCard
+                        && value != null
+                        && value !== ''
+                        && (!Array.isArray(value) || value.length > 0)
                       );
                     })
                     .map(([key, value], i) => (
                       <div key={i} className="text-sm">
                         <span className="text-gray-600 dark:text-gray-400 truncate mr-1">
-                          {key.split(" |||||(")[0]}
+                          {key.split(' |||||(')[0]}
                         </span>
                         {/* <span className="font-semibold text-orange-700 dark:text-orange-400">
                           {String(value)}
                         </span> */}
-                        {typeof value === "string" ? (
+                        {typeof value === 'string' ? (
                           <span className="font-semibold text-orange-700 dark:text-orange-400 capitalize">
                             {value}
                           </span>
                         ) : Array.isArray(value) && value.length > 0 ? (
                           <AttachmentsPopover
                             attachments={value.map((file, index) => {
-                              if (typeof file === "string") {
+                              if (typeof file === 'string') {
                                 return {
-                                  id: "",
-                                  name: "",
-                                  url: "",
-                                  type: "",
+                                  id: '',
+                                  name: '',
+                                  url: '',
+                                  type: '',
                                   size: 0,
                                 };
                               }
                               return {
                                 id: `${key}-${index}-${file.name}`,
                                 name: file.name,
-                                url: file.base64 || "#",
-                                type: file.type || "unknown",
+                                url: file.base64 || '#',
+                                type: file.type || 'unknown',
                                 size: file.size || 0,
                               };
                             })}
                             onMoreClick={() => null}
                           />
                         ) : (
-                          "default"
+                          'default'
                         )}
                       </div>
                     ))}
                 </div>
-              )}
+            )}
 
             {/* Footer - Created Date */}
             <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800">
               <div className="flex items-center justify-end">
                 <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                  Created{" "}
+                  Created
+                  {' '}
                   {job.tracking?.createdAt
                     ? formatDistanceToNow(new Date(job.tracking.createdAt), {
-                        addSuffix: true,
-                      })
-                    : "recently"}
+                      addSuffix: true,
+                    })
+                    : 'recently'}
                 </span>
               </div>
             </div>
@@ -465,6 +472,6 @@ const JobCard = ({
       )}
     </>
   );
-};
+}
 
 export default JobCard;

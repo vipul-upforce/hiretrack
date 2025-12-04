@@ -3,9 +3,9 @@
  * Displays action buttons based on user role and context
  */
 
-import { Button } from "@/components/ui/button";
-import { Candidate } from "@/types/candidate";
-import { User } from "@/lib/features/users/usersApi";
+import { Button } from '@/components/ui/button';
+import { Candidate } from '@/types/candidate';
+import { User } from '@/lib/features/users/usersApi';
 
 interface CandidateDetailsActionsProps {
   candidate: Candidate;
@@ -41,7 +41,7 @@ export function CandidateDetailsActions({
     return (
       <div>
         <Button variant="primary" onClick={onAssignJob}>
-          {!candidate.jobId ? "Assign Job" : "Switch Job"}
+          {!candidate.jobId ? 'Assign Job' : 'Switch Job'}
         </Button>
       </div>
     );
@@ -49,10 +49,10 @@ export function CandidateDetailsActions({
 
   return (
     <div className="flex justify-between w-full">
-      {user?.role !== "candidate" && (
+      {user?.role !== 'candidate' && (
         <div className="flex gap-2">
           <Button
-            className={user?.role === "interviewer" ? "hidden" : ""}
+            className={user?.role === 'interviewer' ? 'hidden' : ''}
             variant="primary"
             onClick={onAssign}
           >
@@ -62,20 +62,20 @@ export function CandidateDetailsActions({
             Mark As Done
           </Button>
 
-          {user?.role !== "interviewer" && (
+          {user?.role !== 'interviewer' && (
             <Button onClick={onAddFollowUp} variant="outline">
               {candidate?.followUp?.note || candidate?.followUp?.date
-                ? "Edit Follow Up"
-                : "Add A Follow Up"}
+                ? 'Edit Follow Up'
+                : 'Add A Follow Up'}
             </Button>
           )}
         </div>
       )}
       <div className="flex gap-2">
-        {!hideEditButton && user?.role !== "interviewer" && (
+        {!hideEditButton && user?.role !== 'interviewer' && (
           <Button
             disabled={
-              user?.role === "candidate" && user.email !== candidate?.email
+              user?.role === 'candidate' && user.email !== candidate?.email
             }
             variant="secondary"
             onClick={onEdit}
@@ -92,4 +92,3 @@ export function CandidateDetailsActions({
     </div>
   );
 }
-

@@ -1,25 +1,25 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Mail } from "lucide-react";
-import { toast } from "sonner";
-import { useTheme } from "@/components/theme-provider";
-import { useSelector } from "react-redux";
+} from '@/components/ui/dialog';
+import { Mail } from 'lucide-react';
+import { toast } from 'sonner';
+import { useTheme } from '@/components/theme-provider';
+import { useSelector } from 'react-redux';
 
 // Import sub-components
-import { EmailTemplateSelector } from "./email-candidate-components/EmailTemplateSelector";
-import { EmailEditor } from "./email-candidate-components/EmailEditor";
-import { EmailRecipients } from "./email-candidate-components/EmailRecipients";
-import { EmailAttachments } from "./email-candidate-components/EmailAttachments";
-import { EmailDialogFooter } from "./email-candidate-components/EmailDialogFooter";
-import { EmailTemplate, FileAttachment } from "./email-candidate-components/types";
+import { EmailTemplateSelector } from './email-candidate-components/EmailTemplateSelector';
+import { EmailEditor } from './email-candidate-components/EmailEditor';
+import { EmailRecipients } from './email-candidate-components/EmailRecipients';
+import { EmailAttachments } from './email-candidate-components/EmailAttachments';
+import { EmailDialogFooter } from './email-candidate-components/EmailDialogFooter';
+import { EmailTemplate, FileAttachment } from './email-candidate-components/types';
 
 interface EmailCandidateDialogProps {
   isOpen: boolean;
@@ -38,25 +38,25 @@ export function EmailCandidateDialog({
   candidate,
 }: EmailCandidateDialogProps) {
   const { theme } = useTheme();
-  const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("");
+  const [subject, setSubject] = useState('');
+  const [body, setBody] = useState('');
   const [cc, setCc] = useState<string[]>([]);
   const [bcc, setBcc] = useState<string[]>([]);
-  const [replyTo, setReplyTo] = useState("");
+  const [replyTo, setReplyTo] = useState('');
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [sending, setSending] = useState(false);
-  const [userEmail, setUserEmail] = useState("");
-  const [userName, setUserName] = useState("");
+  const [userEmail, setUserEmail] = useState('');
+  const [userName, setUserName] = useState('');
   const [emailSent, setEmailSent] = useState(false);
-  const [emailError, setEmailError] = useState("");
+  const [emailError, setEmailError] = useState('');
   const { user } = useSelector((state: any) => state.auth || {});
 
   // Template management
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState<string>("none");
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('none');
   const [templateLoading, setTemplateLoading] = useState(true);
-  const [contentMode, setContentMode] = useState<"rich" | "html">("rich");
-  const [organizationName, setOrganizationName] = useState("");
+  const [contentMode, setContentMode] = useState<'rich' | 'html'>('rich');
+  const [organizationName, setOrganizationName] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -64,12 +64,12 @@ export function EmailCandidateDialog({
         setUserEmail(user.email);
         setUserName(user.name || user.email);
         setReplyTo(user.email);
-        setOrganizationName(user.organizationInfo.name || "HireTrack");
+        setOrganizationName(user.organizationInfo.name || 'HireTrack');
       }
 
       // Fetch templates
       try {
-        const response = await fetch("/api/settings/templates");
+        const response = await fetch('/api/settings/templates');
         if (response.ok) {
           const data = await response.json();
           if (data.templates && Object.keys(data.templates).length > 0) {
@@ -80,38 +80,38 @@ export function EmailCandidateDialog({
                 subject: template.subject,
                 content: template.html,
                 variables: template.variables || [
-                  "SenderName",
-                  "ReceiverName",
-                  "PortalName",
+                  'SenderName',
+                  'ReceiverName',
+                  'PortalName',
                 ],
                 isCustom:
-                  !template.templateId.includes("job-application") &&
-                  !template.templateId.includes("password-reset") &&
-                  !template.templateId.includes("interview-assignment") &&
-                  !template.templateId.includes("status-update") &&
-                  !template.templateId.includes("new-remark") &&
-                  !template.templateId.includes("step-completed") &&
-                  !template.templateId.includes("send-otp"),
+                  !template.templateId.includes('job-application')
+                  && !template.templateId.includes('password-reset')
+                  && !template.templateId.includes('interview-assignment')
+                  && !template.templateId.includes('status-update')
+                  && !template.templateId.includes('new-remark')
+                  && !template.templateId.includes('step-completed')
+                  && !template.templateId.includes('send-otp'),
                 isDefault:
-                  template.templateId.includes("job-application") ||
-                  template.templateId.includes("password-reset") ||
-                  template.templateId.includes("interview-assignment") ||
-                  template.templateId.includes("status-update") ||
-                  template.templateId.includes("new-remark") ||
-                  template.templateId.includes("step-completed") ||
-                  template.templateId.includes("send-otp"),
-              })
+                  template.templateId.includes('job-application')
+                  || template.templateId.includes('password-reset')
+                  || template.templateId.includes('interview-assignment')
+                  || template.templateId.includes('status-update')
+                  || template.templateId.includes('new-remark')
+                  || template.templateId.includes('step-completed')
+                  || template.templateId.includes('send-otp'),
+              }),
             );
 
             // Filter to show only custom templates (suitable for manual emails to candidates)
             const emailTemplates = loadedTemplates.filter(
-              (template: EmailTemplate) => template.isCustom
+              (template: EmailTemplate) => template.isCustom,
             );
             setTemplates(emailTemplates);
           }
         }
       } catch (error) {
-        console.error("Failed to load templates:", error);
+        console.error('Failed to load templates:', error);
       } finally {
         setTemplateLoading(false);
       }
@@ -119,21 +119,19 @@ export function EmailCandidateDialog({
   }, []);
 
   // Replace template variables with actual values
-  const replaceVariables = (content: string): string => {
-    return content
-      .replace(/{{SenderName}}/g, userName || userEmail)
-      .replace(/{{ReceiverName}}/g, candidate.name)
-      .replace(/{{PortalName}}/g, organizationName)
-      .replace(/{{jobTitle}}/g, candidate.jobTitle || "");
-  };
+  const replaceVariables = (content: string): string => content
+    .replace(/{{SenderName}}/g, userName || userEmail)
+    .replace(/{{ReceiverName}}/g, candidate.name)
+    .replace(/{{PortalName}}/g, organizationName)
+    .replace(/{{jobTitle}}/g, candidate.jobTitle || '');
 
   // Handle template selection
   const handleTemplateSelect = (templateId: string) => {
     setSelectedTemplate(templateId);
 
-    if (templateId === "none") {
-      setSubject("");
-      setBody("");
+    if (templateId === 'none') {
+      setSubject('');
+      setBody('');
       return;
     }
 
@@ -142,19 +140,19 @@ export function EmailCandidateDialog({
       setSubject(replaceVariables(template.subject));
       setBody(replaceVariables(template.content));
       // Reset to rich text mode when selecting a template for better UX
-      setContentMode("rich");
+      setContentMode('rich');
     }
   };
 
   const handleSend = async () => {
     if (!subject.trim() || !body.trim()) {
-      toast.error("Subject and body are required");
+      toast.error('Subject and body are required');
       return;
     }
 
     // Clear previous states
     setSending(true);
-    setEmailError("");
+    setEmailError('');
     setEmailSent(false);
 
     try {
@@ -179,17 +177,17 @@ export function EmailCandidateDialog({
 
         const fileData = await Promise.all(filePromises);
 
-        const uploadResponse = await fetch("/api/file-shares", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+        const uploadResponse = await fetch('/api/file-shares', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             files: fileData,
             shareOptions: {
               isPublic: true,
               expiresInHours: 24 * 30, // 30 days
               metadata: {
-                purpose: "email_attachment",
-                relatedTo: "email",
+                purpose: 'email_attachment',
+                relatedTo: 'email',
                 candidateId: candidate._id,
               },
             },
@@ -198,7 +196,7 @@ export function EmailCandidateDialog({
 
         if (!uploadResponse.ok) {
           const error = await uploadResponse.json();
-          throw new Error(error.error || "Failed to upload attachments");
+          throw new Error(error.error || 'Failed to upload attachments');
         }
 
         const uploadResult = await uploadResponse.json();
@@ -206,9 +204,9 @@ export function EmailCandidateDialog({
       }
 
       // Send email
-      const emailResponse = await fetch("/api/candidates/email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const emailResponse = await fetch('/api/candidates/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           candidateId: candidate._id,
           subject,
@@ -223,30 +221,30 @@ export function EmailCandidateDialog({
       const emailResult = await emailResponse.json();
 
       if (!emailResponse.ok) {
-        const errorMsg = emailResult.error || "Failed to send email";
+        const errorMsg = emailResult.error || 'Failed to send email';
         setEmailError(errorMsg);
         throw new Error(errorMsg);
       }
 
       setEmailSent(true);
-      toast.success("Email sent successfully");
+      toast.success('Email sent successfully');
 
       // Auto-close after a short delay to show success state
       setTimeout(() => {
         onClose();
         // Reset form
-        setSubject("");
-        setBody("");
+        setSubject('');
+        setBody('');
         setCc([]);
         setBcc([]);
         setAttachments([]);
         setEmailSent(false);
-        setEmailError("");
-        setSelectedTemplate("none");
-        setContentMode("rich");
+        setEmailError('');
+        setSelectedTemplate('none');
+        setContentMode('rich');
       }, 2000);
     } catch (error: unknown) {
-      const errorMsg = error instanceof Error ? error.message : "Failed to send email";
+      const errorMsg = error instanceof Error ? error.message : 'Failed to send email';
       setEmailError(errorMsg);
       toast.error(errorMsg);
     } finally {
@@ -263,9 +261,20 @@ export function EmailCandidateDialog({
             Compose and send an email
           </DialogTitle>
           <DialogDescription className="text-gray-600 dark:text-gray-400">
-            <span className="font-bold">To:</span> {candidate.name} (
-            {candidate.email}) | <span className="font-bold">From:</span>{" "}
-            {userName} ({userEmail})
+            <span className="font-bold">To:</span>
+            {' '}
+            {candidate.name}
+            {' '}
+            (
+            {candidate.email}
+            ) |
+            <span className="font-bold">From:</span>
+            {' '}
+            {userName}
+            {' '}
+            (
+            {userEmail}
+            )
           </DialogDescription>
         </DialogHeader>
 

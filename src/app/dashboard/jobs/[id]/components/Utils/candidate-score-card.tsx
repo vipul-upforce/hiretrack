@@ -1,7 +1,7 @@
-import { scoreColors } from "@/lib/constants";
-import React from "react";
+import { scoreColors } from '@/lib/constants';
+import React from 'react';
 
-const CandidateScoreCard = ({ candidate }) => {
+function CandidateScoreCard({ candidate }) {
   return (
     <div className="space-y-4">
       {candidate.scores.overall !== undefined && (
@@ -11,11 +11,11 @@ const CandidateScoreCard = ({ candidate }) => {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {candidate.scores?.overall !== undefined &&
-          (() => {
+        {candidate.scores?.overall !== undefined
+          && (() => {
             const normalizedScore = Math.max(
               1,
-              Math.min(10, candidate.scores.overall)
+              Math.min(10, candidate.scores.overall),
             );
             const overallScore = Math.round(normalizedScore);
             const scoreColor = scoreColors[overallScore];
@@ -50,7 +50,8 @@ const CandidateScoreCard = ({ candidate }) => {
                     className={`text-2xl font-bold ${scoreColor.text}`}
                     style={{ color: scoreColor.text }}
                   >
-                    {candidate.scores.overall}/10
+                    {candidate.scores.overall}
+                    /10
                   </div>
                   <div className="text-sm font-medium text-gray-900 dark:text-gray-100 mt-1">
                     Overall Fit
@@ -63,11 +64,11 @@ const CandidateScoreCard = ({ candidate }) => {
             );
           })()}
 
-        {candidate.scores?.experience !== undefined &&
-          (() => {
+        {candidate.scores?.experience !== undefined
+          && (() => {
             const normalizedScore = Math.max(
               1,
-              Math.min(10, candidate.scores.experience)
+              Math.min(10, candidate.scores.experience),
             );
             const experienceScore = Math.round(normalizedScore);
             const scoreColor = scoreColors[experienceScore];
@@ -102,7 +103,8 @@ const CandidateScoreCard = ({ candidate }) => {
                     className={`text-2xl font-bold ${scoreColor.text}`}
                     style={{ color: scoreColor.text }}
                   >
-                    {candidate.scores.experience}/10
+                    {candidate.scores.experience}
+                    /10
                   </div>
                   <div className="text-sm font-medium text-gray-900 dark:text-gray-100 mt-1">
                     Experience
@@ -115,11 +117,11 @@ const CandidateScoreCard = ({ candidate }) => {
             );
           })()}
 
-        {candidate.scores?.skills !== undefined &&
-          (() => {
+        {candidate.scores?.skills !== undefined
+          && (() => {
             const normalizedScore = Math.max(
               1,
-              Math.min(10, candidate.scores.skills)
+              Math.min(10, candidate.scores.skills),
             );
             const skillsScore = Math.round(normalizedScore);
             const scoreColor = scoreColors[skillsScore];
@@ -154,7 +156,8 @@ const CandidateScoreCard = ({ candidate }) => {
                     className={`text-2xl font-bold ${scoreColor.text}`}
                     style={{ color: scoreColor.text }}
                   >
-                    {candidate.scores.skills}/10
+                    {candidate.scores.skills}
+                    /10
                   </div>
                   <div className="text-sm font-medium text-gray-900 dark:text-gray-100 mt-1">
                     Skills Match
@@ -169,6 +172,6 @@ const CandidateScoreCard = ({ candidate }) => {
       </div>
     </div>
   );
-};
+}
 
 export default CandidateScoreCard;

@@ -1,6 +1,8 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import {
+  useState, useEffect, useRef, useCallback,
+} from 'react';
 
 const SCROLL_AREA_WIDTH = 60; // The width of the edge area that triggers scrolling (in pixels)
 const SCROLL_SPEED = 15; // The amount to scroll on each frame
@@ -16,8 +18,7 @@ export function useAutoScroll(scrollContainerRef: React.RefObject<HTMLElement>) 
       }
 
       const { clientX } = event;
-      const { left, right, width } =
-        scrollContainerRef.current.getBoundingClientRect();
+      const { left, right, width } = scrollContainerRef.current.getBoundingClientRect();
 
       if (clientX < left + SCROLL_AREA_WIDTH) {
         // Mouse is in the left scroll zone
@@ -41,7 +42,7 @@ export function useAutoScroll(scrollContainerRef: React.RefObject<HTMLElement>) 
         }
       }
     },
-    [isDragging, scrollContainerRef]
+    [isDragging, scrollContainerRef],
   );
 
   const stopScrolling = useCallback(() => {
@@ -53,17 +54,17 @@ export function useAutoScroll(scrollContainerRef: React.RefObject<HTMLElement>) 
 
   useEffect(() => {
     if (isDragging) {
-      window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mouseup", stopScrolling); // Failsafe for when drag ends outside the window
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', stopScrolling); // Failsafe for when drag ends outside the window
     } else {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", stopScrolling);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', stopScrolling);
       stopScrolling();
     }
 
     return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", stopScrolling);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', stopScrolling);
       stopScrolling();
     };
   }, [isDragging, handleMouseMove, stopScrolling]);

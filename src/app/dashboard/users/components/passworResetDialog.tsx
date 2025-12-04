@@ -1,20 +1,22 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@radix-ui/react-label";
-import { Eye, EyeOff } from "lucide-react";
-import { Formik, Form, Field, FieldProps } from "formik";
-import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { useResetPasswordbyAdminMutation } from "@/lib/features/auth/authApi";
-import { passwordValidationSchema } from "../schemas/passwordValidation.schema";
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@radix-ui/react-label';
+import { Eye, EyeOff } from 'lucide-react';
+import {
+  Formik, Form, Field, FieldProps,
+} from 'formik';
+import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { useResetPasswordbyAdminMutation } from '@/lib/features/auth/authApi';
+import { passwordValidationSchema } from '../schemas/passwordValidation.schema';
 
 interface ResetPasswordDialogProps {
   isOpen: boolean;
@@ -30,8 +32,7 @@ export function ResetPasswordDialog({
   name,
 }: ResetPasswordDialogProps) {
   const { toast } = useToast();
-  const [resetPasswordbyAdmin, { isLoading: isReseting }] =
-    useResetPasswordbyAdminMutation();
+  const [resetPasswordbyAdmin, { isLoading: isReseting }] = useResetPasswordbyAdminMutation();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -43,19 +44,19 @@ export function ResetPasswordDialog({
       }).unwrap();
 
       toast({
-        title: "Success",
-        description: "Password updated successfully",
+        title: 'Success',
+        description: 'Password updated successfully',
       });
 
       onOpenChange(false);
     } catch (error: unknown) {
       toast({
-        title: "Error",
+        title: 'Error',
         description:
           error instanceof Error
             ? `Failed to reset password: ${error.message}`
-            : "Failed to reset password. Please try again.",
-        variant: "destructive",
+            : 'Failed to reset password. Please try again.',
+        variant: 'destructive',
       });
     }
   };
@@ -64,17 +65,18 @@ export function ResetPasswordDialog({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Reset Password for {name}</DialogTitle>
+          <DialogTitle>
+            Reset Password for
+            {name}
+          </DialogTitle>
         </DialogHeader>
         <Formik
           initialValues={{
-            password: "",
-            confirmPassword: "",
+            password: '',
+            confirmPassword: '',
           }}
           validationSchema={passwordValidationSchema}
-          onSubmit={(values) =>
-            handlePasswordUpdate({ password: values.password })
-          }
+          onSubmit={(values) => handlePasswordUpdate({ password: values.password })}
         >
           {({
             handleChange,
@@ -95,12 +97,12 @@ export function ResetPasswordDialog({
                         <Input
                           {...field}
                           id="password"
-                          type={showPassword ? "text" : "password"}
+                          type={showPassword ? 'text' : 'password'}
                           disabled={isReseting || isSubmitting}
                           className={
                             errors.password && touched.password
-                              ? "border-red-500"
-                              : ""
+                              ? 'border-red-500'
+                              : ''
                           }
                         />
                         {errors.password && touched.password && (
@@ -115,7 +117,7 @@ export function ResetPasswordDialog({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className={`absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent ${errors.password && touched.password ? "translate-y-[-25px]" : ""}`}
+                    className={`absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent ${errors.password && touched.password ? 'translate-y-[-25px]' : ''}`}
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {!showPassword ? (
@@ -136,12 +138,12 @@ export function ResetPasswordDialog({
                         <Input
                           {...field}
                           id="confirmPassword"
-                          type={showConfirmPassword ? "text" : "password"}
+                          type={showConfirmPassword ? 'text' : 'password'}
                           disabled={isReseting || isSubmitting}
                           className={
                             errors.confirmPassword && touched.confirmPassword
-                              ? "border-red-500"
-                              : ""
+                              ? 'border-red-500'
+                              : ''
                           }
                         />
                         {errors.confirmPassword && touched.confirmPassword && (
@@ -156,7 +158,7 @@ export function ResetPasswordDialog({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className={`absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent ${errors.confirmPassword && touched.confirmPassword ? "translate-y-[-25px]" : ""}`}
+                    className={`absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent ${errors.confirmPassword && touched.confirmPassword ? 'translate-y-[-25px]' : ''}`}
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   >
                     {!showConfirmPassword ? (
@@ -181,7 +183,7 @@ export function ResetPasswordDialog({
                       Updating...
                     </div>
                   ) : (
-                    "Reset Password"
+                    'Reset Password'
                   )}
                 </Button>
               </div>

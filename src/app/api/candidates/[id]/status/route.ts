@@ -1,12 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Job } from "@/lib/mongodb";
-import { Candidate } from "@/lib/mongodb";
-import { NotificationService } from "@/lib/notifications/notificationService";
-import { getAuthenticatedUser } from "@/app/actions/auth";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { Job, Candidate } from '@/lib/mongodb';
+import { NotificationService } from '@/lib/notifications/notificationService';
+import { getAuthenticatedUser } from '@/app/actions/auth';
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     // Check authentication
@@ -19,24 +18,24 @@ export async function PATCH(
     ]);
     if (!userData) {
       return NextResponse.json(
-        { message: "Unauthorised Access" },
-        { status: 401 }
+        { message: 'Unauthorised Access' },
+        { status: 401 },
       );
     }
 
     if (!Candidate || !Job) {
-      return NextResponse.json({ error: "Models not found" }, { status: 400 });
+      return NextResponse.json({ error: 'Models not found' }, { status: 400 });
     }
 
     // Get current candidate data to access old status and job info
     const currentCandidate = await Candidate.findById(id).populate(
-      "jobId",
-      "title"
+      'jobId',
+      'title',
     );
     if (!currentCandidate) {
       return NextResponse.json(
-        { error: "Candidate not found" },
-        { status: 404 }
+        { error: 'Candidate not found' },
+        { status: 404 },
       );
     }
     // console.log(currentCandidate, "curenett --00 -         --999d");
@@ -47,15 +46,15 @@ export async function PATCH(
       id,
       {
         status,
-        "tracking.updatedAt": new Date(),
+        'tracking.updatedAt': new Date(),
       },
-      { new: true }
-    ).populate("jobId", "title");
+      { new: true },
+    ).populate('jobId', 'title');
 
     if (!updatedCandidate) {
       return NextResponse.json(
-        { error: "Candidate not found" },
-        { status: 404 }
+        { error: 'Candidate not found' },
+        { status: 404 },
       );
     }
     // console.log(oldStatus, "Olda status===000000");
@@ -70,10 +69,10 @@ export async function PATCH(
           candidateId: updatedCandidate._id.toString(),
           candidateName: updatedCandidate.name,
           jobId:
-            jobInfo?._id?.toString() ||
-            updatedCandidate.jobId?.toString() ||
-            "",
-          jobTitle: jobInfo?.title as string || "Unknown Job",
+            jobInfo?._id?.toString()
+            || updatedCandidate.jobId?.toString()
+            || '',
+          jobTitle: jobInfo?.title as string || 'Unknown Job',
           oldStatus,
           newStatus: status,
           triggerUserId: userData.id,
@@ -82,8 +81,8 @@ export async function PATCH(
         // console.log("Status updatesss notifyyy  ===== = ");
       } catch (notificationError) {
         console.error(
-          "Failed to send status update notification:",
-          notificationError
+          'Failed to send status update notification:',
+          notificationError,
         );
         // Don't fail the API call if notification fails
       }

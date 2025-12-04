@@ -1,8 +1,12 @@
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Check, X, Loader2, LogOut, Shield } from "lucide-react";
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from '@/components/ui/card';
+import {
+  Calendar, Check, X, Loader2, LogOut, Shield,
+} from 'lucide-react';
 
 interface ConnectionStatusCardProps {
   isConnected: boolean;
@@ -35,11 +39,15 @@ export function ConnectionStatusCard({
               variant="default"
               className="flex items-center gap-1 bg-green-500 text-white hover:bg-green-600"
             >
-              <Check className="h-3 w-3" /> Connected
+              <Check className="h-3 w-3" />
+              {' '}
+              Connected
             </Badge>
           ) : (
             <Badge variant="secondary" className="flex items-center gap-1">
-              <X className="h-3 w-3" /> Not Connected
+              <X className="h-3 w-3" />
+              {' '}
+              Not Connected
             </Badge>
           )}
         </CardTitle>

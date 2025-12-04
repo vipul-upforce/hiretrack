@@ -1,8 +1,8 @@
-import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { useTestConnectionMutation } from "@/lib/features/settings/settingsApi";
+import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { useTestConnectionMutation } from '@/lib/features/settings/settingsApi';
 
-type StorageType = "cloudinary" | "s3" | "smtp" | "resend";
+type StorageType = 'cloudinary' | 's3' | 'smtp' | 'resend';
 
 interface Credentials {
   // Cloudinary credentials
@@ -35,12 +35,11 @@ interface UseTestConnectionReturn {
 export function useTestConnection(): UseTestConnectionReturn {
   const { toast } = useToast();
   const [isConnectionSuccessful, setIsConnectionSuccessful] = useState(false);
-  const [testConnectionMutation, { isLoading: isTesting }] =
-    useTestConnectionMutation();
+  const [testConnectionMutation, { isLoading: isTesting }] = useTestConnectionMutation();
 
   const testConnection = async (
     storageType: StorageType,
-    credentials: Credentials
+    credentials: Credentials,
   ): Promise<boolean> => {
     try {
       setIsConnectionSuccessful(false);
@@ -53,25 +52,25 @@ export function useTestConnection(): UseTestConnectionReturn {
       setIsConnectionSuccessful(response.success);
 
       toast({
-        title: response.success ? "Success" : "Error",
+        title: response.success ? 'Success' : 'Error',
         description: response.message,
-        variant: response.success ? "default" : "destructive",
+        variant: response.success ? 'default' : 'destructive',
       });
 
       return response.success;
     } catch (error: unknown) {
       toast({
-        title: "Error",
+        title: 'Error',
         description:
-          "Failed to test connection, " +
+          `Failed to test connection, ${
             (
               error as {
                 data: {
                   message: string;
                 };
               }
-            ).data?.message || "Unknown error",
-        variant: "destructive",
+            ).data?.message}` || 'Unknown error',
+        variant: 'destructive',
       });
 
       return false;

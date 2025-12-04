@@ -1,7 +1,8 @@
-import React, { useContext, useState, useCallback } from "react";
-import { CustomFieldsContext } from "../../Context";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import React, { useContext, useState, useCallback } from 'react';
+import {
+  Card, CardHeader, CardTitle, CardContent,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import {
   TrashIcon,
   ChevronRight,
@@ -12,19 +13,19 @@ import {
   Settings2,
   Database,
   FormInput,
-  Info
-} from "lucide-react";
-import AddFormID from "./AddFormID";
-import { CustomField } from "../../Types/CustomField";
-import { Badge } from "@/components/ui/badge";
+  Info,
+} from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { DialogContent } from "@/components/ui/dialog";
-import { Dialog } from "@/components/ui/dialog";
+  DialogContent, Dialog,
+} from '@/components/ui/dialog';
+import { CustomField } from '../../Types/CustomField';
+import AddFormID from './AddFormID';
+import { CustomFieldsContext } from '../../Context';
 // import { IconButton } from "@mui/material";
 interface CardProps {
   formId: string;
@@ -33,9 +34,9 @@ interface CardProps {
 }
 
 const formIcons: Record<string, React.ElementType> = {
-  "job position": Briefcase,
-  "candidate": Users,
-  "default": FileText
+  'job position': Briefcase,
+  candidate: Users,
+  default: FileText,
 };
 
 function FormIDCard({ formId, formName, fields }: CardProps) {
@@ -51,7 +52,7 @@ function FormIDCard({ formId, formName, fields }: CardProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const IconComponent = formIcons[formName.toLowerCase()] || formIcons.default;
-  const globalFields = fields?.filter(field => !field.candidateId && !field.jobId) || [];
+  const globalFields = fields?.filter((field) => !field.candidateId && !field.jobId) || [];
 
   // const handleEdit = useCallback(
   //   (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -67,7 +68,7 @@ function FormIDCard({ formId, formName, fields }: CardProps) {
       // handleDeleteFormId(formId);
       deleteFormIDGlobalCustomFields(formId);
     },
-    [formId, handleDeleteFormId]
+    [formId, handleDeleteFormId],
   );
   const handleDeleteAllInd = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -75,12 +76,12 @@ function FormIDCard({ formId, formName, fields }: CardProps) {
       // handleDeleteFormId(formId);
       deleteFormIDAllIndCustomFields(formId);
     },
-    [formId, handleDeleteFormId]
+    [formId, handleDeleteFormId],
   );
 
   const hadleClick = useCallback(() => {
     selecteFormIdTarget(formId);
-    setStepName("formCustomFieldList");
+    setStepName('formCustomFieldList');
   }, [formId, selecteFormIdTarget, setStepName]);
 
   return (
@@ -92,17 +93,19 @@ function FormIDCard({ formId, formName, fields }: CardProps) {
         <CardHeader className="pb-4">
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-4 flex-1">
-              <div className="p-3 rounded-xl shadow-sm group-hover:shadow-md transition-all duration-200"
+              <div
+                className="p-3 rounded-xl shadow-sm group-hover:shadow-md transition-all duration-200"
                 style={
                   {
                     backgroundColor:
-                      "rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)",
+                      'rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)',
                   }
                 }
               >
-                <IconComponent className="h-6 w-6"
+                <IconComponent
+                  className="h-6 w-6"
                   style={
-                    { color: "var(--portal-primary, #6366f1)" }
+                    { color: 'var(--portal-primary, #6366f1)' }
                   }
                 />
               </div>
@@ -115,14 +118,17 @@ function FormIDCard({ formId, formName, fields }: CardProps) {
                   <div className="flex items-center gap-1.5">
                     <Database className="h-4 w-4" />
                     <span className="font-medium">{globalFields.length}</span>
-                    <span>global field{globalFields.length !== 1 ? 's' : ''}</span>
+                    <span>
+                      global field
+                      {globalFields.length !== 1 ? 's' : ''}
+                    </span>
                   </div>
-                  {fields && fields.some(f => f.candidateId || f.jobId) && (
+                  {fields && fields.some((f) => f.candidateId || f.jobId) && (
                     <>
                       <span className="text-gray-300 dark:text-gray-600">•</span>
                       <div className="flex items-center gap-1.5">
                         <FormInput className="h-4 w-4" />
-                        <span className="font-medium">{fields.filter(f => f.candidateId || f.jobId).length}</span>
+                        <span className="font-medium">{fields.filter((f) => f.candidateId || f.jobId).length}</span>
                         <span>individual</span>
                       </div>
                     </>
@@ -151,11 +157,11 @@ function FormIDCard({ formId, formName, fields }: CardProps) {
                 <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
                 <div className="text-sm text-blue-700 dark:text-blue-300">
                   <p>
-                    {formName.toLowerCase() === 'job position' ?
-                      'These fields will be shown for all existing and new jobs. Any new job or job when edited will have these fields.' :
-                      formName.toLowerCase() === 'candidate' ?
-                        'These fields will be shown for all existing and new candidates. Any new candidate or candidate when edited will have these fields.' :
-                        'These fields will be applied to all relevant items in the system.'}
+                    {formName.toLowerCase() === 'job position'
+                      ? 'These fields will be shown for all existing and new jobs. Any new job or job when edited will have these fields.'
+                      : formName.toLowerCase() === 'candidate'
+                        ? 'These fields will be shown for all existing and new candidates. Any new candidate or candidate when edited will have these fields.'
+                        : 'These fields will be applied to all relevant items in the system.'}
                   </p>
                 </div>
               </div>
@@ -173,9 +179,9 @@ function FormIDCard({ formId, formName, fields }: CardProps) {
                       key={field.id}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm border border-gray-200 dark:border-gray-600"
                     >
-                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-blue-400"></div>
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-blue-400" />
                       <span className="text-gray-700 dark:text-gray-100 font-medium">
-                        {field.label.split(" |||||(")[0]}
+                        {field.label.split(' |||||(')[0]}
                       </span>
                       <span className="text-gray-500 dark:text-gray-400 text-xs">
                         {field.type}
@@ -185,7 +191,10 @@ function FormIDCard({ formId, formName, fields }: CardProps) {
                   {globalFields.length > 4 && (
                     <div className="inline-flex items-center px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-sm border border-blue-200 dark:border-blue-700">
                       <span className="text-blue-600 dark:text-blue-400 font-medium">
-                        +{globalFields.length - 4} more
+                        +
+                        {globalFields.length - 4}
+                        {' '}
+                        more
                       </span>
                     </div>
                   )}
@@ -213,7 +222,9 @@ function FormIDCard({ formId, formName, fields }: CardProps) {
             <DialogTitle className="text-gray-900 dark:text-gray-100">Delete All Individual Meta Field</DialogTitle>
             <DialogDescription className="text-gray-600 dark:text-gray-400">
               Are you sure you want to delete all the individual meta fields of
-              the form &quot;{formName}&quot;? This action cannot be undone.
+              the form &quot;
+              {formName}
+              &quot;? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -242,7 +253,9 @@ function FormIDCard({ formId, formName, fields }: CardProps) {
             <DialogTitle className="text-gray-900 dark:text-gray-100">Delete All Personalized Form Fields</DialogTitle>
             <DialogDescription className="text-gray-600 dark:text-gray-400">
               Are you sure you want to delete the global meta fields from the
-              form &quot;{formName}&quot;? This action cannot be undone.
+              form &quot;
+              {formName}
+              &quot;? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

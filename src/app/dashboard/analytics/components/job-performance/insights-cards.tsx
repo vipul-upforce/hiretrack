@@ -1,5 +1,5 @@
-import { JobPerformanceData } from "@/app/api/analytics/types";
-import React from "react";
+import { JobPerformanceData } from '@/app/api/analytics/types';
+import React from 'react';
 
 interface InsightsProps {
   insights: {
@@ -8,7 +8,7 @@ interface InsightsProps {
   };
 }
 
-const InsightsCards = ({ insights }: InsightsProps) => {
+function InsightsCards({ insights }: InsightsProps) {
   return (
     <div className="grid md:grid-cols-2 gap-4 mb-6">
       {insights.topPerformingJobs.length > 0 ? (
@@ -22,10 +22,14 @@ const InsightsCards = ({ insights }: InsightsProps) => {
               .map((job: JobPerformanceData, index: number) => (
                 <div key={job.jobId} className="text-sm">
                   <span className="font-medium text-foreground">
-                    {index + 1}. {job.title}
+                    {index + 1}
+                    .
+                    {job.title}
                   </span>
                   <span className="text-emerald-600 dark:text-emerald-400 ml-2">
-                    ({job.successRate}% success)
+                    (
+                    {job.successRate}
+                    % success)
                   </span>
                 </div>
               ))}
@@ -54,10 +58,19 @@ const InsightsCards = ({ insights }: InsightsProps) => {
               .map((job: JobPerformanceData, index: number) => (
                 <div key={job.jobId} className="text-sm">
                   <span className="font-medium text-foreground">
-                    {index + 1}. {job.title}
+                    {index + 1}
+                    .
+                    {job.title}
                   </span>
                   <span className="text-red-600 dark:text-red-400 ml-2">
-                    ({job.applications} apps in {job.jobDuration} days)
+                    (
+                    {job.applications}
+                    {' '}
+                    apps in
+                    {' '}
+                    {job.jobDuration}
+                    {' '}
+                    days)
                   </span>
                 </div>
               ))}
@@ -77,6 +90,6 @@ const InsightsCards = ({ insights }: InsightsProps) => {
       )}
     </div>
   );
-};
+}
 
 export default InsightsCards;

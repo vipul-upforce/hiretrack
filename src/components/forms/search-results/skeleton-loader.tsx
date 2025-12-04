@@ -1,5 +1,5 @@
-import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Card } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -7,7 +7,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 
 export function SearchResultsSkeletonLoader() {
   return (
@@ -55,7 +55,7 @@ export function SearchResultsSkeletonLoader() {
                     </TableCell>
                   ))}
                 </TableRow>
-              )
+              ),
             )}
           </TableBody>
         </Table>

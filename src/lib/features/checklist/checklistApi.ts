@@ -1,12 +1,12 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import {
   IJobLaneConfig,
   ILaneConfig,
   IChecklist,
   IChecklistField,
-} from "@/lib/models/JobLaneConfig";
-import { IChecklistTemplate } from "@/lib/models/ChecklistTemplate";
-import { current } from "@reduxjs/toolkit";
+} from '@/lib/models/JobLaneConfig';
+import { IChecklistTemplate } from '@/lib/models/ChecklistTemplate';
+import { current } from '@reduxjs/toolkit';
 
 interface ValidateChecklistResponse {
   success: boolean;
@@ -21,7 +21,7 @@ interface ValidateChecklistResponse {
 interface SubmitChecklistRequest {
   checklistId: string;
   checklistName: string;
-  checklistType: "incoming" | "outgoing";
+  checklistType: 'incoming' | 'outgoing';
   laneId: string;
   laneName: string;
 
@@ -43,9 +43,9 @@ interface SubmitChecklistRequest {
 }
 
 export const checklistApi = createApi({
-  reducerPath: "checklistApi",
-  baseQuery: fetchBaseQuery({ baseUrl: "/api" }),
-  tagTypes: ["JobLaneConfig", "ChecklistTemplate", "CandidateChecklist"],
+  reducerPath: 'checklistApi',
+  baseQuery: fetchBaseQuery({ baseUrl: '/api' }),
+  tagTypes: ['JobLaneConfig', 'ChecklistTemplate', 'CandidateChecklist'],
   endpoints: (builder) => ({
     // Job Lane Configuration endpoints
     getJobLaneConfig: builder.query<IJobLaneConfig, string>({
@@ -55,7 +55,7 @@ export const checklistApi = createApi({
         data: IJobLaneConfig;
       }) => response.data,
       providesTags: (_result, _error, jobId) => [
-        { type: "JobLaneConfig", id: jobId },
+        { type: 'JobLaneConfig', id: jobId },
       ],
     }),
 
@@ -65,7 +65,7 @@ export const checklistApi = createApi({
     >({
       query: ({ jobId, laneConfigs }) => ({
         url: `/jobs/${jobId}/checklist-config`,
-        method: "POST",
+        method: 'POST',
         body: { laneConfigs },
       }),
       transformResponse: (response: {
@@ -73,7 +73,7 @@ export const checklistApi = createApi({
         data: IJobLaneConfig;
       }) => response.data,
       invalidatesTags: (_result, _error, { jobId }) => [
-        { type: "JobLaneConfig", id: jobId },
+        { type: 'JobLaneConfig', id: jobId },
       ],
     }),
 
@@ -83,7 +83,7 @@ export const checklistApi = createApi({
     >({
       query: ({ jobId, laneId, laneConfig }) => ({
         url: `/jobs/${jobId}/checklist-config`,
-        method: "PATCH",
+        method: 'PATCH',
         body: { laneId, laneConfig },
       }),
       transformResponse: (response: {
@@ -91,40 +91,39 @@ export const checklistApi = createApi({
         data: IJobLaneConfig;
       }) => response.data,
       invalidatesTags: (_result, _error, { jobId }) => [
-        { type: "JobLaneConfig", id: jobId },
+        { type: 'JobLaneConfig', id: jobId },
       ],
     }),
 
     deleteLaneChecklist: builder.mutation<
       void,
-      { jobId: string; laneId: string; type: "incoming" | "outgoing" }
+      { jobId: string; laneId: string; type: 'incoming' | 'outgoing' }
     >({
       query: ({ jobId, laneId, type }) => ({
         url: `/jobs/${jobId}/checklist-config?laneId=${laneId}&type=${type}`,
-        method: "DELETE",
+        method: 'DELETE',
       }),
       invalidatesTags: (_result, _error, { jobId }) => [
-        { type: "JobLaneConfig", id: jobId },
+        { type: 'JobLaneConfig', id: jobId },
       ],
     }),
 
     // Checklist Template endpoints
     getChecklistTemplates: builder.query<
       IChecklistTemplate[],
-      { type?: "incoming" | "outgoing"; active?: boolean }
+      { type?: 'incoming' | 'outgoing'; active?: boolean }
     >({
       query: (params) => {
         const searchParams = new URLSearchParams();
-        if (params.type) searchParams.append("type", params.type);
-        if (params.active !== undefined)
-          searchParams.append("active", params.active.toString());
+        if (params.type) searchParams.append('type', params.type);
+        if (params.active !== undefined) searchParams.append('active', params.active.toString());
         return `/checklist-templates?${searchParams.toString()}`;
       },
       transformResponse: (response: {
         success: boolean;
         data: IChecklistTemplate[];
       }) => response.data,
-      providesTags: ["ChecklistTemplate"],
+      providesTags: ['ChecklistTemplate'],
     }),
 
     getChecklistTemplate: builder.query<IChecklistTemplate, string>({
@@ -134,7 +133,7 @@ export const checklistApi = createApi({
         data: IChecklistTemplate;
       }) => response.data,
       providesTags: (_result, _error, id) => [
-        { type: "ChecklistTemplate", id },
+        { type: 'ChecklistTemplate', id },
       ],
     }),
 
@@ -143,20 +142,20 @@ export const checklistApi = createApi({
       {
         name: string;
         description?: string;
-        type: "incoming" | "outgoing";
+        type: 'incoming' | 'outgoing';
         fields: IChecklistField[];
       }
     >({
       query: (body) => ({
-        url: "/checklist-templates",
-        method: "POST",
+        url: '/checklist-templates',
+        method: 'POST',
         body,
       }),
       transformResponse: (response: {
         success: boolean;
         data: IChecklistTemplate;
       }) => response.data,
-      invalidatesTags: ["ChecklistTemplate"],
+      invalidatesTags: ['ChecklistTemplate'],
     }),
 
     updateChecklistTemplate: builder.mutation<
@@ -171,7 +170,7 @@ export const checklistApi = createApi({
     >({
       query: ({ id, ...body }) => ({
         url: `/checklist-templates/${id}`,
-        method: "PUT",
+        method: 'PUT',
         body,
       }),
       transformResponse: (response: {
@@ -179,17 +178,17 @@ export const checklistApi = createApi({
         data: IChecklistTemplate;
       }) => response.data,
       invalidatesTags: (_result, _error, { id }) => [
-        { type: "ChecklistTemplate", id },
-        "ChecklistTemplate",
+        { type: 'ChecklistTemplate', id },
+        'ChecklistTemplate',
       ],
     }),
 
     deleteChecklistTemplate: builder.mutation<void, string>({
       query: (id) => ({
         url: `/checklist-templates/${id}`,
-        method: "DELETE",
+        method: 'DELETE',
       }),
-      invalidatesTags: ["ChecklistTemplate"],
+      invalidatesTags: ['ChecklistTemplate'],
     }),
 
     // Candidate Checklist endpoints
@@ -199,12 +198,12 @@ export const checklistApi = createApi({
         candidateId: string;
         currentLane: string;
         targetLane: string;
-        movementType: "incoming" | "outgoing";
+        movementType: 'incoming' | 'outgoing';
       }
     >({
       query: ({ candidateId, ...body }) => ({
         url: `/candidates/${candidateId}/validate-checklist`,
-        method: "POST",
+        method: 'POST',
         body,
       }),
     }),
@@ -218,11 +217,11 @@ export const checklistApi = createApi({
     >({
       query: ({ candidateId, data }) => ({
         url: `/candidates/${candidateId}/submit-checklist`,
-        method: "POST",
+        method: 'POST',
         body: { ...data, currentTime: new Date().toISOString() },
       }),
       invalidatesTags: (_result, _error, { candidateId }) => [
-        { type: "CandidateChecklist", id: candidateId },
+        { type: 'CandidateChecklist', id: candidateId },
       ],
     }),
   }),

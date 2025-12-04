@@ -1,24 +1,25 @@
-"use client";
-import React from "react";
-import { Formik, Form, ErrorMessage } from "formik";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+'use client';
+
+import React from 'react';
+import { Formik, Form, ErrorMessage } from 'formik';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { FileStorageValues, validationSchema, storageOptions } from "./schema";
-import { CloudinaryFields } from "./partials/cloudinary-fields";
-import { S3Fields } from "./partials/s3-fields";
+} from '@/components/ui/tooltip';
+import { FileStorageValues, validationSchema, storageOptions } from './schema';
+import { CloudinaryFields } from './partials/cloudinary-fields';
+import { S3Fields } from './partials/s3-fields';
 
 interface FileStorageFormProps {
   initialValues: FileStorageValues;
@@ -55,7 +56,7 @@ export default function FileStorageForm({
               <Label htmlFor="fileStorage">Select Storage Option</Label>
               <Select
                 value={values.storageType}
-                onValueChange={(value) => setFieldValue("storageType", value)}
+                onValueChange={(value) => setFieldValue('storageType', value)}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select storage option" />
@@ -75,14 +76,14 @@ export default function FileStorageForm({
               />
             </div>
 
-            {values.storageType === "cloudinary" && (
+            {values.storageType === 'cloudinary' && (
               <CloudinaryFields
                 onTest={onTestConnection}
                 isTesting={isTesting}
               />
             )}
 
-            {values.storageType === "s3" && (
+            {values.storageType === 's3' && (
               <S3Fields onTest={onTestConnection} isTesting={isTesting} />
             )}
           </div>
@@ -104,16 +105,16 @@ export default function FileStorageForm({
                       type="submit"
                       variant="primary"
                       disabled={
-                        values.storageType !== "local" &&
-                        (isSubmitting || isUpdating || !isConnectionSuccessful)
+                        values.storageType !== 'local'
+                        && (isSubmitting || isUpdating || !isConnectionSuccessful)
                       }
                       title={
                         !isConnectionSuccessful
-                          ? "Test the connection before saving."
-                          : ""
+                          ? 'Test the connection before saving.'
+                          : ''
                       }
                     >
-                      {isSubmitting || isUpdating ? "Saving..." : "Save"}
+                      {isSubmitting || isUpdating ? 'Saving...' : 'Save'}
                     </Button>
                   </div>
                 </TooltipTrigger>

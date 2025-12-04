@@ -1,41 +1,36 @@
-"use client";
+'use client';
 
-import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { useMemo } from "react";
+import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { useMemo } from 'react';
 
-const getRandom = (min: number, max: number) =>
-  Math.floor(Math.random() * (max - min + 1)) + min;
+const getRandom = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
 
 // Generate a random width class like w-32, w-24, w-40 etc
 const randomWidth = () => {
   const widths = [
-    "w-10",
-    "w-16",
-    "w-20",
-    "w-24",
-    "w-28",
-    "w-32",
-    "w-40",
-    "w-48",
-    "w-56",
+    'w-10',
+    'w-16',
+    'w-20',
+    'w-24',
+    'w-28',
+    'w-32',
+    'w-40',
+    'w-48',
+    'w-56',
   ];
   return widths[getRandom(0, widths.length - 1)];
 };
 
-const LoaderSkeleton = () => {
-  const columns = useMemo(() => {
-    return [...Array(3)].map(() => {
-      return {
-        cards: [...Array(getRandom(3, 5))].map(() => ({
-          titleWidth: randomWidth(),
-          skills: [...Array(getRandom(1, 5))].map(() => randomWidth()),
-          customFields: [...Array(getRandom(1, 4))].map(() => randomWidth()),
-        })),
-      };
-    });
-  }, []);
+function LoaderSkeleton() {
+  const columns = useMemo(() => [...Array(3)].map(() => ({
+    cards: [...Array(getRandom(3, 5))].map(() => ({
+      titleWidth: randomWidth(),
+      skills: [...Array(getRandom(1, 5))].map(() => randomWidth()),
+      customFields: [...Array(getRandom(1, 4))].map(() => randomWidth()),
+    })),
+  })), []);
 
   return (
     <div className="h-screen flex flex-col overflow-hidden w-full animate-pulse">
@@ -66,7 +61,7 @@ const LoaderSkeleton = () => {
 
       {/* FILTER */}
       <div className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-black border-t border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center gap-3 flex-1"></div>
+        <div className="flex items-center gap-3 flex-1" />
 
         <div className="flex gap-1">
           <Skeleton className="h-8 w-10 rounded-md" />
@@ -155,6 +150,6 @@ const LoaderSkeleton = () => {
       </div>
     </div>
   );
-};
+}
 
 export default LoaderSkeleton;

@@ -1,36 +1,40 @@
-"use client";
+'use client';
 
-import { useRouter } from "next/navigation";
+import { useRouter } from 'next/navigation';
 import {
   useGetUsersQuery,
   useDeleteUserMutation,
   User,
-} from "@/lib/features/users/usersApi";
+} from '@/lib/features/users/usersApi';
 import {
   Table,
   TableBody,
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { UserPlus, Home, ChevronRight } from "lucide-react";
-import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
-import LoaderSkeletonUsers from "./components/loader-skeleton-users";
-import { useEffect, useState } from "react";
-import withAuthGuard from "@/components/withAuthGuard";
-import { ResetPasswordDialog } from "./components/passworResetDialog";
-import ConfirmationDialog from "../jobs/[id]/components/Dialogs/ConfirmationDialog";
-import { EditUserDialog } from "./components/Edit-user-dialog";
-import { UserTableRow } from "./components/User-Table-Row";
-import { EmailNotificationSettingsDialog } from "@/components/dialogs/EmailNotificationSettingsDialog";
+} from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { UserPlus, Home, ChevronRight } from 'lucide-react';
+import Link from 'next/link';
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
+import { useEffect, useState } from 'react';
+import withAuthGuard from '@/components/withAuthGuard';
+import { EmailNotificationSettingsDialog } from '@/components/dialogs/EmailNotificationSettingsDialog';
+import LoaderSkeletonUsers from './components/loader-skeleton-users';
+import { ResetPasswordDialog } from './components/passworResetDialog';
+import ConfirmationDialog from '../jobs/[id]/components/Dialogs/ConfirmationDialog';
+import { EditUserDialog } from './components/Edit-user-dialog';
+import { UserTableRow } from './components/User-Table-Row';
 
 function UsersPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { data: users = [], isLoading, error, refetch } = useGetUsersQuery();
+  const {
+    data: users = [], isLoading, error, refetch,
+  } = useGetUsersQuery();
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [deleteUser] = useDeleteUserMutation();
   const [isOpen, setIsOpen] = useState(false);
@@ -65,23 +69,23 @@ function UsersPage() {
     try {
       await deleteUser(id).unwrap();
       toast({
-        title: "Success",
-        description: "User deleted successfully",
+        title: 'Success',
+        description: 'User deleted successfully',
       });
     } catch (error: unknown) {
       toast({
         description:
-          "Error: " +
-          (typeof error === "object" &&
-          error !== null &&
-          "data" in error &&
-          typeof error.data === "object" &&
-          error.data &&
-          "error" in error.data
-            ? (error.data as { error: string }).error
-            : "Unknown error"),
-        title: "Failed to delete user",
-        variant: "destructive",
+          `Error: ${
+            typeof error === 'object'
+          && error !== null
+          && 'data' in error
+          && typeof error.data === 'object'
+          && error.data
+          && 'error' in error.data
+              ? (error.data as { error: string }).error
+              : 'Unknown error'}`,
+        title: 'Failed to delete user',
+        variant: 'destructive',
       });
     } finally {
       setDeletingUserId(null);
@@ -141,7 +145,7 @@ function UsersPage() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center h-96 space-y-4">
             <p className="text-muted-foreground text-lg">No users found</p>
-            <Button onClick={() => router.push("/auth/signup")}>
+            <Button onClick={() => router.push('/auth/signup')}>
               Create First User
             </Button>
           </CardContent>
@@ -182,7 +186,7 @@ function UsersPage() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3">
               <Button
                 variant="primary"
-                onClick={() => router.push("/auth/signup")}
+                onClick={() => router.push('/auth/signup')}
               >
                 <UserPlus className="h-4 w-4 mr-2" />
                 Create User
@@ -212,8 +216,8 @@ function UsersPage() {
                 {users
                   ?.slice()
                   .sort((a, b) => {
-                    if (a.role === "system") return -1;
-                    if (b.role === "system") return 1;
+                    if (a.role === 'system') return -1;
+                    if (b.role === 'system') return 1;
                     return 0;
                   })
                   .map((user: User) => (
@@ -292,8 +296,8 @@ function UsersPage() {
 }
 
 export default withAuthGuard(UsersPage, {
-  requiredRoles: ["admin"],
-  fallbackPath: "/dashboard",
+  requiredRoles: ['admin'],
+  fallbackPath: '/dashboard',
   checkAllowance: false,
   allowAuthenticated: true,
 });

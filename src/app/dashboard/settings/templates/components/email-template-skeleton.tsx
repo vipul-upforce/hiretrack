@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-const EmailTemplateSkeleton = () => {
+function EmailTemplateSkeleton() {
   return (
     <div className="h-screen flex flex-col overflow-hidden w-full animate-pulse">
       {/* Header Skeleton */}
@@ -98,6 +98,6 @@ const EmailTemplateSkeleton = () => {
       </div>
     </div>
   );
-};
+}
 
 export default EmailTemplateSkeleton;

@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Candidate } from "@/types/candidate";
-import { useToast } from "@/hooks/use-toast";
-import { ShareCandidateFieldSelector } from "./share-candidate-components/ShareCandidateFieldSelector";
-import { ShareCandidateDialogFooter } from "./share-candidate-components/ShareCandidateDialogFooter";
+} from '@/components/ui/dialog';
+import { Candidate } from '@/types/candidate';
+import { useToast } from '@/hooks/use-toast';
+import { ShareCandidateFieldSelector } from './share-candidate-components/ShareCandidateFieldSelector';
+import { ShareCandidateDialogFooter } from './share-candidate-components/ShareCandidateDialogFooter';
 
 interface ShareCandidateDialogProps {
   open: boolean;
@@ -57,7 +57,6 @@ export interface ShareFieldsSelection {
   customFields: boolean;
   resume: boolean;
 }
-
 
 export function ShareCandidateDialog({
   open,
@@ -114,26 +113,26 @@ export function ShareCandidateDialog({
         [field]: value !== undefined ? value : !prev[field],
       }));
     },
-    []
+    [],
   );
 
   const selectAllInCategory = useCallback(
-    (category: "basic" | "professional" | "ai" | "job" | "additional") => {
+    (category: 'basic' | 'professional' | 'ai' | 'job' | 'additional') => {
       const updates: Partial<ShareFieldsSelection> = {};
 
-      if (category === "basic") {
+      if (category === 'basic') {
         updates.name = true;
         updates.email = true;
         updates.phone = true;
         updates.location = true;
-      } else if (category === "professional") {
+      } else if (category === 'professional') {
         updates.experience = true;
         updates.relevantExperience = true;
         updates.skills = true;
         updates.currentCTC = true;
         updates.expectedCTC = true;
         updates.noticePeriod = true;
-      } else if (category === "ai") {
+      } else if (category === 'ai') {
         updates.overallScore = true;
         updates.experienceScore = true;
         updates.skillsScore = true;
@@ -142,10 +141,10 @@ export function ShareCandidateDialog({
         updates.areasForImprovement = true;
         updates.recommendation = true;
         updates.notes = true;
-      } else if (category === "job") {
+      } else if (category === 'job') {
         updates.jobDetails = true;
         updates.status = true;
-      } else if (category === "additional") {
+      } else if (category === 'additional') {
         updates.assignment = true;
         updates.followUp = true;
         updates.tags = true;
@@ -154,26 +153,26 @@ export function ShareCandidateDialog({
 
       setSelection((prev) => ({ ...prev, ...updates }));
     },
-    []
+    [],
   );
 
   const deselectAllInCategory = useCallback(
-    (category: "basic" | "professional" | "ai" | "job" | "additional") => {
+    (category: 'basic' | 'professional' | 'ai' | 'job' | 'additional') => {
       const updates: Partial<ShareFieldsSelection> = {};
 
-      if (category === "basic") {
+      if (category === 'basic') {
         updates.name = false;
         updates.email = false;
         updates.phone = false;
         updates.location = false;
-      } else if (category === "professional") {
+      } else if (category === 'professional') {
         updates.experience = false;
         updates.relevantExperience = false;
         updates.skills = false;
         updates.currentCTC = false;
         updates.expectedCTC = false;
         updates.noticePeriod = false;
-      } else if (category === "ai") {
+      } else if (category === 'ai') {
         updates.overallScore = false;
         updates.experienceScore = false;
         updates.skillsScore = false;
@@ -182,10 +181,10 @@ export function ShareCandidateDialog({
         updates.areasForImprovement = false;
         updates.recommendation = false;
         updates.notes = false;
-      } else if (category === "job") {
+      } else if (category === 'job') {
         updates.jobDetails = false;
         updates.status = false;
-      } else if (category === "additional") {
+      } else if (category === 'additional') {
         updates.assignment = false;
         updates.followUp = false;
         updates.tags = false;
@@ -194,17 +193,17 @@ export function ShareCandidateDialog({
 
       setSelection((prev) => ({ ...prev, ...updates }));
     },
-    []
+    [],
   );
 
   const handleGeneratePDF = async () => {
     setIsGenerating(true);
 
     try {
-      const response = await fetch("/api/candidates/share-pdf", {
-        method: "POST",
+      const response = await fetch('/api/candidates/share-pdf', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           candidateId: candidate._id,
@@ -213,7 +212,7 @@ export function ShareCandidateDialog({
       });
 
       if (!response.ok) {
-        throw new Error("Failed to generate PDF");
+        throw new Error('Failed to generate PDF');
       }
 
       // Get the PDF blob
@@ -221,29 +220,29 @@ export function ShareCandidateDialog({
 
       // Create download link
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
+      const link = document.createElement('a');
       link.href = url;
       // Use candidate name if selected, otherwise use generic filename
       link.download = selection.name
-        ? `${candidate.name.replace(/\s+/g, "_")}_Profile.pdf`
-        : "Candidate_Profile.pdf";
+        ? `${candidate.name.replace(/\s+/g, '_')}_Profile.pdf`
+        : 'Candidate_Profile.pdf';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
       toast({
-        title: "Success",
-        description: "Candidate profile PDF generated successfully",
+        title: 'Success',
+        description: 'Candidate profile PDF generated successfully',
       });
 
       onOpenChange(false);
     } catch (error) {
-      console.error("Error generating PDF:", error);
+      console.error('Error generating PDF:', error);
       toast({
-        title: "Error",
-        description: "Failed to generate PDF. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to generate PDF. Please try again.',
+        variant: 'destructive',
       });
     } finally {
       setIsGenerating(false);
@@ -252,7 +251,7 @@ export function ShareCandidateDialog({
 
   const selectedCount = useMemo(
     () => Object.values(selection).filter(Boolean).length,
-    [selection]
+    [selection],
   );
 
   return (
@@ -263,7 +262,9 @@ export function ShareCandidateDialog({
       >
         <DialogHeader>
           <DialogTitle>
-            Download Candidate Profile - {candidate.name}
+            Download Candidate Profile -
+            {' '}
+            {candidate.name}
           </DialogTitle>
           <DialogDescription>
             Customize and export the profile as a PDF

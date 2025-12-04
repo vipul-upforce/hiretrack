@@ -1,27 +1,29 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import Link from "next/link";
-import { Formik, Form, Field, FieldProps } from "formik";
-import { motion } from "framer-motion";
-import { Mail, Lock, User } from "lucide-react";
-import ReCAPTCHA from "react-google-recaptcha";
-import { Checkbox } from "@/components/ui/checkbox";
-import { SignupSchema } from "../signupSchema";
-import { TermsAndConditionsDialog } from "../TermsAndConditionsDialog";
-import { FormInput } from "./form-input";
-import { useSignupLogic } from "../hooks/useSignupLogic";
-import "../recaptcha-theme.css";
+import React, { useState } from 'react';
+import Link from 'next/link';
+import {
+  Formik, Form, Field, FieldProps,
+} from 'formik';
+import { motion } from 'framer-motion';
+import { Mail, Lock, User } from 'lucide-react';
+import ReCAPTCHA from 'react-google-recaptcha';
+import { Checkbox } from '@/components/ui/checkbox';
+import { SignupSchema } from '../signupSchema';
+import { TermsAndConditionsDialog } from '../TermsAndConditionsDialog';
+import { FormInput } from './form-input';
+import { useSignupLogic } from '../hooks/useSignupLogic';
+import '../recaptcha-theme.css';
 
 const initialValues = {
-  email: "",
-  password: "",
-  name: "",
-  confirmPassword: "",
+  email: '',
+  password: '',
+  name: '',
+  confirmPassword: '',
   termsAccepted: false,
 };
 
-export const SignupForm = () => {
+export function SignupForm() {
   const {
     theme,
     portalSettings,
@@ -61,7 +63,7 @@ export const SignupForm = () => {
             background: `linear-gradient(135deg, ${portalSettings.primaryColor}20, ${portalSettings.secondaryColor}20, ${portalSettings.primaryColor}15)`,
             transform: `translate(${mousePosition.x - 192}px, ${mousePosition.y - 192}px)`,
           }}
-          transition={{ type: "spring", damping: 30, stiffness: 200 }}
+          transition={{ type: 'spring', damping: 30, stiffness: 200 }}
         />
       )}
 
@@ -75,8 +77,8 @@ export const SignupForm = () => {
                 style={{
                   color: portalSettings.primaryColor,
                   animation: orgName
-                    ? "fadeInOrg 0.9s ease-in-out forwards"
-                    : "none",
+                    ? 'fadeInOrg 0.9s ease-in-out forwards'
+                    : 'none',
                 }}
               >
                 {orgName}
@@ -90,7 +92,9 @@ export const SignupForm = () => {
           validationSchema={SignupSchema}
           onSubmit={handleSignupSubmit}
         >
-          {({ errors, touched, isSubmitting, values, setFieldValue }) => (
+          {({
+            errors, touched, isSubmitting, values, setFieldValue,
+          }) => (
             <Form className="space-y-5">
               <FormInput
                 name="name"
@@ -138,15 +142,15 @@ export const SignupForm = () => {
 
               {/* CAPTCHA */}
               {captchaConfig?.captcha?.enableCaptcha && decryptedSiteKey && (
-                <div className="flex justify-center scale-90 sm:scale-100 origin-center">
-                  <div className="recaptcha-container">
-                    <ReCAPTCHA
-                      sitekey={decryptedSiteKey}
-                      onChange={(token) => setCaptchaToken(token)}
-                      theme={theme as "light" | "dark"}
-                    />
-                  </div>
+              <div className="flex justify-center scale-90 sm:scale-100 origin-center">
+                <div className="recaptcha-container">
+                  <ReCAPTCHA
+                    sitekey={decryptedSiteKey}
+                    onChange={(token) => setCaptchaToken(token)}
+                    theme={theme as 'light' | 'dark'}
+                  />
                 </div>
+              </div>
               )}
 
               {/* Terms Checkbox */}
@@ -155,49 +159,52 @@ export const SignupForm = () => {
                   <div className="space-y-1">
                     <div className="flex items-start space-x-2">
                       <Checkbox
-                        id="termsAccepted"
-                        checked={field.value}
-                        onCheckedChange={(checked) => {
-                          setShowTermsDialog(true);
-                          setFieldValue("termsAccepted", false);
-                        }}
-                      />
+              id="termsAccepted"
+              checked={field.value}
+              onCheckedChange={(checked) => {
+                setShowTermsDialog(true);
+                setFieldValue('termsAccepted', false);
+              }}
+            />
                       <label
-                        htmlFor="termsAccepted"
-                        className="text-xs sm:text-sm"
-                      >
-                        I agree to the{" "}
-                        <button
-                          type="button"
-                          className="underline"
-                          style={{ color: portalSettings.primaryColor }}
-                          onClick={(e) => {
+              htmlFor="termsAccepted"
+              className="text-xs sm:text-sm"
+            >
+              I agree to the
+              {' '}
+              <button
+                type="button"
+                className="underline"
+                style={{ color: portalSettings.primaryColor }}
+                onClick={(e) => {
                             e.preventDefault();
                             setShowTermsDialog(true);
-                            setFieldValue("termsAccepted", false);
+                            setFieldValue('termsAccepted', false);
                           }}
-                        >
+              >
                           Terms
-                        </button>{" "}
-                        and{" "}
-                        <button
-                          type="button"
-                          className="underline"
-                          style={{ color: portalSettings.primaryColor }}
-                          onClick={(e) => {
+              </button>
+              {' '}
+              and
+              {' '}
+              <button
+                type="button"
+                className="underline"
+                style={{ color: portalSettings.primaryColor }}
+                onClick={(e) => {
                             e.preventDefault();
                             setShowTermsDialog(true);
-                            setFieldValue("termsAccepted", false);
+                            setFieldValue('termsAccepted', false);
                           }}
-                        >
+              >
                           Privacy Policy
-                        </button>
-                      </label>
+              </button>
+            </label>
                     </div>
                     {errors.termsAccepted && touched.termsAccepted && (
-                      <div className="text-sm text-red-500">
-                        {errors.termsAccepted}
-                      </div>
+                    <div className="text-sm text-red-500">
+            {errors.termsAccepted}
+          </div>
                     )}
                   </div>
                 )}
@@ -206,10 +213,10 @@ export const SignupForm = () => {
               <motion.button
                 type="submit"
                 disabled={
-                  isSignupLoading ||
-                  isSubmitting ||
-                  !values?.termsAccepted ||
-                  (captchaConfig?.captcha?.enableCaptcha && !captchaToken)
+                  isSignupLoading
+                  || isSubmitting
+                  || !values?.termsAccepted
+                  || (captchaConfig?.captcha?.enableCaptcha && !captchaToken)
                 }
                 className="w-full text-white py-3 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 relative overflow-hidden group"
                 style={{
@@ -225,13 +232,14 @@ export const SignupForm = () => {
                     Creating Account...
                   </div>
                 ) : (
-                  "Sign Up"
+                  'Sign Up'
                 )}
               </motion.button>
 
               <div className="text-center pt-4">
                 <span className="text-muted-foreground text-sm">
-                  Already have an account?{" "}
+                  Already have an account?
+                  {' '}
                 </span>
                 <Link
                   href="/auth/login"
@@ -246,7 +254,7 @@ export const SignupForm = () => {
                 open={showTermsDialog}
                 onOpenChange={setShowTermsDialog}
                 onAccept={(accepted: boolean) => {
-                  setFieldValue("termsAccepted", accepted);
+                  setFieldValue('termsAccepted', accepted);
                   setShowTermsDialog(false);
                 }}
               />
@@ -256,4 +264,4 @@ export const SignupForm = () => {
       </div>
     </motion.div>
   );
-};
+}

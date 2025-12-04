@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { useState, useEffect } from 'react';
+import { useToast } from '@/hooks/use-toast';
 // import { EmailNotificationType } from "@/components/ui/email-notification-toggle";
 
 // Define the type for global settings to match the schema
@@ -33,10 +33,8 @@ export interface GlobalEmailNotificationSettings {
 
 // Hook for getting global email notification settings for the current user
 export function useGlobalEmailNotificationSettings() {
-  const [settings, setSettings] =
-    useState<GlobalEmailNotificationSettings | null>(null);
-  const [effectiveSettings, setEffectiveSettings] =
-    useState<GlobalEmailNotificationSettings | null>(null);
+  const [settings, setSettings] = useState<GlobalEmailNotificationSettings | null>(null);
+  const [effectiveSettings, setEffectiveSettings] = useState<GlobalEmailNotificationSettings | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -46,13 +44,13 @@ export function useGlobalEmailNotificationSettings() {
     setError(null);
 
     try {
-      const response = await fetch("/api/settings/email-notifications/global");
+      const response = await fetch('/api/settings/email-notifications/global');
 
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(
-          errorData.error ||
-            "Failed to fetch global email notification settings"
+          errorData.error
+            || 'Failed to fetch global email notification settings',
         );
       }
 
@@ -60,12 +58,12 @@ export function useGlobalEmailNotificationSettings() {
       setSettings(data.globalSettings);
       setEffectiveSettings(data.effectiveSettings);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError(errorMessage);
       toast({
-        title: "Error",
+        title: 'Error',
         description: errorMessage,
-        variant: "destructive",
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -94,10 +92,10 @@ export function useUpdateGlobalEmailNotificationSettings() {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/settings/email-notifications/global", {
-        method: "PUT",
+      const response = await fetch('/api/settings/email-notifications/global', {
+        method: 'PUT',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({ settings }),
       });
@@ -105,25 +103,25 @@ export function useUpdateGlobalEmailNotificationSettings() {
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(
-          errorData.error ||
-            "Failed to update global email notification settings"
+          errorData.error
+            || 'Failed to update global email notification settings',
         );
       }
 
       const data = await response.json();
 
       toast({
-        title: "Success",
-        description: "Global email notification settings updated successfully",
+        title: 'Success',
+        description: 'Global email notification settings updated successfully',
       });
 
       return data;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       toast({
-        title: "Error",
+        title: 'Error',
         description: errorMessage,
-        variant: "destructive",
+        variant: 'destructive',
       });
       throw err;
     } finally {

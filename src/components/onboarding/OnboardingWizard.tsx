@@ -1,24 +1,25 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { useOnboarding } from "./OnboardingProvider";
-import { ChevronLeft, ChevronRight, X, Check, SkipForward } from "lucide-react";
-import ProgressIndicator from "./ProgressIndicator";
-import WelcomeStep from "./steps/WelcomeStep";
-import PortalConfigStep from "./steps/PortalConfigStep";
-import AIProviderStep from "./steps/AIProviderStep";
-import EmailConfigStep from "./steps/EmailConfigStep";
-import CalendarStep from "./steps/CalendarStep";
-import TimezoneStep from "./steps/TimezoneStep";
-import StorageStep from "./steps/StorageStep";
-import UsersStep from "./steps/UsersStep";
-import CustomFieldsStep from "./steps/CustomFieldsStep";
-import CompletionStep from "./steps/CompletionStep";
-import CaptchaConfigStep from "./steps/CaptchaConfigStep";
-import ConfirmationDialog from "@/app/dashboard/jobs/[id]/components/Dialogs/ConfirmationDialog";
-
+import React, { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import {
+  ChevronLeft, ChevronRight, X, Check, SkipForward,
+} from 'lucide-react';
+import ConfirmationDialog from '@/app/dashboard/jobs/[id]/components/Dialogs/ConfirmationDialog';
+import { useOnboarding } from './OnboardingProvider';
+import ProgressIndicator from './ProgressIndicator';
+import WelcomeStep from './steps/WelcomeStep';
+import PortalConfigStep from './steps/PortalConfigStep';
+import AIProviderStep from './steps/AIProviderStep';
+import EmailConfigStep from './steps/EmailConfigStep';
+import CalendarStep from './steps/CalendarStep';
+import TimezoneStep from './steps/TimezoneStep';
+import StorageStep from './steps/StorageStep';
+import UsersStep from './steps/UsersStep';
+import CustomFieldsStep from './steps/CustomFieldsStep';
+import CompletionStep from './steps/CompletionStep';
+import CaptchaConfigStep from './steps/CaptchaConfigStep';
 
 const OnboardingWizard: React.FC = () => {
   const {
@@ -40,10 +41,9 @@ const OnboardingWizard: React.FC = () => {
   const totalSteps = steps.length + 2;
 
   const currentStep = currentStepIndex;
-  const currentStepData =
-    currentStep > 0 && currentStep < totalSteps - 1
-      ? steps[currentStep - 1]
-      : null;
+  const currentStepData = currentStep > 0 && currentStep < totalSteps - 1
+    ? steps[currentStep - 1]
+    : null;
 
   // Validate current step
   useEffect(() => {
@@ -112,32 +112,30 @@ const OnboardingWizard: React.FC = () => {
     if (!currentStepData) return null;
 
     switch (currentStepData.id) {
-      case "portal":
+      case 'portal':
         return <PortalConfigStep />;
-      case "captcha":
+      case 'captcha':
         return <CaptchaConfigStep />;
-      case "aiProviders":
+      case 'aiProviders':
         return <AIProviderStep />;
-      case "email":
+      case 'email':
         return <EmailConfigStep />;
-      case "calendar":
+      case 'calendar':
         return <CalendarStep />;
-      case "timezone":
+      case 'timezone':
         return <TimezoneStep />;
-      case "storage":
+      case 'storage':
         return <StorageStep />;
-      case "users":
+      case 'users':
         return <UsersStep />;
-      case "customFields":
+      case 'customFields':
         return <CustomFieldsStep />;
       default:
         return <div>Step not implemented</div>;
     }
   };
 
-  const getProgressPercentage = () => {
-    return ((currentStep + 1) / totalSteps) * 100;
-  };
+  const getProgressPercentage = () => ((currentStep + 1) / totalSteps) * 100;
 
   return (
     <>
@@ -147,13 +145,19 @@ const OnboardingWizard: React.FC = () => {
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-lg font-semibold">
-                Step {currentStep + 1} of {totalSteps}
+                Step
+                {' '}
+                {currentStep + 1}
+                {' '}
+                of
+                {' '}
+                {totalSteps}
               </span>
 
               <span className="text-sm text-muted-foreground bg-background px-3 py-1 rounded-full border">
                 {progress
                   ? `${progress.completed}/${progress.total} configured`
-                  : "0/9 configured"}
+                  : '0/9 configured'}
               </span>
             </div>
 
@@ -204,8 +208,8 @@ const OnboardingWizard: React.FC = () => {
                   disabled={isCurrentConfigured}
                   className={
                     isCurrentConfigured
-                      ? "opacity-50 cursor-not-allowed"
-                      : ""
+                      ? 'opacity-50 cursor-not-allowed'
+                      : ''
                   }
                 >
                   <SkipForward className="w-4 h-4 mr-2" />
@@ -248,7 +252,7 @@ const OnboardingWizard: React.FC = () => {
         }}
         onCancel={() => setShowDismissDialog(false)} // Close the dialog without action
       />
-     
+
     </>
   );
 };

@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useTheme } from "@/components/theme-provider";
+import { useTheme } from '@/components/theme-provider';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -10,14 +10,14 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import EmailTemplateSkeleton from "./components/email-template-skeleton";
-import { useEmailTemplates } from "./hooks/useEmailTemplate";
-import { AddTemplateDialog } from "./components/add-template-dialog";
-import { TemplateHeader } from "./components/template-header";
-import { TemplateSelector } from "./components/template-selector";
-import { TemplateEditor } from "./components/template-editor";
-import { TemplateSidebar } from "./components/template-sidebar";
+} from '@/components/ui/alert-dialog';
+import EmailTemplateSkeleton from './components/email-template-skeleton';
+import { useEmailTemplates } from './hooks/useEmailTemplate';
+import { AddTemplateDialog } from './components/add-template-dialog';
+import { TemplateHeader } from './components/template-header';
+import { TemplateSelector } from './components/template-selector';
+import { TemplateEditor } from './components/template-editor';
+import { TemplateSidebar } from './components/template-sidebar';
 
 export default function EmailTemplatesPage() {
   const { theme } = useTheme();

@@ -1,4 +1,4 @@
-import { Database } from "lucide-react";
+import { Database } from 'lucide-react';
 
 export function BackupEmptyState() {
   return (

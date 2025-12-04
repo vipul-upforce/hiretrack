@@ -4,19 +4,19 @@ import {
   useState,
   useCallback,
   useLayoutEffect,
-} from "react";
+} from 'react';
 import {
   useGetNginxLogFilesQuery,
   useGetPm2LogFilesQuery,
   useLazyGetNginxFileContentQuery,
   useLazyGetPm2LogFileContentQuery,
-} from "@/lib/features/settings/settingsApi";
-import { useDebounce } from "@/hooks/useDebounce";
-import { SystemLogsResponse } from "../types";
+} from '@/lib/features/settings/settingsApi';
+import { useDebounce } from '@/hooks/useDebounce';
+import { SystemLogsResponse } from '../types';
 
-export type LogType = "nginx" | "pm2";
+export type LogType = 'nginx' | 'pm2';
 
-interface UseLogViewerLogicProps extends Omit<SystemLogsResponse, "onError"> {
+interface UseLogViewerLogicProps extends Omit<SystemLogsResponse, 'onError'> {
   logType: LogType;
   onError?: (error: string | null) => void;
 }
@@ -49,7 +49,7 @@ export function useLogViewerLogic({
     isError: isNginxError,
     error: nginxError,
   } = useGetNginxLogFilesQuery(undefined, {
-    skip: logType !== "nginx" || !!searchQuery,
+    skip: logType !== 'nginx' || !!searchQuery,
   });
 
   const {
@@ -58,29 +58,26 @@ export function useLogViewerLogic({
     isError: isPm2Error,
     error: pm2Error,
   } = useGetPm2LogFilesQuery(undefined, {
-    skip: logType !== "pm2" || !!searchQuery,
+    skip: logType !== 'pm2' || !!searchQuery,
   });
 
-  const isFilesLoading = logType === "nginx" ? isNginxLoading : isPm2Loading;
-  const isFilesError = logType === "nginx" ? isNginxError : isPm2Error;
-  const filesError = logType === "nginx" ? nginxError : pm2Error;
-  const activeData = logType === "nginx" ? nginxData : pm2Data;
+  const isFilesLoading = logType === 'nginx' ? isNginxLoading : isPm2Loading;
+  const isFilesError = logType === 'nginx' ? isNginxError : isPm2Error;
+  const filesError = logType === 'nginx' ? nginxError : pm2Error;
+  const activeData = logType === 'nginx' ? nginxData : pm2Data;
 
-  const [triggerNginxContent, { isFetching: isNginxFileLoading }] =
-    useLazyGetNginxFileContentQuery();
+  const [triggerNginxContent, { isFetching: isNginxFileLoading }] = useLazyGetNginxFileContentQuery();
 
-  const [triggerPm2Content, { isFetching: isPm2FileLoading }] =
-    useLazyGetPm2LogFileContentQuery();
+  const [triggerPm2Content, { isFetching: isPm2FileLoading }] = useLazyGetPm2LogFileContentQuery();
 
-  const isFileLoading =
-    logType === "nginx" ? isNginxFileLoading : isPm2FileLoading;
+  const isFileLoading = logType === 'nginx' ? isNginxFileLoading : isPm2FileLoading;
 
   const triggerGetFileContent = useCallback(
     (args: any) => {
-      if (logType === "nginx") return triggerNginxContent(args);
+      if (logType === 'nginx') return triggerNginxContent(args);
       return triggerPm2Content(args);
     },
-    [logType, triggerNginxContent, triggerPm2Content]
+    [logType, triggerNginxContent, triggerPm2Content],
   );
 
   useEffect(() => {
@@ -102,7 +99,7 @@ export function useLogViewerLogic({
   useEffect(() => {
     if (isFilesError) {
       onError?.(
-        `Error fetching ${logType} logs: ` + (filesError as any)?.message
+        `Error fetching ${logType} logs: ${(filesError as any)?.message}`,
       );
       setIsAvailable(false);
       return;
@@ -135,7 +132,7 @@ export function useLogViewerLogic({
       file: selectedFile,
       offset: 0,
       limit: linesPerLoad,
-      query: searchQuery || "",
+      query: searchQuery || '',
     })
       .unwrap()
       .then((data) => {
@@ -151,16 +148,15 @@ export function useLogViewerLogic({
 
   useEffect(() => {
     const container = logContainerRef.current;
-    const sentinel = document.getElementById("log-sentinel");
+    const sentinel = document.getElementById('log-sentinel');
 
     if (
-      !selectedFile ||
-      isFetchingMore ||
-      isInitialFileLoading ||
-      !container ||
-      !sentinel
-    )
-      return;
+      !selectedFile
+      || isFetchingMore
+      || isInitialFileLoading
+      || !container
+      || !sentinel
+    ) return;
     if (totalLines > 0 && offset >= totalLines) return;
 
     const observer = new IntersectionObserver(
@@ -173,7 +169,7 @@ export function useLogViewerLogic({
             file: selectedFile,
             offset,
             limit: linesPerLoad,
-            query: searchQuery || "",
+            query: searchQuery || '',
           })
             .unwrap()
             .then((data) => {
@@ -192,8 +188,8 @@ export function useLogViewerLogic({
       {
         root: container,
         threshold: 0.1,
-        rootMargin: "50px",
-      }
+        rootMargin: '50px',
+      },
     );
 
     observer.observe(sentinel);
@@ -215,23 +211,22 @@ export function useLogViewerLogic({
   const handleFileSelect = useCallback(
     (file: string) => {
       if (selectedFile === file) return;
-      setSearchQuery("");
-      setRawSearch("");
+      setSearchQuery('');
+      setRawSearch('');
       setSelectedFile(file);
       setFileContent([]);
       setOffset(0);
       setTotalLines(0);
       setIsInitialFileLoading(true);
     },
-    [selectedFile, setSearchQuery]
+    [selectedFile, setSearchQuery],
   );
 
   const handleSearchChange = useCallback((v: string) => {
     setRawSearch(v);
   }, []);
 
-  const globalLoading =
-    isFilesLoading || isFileLoading || isFetchingMore || isInitialFileLoading;
+  const globalLoading = isFilesLoading || isFileLoading || isFetchingMore || isInitialFileLoading;
 
   return {
     files: logFiles,

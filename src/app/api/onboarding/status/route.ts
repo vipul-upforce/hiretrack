@@ -1,27 +1,27 @@
-import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Settings } from "@/lib/mongodb";
-import { getAuthenticatedUser } from "@/app/actions/auth";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { Settings } from '@/lib/mongodb';
+import { getAuthenticatedUser } from '@/app/actions/auth';
 
 export async function GET(req: NextRequest) {
   try {
     await connectToDatabase();
 
-    const user = await getAuthenticatedUser(req, "admin");
+    const user = await getAuthenticatedUser(req, 'admin');
     if (!user) {
       return NextResponse.json(
-        { error: "Admin access required" },
-        { status: 403 }
+        { error: 'Admin access required' },
+        { status: 403 },
       );
     }
 
     const settings = await Settings.findOne({
       organizationId: user.organizationId,
-    }).select("onboardingStatus").lean().exec();
+    }).select('onboardingStatus').lean().exec();
 
     if (!settings) {
       return NextResponse.json(
-        { error: "Settings not found" },
-        { status: 404 }
+        { error: 'Settings not found' },
+        { status: 404 },
       );
     }
 
@@ -36,10 +36,10 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ onboardingStatus });
   } catch (error) {
-    console.error("Error fetching onboarding status:", error);
+    console.error('Error fetching onboarding status:', error);
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+      { error: 'Internal server error' },
+      { status: 500 },
     );
   }
 }
@@ -107,29 +107,26 @@ export async function GET(req: NextRequest) {
 //   }
 // }
 
-
-
-
 export async function PUT(req: NextRequest) {
   try {
-    const user = await getAuthenticatedUser(req, "admin");
+    const user = await getAuthenticatedUser(req, 'admin');
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
     await connectToDatabase();
     const body = await req.json();
 
     const allowedFields = [
-      "completedSteps",
-      "skippedSteps",
-      "doNotShowAgain",
-      "currentStep",
-      "isCompleted",
+      'completedSteps',
+      'skippedSteps',
+      'doNotShowAgain',
+      'currentStep',
+      'isCompleted',
     ];
 
     const $set: Record<string, any> = {
-      "onboardingStatus.lastUpdated": new Date(),
+      'onboardingStatus.lastUpdated': new Date(),
     };
 
     for (const key of allowedFields) {
@@ -141,15 +138,15 @@ export async function PUT(req: NextRequest) {
     const updated = await Settings.findOneAndUpdate(
       { organizationId: user.organizationId },
       { $set },
-      { new: true }
-    ).select("onboardingStatus");
+      { new: true },
+    ).select('onboardingStatus');
 
     return NextResponse.json({
       success: true,
       onboardingStatus: updated?.onboardingStatus,
     });
   } catch (error) {
-    console.error("Error updating onboarding status:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    console.error('Error updating onboarding status:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

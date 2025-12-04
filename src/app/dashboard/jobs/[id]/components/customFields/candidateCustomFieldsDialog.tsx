@@ -1,5 +1,5 @@
-import CustomFieldDialog from "@/Custom_Fields/Components/Common/CustomFieldDialog";
-import JobSpecificCustomFields from "./jobSpecificCustomFields";
+import CustomFieldDialog from '@/Custom_Fields/Components/Common/CustomFieldDialog';
+import JobSpecificCustomFields from './jobSpecificCustomFields';
 
 export default function CandidateCustomFieldsDialog({
   isOpen,

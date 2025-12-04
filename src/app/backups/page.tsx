@@ -1,10 +1,12 @@
-"use client";
+'use client';
 
-import { FileIcon } from "lucide-react";
-import { useGetBackupsQuery, useDeleteBackupMutation, useTakeSnapshotMutation } from "@/lib/features/settings/settingsApi";
+import { FileIcon } from 'lucide-react';
+import { useGetBackupsQuery, useDeleteBackupMutation, useTakeSnapshotMutation } from '@/lib/features/settings/settingsApi';
 
 export default function BackupsDialog() {
-  const { data, isLoading, isError, refetch } = useGetBackupsQuery();
+  const {
+    data, isLoading, isError, refetch,
+  } = useGetBackupsQuery();
   const [deleteBackup] = useDeleteBackupMutation();
   const [takeSnapshot] = useTakeSnapshotMutation();
 
@@ -15,7 +17,7 @@ export default function BackupsDialog() {
       await deleteBackup(fileName).unwrap();
       refetch(); // refresh list
     } catch (err) {
-      console.error("Failed to delete backup:", err);
+      console.error('Failed to delete backup:', err);
     }
   };
 
@@ -24,7 +26,7 @@ export default function BackupsDialog() {
       await takeSnapshot().unwrap();
       refetch();
     } catch (err) {
-      console.error("Failed to take snapshot:", err);
+      console.error('Failed to take snapshot:', err);
     }
   };
 

@@ -1,9 +1,11 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader } from '@/components/ui/card';
+import {
+  Tabs, TabsContent, TabsList, TabsTrigger,
+} from '@/components/ui/tabs';
 import {
   RefreshCw,
   Save,
@@ -14,15 +16,15 @@ import {
   Code,
   Home,
   ChevronRight,
-} from "lucide-react";
-import Link from "next/link";
-import { usePortalConfiguration } from "./hooks/use-portal-configuration";
-import { GeneralTab } from "./components/tabs/general-tab";
-import { BrandingTab } from "./components/tabs/branding-tab";
-import { ColorsTab } from "./components/tabs/colors-tab";
-import { AdvancedTab } from "./components/tabs/advanced-tab";
-import { EmbedTab } from "./components/tabs/embed-tab";
-import { PortalPreviewPane } from "./components/preview/portal-preview-pane";
+} from 'lucide-react';
+import Link from 'next/link';
+import { usePortalConfiguration } from './hooks/use-portal-configuration';
+import { GeneralTab } from './components/tabs/general-tab';
+import { BrandingTab } from './components/tabs/branding-tab';
+import { ColorsTab } from './components/tabs/colors-tab';
+import { AdvancedTab } from './components/tabs/advanced-tab';
+import { EmbedTab } from './components/tabs/embed-tab';
+import { PortalPreviewPane } from './components/preview/portal-preview-pane';
 
 export default function PortalConfigurationPage() {
   const {
@@ -41,13 +43,13 @@ export default function PortalConfigurationPage() {
     generatePortalUrl,
     user,
     hasMultipleOrgs,
-    fetching
+    fetching,
   } = usePortalConfiguration();
 
-  const [activeTab, setActiveTab] = useState<string>("general");
+  const [activeTab, setActiveTab] = useState<string>('general');
 
-  const [embedWidth, setEmbedWidth] = useState<string>("100%");
-  const [embedHeight, setEmbedHeight] = useState<string>("600px");
+  const [embedWidth, setEmbedWidth] = useState<string>('100%');
+  const [embedHeight, setEmbedHeight] = useState<string>('600px');
   const [embedShowBorder, setEmbedShowBorder] = useState<boolean>(true);
   const [embedHideHeader, setEmbedHideHeader] = useState<boolean>(false);
   const [embedHideFooter, setEmbedHideFooter] = useState<boolean>(false);
@@ -96,7 +98,7 @@ export default function PortalConfigurationPage() {
               <div className="flex gap-2">
                 <Button variant="outline" disabled={fetching} onClick={() => refetch()}>
                   <RefreshCw className="h-4 w-4 mr-2" />
-                  {fetching ? "Refreshing...": "Refresh"}
+                  {fetching ? 'Refreshing...' : 'Refresh'}
                 </Button>
                 <Button
                   variant="primary"
@@ -104,7 +106,7 @@ export default function PortalConfigurationPage() {
                   disabled={saving}
                 >
                   <Save className="h-4 w-4 mr-2" />
-                  {saving ? "Saving..." : "Save Changes"}
+                  {saving ? 'Saving...' : 'Save Changes'}
                 </Button>
               </div>
             </div>

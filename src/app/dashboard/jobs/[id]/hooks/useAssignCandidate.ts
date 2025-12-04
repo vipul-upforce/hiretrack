@@ -1,25 +1,25 @@
-import { useState } from "react";
-import { toast } from "@/hooks/use-toast";
-import { FormikHelpers } from "formik";
+import { useState } from 'react';
+import { toast } from '@/hooks/use-toast';
+import { FormikHelpers } from 'formik';
 import {
   useSendMailMutation,
   useSendUnassignMailMutation,
-} from "@/lib/features/org/orgApi";
+} from '@/lib/features/org/orgApi';
 import {
   useUpdateCandidateMutation,
   useUpdateCandidateHistoryMutation,
-} from "@/lib/features/candidate/candidateApi";
-import { sentAssignmentMail } from "@/lib/utils";
-import { ICandidateHistory } from "@/lib/models/history";
+} from '@/lib/features/candidate/candidateApi';
+import { sentAssignmentMail } from '@/lib/utils';
+import { ICandidateHistory } from '@/lib/models/history';
+import { usePathname } from 'next/navigation';
+import { Interviewer } from '@/lib/features/user/userApi';
+import { Candidate } from '@/types/candidate';
 import {
   FormValues,
   User,
   AssignCandidateDialogProps,
-} from "../schemas/AssignCandidateSchema";
-import { usePathname } from "next/navigation";
-import { Interviewer } from "@/lib/features/user/userApi";
-import { Candidate } from "@/types/candidate";
-import { getJobId } from "../utils/candidateAccessors";
+} from '../schemas/AssignCandidateSchema';
+import { getJobId } from '../utils/candidateAccessors';
 
 export const useAssignCandidate = ({
   candidate,
@@ -42,13 +42,13 @@ export const useAssignCandidate = ({
     values: FormValues,
     { setSubmitting }: FormikHelpers<FormValues>,
     user: User | null,
-    interviewers: Interviewer[] | undefined
+    interviewers: Interviewer[] | undefined,
   ) => {
     if (!user) {
       toast({
-        title: "Error",
-        description: "User information is missing.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'User information is missing.',
+        variant: 'destructive',
       });
       setSubmitting(false);
       return;
@@ -103,21 +103,19 @@ export const useAssignCandidate = ({
         attachments: uniqueAttachments,
       };
 
-      const previousInterviewer =
-        typeof candidate.assignment?.interviewerId === "object"
-          ? candidate.assignment.interviewerId.name
-          : "";
-      const previousInterviewerId =
-        typeof candidate.assignment?.interviewerId === "object" &&
-          Object.keys(candidate.assignment?.interviewerId).length > 0
-          ? Object(candidate.assignment.interviewerId._id)
-          : null;
+      const previousInterviewer = typeof candidate.assignment?.interviewerId === 'object'
+        ? candidate.assignment.interviewerId.name
+        : '';
+      const previousInterviewerId = typeof candidate.assignment?.interviewerId === 'object'
+          && Object.keys(candidate.assignment?.interviewerId).length > 0
+        ? Object(candidate.assignment.interviewerId._id)
+        : null;
 
-      let nextInterviewer = "No Next interviewer";
+      let nextInterviewer = 'No Next interviewer';
       let nextInterviewerId = null;
       if (values.interviewerId && interviewers) {
         const foundNextInterviewer = interviewers.find(
-          (interviewer) => interviewer._id === values.interviewerId
+          (interviewer) => interviewer._id === values.interviewerId,
         );
         if (foundNextInterviewer) {
           nextInterviewer = foundNextInterviewer.name;
@@ -125,30 +123,29 @@ export const useAssignCandidate = ({
         }
       }
 
-      const title =
-        !previousInterviewer || previousInterviewer === ""
-          ? `Assigned to ${nextInterviewer} : Assigned by ${user.name}`
-          : `${previousInterviewer} → ${nextInterviewer} : Assigned by ${user.name}`;
+      const title = !previousInterviewer || previousInterviewer === ''
+        ? `Assigned to ${nextInterviewer} : Assigned by ${user.name}`
+        : `${previousInterviewer} → ${nextInterviewer} : Assigned by ${user.name}`;
 
       const newHistoryEntry: ICandidateHistory = {
         dateTime: new Date().toISOString(),
         currentInterviewer: nextInterviewerId,
         previousInterviewer: previousInterviewerId,
         assignmentBy: user.id,
-        title: title,
+        title,
         note: newRemarkObj,
         attachments: values.attachments,
       };
 
       const { data: result, error } = await updateCandidate(
-        updatedCandidate as Candidate
+        updatedCandidate as Candidate,
       );
       if (!error) {
         sentAssignmentMail(result, sendEmail);
       }
       const updatedHistory = await updateCandidateHistory({
         candidateId: updatedCandidate._id,
-        jobId: getJobId(candidate) || "",
+        jobId: getJobId(candidate) || '',
         newEntry: newHistoryEntry,
       }).unwrap();
 
@@ -158,41 +155,41 @@ export const useAssignCandidate = ({
         setLocalCandidate(result);
       }
 
-      if (pathname === "/dashboard") {
+      if (pathname === '/dashboard') {
         refetchAssignment?.();
       }
 
       toast({
-        title: "Success",
-        description: "Candidate assigned successfully",
+        title: 'Success',
+        description: 'Candidate assigned successfully',
       });
 
-      if (pathname !== "/dashboard" && pathname !== "/dashboard/calendar") {
+      if (pathname !== '/dashboard' && pathname !== '/dashboard/calendar') {
         refetch();
       }
       onSuccess();
     } catch (error) {
-      if (typeof error === "object" && error !== null && "data" in error) {
+      if (typeof error === 'object' && error !== null && 'data' in error) {
         const errorData = (error as { data?: { error?: string } }).data;
 
         if (
-          typeof errorData === "object" &&
-          errorData !== null &&
-          "error" in errorData
+          typeof errorData === 'object'
+          && errorData !== null
+          && 'error' in errorData
         ) {
           toast({
-            title: "Error",
-            description: errorData.error || "Failed to update job",
-            variant: "destructive",
+            title: 'Error',
+            description: errorData.error || 'Failed to update job',
+            variant: 'destructive',
           });
           return;
         }
       }
 
       toast({
-        title: "Error",
-        description: "Failed to update job due to an unexpected error.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to update job due to an unexpected error.',
+        variant: 'destructive',
       });
     } finally {
       setSubmitting(false);
@@ -206,9 +203,9 @@ export const useAssignCandidate = ({
   const confirmUnassign = async (user: User | null) => {
     if (!user) {
       toast({
-        title: "Error",
-        description: "User information is missing.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'User information is missing.',
+        variant: 'destructive',
       });
       return;
     }
@@ -224,26 +221,25 @@ export const useAssignCandidate = ({
       onOpenChange(false);
       setLocalCandidate(result);
 
-      if (pathname !== "/dashboard" && pathname !== "/dashboard/calendar") {
+      if (pathname !== '/dashboard' && pathname !== '/dashboard/calendar') {
         await refetch();
       } else {
         refetchAssignment?.();
       }
       onSuccess();
 
-      const previousInterviewerId =
-        typeof candidate.assignment?.interviewerId === "object"
-          ? Object(candidate.assignment.interviewerId._id)
-          : null;
+      const previousInterviewerId = typeof candidate.assignment?.interviewerId === 'object'
+        ? Object(candidate.assignment.interviewerId._id)
+        : null;
       const newHistoryEntry: ICandidateHistory = {
         dateTime: new Date().toISOString(),
         currentInterviewer: null,
         previousInterviewer: previousInterviewerId,
         assignmentBy: user.id,
-        title: "Unassigned",
+        title: 'Unassigned',
         note: {
-          description: "",
-          date: "",
+          description: '',
+          date: '',
           rating: 0,
           userId: null,
         },
@@ -252,7 +248,7 @@ export const useAssignCandidate = ({
 
       await updateCandidateHistory({
         candidateId: updatedCandidate._id,
-        jobId: getJobId(candidate) || "",
+        jobId: getJobId(candidate) || '',
         newEntry: newHistoryEntry,
       }).unwrap();
       // sendUnassignEmail({ name: result.name });
@@ -266,16 +262,16 @@ export const useAssignCandidate = ({
         feedback: newHistoryEntry.note,
       });
       toast({
-        title: "Success",
-        description: "Interviewer has been unassigned successfully",
+        title: 'Success',
+        description: 'Interviewer has been unassigned successfully',
       });
     } catch (error: unknown) {
       toast({
         title:
-          "Error: " +
-          (error instanceof Error ? error.message : "Unknown error"),
-        description: "Failed to unassign interviewer",
-        variant: "destructive",
+          `Error: ${
+            error instanceof Error ? error.message : 'Unknown error'}`,
+        description: 'Failed to unassign interviewer',
+        variant: 'destructive',
       });
     } finally {
       setConfirmUnassignOpen(false);

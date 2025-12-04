@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import React, { useState, useCallback } from "react";
-import { Button } from "@/components/ui/button";
-import CustomFieldDialog from "./Common/CustomFieldDialog";
-import { CustomField } from "../Types/CustomField";
-import SpecificCustomFieldList from "./List/SpecificCustomFieldList";
+import React, { useState, useCallback } from 'react';
+import { Button } from '@/components/ui/button';
+import CustomFieldDialog from './Common/CustomFieldDialog';
+import { CustomField } from '../Types/CustomField';
+import SpecificCustomFieldList from './List/SpecificCustomFieldList';
 
 interface AddJobOrCandidateCustomFieldProps {
   jobId?: string;
@@ -36,12 +36,12 @@ export function AddSpecificCustomFieldButton({
     <div>
       <Button type="button" variant="secondary" onClick={() => setIsOpen(true)}>
         {/* <Plus className="h-4 w-4 mr-2" /> */}
-        {jobId ? "Personalized fields for this Job" : "Personalized fields for this Candidate"}
+        {jobId ? 'Personalized fields for this Job' : 'Personalized fields for this Candidate'}
       </Button>
       <CustomFieldDialog
         isOpen={isOpen}
         onClose={handleClose}
-        title={jobId ? "Personalized fields for this Job" : "Personalized fields for this Candidate"}
+        title={jobId ? 'Personalized fields for this Job' : 'Personalized fields for this Candidate'}
       >
         {/* <AddSpecificCustomFieldForm
           handleClose={handleClose}

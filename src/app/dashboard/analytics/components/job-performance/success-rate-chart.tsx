@@ -1,4 +1,4 @@
-import { JobPerformanceData } from "@/app/api/analytics/types";
+import { JobPerformanceData } from '@/app/api/analytics/types';
 import {
   Bar,
   BarChart,
@@ -9,7 +9,7 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from "recharts";
+} from 'recharts';
 
 // Success Rate Analysis Chart
 export const SuccessRateChart: React.FC<{ data: JobPerformanceData[] }> = ({
@@ -32,7 +32,9 @@ export const SuccessRateChart: React.FC<{ data: JobPerformanceData[] }> = ({
     <ResponsiveContainer width="100%" height={450}>
       <BarChart
         data={successData}
-        margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+        margin={{
+          top: 20, right: 30, left: 20, bottom: 60,
+        }}
       >
         <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
         <XAxis
@@ -50,13 +52,18 @@ export const SuccessRateChart: React.FC<{ data: JobPerformanceData[] }> = ({
               const value = payload[0].value as number;
               return (
                 <div className="bg-background border rounded-lg shadow-lg p-3">
-                  <p className="font-semibold text-foreground">Job: {label}</p>
+                  <p className="font-semibold text-foreground">
+                    Job:
+                    {label}
+                  </p>
                   <p className="text-foreground">
-                    Success Rate:{" "}
+                    Success Rate:
+                    {' '}
                     <span
-                      className={`font-bold ${value >= 20 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                      className={`font-bold ${value >= 20 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
                     >
-                      {value}%
+                      {value}
+                      %
                     </span>
                   </p>
                 </div>
@@ -75,7 +82,7 @@ export const SuccessRateChart: React.FC<{ data: JobPerformanceData[] }> = ({
           {successData.map((entry, index) => (
             <Cell
               key={`cell-${index}`}
-              fill={entry.successRate >= 20 ? "#10B981" : "#EF4444"}
+              fill={entry.successRate >= 20 ? '#10B981' : '#EF4444'}
             />
           ))}
         </Bar>

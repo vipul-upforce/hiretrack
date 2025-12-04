@@ -1,9 +1,11 @@
-import { Button } from "@/components/ui/button";
-import { TableCell, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { EditIcon, ShieldQuestion, Trash2, Mail } from "lucide-react";
-import { User } from "@/lib/features/users/usersApi";
-import { format } from "date-fns";
+import { Button } from '@/components/ui/button';
+import { TableCell, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import {
+  EditIcon, ShieldQuestion, Trash2, Mail,
+} from 'lucide-react';
+import { User } from '@/lib/features/users/usersApi';
+import { format } from 'date-fns';
 
 interface UserTableRowProps {
   user: User;
@@ -37,14 +39,14 @@ export function UserTableRow({
 }: UserTableRowProps) {
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
-      case "hr":
-        return "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300";
-      case "admin":
-        return "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300";
-      case "system":
-        return "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300";
+      case 'hr':
+        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300';
+      case 'admin':
+        return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300';
+      case 'system':
+        return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300';
       default:
-        return "bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300";
+        return 'bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300';
     }
   };
 
@@ -75,9 +77,9 @@ export function UserTableRow({
           {user.role}
         </span>
       </TableCell>
-      <TableCell>{format(new Date(user.createdAt), "MMM d, yyyy")}</TableCell>
+      <TableCell>{format(new Date(user.createdAt), 'MMM d, yyyy')}</TableCell>
       <TableCell className="flex flex-row justify-between items-center gap-2">
-        {user.role !== "system" && (
+        {user.role !== 'system' && (
           <div className="flex flex-row items-center gap-2">
             <Button
               variant="destructive"
@@ -109,7 +111,7 @@ export function UserTableRow({
               variant="outline"
               size="icon"
               onClick={() => {
-                if (user.role !== "interviewer") {
+                if (user.role !== 'interviewer') {
                   onEmailSettingsClick({
                     _id: user._id,
                     name: user.name,
@@ -118,29 +120,29 @@ export function UserTableRow({
                   });
                 }
               }}
-              disabled={isUpdating || user.role === "interviewer"}
+              disabled={isUpdating || user.role === 'interviewer'}
               className={`bg-white dark:bg-black border-gray-200 dark:border-gray-600 ${
-                user.role === "interviewer"
-                  ? "opacity-50 cursor-not-allowed"
-                  : "hover:bg-gray-100 dark:hover:bg-gray-700"
+                user.role === 'interviewer'
+                  ? 'opacity-50 cursor-not-allowed'
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
               title={
-                user.role === "interviewer"
-                  ? "Email notifications are always enabled for interviewers"
-                  : "Email Notification Settings"
+                user.role === 'interviewer'
+                  ? 'Email notifications are always enabled for interviewers'
+                  : 'Email Notification Settings'
               }
             >
               <Mail
                 className={`h-4 w-4 ${
-                  user.role === "interviewer"
-                    ? "text-gray-400 dark:text-gray-500"
-                    : "text-gray-700 dark:text-gray-300"
+                  user.role === 'interviewer'
+                    ? 'text-gray-400 dark:text-gray-500'
+                    : 'text-gray-700 dark:text-gray-300'
                 }`}
               />
             </Button>
           </div>
         )}
-        {user.role !== "system" && (
+        {user.role !== 'system' && (
           <Button
             variant="outline"
             size="icon"
@@ -151,7 +153,7 @@ export function UserTableRow({
             <EditIcon className="h-4 w-4 text-gray-700 dark:text-gray-300" />
           </Button>
         )}
-        {user.role === "system" && (
+        {user.role === 'system' && (
           <span className="text-sm text-muted-foreground py-2">
             No actions available
           </span>

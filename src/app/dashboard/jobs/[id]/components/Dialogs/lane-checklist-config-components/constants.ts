@@ -11,22 +11,22 @@ import {
   CalendarClock,
   Lock,
   Upload,
-} from "lucide-react";
+} from 'lucide-react';
 
 export const FIELD_TYPES = [
-  { value: "text", label: "Text Input" },
-  { value: "email", label: "Email Input" },
-  { value: "textarea", label: "Text Area" },
-  { value: "number", label: "Number Input" },
-  { value: "select", label: "Select Dropdown" },
-  { value: "multiSelect", label: "Multi-Select Dropdown" },
-  { value: "radio", label: "Radio Buttons" },
-  { value: "checkbox", label: "Checkbox" },
-  { value: "date", label: "Date Picker" },
-  { value: "time", label: "Time Picker" },
-  { value: "datetime", label: "Date & Time Picker" },
-  { value: "password", label: "Password" },
-  { value: "file", label: "File Upload" },
+  { value: 'text', label: 'Text Input' },
+  { value: 'email', label: 'Email Input' },
+  { value: 'textarea', label: 'Text Area' },
+  { value: 'number', label: 'Number Input' },
+  { value: 'select', label: 'Select Dropdown' },
+  { value: 'multiSelect', label: 'Multi-Select Dropdown' },
+  { value: 'radio', label: 'Radio Buttons' },
+  { value: 'checkbox', label: 'Checkbox' },
+  { value: 'date', label: 'Date Picker' },
+  { value: 'time', label: 'Time Picker' },
+  { value: 'datetime', label: 'Date & Time Picker' },
+  { value: 'password', label: 'Password' },
+  { value: 'file', label: 'File Upload' },
 ];
 
 export const fieldTypeIcons: Record<string, React.ElementType> = {
@@ -44,4 +44,3 @@ export const fieldTypeIcons: Record<string, React.ElementType> = {
   password: Lock,
   file: Upload,
 };
-

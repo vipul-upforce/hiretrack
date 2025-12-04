@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { memo, useCallback } from "react";
+} from '@/components/ui/select';
+import { memo, useCallback } from 'react';
 
 interface ResultsFooterProps {
   totalPages: number;
@@ -23,7 +23,7 @@ interface ResultsFooterProps {
   activeFilters: string[];
 }
 
-export const ResultsFooter = memo(function ResultsFooter({
+export const ResultsFooter = memo(({
   totalPages,
   currentPage,
   onPageChange,
@@ -33,7 +33,7 @@ export const ResultsFooter = memo(function ResultsFooter({
   filteredCount,
   totalCount,
   activeFilters,
-}: ResultsFooterProps) {
+}: ResultsFooterProps) => {
   const handlePrevPage = useCallback(() => {
     if (currentPage > 1) {
       onPageChange(currentPage - 1);
@@ -50,7 +50,7 @@ export const ResultsFooter = memo(function ResultsFooter({
     (value: string) => {
       onLimitChange(Number(value));
     },
-    [onLimitChange]
+    [onLimitChange],
   );
 
   if (totalPages === 0) return null;
@@ -62,36 +62,43 @@ export const ResultsFooter = memo(function ResultsFooter({
         <div className="text-sm text-muted-foreground">
           {activeFilters.length > 0 ? (
             <>
-              Showing{" "}
+              Showing
+              {' '}
               <span className="font-medium text-foreground">
                 {filteredCount}
-              </span>{" "}
-              of{" "}
-              <span className="font-medium text-foreground">{totalCount}</span>{" "}
+              </span>
+              {' '}
+              of
+              {' '}
+              <span className="font-medium text-foreground">{totalCount}</span>
+              {' '}
               results
               {activeFilters.length > 0 && (
                 <span className="ml-2">
-                  (filtered by:{" "}
+                  (filtered by:
+                  {' '}
                   {activeFilters
-                    .map((f) =>
-                      f
-                        .replace("-", " ")
-                        .replace(/([A-Z])/g, " $1")
-                        .trim()
-                    )
-                    .join(", ")}
+                    .map((f) => f
+                      .replace('-', ' ')
+                      .replace(/([A-Z])/g, ' $1')
+                      .trim())
+                    .join(', ')}
                   )
                 </span>
               )}
             </>
           ) : (
             <>
-              Showing{" "}
+              Showing
+              {' '}
               <span className="font-medium text-foreground">
                 {filteredCount}
-              </span>{" "}
-              of{" "}
-              <span className="font-medium text-foreground">{totalCount}</span>{" "}
+              </span>
+              {' '}
+              of
+              {' '}
+              <span className="font-medium text-foreground">{totalCount}</span>
+              {' '}
               results
             </>
           )}
@@ -108,7 +115,13 @@ export const ResultsFooter = memo(function ResultsFooter({
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="text-sm text-muted-foreground">
-              Page {currentPage} of {totalPages}
+              Page
+              {' '}
+              {currentPage}
+              {' '}
+              of
+              {' '}
+              {totalPages}
             </span>
             <Button
               variant="outline"
@@ -141,4 +154,4 @@ export const ResultsFooter = memo(function ResultsFooter({
   );
 });
 
-ResultsFooter.displayName = "ResultsFooter";
+ResultsFooter.displayName = 'ResultsFooter';

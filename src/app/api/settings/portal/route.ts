@@ -1,21 +1,21 @@
-import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Organization, Settings } from "@/lib/mongodb";
-import { handleSingleFile } from "@/lib/fileUtils";
-import { getAuthenticatedUser } from "@/app/actions/auth";
-import path from "path";
-import fs from "fs";
-import https from "https";
-import http from "http";
-import { pipeline } from "stream";
-import { promisify } from "util";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { Organization, Settings } from '@/lib/mongodb';
+import { handleSingleFile } from '@/lib/fileUtils';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+import path from 'path';
+import fs from 'fs';
+import https from 'https';
+import http from 'http';
+import { pipeline } from 'stream';
+import { promisify } from 'util';
 // Removed sharp import
-import { parse } from "url";
+import { parse } from 'url';
 import {
   validateQueryParams,
   VALIDATION_PATTERNS,
   MAX_LENGTHS,
-} from "@/lib/inputValidation";
-import { apiRateLimiter } from "@/lib/rateLimiter";
+} from '@/lib/inputValidation';
+import { apiRateLimiter } from '@/lib/rateLimiter';
 
 const streamPipeline = promisify(pipeline);
 
@@ -24,22 +24,22 @@ async function saveFavicon(
   sourceUrl: string,
   destPath: string,
   _?: string, // Unused parameter for backward compatibility
-  token?: string
+  token?: string,
 ): Promise<void> {
   try {
     console.log(
-      `[saveFavicon] Starting with sourceUrl: ${sourceUrl}, destPath: ${destPath}, token: ${token ? "provided" : "not provided"}`
+      `[saveFavicon] Starting with sourceUrl: ${sourceUrl}, destPath: ${destPath}, token: ${token ? 'provided' : 'not provided'}`,
     );
-    if (!sourceUrl || typeof sourceUrl !== "string") {
-      throw new Error("Invalid or missing source URL");
+    if (!sourceUrl || typeof sourceUrl !== 'string') {
+      throw new Error('Invalid or missing source URL');
     }
-    if (!destPath || typeof destPath !== "string") {
-      throw new Error("Invalid or missing destination path");
+    if (!destPath || typeof destPath !== 'string') {
+      throw new Error('Invalid or missing destination path');
     }
 
-    const finalDestPath = destPath.endsWith(".png")
+    const finalDestPath = destPath.endsWith('.png')
       ? destPath
-      : path.join(path.dirname(destPath), "favicon.png");
+      : path.join(path.dirname(destPath), 'favicon.png');
 
     const destDir = path.dirname(finalDestPath);
     if (!fs.existsSync(destDir)) {
@@ -49,9 +49,9 @@ async function saveFavicon(
     const downloadImage = async (
       url: string,
       outputPath: string,
-      authToken?: string
+      authToken?: string,
     ): Promise<void> => {
-      const protocol = url.startsWith("https") ? https : http;
+      const protocol = url.startsWith('https') ? https : http;
 
       return new Promise((resolve, reject) => {
         const options = {
@@ -63,25 +63,25 @@ async function saveFavicon(
             if (res.statusCode !== 200) {
               reject(
                 new Error(
-                  `Failed to download image: HTTP status ${res.statusCode}`
-                )
+                  `Failed to download image: HTTP status ${res.statusCode}`,
+                ),
               );
               return;
             }
 
-            const contentType = res.headers["content-type"]?.toLowerCase();
-            if (!contentType?.startsWith("image/")) {
+            const contentType = res.headers['content-type']?.toLowerCase();
+            if (!contentType?.startsWith('image/')) {
               reject(
-                new Error(`Invalid content type: ${contentType || "unknown"}`)
+                new Error(`Invalid content type: ${contentType || 'unknown'}`),
               );
               return;
             }
 
             const writeStream = fs.createWriteStream(outputPath);
-            writeStream.on("finish", () => {
+            writeStream.on('finish', () => {
               writeStream.close(() => resolve());
             });
-            writeStream.on("error", (err) => {
+            writeStream.on('error', (err) => {
               writeStream.close();
               reject(new Error(`Failed to write image: ${err.message}`));
             });
@@ -91,18 +91,15 @@ async function saveFavicon(
               reject(new Error(`Stream pipeline error: ${err.message}`));
             });
           })
-          .on("error", (err) =>
-            reject(new Error(`Network error: ${err.message}`))
-          );
+          .on('error', (err) => reject(new Error(`Network error: ${err.message}`)));
       });
     };
 
-    const isRemote =
-      sourceUrl.startsWith("http") || sourceUrl.startsWith("/api/");
+    const isRemote = sourceUrl.startsWith('http') || sourceUrl.startsWith('/api/');
     const tempImagePath = path.join(
       process.cwd(),
-      "temp",
-      `favicon-${Date.now()}.tmp`
+      'temp',
+      `favicon-${Date.now()}.tmp`,
     );
 
     let inputImagePath = sourceUrl;
@@ -110,15 +107,14 @@ async function saveFavicon(
       const parsedUrl = parse(sourceUrl, true);
       const pathName = parsedUrl.query.pathName as string | undefined;
 
-      const baseUrl =
-        process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
       let fullUrl = sourceUrl;
       if (pathName) {
         const normalizedPath = path.posix
           .normalize(decodeURI(pathName))
-          .replace(/\\/g, "/");
+          .replace(/\\/g, '/');
         fullUrl = `${baseUrl}/api/files?pathName=${encodeURIComponent(normalizedPath)}`;
-      } else if (!sourceUrl.startsWith("http")) {
+      } else if (!sourceUrl.startsWith('http')) {
         fullUrl = `${baseUrl}${sourceUrl}`;
       }
 
@@ -144,7 +140,7 @@ async function saveFavicon(
     }
   } catch (error) {
     console.error(
-      `saveFavicon error: ${error instanceof Error ? error.message : "Unknown error"}`
+      `saveFavicon error: ${error instanceof Error ? error.message : 'Unknown error'}`,
     );
   }
 }
@@ -154,12 +150,12 @@ const handleGetPortalData = async (req: NextRequest) => {
     // SECURITY FIX: Validate query parameters
     const validation = validateQueryParams(req.nextUrl.searchParams, {
       org: {
-        type: "string",
+        type: 'string',
         maxLength: MAX_LENGTHS.shortText,
         pattern: VALIDATION_PATTERNS.safeString,
       },
       subdomain: {
-        type: "string",
+        type: 'string',
         maxLength: MAX_LENGTHS.shortText,
         pattern: VALIDATION_PATTERNS.slug,
       },
@@ -167,8 +163,8 @@ const handleGetPortalData = async (req: NextRequest) => {
 
     if (!validation.isValid) {
       return NextResponse.json(
-        { error: "Invalid query parameters", details: validation.errors },
-        { status: 400 }
+        { error: 'Invalid query parameters', details: validation.errors },
+        { status: 400 },
       );
     }
 
@@ -183,24 +179,24 @@ const handleGetPortalData = async (req: NextRequest) => {
 
     if (!Settings || !Organization) {
       return NextResponse.json(
-        { error: "Database models not initialized" },
-        { status: 500 }
+        { error: 'Database models not initialized' },
+        { status: 500 },
       );
     }
 
-    let organizationId = "";
+    let organizationId = '';
     let isAuthenticated = false;
 
     // Try to get organization from auth token
     try {
       const userData = await getAuthenticatedUser(req);
       if (userData) {
-        organizationId = userData.organizationId || "";
+        organizationId = userData.organizationId || '';
         isAuthenticated = true;
       }
     } catch {
       // Token verification failed, continue as anonymous user
-      console.log("Token verification failed, serving as anonymous user");
+      console.log('Token verification failed, serving as anonymous user');
     }
 
     let settings = null;
@@ -208,12 +204,12 @@ const handleGetPortalData = async (req: NextRequest) => {
     if (organizationId) {
       // Authenticated user - get specific organization settings
       settings = await Settings.findOne(
-        { organizationId: organizationId },
+        { organizationId },
         {
-          "fileStorage.storageType": 1,
+          'fileStorage.storageType': 1,
           portalConfigs: 1,
           smtpConfigs: 1,
-        }
+        },
       )
         .lean()
         .exec();
@@ -226,7 +222,7 @@ const handleGetPortalData = async (req: NextRequest) => {
           { organizationId: defaultOrg._id.toString() },
           {
             portalConfigs: 1,
-          }
+          },
         )
           .lean()
           .exec();
@@ -246,36 +242,36 @@ const handleGetPortalData = async (req: NextRequest) => {
     // For anonymous users, only return portal branding (no sensitive data)
     const response = isAuthenticated
       ? {
-          fileStorage: settings.fileStorage,
-          portalLogo: settings.portalConfigs?.portalLogo || null,
-          portalLogoDark: settings.portalConfigs?.portalLogoDark || null,
-          portalFavicon: settings.portalConfigs?.portalFavicon || null,
-          portalHeader: settings.portalConfigs?.portalHeader || null,
-          portalFooter: settings.portalConfigs?.portalFooter || null,
-          portalName: settings.portalConfigs?.portalName || "",
-          primaryColor: settings.portalConfigs?.primaryColor || "#6366f1",
-          secondaryColor: settings.portalConfigs?.secondaryColor || "#8b5cf6",
-        }
+        fileStorage: settings.fileStorage,
+        portalLogo: settings.portalConfigs?.portalLogo || null,
+        portalLogoDark: settings.portalConfigs?.portalLogoDark || null,
+        portalFavicon: settings.portalConfigs?.portalFavicon || null,
+        portalHeader: settings.portalConfigs?.portalHeader || null,
+        portalFooter: settings.portalConfigs?.portalFooter || null,
+        portalName: settings.portalConfigs?.portalName || '',
+        primaryColor: settings.portalConfigs?.primaryColor || '#6366f1',
+        secondaryColor: settings.portalConfigs?.secondaryColor || '#8b5cf6',
+      }
       : {
-          // Anonymous users only get public portal branding
-          fileStorage: null,
-          portalLogo: settings.portalConfigs?.portalLogo || null,
-          portalLogoDark: settings.portalConfigs?.portalLogoDark || null,
-          portalFavicon: settings.portalConfigs?.portalFavicon || null,
-          portalHeader: settings.portalConfigs?.portalHeader || null,
-          portalFooter: settings.portalConfigs?.portalFooter || null,
-          portalName: settings.portalConfigs?.portalName || "",
-          primaryColor: settings.portalConfigs?.primaryColor || "#6366f1",
-          secondaryColor: settings.portalConfigs?.secondaryColor || "#8b5cf6",
-        };
-    console.log(response, "etting responsee get -- = ");
+        // Anonymous users only get public portal branding
+        fileStorage: null,
+        portalLogo: settings.portalConfigs?.portalLogo || null,
+        portalLogoDark: settings.portalConfigs?.portalLogoDark || null,
+        portalFavicon: settings.portalConfigs?.portalFavicon || null,
+        portalHeader: settings.portalConfigs?.portalHeader || null,
+        portalFooter: settings.portalConfigs?.portalFooter || null,
+        portalName: settings.portalConfigs?.portalName || '',
+        primaryColor: settings.portalConfigs?.primaryColor || '#6366f1',
+        secondaryColor: settings.portalConfigs?.secondaryColor || '#8b5cf6',
+      };
+    console.log(response, 'etting responsee get -- = ');
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error("Portal settings API error:", error);
+    console.error('Portal settings API error:', error);
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+      { error: 'Internal server error' },
+      { status: 500 },
     );
   }
 };
@@ -287,22 +283,22 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const [userData] = await Promise.all([
-      getAuthenticatedUser(req, "admin"),
+      getAuthenticatedUser(req, 'admin'),
       connectToDatabase(),
     ]);
     if (!userData) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const token = req.cookies.get("auth_token")?.value || "";
-    const organizationId = userData.organizationId || "";
-    const fileStorage = userData.fileStorage || "local";
+    const token = req.cookies.get('auth_token')?.value || '';
+    const organizationId = userData.organizationId || '';
+    const fileStorage = userData.fileStorage || 'local';
 
     const org = await Organization?.findById(organizationId);
     if (!org) {
       return NextResponse.json(
-        { error: "Organization not found" },
-        { status: 404 }
+        { error: 'Organization not found' },
+        { status: 404 },
       );
     }
 
@@ -316,7 +312,7 @@ export async function PUT(req: NextRequest) {
 
     const currentSettings = await Settings!
       .findOne({ organizationId })
-      .select("portalConfigs")
+      .select('portalConfigs')
       .lean()
       .exec();
 
@@ -332,11 +328,11 @@ export async function PUT(req: NextRequest) {
         console.log(`[PUT] Processing header HTML for org: ${organizationId}`);
         const headerPath = path.join(
           process.cwd(),
-          "..",
-          "assets",
-          "organizations",
+          '..',
+          'assets',
+          'organizations',
           organizationId,
-          "header.html"
+          'header.html',
         );
 
         console.log(`[PUT] Header file path: ${headerPath}`);
@@ -352,33 +348,33 @@ export async function PUT(req: NextRequest) {
         if (fs.existsSync(headerPath)) {
           console.log(`[PUT] Removing existing header file: ${headerPath}`);
           fs.unlinkSync(headerPath);
-          console.log(`[PUT] Existing header file removed successfully`);
+          console.log('[PUT] Existing header file removed successfully');
         }
 
         // Write HTML content to file
-        await fs.promises.writeFile(headerPath, data.portalHeaderHtml, "utf8");
+        await fs.promises.writeFile(headerPath, data.portalHeaderHtml, 'utf8');
         console.log(
-          `[PUT] Header HTML file created successfully at: ${headerPath}`
+          `[PUT] Header HTML file created successfully at: ${headerPath}`,
         );
 
         uploadedHeader = {
           id: Date.now().toString(),
-          name: "header.html",
+          name: 'header.html',
           url: `/api/files?pathName=../assets/organizations/${organizationId}/header.html`,
-          type: "text/html",
-          size: Buffer.byteLength(data.portalHeaderHtml, "utf8"),
+          type: 'text/html',
+          size: Buffer.byteLength(data.portalHeaderHtml, 'utf8'),
         };
 
         console.log(
-          `[PUT] Header file metadata: ${JSON.stringify(uploadedHeader)}`
+          `[PUT] Header file metadata: ${JSON.stringify(uploadedHeader)}`,
         );
       } catch (error) {
-        console.error("Failed to save header HTML:", error);
+        console.error('Failed to save header HTML:', error);
         return NextResponse.json(
           {
-            error: `Failed to save header HTML: ${error instanceof Error ? error.message : "Unknown error"}`,
+            error: `Failed to save header HTML: ${error instanceof Error ? error.message : 'Unknown error'}`,
           },
-          { status: 500 }
+          { status: 500 },
         );
       }
     }
@@ -389,11 +385,11 @@ export async function PUT(req: NextRequest) {
         console.log(`[PUT] Processing footer HTML for org: ${organizationId}`);
         const footerPath = path.join(
           process.cwd(),
-          "..",
-          "assets",
-          "organizations",
+          '..',
+          'assets',
+          'organizations',
           organizationId,
-          "footer.html"
+          'footer.html',
         );
 
         console.log(`[PUT] Footer file path: ${footerPath}`);
@@ -409,36 +405,36 @@ export async function PUT(req: NextRequest) {
         if (fs.existsSync(footerPath)) {
           console.log(`[PUT] Removing existing footer file: ${footerPath}`);
           fs.unlinkSync(footerPath);
-          console.log(`[PUT] Existing footer file removed successfully`);
+          console.log('[PUT] Existing footer file removed successfully');
         }
 
         // Write HTML content to file
-        await fs.promises.writeFile(footerPath, data.portalFooterHtml, "utf8");
+        await fs.promises.writeFile(footerPath, data.portalFooterHtml, 'utf8');
         console.log(
-          `[PUT] Footer HTML file created successfully at: ${footerPath}`
+          `[PUT] Footer HTML file created successfully at: ${footerPath}`,
         );
         console.log(
-          `[PUT] Footer HTML length: ${fs.readFileSync(footerPath, "utf8")}`
+          `[PUT] Footer HTML length: ${fs.readFileSync(footerPath, 'utf8')}`,
         );
 
         uploadedFooter = {
           id: Date.now().toString(),
-          name: "footer.html",
+          name: 'footer.html',
           url: `/api/files?pathName=../assets/organizations/${organizationId}/footer.html`,
-          type: "text/html",
-          size: Buffer.byteLength(data.portalFooterHtml, "utf8"),
+          type: 'text/html',
+          size: Buffer.byteLength(data.portalFooterHtml, 'utf8'),
         };
 
         console.log(
-          `[PUT] Footer file metadata: ${JSON.stringify(uploadedFooter)}`
+          `[PUT] Footer file metadata: ${JSON.stringify(uploadedFooter)}`,
         );
       } catch (error) {
-        console.error("Failed to save footer HTML:", error);
+        console.error('Failed to save footer HTML:', error);
         return NextResponse.json(
           {
-            error: `Failed to save footer HTML: ${error instanceof Error ? error.message : "Unknown error"}`,
+            error: `Failed to save footer HTML: ${error instanceof Error ? error.message : 'Unknown error'}`,
           },
-          { status: 500 }
+          { status: 500 },
         );
       }
     }
@@ -449,27 +445,27 @@ export async function PUT(req: NextRequest) {
         uploadedLogo = await handleSingleFile(
           data.portalLogo,
           fileStorage,
-          organizationId
+          organizationId,
         );
       } catch (fileError) {
         console.error(
-          `File upload failed: ${fileError instanceof Error ? fileError.message : "Unknown error"}`
+          `File upload failed: ${fileError instanceof Error ? fileError.message : 'Unknown error'}`,
         );
         return NextResponse.json(
           {
-            error: `Failed to process logo file: ${fileError instanceof Error ? fileError.message : "Unknown error"}`,
+            error: `Failed to process logo file: ${fileError instanceof Error ? fileError.message : 'Unknown error'}`,
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
       const faviconTargetPath = path.join(
         process.cwd(),
-        "..",
-        "assets",
-        "organizations",
+        '..',
+        'assets',
+        'organizations',
         organizationId,
-        "favicon.png"
+        'favicon.png',
       );
       const source = uploadedLogo?.url;
 
@@ -479,33 +475,33 @@ export async function PUT(req: NextRequest) {
           await saveFavicon(source, faviconTargetPath, undefined, token);
         } catch (faviconError) {
           console.error(
-            `Favicon save failed: ${faviconError instanceof Error ? faviconError.message : "Unknown error"}`
+            `Favicon save failed: ${faviconError instanceof Error ? faviconError.message : 'Unknown error'}`,
           );
           return NextResponse.json(
             {
-              error: `Failed to save favicon: ${faviconError instanceof Error ? faviconError.message : "Unknown error"}`,
+              error: `Failed to save favicon: ${faviconError instanceof Error ? faviconError.message : 'Unknown error'}`,
             },
-            { status: 500 }
+            { status: 500 },
           );
         }
       } else {
-        console.warn("Skipping favicon update: no valid source URL.");
+        console.warn('Skipping favicon update: no valid source URL.');
         return NextResponse.json(
-          { error: "No valid logo URL provided for favicon" },
-          { status: 400 }
+          { error: 'No valid logo URL provided for favicon' },
+          { status: 400 },
         );
       }
     } else {
       const faviconPath = path.join(
         process.cwd(),
-        "..",
-        "assets",
-        "organizations",
+        '..',
+        'assets',
+        'organizations',
         organizationId,
-        "favicon.png"
+        'favicon.png',
       );
       console.log(
-        `[PUT] No portalLogo provided, checking favicon at: ${faviconPath}`
+        `[PUT] No portalLogo provided, checking favicon at: ${faviconPath}`,
       );
 
       if (fs.existsSync(faviconPath)) {
@@ -514,7 +510,7 @@ export async function PUT(req: NextRequest) {
         console.log(`[PUT] Favicon removed successfully from ${faviconPath}`);
       } else {
         console.log(
-          `[PUT] No favicon found at ${faviconPath}, skipping removal.`
+          `[PUT] No favicon found at ${faviconPath}, skipping removal.`,
         );
       }
     }
@@ -526,17 +522,17 @@ export async function PUT(req: NextRequest) {
         uploadedLogoDark = await handleSingleFile(
           data.portalLogoDark,
           fileStorage,
-          organizationId
+          organizationId,
         );
       } catch (fileError) {
         console.error(
-          `Dark logo upload failed: ${fileError instanceof Error ? fileError.message : "Unknown error"}`
+          `Dark logo upload failed: ${fileError instanceof Error ? fileError.message : 'Unknown error'}`,
         );
         return NextResponse.json(
           {
-            error: `Failed to process dark logo file: ${fileError instanceof Error ? fileError.message : "Unknown error"}`,
+            error: `Failed to process dark logo file: ${fileError instanceof Error ? fileError.message : 'Unknown error'}`,
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -548,17 +544,17 @@ export async function PUT(req: NextRequest) {
         uploadedFavicon = await handleSingleFile(
           data.portalFavicon,
           fileStorage,
-          organizationId
+          organizationId,
         );
       } catch (fileError) {
         console.error(
-          `Favicon upload failed: ${fileError instanceof Error ? fileError.message : "Unknown error"}`
+          `Favicon upload failed: ${fileError instanceof Error ? fileError.message : 'Unknown error'}`,
         );
         return NextResponse.json(
           {
-            error: `Failed to process favicon file: ${fileError instanceof Error ? fileError.message : "Unknown error"}`,
+            error: `Failed to process favicon file: ${fileError instanceof Error ? fileError.message : 'Unknown error'}`,
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -566,17 +562,17 @@ export async function PUT(req: NextRequest) {
     // Handle removal of header HTML file if no content provided
     if (!data?.portalHeaderHtml) {
       const headerRelativePath = path.join(
-        "..",
-        "assets",
-        "organizations",
+        '..',
+        'assets',
+        'organizations',
         organizationId,
-        "header.html"
+        'header.html',
       );
       const headerPath = path.join(process.cwd(), headerRelativePath);
 
       if (fs.existsSync(headerPath)) {
         console.log(
-          `[PUT] No header HTML provided, removing existing file: ${headerPath}`
+          `[PUT] No header HTML provided, removing existing file: ${headerPath}`,
         );
         fs.unlinkSync(headerPath);
         uploadedHeader = null; // Clear the header reference
@@ -586,17 +582,17 @@ export async function PUT(req: NextRequest) {
     // Handle removal of footer HTML file if no content provided
     if (!data?.portalFooterHtml) {
       const footerRelativePath = path.join(
-        "..",
-        "assets",
-        "organizations",
+        '..',
+        'assets',
+        'organizations',
         organizationId,
-        "footer.html"
+        'footer.html',
       );
       const footerPath = path.join(process.cwd(), footerRelativePath);
 
       if (fs.existsSync(footerPath)) {
         console.log(
-          `[PUT] No footer HTML provided, removing existing file: ${footerPath}`
+          `[PUT] No footer HTML provided, removing existing file: ${footerPath}`,
         );
         fs.unlinkSync(footerPath);
         uploadedFooter = null; // Clear the footer reference
@@ -611,27 +607,27 @@ export async function PUT(req: NextRequest) {
       portalLogo:
         uploadedLogo || currentSettings?.portalConfigs?.portalLogo || null,
       portalLogoDark:
-        uploadedLogoDark ||
-        currentSettings?.portalConfigs?.portalLogoDark ||
-        null,
+        uploadedLogoDark
+        || currentSettings?.portalConfigs?.portalLogoDark
+        || null,
       portalFavicon:
-        uploadedFavicon ||
-        currentSettings?.portalConfigs?.portalFavicon ||
-        null,
+        uploadedFavicon
+        || currentSettings?.portalConfigs?.portalFavicon
+        || null,
       portalName:
-        data.portalName || currentSettings?.portalConfigs?.portalName || "",
+        data.portalName || currentSettings?.portalConfigs?.portalName || '',
       primaryColor:
-        data.primaryColor ||
-        currentSettings?.portalConfigs?.primaryColor ||
-        "#6366f1",
+        data.primaryColor
+        || currentSettings?.portalConfigs?.primaryColor
+        || '#6366f1',
       secondaryColor:
-        data.secondaryColor ||
-        currentSettings?.portalConfigs?.secondaryColor ||
-        "#8b5cf6",
+        data.secondaryColor
+        || currentSettings?.portalConfigs?.secondaryColor
+        || '#8b5cf6',
     };
     if (
-      data?.portalName &&
-      data?.portalName !== currentSettings?.portalConfigs?.portalName
+      data?.portalName
+      && data?.portalName !== currentSettings?.portalConfigs?.portalName
     ) {
       await Organization?.findByIdAndUpdate(organizationId, {
         name: updatedPortal.portalName,
@@ -645,26 +641,28 @@ export async function PUT(req: NextRequest) {
     const updatedSettings = await Settings?.findOneAndUpdate(
       { organizationId },
       { portalConfigs: updatedPortal },
-      { new: true, runValidators: true, upsert: true, select: "portalConfigs" }
+      {
+        new: true, runValidators: true, upsert: true, select: 'portalConfigs',
+      },
     );
 
     if (!updatedSettings) {
       return NextResponse.json(
-        { error: "Settings not found" },
-        { status: 404 }
+        { error: 'Settings not found' },
+        { status: 404 },
       );
     }
 
-    return NextResponse.json({ message: "Settings updated successfully" });
+    return NextResponse.json({ message: 'Settings updated successfully' });
   } catch (error) {
     console.error(
-      `PUT handler error: ${error instanceof Error ? error.message : "Unknown error"}`
+      `PUT handler error: ${error instanceof Error ? error.message : 'Unknown error'}`,
     );
     return NextResponse.json(
       {
-        error: `Internal server error: ${error instanceof Error ? error.message : "Unknown error"}`,
+        error: `Internal server error: ${error instanceof Error ? error.message : 'Unknown error'}`,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

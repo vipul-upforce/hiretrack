@@ -1,10 +1,11 @@
-"use client";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { ErrorMessage, useFormikContext } from "formik";
-import { SecretInput } from "./secret-input";
-import { Button } from "@/components/ui/button";
-import { FileStorageValues } from "../schema";
+'use client';
+
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { ErrorMessage, useFormikContext } from 'formik';
+import { Button } from '@/components/ui/button';
+import { SecretInput } from './secret-input';
+import { FileStorageValues } from '../schema';
 
 interface S3FieldsProps {
   onTest: (values: FileStorageValues) => void;
@@ -22,7 +23,7 @@ export function S3Fields({ onTest, isTesting }: S3FieldsProps) {
           id="awsRegion"
           name="awsRegion"
           value={values.awsRegion}
-          onChange={(e) => setFieldValue("awsRegion", e.target.value.trim())}
+          onChange={(e) => setFieldValue('awsRegion', e.target.value.trim())}
         />
         <ErrorMessage
           name="awsRegion"
@@ -40,9 +41,7 @@ export function S3Fields({ onTest, isTesting }: S3FieldsProps) {
           id="awsBucketName"
           name="awsBucketName"
           value={values.awsBucketName}
-          onChange={(e) =>
-            setFieldValue("awsBucketName", e.target.value.trim())
-          }
+          onChange={(e) => setFieldValue('awsBucketName', e.target.value.trim())}
         />
         <ErrorMessage
           name="awsBucketName"
@@ -58,7 +57,7 @@ export function S3Fields({ onTest, isTesting }: S3FieldsProps) {
           onClick={() => onTest(values)}
           disabled={isTesting}
         >
-          {isTesting ? "Testing..." : "Test Credentials"}
+          {isTesting ? 'Testing...' : 'Test Credentials'}
         </Button>
       </div>
     </div>

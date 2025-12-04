@@ -1,15 +1,15 @@
-"use client"
+'use client';
 
-import * as React from "react"
+import * as React from 'react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog"
-import { File, Download, X } from "lucide-react"
-import { Button } from "./button"
+} from '@/components/ui/dialog';
+import { File, Download, X } from 'lucide-react';
+import { Button } from './button';
 
 interface FilePreviewDialogProps {
   file: File | null
@@ -24,16 +24,16 @@ export function FilePreviewDialog({
   isOpen,
   onClose,
 }: FilePreviewDialogProps) {
-  if (!file || !preview) return null
+  if (!file || !preview) return null;
 
   const downloadFile = () => {
-    const link = document.createElement('a')
-    link.href = preview
-    link.download = file.name
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
+    const link = document.createElement('a');
+    link.href = preview;
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -45,7 +45,9 @@ export function FilePreviewDialog({
               <span className="truncate">{file.name}</span>
             </DialogTitle>
             <DialogDescription className="text-sm">
-              {Math.round(file.size / 1024)}KB - {file.type || 'Unknown type'}
+              {Math.round(file.size / 1024)}
+              KB -
+              {file.type || 'Unknown type'}
             </DialogDescription>
           </div>
           <div className="flex items-center gap-2">
@@ -70,7 +72,7 @@ export function FilePreviewDialog({
         </DialogHeader>
 
         <div className="flex-1 overflow-auto">
-          {file.type.startsWith("image/") ? (
+          {file.type.startsWith('image/') ? (
             <div className="flex items-center justify-center min-h-full p-4">
               <img
                 src={preview}
@@ -78,7 +80,7 @@ export function FilePreviewDialog({
                 className="max-w-full max-h-full object-contain rounded-lg"
               />
             </div>
-          ) : file.type === "application/pdf" ? (
+          ) : file.type === 'application/pdf' ? (
             <div className="w-full h-full">
               <iframe
                 src={preview}
@@ -99,5 +101,5 @@ export function FilePreviewDialog({
         </div>
       </DialogContent>
     </Dialog>
-  )
-} 
+  );
+}

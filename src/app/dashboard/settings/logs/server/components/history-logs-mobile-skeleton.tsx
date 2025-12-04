@@ -1,7 +1,7 @@
-import { Skeleton } from "@mui/material";
-import React from "react";
+import { Skeleton } from '@mui/material';
+import React from 'react';
 
-const MobileSkeletonHistroyLogs = () => {
+function MobileSkeletonHistroyLogs() {
   return (
     <div className="md:hidden p-3 space-y-3">
       {Array.from({ length: 8 }).map((_, idx) => (
@@ -23,6 +23,6 @@ const MobileSkeletonHistroyLogs = () => {
       ))}
     </div>
   );
-};
+}
 
 export default MobileSkeletonHistroyLogs;

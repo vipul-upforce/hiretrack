@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import { Badge } from "@/components/ui/badge";
-import { FileText } from "lucide-react";
-import { PDFViewer } from "@/components/ui/pdf-viewer";
-import CustomFieldsData from "@/Custom_Fields/Components/CustomFields/customFields-details";
-import { RenderAttachments } from "../Utils/RenderAttachments";
-import ResumeEvaluationDetails from "../Candidate/ResumeEvaluationDetails";
-import { CandidateInfoSection } from "../Candidate/CandidateInfoSection";
+import { Badge } from '@/components/ui/badge';
+import { FileText } from 'lucide-react';
+import { PDFViewer } from '@/components/ui/pdf-viewer';
+import CustomFieldsData from '@/Custom_Fields/Components/CustomFields/customFields-details';
+import { Candidate } from '@/types/candidate';
+import { User } from '@/lib/features/users/usersApi';
+import { ICandidateHistory } from '@/lib/models/history';
+import React from 'react';
+import { RenderAttachments } from '../Utils/RenderAttachments';
+import ResumeEvaluationDetails from './ResumeEvaluationDetails';
+import { CandidateInfoSection } from './CandidateInfoSection';
 
-import { formatDate, formatTime } from "../../hooks/dateTimeFormatting";
-import { Candidate } from "@/types/candidate";
-import { User } from "@/lib/features/users/usersApi";
-import { ICandidateHistory } from "@/lib/models/history";
-import { IEditRemark } from "../../schemas/EditRemarkDialog";
-import React from "react";
-import { HistoryAndLogTable } from "./HisotryAndLogTable";
+import { formatDate, formatTime } from '../../hooks/dateTimeFormatting';
+import { IEditRemark } from '../../schemas/EditRemarkDialog';
+import { HistoryAndLogTable } from './HisotryAndLogTable';
 // import { useDateFormatter } from "@/components/timezoneFormat/useGetFormattedTZ";
 interface FieldConfig {
   label: string;
@@ -27,14 +27,14 @@ interface FieldConfig {
   shouldRender?: (candidate: Candidate) => boolean;
 }
 
-const labelClass = "font-semibold text-base";
+const labelClass = 'font-semibold text-base';
 
 // New HistorySection component to handle toggle
 
 export const candidateDetailsFields: FieldConfig[] = [
   {
-    label: "",
-    id: "candidate-info",
+    label: '',
+    id: 'candidate-info',
     render: (candidate: Candidate, user: User | null) => (
       <CandidateInfoSection
         candidate={candidate}
@@ -45,8 +45,8 @@ export const candidateDetailsFields: FieldConfig[] = [
     shouldRender: (candidate) => !!candidate,
   },
   {
-    label: "Skills",
-    id: "skills",
+    label: 'Skills',
+    id: 'skills',
     render: (candidate: Candidate) => (
       <div className="flex flex-wrap gap-2">
         {candidate.skills.map((skill, skillIndex) => (
@@ -61,28 +61,25 @@ export const candidateDetailsFields: FieldConfig[] = [
     ),
   },
   {
-    label: "",
-    id: "metafields",
+    label: '',
+    id: 'metafields',
     render: (candidate: Candidate) => (
       // <CustomFieldsData
       //   customFields={{ customFields: candidate.customFields || {} } as any}
       // />
       <CustomFieldsData customFields={candidate.customFields || {}} />
     ),
-    shouldRender: (candidate) =>
-      candidate.customFields && Object.keys(candidate.customFields).length > 0
-        ? true
-        : false,
+    shouldRender: (candidate) => (!!(candidate.customFields && Object.keys(candidate.customFields).length > 0)),
   },
   {
-    label: "",
-    id: "ai-evaluation",
+    label: '',
+    id: 'ai-evaluation',
     render: (
       candidate: Candidate,
       user: User | null,
       isReEvaluating: boolean,
       isEvaluatingFor: string,
-      onReEvaluate: () => void
+      onReEvaluate: () => void,
     ) => (
       <ResumeEvaluationDetails
         labelClass={labelClass}
@@ -95,23 +92,22 @@ export const candidateDetailsFields: FieldConfig[] = [
     shouldRender: (candidate) => !!candidate,
   },
   {
-    label: "Resume",
-    id: "resume",
-    render: (candidate: Candidate) =>
-      candidate.resume ? <PDFViewer files={[candidate.resume]} /> : null,
+    label: 'Resume',
+    id: 'resume',
+    render: (candidate: Candidate) => (candidate.resume ? <PDFViewer files={[candidate.resume]} /> : null),
     shouldRender: (candidate) => !!candidate.resume,
   },
   {
-    label: "",
-    id: "attachments",
+    label: '',
+    id: 'attachments',
     render: (candidate: Candidate) => (
       <RenderAttachments labelClass={labelClass} localCandidate={candidate} />
     ),
     shouldRender: (candidate) => candidate.attachments.length > 0,
   },
   {
-    label: "",
-    id: "candidate-history",
+    label: '',
+    id: 'candidate-history',
     render: (
       candidate: Candidate,
       user: User | null,
@@ -125,10 +121,10 @@ export const candidateDetailsFields: FieldConfig[] = [
         React.SetStateAction<IEditRemark | null>
       >,
       setIsEditRemarkDialogOpen: React.Dispatch<React.SetStateAction<boolean>>,
-      showHeader?: boolean
-    ) => {
+      showHeader?: boolean,
+    ) =>
       // debugger;
-      return (
+      (
         <HistoryAndLogTable
           candidate={candidate}
           user={user}
@@ -138,46 +134,51 @@ export const candidateDetailsFields: FieldConfig[] = [
           setIsEditRemarkDialogOpen={setIsEditRemarkDialogOpen}
           showHeader={showHeader}
         />
-      );
-    },
-    shouldRender: (candidate) =>
-      candidate.history?.length && candidate.history?.length > 0 ? true : false,
+      ),
+    shouldRender: (candidate) => (!!(candidate.history?.length && candidate.history?.length > 0)),
   },
   {
-    label: "Status History",
-    id: "status-history",
+    label: 'Status History',
+    id: 'status-history',
     render: (candidate: Candidate) => (
       <div className="space-y-2">
         <div className="text-sm flex items-center gap-2">
           <FileText className="h-4 w-4" />
-          <span>Created: {formatDate(candidate.tracking?.createdAt)}</span>
+          <span>
+            Created:
+            {formatDate(candidate.tracking?.createdAt)}
+          </span>
         </div>
         {candidate.tracking?.assignedToJobDate && (
           <div className="text-sm flex items-center gap-2">
             <FileText className="h-4 w-4" />
             <span>
-              Job Assigned: {formatDate(candidate.tracking?.assignedToJobDate)}
+              Job Assigned:
+              {' '}
+              {formatDate(candidate.tracking?.assignedToJobDate)}
             </span>
           </div>
         )}
         <div className="text-sm flex items-center gap-2">
           <FileText className="h-4 w-4" />
-          <span>Last Updated: {formatDate(candidate.tracking?.updatedAt)}</span>
+          <span>
+            Last Updated:
+            {formatDate(candidate.tracking?.updatedAt)}
+          </span>
         </div>
       </div>
     ),
   },
   {
-    label: "",
-    id: "interview-assignment",
+    label: '',
+    id: 'interview-assignment',
     render: (candidate: Candidate) => {
       // Check if assignment exists and has valid interviewer data
-      const hasValidInterviewer =
-        candidate.assignment &&
-        candidate.assignment.interviewerId &&
-        typeof candidate.assignment.interviewerId === "object" &&
-        candidate.assignment.interviewerId._id &&
-        candidate.assignment.interviewerId.name;
+      const hasValidInterviewer = candidate.assignment
+        && candidate.assignment.interviewerId
+        && typeof candidate.assignment.interviewerId === 'object'
+        && candidate.assignment.interviewerId._id
+        && candidate.assignment.interviewerId.name;
 
       return (
         <div className="space-y-4 border-t pt-4">
@@ -186,13 +187,19 @@ export const candidateDetailsFields: FieldConfig[] = [
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span>
-                  Interviewer:{" "}
-                  {typeof candidate.assignment.interviewerId === "object" &&
-                    candidate.assignment.interviewerId.name}
+                  Interviewer:
+                  {' '}
+                  {typeof candidate.assignment.interviewerId === 'object'
+                    && candidate.assignment.interviewerId.name}
                 </span>
               </div>
               <div>
-                Interview Date: {formatDate(candidate.assignment.time)} on{" "}
+                Interview Date:
+                {' '}
+                {formatDate(candidate.assignment.time)}
+                {' '}
+                on
+                {' '}
                 {formatTime(candidate.assignment.time)}
               </div>
             </div>

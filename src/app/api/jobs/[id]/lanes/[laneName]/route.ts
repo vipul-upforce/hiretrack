@@ -1,37 +1,37 @@
-import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Job, Organization, Candidate } from "@/lib/mongodb";
-import { broadcastLaneUpdate } from "@/lib/broadcast/broadCastCandidate";
-import { getAuthenticatedUser } from "@/app/actions/auth";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { Job, Organization, Candidate } from '@/lib/mongodb';
+import { broadcastLaneUpdate } from '@/lib/broadcast/broadCastCandidate';
+import { getAuthenticatedUser } from '@/app/actions/auth';
 
 const DEFAULT_LANES = [
-  "applied",
-  "screening",
-  "shortlisted",
-  "processing",
-  "accepted",
-  "rejected",
+  'applied',
+  'screening',
+  'shortlisted',
+  'processing',
+  'accepted',
+  'rejected',
 ];
 
-const RESTRICTED_LANES = ["applied", "accepted", "rejected"];
+const RESTRICTED_LANES = ['applied', 'accepted', 'rejected'];
 
 // DELETE /api/jobs/[id]/lanes/[laneName] - Remove a lane from a specific job
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; laneName: string } }
+  { params }: { params: { id: string; laneName: string } },
 ) {
   try {
     const [user] = await Promise.all([
-      getAuthenticatedUser(request, ["admin", "hr"]),
+      getAuthenticatedUser(request, ['admin', 'hr']),
       connectToDatabase(),
     ]);
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     if (!Job || !Organization || !Candidate) {
       return NextResponse.json(
-        { error: "Database not connected" },
-        { status: 400 }
+        { error: 'Database not connected' },
+        { status: 400 },
       );
     }
 
@@ -49,7 +49,7 @@ export async function DELETE(
     if (RESTRICTED_LANES.includes(laneName)) {
       return NextResponse.json(
         { error: `Cannot delete restricted lane: ${laneName}` },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -57,12 +57,12 @@ export async function DELETE(
       _id: jobId,
       organizationId: user.organizationId,
     })
-      .select("lanes useCustomLanes organizationId _id")
+      .select('lanes useCustomLanes organizationId _id')
       .lean()
       .exec();
 
     if (!job) {
-      return NextResponse.json({ error: "Job not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Job not found' }, { status: 404 });
     }
 
     // Get current lanes
@@ -71,7 +71,7 @@ export async function DELETE(
       currentLanes = [...job.lanes];
     } else {
       const organization = await Organization.findById(user.organizationId)
-        .select("defaultLanes")
+        .select('defaultLanes')
         .lean()
         .exec();
       currentLanes = [...(organization?.defaultLanes || DEFAULT_LANES)];
@@ -79,10 +79,10 @@ export async function DELETE(
 
     // Check if lane exists
     if (!currentLanes.includes(laneName)) {
-      return NextResponse.json({ error: "Lane not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Lane not found' }, { status: 404 });
     }
 
-    const organizationId = user.organizationId;
+    const { organizationId } = user;
     // Check if any candidates are currently in this lane
     // const candidatesInLane = await Candidate.find({
     //   jobId: jobId,
@@ -90,7 +90,7 @@ export async function DELETE(
     //   status: laneName,
     // });
     const countCandidatesInLane = await Candidate.countDocuments({
-      jobId: jobId,
+      jobId,
       organizationId,
       status: laneName,
     });
@@ -99,18 +99,18 @@ export async function DELETE(
         const otherLanes = currentLanes.filter((lane) => lane !== laneName);
         return NextResponse.json(
           {
-            error: "Cannot delete lane: candidates are currently in this lane",
+            error: 'Cannot delete lane: candidates are currently in this lane',
             migrationNeeded: true,
             lanes: otherLanes,
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
       // Migration lane is provided, so update candidates
       await Candidate.updateMany(
-        { jobId: jobId, organizationId, status: laneName },
-        { $set: { status: migrationLane } }
+        { jobId, organizationId, status: laneName },
+        { $set: { status: migrationLane } },
       );
     }
 
@@ -126,20 +126,20 @@ export async function DELETE(
           useCustomLanes: true, // Ensure we're using custom lanes after modification
         },
       },
-      { new: true }
+      { new: true },
     );
     broadcastLaneUpdate(organizationId, newLanes, jobId);
     return NextResponse.json({
-      message: "Lane deleted successfully",
+      message: 'Lane deleted successfully',
       jobId: updatedJob._id,
       lanes: updatedJob.lanes,
       deletedLane: laneName,
     });
   } catch (error) {
-    console.error("Delete job lane error:", error);
+    console.error('Delete job lane error:', error);
     return NextResponse.json(
-      { error: "Failed to delete job lane" },
-      { status: 500 }
+      { error: 'Failed to delete job lane' },
+      { status: 500 },
     );
   }
 }
@@ -147,21 +147,21 @@ export async function DELETE(
 // PATCH /api/jobs/[id]/lanes/[laneName] - Rename a lane for a specific job
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string; laneName: string } }
+  { params }: { params: { id: string; laneName: string } },
 ) {
   try {
     const [user] = await Promise.all([
-      getAuthenticatedUser(request, ["admin", "hr"]),
+      getAuthenticatedUser(request, ['admin', 'hr']),
       connectToDatabase(),
     ]);
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     if (!Job || !Organization || !Candidate) {
       return NextResponse.json(
-        { error: "Database not connected" },
-        { status: 400 }
+        { error: 'Database not connected' },
+        { status: 400 },
       );
     }
 
@@ -170,10 +170,10 @@ export async function PATCH(
     const { newLaneName } = body;
 
     // Validation
-    if (!newLaneName || typeof newLaneName !== "string") {
+    if (!newLaneName || typeof newLaneName !== 'string') {
       return NextResponse.json(
-        { error: "New lane name is required and must be a string" },
-        { status: 400 }
+        { error: 'New lane name is required and must be a string' },
+        { status: 400 },
       );
     }
 
@@ -182,9 +182,9 @@ export async function PATCH(
       return NextResponse.json(
         {
           error:
-            "Invalid lane name. Only alphanumeric characters, spaces, hyphens, and underscores allowed.",
+            'Invalid lane name. Only alphanumeric characters, spaces, hyphens, and underscores allowed.',
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -192,17 +192,17 @@ export async function PATCH(
     if (RESTRICTED_LANES.includes(laneName)) {
       return NextResponse.json(
         { error: `Cannot rename restricted lane: ${laneName}` },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const job = await Job.findOne({
       _id: jobId,
       organizationId: user.organizationId,
-    }).select("lanes useCustomLanes organizationId _id").lean().exec();
+    }).select('lanes useCustomLanes organizationId _id').lean().exec();
 
     if (!job) {
-      return NextResponse.json({ error: "Job not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Job not found' }, { status: 404 });
     }
 
     // Get current lanes
@@ -211,7 +211,7 @@ export async function PATCH(
       currentLanes = [...job.lanes];
     } else {
       const organization = await Organization.findById(user.organizationId)
-        .select("defaultLanes")
+        .select('defaultLanes')
         .lean()
         .exec();
       currentLanes = [...(organization?.defaultLanes || DEFAULT_LANES)];
@@ -219,22 +219,20 @@ export async function PATCH(
 
     // Check if old lane exists
     if (!currentLanes.includes(laneName)) {
-      return NextResponse.json({ error: "Lane not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Lane not found' }, { status: 404 });
     }
 
     // Check if new lane name already exists
     if (currentLanes.includes(newLaneName)) {
       return NextResponse.json(
-        { error: "New lane name already exists" },
-        { status: 400 }
+        { error: 'New lane name already exists' },
+        { status: 400 },
       );
     }
 
     // Update lane name in the array
-    const newLanes = currentLanes.map((lane) =>
-      lane === laneName ? newLaneName : lane
-    );
-    const organizationId = user.organizationId;
+    const newLanes = currentLanes.map((lane) => (lane === laneName ? newLaneName : lane));
+    const { organizationId } = user;
 
     const [updatedJob] = await Promise.all([
       // Update job
@@ -246,32 +244,32 @@ export async function PATCH(
             useCustomLanes: true, // Ensure we're using custom lanes after modification
           },
         },
-        { new: true }
+        { new: true },
       ),
       // Update all candidates with the old status to the new status
       Candidate.updateMany(
         {
-          jobId: jobId,
+          jobId,
           organizationId,
           status: laneName,
         },
-        { $set: { status: newLaneName } }
+        { $set: { status: newLaneName } },
       ),
     ]);
 
     broadcastLaneUpdate(organizationId, newLanes, jobId);
     return NextResponse.json({
-      message: "Lane renamed successfully",
+      message: 'Lane renamed successfully',
       jobId: updatedJob._id,
       lanes: updatedJob.lanes,
       oldLaneName: laneName,
-      newLaneName: newLaneName,
+      newLaneName,
     });
   } catch (error) {
-    console.error("Rename job lane error:", error);
+    console.error('Rename job lane error:', error);
     return NextResponse.json(
-      { error: "Failed to rename job lane" },
-      { status: 500 }
+      { error: 'Failed to rename job lane' },
+      { status: 500 },
     );
   }
 }

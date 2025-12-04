@@ -1,29 +1,29 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
-import { Button } from "@/components/ui/button";
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from '@/components/ui/tooltip';
 import {
   DragDropContext,
   Droppable,
   Draggable,
   DropResult,
-} from "@hello-pangea/dnd";
+} from '@hello-pangea/dnd';
 import {
   Plus,
   X,
@@ -32,8 +32,8 @@ import {
   AlertCircle,
   Save,
   Settings,
-} from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+} from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,13 +43,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from '@/components/ui/alert-dialog';
 import {
   useGetDefaultLanesQuery,
   useUpdateDefaultLanesMutation,
   useAddDefaultLaneMutation,
   useDeleteDefaultLaneMutation,
-} from "@/lib/features/lane/laneApi";
+} from '@/lib/features/lane/laneApi';
 
 interface DefaultLanesButtonProps {
   userRole?: string;
@@ -66,41 +66,41 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [defaultLanes, setDefaultLanes] = useState<string[]>([]);
   const [laneRestrictions, setLaneRestrictions] = useState<LaneRestrictions>({
-    nonEditable: ["applied", "accepted", "rejected"],
-    nonDeletable: ["applied", "accepted", "rejected"],
+    nonEditable: ['applied', 'accepted', 'rejected'],
+    nonDeletable: ['applied', 'accepted', 'rejected'],
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(
-    null
+    null,
   );
 
   // RTK query hooks and states
-  const { data, isLoading, isError, error } =
-    useGetDefaultLanesQuery(undefined);
-  const [updateDefaultLanes, { isLoading: isSaving }] =
-    useUpdateDefaultLanesMutation();
+  const {
+    data, isLoading, isError, error,
+  } = useGetDefaultLanesQuery(undefined);
+  const [updateDefaultLanes, { isLoading: isSaving }] = useUpdateDefaultLanesMutation();
   const [addDefaultLane] = useAddDefaultLaneMutation();
   const [deleteDefaultLane] = useDeleteDefaultLaneMutation();
 
   // Editing state
   const [editingLane, setEditingLane] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState("");
-  const [newLaneName, setNewLaneName] = useState("");
+  const [editValue, setEditValue] = useState('');
+  const [newLaneName, setNewLaneName] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
 
   // Delete confirmation
   const [deleteConfirm, setDeleteConfirm] = useState<{
     lane: string;
     show: boolean;
-  }>({ lane: "", show: false });
+  }>({ lane: '', show: false });
 
   // Check if user has permission to manage default lanes
-  const canManage = userRole === "admin" || userRole === "hr";
+  const canManage = userRole === 'admin' || userRole === 'hr';
 
   // Set up portal container
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== 'undefined') {
       setPortalContainer(document.body);
     }
   }, []);
@@ -110,9 +110,9 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
       setDefaultLanes(data.defaultLanes || []);
       setLaneRestrictions(
         data.laneRestrictions || {
-          nonEditable: ["applied", "accepted", "rejected"],
-          nonDeletable: ["applied", "accepted", "rejected"],
-        }
+          nonEditable: ['applied', 'accepted', 'rejected'],
+          nonDeletable: ['applied', 'accepted', 'rejected'],
+        },
       );
     }
   }, [data]);
@@ -130,9 +130,9 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
   const startEdit = (lane: string) => {
     if (laneRestrictions.nonEditable.includes(lane)) {
       toast({
-        title: "Cannot Edit",
+        title: 'Cannot Edit',
         description: `The "${lane}" lane cannot be edited as it's a system requirement.`,
-        variant: "destructive",
+        variant: 'destructive',
       });
       return;
     }
@@ -143,44 +143,42 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
   const saveEdit = () => {
     if (!editValue.trim()) {
       toast({
-        title: "Invalid Name",
-        description: "Lane name cannot be empty",
-        variant: "destructive",
+        title: 'Invalid Name',
+        description: 'Lane name cannot be empty',
+        variant: 'destructive',
       });
       return;
     }
 
     if (
-      editValue.trim() !== editingLane &&
-      defaultLanes.includes(editValue.trim())
+      editValue.trim() !== editingLane
+      && defaultLanes.includes(editValue.trim())
     ) {
       toast({
-        title: "Duplicate Name",
-        description: "A lane with this name already exists",
-        variant: "destructive",
+        title: 'Duplicate Name',
+        description: 'A lane with this name already exists',
+        variant: 'destructive',
       });
       return;
     }
 
-    const newLanes = defaultLanes.map((lane) =>
-      lane === editingLane ? editValue.trim() : lane
-    );
+    const newLanes = defaultLanes.map((lane) => (lane === editingLane ? editValue.trim() : lane));
     setDefaultLanes(newLanes);
     setEditingLane(null);
-    setEditValue("");
+    setEditValue('');
   };
 
   const cancelEdit = () => {
     setEditingLane(null);
-    setEditValue("");
+    setEditValue('');
   };
 
   const confirmDelete = (lane: string) => {
     if (laneRestrictions.nonDeletable.includes(lane)) {
       toast({
-        title: "Cannot Delete",
+        title: 'Cannot Delete',
         description: `The "${lane}" lane cannot be deleted as it's a system requirement.`,
-        variant: "destructive",
+        variant: 'destructive',
       });
       return;
     }
@@ -192,21 +190,21 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
       setSaving(true);
       await updateDefaultLanes(defaultLanes).unwrap();
       toast({
-        title: "Success",
-        description: "Default lanes updated successfully",
+        title: 'Success',
+        description: 'Default lanes updated successfully',
       });
       setIsOpen(false);
     } catch (err) {
       toast({
-        title: "Error",
+        title: 'Error',
         description:
-          typeof err === "object" &&
-          err !== null &&
-          "data" in err &&
-          typeof (err as any).data?.message === "string"
+          typeof err === 'object'
+          && err !== null
+          && 'data' in err
+          && typeof (err as any).data?.message === 'string'
             ? (err as any).data.message
-            : "Failed to save default lanes",
-        variant: "destructive",
+            : 'Failed to save default lanes',
+        variant: 'destructive',
       });
     } finally {
       setSaving(false);
@@ -217,19 +215,19 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
   const addNewLane = async () => {
     try {
       await addDefaultLane(newLaneName.trim()).unwrap();
-      setNewLaneName("");
-      toast({ title: "Success", description: "Lane added successfully" });
+      setNewLaneName('');
+      toast({ title: 'Success', description: 'Lane added successfully' });
     } catch (err) {
       toast({
-        title: "Error",
+        title: 'Error',
         description:
-          typeof err === "object" &&
-          err !== null &&
-          "data" in err &&
-          typeof (err as any).data?.message === "string"
+          typeof err === 'object'
+          && err !== null
+          && 'data' in err
+          && typeof (err as any).data?.message === 'string'
             ? (err as any).data.message
-            : "Failed to add lane",
-        variant: "destructive",
+            : 'Failed to add lane',
+        variant: 'destructive',
       });
     }
   };
@@ -237,28 +235,26 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
   const deleteLane = async () => {
     try {
       await deleteDefaultLane(deleteConfirm.lane).unwrap();
-      toast({ title: "Success", description: "Lane removed successfully" });
-      setDeleteConfirm({ lane: "", show: false });
+      toast({ title: 'Success', description: 'Lane removed successfully' });
+      setDeleteConfirm({ lane: '', show: false });
     } catch (err) {
       toast({
-        title: "Error",
+        title: 'Error',
         description:
-          typeof err === "object" &&
-          err !== null &&
-          "data" in err &&
-          typeof (err as any).data?.message === "string"
+          typeof err === 'object'
+          && err !== null
+          && 'data' in err
+          && typeof (err as any).data?.message === 'string'
             ? (err as any).data.message
-            : "Failed to delete lane",
-        variant: "destructive",
+            : 'Failed to delete lane',
+        variant: 'destructive',
       });
     }
   };
 
-  const isRestricted = (lane: string, type: "edit" | "delete") => {
-    return type === "edit"
-      ? laneRestrictions.nonEditable.includes(lane)
-      : laneRestrictions.nonDeletable.includes(lane);
-  };
+  const isRestricted = (lane: string, type: 'edit' | 'delete') => (type === 'edit'
+    ? laneRestrictions.nonEditable.includes(lane)
+    : laneRestrictions.nonDeletable.includes(lane));
 
   if (!canManage) {
     return null; // Don't show button if user doesn't have permission
@@ -299,7 +295,7 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
 
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
             </div>
           ) : (
             <TooltipProvider delayDuration={0}>
@@ -313,8 +309,8 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
                         ref={provided.innerRef}
                         className={`space-y-2 px-2 ${
                           snapshot.isDraggingOver
-                            ? "bg-muted/20 rounded-lg p-2 max-h-[300px] overflow-y-scroll"
-                            : `${showAddForm  ? "max-h-[282px]" : "max-h-[305px]"} overflow-y-scroll`
+                            ? 'bg-muted/20 rounded-lg p-2 max-h-[300px] overflow-y-scroll'
+                            : `${showAddForm ? 'max-h-[282px]' : 'max-h-[305px]'} overflow-y-scroll`
                         }`}
                       >
                         {defaultLanes.map((lane, index) => (
@@ -331,25 +327,25 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
                                   style={{
                                     ...provided.draggableProps.style,
                                     ...(snapshot.isDragging && {
-                                      position: "fixed",
+                                      position: 'fixed',
                                       zIndex: 9999,
-                                      pointerEvents: "none",
+                                      pointerEvents: 'none',
                                       transform:
                                         provided.draggableProps.style
-                                          ?.transform || "none",
+                                          ?.transform || 'none',
                                     }),
                                   }}
                                 >
                                   <div
                                     className={`bg-card border rounded-none transition-all ${
                                       snapshot.isDragging
-                                        ? "shadow-2xl bg-white dark:bg-black border-2 border-primary opacity-95 scale-105"
-                                        : "shadow-sm hover:shadow-md"
+                                        ? 'shadow-2xl bg-white dark:bg-black border-2 border-primary opacity-95 scale-105'
+                                        : 'shadow-sm hover:shadow-md'
                                     }`}
                                     style={{
                                       ...(snapshot.isDragging && {
-                                        width: "320px",
-                                        minWidth: "320px",
+                                        width: '320px',
+                                        minWidth: '320px',
                                       }),
                                     }}
                                   >
@@ -367,15 +363,13 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
                                             <div className="flex items-center gap-2">
                                               <Input
                                                 value={editValue}
-                                                onChange={(e) =>
-                                                  setEditValue(e.target.value)
-                                                }
+                                                onChange={(e) => setEditValue(e.target.value)}
                                                 onKeyDown={(e) => {
-                                                  if (e.key === "Enter") {
+                                                  if (e.key === 'Enter') {
                                                     e.preventDefault();
                                                     saveEdit();
                                                   }
-                                                  if (e.key === "Escape") {
+                                                  if (e.key === 'Escape') {
                                                     e.preventDefault();
                                                     e.stopPropagation();
                                                     cancelEdit();
@@ -405,23 +399,21 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
                                             <div className="flex items-center gap-2">
                                               <span
                                                 className={`capitalize font-medium text-foreground select-none ${
-                                                  !isRestricted(lane, "edit")
-                                                    ? "cursor-pointer"
-                                                    : "cursor-default"
+                                                  !isRestricted(lane, 'edit')
+                                                    ? 'cursor-pointer'
+                                                    : 'cursor-default'
                                                 }`}
-                                                onDoubleClick={() =>
-                                                  !isRestricted(lane, "edit") &&
-                                                  startEdit(lane)
-                                                }
+                                                onDoubleClick={() => !isRestricted(lane, 'edit')
+                                                  && startEdit(lane)}
                                                 title={
-                                                  !isRestricted(lane, "edit")
-                                                    ? "Double-click to edit"
+                                                  !isRestricted(lane, 'edit')
+                                                    ? 'Double-click to edit'
                                                     : undefined
                                                 }
                                               >
                                                 {lane}
                                               </span>
-                                              {isRestricted(lane, "edit") && (
+                                              {isRestricted(lane, 'edit') && (
                                                 <Tooltip>
                                                   <TooltipTrigger asChild>
                                                     <AlertCircle className="h-3 w-3 text-muted-foreground cursor-help" />
@@ -439,7 +431,7 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
                                         </div>
 
                                         <div className="flex items-center gap-1">
-                                          {!isRestricted(lane, "edit") && (
+                                          {!isRestricted(lane, 'edit') && (
                                             <Button
                                               size="sm"
                                               variant="ghost"
@@ -449,13 +441,11 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
                                               <Edit2 className="h-3 w-3" />
                                             </Button>
                                           )}
-                                          {!isRestricted(lane, "delete") && (
+                                          {!isRestricted(lane, 'delete') && (
                                             <Button
                                               size="sm"
                                               variant="ghost"
-                                              onClick={() =>
-                                                confirmDelete(lane)
-                                              }
+                                              onClick={() => confirmDelete(lane)}
                                               className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                                             >
                                               <X className="h-3 w-3" />
@@ -472,7 +462,7 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
                               if (snapshot.isDragging && portalContainer) {
                                 return createPortal(
                                   draggingComponent,
-                                  portalContainer
+                                  portalContainer,
                                 );
                               }
 
@@ -500,15 +490,15 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
                           value={newLaneName}
                           onChange={(e) => setNewLaneName(e.target.value)}
                           onKeyDown={(e) => {
-                            if (e.key === "Enter") {
+                            if (e.key === 'Enter') {
                               e.preventDefault();
                               addNewLane();
                             }
-                            if (e.key === "Escape") {
+                            if (e.key === 'Escape') {
                               e.preventDefault();
                               e.stopPropagation();
                               setShowAddForm(false);
-                              setNewLaneName("");
+                              setNewLaneName('');
                             }
                           }}
                           className="flex-1"
@@ -516,13 +506,13 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
                         />
                         <Button onClick={addNewLane} size="sm" variant="primary">
                           Add
-                          <Plus className="h-4 w-4"  />
+                          <Plus className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="outline"
                           onClick={() => {
                             setShowAddForm(false);
-                            setNewLaneName("");
+                            setNewLaneName('');
                           }}
                           size="sm"
                         >
@@ -585,7 +575,7 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
               disabled={saving || loading}
               variant="primary"
             >
-              {saving ? "Saving..." : "Save Changes"}
+              {saving ? 'Saving...' : 'Save Changes'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -594,15 +584,15 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
       {/* Delete Confirmation Dialog */}
       <AlertDialog
         open={deleteConfirm.show}
-        onOpenChange={(open) =>
-          setDeleteConfirm((prev) => ({ ...prev, show: open }))
-        }
+        onOpenChange={(open) => setDeleteConfirm((prev) => ({ ...prev, show: open }))}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Lane</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete the "{deleteConfirm.lane}" lane?
+              Are you sure you want to delete the "
+              {deleteConfirm.lane}
+              " lane?
               This will remove it from the default lanes for new jobs.
             </AlertDialogDescription>
           </AlertDialogHeader>

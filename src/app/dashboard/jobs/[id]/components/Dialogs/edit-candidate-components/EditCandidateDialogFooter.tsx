@@ -3,8 +3,8 @@
  * Displays action buttons for form submission
  */
 
-import { Button } from "@/components/ui/button";
-import { AddSpecificCustomFieldButton } from "@/Custom_Fields/Components/AddSpecificCustomFieldButton";
+import { Button } from '@/components/ui/button';
+import { AddSpecificCustomFieldButton } from '@/Custom_Fields/Components/AddSpecificCustomFieldButton';
 
 interface EditCandidateDialogFooterProps {
   candidateId: string;
@@ -33,8 +33,8 @@ export function EditCandidateDialogFooter({
         candidateId={candidateId}
         candidateName={candidateName}
         onSave={(newField) => {
-          console.log("newField", newField);
-          console.log("selectedFormId", selectedFormId);
+          console.log('newField', newField);
+          console.log('selectedFormId', selectedFormId);
           onAddCustomField(newField, selectedFormId);
         }}
       />
@@ -44,15 +44,12 @@ export function EditCandidateDialogFooter({
         </Button>
         <Button
           onClick={onApply}
-          type={hasErrors ? "button" : "submit"}
+          type={hasErrors ? 'button' : 'submit'}
           variant="primary"
         >
-          {isSubmitting ? "Saving..." : "Save Changes"}
+          {isSubmitting ? 'Saving...' : 'Save Changes'}
         </Button>
       </div>
     </div>
   );
 }
-
-
-

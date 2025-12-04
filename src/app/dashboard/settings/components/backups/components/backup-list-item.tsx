@@ -1,13 +1,13 @@
-import { Button } from "@/components/ui/button";
-import { formatFileSize } from "@/components/ui/file-upload";
+import { Button } from '@/components/ui/button';
+import { formatFileSize } from '@/components/ui/file-upload';
 import {
   Calendar,
   FileIcon,
   HardDrive,
   LucideDownload,
   Trash,
-} from "lucide-react";
-import { BackupFile } from "../types";
+} from 'lucide-react';
+import { BackupFile } from '../types';
 
 interface BackupListItemProps {
   file: BackupFile;
@@ -31,7 +31,7 @@ export function BackupListItem({
           <div className="flex flex-row justify-start items-center gap-4">
             <span className="text-xs text-gray-500 flex items-center gap-1">
               <Calendar className="h-3 w-3" />
-              {new Date(file.createdAt).toLocaleString("in-us")}
+              {new Date(file.createdAt).toLocaleString('in-us')}
             </span>
             <span className="text-xs text-gray-500 flex items-center gap-1">
               <HardDrive className="h-3 w-3" />

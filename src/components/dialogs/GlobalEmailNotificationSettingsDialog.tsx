@@ -1,24 +1,24 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Loader2, Mail } from "lucide-react";
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Loader2, Mail } from 'lucide-react';
 import {
   EmailNotificationToggle,
   EmailNotificationType,
-} from "@/components/ui/email-notification-toggle";
+} from '@/components/ui/email-notification-toggle';
 import {
   useGlobalEmailNotificationSettings,
   useUpdateGlobalEmailNotificationSettings,
-} from "@/hooks/useGlobalEmailNotificationSettings";
-import EmailNotificationSettingsSkeleton from "./email-notification-settings-skeleton";
+} from '@/hooks/useGlobalEmailNotificationSettings';
+import EmailNotificationSettingsSkeleton from './email-notification-settings-skeleton';
 
 export function GlobalEmailNotificationSettingsDialog({
   isOpen,
@@ -29,44 +29,43 @@ export function GlobalEmailNotificationSettingsDialog({
 }) {
   const allNotificationTypes: EmailNotificationType[] = useMemo(
     () => [
-      "mentions",
-      "newRemarks",
-      "newApplications",
-      "statusUpdates",
-      "detailsUpdated",
-      "interviewAssignments",
-      "stepCompleted",
-      "meetingScheduled",
-      "meetingUpdated",
-      "meetingCancelled",
-      "meetingInviteAccepted",
-      "meetingInviteDeclined",
-      "meetingInviteTentative",
-      "followupAdded",
-      "followupUpdated",
-      "followupRemoved",
-      "checklistCompleted",
-      "jobCreated",
-      "jobUpdated",
-      "candidateRejected",
-      "interviewCompleted",
+      'mentions',
+      'newRemarks',
+      'newApplications',
+      'statusUpdates',
+      'detailsUpdated',
+      'interviewAssignments',
+      'stepCompleted',
+      'meetingScheduled',
+      'meetingUpdated',
+      'meetingCancelled',
+      'meetingInviteAccepted',
+      'meetingInviteDeclined',
+      'meetingInviteTentative',
+      'followupAdded',
+      'followupUpdated',
+      'followupRemoved',
+      'checklistCompleted',
+      'jobCreated',
+      'jobUpdated',
+      'candidateRejected',
+      'interviewCompleted',
     ],
-    []
+    [],
   );
 
   const [localSettings, setLocalSettings] = useState<
     Record<EmailNotificationType, boolean>
   >(
-    () =>
-      Object.fromEntries(
-        allNotificationTypes.map((type) => [type, true])
-      ) as Record<EmailNotificationType, boolean>
+    () => Object.fromEntries(
+      allNotificationTypes.map((type) => [type, true]),
+    ) as Record<EmailNotificationType, boolean>,
   );
 
-  const { settings, loading, error, refetch } =
-    useGlobalEmailNotificationSettings();
-  const { updateSettings, loading: updating } =
-    useUpdateGlobalEmailNotificationSettings();
+  const {
+    settings, loading, error, refetch,
+  } = useGlobalEmailNotificationSettings();
+  const { updateSettings, loading: updating } = useUpdateGlobalEmailNotificationSettings();
 
   useEffect(() => {
     if (settings) {
@@ -96,8 +95,8 @@ export function GlobalEmailNotificationSettingsDialog({
     } else {
       setLocalSettings(
         Object.fromEntries(
-          allNotificationTypes.map((t) => [t, true])
-        ) as Record<EmailNotificationType, boolean>
+          allNotificationTypes.map((t) => [t, true]),
+        ) as Record<EmailNotificationType, boolean>,
       );
     }
   };
@@ -105,7 +104,7 @@ export function GlobalEmailNotificationSettingsDialog({
   const hasChanges = () => {
     if (!settings) return false;
     return allNotificationTypes.some(
-      (key) => localSettings[key] !== (settings[key] ?? true)
+      (key) => localSettings[key] !== (settings[key] ?? true),
     );
   };
 
@@ -129,7 +128,10 @@ export function GlobalEmailNotificationSettingsDialog({
           <EmailNotificationSettingsSkeleton />
         ) : error ? (
           <div className="flex items-center justify-center py-8 text-red-600">
-            <span>Error loading settings: {error}</span>
+            <span>
+              Error loading settings:
+              {error}
+            </span>
           </div>
         ) : (
           <>

@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import UniqueLoading from "./morph-loading";
+import UniqueLoading from './morph-loading';
 
-export const AuthGuardLoading = () => {
+export function AuthGuardLoading() {
   return (
     <div className="fixed inset-0 bg-gradient-to-b from-white to-gray-50 dark:from-gray-950 dark:to-gray-900 flex items-center justify-center z-50">
       <div className="flex flex-col items-center max-w-md mx-auto p-8 rounded-xl">
@@ -22,6 +22,6 @@ export const AuthGuardLoading = () => {
       </div>
     </div>
   );
-};
+}
 
 export default AuthGuardLoading;

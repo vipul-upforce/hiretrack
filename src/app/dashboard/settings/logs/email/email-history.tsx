@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useEmailHistory } from "./hooks/use-email-history";
-import { EmailHistoryToolbar } from "./components/email-history-toolbar";
-import { EmailHistoryTable } from "./components/email-history-table";
-import { EmailDetailsDialog } from "./components/email-details-dialog";
-import EmailHistorySkeleton from "./components/email-history-skeleton";
+import { useEmailHistory } from './hooks/use-email-history';
+import { EmailHistoryToolbar } from './components/email-history-toolbar';
+import { EmailHistoryTable } from './components/email-history-table';
+import { EmailDetailsDialog } from './components/email-details-dialog';
+import EmailHistorySkeleton from './components/email-history-skeleton';
 
 export function EmailHistory() {
   const {

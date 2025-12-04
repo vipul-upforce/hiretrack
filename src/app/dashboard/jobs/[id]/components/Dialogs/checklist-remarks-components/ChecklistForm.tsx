@@ -1,6 +1,6 @@
-import React from "react";
-import { IChecklistField } from "@/lib/models/JobLaneConfig";
-import { ChecklistFieldRenderer } from "./ChecklistFieldRenderer";
+import React from 'react';
+import { IChecklistField } from '@/lib/models/JobLaneConfig';
+import { ChecklistFieldRenderer } from './ChecklistFieldRenderer';
 
 interface ChecklistFormProps {
   checklist: {
@@ -22,20 +22,17 @@ export const ChecklistForm: React.FC<ChecklistFormProps> = ({
   onResponseChange,
   errors,
   touched = {},
-}) => {
-  return (
-    <div className="space-y-4">
-      {checklist.fields.map((field) => (
-        <ChecklistFieldRenderer
-          key={field.id}
-          field={field}
-          value={responses[field.id]?.value}
-          onChange={(value) => onResponseChange(field.id, value)}
-          error={errors[field.id]}
-          touched={touched[field.id]}
-        />
-      ))}
-    </div>
-  );
-};
-
+}) => (
+  <div className="space-y-4">
+    {checklist.fields.map((field) => (
+      <ChecklistFieldRenderer
+        key={field.id}
+        field={field}
+        value={responses[field.id]?.value}
+        onChange={(value) => onResponseChange(field.id, value)}
+        error={errors[field.id]}
+        touched={touched[field.id]}
+      />
+    ))}
+  </div>
+);

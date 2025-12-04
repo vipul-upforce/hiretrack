@@ -1,9 +1,11 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { NotificationType } from "@/lib/models/notification";
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from '@/components/ui/card';
+import { NotificationType } from '@/lib/models/notification';
 
 export default function TestNotificationsPage() {
   const [loading, setLoading] = useState<string | null>(null);
@@ -13,9 +15,9 @@ export default function TestNotificationsPage() {
     setLoading(type);
     setResult(null);
     try {
-      const response = await fetch("/api/test-notifications", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/test-notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type }),
       });
       const data = await response.json();
@@ -32,14 +34,13 @@ export default function TestNotificationsPage() {
   };
 
   const notificationTypes = Object.values(NotificationType).filter(
-    (type) =>
-      ![
-        "deadline_reminder",
-        "email_failed",
-        "system_maintenance",
-        "file_upload_completed",
-        "report_generated",
-      ].includes(type)
+    (type) => ![
+      'deadline_reminder',
+      'email_failed',
+      'system_maintenance',
+      'file_upload_completed',
+      'report_generated',
+    ].includes(type),
   );
 
   return (
@@ -55,7 +56,7 @@ export default function TestNotificationsPage() {
               onClick={() => triggerNotification(type)}
               disabled={loading === type}
             >
-              {loading === type ? "Sending..." : `Trigger ${type}`}
+              {loading === type ? 'Sending...' : `Trigger ${type}`}
             </Button>
           ))}
         </CardContent>

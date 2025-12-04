@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useCallback } from "react";
-import { useDropzone } from "react-dropzone";
-import { Upload } from "lucide-react";
+import { useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
+import { Upload } from 'lucide-react';
 
 interface FileUploaderProps {
   onFilesAdded: (files: File[]) => void;
@@ -17,14 +17,14 @@ export function FileUploader({
     (acceptedFiles: File[]) => {
       onFilesAdded(acceptedFiles);
     },
-    [onFilesAdded]
+    [onFilesAdded],
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      "application/pdf": [".pdf"],
-      "application/zip": [".zip"],
+      'application/pdf': ['.pdf'],
+      'application/zip': ['.zip'],
     },
   });
 
@@ -33,9 +33,9 @@ export function FileUploader({
       {...getRootProps()}
       className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
         isDragActive
-          ? "border-primary bg-primary/5"
-          : "border-muted-foreground/20"
-      } ${isProcessing ? "opacity-50 cursor-not-allowed" : ""}`}
+          ? 'border-primary bg-primary/5'
+          : 'border-muted-foreground/20'
+      } ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
       <input {...getInputProps()} disabled={isProcessing} />
       <Upload className="h-8 w-8 mx-auto mb-4 text-muted-foreground" />

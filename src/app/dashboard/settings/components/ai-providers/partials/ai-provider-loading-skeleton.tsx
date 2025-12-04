@@ -1,7 +1,7 @@
-import { Skeleton } from "@/components/ui/skeleton";
-import React from "react";
+import { Skeleton } from '@/components/ui/skeleton';
+import React from 'react';
 
-const AiProviderSkeleton = () => {
+function AiProviderSkeleton() {
   return (
     <div className="flex flex-col h-[calc(86vh-80px)] overflow-hidden">
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 sticky top-0">
@@ -54,6 +54,6 @@ const AiProviderSkeleton = () => {
       </div>
     </div>
   );
-};
+}
 
 export default AiProviderSkeleton;

@@ -1,19 +1,19 @@
-import React, { useState } from "react";
-import Image from "next/image";
+import React, { useState } from 'react';
+import Image from 'next/image';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from '@/components/ui/popover';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { FileIcon, Folder } from "lucide-react";
-import { PDFViewer } from "@/components/ui/pdf-viewer";
-import { Button } from "@/components/ui/button";
+} from '@/components/ui/dialog';
+import { FileIcon, Folder } from 'lucide-react';
+import { PDFViewer } from '@/components/ui/pdf-viewer';
+import { Button } from '@/components/ui/button';
 
 interface Image {
   id: string;
@@ -21,7 +21,7 @@ interface Image {
   name: string;
 }
 
-const AttachmentsPopover = ({
+function AttachmentsPopover({
   attachments,
   onMoreClick,
 }: {
@@ -34,7 +34,7 @@ const AttachmentsPopover = ({
     size: number;
   }>;
   onMoreClick: () => void;
-}) => {
+}) {
   const [visibleCount, setVisibleCount] = useState(6);
   const [selectedImage, setSelectedImage] = React.useState<Image | null>(null);
 
@@ -46,7 +46,7 @@ const AttachmentsPopover = ({
       <Popover>
         <PopoverTrigger asChild>
           {attachments.length === 0 ? (
-            " "
+            ' '
           ) : (
             <Button
               onClick={(e) => e.stopPropagation()}
@@ -54,7 +54,7 @@ const AttachmentsPopover = ({
               className="inline-flex items-center px-4 py-2 text-sm font-medium text-foreground bg-background border border-border rounded-lg hover:bg-accent hover:text-accent-foreground focus:z-10 focus:ring-4 focus:outline-none focus:ring-ring focus:text-accent-foreground"
             >
               {attachments.length === 1
-                ? "1 Attachment"
+                ? '1 Attachment'
                 : `${attachments.length} Attachments`}
               <Folder className="h-4 w-4 ml-1" />
             </Button>
@@ -75,17 +75,17 @@ const AttachmentsPopover = ({
                 {visibleAttachments.map((file) => {
                   // debugger;
                   const fileExtension = file.name
-                    .split(".")
+                    .split('.')
                     .pop()
                     ?.toLowerCase();
                   const isImage = [
-                    "jpg",
-                    "jpeg",
-                    "png",
-                    "gif",
-                    "webp",
-                  ].includes(fileExtension || "");
-                  const isPDF = fileExtension === "pdf";
+                    'jpg',
+                    'jpeg',
+                    'png',
+                    'gif',
+                    'webp',
+                  ].includes(fileExtension || '');
+                  const isPDF = fileExtension === 'pdf';
 
                   return isPDF ? (
                     <PDFViewer key={file.id} files={[file]} />
@@ -101,7 +101,10 @@ const AttachmentsPopover = ({
                             {file.name}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            ({(file.size / 1024).toFixed(1)} KB)
+                            (
+                            {(file.size / 1024).toFixed(1)}
+                            {' '}
+                            KB)
                           </span>
                         </div>
                       </div>
@@ -176,6 +179,6 @@ const AttachmentsPopover = ({
       </Dialog>
     </>
   );
-};
+}
 
 export default AttachmentsPopover;

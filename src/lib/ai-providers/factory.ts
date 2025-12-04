@@ -1,17 +1,17 @@
-import { AIProvider, AIProviderType } from "./types";
-import { GeminiProvider } from "./gemini-provider";
-import { OpenAIProvider } from "./openai-provider";
-import { AnthropicProvider } from "./anthropic-provider";
-import { PerplexityProvider } from "./perplexity-provider";
+import { AIProvider, AIProviderType } from './types';
+import { GeminiProvider } from './gemini-provider';
+import { OpenAIProvider } from './openai-provider';
+import { AnthropicProvider } from './anthropic-provider';
+import { PerplexityProvider } from './perplexity-provider';
 
-export type { AIProviderType } from "./types";
+export type { AIProviderType } from './types';
 
 export class AIProviderFactory {
   private static providers: Map<AIProviderType, AIProvider> = new Map([
-    ["gemini", new GeminiProvider()],
-    ["openai", new OpenAIProvider()],
-    ["anthropic", new AnthropicProvider()],
-    ["perplexity", new PerplexityProvider()],
+    ['gemini', new GeminiProvider()],
+    ['openai', new OpenAIProvider()],
+    ['anthropic', new AnthropicProvider()],
+    ['perplexity', new PerplexityProvider()],
   ]);
 
   static getProvider(type: AIProviderType): AIProvider {
@@ -28,10 +28,10 @@ export class AIProviderFactory {
 
   static getProviderDisplayName(type: AIProviderType): string {
     const displayNames: Record<AIProviderType, string> = {
-      gemini: "Google Gemini",
-      openai: "OpenAI GPT",
-      anthropic: "Anthropic Claude",
-      perplexity: "Perplexity AI",
+      gemini: 'Google Gemini',
+      openai: 'OpenAI GPT',
+      anthropic: 'Anthropic Claude',
+      perplexity: 'Perplexity AI',
     };
     return displayNames[type];
   }

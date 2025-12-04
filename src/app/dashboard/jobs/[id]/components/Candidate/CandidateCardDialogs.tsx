@@ -3,21 +3,21 @@
  * Manages all dialogs used by the candidate card
  */
 
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Candidate } from "@/types/candidate";
-import { User } from "@/lib/features/users/usersApi";
-import { EditCandidateDialog } from "../Dialogs/edit-candidate-dialog";
-import { AssignCandidateDialog } from "../Dialogs/assign-candidate-dialog";
-import AddFollowUpDialog from "../Dialogs/add-followup-dialog";
-import ConfirmAndRemarkDialog from "../Dialogs/mark-as-done-dialog";
-import ConfirmationDialog from "../Dialogs/ConfirmationDialog";
-import AddRemarksDialog from "../Dialogs/add-remark-dialog";
-import { EmailCandidateDialog } from "../Dialogs/email-candidate-dialog";
-import { AssignJobDialog } from "../Dialogs/assign-job-dialog";
-import { ShareCandidateDialog } from "../Dialogs/share-candidate-dialog";
-import TagsDialog from "../Dialogs/tags-dialog";
-import { getJobTitle } from "../../utils/candidateAccessors";
-import dayjs from "dayjs";
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Candidate } from '@/types/candidate';
+import { User } from '@/lib/features/users/usersApi';
+import dayjs from 'dayjs';
+import { EditCandidateDialog } from '../Dialogs/edit-candidate-dialog';
+import { AssignCandidateDialog } from '../Dialogs/assign-candidate-dialog';
+import AddFollowUpDialog from '../Dialogs/add-followup-dialog';
+import ConfirmAndRemarkDialog from '../Dialogs/mark-as-done-dialog';
+import ConfirmationDialog from '../Dialogs/ConfirmationDialog';
+import AddRemarksDialog from '../Dialogs/add-remark-dialog';
+import { EmailCandidateDialog } from '../Dialogs/email-candidate-dialog';
+import { AssignJobDialog } from '../Dialogs/assign-job-dialog';
+import { ShareCandidateDialog } from '../Dialogs/share-candidate-dialog';
+import TagsDialog from '../Dialogs/tags-dialog';
+import { getJobTitle } from '../../utils/candidateAccessors';
 
 interface CandidateCardDialogsProps {
   candidate: Candidate;
@@ -120,12 +120,12 @@ export function CandidateCardDialogs({
 
       {/* Tags Dialog */}
       <Dialog open={isTagsOpen} onOpenChange={setIsTagsOpen}>
-        <DialogTitle></DialogTitle>
+        <DialogTitle />
         <DialogContent className="w-[330px]">
           <div className="h-full">
             <TagsDialog
               user={user}
-              isDialog={true}
+              isDialog
               candidate={candidate}
               refetch={() => {
                 refetch();
@@ -170,7 +170,7 @@ export function CandidateCardDialogs({
           newFollowUpDate={newFollowUpDate}
           onAddingFollowup={async () => {
             setIsAddingFollowUp(false);
-            setNewFollowUp("");
+            setNewFollowUp('');
             setNewFollowUpDate(null);
             refetch();
           }}
@@ -257,4 +257,3 @@ export function CandidateCardDialogs({
     </>
   );
 }
-

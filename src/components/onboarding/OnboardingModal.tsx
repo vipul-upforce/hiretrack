@@ -1,18 +1,20 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { useOnboarding } from "./OnboardingProvider";
-import OnboardingWizard from "./OnboardingWizard";
+} from '@/components/ui/dialog';
+import { useOnboarding } from './OnboardingProvider';
+import OnboardingWizard from './OnboardingWizard';
 
 const OnboardingModal: React.FC = () => {
-  const { isOpen, setIsOpen, onboardingStatus, isLoading } = useOnboarding();
+  const {
+    isOpen, setIsOpen, onboardingStatus, isLoading,
+  } = useOnboarding();
   const [isLargeViewport, setIsLargeViewport] = useState(false);
 
   useEffect(() => {
@@ -22,8 +24,8 @@ const OnboardingModal: React.FC = () => {
     };
 
     checkViewportSize();
-    window.addEventListener("resize", checkViewportSize);
-    return () => window.removeEventListener("resize", checkViewportSize);
+    window.addEventListener('resize', checkViewportSize);
+    return () => window.removeEventListener('resize', checkViewportSize);
   }, []);
 
   // Don't render if user has chosen "do not show again"
@@ -33,8 +35,8 @@ const OnboardingModal: React.FC = () => {
   // }
 
   const dialogClassName = isLargeViewport
-    ? "!max-w-[80vw] !min-w-[950px] !h-[90vh] !left-[50%] !top-[50%] !translate-x-[-50%] !translate-y-[-50%] xl:!max-w-[70vw] overflow-hidden p-0 gap-0 !flex !flex-col"
-    : "!max-w-[95vw] !w-[95vw] !h-[95vh] !left-[50%] !top-[50%] !translate-x-[-50%] !translate-y-[-50%] overflow-hidden p-0 gap-0 rounded-lg !flex !flex-col";
+    ? '!max-w-[80vw] !min-w-[950px] !h-[90vh] !left-[50%] !top-[50%] !translate-x-[-50%] !translate-y-[-50%] xl:!max-w-[70vw] overflow-hidden p-0 gap-0 !flex !flex-col'
+    : '!max-w-[95vw] !w-[95vw] !h-[95vh] !left-[50%] !top-[50%] !translate-x-[-50%] !translate-y-[-50%] overflow-hidden p-0 gap-0 rounded-lg !flex !flex-col';
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>

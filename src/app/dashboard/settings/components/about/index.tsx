@@ -1,18 +1,20 @@
-"use client";
+'use client';
 
-import React from "react";
-import { Form, Formik } from "formik";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Download, Loader2 } from "lucide-react";
-import { VersionInfoSection } from "./version/version-info-section";
-import { UpdateSettingsSection } from "./version/update-settings-section";
-import { ChangelogSection } from "./version/changelog-section";
-import { DiskSpaceSection } from "./disk-space";
-import { aboutFormSchema } from "./schema";
-import { useAboutVersion } from "./version/useAboutVersion";
-import { AboutValues } from "./types";
-import AboutVersionLoadingSkeleton from "./loading-skeleton";
+import React from 'react';
+import { Form, Formik } from 'formik';
+import {
+  Tabs, TabsList, TabsTrigger, TabsContent,
+} from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Download, Loader2 } from 'lucide-react';
+import { VersionInfoSection } from './version/version-info-section';
+import { UpdateSettingsSection } from './version/update-settings-section';
+import { ChangelogSection } from './version/changelog-section';
+import { DiskSpaceSection } from './disk-space';
+import { aboutFormSchema } from './schema';
+import { useAboutVersion } from './version/useAboutVersion';
+import { AboutValues } from './types';
+import AboutVersionLoadingSkeleton from './loading-skeleton';
 
 export default function AboutDialog({
   onClose,
@@ -42,7 +44,9 @@ export default function AboutDialog({
       onSubmit={handleSubmit}
       enableReinitialize
     >
-      {({ values, setFieldValue, handleSubmit, isSubmitting }) => (
+      {({
+        values, setFieldValue, handleSubmit, isSubmitting,
+      }) => (
         <Form onSubmit={handleSubmit} className="flex flex-col h-full">
           <Tabs defaultValue="version" className="w-full flex flex-col h-full">
             {/* TAB HEADERS */}
@@ -77,32 +81,32 @@ export default function AboutDialog({
               </div>
 
               {updateAvailable && (
-                <div className="pt-4">
-                  <Button
-                    type="button"
-                    onClick={handleUpdate}
-                    disabled={updatingRTK}
-                    className="w-full"
-                    style={{ backgroundColor: "var(--portal-primary)" }}
-                  >
-                    {updatingRTK ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Updating...
+              <div className="pt-4">
+                <Button
+                  type="button"
+                  onClick={handleUpdate}
+                  disabled={updatingRTK}
+                  className="w-full"
+                  style={{ backgroundColor: 'var(--portal-primary)' }}
+                >
+                  {updatingRTK ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Updating...
                       </>
-                    ) : (
-                      <>
+            ) : (
+              <>
                         <Download className="mr-2 h-4 w-4" />
                         Update now
                       </>
-                    )}
-                  </Button>
-                </div>
+            )}
+                </Button>
+              </div>
               )}
             </TabsContent>
 
             <TabsContent value="disk" className="flex-1 overflow-y-scroll">
-                <DiskSpaceSection />
+              <DiskSpaceSection />
             </TabsContent>
           </Tabs>
         </Form>

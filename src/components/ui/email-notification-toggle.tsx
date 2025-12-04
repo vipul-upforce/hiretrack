@@ -1,47 +1,47 @@
-"use client";
+'use client';
 
-import React from "react";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import React from 'react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Info } from "lucide-react";
+} from '@/components/ui/tooltip';
+import { Info } from 'lucide-react';
 
 // ✅ Full notification type list (same as NotificationType enum)
 export type EmailNotificationType =
-  | "mentions"
-  | "newApplications"
-  | "statusUpdates"
-  | "detailsUpdated"
-  | "interviewAssignments"
-  | "stepCompleted"
-  | "newRemarks"
-  | "meetingScheduled"
-  | "meetingUpdated"
-  | "meetingCancelled"
-  | "meetingInviteAccepted"
-  | "meetingInviteDeclined"
-  | "meetingInviteTentative"
-  | "followupAdded"
-  | "followupUpdated"
-  | "followupRemoved"
-  | "checklistCompleted"
-  | "jobCreated"
-  | "jobUpdated"
-  | "userAdded"
-  | "bulkImportCompleted"
-  | "candidateRejected"
-  | "interviewCompleted";
+  | 'mentions'
+  | 'newApplications'
+  | 'statusUpdates'
+  | 'detailsUpdated'
+  | 'interviewAssignments'
+  | 'stepCompleted'
+  | 'newRemarks'
+  | 'meetingScheduled'
+  | 'meetingUpdated'
+  | 'meetingCancelled'
+  | 'meetingInviteAccepted'
+  | 'meetingInviteDeclined'
+  | 'meetingInviteTentative'
+  | 'followupAdded'
+  | 'followupUpdated'
+  | 'followupRemoved'
+  | 'checklistCompleted'
+  | 'jobCreated'
+  | 'jobUpdated'
+  | 'userAdded'
+  | 'bulkImportCompleted'
+  | 'candidateRejected'
+  | 'interviewCompleted';
 
 export interface EmailNotificationToggleProps {
   type: EmailNotificationType;
   enabled: boolean;
-  source: "job-level" | "global-user" | "admin-override" | "org-default";
+  source: 'job-level' | 'global-user' | 'admin-override' | 'org-default';
   onToggle: (type: EmailNotificationType, enabled: boolean) => void;
   disabled?: boolean;
   showSource?: boolean;
@@ -53,114 +53,114 @@ const notificationLabels: Record<
   { label: string; description: string }
 > = {
   mentions: {
-    label: "Mentions",
-    description: "Get notified when mentioned in remarks or comments",
+    label: 'Mentions',
+    description: 'Get notified when mentioned in remarks or comments',
   },
   newApplications: {
-    label: "New Applications",
-    description: "Get notified when new candidates apply to jobs",
+    label: 'New Applications',
+    description: 'Get notified when new candidates apply to jobs',
   },
   statusUpdates: {
-    label: "Status Updates",
-    description: "Get notified when a candidate’s status changes",
+    label: 'Status Updates',
+    description: 'Get notified when a candidate’s status changes',
   },
   detailsUpdated: {
-    label: "Candidate Details Updated",
-    description: "Get notified when candidate profile details are updated",
+    label: 'Candidate Details Updated',
+    description: 'Get notified when candidate profile details are updated',
   },
   interviewAssignments: {
-    label: "Interview Assignments",
-    description: "Get notified when assigned to conduct an interview",
+    label: 'Interview Assignments',
+    description: 'Get notified when assigned to conduct an interview',
   },
   stepCompleted: {
-    label: "Step Completed",
-    description: "Get notified when interview steps are completed",
+    label: 'Step Completed',
+    description: 'Get notified when interview steps are completed',
   },
   newRemarks: {
-    label: "New Remarks",
-    description: "Get notified when new remarks are added to candidates",
+    label: 'New Remarks',
+    description: 'Get notified when new remarks are added to candidates',
   },
   meetingScheduled: {
-    label: "Meeting Scheduled",
-    description: "Get notified when meetings are scheduled",
+    label: 'Meeting Scheduled',
+    description: 'Get notified when meetings are scheduled',
   },
   meetingUpdated: {
-    label: "Meeting Updated",
-    description: "Get notified when meeting details are updated",
+    label: 'Meeting Updated',
+    description: 'Get notified when meeting details are updated',
   },
   meetingCancelled: {
-    label: "Meeting Cancelled",
-    description: "Get notified when a meeting is cancelled",
+    label: 'Meeting Cancelled',
+    description: 'Get notified when a meeting is cancelled',
   },
   meetingInviteAccepted: {
-    label: "Meeting Invite Accepted",
-    description: "Get notified when meeting invites are accepted",
+    label: 'Meeting Invite Accepted',
+    description: 'Get notified when meeting invites are accepted',
   },
   meetingInviteDeclined: {
-    label: "Meeting Invite Declined",
-    description: "Get notified when meeting invites are declined",
+    label: 'Meeting Invite Declined',
+    description: 'Get notified when meeting invites are declined',
   },
   meetingInviteTentative: {
-    label: "Meeting Invite Tentative",
-    description: "Get notified when meeting invites are marked as tentative",
+    label: 'Meeting Invite Tentative',
+    description: 'Get notified when meeting invites are marked as tentative',
   },
   followupAdded: {
-    label: "Follow-Up Added",
-    description: "Get notified when a follow-up task is created",
+    label: 'Follow-Up Added',
+    description: 'Get notified when a follow-up task is created',
   },
   followupUpdated: {
-    label: "Follow-Up Updated",
-    description: "Get notified when a follow-up task is updated",
+    label: 'Follow-Up Updated',
+    description: 'Get notified when a follow-up task is updated',
   },
   followupRemoved: {
-    label: "Follow-Up Removed",
-    description: "Get notified when a follow-up task is deleted",
+    label: 'Follow-Up Removed',
+    description: 'Get notified when a follow-up task is deleted',
   },
   checklistCompleted: {
-    label: "Checklist Completed",
-    description: "Get notified when a checklist is completed",
+    label: 'Checklist Completed',
+    description: 'Get notified when a checklist is completed',
   },
   jobCreated: {
-    label: "Job Created",
-    description: "Get notified when a new job is created",
+    label: 'Job Created',
+    description: 'Get notified when a new job is created',
   },
   jobUpdated: {
-    label: "Job Updated",
-    description: "Get notified when job details are updated",
+    label: 'Job Updated',
+    description: 'Get notified when job details are updated',
   },
   userAdded: {
-    label: "User Added",
-    description: "Get notified when new users are added to your organization",
+    label: 'User Added',
+    description: 'Get notified when new users are added to your organization',
   },
   bulkImportCompleted: {
-    label: "Bulk Import Completed",
-    description: "Get notified when bulk import processes are completed",
+    label: 'Bulk Import Completed',
+    description: 'Get notified when bulk import processes are completed',
   },
   candidateRejected: {
-    label: "Candidate Rejected",
-    description: "Get notified when candidates are rejected",
+    label: 'Candidate Rejected',
+    description: 'Get notified when candidates are rejected',
   },
   interviewCompleted: {
-    label: "Interview Completed",
-    description: "Get notified when interviews are completed",
+    label: 'Interview Completed',
+    description: 'Get notified when interviews are completed',
   },
 };
 
 const sourceColors: Record<string, string> = {
-  "job-level": "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-  "global-user":
-    "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-  "admin-override":
-    "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-  "org-default":
-    "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
+  'job-level': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+  'global-user':
+    'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  'admin-override':
+    'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+  'org-default':
+    'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200',
 };
 
 const sourceLabels: Record<string, string> = {
-  "job-level": "Job Setting",
-  "global-user": "User Setting",
-  "admin-override": "Admin Override",
-  "org-default": "Default",
+  'job-level': 'Job Setting',
+  'global-user': 'User Setting',
+  'admin-override': 'Admin Override',
+  'org-default': 'Default',
 };
 
 export function EmailNotificationToggle({
@@ -198,9 +198,9 @@ export function EmailNotificationToggle({
           {showSource && (
             <Badge
               variant="secondary"
-              className={`text-xs ${sourceColors[source] || sourceColors["org-default"]}`}
+              className={`text-xs ${sourceColors[source] || sourceColors['org-default']}`}
             >
-              {sourceLabels[source] || "Default"}
+              {sourceLabels[source] || 'Default'}
             </Badge>
           )}
         </div>

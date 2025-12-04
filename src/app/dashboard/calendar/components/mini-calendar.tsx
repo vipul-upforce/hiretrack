@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState } from 'react';
 
 interface MiniCalendarProps {
   selectedDate: Date;
@@ -17,21 +17,21 @@ export function MiniCalendar({
   const [currentMonth, setCurrentMonth] = useState(new Date(selectedDate));
 
   const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
 
-  const daysOfWeek = ["S", "M", "T", "W", "T", "F", "S"];
+  const daysOfWeek = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
@@ -60,21 +60,19 @@ export function MiniCalendar({
     if (!day) return false;
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
-    return eventDates.some((eventDate) => {
-      return (
-        eventDate.getFullYear() === year &&
-        eventDate.getMonth() === month &&
-        eventDate.getDate() === day
-      );
-    });
+    return eventDates.some((eventDate) => (
+      eventDate.getFullYear() === year
+        && eventDate.getMonth() === month
+        && eventDate.getDate() === day
+    ));
   };
 
   const isSelected = (day: number | null) => {
     if (!day) return false;
     return (
-      selectedDate.getDate() === day &&
-      selectedDate.getMonth() === currentMonth.getMonth() &&
-      selectedDate.getFullYear() === currentMonth.getFullYear()
+      selectedDate.getDate() === day
+      && selectedDate.getMonth() === currentMonth.getMonth()
+      && selectedDate.getFullYear() === currentMonth.getFullYear()
     );
   };
 
@@ -82,9 +80,9 @@ export function MiniCalendar({
     if (!day) return false;
     const today = new Date();
     return (
-      today.getDate() === day &&
-      today.getMonth() === currentMonth.getMonth() &&
-      today.getFullYear() === currentMonth.getFullYear()
+      today.getDate() === day
+      && today.getMonth() === currentMonth.getMonth()
+      && today.getFullYear() === currentMonth.getFullYear()
     );
   };
 
@@ -93,20 +91,20 @@ export function MiniCalendar({
     const newDate = new Date(
       currentMonth.getFullYear(),
       currentMonth.getMonth(),
-      day
+      day,
     );
     onDateSelect(newDate);
   };
 
   const handlePrevMonth = () => {
     setCurrentMonth(
-      new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)
+      new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1),
     );
   };
 
   const handleNextMonth = () => {
     setCurrentMonth(
-      new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)
+      new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1),
     );
   };
 
@@ -123,7 +121,9 @@ export function MiniCalendar({
           <ChevronLeft className="h-4 w-4" />
         </button>
         <div className="text-sm font-semibold">
-          {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
+          {monthNames[currentMonth.getMonth()]}
+          {' '}
+          {currentMonth.getFullYear()}
         </div>
         <button
           onClick={handleNextMonth}
@@ -156,12 +156,12 @@ export function MiniCalendar({
               h-8 text-sm rounded-md transition-colors relative
               ${
                 !day
-                  ? "invisible"
+                  ? 'invisible'
                   : isSelected(day)
-                  ? "bg-primary text-primary-foreground font-semibold"
-                  : isToday(day)
-                  ? "bg-accent font-semibold"
-                  : "hover:bg-accent"
+                    ? 'bg-primary text-primary-foreground font-semibold'
+                    : isToday(day)
+                      ? 'bg-accent font-semibold'
+                      : 'hover:bg-accent'
               }
             `}
           >

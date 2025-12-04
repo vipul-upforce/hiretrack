@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { Label } from "@/components/ui/label";
-import { RenderField } from "./RenderField";
-import { FieldMetaProps, useField, useFormikContext } from "formik";
-import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
-import { Dayjs } from "dayjs";
-import useRoles from "@/hooks/useRoles";
-import { useEffect, useRef, useMemo } from "react";
-import { CustomField } from "@/Custom_Fields/Types/CustomField";
+import { Label } from '@/components/ui/label';
+import { FieldMetaProps, useField, useFormikContext } from 'formik';
+import useCustomForm from '@/Custom_Fields/hooks/useCustomForm';
+import { Dayjs } from 'dayjs';
+import useRoles from '@/hooks/useRoles';
+import { useEffect, useRef, useMemo } from 'react';
+import { CustomField } from '@/Custom_Fields/Types/CustomField';
+import { RenderField } from './RenderField';
 
 interface FormValues {
   _id?: string;
@@ -31,14 +31,12 @@ interface FileData {
 }
 
 // Convert the hook to a regular validation function
-const createFieldValidator = (shouldValidate: boolean) => {
-  return () => {
-    if (!shouldValidate) {
-      return undefined;
-    }
-    // Add any other validation logic here if needed
+const createFieldValidator = (shouldValidate: boolean) => () => {
+  if (!shouldValidate) {
     return undefined;
-  };
+  }
+  // Add any other validation logic here if needed
+  return undefined;
 };
 
 function CustomFields({
@@ -67,7 +65,7 @@ function CustomFields({
     formName,
     jobId,
     undefined,
-    undefined
+    undefined,
     // role || ""
   );
 
@@ -75,7 +73,7 @@ function CustomFields({
     setTimeout(() => {}, 1000);
   });
 
-  const allFields = role !== "candidate" && role !== "";
+  const allFields = role !== 'candidate' && role !== '';
   const fieldRefs = useRef<{ [key: string]: HTMLElement | null }>({});
 
   // Pre-calculate all fields that will be rendered
@@ -132,9 +130,9 @@ function CustomFields({
   // Focus on first field with error only after form submission
   useEffect(() => {
     if (
-      submitCount > 0 &&
-      errors.customFields &&
-      Object.keys(errors.customFields).length > 0
+      submitCount > 0
+      && errors.customFields
+      && Object.keys(errors.customFields).length > 0
     ) {
       const firstErrorNormalField = Object.keys(errors)[0];
       const firstErrorField = Object.keys(errors.customFields)[0];
@@ -142,11 +140,11 @@ function CustomFields({
 
       // debugger;
 
-      if (fieldElement && firstErrorNormalField === "customFields") {
+      if (fieldElement && firstErrorNormalField === 'customFields') {
         // Scroll to the field and focus it
         fieldElement.scrollIntoView({
-          behavior: "smooth",
-          block: "nearest",
+          behavior: 'smooth',
+          block: 'nearest',
         });
 
         // // Focus the input element
@@ -163,9 +161,9 @@ function CustomFields({
   }, [submitCount]);
 
   if (
-    !formNameObject ||
-    !formNameObject.fields ||
-    Object.keys(formNameObject.fields).length === 0
+    !formNameObject
+    || !formNameObject.fields
+    || Object.keys(formNameObject.fields).length === 0
   ) {
     return null;
   }
@@ -199,7 +197,7 @@ function CustomFields({
             }}
           >
             <Label htmlFor={field.label} className="capitalize font-semibold">
-              {field.label.split(" |||||(")[0]}
+              {field.label.split(' |||||(')[0]}
               {field.required && (
                 <span className="text-red-500 text-sm capitalize">*</span>
               )}
@@ -213,7 +211,7 @@ function CustomFields({
               values: values as FormValues,
               options: field.options
                 ?.map((opt) => opt.trim())
-                .filter((opt) => opt !== ""),
+                .filter((opt) => opt !== ''),
               setFieldError,
               fieldHook: { fieldProps, fieldMeta },
               isEditMode,
@@ -222,7 +220,7 @@ function CustomFields({
               <div
                 className="text-red-500 text-xs capitalize"
                 style={{
-                  marginTop: "-5px",
+                  marginTop: '-5px',
                 }}
               >
                 {fieldMeta.error}

@@ -1,5 +1,5 @@
-import { UserCheckIcon } from "lucide-react";
-import React from "react";
+import { UserCheckIcon } from 'lucide-react';
+import React from 'react';
 
 interface SummaryCardProps {
   summary: {
@@ -9,7 +9,7 @@ interface SummaryCardProps {
   };
 }
 
-export const SummaryCards = ({ summary }: SummaryCardProps) => {
+export function SummaryCards({ summary }: SummaryCardProps) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-2 gap-4 mb-6">
       <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
@@ -33,4 +33,4 @@ export const SummaryCards = ({ summary }: SummaryCardProps) => {
       </div>
     </div>
   );
-};
+}

@@ -1,18 +1,19 @@
-"use client";
-import { Label } from "@/components/ui/label";
-import type React from "react";
+'use client';
 
-import { Input } from "@/components/ui/input";
+import { Label } from '@/components/ui/label';
+import type React from 'react';
+
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { ChipInput } from "@/components/ui/chip-input";
-import { Card, CardContent } from "@/components/ui/card";
-import type { SearchFilter } from "../candidate-search";
+} from '@/components/ui/select';
+import { ChipInput } from '@/components/ui/chip-input';
+import { Card, CardContent } from '@/components/ui/card';
+import type { SearchFilter } from '../candidate-search';
 
 interface BasicSearchSectionProps {
   values: SearchFilter;
@@ -52,14 +53,14 @@ export function BasicSearchSection({
               id="name"
               name="name"
               placeholder="Search by name"
-              value={values.name || ""}
+              value={values.name || ''}
               onChange={handleChange}
               onBlur={handleBlur}
-              className={hasError("name") ? "border-destructive" : ""}
+              className={hasError('name') ? 'border-destructive' : ''}
             />
-            {hasError("name") && (
+            {hasError('name') && (
               <p className="text-xs text-destructive">
-                {getErrorMessage("name")}
+                {getErrorMessage('name')}
               </p>
             )}
           </div>
@@ -73,14 +74,14 @@ export function BasicSearchSection({
               id="location"
               name="location"
               placeholder="City, State"
-              value={values.location || ""}
+              value={values.location || ''}
               onChange={handleChange}
               onBlur={handleBlur}
-              className={hasError("location") ? "border-destructive" : ""}
+              className={hasError('location') ? 'border-destructive' : ''}
             />
-            {hasError("location") && (
+            {hasError('location') && (
               <p className="text-xs text-destructive">
-                {getErrorMessage("location")}
+                {getErrorMessage('location')}
               </p>
             )}
           </div>
@@ -90,11 +91,11 @@ export function BasicSearchSection({
             <Label className="text-sm font-medium">Skills</Label>
             <ChipInput
               placeholder="Type and press Enter to add skills"
-              fullWidth={true}
+              fullWidth
               value={values.skills}
-              onChange={(skills: any) => setFieldValue("skills", skills)}
+              onChange={(skills: any) => setFieldValue('skills', skills)}
               onSuggestionClick={(suggestion: any) => {
-                setFieldValue("skills", [...(values.skills || []), suggestion]);
+                setFieldValue('skills', [...(values.skills || []), suggestion]);
               }}
             />
           </div>
@@ -106,12 +107,12 @@ export function BasicSearchSection({
             </Label>
             <Select
               name="logicOperator"
-              value={values.logicOperator || "$and"}
-              onValueChange={(value) => setFieldValue("logicOperator", value)}
+              value={values.logicOperator || '$and'}
+              onValueChange={(value) => setFieldValue('logicOperator', value)}
             >
               <SelectTrigger
                 className={
-                  hasError("logicOperator") ? "border-destructive" : ""
+                  hasError('logicOperator') ? 'border-destructive' : ''
                 }
               >
                 <SelectValue placeholder="Select logic operator" />
@@ -121,9 +122,9 @@ export function BasicSearchSection({
                 <SelectItem value="$or">OR (Match any filter)</SelectItem>
               </SelectContent>
             </Select>
-            {hasError("logicOperator") && (
+            {hasError('logicOperator') && (
               <p className="text-xs text-destructive">
-                {getErrorMessage("logicOperator")}
+                {getErrorMessage('logicOperator')}
               </p>
             )}
           </div>

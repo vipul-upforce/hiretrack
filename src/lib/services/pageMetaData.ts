@@ -1,17 +1,17 @@
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 // This function is used by Next.js for initial server-side metadata generation
 // Client-side updates are handled in client-layout.tsx
 export const pageMetaData = async () => {
   try {
-    const url = process.env.BASE_URL || "http://localhost:3000";
+    const url = process.env.BASE_URL || 'http://localhost:3000';
     const res = await fetch(`${url}/api/organization`, {
-      cache: "no-store", // disable fetch caching
+      cache: 'no-store', // disable fetch caching
       next: { revalidate: 0 },
     });
 
-    if (!res.ok) throw new Error("Failed to fetch organization data");
+    if (!res.ok) throw new Error('Failed to fetch organization data');
 
     const data = await res.json();
     // data.data.forEach((org: any) => {
@@ -21,11 +21,11 @@ export const pageMetaData = async () => {
     // We'll use client-side updates to ensure metadata is fresh when switching orgs
     const org = Array.isArray(data) ? data[0] : data?.data?.[0];
 
-    const title = org?.portalConfigs?.portalName || "HireTrack";
+    const title = org?.portalConfigs?.portalName || 'HireTrack';
 
-    const faviconUrl = org?.portalConfigs?.portalFavicon?.url || "/favicon.png";
-    console.log("$$$$###title>>>>>>>>>>>> ", title);
-    console.log("$$$$$$#faviconUrl>>>>>>>>>>>> ", faviconUrl);
+    const faviconUrl = org?.portalConfigs?.portalFavicon?.url || '/favicon.png';
+    console.log('$$$$###title>>>>>>>>>>>> ', title);
+    console.log('$$$$$$#faviconUrl>>>>>>>>>>>> ', faviconUrl);
     return {
       title,
       icons: {
@@ -36,9 +36,9 @@ export const pageMetaData = async () => {
     // console.log("Error fetching metadata:", error);
 
     return {
-      title: "HireTrack",
+      title: 'HireTrack',
       icons: {
-        icon: "/favicon.png",
+        icon: '/favicon.png',
       },
     };
   }

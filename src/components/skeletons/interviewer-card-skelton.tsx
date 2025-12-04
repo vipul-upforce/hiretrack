@@ -1,6 +1,6 @@
-import { Skeleton } from "../ui/skeleton";
+import { Skeleton } from '../ui/skeleton';
 
-export const InterviewerCardSkeleton = () => {
+export function InterviewerCardSkeleton() {
   return (
     <div className="w-[430px] h-auto border rounded-xl p-2 animate-pulse">
       <div className="space-y-7 p-2">
@@ -48,4 +48,4 @@ export const InterviewerCardSkeleton = () => {
       </div>
     </div>
   );
-};
+}

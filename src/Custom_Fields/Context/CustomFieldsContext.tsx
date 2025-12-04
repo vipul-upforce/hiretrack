@@ -4,43 +4,42 @@ import React, {
   memo,
   useEffect,
   useCallback,
-} from "react";
-import {
-  CustomField,
-  CustomFields,
-  SelectedFormObject,
-} from "../Types/CustomField";
-import { CustomFieldsContext } from ".";
+} from 'react';
 import {
   useLazyGetCustomFieldsQuery,
   useUpdateCustomFieldsMutation,
   useLazyGetCustomFieldsByOrgNameQuery,
   User,
-} from "@/lib/features/org/orgApi";
-import { usePathname } from "next/navigation";
-import { useSelector } from "react-redux";
+} from '@/lib/features/org/orgApi';
+import { usePathname } from 'next/navigation';
+import { useSelector } from 'react-redux';
+import { CustomFieldsContext } from '.';
+import {
+  CustomField,
+  CustomFields,
+  SelectedFormObject,
+} from '../Types/CustomField';
 
 const getOrgParamFromUrl = (): string | null => {
-  if (typeof window === "undefined") return null;
+  if (typeof window === 'undefined') return null;
   const queryString = window.location.search;
   const urlParams = new URLSearchParams(queryString);
-  return urlParams.get("o");
+  return urlParams.get('o');
 };
 
 // Create a provider component
 export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
   ({ children }) => {
     const [customFields, setCustomFields] = useState<CustomFields>({});
-    const [stepName, setStepName] = useState<string>("FormList");
-    const [selectedFormId, setSelectedFormId] =
-      useState<SelectedFormObject | null>(null);
+    const [stepName, setStepName] = useState<string>('FormList');
+    const [selectedFormId, setSelectedFormId] = useState<SelectedFormObject | null>(null);
     const [updateCustomFields] = useUpdateCustomFieldsMutation();
     const [getCustomField] = useLazyGetCustomFieldsQuery();
     const [getCustomFieldsByOrgName] = useLazyGetCustomFieldsByOrgNameQuery();
     const [userLoggedIn, setUserLoggedIn] = useState<boolean>(false);
     const pathname = usePathname();
     const { user }: { user: User } = useSelector(
-      (state: any) => state.auth || {}
+      (state: any) => state.auth || {},
     );
     // const searchParams = useSearchParams();
 
@@ -48,28 +47,28 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
       // debugger;
       // const token = Cookies.get("token");
       if (
-        (user && user.id && pathname?.includes("jobs-board")) ||
-        pathname?.includes("jobs") ||
-        pathname?.includes("settings") ||
-        pathname?.endsWith("dashboard")
+        (user && user.id && pathname?.includes('jobs-board'))
+        || pathname?.includes('jobs')
+        || pathname?.includes('settings')
+        || pathname?.endsWith('dashboard')
       ) {
         const orgId = user?.organizationId;
         updateCustomFields({
-          orgId: orgId,
-          customFields: customFields,
+          orgId,
+          customFields,
         });
       }
     }, [customFields, updateCustomFields, pathname]);
 
     const getCustomFields = useCallback(async () => {
       // const token = Cookies.get("token");
-      if (user && user.role !== "" && user.role !== "candidate") {
+      if (user && user.role !== '' && user.role !== 'candidate') {
         const userObject = user;
         const orgId = userObject.organizationId;
         const data = await getCustomField(orgId);
         if (data.data) setCustomFields(data.data);
         // }
-      } else if (pathname?.includes("/apply-jobs")) {
+      } else if (pathname?.includes('/apply-jobs')) {
         // debugger;
         const orgParam = getOrgParamFromUrl();
         // if (orgParam) {
@@ -77,7 +76,7 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
           const data = await getCustomFieldsByOrgName(orgParam);
           if (data.data) setCustomFields(data.data);
         } catch (error) {
-          console.error("Error fetching custom fields by org name:", error);
+          console.error('Error fetching custom fields by org name:', error);
         }
         // }
       }
@@ -93,15 +92,15 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
 
     useEffect(() => {
       // debugger;
-      const isApplyJobsPage = pathname?.includes("/apply-jobs");
+      const isApplyJobsPage = pathname?.includes('/apply-jobs');
       // const isJobsPage = pathname?.includes("/dashboard/jobs-board");
 
       if (userLoggedIn || isApplyJobsPage) {
         getAndSetCustomFields();
       } else if (
-        !userLoggedIn &&
-        !isApplyJobsPage &&
-        Object.keys(customFields).length > 0
+        !userLoggedIn
+        && !isApplyJobsPage
+        && Object.keys(customFields).length > 0
       ) {
         setCustomFields({});
       }
@@ -125,7 +124,7 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
           return newFields;
         });
       },
-      []
+      [],
     );
 
     const handleDeleteFormId = useCallback((formId: string) => {
@@ -142,12 +141,12 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
         if (formIdObject) {
           const form = {
             ...formIdObject,
-            formId: formId,
+            formId,
           };
           setSelectedFormId(form);
         }
       },
-      [customFields]
+      [customFields],
     );
 
     const handleAddCustomField = useCallback(
@@ -165,12 +164,12 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
           setSelectedFormId((prev) => ({
             ...prev,
             fields: [...(prev?.fields || []), customField],
-            formId: formId,
+            formId,
             formName: formIdObject.formName,
           }));
         }
       },
-      [customFields]
+      [customFields],
     );
 
     const handleEditCustomField = useCallback(
@@ -181,22 +180,18 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
             ...prev,
             [formId]: {
               ...formIdObject,
-              fields: formIdObject.fields.map((field) =>
-                field.id === customField.id ? customField : field
-              ),
+              fields: formIdObject.fields.map((field) => (field.id === customField.id ? customField : field)),
             },
           }));
           setSelectedFormId((prev) => ({
             ...prev,
-            fields: formIdObject.fields.map((field) =>
-              field.id === customField.id ? customField : field
-            ),
-            formId: formId,
+            fields: formIdObject.fields.map((field) => (field.id === customField.id ? customField : field)),
+            formId,
             formName: formIdObject.formName,
           }));
         }
       },
-      [customFields]
+      [customFields],
     );
 
     const handleDeleteCustomField = useCallback(
@@ -205,7 +200,7 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
         const formIdObject = customFields[formId];
         if (formIdObject) {
           const newFields = formIdObject.fields.filter(
-            (field) => field.id !== customFieldID
+            (field) => field.id !== customFieldID,
           );
           setCustomFields((prev) => ({
             ...prev,
@@ -217,12 +212,12 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
           setSelectedFormId((prev) => ({
             ...prev,
             fields: newFields,
-            formId: formId,
+            formId,
             formName: formIdObject.formName,
           }));
         }
       },
-      [customFields]
+      [customFields],
     );
 
     const deleteFormIDAllCustomFields = useCallback(
@@ -230,7 +225,7 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
         const formIdObject = customFields[formId];
         if (formIdObject) {
           const individualCustomFields = formIdObject.fields.filter(
-            (field) => field.candidateId || field.jobId
+            (field) => field.candidateId || field.jobId,
           );
           setCustomFields((prev) => ({
             ...prev,
@@ -243,18 +238,17 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
           // Update selected form ID state if it matches the cleared form
           if (selectedFormId?.formId === formId) {
             setSelectedFormId(
-              (prev) =>
-                prev && {
-                  ...prev,
-                  fields: [],
-                  formId: prev.formId,
-                  formName: prev.formName,
-                }
+              (prev) => prev && {
+                ...prev,
+                fields: [],
+                formId: prev.formId,
+                formName: prev.formName,
+              },
             );
           }
         }
       },
-      [customFields, selectedFormId]
+      [customFields, selectedFormId],
     );
 
     const deleteFormIDAllIndCustomFields = useCallback(
@@ -262,7 +256,7 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
         const formIdObject = customFields[formId];
         if (formIdObject) {
           const globalCustomFields = formIdObject.fields.filter(
-            (field) => !field.candidateId && !field.jobId
+            (field) => !field.candidateId && !field.jobId,
           );
           setCustomFields((prev) => ({
             ...prev,
@@ -275,18 +269,17 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
           // Update selected form ID state if it matches the cleared form
           if (selectedFormId?.formId === formId) {
             setSelectedFormId(
-              (prev) =>
-                prev && {
-                  ...prev,
-                  fields: [],
-                  formId: prev.formId,
-                  formName: prev.formName,
-                }
+              (prev) => prev && {
+                ...prev,
+                fields: [],
+                formId: prev.formId,
+                formName: prev.formName,
+              },
             );
           }
         }
       },
-      [customFields, selectedFormId]
+      [customFields, selectedFormId],
     );
 
     return (
@@ -315,7 +308,7 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
         {children}
       </CustomFieldsContext.Provider>
     );
-  }
+  },
 );
 
-CustomFieldsProvider.displayName = "CustomFieldsProvider";
+CustomFieldsProvider.displayName = 'CustomFieldsProvider';

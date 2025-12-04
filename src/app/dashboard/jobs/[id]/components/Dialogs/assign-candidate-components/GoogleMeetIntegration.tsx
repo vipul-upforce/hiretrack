@@ -1,17 +1,19 @@
-import { Field, FieldProps, useFormikContext, FormikProps } from "formik";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import {
+  Field, FieldProps, useFormikContext, FormikProps,
+} from 'formik';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { MentionTextarea } from "@/components/ui/mention-textarea";
+} from '@/components/ui/select';
+import { MentionTextarea } from '@/components/ui/mention-textarea';
 import {
   Video,
   Edit,
@@ -25,14 +27,13 @@ import {
   Paperclip,
   FileIcon,
   PenOffIcon,
-} from "lucide-react";
-import { toast } from "@/hooks/use-toast";
-import { Candidate } from "@/types/candidate";
-import { User } from "../../../schemas/AssignCandidateSchema";
-import { Interviewer } from "@/lib/features/user/userApi";
-import { FormValues } from "../../../schemas/AssignCandidateSchema";
-import { useState } from "react";
-import { useSanitizeFiles } from "@/hooks/useSanitizeFiles";
+} from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+import { Candidate } from '@/types/candidate';
+import { Interviewer } from '@/lib/features/user/userApi';
+import { useState } from 'react';
+import { useSanitizeFiles } from '@/hooks/useSanitizeFiles';
+import { FormValues, User } from '../../../schemas/AssignCandidateSchema';
 
 interface GoogleMeetIntegrationProps {
   candidate: Candidate;
@@ -60,8 +61,8 @@ export function GoogleMeetIntegration({
   const formikContext = useFormikContext<FormValues>();
   const { values, setFieldValue, isSubmitting } = formikContext;
   const [isEditMode, setIsEditMode] = useState(false);
-  const [newGuest, setNewGuest] = useState("");
-  const [emailError, setEmailError] = useState("");
+  const [newGuest, setNewGuest] = useState('');
+  const [emailError, setEmailError] = useState('');
   const { sanitizeFiles: contextSanitizeFiles } = useSanitizeFiles();
   // Prioritize sanitizeFiles from context, fallback to hook.
   const { sanitizeFiles: localSanitizeFiles } = useSanitizeFiles();
@@ -74,35 +75,34 @@ export function GoogleMeetIntegration({
 
   const handleAddGuest = () => {
     if (!newGuest) {
-      setEmailError("Please enter an email address");
+      setEmailError('Please enter an email address');
       return;
     }
     if (!validateEmail(newGuest)) {
-      setEmailError("Please enter a valid email address");
+      setEmailError('Please enter a valid email address');
       return;
     }
     const currentGuests = values.additionalGuests || [];
     if (currentGuests.includes(newGuest)) {
-      setEmailError("This email is already in the guest list");
+      setEmailError('This email is already in the guest list');
       return;
     }
-    setFieldValue("additionalGuests", [...currentGuests, newGuest]);
-    setNewGuest("");
-    setEmailError("");
+    setFieldValue('additionalGuests', [...currentGuests, newGuest]);
+    setNewGuest('');
+    setEmailError('');
   };
 
   const handleRemoveGuest = (email: string) => {
     const currentGuests = values.additionalGuests || [];
     setFieldValue(
-      "additionalGuests",
-      currentGuests.filter((g) => g !== email)
+      'additionalGuests',
+      currentGuests.filter((g) => g !== email),
     );
   };
 
   const getDefaultGuests = (selectedInterviewer: Interviewer) => {
     const defaultGuests = [];
-    if (selectedInterviewer?.email)
-      defaultGuests.push(selectedInterviewer.email);
+    if (selectedInterviewer?.email) defaultGuests.push(selectedInterviewer.email);
     if (candidate.email) defaultGuests.push(candidate.email);
     if (user?.email && user.email !== selectedInterviewer?.email) {
       defaultGuests.push(user.email);
@@ -133,7 +133,7 @@ export function GoogleMeetIntegration({
                 size="sm"
                 onClick={() => {
                   setIsEditMode(true);
-                  setFieldValue("scheduleGoogleMeet", true);
+                  setFieldValue('scheduleGoogleMeet', true);
                 }}
                 className="h-7 text-xs"
               >
@@ -160,7 +160,7 @@ export function GoogleMeetIntegration({
                 {candidate.assignment?.googleMeet.summary}
               </p>
               <p className="text-xs text-blue-700 dark:text-blue-600 mt-1">
-                {candidate.assignment?.googleMeet.description?.split("\n")[0]}
+                {candidate.assignment?.googleMeet.description?.split('\n')[0]}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -179,11 +179,11 @@ export function GoogleMeetIntegration({
                 size="sm"
                 onClick={() => {
                   navigator.clipboard.writeText(
-                    candidate.assignment?.googleMeet?.meetingLink || ""
+                    candidate.assignment?.googleMeet?.meetingLink || '',
                   );
                   toast({
-                    title: "Copied!",
-                    description: "Meeting link copied to clipboard",
+                    title: 'Copied!',
+                    description: 'Meeting link copied to clipboard',
                     duration: 2000,
                   });
                 }}
@@ -207,9 +207,7 @@ export function GoogleMeetIntegration({
                   <Checkbox
                     id="scheduleGoogleMeet"
                     checked={field.value}
-                    onCheckedChange={(checked) =>
-                      setFieldValue("scheduleGoogleMeet", checked)
-                    }
+                    onCheckedChange={(checked) => setFieldValue('scheduleGoogleMeet', checked)}
                   />
                 )}
               </Field>
@@ -229,38 +227,38 @@ export function GoogleMeetIntegration({
               {/* Add ability to leave editing mode */}
               {isEditMode && hasExistingMeet && (
                 <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Video className="h-4 w-4 text-blue-500" />
-                  <span className="font-medium text-sm">Google Meet Scheduled</span>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setIsEditMode(false);
+                  <div className="flex items-center gap-2">
+                    <Video className="h-4 w-4 text-blue-500" />
+                    <span className="font-medium text-sm">Google Meet Scheduled</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setIsEditMode(false);
                       // setFieldValue("scheduleGoogleMeet", true);
-                    }}
-                    className="h-7 text-xs"
-                  >
-                    <PenOffIcon className="h-3 w-3 mr-1" />
-                    Cancel Edit
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setShowCancelMeetDialog(true);
-                    }}
-                    className="h-7 text-xs text-red-600 hover:text-red-700"
-                  >
-                    <Trash2 className="h-3 w-3 mr-1" />
-                    Cancel Meet
-                  </Button>
+                      }}
+                      className="h-7 text-xs"
+                    >
+                      <PenOffIcon className="h-3 w-3 mr-1" />
+                      Cancel Edit
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setShowCancelMeetDialog(true);
+                      }}
+                      className="h-7 text-xs text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      Cancel Meet
+                    </Button>
+                  </div>
                 </div>
-              </div>
               )}
 
               {/* Meeting Date/Time Display */}
@@ -269,8 +267,11 @@ export function GoogleMeetIntegration({
                   <div className="flex items-center gap-2 text-blue-800 dark:text-blue-300 text-sm">
                     <Calendar className="h-3 w-3" />
                     <span className="font-medium">
-                      {values.time.format("dddd, MMMM D, YYYY")} at{" "}
-                      {values.time.format("h:mm A")}
+                      {values.time.format('dddd, MMMM D, YYYY')}
+                      {' '}
+                      at
+                      {' '}
+                      {values.time.format('h:mm A')}
                     </span>
                   </div>
                 </div>
@@ -285,9 +286,7 @@ export function GoogleMeetIntegration({
                   {({ field }: FieldProps) => (
                     <Select
                       value={String(field.value)}
-                      onValueChange={(value) =>
-                        setFieldValue("meetDuration", Number(value))
-                      }
+                      onValueChange={(value) => setFieldValue('meetDuration', Number(value))}
                     >
                       <SelectTrigger className="w-24 h-8">
                         <SelectValue />
@@ -311,23 +310,21 @@ export function GoogleMeetIntegration({
                 <Field name="meetingNotes">
                   {({ field }: FieldProps) => (
                     <MentionTextarea
-                      value={field.value || ""}
-                      onChange={(value: string) =>
-                        setFieldValue("meetingNotes", value)
-                      }
+                      value={field.value || ''}
+                      onChange={(value: string) => setFieldValue('meetingNotes', value)}
                       placeholder="Add notes to include in the meeting description... (Alt+Enter to submit)"
                       rows={2}
                       className="text-sm"
                       onKeyDown={getOnAltEnterSubmit(
                         values,
                         formikContext,
-                        isSubmitting
+                        isSubmitting,
                       )(field.value)}
                       organizationId={
-                        user?.organizationInfo?._id ||
-                        ""
+                        user?.organizationInfo?._id
+                        || ''
                       }
-                      currentUserRole={user?.role || ""}
+                      currentUserRole={user?.role || ''}
                     />
                   )}
                 </Field>
@@ -339,26 +336,22 @@ export function GoogleMeetIntegration({
                 <div className="space-y-1">
                   {(() => {
                     const selectedInterviewer = interviewers?.find(
-                      (i) => i._id === values.interviewerId
+                      (i) => i._id === values.interviewerId,
                     );
                     const defaultGuests = getDefaultGuests(selectedInterviewer);
 
                     return defaultGuests.map((email) => {
-                      let role = "";
-                      let roleColor =
-                        "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
+                      let role = '';
+                      let roleColor = 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
                       if (email === candidate.email) {
-                        role = "Candidate";
-                        roleColor =
-                          "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400";
+                        role = 'Candidate';
+                        roleColor = 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400';
                       } else if (email === selectedInterviewer?.email) {
-                        role = "Interviewer";
-                        roleColor =
-                          "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400";
+                        role = 'Interviewer';
+                        roleColor = 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400';
                       } else if (email === user?.email) {
-                        role = user?.role === "hr" ? "HR" : "Admin";
-                        roleColor =
-                          "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-400";
+                        role = user?.role === 'hr' ? 'HR' : 'Admin';
+                        roleColor = 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-400';
                       }
 
                       return (
@@ -423,16 +416,16 @@ export function GoogleMeetIntegration({
                       value={newGuest}
                       onChange={(e) => {
                         setNewGuest(e.target.value);
-                        setEmailError("");
+                        setEmailError('');
                       }}
                       onKeyPress={(e) => {
-                        if (e.key === "Enter") {
+                        if (e.key === 'Enter') {
                           e.preventDefault();
                           handleAddGuest();
                         }
                       }}
                       className={`flex-1 text-sm h-8 ${
-                        emailError ? "border-red-500" : "border-gray-300"
+                        emailError ? 'border-red-500' : 'border-gray-300'
                       }`}
                     />
                     <Button
@@ -461,14 +454,14 @@ export function GoogleMeetIntegration({
                     size="sm"
                     className="flex items-center gap-2 h-8"
                     onClick={() => {
-                      const input = document.createElement("input");
-                      input.type = "file";
+                      const input = document.createElement('input');
+                      input.type = 'file';
                       input.multiple = true;
                       input.onchange = (e) => {
-                        const files = (e.target as HTMLInputElement).files;
+                        const { files } = (e.target as HTMLInputElement);
                         if (files && files.length > 0) {
                           const currentFormFiles = Array.isArray(
-                            values.meetingAttachments
+                            values.meetingAttachments,
                           )
                             ? values.meetingAttachments
                             : [];
@@ -479,7 +472,7 @@ export function GoogleMeetIntegration({
                             ...allFiles,
                             ...sanitizedNewFiles.slice(0, availableSlots),
                           ];
-                          setFieldValue("meetingAttachments", updatedFiles);
+                          setFieldValue('meetingAttachments', updatedFiles);
                         }
                       };
                       input.click();
@@ -489,8 +482,8 @@ export function GoogleMeetIntegration({
                     Add Files
                   </Button>
 
-                  {values.meetingAttachments &&
-                    values.meetingAttachments.length > 0 && (
+                  {values.meetingAttachments
+                    && values.meetingAttachments.length > 0 && (
                       <ul className="space-y-2">
                         {values.meetingAttachments.map(
                           (file: any, index: number) => (
@@ -508,7 +501,10 @@ export function GoogleMeetIntegration({
                                 </span>
                                 {file.size && (
                                   <span className="text-xs text-gray-500 dark:text-gray-400">
-                                    ({(file.size / 1024).toFixed(1)} KB)
+                                    (
+                                    {(file.size / 1024).toFixed(1)}
+                                    {' '}
+                                    KB)
                                   </span>
                                 )}
                               </div>
@@ -517,21 +513,20 @@ export function GoogleMeetIntegration({
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => {
-                                  const updatedFiles =
-                                    values.meetingAttachments?.filter(
-                                      (_: any, i: number) => i !== index
-                                    );
-                                  setFieldValue("meetingAttachments", updatedFiles);
+                                  const updatedFiles = values.meetingAttachments?.filter(
+                                    (_: any, i: number) => i !== index,
+                                  );
+                                  setFieldValue('meetingAttachments', updatedFiles);
                                 }}
                                 className="p-1 text-gray-400 hover:text-red-500 focus:ring-2 focus:ring-red-500 focus:outline-none"
                               >
                                 <X className="w-4 h-4" />
                               </Button>
                             </li>
-                          )
+                          ),
                         )}
                       </ul>
-                    )}
+                  )}
                 </div>
               </div>
             </div>

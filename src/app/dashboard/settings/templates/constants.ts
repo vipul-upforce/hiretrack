@@ -1,16 +1,16 @@
-import { EmailTemplate, SampleCustomTemplate } from "./types";
+import { EmailTemplate, SampleCustomTemplate } from './types';
 
 export const templateVariables = [
-  "SenderName",
-  "ReceiverName",
-  "PortalName",
-  "jobTitle",
+  'SenderName',
+  'ReceiverName',
+  'PortalName',
+  'jobTitle',
 ];
 
 export const sampleCustomTemplates: SampleCustomTemplate[] = [
   {
-    name: "Practical Task Assignment",
-    subject: "Practical Task - {{PortalName}} Application Process",
+    name: 'Practical Task Assignment',
+    subject: 'Practical Task - {{PortalName}} Application Process',
     content: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <h2 style="color: #2c3e50; margin-top: 0;">Hello {{ReceiverName}},</h2>
     
@@ -34,8 +34,8 @@ export const sampleCustomTemplates: SampleCustomTemplate[] = [
 </div>`,
   },
   {
-    name: "Interview Availability Check",
-    subject: "Interview Scheduling - {{PortalName}}",
+    name: 'Interview Availability Check',
+    subject: 'Interview Scheduling - {{PortalName}}',
     content: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <h2 style="color: #2c3e50; margin-top: 0;">Hello {{ReceiverName}},</h2>
     
@@ -66,8 +66,8 @@ export const sampleCustomTemplates: SampleCustomTemplate[] = [
 </div>`,
   },
   {
-    name: "Follow-up After Interview",
-    subject: "Thank you for the interview - {{PortalName}}",
+    name: 'Follow-up After Interview',
+    subject: 'Thank you for the interview - {{PortalName}}',
     content: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <h2 style="color: #2c3e50; margin-top: 0;">Hello {{ReceiverName}},</h2>
     
@@ -89,8 +89,8 @@ export const sampleCustomTemplates: SampleCustomTemplate[] = [
 </div>`,
   },
   {
-    name: "Application Status Follow-up",
-    subject: "Application Update - {{PortalName}}",
+    name: 'Application Status Follow-up',
+    subject: 'Application Update - {{PortalName}}',
     content: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <h2 style="color: #2c3e50; margin-top: 0;">Hello {{ReceiverName}},</h2>
     
@@ -112,8 +112,8 @@ export const sampleCustomTemplates: SampleCustomTemplate[] = [
 </div>`,
   },
   {
-    name: "Reference Check Request",
-    subject: "Reference Check - {{PortalName}} Application",
+    name: 'Reference Check Request',
+    subject: 'Reference Check - {{PortalName}} Application',
     content: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <h2 style="color: #2c3e50; margin-top: 0;">Hello {{ReceiverName}},</h2>
     
@@ -145,8 +145,8 @@ export const sampleCustomTemplates: SampleCustomTemplate[] = [
 </div>`,
   },
   {
-    name: "Welcome and Onboarding",
-    subject: "Welcome to {{PortalName}} - Next Steps",
+    name: 'Welcome and Onboarding',
+    subject: 'Welcome to {{PortalName}} - Next Steps',
     content: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <h2 style="color: #28a745; margin-top: 0;">Congratulations {{ReceiverName}}!</h2>
     
@@ -178,9 +178,9 @@ export const sampleCustomTemplates: SampleCustomTemplate[] = [
 
 export const defaultTemplates: EmailTemplate[] = [
   {
-    id: "job-application-hr",
-    name: "Job Application (HR Notification)",
-    subject: "New Job Application - {{jobTitle}}",
+    id: 'job-application-hr',
+    name: 'Job Application (HR Notification)',
+    subject: 'New Job Application - {{jobTitle}}',
     isDefault: true,
     content: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
@@ -200,18 +200,18 @@ export const defaultTemplates: EmailTemplate[] = [
     </div>
 </div>`,
     variables: [
-      "jobTitle",
-      "candidateName",
-      "candidateEmail",
-      "candidatePhone",
-      "applicationDate",
-      "dashboardLink",
+      'jobTitle',
+      'candidateName',
+      'candidateEmail',
+      'candidatePhone',
+      'applicationDate',
+      'dashboardLink',
     ],
   },
   {
-    id: "password-reset",
-    name: "Password Reset Request",
-    subject: "Password Reset Request - {{organizationName}}",
+    id: 'password-reset',
+    name: 'Password Reset Request',
+    subject: 'Password Reset Request - {{organizationName}}',
     isDefault: true,
     content: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
@@ -237,13 +237,13 @@ export const defaultTemplates: EmailTemplate[] = [
         <p style="margin: 15px 0 0 0;">Best regards,<br>{{organizationName}} Team</p>
     </div>
 </div>`,
-    variables: ["userName", "organizationName", "resetLink"],
+    variables: ['userName', 'organizationName', 'resetLink'],
   },
   {
-    id: "interview-assignment",
-    name: "Interview Assignment Event",
+    id: 'interview-assignment',
+    name: 'Interview Assignment Event',
     subject:
-      "Interview Scheduled: {{candidateName}} for the {{jobTitle}} Position — Assigned to {{interviewerName}}",
+      'Interview Scheduled: {{candidateName}} for the {{jobTitle}} Position — Assigned to {{interviewerName}}',
     isDefault: true,
     content: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
@@ -285,24 +285,24 @@ export const defaultTemplates: EmailTemplate[] = [
     </div>
 </div>`,
     variables: [
-      "interviewerName",
-      "candidateName",
-      "jobTitle",
-      "interviewDate",
-      "interviewTime",
-      "duration",
-      "interviewType",
-      "meetingLink",
-      "candidateProfileLink",
-      "dashboardLink",
-      "organizationName",
+      'interviewerName',
+      'candidateName',
+      'jobTitle',
+      'interviewDate',
+      'interviewTime',
+      'duration',
+      'interviewType',
+      'meetingLink',
+      'candidateProfileLink',
+      'dashboardLink',
+      'organizationName',
     ],
   },
   {
-    id: "status-update",
-    name: "Status Update Notification",
+    id: 'status-update',
+    name: 'Status Update Notification',
     subject:
-      "Application Status Update for {{jobTitle}} position | {{candidateName}}",
+      'Application Status Update for {{jobTitle}} position | {{candidateName}}',
     isDefault: true,
     content: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
@@ -330,19 +330,19 @@ export const defaultTemplates: EmailTemplate[] = [
     </div>
 </div>`,
     variables: [
-      "candidateName",
-      "jobTitle",
-      "organizationName",
-      "newStatus",
-      "statusMessage",
-      "nextSteps",
-      "hrContactInfo",
+      'candidateName',
+      'jobTitle',
+      'organizationName',
+      'newStatus',
+      'statusMessage',
+      'nextSteps',
+      'hrContactInfo',
     ],
   },
   {
-    id: "new-remark",
-    name: "New Remark Added",
-    subject: "New Remark Added for {{candidateName}} by {{reviewerName}} for {{jobTitle}} position",
+    id: 'new-remark',
+    name: 'New Remark Added',
+    subject: 'New Remark Added for {{candidateName}} by {{reviewerName}} for {{jobTitle}} position',
     isDefault: true,
     content: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
@@ -371,22 +371,22 @@ export const defaultTemplates: EmailTemplate[] = [
     </div>
 </div>`,
     variables: [
-      "recipientName",
-      "candidateName",
-      "jobTitle",
-      "reviewerName",
-      "remarkDate",
-      "rating",
-      "remarkText",
-      "candidateProfileLink",
-      "organizationName",
+      'recipientName',
+      'candidateName',
+      'jobTitle',
+      'reviewerName',
+      'remarkDate',
+      'rating',
+      'remarkText',
+      'candidateProfileLink',
+      'organizationName',
     ],
   },
   {
-    id: "step-completed",
-    name: "Step Completed",
+    id: 'step-completed',
+    name: 'Step Completed',
     subject:
-      "Interview Step Completed — {{candidateName}} | Step {{stepName}} completed by {{completedBy}}",
+      'Interview Step Completed — {{candidateName}} | Step {{stepName}} completed by {{completedBy}}',
     isDefault: true,
     content: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
@@ -421,22 +421,22 @@ export const defaultTemplates: EmailTemplate[] = [
     </div>
 </div>`,
     variables: [
-      "recipientName",
-      "candidateName",
-      "jobTitle",
-      "stepName",
-      "completedBy",
-      "completionDate",
-      "feedback",
-      "nextStep",
-      "candidateProfileLink",
-      "organizationName",
+      'recipientName',
+      'candidateName',
+      'jobTitle',
+      'stepName',
+      'completedBy',
+      'completionDate',
+      'feedback',
+      'nextStep',
+      'candidateProfileLink',
+      'organizationName',
     ],
   },
   {
-    id: "send-otp",
-    name: "Send OTP",
-    subject: "Your OTP Code - {{organizationName}}",
+    id: 'send-otp',
+    name: 'Send OTP',
+    subject: 'Your OTP Code - {{organizationName}}',
     isDefault: true,
     content: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
@@ -464,6 +464,6 @@ export const defaultTemplates: EmailTemplate[] = [
         <p style="margin: 15px 0 0 0;">Best regards,<br>{{organizationName}} Security Team</p>
     </div>
 </div>`,
-    variables: ["userName", "organizationName", "otpCode", "expirationTime"],
+    variables: ['userName', 'organizationName', 'otpCode', 'expirationTime'],
   },
 ];

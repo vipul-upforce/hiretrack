@@ -1,12 +1,12 @@
-import { Geist, Geist_Mono } from "next/font/google";
-import type { Metadata } from "next";
-import "./globals.css";
-import { Providers } from "./providers";
-import { ClientLayout } from "./client-layout";
-import AuthInitializer from "@/components/AuthInitializer";
-import { Suspense } from "react";
-import LoadingScreen from "./loading-screen";
-import { getPortalMetadata } from "@/lib/getPortalMetadata";
+import { Geist, Geist_Mono } from 'next/font/google';
+import type { Metadata } from 'next';
+import './globals.css';
+import AuthInitializer from '@/components/AuthInitializer';
+import { Suspense } from 'react';
+import { getPortalMetadata } from '@/lib/getPortalMetadata';
+import { Providers } from './providers';
+import { ClientLayout } from './client-layout';
+import LoadingScreen from './loading-screen';
 
 // Force dynamic to ensure fresh metadata on each page load
 // getPortalMetadata() uses Next.js unstable_cache with revalidate=0 to fetch fresh data
@@ -15,18 +15,18 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+  variable: '--font-geist-sans',
+  subsets: ['latin'],
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
 });
 
 export async function generateMetadata(): Promise<Metadata> {
   const portalData = await getPortalMetadata();
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
   // Construct absolute URLs for images
   const logoUrl = portalData.portalLogo?.url
@@ -49,8 +49,8 @@ export async function generateMetadata(): Promise<Metadata> {
       title,
       description,
       siteName: portalData.portalName,
-      locale: "en_US",
-      type: "website",
+      locale: 'en_US',
+      type: 'website',
       ...(logoUrl && {
         images: [
           {
@@ -63,7 +63,7 @@ export async function generateMetadata(): Promise<Metadata> {
       }),
     },
     twitter: {
-      card: "summary_large_image",
+      card: 'summary_large_image',
       title,
       description,
       ...(logoUrl && {

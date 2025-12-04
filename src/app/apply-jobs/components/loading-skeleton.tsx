@@ -1,4 +1,4 @@
-import { JobCardSkeleton } from "./jobs-card-skeleton";
+import { JobCardSkeleton } from './jobs-card-skeleton';
 
 interface LoadingSkeletonProps {
   count?: number;

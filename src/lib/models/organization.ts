@@ -1,19 +1,20 @@
-import { Schema, Types } from "mongoose";
+import { Schema, Types } from 'mongoose';
+
 const DEFAULT_LANES = [
-  "applied",
-  "screening",
-  "shortlisted",
-  "processing",
-  "accepted",
-  "rejected",
+  'applied',
+  'screening',
+  'shortlisted',
+  'processing',
+  'accepted',
+  'rejected',
 ];
 const DEFAULT_TAGS = [
-  { title: "Accepted Another Offer", color: "#FF4D4F" },
-  { title: "Insufficient Experience", color: "#FA8C16" },
-  { title: "Skills Mismatch", color: "#F5222D" },
-  { title: "Location Incompatibility", color: "#FAAD14" },
-  { title: "Salary Expectations", color: "#EB2F96" },
-  { title: "Cultural Fit", color: "#722ED1" },
+  { title: 'Accepted Another Offer', color: '#FF4D4F' },
+  { title: 'Insufficient Experience', color: '#FA8C16' },
+  { title: 'Skills Mismatch', color: '#F5222D' },
+  { title: 'Location Incompatibility', color: '#FAAD14' },
+  { title: 'Salary Expectations', color: '#EB2F96' },
+  { title: 'Cultural Fit', color: '#722ED1' },
 ];
 const organizationSchema = new Schema({
   name: {
@@ -22,7 +23,7 @@ const organizationSchema = new Schema({
   },
   adminId: {
     type: Types.ObjectId,
-    ref: "User",
+    ref: 'User',
     required: true,
   },
   defaultLanes: {
@@ -35,8 +36,8 @@ const organizationSchema = new Schema({
       nonDeletable: [String],
     },
     default: {
-      nonEditable: ["applied", "accepted", "rejected"],
-      nonDeletable: ["applied", "accepted", "rejected"],
+      nonEditable: ['applied', 'accepted', 'rejected'],
+      nonDeletable: ['applied', 'accepted', 'rejected'],
     },
   },
   openJobCards: {

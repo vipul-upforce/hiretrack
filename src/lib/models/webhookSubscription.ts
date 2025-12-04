@@ -1,4 +1,4 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema } from 'mongoose';
 
 export interface IWebhookSubscription {
   organizationId: string;
@@ -59,7 +59,7 @@ export const webhookSubscriptionSchema = new Schema<IWebhookSubscription>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Compound indexes for efficient queries

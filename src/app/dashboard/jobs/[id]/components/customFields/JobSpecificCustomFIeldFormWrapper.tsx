@@ -1,6 +1,6 @@
-import CustomFieldForm from "@/Custom_Fields/Components/Form/CustomFieldForm";
-import { CustomFieldsContext } from "@/Custom_Fields/Context";
-import { useContext, useMemo, useState } from "react";
+import CustomFieldForm from '@/Custom_Fields/Components/Form/CustomFieldForm';
+import { CustomFieldsContext } from '@/Custom_Fields/Context';
+import { useContext, useMemo, useState } from 'react';
 
 export default function JobSpecificCustomFieldFormWrapper({
   isOpen,
@@ -28,19 +28,19 @@ export default function JobSpecificCustomFieldFormWrapper({
       handleAddCustomField: (field: any, selectedFormId: string | null) => {
         const jobSpecificField = {
           ...field,
-          jobId: jobId,
+          jobId,
         };
         handleAddCustomField(jobSpecificField, selectedFormId);
       },
       handleEditCustomField: (field: any, selectedFormId: string | null) => {
         const jobSpecificField = {
           ...field,
-          jobId: jobId,
+          jobId,
         };
         handleEditCustomField(jobSpecificField, selectedFormId);
       },
     }),
-    [context, handleAddCustomField, handleEditCustomField, jobId]
+    [context, handleAddCustomField, handleEditCustomField, jobId],
   );
 
   return (

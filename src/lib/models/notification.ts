@@ -1,30 +1,30 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema } from 'mongoose';
 
 export enum NotificationType {
   // Admin/HR notifications
-  NEW_APPLICATIONS = "newApplications",
-  INTERVIEW_ASSIGNMENTS = "interviewAssignments",
-  STATUS_UPDATES = "statusUpdates",
-  NEW_REMARKS = "newRemarks",
-  STEP_COMPLETED = "stepCompleted",
-  MENTIONS = "mentions",
-  CANDIDATE_DETAILS_UPDATED = "detailsUpdated",
-  MEETING_SCHEDULED = "meetingScheduled",
-  MEETING_UPDATED = "meetingUpdated",
-  MEETING_CANCELLED = "meetingCancelled",
-  MEETING_INVITE_ACCEPTED = "meetingInviteAccepted",
-  MEETING_INVITE_DECLINED = "meetingInviteDeclined",
-  MEETING_INVITE_TENTATIVE = "meetingInviteTentative",
-  FOLLOWUP_ADDED = "followupAdded",
-  FOLLOWUP_UPDATED = "followupUpdated",
-  FOLLOWUP_REMOVED = "followupRemoved",
-  CHECKLIST_COMPLETED = "checklistCompleted",
-  JOB_CREATED = "jobCreated",
-  JOB_UPDATED = "jobUpdated",
-  USER_ADDED = "userAdded",
-  BULK_IMPORT_COMPLETED = "bulkImportCompleted",
-  CANDIDATE_REJECTED = "candidateRejected",
-  INTERVIEW_COMPLETED = "interviewCompleted",
+  NEW_APPLICATIONS = 'newApplications',
+  INTERVIEW_ASSIGNMENTS = 'interviewAssignments',
+  STATUS_UPDATES = 'statusUpdates',
+  NEW_REMARKS = 'newRemarks',
+  STEP_COMPLETED = 'stepCompleted',
+  MENTIONS = 'mentions',
+  CANDIDATE_DETAILS_UPDATED = 'detailsUpdated',
+  MEETING_SCHEDULED = 'meetingScheduled',
+  MEETING_UPDATED = 'meetingUpdated',
+  MEETING_CANCELLED = 'meetingCancelled',
+  MEETING_INVITE_ACCEPTED = 'meetingInviteAccepted',
+  MEETING_INVITE_DECLINED = 'meetingInviteDeclined',
+  MEETING_INVITE_TENTATIVE = 'meetingInviteTentative',
+  FOLLOWUP_ADDED = 'followupAdded',
+  FOLLOWUP_UPDATED = 'followupUpdated',
+  FOLLOWUP_REMOVED = 'followupRemoved',
+  CHECKLIST_COMPLETED = 'checklistCompleted',
+  JOB_CREATED = 'jobCreated',
+  JOB_UPDATED = 'jobUpdated',
+  USER_ADDED = 'userAdded',
+  BULK_IMPORT_COMPLETED = 'bulkImportCompleted',
+  CANDIDATE_REJECTED = 'candidateRejected',
+  INTERVIEW_COMPLETED = 'interviewCompleted',
 
   // System notifications
   // DEADLINE_REMINDER = 'deadline_reminder',
@@ -35,14 +35,14 @@ export enum NotificationType {
 }
 
 export type RelatedEntityType =
-  | "candidate"
-  | "job"
-  | "user"
-  | "meeting"
-  | "followup"
-  | "checklist"
-  | "system"
-  | "cvBatch";
+  | 'candidate'
+  | 'job'
+  | 'user'
+  | 'meeting'
+  | 'followup'
+  | 'checklist'
+  | 'system'
+  | 'cvBatch';
 
 export interface INotification {
   _id: string;
@@ -52,7 +52,7 @@ export interface INotification {
   title: string; // Display title
   message: string; // Description text
   isRead: boolean;
-  priority: "high" | "medium" | "low";
+  priority: 'high' | 'medium' | 'low';
 
   // Related entity information
   relatedEntity: RelatedEntityType;
@@ -120,21 +120,21 @@ export const notificationSchema = new Schema<INotification>(
     },
     priority: {
       type: String,
-      enum: ["high", "medium", "low"],
-      default: "medium",
+      enum: ['high', 'medium', 'low'],
+      default: 'medium',
       index: true,
     },
     relatedEntity: {
       type: String,
       enum: [
-        "candidate",
-        "job",
-        "user",
-        "meeting",
-        "followup",
-        "checklist",
-        "system",
-        "cvBatch",
+        'candidate',
+        'job',
+        'user',
+        'meeting',
+        'followup',
+        'checklist',
+        'system',
+        'cvBatch',
       ],
       required: true,
       index: true,
@@ -164,7 +164,7 @@ export const notificationSchema = new Schema<INotification>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // TTL index for deleting notifications docs after 30 days
@@ -176,12 +176,12 @@ notificationSchema.index({ organizationId: 1, recipientId: 1, isRead: 1 }); // U
 notificationSchema.index({ organizationId: 1, relatedEntity: 1, relatedId: 1 }); // Related entity queries
 // 5. Notifications - Organization + Recipient + Read status
 notificationSchema.index(
-  { 
-    organizationId: 1, 
-    recipientId: 1, 
-    isRead: 1, 
-    createdAt: -1 
+  {
+    organizationId: 1,
+    recipientId: 1,
+    isRead: 1,
+    createdAt: -1,
   },
-  { name: "idx_notification_org_recipient_read", background: true }
+  { name: 'idx_notification_org_recipient_read', background: true },
 );
 export default notificationSchema;

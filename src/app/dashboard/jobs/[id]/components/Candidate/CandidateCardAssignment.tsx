@@ -3,23 +3,23 @@
  * Displays interview assignment details with Google Meet integration
  */
 
-import { Badge } from "@/components/ui/badge";
+import { Badge } from '@/components/ui/badge';
 import {
   CalendarClockIcon,
   Video,
   RefreshCw,
   MessageCircle,
-} from "lucide-react";
+} from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Candidate } from "@/types/candidate";
-import { formatDate, formatTime } from "../../hooks/dateTimeFormatting";
-import { cn } from "@/lib/utils";
-import { getInterviewerName } from "../../utils/candidateAccessors";
+} from '@/components/ui/tooltip';
+import { Candidate } from '@/types/candidate';
+import { cn } from '@/lib/utils';
+import { formatDate, formatTime } from '../../hooks/dateTimeFormatting';
+import { getInterviewerName } from '../../utils/candidateAccessors';
 
 interface CandidateCardAssignmentProps {
   candidate: Candidate;
@@ -39,24 +39,24 @@ export function CandidateCardAssignment({
   const interviewerName = getInterviewerName(candidate);
 
   if (
-    !candidate.assignment ||
-    !candidate.assignment.interviewerId ||
-    typeof candidate.assignment.interviewerId !== "object" ||
-    !candidate.assignment.interviewerId._id ||
-    !interviewerName
+    !candidate.assignment
+    || !candidate.assignment.interviewerId
+    || typeof candidate.assignment.interviewerId !== 'object'
+    || !candidate.assignment.interviewerId._id
+    || !interviewerName
   ) {
     return null;
   }
 
-  const googleMeet = candidate.assignment.googleMeet;
+  const { googleMeet } = candidate.assignment;
   const hasGoogleMeet = googleMeet?.eventId;
   const attendeeResponses = googleMeet?.attendeeResponses || [];
 
   const hasDeclined = attendeeResponses.some(
-    (a) => a.responseStatus === "declined"
+    (a) => a.responseStatus === 'declined',
   );
   const allAccepted = attendeeResponses.every(
-    (a) => a.responseStatus === "accepted"
+    (a) => a.responseStatus === 'accepted',
   );
 
   return (
@@ -71,7 +71,9 @@ export function CandidateCardAssignment({
             className="text-gray-400 dark:text-gray-500 flex-shrink-0"
           />
           <span className="text-xs text-gray-600 dark:text-gray-400 truncate">
-            Assigned to <span className="font-semibold">{interviewerName}</span>
+            Assigned to
+            {' '}
+            <span className="font-semibold">{interviewerName}</span>
             {hasGoogleMeet && (
               <Badge
                 variant="default"
@@ -88,20 +90,20 @@ export function CandidateCardAssignment({
                 <TooltipTrigger asChild>
                   <div
                     className={cn(
-                      "w-6 h-6 rounded-full flex items-center justify-center cursor-pointer transition-colors flex-shrink-0 relative",
+                      'w-6 h-6 rounded-full flex items-center justify-center cursor-pointer transition-colors flex-shrink-0 relative',
                       hasDeclined
-                        ? "bg-red-500 hover:bg-red-600"
+                        ? 'bg-red-500 hover:bg-red-600'
                         : allAccepted
-                          ? "bg-green-500 hover:bg-green-600"
-                          : "bg-blue-500 hover:bg-blue-600"
+                          ? 'bg-green-500 hover:bg-green-600'
+                          : 'bg-blue-500 hover:bg-blue-600',
                     )}
                     onClick={(e) => {
                       e.stopPropagation();
                       const meetingInfo = `Meeting: ${googleMeet.summary}
 Description: ${googleMeet.description}
-Time: ${candidate.assignment?.time ? `${formatDate(candidate.assignment.time)} at ${formatTime(candidate.assignment.time)}` : "Not set"}
+Time: ${candidate.assignment?.time ? `${formatDate(candidate.assignment.time)} at ${formatTime(candidate.assignment.time)}` : 'Not set'}
 Google Meet Link: ${googleMeet.meetingLink}`;
-                      onCopy(meetingInfo, "Meeting information");
+                      onCopy(meetingInfo, 'Meeting information');
                     }}
                   >
                     <Video size={12} className="text-white" />
@@ -116,7 +118,7 @@ Google Meet Link: ${googleMeet.meetingLink}`;
                       {googleMeet.summary}
                     </div>
                     <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300 bg-white/50 dark:bg-gray-700/50 px-2 py-1 rounded">
-                      <div className="w-1 h-1 bg-blue-500 rounded-full"></div>
+                      <div className="w-1 h-1 bg-blue-500 rounded-full" />
                       Click to copy meeting details
                     </div>
                     <div className="text-xs">
@@ -139,7 +141,7 @@ Google Meet Link: ${googleMeet.meetingLink}`;
                               className="flex items-center justify-between gap-2 px-2 py-1 bg-gray-50/50 dark:bg-gray-800/50 rounded relative group"
                             >
                               <span className="text-gray-700 dark:text-gray-300 truncate flex-1">
-                                {attendee.name || attendee.email.split("@")[0]}
+                                {attendee.name || attendee.email.split('@')[0]}
                               </span>
                               <div className="flex items-center gap-1">
                                 {attendee.comment && (
@@ -149,31 +151,31 @@ Google Meet Link: ${googleMeet.meetingLink}`;
                                     </span>
                                     <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 max-w-xs">
                                       {attendee.comment}
-                                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
                                     </div>
                                   </div>
                                 )}
                                 <span
                                   className={cn(
-                                    "text-xs px-1.5 py-0.5 rounded font-medium",
-                                    attendee.responseStatus === "accepted" &&
-                                      "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400",
-                                    attendee.responseStatus === "declined" &&
-                                      "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400",
-                                    attendee.responseStatus === "tentative" &&
-                                      "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400",
-                                    attendee.responseStatus === "needsAction" &&
-                                      "bg-gray-100 text-gray-600 dark:bg-gray-700/50 dark:text-gray-400"
+                                    'text-xs px-1.5 py-0.5 rounded font-medium',
+                                    attendee.responseStatus === 'accepted'
+                                      && 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400',
+                                    attendee.responseStatus === 'declined'
+                                      && 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400',
+                                    attendee.responseStatus === 'tentative'
+                                      && 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400',
+                                    attendee.responseStatus === 'needsAction'
+                                      && 'bg-gray-100 text-gray-600 dark:bg-gray-700/50 dark:text-gray-400',
                                   )}
                                 >
-                                  {attendee.responseStatus === "accepted" &&
-                                    "✓ Accepted"}
-                                  {attendee.responseStatus === "declined" &&
-                                    "✗ Declined"}
-                                  {attendee.responseStatus === "tentative" &&
-                                    "? Maybe"}
-                                  {attendee.responseStatus === "needsAction" &&
-                                    "⏳ Pending"}
+                                  {attendee.responseStatus === 'accepted'
+                                    && '✓ Accepted'}
+                                  {attendee.responseStatus === 'declined'
+                                    && '✗ Declined'}
+                                  {attendee.responseStatus === 'tentative'
+                                    && '? Maybe'}
+                                  {attendee.responseStatus === 'needsAction'
+                                    && '⏳ Pending'}
                                 </span>
                               </div>
                             </div>
@@ -194,10 +196,10 @@ Google Meet Link: ${googleMeet.meetingLink}`;
                 <TooltipTrigger asChild>
                   <button
                     className={cn(
-                      "w-6 h-6 rounded-full flex items-center justify-center transition-colors flex-shrink-0",
+                      'w-6 h-6 rounded-full flex items-center justify-center transition-colors flex-shrink-0',
                       isSyncing
-                        ? "bg-blue-200 dark:bg-blue-800 cursor-not-allowed"
-                        : "bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
+                        ? 'bg-blue-200 dark:bg-blue-800 cursor-not-allowed'
+                        : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700',
                     )}
                     onClick={onSync}
                     disabled={isSyncing}
@@ -205,15 +207,15 @@ Google Meet Link: ${googleMeet.meetingLink}`;
                     <RefreshCw
                       size={12}
                       className={cn(
-                        "text-gray-600 dark:text-gray-400",
-                        isSyncing && "animate-spin"
+                        'text-gray-600 dark:text-gray-400',
+                        isSyncing && 'animate-spin',
                       )}
                     />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="top">
                   <p className="text-xs">
-                    {isSyncing ? "Syncing..." : "Sync attendee responses"}
+                    {isSyncing ? 'Syncing...' : 'Sync attendee responses'}
                   </p>
                 </TooltipContent>
               </Tooltip>
@@ -222,7 +224,10 @@ Google Meet Link: ${googleMeet.meetingLink}`;
         </div>
         {candidate.assignment?.time && (
           <div className="text-xs text-gray-500 dark:text-gray-500 flex-shrink-0">
-            {formatDate(candidate.assignment.time)} •{" "}
+            {formatDate(candidate.assignment.time)}
+            {' '}
+            •
+            {' '}
             {formatTime(candidate.assignment.time)}
           </div>
         )}
@@ -230,4 +235,3 @@ Google Meet Link: ${googleMeet.meetingLink}`;
     </div>
   );
 }
-

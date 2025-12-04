@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import React from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import React from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   CheckCircle2,
   Settings,
@@ -13,62 +13,62 @@ import {
   Users,
   ShieldCheck,
   HardDrive,
-} from "lucide-react";
+} from 'lucide-react';
 
 const WelcomeStep: React.FC = () => {
   const features = [
     {
       icon: Palette,
-      title: "Portal Branding",
+      title: 'Portal Branding',
       description:
-        "Customize your job application portal with your company branding",
+        'Customize your job application portal with your company branding',
     },
     {
       icon: ShieldCheck,
-      title: "Captcha Verification",
-      description: "Configure captcha for the portal",
+      title: 'Captcha Verification',
+      description: 'Configure captcha for the portal',
     },
     {
       icon: Bot,
-      title: "AI-Powered Resume Processing",
+      title: 'AI-Powered Resume Processing',
       description:
-        "Configure AI providers to automatically process and score resumes",
+        'Configure AI providers to automatically process and score resumes',
     },
     {
       icon: Mail,
-      title: "Email Notifications",
-      description: "Set up email delivery for candidate and team notifications",
+      title: 'Email Notifications',
+      description: 'Set up email delivery for candidate and team notifications',
     },
     {
       icon: Calendar,
-      title: "Interview Scheduling",
-      description: "Connect Google Calendar for seamless interview scheduling",
+      title: 'Interview Scheduling',
+      description: 'Connect Google Calendar for seamless interview scheduling',
     },
     {
       icon: Clock,
-      title: "Timezone Settings",
+      title: 'Timezone Settings',
       description:
         "Configure your organization's timezone for proper scheduling",
     },
     {
       icon: HardDrive,
-      title: "File Storage",
+      title: 'File Storage',
       description:
-        "Configure cloud storage to manage resumes and media files securely",
+        'Configure cloud storage to manage resumes and media files securely',
     },
     {
       icon: Users,
-      title: "Team Management",
-      description: "Invite team members and set up user roles",
+      title: 'Team Management',
+      description: 'Invite team members and set up user roles',
     },
     {
       icon: Palette,
-      title: "Custom Fields",
+      title: 'Custom Fields',
       description:
-        "Create custom form fields for jobs, applications, and candidate data",
+        'Create custom form fields for jobs, applications, and candidate data',
     },
   ];
-  
+
   return (
     <div className="space-y-4 max-w-4xl mx-auto">
       <div className="text-center space-y-2">

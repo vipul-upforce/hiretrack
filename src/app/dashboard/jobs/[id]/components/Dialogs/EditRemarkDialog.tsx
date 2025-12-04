@@ -4,15 +4,15 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog";
-import { MentionTextarea } from "@/components/ui/mention-textarea";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { useSelector } from "react-redux";
-import Rating from "@mui/material/Rating";
-import { IEditRemark } from "../../schemas/EditRemarkDialog";
+} from '@/components/ui/dialog';
+import { MentionTextarea } from '@/components/ui/mention-textarea';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { useSelector } from 'react-redux';
+import Rating from '@mui/material/Rating';
+import { IEditRemark } from '../../schemas/EditRemarkDialog';
 
-const EditRemarkDialog = ({
+function EditRemarkDialog({
   isEditRemarkDialogOpen,
   setIsEditRemarkDialogOpen,
   editingRemark,
@@ -34,7 +34,7 @@ const EditRemarkDialog = ({
   isLoading: boolean;
   setRemarkRating: (x: number | null) => void;
   setRemarkRatingHistory: (x: number | null) => void;
-}) => {
+}) {
   const { user } = useSelector((state: any) => state.auth || {});
 
   // const [remarkRating, setRemarkRating] = useState(editingRemark?.rating || 0);
@@ -55,35 +55,35 @@ const EditRemarkDialog = ({
           <MentionTextarea
             className="min-h-[120px] resize-none focus-visible:ring-offset-1"
             placeholder="Enter your remark here... (Alt+Enter to save)"
-            value={editingRemark?.description || ""}
+            value={editingRemark?.description || ''}
             onChange={(input) => {
               const trimmed = input.trim();
 
               // Disallow null/empty/whitespace-only input
-              if (trimmed === "") return;
+              if (trimmed === '') return;
 
               setEditingRemark({
-                id: editingRemark?.id || "",
+                id: editingRemark?.id || '',
                 rating: editingRemark?.rating,
                 isPrivate: editingRemark?.isPrivate || false,
                 description: input, // store original input, not trimmed
               });
             }}
             onKeyDown={(e) => {
-              if (e.altKey && e.key === "Enter") {
+              if (e.altKey && e.key === 'Enter') {
                 e.preventDefault();
                 if (editingRemark?.description?.trim() && !isLoading) {
                   handleRemarkUpdate(
-                    editingRemark?.id || "",
-                    editingRemark?.description || "",
-                    editingRemark?.isPrivate
+                    editingRemark?.id || '',
+                    editingRemark?.description || '',
+                    editingRemark?.isPrivate,
                   );
                   setIsEditRemarkDialogOpen(false);
                 }
               }
             }}
-            organizationId={user?.organizationId || ""}
-            currentUserRole={user?.role || ""}
+            organizationId={user?.organizationId || ''}
+            currentUserRole={user?.role || ''}
             rows={5}
           />
           <div className="flex items-center gap-2 mt-2">
@@ -91,8 +91,8 @@ const EditRemarkDialog = ({
             <Rating
               name="half-rating"
               onChange={(e, value) => {
-                setRemarkRating(value ? value : null);
-                setRemarkRatingHistory(value ? value : null);
+                setRemarkRating(value || null);
+                setRemarkRatingHistory(value || null);
               }}
               defaultValue={editingRemark?.rating || 0}
               precision={0.5}
@@ -111,19 +111,19 @@ const EditRemarkDialog = ({
             variant="primary"
             onClick={() => {
               handleRemarkUpdate(
-                editingRemark?.id || "",
-                editingRemark?.description || "",
-                editingRemark?.isPrivate
+                editingRemark?.id || '',
+                editingRemark?.description || '',
+                editingRemark?.isPrivate,
               );
               setIsEditRemarkDialogOpen(false);
             }}
           >
-            {isLoading ? "Marking as done..." : "Confirm"}
+            {isLoading ? 'Marking as done...' : 'Confirm'}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
-};
+}
 
 export default EditRemarkDialog;

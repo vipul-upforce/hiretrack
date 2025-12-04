@@ -1,5 +1,5 @@
-import { RefObject } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { RefObject } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface LogViewerProps {
   content: string[];
@@ -65,7 +65,7 @@ export function LogViewer({
               );
             }
 
-            const parts = line.split(new RegExp(`(${searchQuery})`, "gi"));
+            const parts = line.split(new RegExp(`(${searchQuery})`, 'gi'));
             return (
               <div
                 key={index}
@@ -77,18 +77,16 @@ export function LogViewer({
                   </span>
                 )}
                 <span className="break-all">
-                  {parts.map((part, i) =>
-                    part.toLowerCase() === searchQuery.toLowerCase() ? (
-                      <mark
-                        key={i}
-                        className="bg-yellow-200 dark:bg-yellow-900 text-black dark:text-white rounded-sm px-0.5"
-                      >
-                        {part}
-                      </mark>
-                    ) : (
-                      part
-                    )
-                  )}
+                  {parts.map((part, i) => (part.toLowerCase() === searchQuery.toLowerCase() ? (
+                    <mark
+                      key={i}
+                      className="bg-yellow-200 dark:bg-yellow-900 text-black dark:text-white rounded-sm px-0.5"
+                    >
+                      {part}
+                    </mark>
+                  ) : (
+                    part
+                  )))}
                 </span>
               </div>
             );
@@ -126,8 +124,13 @@ export function LogViewer({
 
       {!hasMore && hasContent && (
         <div className="py-4 text-center text-xs text-muted-foreground/50 italic">
-          End of file <span className="mx-1">•</span>{" "}
-          {totalLines.toLocaleString()} lines
+          End of file
+          {' '}
+          <span className="mx-1">•</span>
+          {' '}
+          {totalLines.toLocaleString()}
+          {' '}
+          lines
         </div>
       )}
     </div>

@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import React from "react";
-import { Formik } from "formik";
-import { useCaptchaSettings } from "./useCaptchaSettings";
-import { captchaValidationSchema } from "./schema";
-import CaptchaSkeleton from "./loading-skeleton";
-import CaptchaForm from "./captcha-form";
-import { CaptchaValues, CaptchaFormProps } from "./types";
+import React from 'react';
+import { Formik } from 'formik';
+import { useCaptchaSettings } from './useCaptchaSettings';
+import { captchaValidationSchema } from './schema';
+import CaptchaSkeleton from './loading-skeleton';
+import CaptchaForm from './captcha-form';
+import { CaptchaValues, CaptchaFormProps } from './types';
 
 export default function CaptchaSettings({ onClose }: CaptchaFormProps) {
   const {

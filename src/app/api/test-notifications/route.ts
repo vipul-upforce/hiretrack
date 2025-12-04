@@ -1,14 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
-import { NotificationService } from "@/lib/notifications/notificationService";
-import { NotificationType } from "@/lib/models/notification";
-import { getCurrentUser } from "@/lib/auth";
+import { NextRequest, NextResponse } from 'next/server';
+import { NotificationService } from '@/lib/notifications/notificationService';
+import { NotificationType } from '@/lib/models/notification';
+import { getCurrentUser } from '@/lib/auth';
 
 // A utility function to get or create a test user
 async function getTestUser(
   organizationId: string,
-  role: "admin" | "hr" | "interviewer"
+  role: 'admin' | 'hr' | 'interviewer',
 ) {
-  const { User } = await require("@/lib/mongodb");
+  const { User } = await require('@/lib/mongodb');
   let user = await User.findOne({ organizationId, email: `${role}@test.com` });
   if (!user) {
     user = await User.create({
@@ -28,21 +28,21 @@ export async function POST(req: NextRequest) {
     const currentUser = await getCurrentUser();
 
     if (!currentUser || !currentUser.organizationId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const organizationId = currentUser.organizationId;
+    const { organizationId } = currentUser;
     const triggerUserId = currentUser.id;
     const triggerUserName = currentUser.name;
 
-    const testInterviewer = await getTestUser(organizationId, "interviewer");
+    const testInterviewer = await getTestUser(organizationId, 'interviewer');
 
     const commonParams = {
       organizationId,
-      candidateId: "test_candidate_id",
-      candidateName: "Test Candidate",
-      jobId: "test_job_id",
-      jobTitle: "Test Job",
+      candidateId: 'test_candidate_id',
+      candidateName: 'Test Candidate',
+      jobId: 'test_job_id',
+      jobTitle: 'Test Job',
       triggerUserId,
       triggerUserName,
     };
@@ -51,14 +51,14 @@ export async function POST(req: NextRequest) {
       case NotificationType.NEW_APPLICATIONS:
         await NotificationService.notifyCandidateApplied({
           ...commonParams,
-          candidateEmail: "candidate@test.com",
+          candidateEmail: 'candidate@test.com',
         });
         break;
       case NotificationType.STATUS_UPDATES:
         await NotificationService.notifyCandidateStatusUpdated({
           ...commonParams,
-          oldStatus: "New",
-          newStatus: "In Review",
+          oldStatus: 'New',
+          newStatus: 'In Review',
         });
         break;
       case NotificationType.INTERVIEW_ASSIGNMENTS:
@@ -70,8 +70,8 @@ export async function POST(req: NextRequest) {
       case NotificationType.NEW_REMARKS:
         await NotificationService.notifyRemarkAdded({
           ...commonParams,
-          remarkText: "This is a test remark.",
-          roles: ["admin", "hr"],
+          remarkText: 'This is a test remark.',
+          roles: ['admin', 'hr'],
         });
         break;
       case NotificationType.MEETING_SCHEDULED:
@@ -85,8 +85,8 @@ export async function POST(req: NextRequest) {
       // Add cases for other notification types here...
       default:
         return NextResponse.json(
-          { error: "Invalid notification type" },
-          { status: 400 }
+          { error: 'Invalid notification type' },
+          { status: 400 },
         );
     }
 
@@ -94,10 +94,10 @@ export async function POST(req: NextRequest) {
       message: `Notification of type '${type}' triggered successfully.`,
     });
   } catch (error) {
-    console.error("Error triggering test notification:", error);
+    console.error('Error triggering test notification:', error);
     return NextResponse.json(
-      { error: "Failed to trigger notification" },
-      { status: 500 }
+      { error: 'Failed to trigger notification' },
+      { status: 500 },
     );
   }
 }

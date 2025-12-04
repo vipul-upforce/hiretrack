@@ -1,32 +1,33 @@
-"use client";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+'use client';
+
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
-import { ErrorMessage, Form, Formik } from "formik";
-import * as Yup from "yup";
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
+import { ErrorMessage, Form, Formik } from 'formik';
+import * as Yup from 'yup';
 import {
   useGetAIProvidersConfigsQuery,
   useUpdateAIProvidersMutation,
   useGetPortalConfigsQuery,
-} from "@/lib/features/settings/settingsApi";
-import React, { useState, useEffect } from "react";
-import { AIProviderType } from "@/lib/ai-providers";
+} from '@/lib/features/settings/settingsApi';
+import React, { useState, useEffect } from 'react';
+import { AIProviderType } from '@/lib/ai-providers';
 import {
   CheckCircle,
   XCircle,
@@ -37,12 +38,12 @@ import {
   Key,
   Shield,
   Settings,
-} from "lucide-react";
+} from 'lucide-react';
 import {
   AI_PROVIDER_MODELS,
   getDefaultModel,
   getProviderModels,
-} from "@/lib/ai-providers/models-config";
+} from '@/lib/ai-providers/models-config';
 
 export interface AIProvidersValues {
   activeProvider: AIProviderType;
@@ -60,7 +61,7 @@ export interface AIProvidersValues {
   perplexity_custom_model: string;
 }
 
-type FormFieldName = keyof Omit<AIProvidersValues, "activeProvider">;
+type FormFieldName = keyof Omit<AIProvidersValues, 'activeProvider'>;
 
 export default function AIProvidersConfigs({
   onClose,
@@ -70,18 +71,17 @@ export default function AIProvidersConfigs({
   const { toast } = useToast();
   const { data, isLoading, refetch } = useGetAIProvidersConfigsQuery(undefined);
   const { data: portalData } = useGetPortalConfigsQuery(undefined);
-  const [updateAIProviders, { isLoading: isUpdating }] =
-    useUpdateAIProvidersMutation();
+  const [updateAIProviders, { isLoading: isUpdating }] = useUpdateAIProvidersMutation();
 
   // State for API key verification
   const [verificationStatus, setVerificationStatus] = useState<
-    Record<string, "idle" | "loading" | "success" | "error">
+    Record<string, 'idle' | 'loading' | 'success' | 'error'>
   >({});
   const [verificationMessages, setVerificationMessages] = useState<
     Record<string, string>
   >({});
   const [showApiKeys, setShowApiKeys] = useState<Record<string, boolean>>({});
-  const [primaryColor, setPrimaryColor] = useState<string>("#6366f1");
+  const [primaryColor, setPrimaryColor] = useState<string>('#6366f1');
 
   React.useEffect(() => {
     refetch();
@@ -95,60 +95,60 @@ export default function AIProvidersConfigs({
   }, [portalData]);
 
   const initialValues: AIProvidersValues = {
-    activeProvider: data?.aiProviders?.activeProvider ?? "gemini",
-    gemini_api_key: data?.aiProviders?.gemini?.api_key ?? "",
-    gemini_model: data?.aiProviders?.gemini?.model ?? getDefaultModel("gemini"),
-    gemini_custom_model: data?.aiProviders?.gemini?.customModel ?? "",
-    openai_api_key: data?.aiProviders?.openai?.api_key ?? "",
-    openai_model: data?.aiProviders?.openai?.model ?? getDefaultModel("openai"),
-    openai_custom_model: data?.aiProviders?.openai?.customModel ?? "",
-    anthropic_api_key: data?.aiProviders?.anthropic?.api_key ?? "",
+    activeProvider: data?.aiProviders?.activeProvider ?? 'gemini',
+    gemini_api_key: data?.aiProviders?.gemini?.api_key ?? '',
+    gemini_model: data?.aiProviders?.gemini?.model ?? getDefaultModel('gemini'),
+    gemini_custom_model: data?.aiProviders?.gemini?.customModel ?? '',
+    openai_api_key: data?.aiProviders?.openai?.api_key ?? '',
+    openai_model: data?.aiProviders?.openai?.model ?? getDefaultModel('openai'),
+    openai_custom_model: data?.aiProviders?.openai?.customModel ?? '',
+    anthropic_api_key: data?.aiProviders?.anthropic?.api_key ?? '',
     anthropic_model:
-      data?.aiProviders?.anthropic?.model ?? getDefaultModel("anthropic"),
-    anthropic_custom_model: data?.aiProviders?.anthropic?.customModel ?? "",
-    perplexity_api_key: data?.aiProviders?.perplexity?.api_key ?? "",
+      data?.aiProviders?.anthropic?.model ?? getDefaultModel('anthropic'),
+    anthropic_custom_model: data?.aiProviders?.anthropic?.customModel ?? '',
+    perplexity_api_key: data?.aiProviders?.perplexity?.api_key ?? '',
     perplexity_model:
-      data?.aiProviders?.perplexity?.model ?? getDefaultModel("perplexity"),
-    perplexity_custom_model: data?.aiProviders?.perplexity?.customModel ?? "",
+      data?.aiProviders?.perplexity?.model ?? getDefaultModel('perplexity'),
+    perplexity_custom_model: data?.aiProviders?.perplexity?.customModel ?? '',
   };
 
   const validationSchema = Yup.object({
-    activeProvider: Yup.string().required("Please select an active provider"),
-    gemini_api_key: Yup.string().max(200, "Max length 200 chars"),
-    gemini_model: Yup.string().required("Model is required"),
-    openai_api_key: Yup.string().max(200, "Max length 200 chars"),
-    openai_model: Yup.string().required("Model is required"),
-    anthropic_api_key: Yup.string().max(200, "Max length 200 chars"),
-    anthropic_model: Yup.string().required("Model is required"),
-    perplexity_api_key: Yup.string().max(200, "Max length 200 chars"),
-    perplexity_model: Yup.string().required("Model is required"),
+    activeProvider: Yup.string().required('Please select an active provider'),
+    gemini_api_key: Yup.string().max(200, 'Max length 200 chars'),
+    gemini_model: Yup.string().required('Model is required'),
+    openai_api_key: Yup.string().max(200, 'Max length 200 chars'),
+    openai_model: Yup.string().required('Model is required'),
+    anthropic_api_key: Yup.string().max(200, 'Max length 200 chars'),
+    anthropic_model: Yup.string().required('Model is required'),
+    perplexity_api_key: Yup.string().max(200, 'Max length 200 chars'),
+    perplexity_model: Yup.string().required('Model is required'),
   });
 
   const verifyApiKey = async (
     provider: AIProviderType,
     apiKey: string,
-    model: string
+    model: string,
   ) => {
     if (!apiKey.trim()) {
-      setVerificationStatus((prev) => ({ ...prev, [provider]: "error" }));
+      setVerificationStatus((prev) => ({ ...prev, [provider]: 'error' }));
       setVerificationMessages((prev) => ({
         ...prev,
-        [provider]: "Please enter an API key before verifying",
+        [provider]: 'Please enter an API key before verifying',
       }));
       return;
     }
 
-    setVerificationStatus((prev) => ({ ...prev, [provider]: "loading" }));
+    setVerificationStatus((prev) => ({ ...prev, [provider]: 'loading' }));
     setVerificationMessages((prev) => ({
       ...prev,
-      [provider]: "Verifying API key and model...",
+      [provider]: 'Verifying API key and model...',
     }));
 
     try {
-      const response = await fetch("/api/settings/ai-providers/validate", {
-        method: "POST",
+      const response = await fetch('/api/settings/ai-providers/validate', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           provider,
@@ -160,29 +160,29 @@ export default function AIProvidersConfigs({
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Validation failed");
+        throw new Error(result.error || 'Validation failed');
       }
 
-      const isValid = result.isValid;
+      const { isValid } = result;
       setVerificationStatus((prev) => ({
         ...prev,
-        [provider]: isValid ? "success" : "error",
+        [provider]: isValid ? 'success' : 'error',
       }));
 
       // Use the message from the server if available, otherwise use default messages
       const message = isValid
-        ? result.message || `✅ API key and model are valid`
-        : result.error || `❌ API key or model is invalid`;
+        ? result.message || '✅ API key and model are valid'
+        : result.error || '❌ API key or model is invalid';
 
       setVerificationMessages((prev) => ({
         ...prev,
         [provider]: message,
       }));
     } catch (error) {
-      setVerificationStatus((prev) => ({ ...prev, [provider]: "error" }));
+      setVerificationStatus((prev) => ({ ...prev, [provider]: 'error' }));
       setVerificationMessages((prev) => ({
         ...prev,
-        [provider]: `❌ Verification failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+        [provider]: `❌ Verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
       }));
     }
   };
@@ -222,17 +222,17 @@ export default function AIProvidersConfigs({
 
         await updateAIProviders(dataToSubmit).unwrap();
         toast({
-          title: "Success",
-          description: "AI provider settings updated successfully",
+          title: 'Success',
+          description: 'AI provider settings updated successfully',
         });
         refetch();
         onClose();
       }
     } catch {
       toast({
-        title: "Error",
-        description: "Failed to update AI provider settings",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to update AI provider settings',
+        variant: 'destructive',
       });
     }
   };
@@ -248,40 +248,40 @@ export default function AIProvidersConfigs({
 
   const providers = [
     {
-      id: "gemini",
-      name: "Google Gemini",
+      id: 'gemini',
+      name: 'Google Gemini',
       description: "Google's Gemini AI with PDF and vision support",
       icon: Key,
-      apiKeyField: "gemini_api_key",
-      modelField: "gemini_model",
-      customModelField: "gemini_custom_model",
+      apiKeyField: 'gemini_api_key',
+      modelField: 'gemini_model',
+      customModelField: 'gemini_custom_model',
     },
     {
-      id: "openai",
-      name: "OpenAI",
+      id: 'openai',
+      name: 'OpenAI',
       description: "OpenAI's GPT models for text and vision processing",
       icon: Key,
-      apiKeyField: "openai_api_key",
-      modelField: "openai_model",
-      customModelField: "openai_custom_model",
+      apiKeyField: 'openai_api_key',
+      modelField: 'openai_model',
+      customModelField: 'openai_custom_model',
     },
     {
-      id: "anthropic",
-      name: "Anthropic Claude",
+      id: 'anthropic',
+      name: 'Anthropic Claude',
       description: "Anthropic's Claude AI for advanced reasoning",
       icon: Shield,
-      apiKeyField: "anthropic_api_key",
-      modelField: "anthropic_model",
-      customModelField: "anthropic_custom_model",
+      apiKeyField: 'anthropic_api_key',
+      modelField: 'anthropic_model',
+      customModelField: 'anthropic_custom_model',
     },
     {
-      id: "perplexity",
-      name: "Perplexity AI",
+      id: 'perplexity',
+      name: 'Perplexity AI',
       description: "Perplexity's search-augmented language models",
       icon: Settings,
-      apiKeyField: "perplexity_api_key",
-      modelField: "perplexity_model",
-      customModelField: "perplexity_custom_model",
+      apiKeyField: 'perplexity_api_key',
+      modelField: 'perplexity_model',
+      customModelField: 'perplexity_custom_model',
     },
   ];
 
@@ -293,7 +293,9 @@ export default function AIProvidersConfigs({
         enableReinitialize
         onSubmit={handleSubmit}
       >
-        {({ values, setFieldValue, errors, touched }) => (
+        {({
+          values, setFieldValue, errors, touched,
+        }) => (
           <Form className="space-y-6">
             {/* Active Provider Selection */}
             <Card>
@@ -312,22 +314,20 @@ export default function AIProvidersConfigs({
                   <Label>Active Provider</Label>
                   <Select
                     value={values.activeProvider}
-                    onValueChange={(value: AIProviderType) =>
-                      setFieldValue("activeProvider", value)
-                    }
+                    onValueChange={(value: AIProviderType) => setFieldValue('activeProvider', value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select active provider" />
                     </SelectTrigger>
                     <SelectContent>
                       {providers.map((provider) => (
-                        <SelectItem key={provider.id} value={provider.id}>
-                          <div className="flex items-center gap-2">
+                <SelectItem key={provider.id} value={provider.id}>
+                  <div className="flex items-center gap-2">
                             <provider.icon className="h-4 w-4" />
                             {provider.name}
                           </div>
-                        </SelectItem>
-                      ))}
+                </SelectItem>
+              ))}
                     </SelectContent>
                   </Select>
                   <ErrorMessage
@@ -353,8 +353,8 @@ export default function AIProvidersConfigs({
                   provider.customModelField as keyof AIProvidersValues
                 ] as string;
                 const providerModels = getProviderModels(provider.id);
-                const status = verificationStatus[provider.id] || "idle";
-                const message = verificationMessages[provider.id] || "";
+                const status = verificationStatus[provider.id] || 'idle';
+                const message = verificationMessages[provider.id] || '';
                 const showKey = showApiKeys[provider.id] || false;
 
                 return (
@@ -362,24 +362,24 @@ export default function AIProvidersConfigs({
                     key={provider.id}
                     className={`transition-all duration-200 ${
                       isActive
-                        ? `ring-2 ring-offset-2 bg-gradient-to-r from-white to-gray-50 dark:from-black dark:to-gray-950`
-                        : "hover:shadow-md"
+                        ? 'ring-2 ring-offset-2 bg-gradient-to-r from-white to-gray-50 dark:from-black dark:to-gray-950'
+                        : 'hover:shadow-md'
                     }`}
                     style={
                       isActive
                         ? ({
-                            "--tw-ring-color": primaryColor,
-                          } as React.CSSProperties)
+                          '--tw-ring-color': primaryColor,
+                        } as React.CSSProperties)
                         : undefined
                     }
                   >
                     <CardHeader>
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-lg bg-gray-100 dark:bg-black">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gray-100 dark:bg-black">
                             <provider.icon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                           </div>
-                          <div>
+                  <div>
                             <CardTitle className="flex items-center gap-2">
                               {provider.name}
                               {isActive && (
@@ -395,27 +395,25 @@ export default function AIProvidersConfigs({
                               {provider.description}
                             </CardDescription>
                           </div>
-                        </div>
-                      </div>
+                </div>
+              </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       {/* API Key Field */}
                       <div className="space-y-2">
-                        <Label htmlFor={provider.apiKeyField}>API Key</Label>
-                        <div className="flex gap-2">
-                          <div className="relative flex-1">
+                <Label htmlFor={provider.apiKeyField}>API Key</Label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
                             <Input
                               id={provider.apiKeyField}
                               name={provider.apiKeyField}
-                              type={showKey ? "text" : "password"}
+                              type={showKey ? 'text' : 'password'}
                               placeholder={`Enter ${provider.name} API key`}
                               value={apiKey}
-                              onChange={(e) =>
-                                setFieldValue(
-                                  provider.apiKeyField,
-                                  e.target.value
-                                )
-                              }
+                              onChange={(e) => setFieldValue(
+                                provider.apiKeyField,
+                                e.target.value,
+                              )}
                               className="pr-10"
                             />
                             <Button
@@ -423,9 +421,7 @@ export default function AIProvidersConfigs({
                               variant="ghost"
                               size="sm"
                               className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                              onClick={() =>
-                                toggleApiKeyVisibility(provider.id)
-                              }
+                              onClick={() => toggleApiKeyVisibility(provider.id)}
                             >
                               {showKey ? (
                                 <EyeOff className="h-4 w-4" />
@@ -434,56 +430,52 @@ export default function AIProvidersConfigs({
                               )}
                             </Button>
                           </div>
-                          <Button
+                  <Button
                             type="button"
                             variant="outline"
-                            onClick={() =>
-                              verifyApiKey(
+                            onClick={() => verifyApiKey(
                                 provider.id as AIProviderType,
                                 apiKey,
-                                customModel || model
-                              )
-                            }
-                            disabled={status === "loading" || !apiKey.trim()}
+                                customModel || model,
+                            )}
+                            disabled={status === 'loading' || !apiKey.trim()}
                             className="flex items-center gap-2"
                           >
-                            {status === "loading" ? (
+                            {status === 'loading' ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : status === "success" ? (
+                            ) : status === 'success' ? (
                               <CheckCircle className="h-4 w-4 text-green-600" />
-                            ) : status === "error" ? (
+                            ) : status === 'error' ? (
                               <XCircle className="h-4 w-4 text-red-600" />
                             ) : null}
                             Verify
                           </Button>
-                        </div>
-                        <ErrorMessage
-                          name={provider.apiKeyField}
-                          component="div"
-                          className="text-red-500 text-sm"
-                        />
-                        {message && (
-                          <p
-                            className={`text-sm ${status === "success" ? "text-green-600" : status === "error" ? "text-red-600" : "text-gray-600"}`}
+                </div>
+                <ErrorMessage
+                  name={provider.apiKeyField}
+                  component="div"
+                  className="text-red-500 text-sm"
+                />
+                {message && (
+                <p
+                            className={`text-sm ${status === 'success' ? 'text-green-600' : status === 'error' ? 'text-red-600' : 'text-gray-600'}`}
                           >
                             {message}
                           </p>
-                        )}
-                      </div>
+                )}
+              </div>
 
                       {/* Model Selection */}
                       <div className="space-y-2">
-                        <Label htmlFor={provider.modelField}>Model</Label>
-                        <Select
-                          value={model}
-                          onValueChange={(value) =>
-                            setFieldValue(provider.modelField, value)
-                          }
-                        >
-                          <SelectTrigger>
+                <Label htmlFor={provider.modelField}>Model</Label>
+                <Select
+                  value={model}
+                  onValueChange={(value) => setFieldValue(provider.modelField, value)}
+                >
+                  <SelectTrigger>
                             <SelectValue placeholder="Select model" />
                           </SelectTrigger>
-                          <SelectContent>
+                  <SelectContent>
                             {providerModels.map((modelInfo) => (
                               <SelectItem
                                 key={modelInfo.id}
@@ -522,47 +514,45 @@ export default function AIProvidersConfigs({
                               </SelectItem>
                             ))}
                           </SelectContent>
-                        </Select>
-                        <ErrorMessage
-                          name={provider.modelField}
-                          component="div"
-                          className="text-red-500 text-sm"
-                        />
-                      </div>
+                </Select>
+                <ErrorMessage
+                  name={provider.modelField}
+                  component="div"
+                  className="text-red-500 text-sm"
+                />
+              </div>
 
                       {/* Custom Model Field */}
                       <div className="space-y-2">
-                        <Label htmlFor={provider.customModelField}>
-                          Custom Model (Optional)
+                <Label htmlFor={provider.customModelField}>
+                  Custom Model (Optional)
                         </Label>
-                        <Input
-                          id={provider.customModelField}
-                          name={provider.customModelField}
-                          placeholder="Enter custom model name to override selection above"
-                          value={customModel}
-                          onChange={(e) =>
-                            setFieldValue(
-                              provider.customModelField,
-                              e.target.value
-                            )
-                          }
-                        />
-                        <p className="text-xs text-gray-500">
-                          Leave empty to use the selected model above. Enter a
-                          custom model name to use a newer or unlisted model.
+                <Input
+                  id={provider.customModelField}
+                  name={provider.customModelField}
+                  placeholder="Enter custom model name to override selection above"
+                  value={customModel}
+                  onChange={(e) => setFieldValue(
+                            provider.customModelField,
+                            e.target.value,
+                          )}
+                />
+                <p className="text-xs text-gray-500">
+                  Leave empty to use the selected model above. Enter a
+                  custom model name to use a newer or unlisted model.
                         </p>
-                      </div>
+              </div>
 
                       {/* Model Capabilities */}
                       {model && (
-                        <div className="mt-4 p-3 bg-white dark:bg-black rounded-lg">
-                          <h4 className="text-sm font-medium mb-2">
+              <div className="mt-4 p-3 bg-white dark:bg-black rounded-lg">
+                <h4 className="text-sm font-medium mb-2">
                             Model Capabilities
                           </h4>
-                          <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2">
                             {(() => {
                               const modelInfo = providerModels.find(
-                                (m) => m.id === model
+                                (m) => m.id === model,
                               );
                               if (!modelInfo) return null;
                               const caps = modelInfo.capabilities;
@@ -593,14 +583,16 @@ export default function AIProvidersConfigs({
                                     </Badge>
                                   )}
                                   <Badge variant="outline" className="text-xs">
-                                    {caps.maxTokens.toLocaleString()} tokens
+                                    {caps.maxTokens.toLocaleString()}
+                                    {' '}
+                                    tokens
                                   </Badge>
                                 </>
                               );
                             })()}
                           </div>
-                        </div>
-                      )}
+              </div>
+              )}
                     </CardContent>
                   </Card>
                 );
@@ -624,7 +616,7 @@ export default function AIProvidersConfigs({
                     Saving...
                   </>
                 ) : (
-                  "Save Settings"
+                  'Save Settings'
                 )}
               </Button>
             </div>

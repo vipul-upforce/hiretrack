@@ -1,4 +1,4 @@
-import { AssignmentData } from "@/app/api/analytics/types";
+import { AssignmentData } from '@/app/api/analytics/types';
 import {
   Bar,
   BarChart,
@@ -7,7 +7,7 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from "recharts";
+} from 'recharts';
 
 export const WorkloadDistributionChart: React.FC<{
   data: AssignmentData[];
@@ -16,7 +16,7 @@ export const WorkloadDistributionChart: React.FC<{
     ...interviewer,
     name:
       interviewer.interviewerName.length > 15
-        ? interviewer.interviewerName.substring(0, 12) + "..."
+        ? `${interviewer.interviewerName.substring(0, 12)}...`
         : interviewer.interviewerName,
   }));
 
@@ -32,7 +32,9 @@ export const WorkloadDistributionChart: React.FC<{
     <ResponsiveContainer width="100%" height={450}>
       <BarChart
         data={chartData}
-        margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+        margin={{
+          top: 20, right: 30, left: 20, bottom: 60,
+        }}
       >
         <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
         <XAxis
@@ -54,7 +56,8 @@ export const WorkloadDistributionChart: React.FC<{
                     {data.interviewerName}
                   </p>
                   <p className="text-foreground">
-                    Total Pending Assignments:{" "}
+                    Total Pending Assignments:
+                    {' '}
                     <span className="font-bold">{data.assignments}</span>
                   </p>
                 </div>
@@ -69,7 +72,7 @@ export const WorkloadDistributionChart: React.FC<{
           radius={[5, 5, 0, 0]}
           opacity={0.8}
         />
-       
+
       </BarChart>
     </ResponsiveContainer>
   );

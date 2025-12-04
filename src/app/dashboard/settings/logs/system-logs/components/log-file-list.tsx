@@ -1,4 +1,4 @@
-import { HardDrive } from "lucide-react";
+import { HardDrive } from 'lucide-react';
 
 interface LogFileListProps {
   files: string[];
@@ -20,7 +20,11 @@ export function LogFileList({
   return (
     <div className="col-span-1 flex flex-col min-h-0">
       <h3 className="font-bold text-sm mb-2 flex-shrink-0 flex items-center justify-between">
-        <span>Log Files ({files.length})</span>
+        <span>
+          Log Files (
+          {files.length}
+          )
+        </span>
 
         {totalStorage && (
           <span className="text-xs flex items-center gap-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-[3px] rounded-md">
@@ -41,8 +45,8 @@ export function LogFileList({
                 key={file}
                 className={`cursor-pointer p-2 text-sm rounded ${
                   selectedFile === file
-                    ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
-                    : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                    : 'hover:bg-gray-100 dark:hover:bg-gray-800'
                 }`}
                 onClick={() => onSelect(file)}
               >

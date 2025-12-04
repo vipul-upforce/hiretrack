@@ -3,10 +3,10 @@
  * Displays update logs for the candidate
  */
 
-import { Candidate } from "@/types/candidate";
-import { User } from "@/lib/features/users/usersApi";
-import { ICandidateHistory } from "@/lib/models/history";
-import { LogsTable } from "../../Candidate/HisotryAndLogTable";
+import { Candidate } from '@/types/candidate';
+import { User } from '@/lib/features/users/usersApi';
+import { ICandidateHistory } from '@/lib/models/history';
+import { LogsTable } from '../../Candidate/HisotryAndLogTable';
 
 interface CandidateLogsTabProps {
   candidate: Candidate;
@@ -29,13 +29,13 @@ export function CandidateLogsTab({
   if (isHistoryLoading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         <span className="ml-2 text-sm text-muted-foreground">Loading Logs...</span>
       </div>
     );
   }
 
-  if (user?.role === "interviewer" || user?.role === "candidate") {
+  if (user?.role === 'interviewer' || user?.role === 'candidate') {
     return null;
   }
 
@@ -53,4 +53,3 @@ export function CandidateLogsTab({
     </div>
   );
 }
-

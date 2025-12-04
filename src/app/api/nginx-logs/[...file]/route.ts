@@ -1,22 +1,21 @@
-import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
-import readline from "readline";
+import { NextResponse } from 'next/server';
+import fs from 'fs';
+import path from 'path';
+import readline from 'readline';
 
 export async function GET(
   req: Request,
-  { params }: { params: Promise<{ file: string[] }> }
+  { params }: { params: Promise<{ file: string[] }> },
 ) {
   const { file } = await params;
   const { searchParams } = new URL(req.url);
-  const offset = parseInt(searchParams.get("offset") || "0", 10);
-  const limit = parseInt(searchParams.get("limit") || "100", 10);
-  const query = searchParams.get("query")?.toLowerCase() || "";
+  const offset = parseInt(searchParams.get('offset') || '0', 10);
+  const limit = parseInt(searchParams.get('limit') || '100', 10);
+  const query = searchParams.get('query')?.toLowerCase() || '';
 
-  const logDir =
-    process.platform === "linux"
-      ? "/var/log/nginx"
-      : "/Users/UpforceTech/hiretrack";
+  const logDir = process.platform === 'linux'
+    ? '/var/log/nginx'
+    : '/Users/UpforceTech/hiretrack';
 
   const filePath = path.join(logDir, ...file);
 
@@ -24,15 +23,15 @@ export async function GET(
     // Check if file exists
     if (!fs.existsSync(filePath)) {
       return NextResponse.json(
-        { error: "Log file not found" },
-        { status: 404 }
+        { error: 'Log file not found' },
+        { status: 404 },
       );
     }
 
     // Read lines from file
     const allLines: string[] = [];
     const rl = readline.createInterface({
-      input: fs.createReadStream(filePath, "utf-8"),
+      input: fs.createReadStream(filePath, 'utf-8'),
       crlfDelay: Infinity,
     });
 
@@ -57,10 +56,10 @@ export async function GET(
       query,
     });
   } catch (error) {
-    console.error("Log file read error:", error);
+    console.error('Log file read error:', error);
     return NextResponse.json(
-      { error: "Failed to read nginx log file" },
-      { status: 500 }
+      { error: 'Failed to read nginx log file' },
+      { status: 500 },
     );
   }
 }

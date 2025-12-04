@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -9,14 +9,14 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   ArrowRight,
   Users,
   Trash2,
   CheckCircle,
   ArrowDown,
-} from "lucide-react";
+} from 'lucide-react';
 
 interface MigrationDialogProps {
   isOpen: boolean;
@@ -56,7 +56,9 @@ export function MigrationDialog({
             Migrate Candidates
           </DialogTitle>
           <DialogDescription className="text-base text-gray-600 dark:text-gray-300">
-            The lane "{laneToDelete}" contains candidates that need to be moved
+            The lane "
+            {laneToDelete}
+            " contains candidates that need to be moved
             before deletion. Choose a destination lane to migrate all
             candidates.
           </DialogDescription>
@@ -101,16 +103,16 @@ export function MigrationDialog({
                     onClick={() => setSelectedLane(lane)}
                     className={`w-full p-4 py-2 rounded-lg border-2 text-left transition-all duration-200 ${
                       selectedLane === lane
-                        ? "border-green-500 bg-green-50 dark:bg-green-900/30 dark:border-green-600 shadow-md"
-                        : "border-gray-200 dark:border-gray-900 bg-white dark:bg-black hover:border-blue-300 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                        ? 'border-green-500 bg-green-50 dark:bg-green-900/30 dark:border-green-600 shadow-md'
+                        : 'border-gray-200 dark:border-gray-900 bg-white dark:bg-black hover:border-blue-300 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <span
                         className={`font-medium ${
                           selectedLane === lane
-                            ? "text-green-700 dark:text-green-300"
-                            : "text-gray-700 dark:text-gray-200"
+                            ? 'text-green-700 dark:text-green-300'
+                            : 'text-gray-700 dark:text-gray-200'
                         }`}
                       >
                         {lane}

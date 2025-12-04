@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
-import { MoreVertical, Briefcase, Archive } from "lucide-react";
+import { Button } from '@/components/ui/button';
+import { MoreVertical, Briefcase, Archive } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
-import { memo } from "react";
+} from '@/components/ui/dropdown-menu';
+import { memo } from 'react';
 
 interface BulkActionsProps {
   selectedCount: number;
@@ -16,11 +16,11 @@ interface BulkActionsProps {
   onDelete: () => void;
 }
 
-export const BulkActions = memo(function BulkActions({
+export const BulkActions = memo(({
   selectedCount,
   onAssignJob,
   onDelete,
-}: BulkActionsProps) {
+}: BulkActionsProps) => {
   if (selectedCount === 0) return null;
 
   return (
@@ -49,4 +49,4 @@ export const BulkActions = memo(function BulkActions({
   );
 });
 
-BulkActions.displayName = "BulkActions";
+BulkActions.displayName = 'BulkActions';

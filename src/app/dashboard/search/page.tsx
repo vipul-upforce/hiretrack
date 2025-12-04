@@ -1,8 +1,8 @@
-import { Suspense } from "react";
-import CandidateSearch from "@/components/forms/candidate-search";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { SearchResultsSkeletonLoader } from "@/components/forms/search-results/skeleton-loader";
+import { Suspense } from 'react';
+import CandidateSearch from '@/components/forms/candidate-search';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { SearchResultsSkeletonLoader } from '@/components/forms/search-results/skeleton-loader';
 
 export default function Page() {
   return (
@@ -21,12 +21,12 @@ export default function Page() {
 
       <div className="flex-1 min-h-0 px-4 pb-4 mt-4 overflow-y-auto">
         <Suspense
-          fallback={
+          fallback={(
             <div className="space-y-6">
               <Skeleton className="h-[300px] w-full" />
               <SearchResultsSkeletonLoader />
             </div>
-          }
+          )}
         >
           <CandidateSearch />
         </Suspense>

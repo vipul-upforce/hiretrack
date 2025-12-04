@@ -1,20 +1,20 @@
-import { Candidate } from "@/types/candidate";
+import { Candidate } from '@/types/candidate';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { Badge } from "@/components/ui/badge";
-import { NotebookText, Star } from "lucide-react";
-import { formatTime } from "../../hooks/dateTimeFormatting";
+} from '@/components/ui/popover';
+import { Badge } from '@/components/ui/badge';
+import { NotebookText, Star } from 'lucide-react';
+import { formatTime } from '../../hooks/dateTimeFormatting';
 
-const RemarksPopover = ({
+function RemarksPopover({
   candidate,
   onMoreClick,
 }: {
   candidate: Candidate;
   onMoreClick: () => void;
-}) => {
+}) {
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -36,22 +36,22 @@ const RemarksPopover = ({
             <div className="space-y-2">
               {[...candidate.remarks]
                 .sort(
-                  (a, b) =>
-                    new Date(b.date).getTime() - new Date(a.date).getTime()
+                  (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
                 )
                 .slice(0, 6)
                 .map((remark, index) => (
                   <div key={index} className="border-b pb-2">
                     <div
                       className="text-sm capitalize align-center w-full whitespace-pre-wrap"
-                      style={{ wordWrap: "break-word" }}
+                      style={{ wordWrap: 'break-word' }}
                     >
                       {remark.description}
                       {remark?.rating && (
                         <div className="flex">
-                          {remark?.rating}/5
+                          {remark?.rating}
+                          /5
                           <Star
-                            size={"15px"}
+                            size="15px"
                             className="mt-[1px] text-amber-500 dark:text-amber-400"
                           />
                         </div>
@@ -59,7 +59,9 @@ const RemarksPopover = ({
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
                       {new Date(remark.date).toLocaleDateString()}
-                      &nbsp; {formatTime(remark.date)}
+                      &nbsp;
+                      {' '}
+                      {formatTime(remark.date)}
                     </p>
                   </div>
                 ))}
@@ -68,7 +70,10 @@ const RemarksPopover = ({
                   className="text-xs text-muted-foreground text-center cursor-pointer"
                   onClick={() => onMoreClick()}
                 >
-                  +{candidate.remarks.length - 6} more remarks
+                  +
+                  {candidate.remarks.length - 6}
+                  {' '}
+                  more remarks
                 </p>
               )}
             </div>
@@ -79,6 +84,6 @@ const RemarksPopover = ({
       </PopoverContent>
     </Popover>
   );
-};
+}
 
 export default RemarksPopover;

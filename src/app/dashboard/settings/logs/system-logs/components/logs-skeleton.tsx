@@ -1,4 +1,4 @@
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function NginxLogsSkeleton() {
   return (
@@ -19,7 +19,8 @@ export default function NginxLogsSkeleton() {
             <div className="flex flex-row items-center w-[70%] gap-3">
               <Skeleton className="h-4 w-32" />
               <Skeleton className="h-10 w-full max-w-md" />
-              <Skeleton className="h-4 w-4 rounded-full" />{" "}
+              <Skeleton className="h-4 w-4 rounded-full" />
+              {' '}
             </div>
 
             <div className="flex flex-row items-center gap-3">
@@ -28,7 +29,7 @@ export default function NginxLogsSkeleton() {
             </div>
           </div>
 
-          <div className="bg-muted p-4 rounded-md flex-1 overflow-y-auto min-h-0 space-y-2"></div>
+          <div className="bg-muted p-4 rounded-md flex-1 overflow-y-auto min-h-0 space-y-2" />
         </div>
       </div>
     </div>

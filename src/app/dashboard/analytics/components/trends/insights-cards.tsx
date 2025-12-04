@@ -1,10 +1,10 @@
-import { TrendData } from "@/app/api/analytics/types";
-import { Badge } from "@/components/ui/badge";
-import { AlertCircleIcon, TrendingUpIcon } from "lucide-react";
-import React from "react";
-import { getTrendIcon } from "./summary-cards";
+import { TrendData } from '@/app/api/analytics/types';
+import { Badge } from '@/components/ui/badge';
+import { AlertCircleIcon, TrendingUpIcon } from 'lucide-react';
+import React from 'react';
+import { getTrendIcon } from './summary-cards';
 
-const InsightsCards = ({ insights }) => {
+function InsightsCards({ insights }) {
   return (
     <div className="grid md:grid-cols-3 gap-4 mb-6">
       <div className="bg-emerald-50 dark:bg-emerald-950/20 p-4 rounded-lg border border-emerald-200 dark:border-emerald-800">
@@ -21,7 +21,10 @@ const InsightsCards = ({ insights }) => {
                   {period.date}
                 </span>
                 <span className="text-emerald-600 dark:text-emerald-400 ml-2">
-                  ({period.applications} apps)
+                  (
+                  {period.applications}
+                  {' '}
+                  apps)
                 </span>
               </div>
             ))}
@@ -42,7 +45,10 @@ const InsightsCards = ({ insights }) => {
                   {period.date}
                 </span>
                 <span className="text-red-600 dark:text-red-400 ml-2">
-                  ({period.applications} apps)
+                  (
+                  {period.applications}
+                  {' '}
+                  apps)
                 </span>
               </div>
             ))}
@@ -68,16 +74,17 @@ const InsightsCards = ({ insights }) => {
           <div className="flex justify-between text-sm">
             <span>Growth:</span>
             <Badge
-              variant={insights.growthTrend >= 0 ? "default" : "destructive"}
+              variant={insights.growthTrend >= 0 ? 'default' : 'destructive'}
             >
-              {insights.growthTrend >= 0 ? "+" : ""}
-              {insights.growthTrend}%
+              {insights.growthTrend >= 0 ? '+' : ''}
+              {insights.growthTrend}
+              %
             </Badge>
           </div>
         </div>
       </div>
     </div>
   );
-};
+}
 
 export default InsightsCards;

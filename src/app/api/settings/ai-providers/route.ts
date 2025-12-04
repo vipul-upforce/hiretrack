@@ -1,57 +1,57 @@
-import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Settings } from "@/lib/mongodb";
-import { getAuthenticatedUser } from "@/app/actions/auth";
-import { decryptProviderKeys, encryptProviderKeys } from "@/lib/encryption";
-import { getDefaultModel } from "@/lib/ai-providers/models-config";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { Settings } from '@/lib/mongodb';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+import { decryptProviderKeys, encryptProviderKeys } from '@/lib/encryption';
+import { getDefaultModel } from '@/lib/ai-providers/models-config';
 
 export async function GET(req: NextRequest) {
   try {
     await connectToDatabase();
-    const userData = await getAuthenticatedUser(req, "admin");
+    const userData = await getAuthenticatedUser(req, 'admin');
     if (!userData) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const organizationId = userData.organizationId || "";
+    const organizationId = userData.organizationId || '';
 
     if (!Settings) {
       return NextResponse.json(
-        { error: "Settings Model Not Found" },
-        { status: 404 }
+        { error: 'Settings Model Not Found' },
+        { status: 404 },
       );
     }
     const settings = await Settings.findOne({
-      organizationId: organizationId,
-    }).select("aiProviders gemini").lean().exec();
+      organizationId,
+    }).select('aiProviders gemini').lean().exec();
 
     if (!settings) {
       return NextResponse.json(
-        { error: "Settings not found" },
-        { status: 404 }
+        { error: 'Settings not found' },
+        { status: 404 },
       );
     }
 
     // Return AI providers configuration, with backward compatibility for old gemini field
     let aiProviders = settings.aiProviders || {
-      activeProvider: "gemini",
+      activeProvider: 'gemini',
       gemini: {
-        api_key: settings.gemini?.gemini_key || "",
-        model: getDefaultModel("gemini"),
-        customModel: "",
+        api_key: settings.gemini?.gemini_key || '',
+        model: getDefaultModel('gemini'),
+        customModel: '',
       },
       openai: {
-        api_key: "",
-        model: getDefaultModel("openai"),
-        customModel: "",
+        api_key: '',
+        model: getDefaultModel('openai'),
+        customModel: '',
       },
       anthropic: {
-        api_key: "",
-        model: getDefaultModel("anthropic"),
-        customModel: "",
+        api_key: '',
+        model: getDefaultModel('anthropic'),
+        customModel: '',
       },
       perplexity: {
-        api_key: "",
-        model: getDefaultModel("perplexity"),
-        customModel: "",
+        api_key: '',
+        model: getDefaultModel('perplexity'),
+        customModel: '',
       },
     };
 
@@ -62,9 +62,9 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Internal server error",
+        error: error instanceof Error ? error.message : 'Internal server error',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -72,54 +72,53 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const [userData, aiProvidersSetting] = await Promise.all([
-      getAuthenticatedUser(req, "admin"),
+      getAuthenticatedUser(req, 'admin'),
       req.json(),
       connectToDatabase(),
     ]);
     if (!userData) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const organizationId = userData.organizationId || "";
+    const organizationId = userData.organizationId || '';
 
     if (!Settings) {
       return NextResponse.json(
-        { error: "Settings Model Not Found" },
-        { status: 404 }
+        { error: 'Settings Model Not Found' },
+        { status: 404 },
       );
     }
-
 
     // Encrypt API keys before storing in database
     const encryptedProviders = encryptProviderKeys(aiProvidersSetting, userData.organizationId);
 
     const updatedUser = await Settings.findOneAndUpdate(
       {
-        organizationId: organizationId,
+        organizationId,
       },
       { aiProviders: encryptedProviders },
       {
         new: true,
         runValidators: true,
         upsert: true,
-      }
+      },
     );
 
     if (!updatedUser) {
       return NextResponse.json(
-        { error: "Settings not found" },
-        { status: 404 }
+        { error: 'Settings not found' },
+        { status: 404 },
       );
     }
 
     return NextResponse.json({
-      message: "AI providers settings updated successfully",
+      message: 'AI providers settings updated successfully',
     });
   } catch (error) {
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Internal server error",
+        error: error instanceof Error ? error.message : 'Internal server error',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -1,11 +1,9 @@
-"use client";
+'use client';
 
-import { Batch } from "./cv-batch-processor";
+import { Batch } from './cv-batch-processor';
 
 export function CompletedBatches({ batches }: { batches: Batch[] }) {
-  const sortedBatches = [...batches].sort((a, b) => {
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-  });
+  const sortedBatches = [...batches].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold">Completed Batches</h2>
@@ -22,24 +20,27 @@ export function CompletedBatches({ batches }: { batches: Batch[] }) {
                 </p>
                 <div className="flex gap-4 mt-2">
                   <p className="text-sm">
-                    <span className="text-muted-foreground">Total:</span>{" "}
+                    <span className="text-muted-foreground">Total:</span>
+                    {' '}
                     {batch.totalFiles}
                   </p>
                   <p className="text-sm">
-                    <span className="text-muted-foreground">Successful:</span>{" "}
+                    <span className="text-muted-foreground">Successful:</span>
+                    {' '}
                     <span className="text-green-600">{batch.successCount}</span>
                   </p>
                   <p className="text-sm">
-                    <span className="text-muted-foreground">Failed:</span>{" "}
+                    <span className="text-muted-foreground">Failed:</span>
+                    {' '}
                     <span className="text-red-600">{batch.failureCount}</span>
                   </p>
                 </div>
               </div>
               <div
                 className={`px-2 py-1 rounded-full text-xs ${
-                  batch.status === "completed"
-                    ? "bg-green-100 text-green-800"
-                    : "bg-red-100 text-red-800"
+                  batch.status === 'completed'
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-red-100 text-red-800'
                 }`}
               >
                 {batch.status}
@@ -57,18 +58,18 @@ export function CompletedBatches({ batches }: { batches: Batch[] }) {
                       <div
                         key={item._id}
                         className="p-2 border flex items-center justify-between"
-                        style={{ borderRadius: "10px" }}
+                        style={{ borderRadius: '10px' }}
                       >
                         <span className="truncate flex-1">{item.filename}</span>
                         <div
                           className="flex items-center gap-2 capitalize"
-                          style={{ maxWidth: "50%" }}
+                          style={{ maxWidth: '50%' }}
                         >
                           <span
                             className={`px-2 py-1 rounded-xl text-xs ${
-                              item.status === "success"
-                                ? "bg-green-100 text-green-800"
-                                : "bg-red-100 text-red-800"
+                              item.status === 'success'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-red-100 text-red-800'
                             }`}
                           >
                             {item.status}

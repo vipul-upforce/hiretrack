@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Notification } from "@/lib/mongodb";
-import { broadcastNotificationCount } from "@/lib/broadcast/broadcastNotifications";
-import { getAuthenticatedUser } from "@/app/actions/auth";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { Notification } from '@/lib/mongodb';
+import { broadcastNotificationCount } from '@/lib/broadcast/broadcastNotifications';
+import { getAuthenticatedUser } from '@/app/actions/auth';
 
 export async function PUT(request: NextRequest) {
   try {
@@ -13,8 +13,8 @@ export async function PUT(request: NextRequest) {
     ]);
     if (!Notification) {
       return NextResponse.json(
-        { error: "Notification Model not found" },
-        { status: 404 }
+        { error: 'Notification Model not found' },
+        { status: 404 },
       );
     }
 
@@ -29,13 +29,13 @@ export async function PUT(request: NextRequest) {
         {
           isRead: true,
           updatedAt: new Date(),
-        }
+        },
       ),
       broadcastNotificationCount(user.organizationId, user.id, 0),
     ]);
 
     return NextResponse.json({
-      message: "All notifications marked as read",
+      message: 'All notifications marked as read',
       modifiedCount: result.modifiedCount,
     });
   } catch (error: unknown) {
@@ -43,8 +43,8 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     return NextResponse.json(
-      { error: "Unknown error occurred" },
-      { status: 500 }
+      { error: 'Unknown error occurred' },
+      { status: 500 },
     );
   }
 }

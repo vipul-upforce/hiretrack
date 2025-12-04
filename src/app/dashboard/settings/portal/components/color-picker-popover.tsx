@@ -1,14 +1,14 @@
-import React from "react";
-import { HexColorPicker } from "react-colorful";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import React from 'react';
+import { HexColorPicker } from 'react-colorful';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
-import { PREDEFINED_COLORS } from "../constants";
+} from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { PREDEFINED_COLORS } from '../constants';
 
 interface ColorPickerPopoverProps {
   value: string;
@@ -55,8 +55,8 @@ export function ColorPickerPopover({
                   <button
                     key={color}
                     className={cn(
-                      "h-6 w-6 rounded border border-border",
-                      value === color && "ring-2 ring-primary ring-offset-2"
+                      'h-6 w-6 rounded border border-border',
+                      value === color && 'ring-2 ring-primary ring-offset-2',
                     )}
                     style={{ backgroundColor: color }}
                     onClick={() => onChange(color)}

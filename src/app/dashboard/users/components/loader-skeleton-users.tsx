@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
   TableCell,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 
 export default function LoaderSkeletonUsers() {
   const rows = Array.from({ length: 8 });
@@ -36,7 +36,9 @@ export default function LoaderSkeletonUsers() {
       <div className="flex-1 min-h-0 px-4 pb-4 mt-4 overflow-y-auto">
         <div className="border rounded-lg">
           <div className="px-6 py-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
-            <Skeleton className="h-5 w-32" /> {/* Title */}
+            <Skeleton className="h-5 w-32" />
+            {' '}
+            {/* Title */}
           </div>
 
           <div className="p-4">
@@ -65,7 +67,7 @@ export default function LoaderSkeletonUsers() {
                 {rows.map((_, i) => (
                   <TableRow key={i}>
                     <TableCell>
-                        <Skeleton className="h-5 w-32" />
+                      <Skeleton className="h-5 w-32" />
                     </TableCell>
 
                     <TableCell>

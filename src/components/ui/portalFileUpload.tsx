@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useCallback, useState } from "react";
-import { useDropzone } from "react-dropzone";
-import { Upload, X } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { RenameFileDialog } from "./rename-file-dialog";
+import { useCallback, useState } from 'react';
+import { useDropzone } from 'react-dropzone';
+import { Upload, X } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { RenameFileDialog } from './rename-file-dialog';
 
 interface FileUploadProps {
   onFileSelect: (files: File[]) => void;
@@ -60,11 +60,11 @@ interface RenameFileState {
 // }
 
 export const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return "0 Bytes";
+  if (bytes === 0) return '0 Bytes';
   const k = 1024;
-  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+  return `${parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`;
 };
 
 export function PortalFileUpload({
@@ -73,7 +73,7 @@ export function PortalFileUpload({
   maxFiles = 1,
   files,
   existingFiles = [],
-  id = "",
+  id = '',
   setter,
   isEdit = true,
 }: FileUploadProps) {
@@ -88,9 +88,7 @@ export function PortalFileUpload({
       const newFile = new File([renameFile.file], newName, {
         type: renameFile.file.type,
       });
-      const updatedFiles = files.map((f) =>
-        f === renameFile.file ? newFile : f
-      );
+      const updatedFiles = files.map((f) => (f === renameFile.file ? newFile : f));
       setter?.(updatedFiles);
       // setDroppedFiles((prev = []) => [...new Set([...prev, newName])]);
     }
@@ -98,7 +96,7 @@ export function PortalFileUpload({
 
   const handleRemoveFile = (fileNameToRemove: string) => {
     const updatedFiles = files.filter(
-      (file) => file?.name !== fileNameToRemove
+      (file) => file?.name !== fileNameToRemove,
     );
     setter(updatedFiles);
   };
@@ -110,7 +108,7 @@ export function PortalFileUpload({
       //   ...new Set([...prev, ...acceptedFiles.map((file) => file.name)]),
       // ]);
     },
-    [onFileSelect]
+    [onFileSelect],
   );
 
   const { getRootProps, getInputProps } = useDropzone({
@@ -119,8 +117,7 @@ export function PortalFileUpload({
     maxFiles,
   });
 
-  const previewFile: File | ExistingFile | undefined =
-    files[0] || existingFiles[0];
+  const previewFile: File | ExistingFile | undefined = files[0] || existingFiles[0];
 
   function isExistingFile(file: File | ExistingFile): file is ExistingFile {
     return (file as ExistingFile).url !== undefined;
@@ -141,7 +138,7 @@ export function PortalFileUpload({
         <div className="flex-1">
           <div className="flex items-center justify-between gap-4 p-2 bg-muted/30 rounded-md border">
             <div className="flex items-center gap-2">
-              {previewFile?.type?.startsWith("image/") ? (
+              {previewFile?.type?.startsWith('image/') ? (
                 <img
                   src={
                     isExistingFile(previewFile)
@@ -153,15 +150,17 @@ export function PortalFileUpload({
                 />
               ) : (
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded flex items-center justify-center text-white text-xs font-bold">
-                  {previewFile?.name?.charAt(0).toUpperCase() || "N"}
+                  {previewFile?.name?.charAt(0).toUpperCase() || 'N'}
                 </div>
               )}
               <div className="flex flex-col">
                 <p className="text-sm font-medium">
-                  {previewFile?.name || "No file uploaded"}
+                  {previewFile?.name || 'No file uploaded'}
                   {previewFile?.size && (
                     <span className="text-xs text-muted-foreground ml-2">
-                      ({formatFileSize(previewFile.size)})
+                      (
+                      {formatFileSize(previewFile.size)}
+                      )
                     </span>
                   )}
                 </p>
@@ -201,7 +200,7 @@ export function PortalFileUpload({
       <RenameFileDialog
         isOpen={!!renameFile.file || !!renameFile.existingFile}
         onClose={() => setRenameFile({ file: null, isExisting: false })}
-        fileName={renameFile.file?.name || renameFile.existingFile?.name || ""}
+        fileName={renameFile.file?.name || renameFile.existingFile?.name || ''}
         onRename={handleRename}
       />
     </div>

@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { Badge } from "@/components/ui/badge";
+import { Badge } from '@/components/ui/badge';
 
-export type StatusFilterValue = "draft" | "open" | "closed";
-export type DateFilterValue = "today" | "week" | "month" | "quarter";
-export type SortOption = "date-desc" | "date-asc" | "title-asc" | "title-desc" | "candidates-desc" | "candidates-asc";
+export type StatusFilterValue = 'draft' | 'open' | 'closed';
+export type DateFilterValue = 'today' | 'week' | 'month' | 'quarter';
+export type SortOption = 'date-desc' | 'date-asc' | 'title-asc' | 'title-desc' | 'candidates-desc' | 'candidates-asc';
 
 interface JobsFiltersProps {
   statusFilters: StatusFilterValue[];
@@ -42,23 +42,23 @@ export function JobsFilters({
         </span>
         <div className="flex items-center gap-2">
           <Badge
-            variant={statusFilters.includes("draft") ? "default" : "outline"}
+            variant={statusFilters.includes('draft') ? 'default' : 'outline'}
             className="cursor-pointer hover:opacity-80 transition-opacity text-xs"
-            onClick={() => handleStatusToggle("draft")}
+            onClick={() => handleStatusToggle('draft')}
           >
             Draft
           </Badge>
           <Badge
-            variant={statusFilters.includes("open") ? "default" : "outline"}
+            variant={statusFilters.includes('open') ? 'default' : 'outline'}
             className="cursor-pointer hover:opacity-80 transition-opacity text-xs"
-            onClick={() => handleStatusToggle("open")}
+            onClick={() => handleStatusToggle('open')}
           >
             Open
           </Badge>
           <Badge
-            variant={statusFilters.includes("closed") ? "default" : "outline"}
+            variant={statusFilters.includes('closed') ? 'default' : 'outline'}
             className="cursor-pointer hover:opacity-80 transition-opacity text-xs"
-            onClick={() => handleStatusToggle("closed")}
+            onClick={() => handleStatusToggle('closed')}
           >
             Closed
           </Badge>
@@ -72,30 +72,30 @@ export function JobsFilters({
         </span>
         <div className="flex items-center gap-2">
           <Badge
-            variant={dateFilters.includes("today") ? "default" : "outline"}
+            variant={dateFilters.includes('today') ? 'default' : 'outline'}
             className="cursor-pointer hover:opacity-80 transition-opacity text-xs"
-            onClick={() => handleDateToggle("today")}
+            onClick={() => handleDateToggle('today')}
           >
             Today
           </Badge>
           <Badge
-            variant={dateFilters.includes("week") ? "default" : "outline"}
+            variant={dateFilters.includes('week') ? 'default' : 'outline'}
             className="cursor-pointer hover:opacity-80 transition-opacity text-xs"
-            onClick={() => handleDateToggle("week")}
+            onClick={() => handleDateToggle('week')}
           >
             This Week
           </Badge>
           <Badge
-            variant={dateFilters.includes("month") ? "default" : "outline"}
+            variant={dateFilters.includes('month') ? 'default' : 'outline'}
             className="cursor-pointer hover:opacity-80 transition-opacity text-xs"
-            onClick={() => handleDateToggle("month")}
+            onClick={() => handleDateToggle('month')}
           >
             This Month
           </Badge>
           <Badge
-            variant={dateFilters.includes("quarter") ? "default" : "outline"}
+            variant={dateFilters.includes('quarter') ? 'default' : 'outline'}
             className="cursor-pointer hover:opacity-80 transition-opacity text-xs"
-            onClick={() => handleDateToggle("quarter")}
+            onClick={() => handleDateToggle('quarter')}
           >
             This Quarter
           </Badge>
