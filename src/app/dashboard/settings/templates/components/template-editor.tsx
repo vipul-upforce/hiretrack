@@ -1,11 +1,12 @@
-import React from "react";
-import { Code, Eye, RotateCcw } from "lucide-react";
+import React, { useState } from "react";
+import { Code, Eye, RotateCcw, Edit2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Editor } from "@monaco-editor/react";
 import { EmailTemplate } from "../types";
+import { TemplateVisualEditor } from "@/app/dashboard/jobs/[id]/components/Dialogs/email-candidate-components/TemplateVisualEditor";
 
 interface TemplateEditorProps {
   currentTemplate: EmailTemplate;
@@ -30,6 +31,8 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
   renderPreview,
   theme,
 }) => {
+  const [editorMode, setEditorMode] = useState<"code" | "visual">("visual");
+
   return (
     <div className="lg:col-span-2 space-y-4">
       <Card>
@@ -39,18 +42,42 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
               <Code className="h-5 w-5" />
               {currentTemplate.name}
             </CardTitle>
-            <div className="flex gap-2">
-              {currentTemplate.isDefault && (
+            <div className="flex gap-2 ">
+              {currentTemplate && (
                 <Button
                   variant="outline"
                   size="sm"
+                  className="h-8 rounded-md"
                   onClick={() => resetToDefault(currentTemplate.id)}
                 >
                   <RotateCcw className="h-4 w-4 mr-2" />
                   Reset to Default
                 </Button>
               )}
-              <Button
+              {!previewMode && (
+                < >
+                 
+                  <Button
+                    variant={editorMode === "visual" ? "primary" : "outline"}
+                    size="sm"
+                    onClick={() => setEditorMode("visual")}
+                    className="h-8"
+                  >
+                    <Edit2 className="h-3 w-3 mr-1" />
+                    Preview
+                  </Button>
+                  <Button
+                    variant={editorMode === "code" ? "primary" : "outline"}
+                    size="sm"
+                    onClick={() => setEditorMode("code")}
+                    className="h-8"
+                  >
+                    <Code className="h-4 w-4 mr-1" />
+                    Edit HTML
+                  </Button>
+                </>
+              )}
+              {/* <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setPreviewMode(!previewMode)}
@@ -61,7 +88,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
                   <Eye className="h-4 w-4 mr-2" />
                 )}
                 {previewMode ? "Edit" : "Preview"}
-              </Button>
+              </Button> */}
             </div>
           </div>
         </CardHeader>
@@ -93,6 +120,14 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
                   }}
                 />
               </div>
+            ) : editorMode === "visual" ? (
+              <TemplateVisualEditor
+                htmlContent={currentTemplate.content}
+                onContentChange={(html) =>
+                  updateTemplate(currentTemplate.id, "content", html)
+                }
+                className="min-h-[400px]"
+              />
             ) : (
               <div className="border rounded-lg overflow-hidden">
                 <Editor
