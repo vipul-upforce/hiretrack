@@ -12,7 +12,10 @@ import { AssignJobDialog } from "@/app/dashboard/jobs/[id]/components/Dialogs/as
 import AddRemarksDialog from "@/app/dashboard/jobs/[id]/components/Dialogs/add-remark-dialog";
 import ConfirmationDialog from "../../app/dashboard/jobs/[id]/components/Dialogs/ConfirmationDialog";
 import { toast } from "@/hooks/use-toast";
-import { useDeleteCandidateMutation } from "@/lib/features/candidate/candidateApi";
+import {
+  useDeleteCandidateMutation,
+  useBulkArchiveCandidatesMutation,
+} from "@/lib/features/candidate/candidateApi";
 import { SearchResultsSkeletonLoader } from "./search-results/skeleton-loader";
 import { ResultsHeader } from "./search-results/results-header";
 import { ResultsInfo } from "./search-results/results-info";
@@ -76,6 +79,7 @@ export function SearchResults({
   const [selectAll, setSelectAll] = useState(false);
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [filteredResults, setFilteredResults] = useState<Candidate[]>(results);
+  const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null);
 
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -106,6 +110,8 @@ export function SearchResults({
   );
 
   const [deleteCandidate] = useDeleteCandidateMutation();
+  const [bulkArchiveCandidates, { isLoading: isBulkArchiving }] =
+    useBulkArchiveCandidatesMutation();
 
   const applyFilters = useCallback(
     (candidates: Candidate[], filters: string[]) => {
@@ -155,6 +161,7 @@ export function SearchResults({
     setFilteredResults(applyFilters(results, activeFilters));
     setSelectedCandidates([]);
     setSelectAll(false);
+    setLastSelectedIndex(null);
   }, [results, activeFilters, applyFilters]);
 
   const handleToggleFilter = useCallback((filter: string) => {
@@ -176,13 +183,48 @@ export function SearchResults({
     }));
   }, []);
 
-  const handleSelectCandidate = useCallback((candidateId: string) => {
-    setSelectedCandidates((prev) =>
-      prev.includes(candidateId)
-        ? prev.filter((id) => id !== candidateId)
-        : [...prev, candidateId]
-    );
-  }, []);
+  const handleSelectCandidate = useCallback(
+    (candidateId: string, shiftKey: boolean = false) => {
+      const candidateIndex = filteredResults.findIndex(
+        (c) => c._id === candidateId
+      );
+
+      if (shiftKey && lastSelectedIndex !== null && candidateIndex !== -1) {
+        // Shift-click: toggle range selection from last selected to current
+        const startIndex = Math.min(lastSelectedIndex, candidateIndex);
+        const endIndex = Math.max(lastSelectedIndex, candidateIndex);
+        const rangeIds = filteredResults
+          .slice(startIndex, endIndex + 1)
+          .map((c) => c._id);
+
+        setSelectedCandidates((prev) => {
+          // Check if all items in range are selected using current state
+          const allSelected = rangeIds.every((id) => prev.includes(id));
+          const newSelection = new Set(prev);
+          if (allSelected) {
+            // If all selected, unselect the range
+            rangeIds.forEach((id) => newSelection.delete(id));
+          } else {
+            // If not all selected, select the range
+            rangeIds.forEach((id) => newSelection.add(id));
+          }
+          return Array.from(newSelection);
+        });
+        setLastSelectedIndex(candidateIndex);
+      } else {
+        // Regular click: toggle single selection
+        setSelectedCandidates((prev) => {
+          if (prev.includes(candidateId)) {
+            return prev.filter((id) => id !== candidateId);
+          } else {
+            return [...prev, candidateId];
+          }
+        });
+        setLastSelectedIndex(candidateIndex !== -1 ? candidateIndex : null);
+      }
+    },
+    [filteredResults, lastSelectedIndex]
+  );
 
   const handleSelectAll = useCallback(
     (checked: boolean | "indeterminate") => {
@@ -207,44 +249,58 @@ export function SearchResults({
     setIsAssignJobOpen(true);
   }, [filteredResults, selectedCandidates]);
 
-  const handleBulkDelete = useCallback(() => {
+  const handleBulkArchive = useCallback(() => {
+    const candidatesToArchive = filteredResults.filter((candidate) =>
+      selectedCandidates.includes(candidate._id)
+    );
+
+    if (candidatesToArchive.length === 0) {
+      toast({
+        title: "Info",
+        description: "No candidates selected",
+      });
+      return;
+    }
+
     setConfirmDialogConfig({
-      title: "Confirm Delete",
-      message: `Are you sure you want to delete ${selectedCandidates.length} candidate(s)? This action cannot be undone.`,
+      title: "Confirm Archive",
+      message: `Are you sure you want to archive ${candidatesToArchive.length} candidate(s)?`,
       buttonName: "Archive",
-      loadingText: "Deleting...",
+      loadingText: "Archiving...",
       onConfirm: async () => {
         setIsDeleting(true);
         try {
-          const deletePromises = selectedCandidates.map((candidateId) =>
-            deleteCandidate(candidateId).unwrap()
-          );
-          const results = await Promise.allSettled(deletePromises);
-          const successfulDeletes = results.filter(
-            (result) => result.status === "fulfilled"
-          ).length;
+          const result = await bulkArchiveCandidates({
+            candidateIds: candidatesToArchive.map((c) => c._id),
+            action: "archive",
+          }).unwrap();
 
-          if (successfulDeletes > 0) {
+          if (result.updatedCount > 0) {
             toast({
               title: "Success",
-              description: `Successfully deleted ${successfulDeletes} candidate(s)`,
+              description: `Successfully archived ${result.updatedCount} candidate(s)`,
             });
 
             setSelectedCandidates([]);
             setSelectAll(false);
-
             await refetch();
-          } else {
+          }
+
+          if (result.skippedCount > 0) {
             toast({
-              title: "Warning",
-              description: "No candidates were deleted",
-              variant: "destructive",
+              title: "Info",
+              description: `${result.skippedCount} candidate(s) were already archived`,
             });
           }
-        } catch {
+        } catch (error: unknown) {
+          const errorMessage =
+            error && typeof error === "object" && "data" in error
+              ? (error.data as { error?: string })?.error
+              : "Failed to archive candidates";
+
           toast({
             title: "Error",
-            description: "Failed to delete candidates",
+            description: errorMessage || "Failed to archive candidates",
             variant: "destructive",
           });
         } finally {
@@ -256,7 +312,73 @@ export function SearchResults({
     });
 
     setIsConfirmDialogOpen(true);
-  }, [selectedCandidates, deleteCandidate, refetch]);
+  }, [filteredResults, selectedCandidates, bulkArchiveCandidates, refetch]);
+
+  const handleBulkUnarchive = useCallback(() => {
+    const candidatesToUnarchive = filteredResults.filter((candidate) =>
+      selectedCandidates.includes(candidate._id)
+    );
+
+    if (candidatesToUnarchive.length === 0) {
+      toast({
+        title: "Info",
+        description: "No candidates selected",
+      });
+      return;
+    }
+
+    setConfirmDialogConfig({
+      title: "Confirm Unarchive",
+      message: `Are you sure you want to unarchive ${candidatesToUnarchive.length} candidate(s)?`,
+      buttonName: "Unarchive",
+      loadingText: "Unarchiving...",
+      onConfirm: async () => {
+        setIsDeleting(true);
+        try {
+          const result = await bulkArchiveCandidates({
+            candidateIds: candidatesToUnarchive.map((c) => c._id),
+            action: "unarchive",
+          }).unwrap();
+
+          if (result.updatedCount > 0) {
+            toast({
+              title: "Success",
+              description: `Successfully unarchived ${result.updatedCount} candidate(s)`,
+            });
+
+            setSelectedCandidates([]);
+            setSelectAll(false);
+            await refetch();
+          }
+
+          if (result.skippedCount > 0) {
+            toast({
+              title: "Info",
+              description: `${result.skippedCount} candidate(s) were already unarchived`,
+            });
+          }
+        } catch (error: unknown) {
+          const errorMessage =
+            error && typeof error === "object" && "data" in error
+              ? (error.data as { error?: string })?.error
+              : "Failed to unarchive candidates";
+
+          toast({
+            title: "Error",
+            description: errorMessage || "Failed to unarchive candidates",
+            variant: "destructive",
+          });
+        } finally {
+          setIsDeleting(false);
+          setIsConfirmDialogOpen(false);
+        }
+      },
+      onCancel: () => setIsConfirmDialogOpen(false),
+    });
+
+    setIsConfirmDialogOpen(true);
+  }, [filteredResults, selectedCandidates, bulkArchiveCandidates, refetch]);
+
 
   const handleViewDetails = useCallback((candidate: Candidate) => {
     setSelectedCandidate(candidate);
@@ -372,7 +494,8 @@ export function SearchResults({
           onColumnToggle={handleColumnToggle}
           selectedCandidatesCount={selectedCandidates.length}
           onBulkAssignJob={handleBulkAssignJob}
-          onBulkDelete={handleBulkDelete}
+          onBulkArchive={handleBulkArchive}
+          onBulkUnarchive={handleBulkUnarchive}
         />
 
         <ResultsInfo

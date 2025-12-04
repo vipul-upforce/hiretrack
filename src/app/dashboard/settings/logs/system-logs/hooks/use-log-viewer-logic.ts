@@ -13,6 +13,7 @@ import {
 } from "@/lib/features/settings/settingsApi";
 import { useDebounce } from "@/hooks/useDebounce";
 import { SystemLogsResponse } from "../types";
+import packageJson from "../../../../../../../package.json";
 
 export type LogType = "nginx" | "pm2";
 
@@ -27,20 +28,27 @@ export function useLogViewerLogic({
   setSearchQuery,
   onError,
 }: UseLogViewerLogicProps) {
-  const [isInitialFileLoading, setIsInitialFileLoading] = useState(false);
   const [logFiles, setLogFiles] = useState<string[]>([]);
   const [totalStorage, setTotalStorage] = useState<string>();
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<string[]>([]);
   const [isAvailable, setIsAvailable] = useState(false);
   const [showLn, setShowLn] = useState(false);
-  const [offset, setOffset] = useState(0);
+
+  const [startLineIndex, setStartLineIndex] = useState(0);
+  const [endLineIndex, setEndLineIndex] = useState(0);
+
   const [totalLines, setTotalLines] = useState(0);
-  const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [rawSearch, setRawSearch] = useState(searchQuery);
+
+  const [isInitialLoading, setIsInitialLoading] = useState(false);
+  const [isLoadingUp, setIsLoadingUp] = useState(false);
+  const [isLoadingDown, setIsLoadingDown] = useState(false);
 
   const linesPerLoad = 100;
   const logContainerRef = useRef<HTMLDivElement>(null);
+  const previousScrollHeightRef = useRef<number>(0);
+
   const debouncedSearchQuery = useDebounce(rawSearch, 700);
 
   const {
@@ -75,30 +83,32 @@ export function useLogViewerLogic({
   const isFileLoading =
     logType === "nginx" ? isNginxFileLoading : isPm2FileLoading;
 
-  const triggerGetFileContent = useCallback(
+  const fetchLogs = useCallback(
     (args: any) => {
-      if (logType === "nginx") return triggerNginxContent(args);
-      return triggerPm2Content(args);
+      if (logType === "nginx") return triggerNginxContent(args).unwrap();
+      return triggerPm2Content(args).unwrap();
     },
     [logType, triggerNginxContent, triggerPm2Content]
   );
 
+  // Reset on Search Change
   useEffect(() => {
     setSearchQuery(debouncedSearchQuery);
-    setOffset(0);
-    setTotalLines(0);
   }, [debouncedSearchQuery, setSearchQuery]);
 
+  // Reset on Tab Change
   useEffect(() => {
     setLogFiles([]);
     setSelectedFile(null);
     setFileContent([]);
     setIsAvailable(false);
-    setOffset(0);
+    setStartLineIndex(0);
+    setEndLineIndex(0);
     setTotalLines(0);
     onError?.(null);
   }, [logType, onError]);
 
+  // Handle File List Data
   useEffect(() => {
     if (isFilesError) {
       onError?.(
@@ -112,116 +122,152 @@ export function useLogViewerLogic({
       setLogFiles(activeData.files);
       setTotalStorage(activeData.size);
       if (!selectedFile && activeData.files.length > 0) {
-        setSelectedFile(activeData.files[0]);
+        let fileToSelect = activeData.files[0];
+
+        if (logType === "pm2") {
+          const version = packageJson.version;
+          const targetFileName = `hiretrack-v${version}-error.log`;
+
+          const foundFile = activeData.files.find((f) => f === targetFileName);
+
+          if (foundFile) {
+            fileToSelect = foundFile;
+          }
+        }
+
+        setSelectedFile(fileToSelect);
       }
     }
   }, [activeData, isFilesError, filesError, logType, selectedFile, onError]);
 
-  useLayoutEffect(() => {
-    if (logContainerRef.current) {
-      logContainerRef.current.scrollTop = 0;
-    }
-  }, [selectedFile, searchQuery]);
-
+  // Initial Load (Tail)
   useEffect(() => {
     if (!selectedFile) return;
 
-    if (offset === 0) {
-      if (fileContent.length > 0) setFileContent([]);
-      setIsInitialFileLoading(true);
-    }
+    setIsInitialLoading(true);
+    setFileContent([]);
 
-    triggerGetFileContent({
+    fetchLogs({
       file: selectedFile,
-      offset: 0,
+      mode: "tail",
       limit: linesPerLoad,
       query: searchQuery || "",
     })
-      .unwrap()
       .then((data) => {
         setFileContent(data.content || []);
-        setOffset((data.offset || 0) + (data.content?.length || 0));
+        setStartLineIndex(data.start);
+        setEndLineIndex(data.end);
         setTotalLines(data.totalLines || 0);
+
+        // Force scroll to bottom initially
+        setTimeout(() => {
+          if (logContainerRef.current) {
+            logContainerRef.current.scrollTop =
+              logContainerRef.current.scrollHeight;
+          }
+        }, 100);
       })
       .catch((err) => onError?.(err.message))
-      .finally(() => setIsInitialFileLoading(false));
+      .finally(() => setIsInitialLoading(false));
+  }, [selectedFile, searchQuery, fetchLogs, onError]);
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedFile, searchQuery, triggerGetFileContent]);
+  // Scroll Up Logic (Prepend)
+  const handleScrollUp = useCallback(() => {
+    if (isLoadingUp || startLineIndex === 0 || isInitialLoading) return;
 
-  useEffect(() => {
-    const container = logContainerRef.current;
-    const sentinel = document.getElementById("log-sentinel");
+    setIsLoadingUp(true);
 
+    // Capture height for scroll restoration
+    if (logContainerRef.current) {
+      previousScrollHeightRef.current = logContainerRef.current.scrollHeight;
+    }
+
+    const reqEnd = startLineIndex;
+    const reqStart = Math.max(0, startLineIndex - linesPerLoad);
+
+    fetchLogs({
+      file: selectedFile,
+      mode: "range",
+      start: reqStart,
+      end: reqEnd,
+      query: searchQuery || "",
+    })
+      .then((data) => {
+        if (data.content?.length > 0) {
+          setFileContent((prev) => [...data.content, ...prev]);
+          setStartLineIndex(data.start);
+        }
+      })
+      .catch((err) => onError?.(err.message))
+      .finally(() => setIsLoadingUp(false));
+  }, [
+    isLoadingUp,
+    startLineIndex,
+    isInitialLoading,
+    selectedFile,
+    linesPerLoad,
+    searchQuery,
+    fetchLogs,
+    onError,
+  ]);
+
+  useLayoutEffect(() => {
     if (
-      !selectedFile ||
-      isFetchingMore ||
-      isInitialFileLoading ||
-      !container ||
-      !sentinel
+      isLoadingUp ||
+      !logContainerRef.current ||
+      previousScrollHeightRef.current === 0
     )
       return;
-    if (totalLines > 0 && offset >= totalLines) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const target = entries[0];
-        if (target.isIntersecting) {
-          setIsFetchingMore(true);
+    const newScrollHeight = logContainerRef.current.scrollHeight;
+    const diff = newScrollHeight - previousScrollHeightRef.current;
 
-          triggerGetFileContent({
-            file: selectedFile,
-            offset,
-            limit: linesPerLoad,
-            query: searchQuery || "",
-          })
-            .unwrap()
-            .then((data) => {
-              if (data.content?.length) {
-                setFileContent((prev) => [...prev, ...data.content]);
-                setOffset((prev) => prev + data.content.length);
-              }
-              setTotalLines(data.totalLines || 0);
-            })
-            .catch((err) => onError?.(err.message))
-            .finally(() => {
-              setIsFetchingMore(false);
-            });
+    if (diff > 0) {
+      logContainerRef.current.scrollTop += diff;
+    }
+    previousScrollHeightRef.current = 0;
+  }, [fileContent, isLoadingUp]);
+
+  const handleLoadMore = useCallback(() => {
+    if (isLoadingDown || !selectedFile) return;
+
+    setIsLoadingDown(true);
+
+    const reqStart = endLineIndex;
+    const reqEnd = endLineIndex + linesPerLoad;
+
+    fetchLogs({
+      file: selectedFile,
+      mode: "range",
+      start: reqStart,
+      end: reqEnd,
+      query: searchQuery || "",
+    })
+      .then((data) => {
+        if (data.content?.length > 0) {
+          setFileContent((prev) => [...prev, ...data.content]);
+          setEndLineIndex(data.end);
+          setTotalLines(data.totalLines);
         }
-      },
-      {
-        root: container,
-        threshold: 0.1,
-        rootMargin: "50px",
-      }
-    );
-
-    observer.observe(sentinel);
-
-    return () => {
-      observer.disconnect();
-    };
+      })
+      .catch((err) => onError?.(err.message))
+      .finally(() => setIsLoadingDown(false));
   }, [
+    isLoadingDown,
     selectedFile,
-    offset,
-    totalLines,
-    isFetchingMore,
-    isInitialFileLoading,
-    triggerGetFileContent,
+    endLineIndex,
+    linesPerLoad,
     searchQuery,
+    fetchLogs,
     onError,
   ]);
 
   const handleFileSelect = useCallback(
     (file: string) => {
       if (selectedFile === file) return;
-      setSearchQuery("");
       setRawSearch("");
+      setSearchQuery("");
       setSelectedFile(file);
-      setFileContent([]);
-      setOffset(0);
-      setTotalLines(0);
-      setIsInitialFileLoading(true);
     },
     [selectedFile, setSearchQuery]
   );
@@ -230,8 +276,7 @@ export function useLogViewerLogic({
     setRawSearch(v);
   }, []);
 
-  const globalLoading =
-    isFilesLoading || isFileLoading || isFetchingMore || isInitialFileLoading;
+  const globalLoading = isFilesLoading || isFileLoading || isInitialLoading;
 
   return {
     files: logFiles,
@@ -239,9 +284,8 @@ export function useLogViewerLogic({
     fileContent,
     isAvailable,
     showLn,
-    offset,
+    offset: startLineIndex,
     totalLines,
-    isFetchingMore,
     rawSearch,
     isFilesLoading,
     globalLoading,
@@ -250,5 +294,10 @@ export function useLogViewerLogic({
     handleFileSelect,
     handleSearchChange,
     totalStorage,
+    isLoadingUp,
+    isLoadingDown,
+    startLineIndex,
+    handleScrollUp,
+    handleLoadMore,
   };
 }

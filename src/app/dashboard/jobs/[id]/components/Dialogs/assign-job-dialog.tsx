@@ -21,6 +21,7 @@ import { toast } from "@/hooks/use-toast";
 import {
   useFetchOpenJobsQuery,
   useAssignJobMutation,
+  useBulkAssignJobMutation,
 } from "@/lib/features/job/jobApi";
 import { Loader2, AlertCircle } from "lucide-react";
 import { useState } from "react";
@@ -51,6 +52,7 @@ export function AssignJobDialog({
 }: AssignJobDialogProps) {
   const { data: jobs, isFetching, error } = useFetchOpenJobsQuery();
   const [assignJob] = useAssignJobMutation();
+  const [bulkAssignJob] = useBulkAssignJobMutation();
   const [loading, setLoading] = useState(false);
 
   // Determine if multiple candidates are being assigned
@@ -77,35 +79,42 @@ export function AssignJobDialog({
     setLoading(true);
     try {
       if (isMultiple) {
-        // Handle multiple candidates
-        const updatedCandidates: Candidate[] = [];
-        for (const c of candidate) {
-          const isAlreadyAssigned =
-            c.jobId &&
-            (typeof c.jobId === "string"
-              ? c.jobId === values.jobId
-              : c.jobId._id === values.jobId);
+        // Use bulk endpoint for multiple candidates
+        try {
+          const candidateIdsToMove = candidate
+            .filter((c) => {
+              const isAlreadyAssigned =
+                c.jobId &&
+                (typeof c.jobId === "string"
+                  ? c.jobId === values.jobId
+                  : c.jobId._id === values.jobId);
+              return !isAlreadyAssigned;
+            })
+            .map((c) => c._id);
 
-          if (!isAlreadyAssigned) {
-            const resp = await assignJob({
-              jobId: values.jobId,
-              candidateId: c._id,
-            }).unwrap();
-            updatedCandidates.push(resp.updatedCandidate);
+          if (candidateIdsToMove.length === 0) {
+            toast({
+              title: "Warning",
+              description: "All selected candidates are already assigned to this job",
+              variant: "destructive",
+            });
+            return;
           }
-        }
 
-        if (updatedCandidates.length > 0) {
-          onJobAssignment?.(updatedCandidates);
+          const resp = await bulkAssignJob({
+            jobId: values.jobId,
+            candidateIds: candidateIdsToMove,
+          }).unwrap();
+
+          onJobAssignment?.(resp.updatedCandidates);
           toast({
             title: "Success",
-            description: `Successfully assigned ${updatedCandidates.length} candidate(s) to the job`,
+            description: `Successfully assigned ${candidateIdsToMove.length} candidate(s) to the job`,
           });
-        } else {
+        } catch (error) {
           toast({
-            title: "Warning",
-            description:
-              "All selected candidates are already assigned to this job",
+            title: "Error",
+            description: "Bulk job assignment failed.",
             variant: "destructive",
           });
         }

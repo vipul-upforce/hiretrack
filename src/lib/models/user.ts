@@ -32,13 +32,13 @@ export interface EmailNotificationSettings {
     followupAdded: boolean;
     followupUpdated: boolean;
     followupRemoved: boolean;
-    checklistCompleted: boolean;
     jobCreated: boolean;
     jobUpdated: boolean;
     userAdded: boolean;
     bulkImportCompleted: boolean;
     candidateRejected: boolean;
     interviewCompleted: boolean;
+    candidateMoved: boolean;
   };
   jobLevel: {
     [jobId: string]: {
@@ -58,13 +58,13 @@ export interface EmailNotificationSettings {
       followupAdded?: boolean;
       followupUpdated?: boolean;
       followupRemoved?: boolean;
-      checklistCompleted?: boolean;
       jobCreated?: boolean;
       jobUpdated?: boolean;
       userAdded?: boolean;
       bulkImportCompleted?: boolean;
       candidateRejected?: boolean;
       interviewCompleted?: boolean;
+      candidateMoved?: boolean;
     };
   };
 }
@@ -164,13 +164,13 @@ export const userSchema = new Schema<IUser>(
         followupAdded: { type: Boolean, default: true },
         followupUpdated: { type: Boolean, default: true },
         followupRemoved: { type: Boolean, default: true },
-        checklistCompleted: { type: Boolean, default: true },
         jobCreated: { type: Boolean, default: true },
         jobUpdated: { type: Boolean, default: true },
         userAdded: { type: Boolean, default: true },
         bulkImportCompleted: { type: Boolean, default: true },
         candidateRejected: { type: Boolean, default: true },
         interviewCompleted: { type: Boolean, default: true },
+        candidateMoved: { type: Boolean, default: true },
       },
       jobLevel: {
         type: Map,
@@ -191,12 +191,12 @@ export const userSchema = new Schema<IUser>(
           followupAdded: { type: Boolean },
           followupUpdated: { type: Boolean },
           followupRemoved: { type: Boolean },
-          checklistCompleted: { type: Boolean },
           jobCreated: { type: Boolean },
           jobUpdated: { type: Boolean },
           bulkImportCompleted: { type: Boolean },
           candidateRejected: { type: Boolean },
           interviewCompleted: { type: Boolean },
+          candidateMoved: { type: Boolean },
         },
         default: new Map(),
       },

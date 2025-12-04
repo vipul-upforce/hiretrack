@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { MoreVertical, Briefcase, Archive } from "lucide-react";
+import { MoreVertical, Briefcase, Archive, ArchiveRestore } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -13,13 +13,15 @@ import { memo } from "react";
 interface BulkActionsProps {
   selectedCount: number;
   onAssignJob: () => void;
-  onDelete: () => void;
+  onArchive: () => void;
+  onUnarchive: () => void;
 }
 
 export const BulkActions = memo(function BulkActions({
   selectedCount,
   onAssignJob,
-  onDelete,
+  onArchive,
+  onUnarchive,
 }: BulkActionsProps) {
   if (selectedCount === 0) return null;
 
@@ -40,9 +42,13 @@ export const BulkActions = memo(function BulkActions({
           <Briefcase className="mr-2 h-4 w-4" />
           Assign Job
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={onDelete}>
+        <DropdownMenuItem onClick={onArchive}>
           <Archive className="mr-2 h-4 w-4" />
           Archive
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={onUnarchive}>
+          <ArchiveRestore className="mr-2 h-4 w-4" />
+          Unarchive
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

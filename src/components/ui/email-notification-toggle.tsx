@@ -30,13 +30,13 @@ export type EmailNotificationType =
   | "followupAdded"
   | "followupUpdated"
   | "followupRemoved"
-  | "checklistCompleted"
   | "jobCreated"
   | "jobUpdated"
   | "userAdded"
   | "bulkImportCompleted"
   | "candidateRejected"
-  | "interviewCompleted";
+  | "interviewCompleted"
+  | "candidateMoved";
 
 export interface EmailNotificationToggleProps {
   type: EmailNotificationType;
@@ -116,10 +116,6 @@ const notificationLabels: Record<
     label: "Follow-Up Removed",
     description: "Get notified when a follow-up task is deleted",
   },
-  checklistCompleted: {
-    label: "Checklist Completed",
-    description: "Get notified when a checklist is completed",
-  },
   jobCreated: {
     label: "Job Created",
     description: "Get notified when a new job is created",
@@ -144,6 +140,10 @@ const notificationLabels: Record<
     label: "Interview Completed",
     description: "Get notified when interviews are completed",
   },
+  candidateMoved: {
+    label: "Candidate Moved",
+    description: "Get notified when a candidate is moved from one job to another",
+  },
 };
 
 const sourceColors: Record<string, string> = {
@@ -158,7 +158,7 @@ const sourceColors: Record<string, string> = {
 
 const sourceLabels: Record<string, string> = {
   "job-level": "Job Setting",
-  "global-user": "User Setting",
+  "global-user": "Global Setting",
   "admin-override": "Admin Override",
   "org-default": "Default",
 };

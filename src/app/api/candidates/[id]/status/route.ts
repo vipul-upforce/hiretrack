@@ -58,37 +58,7 @@ export async function PATCH(
         { status: 404 }
       );
     }
-    // console.log(oldStatus, "Olda status===000000");
-    // console.log(status, "neww status===000000");
-
-    // Trigger notification if status actually changed
-    if (oldStatus !== status && oldStatus && status) {
-      try {
-        const jobInfo = updatedCandidate.jobId as Record<string, unknown>;
-        await NotificationService.notifyCandidateStatusUpdated({
-          organizationId: userData?.organizationId,
-          candidateId: updatedCandidate._id.toString(),
-          candidateName: updatedCandidate.name,
-          jobId:
-            jobInfo?._id?.toString() ||
-            updatedCandidate.jobId?.toString() ||
-            "",
-          jobTitle: jobInfo?.title as string || "Unknown Job",
-          oldStatus,
-          newStatus: status,
-          triggerUserId: userData.id,
-          triggerUserName: userData.name,
-        });
-        // console.log("Status updatesss notifyyy  ===== = ");
-      } catch (notificationError) {
-        console.error(
-          "Failed to send status update notification:",
-          notificationError
-        );
-        // Don't fail the API call if notification fails
-      }
-    }
-
+    
     return NextResponse.json(updatedCandidate);
   } catch (error: unknown) {
     if (error instanceof Error) {

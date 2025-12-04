@@ -16,7 +16,9 @@ async function getPM2Logs(
   const { file } = await params;
   const { searchParams } = new URL(req.url);
 
-  const offset = parseInt(searchParams.get("offset") || "0", 10);
+  const mode = searchParams.get("mode") || "tail";
+  const startParam = parseInt(searchParams.get("start") || "0", 10);
+  const endParam = parseInt(searchParams.get("end") || "0", 10);
   const limit = parseInt(searchParams.get("limit") || "100", 10);
   const query = searchParams.get("query")?.toLowerCase() || "";
 
@@ -49,14 +51,30 @@ async function getPM2Logs(
     }
 
     const totalLines = allLines.length;
-    const reversedLines = allLines.reverse();
-    const paginated = reversedLines.slice(offset, offset + limit);
+    let slicedLines: string[] = [];
+    let nextStart = 0;
+    let nextEnd = 0;
+
+    if (mode === "tail") {
+      const startIndex = Math.max(0, totalLines - limit);
+      slicedLines = allLines.slice(startIndex, totalLines);
+
+      nextStart = startIndex;
+      nextEnd = totalLines;
+    } else {
+      const safeStart = Math.max(0, startParam);
+      const safeEnd = Math.min(totalLines, endParam);
+
+      slicedLines = allLines.slice(safeStart, safeEnd);
+      nextStart = safeStart;
+      nextEnd = safeEnd;
+    }
 
     return NextResponse.json({
-      content: paginated,
+      content: slicedLines,
       totalLines,
-      offset,
-      limit,
+      start: nextStart,
+      end: nextEnd,
       query,
     });
   } catch (error) {

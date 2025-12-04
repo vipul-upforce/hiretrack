@@ -125,13 +125,13 @@ export async function PUT(
         "followupAdded",
         "followupUpdated",
         "followupRemoved",
-        "checklistCompleted",
         "jobCreated",
         "jobUpdated",
         "userAdded",
         "bulkImportCompleted",
         "candidateRejected",
         "interviewCompleted",
+        "candidateMoved",
       ];
       for (const key of validKeys) {
         if (global[key] !== undefined && typeof global[key] !== "boolean") {
@@ -171,7 +171,6 @@ export async function PUT(
             "followupAdded",
             "followupUpdated",
             "followupRemoved",
-            "checklistCompleted",
             "jobCreated",
             "jobUpdated",
             "userAdded",

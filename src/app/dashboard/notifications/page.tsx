@@ -183,9 +183,9 @@ export default function NotificationsPage() {
           type === NotificationType.FOLLOWUP_ADDED ||
           type === NotificationType.FOLLOWUP_UPDATED ||
           type === NotificationType.FOLLOWUP_REMOVED ||
-          type === NotificationType.CHECKLIST_COMPLETED ||
           type === NotificationType.JOB_CREATED ||
           type === NotificationType.JOB_UPDATED ||
+          type === NotificationType.CANDIDATE_MOVED ||
           // type === NotificationType.USER_ADDED ||
           type === NotificationType.BULK_IMPORT_COMPLETED ||
           type === NotificationType.INTERVIEW_COMPLETED

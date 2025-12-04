@@ -195,6 +195,26 @@ export const candidateApi = createApi({
       }),
       invalidatesTags: ["Candidate"],
     }),
+    bulkArchiveCandidates: builder.mutation<
+      {
+        success: boolean;
+        message: string;
+        updatedCount: number;
+        skippedCount: number;
+        failedCount: number;
+      },
+      {
+        candidateIds: string[];
+        action: "archive" | "unarchive";
+      }
+    >({
+      query: ({ candidateIds, action }) => ({
+        url: "/candidates/bulk-archive",
+        method: "POST",
+        body: { candidateIds, action },
+      }),
+      invalidatesTags: ["Candidate"],
+    }),
   }),
 });
 
@@ -218,4 +238,5 @@ export const {
   useRefetchCandidateMutation,
   useCandidateSignupMutation,
   useApplicationEventMailMutation,
+  useBulkArchiveCandidatesMutation,
 } = candidateApi;

@@ -53,6 +53,7 @@ const AddRemarksDialog = ({
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
   const [sendStatusMail] = useSendStatusMailMutation();
   const { user } = useSelector((state: any) => state.auth || {});
+  const [selectedMentions, setSelectedMentions] = useState<Array<{_id: string; name: string; email: string; role: string}>>([]);
 
   const handleAddRemark = async () => {
     if (isSubmitting) return;
@@ -87,6 +88,7 @@ const AddRemarksDialog = ({
             name: user.name,
             email: user.email,
           },
+          selectedMentionUserIds: selectedMentions.map(m => m._id),
         };
 
         // debugger;
@@ -138,16 +140,19 @@ const AddRemarksDialog = ({
           jobId: candidate.jobId,
           newEntry: newHistoryEntry,
         }).unwrap();
-        // debugger;
-        const wasUpdatedRecently =
-          (() => {
-            const updatedAt = getTrackingDate(candidate, "updatedAt");
-            return updatedAt && Date.now() - updatedAt.getTime() <= 20 * 1000; // 20 seconds
-          })();
-
         const updatedCandidate = await updateCandidate(updateData).unwrap();
+        
+        // Send status mail if status was recently updated (within 20 seconds)
+        // This handles the case where remark dialog was opened after status update
+        const updatedAt = getTrackingDate(candidate, "updatedAt");
+        const wasUpdatedRecently =
+          updatedAt && Date.now() - updatedAt.getTime() <= 20 * 1000;
+
         if (wasUpdatedRecently) {
-          await sentStatusMailHandler(updatedCandidate, sendStatusMail);
+          await sentStatusMailHandler(updatedCandidate, sendStatusMail, {
+            remark: newRemark.trim(),
+            rating: remarkRating,
+          });
         }
         // sentRemarkMail(result, sendEmail);
 
@@ -196,23 +201,25 @@ const AddRemarksDialog = ({
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1  px-6 py-4 space-y-4">
-          <MentionTextarea
-            placeholder="Add a remark... (Alt+Enter to submit)"
-            className="max-h-80 overflow-y-auto"
-            value={newRemark}
-            onChange={setNewRemark}
-            onKeyDown={(e) => {
-              if (e.altKey && e.key === "Enter") {
-                e.preventDefault();
-                if (newRemark.trim() && !isSubmitting) {
-                  handleAddRemark();
-                }
-              }
-            }}
-            organizationId={user?.organizationId || ""}
-            currentUserRole={user?.role || ""}
-            rows={4}
-          />
+              <MentionTextarea
+                placeholder="Add a remark... (Alt+Enter to submit)"
+                className="max-h-80 overflow-y-auto"
+                value={newRemark}
+                onChange={setNewRemark}
+                onKeyDown={(e) => {
+                  if (e.altKey && e.key === "Enter") {
+                    e.preventDefault();
+                    if (newRemark.trim() && !isSubmitting) {
+                      handleAddRemark();
+                    }
+                  }
+                }}
+                organizationId={user?.organizationId || ""}
+                currentUserRole={user?.role || ""}
+                rows={4}
+                isRemarkPrivate={isSubRemarkPrivate}
+                onSelectedMentionsChange={setSelectedMentions}
+              />
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
               <Label htmlFor="rating">Ratings:</Label>

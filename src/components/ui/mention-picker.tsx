@@ -34,6 +34,7 @@ interface MentionPickerProps {
   searchQuery: string;
   onSearchQueryChange: (query: string) => void;
   position?: "top" | "bottom";
+  isRemarkPrivate?: boolean;
 }
 
 export const MentionPicker = forwardRef<
@@ -53,6 +54,7 @@ export const MentionPicker = forwardRef<
       searchQuery,
       onSearchQueryChange,
       position = "bottom",
+      isRemarkPrivate = true,
     },
     ref
   ) => {
@@ -87,17 +89,35 @@ export const MentionPicker = forwardRef<
       }
     }, [organizationId, shouldShowMentionPicker, loadUsers]); // Added missing dependencies
 
-    // Filter users based on search query
+    // Filter users based on search query and remark privacy
     const filteredUsers = useMemo(() => {
-      if (!searchQuery) return users;
+      // First filter by role based on remark privacy
+      let roleFilteredUsers = users;
+      if (isRemarkPrivate) {
+        // Private remarks: only show HR and admin
+        roleFilteredUsers = users.filter(
+          (user) => user.role === "hr" || user.role === "admin"
+        );
+      } else {
+        // Public remarks: show HR, admin, and interviewer
+        roleFilteredUsers = users.filter(
+          (user) =>
+            user.role === "hr" ||
+            user.role === "admin" ||
+            user.role === "interviewer"
+        );
+      }
+
+      // Then filter by search query if provided
+      if (!searchQuery) return roleFilteredUsers;
 
       const query = searchQuery.toLowerCase();
-      return users.filter(
+      return roleFilteredUsers.filter(
         (user) =>
           user.name.toLowerCase().includes(query) ||
           user.email.toLowerCase().includes(query)
       );
-    }, [users, searchQuery]);
+    }, [users, searchQuery, isRemarkPrivate]);
 
     // Handle user selection
     const handleUserSelect = (user: MentionUser) => {

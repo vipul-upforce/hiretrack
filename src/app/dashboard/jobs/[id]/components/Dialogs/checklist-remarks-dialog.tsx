@@ -392,7 +392,11 @@ const ChecklistRemarksDialog = ({
             ...updatedCandidate,
             prev_status: parsedChecklistInfo.currentLane,
           },
-          sendStatusMail
+          sendStatusMail,
+          {
+            remark: newRemark.trim(),
+            rating: remarkRating,
+          }
         );
       } else if (newRemark.trim()) {
         // Only submit remark if no checklist
@@ -448,7 +452,10 @@ const ChecklistRemarksDialog = ({
         }).unwrap();
 
         const updatedCandidate = await updateCandidate(updateData).unwrap();
-        await sentStatusMailHandler(updatedCandidate, sendStatusMail);
+        await sentStatusMailHandler(updatedCandidate, sendStatusMail, {
+          remark: newRemark.trim(),
+          rating: remarkRating,
+        });
       }
 
       onOpenChange(false);

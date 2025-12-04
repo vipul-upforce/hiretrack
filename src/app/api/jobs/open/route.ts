@@ -4,6 +4,7 @@ import { Job, Candidate, History } from "@/lib/mongodb";
 import { ICandidateHistory } from "@/lib/models/history";
 import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
 import { getAuthenticatedUser } from "@/app/actions/auth";
+import { NotificationService } from "@/lib/notifications/notificationService";
 
 export async function GET(request: NextRequest) {
   try {
@@ -157,6 +158,30 @@ export async function POST(req: NextRequest) {
       { $push: { history: historyEntry } },
       { upsert: true }
     );
+    
+    // Send notification about candidate being moved
+    if (previousJob && user) {
+      try {
+        await NotificationService.notifyCandidateMoved({
+          organizationId: user.organizationId,
+          candidateId: candidateId,
+          candidateName: candidate.name || "Unknown Candidate",
+          fromJobId: previousJob._id.toString(),
+          fromJobTitle: previousJob.title,
+          toJobId: jobId,
+          toJobTitle: nextJob.title,
+            triggerUserId: user.id,
+          triggerUserName: user.name,
+        });
+      } catch (notificationError) {
+        console.error(
+          "Failed to send candidate moved notification:",
+          notificationError
+        );
+        // Don't fail the API call if notification fails
+      }
+    }
+    
     const updatedHistory = await History!
       .findOne({
         jobId,

@@ -127,7 +127,7 @@ export const useRemarkHandlers = (
     }
   };
 
-  const handleAddRemark = async () => {
+  const handleAddRemark = async (selectedMentionUserIds?: string[]) => {
     // debugger;
     if (!newRemark.trim() || !user?.id) {
       toast({
@@ -161,6 +161,7 @@ export const useRemarkHandlers = (
           name: user.name,
           email: user.email,
         },
+        selectedMentionUserIds: selectedMentionUserIds || [], // Store selected mention user IDs
       };
       const newHistoryEntry: ICandidateHistory = {
         dateTime: new Date().toISOString(),

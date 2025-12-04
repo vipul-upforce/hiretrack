@@ -136,13 +136,14 @@ export const useCandidate = ({
         status: pendingMove.targetLaneId,
       }).unwrap();
 
-      // Send status change email
+      // Send status change email notification
       sentStatusMailHandler(
         {
           ...updatedCandidate,
           prev_status: pendingMove.sourceLaneId,
         },
-        sendStatusMail
+        sendStatusMail,
+        { remark: "" }
       );
 
       // Remove from pending moves
@@ -295,6 +296,9 @@ export const useCandidate = ({
           destination.droppableId
         );
 
+        // Track if a dialog will be opened (so we don't send email immediately)
+        let dialogWillBeOpened = false;
+
         // Handle movement based on checklist requirements
         if (validationResult.validation.requiresChecklist) {
           const validationInfo = {
@@ -338,12 +342,14 @@ export const useCandidate = ({
           // Show dialog with checklist for optional checklists
           // if (promptForStatusChangeReason) {
           setOpenRemarksFor(JSON.stringify(validationInfo));
+          dialogWillBeOpened = true;
           // }
         } else {
           // No checklist required, proceed with optimistic update and normal remarks dialog
           setColumns(newColumns);
           if (job?.promptForStatusChangeReason) {
             setOpenRemarksFor(draggableId);
+            dialogWillBeOpened = true;
           }
         }
 
@@ -353,12 +359,15 @@ export const useCandidate = ({
           status: destination.droppableId,
         }).unwrap();
 
+        // Always send status mail when status is updated
+        // If dialog opens and remark is added, another email will be sent with that remark
         sentStatusMailHandler(
           {
             ...updatedCandidate,
             prev_status: source.droppableId,
           },
-          sendStatusMail
+          sendStatusMail,
+          { remark: "" }
         );
       } catch (error) {
         // Revert on error

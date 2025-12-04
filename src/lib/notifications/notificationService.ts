@@ -45,7 +45,7 @@ export class NotificationService {
       if (!Notification) {
         throw new Error("Notification model not available");
       }
-
+      console.log(params, "params to direct notification");
       const notification = await Notification.create({
         organizationId: params.organizationId,
         recipientId: params.recipientId,
@@ -102,8 +102,11 @@ export class NotificationService {
       console.log(baseParams, "baseParams");
 
       const recipients = recipientIds.filter(
-        (id) => id !== baseParams.triggerUserId
+        (id) =>
+          id !== baseParams.triggerUserId &&
+          id !== baseParams.metadata?.interviewerId
       );
+      console.log(recipients, "recipients");
       const notifications = recipients.map((recipientId) => ({
         organizationId: baseParams.organizationId,
         recipientId,
@@ -177,7 +180,33 @@ export class NotificationService {
       return [];
     }
   }
+  static async getUsersEmailByRole(
+    organizationId: string,
+    roles: string[]
+  ): Promise<{ id: string; email: string }[]> {
+    try {
+      await connectToDatabase();
 
+      if (!User) {
+        throw new Error("User model not available");
+      }
+
+      const users = await User.find({
+        organizationId,
+        role: { $in: roles },
+        isDeleted: { $ne: true },
+      }).select("_id role name email");
+      const userEmails = users.map((user) => {
+        return { id: user._id.toString(), email: user.email };
+      });
+      return userEmails as { id: string; email: string }[];
+    } catch (error) {
+      console.error("❌ Error getting users by role:", error);
+      return [];
+    }
+  }
+
+  /** Notify when candidate is applied for a job */
   static async notifyCandidateApplied(params: {
     organizationId: string;
     candidateId: string;
@@ -211,7 +240,7 @@ export class NotificationService {
           jobId: params.jobId,
           triggererUserId: params.triggerUserId,
           isMention: false,
-          notificationCategory: "email",
+          notificationCategory: "inApp",
         }));
       console.log(decisionContexts, "decisionContexts");
 
@@ -233,7 +262,7 @@ export class NotificationService {
           organizationId: params.organizationId,
           type: NotificationType.NEW_APPLICATIONS,
           title: "New Candidate Application",
-          message: `${params.candidateName} has applied for ${params.jobTitle}`,
+          message: `A new application from ${params.candidateName} has been received for the ${params.jobTitle} role.`,
           relatedEntity: "candidate",
           relatedId: params.candidateId,
           actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
@@ -258,6 +287,113 @@ export class NotificationService {
     }
   }
 
+  /** Notify when remark is added by HR/Admin */
+  static async notifyRemarkAdded(params: {
+    organizationId: string;
+    candidateId: string;
+    candidateName: string;
+    jobId: string;
+    jobTitle: string;
+    remarkText: string;
+    triggerUserId: string;
+    triggerUserName: string;
+    roles: string[];
+    validMentionUserIds?: string[]; // User IDs selected from mention picker
+  }) {
+    try {
+      await connectToDatabase();
+      const userIds = await this.getUsersByRole(
+        params.organizationId,
+        params.roles
+      );
+      const filteredUserIds = userIds.filter(
+        (id) => id !== params.triggerUserId
+      );
+
+      let mentionedUserIds: string[] = [];
+      try {
+        const mentionResult = await findMentionedUsers(
+          params.remarkText,
+          params.organizationId,
+          params.validMentionUserIds
+        );
+        mentionedUserIds = mentionResult.mentionedUsers.map((u) =>
+          u._id.toString()
+        );
+        console.log("Mentioned users:", mentionedUserIds);
+      } catch (mentionError) {
+        console.error("Error in mention detection:", mentionError);
+      }
+
+      const allRecipients = [
+        ...new Set([...filteredUserIds, ...mentionedUserIds]),
+      ];
+
+      if (allRecipients.length === 0) {
+        console.log("No eligible recipients for remark notification");
+        return;
+      }
+
+      const decisionContexts: NotificationDecisionContext[] = allRecipients.map(
+        (userId) => ({
+          organizationId: params.organizationId,
+          recipientUserId: userId,
+          notificationType: mentionedUserIds.includes(userId)
+            ? NotificationType.MENTIONS
+            : NotificationType.NEW_REMARKS,
+          jobId: params.jobId,
+          triggererUserId: params.triggerUserId,
+          isMention: mentionedUserIds.includes(userId),
+          notificationCategory: "inApp",
+        })
+      );
+
+      const decisions = await batchCheckNotifications(decisionContexts);
+      const eligibleUserIds = allRecipients.filter(
+        (userId, index) => decisions[index].shouldSend
+      );
+
+      if (eligibleUserIds.length === 0) {
+        console.log(
+          "No users have enabled NEW_REMARKS or MENTIONS notifications"
+        );
+        return;
+      }
+
+      await this.createBulkNotifications(
+        {
+          organizationId: params.organizationId,
+          type: NotificationType.NEW_REMARKS,
+          title: "New Remark Added",
+          message: `${params.triggerUserName} added a remark for ${params.candidateName}`,
+          relatedEntity: "candidate",
+          relatedId: params.candidateId,
+          actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
+          triggerUserId: params.triggerUserId,
+          triggerUserName: params.triggerUserName,
+          priority: "low",
+          metadata: {
+            candidateName: params.candidateName,
+            jobTitle: params.jobTitle,
+            jobId: params.jobId,
+            remarkText:
+              params.remarkText.substring(0, 100) +
+              (params.remarkText.length > 100 ? "..." : ""),
+          },
+        },
+        eligibleUserIds
+      );
+
+      console.log(
+        `Sent remark notifications to ${eligibleUserIds.length} users`
+      );
+    } catch (error) {
+      console.error("Failed to send remark notification:", error);
+    }
+  }
+
+
+
   static async notifyCandidateStatusUpdated(params: {
     organizationId: string;
     candidateId: string;
@@ -275,10 +411,12 @@ export class NotificationService {
         "admin",
         "hr",
       ]);
+      console.log(adminHrIds.length, "adminHrIds");
       const filteredAdminHrIds = adminHrIds.filter(
         (id) => id !== params.triggerUserId
       );
 
+      console.log(filteredAdminHrIds.length, "filteredAdminHrIds");
       if (filteredAdminHrIds.length === 0) {
         console.log("No eligible recipients for notification");
         return;
@@ -292,7 +430,7 @@ export class NotificationService {
           jobId: params.jobId,
           triggererUserId: params.triggerUserId,
           isMention: false,
-          notificationCategory: "email",
+          notificationCategory: "inApp",
         }));
 
       const decisions = await batchCheckNotifications(decisionContexts);
@@ -310,7 +448,7 @@ export class NotificationService {
           organizationId: params.organizationId,
           type: NotificationType.STATUS_UPDATES,
           title: "Candidate Status Updated",
-          message: `${params.candidateName} moved from ${params.oldStatus} to ${params.newStatus}`,
+          message: `The status for ${params.candidateName} has been updated from ${params.oldStatus} to ${params.newStatus}.`,
           relatedEntity: "candidate",
           relatedId: params.candidateId,
           actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
@@ -338,7 +476,462 @@ export class NotificationService {
       );
     }
   }
+   /** Notify when candidate is rejected by HR/Admin */
+   static async notifyCandidateRejected(params: {
+    organizationId: string;
+    candidateId: string;
+    candidateName: string;
+    jobId: string;
+    jobTitle: string;
+    triggerUserId: string;
+    triggerUserName: string;
+  }) {
+    try {
+      await connectToDatabase();
+      const adminHrIds = await this.getUsersByRole(params.organizationId, [
+        "admin",
+        "hr",
+      ]);
+      const filteredAdminHrIds = adminHrIds.filter(
+        (id) => id !== params.triggerUserId
+      );
 
+      if (filteredAdminHrIds.length === 0) {
+        console.log("No eligible recipients for notification");
+        return;
+      }
+
+      const decisionContexts: NotificationDecisionContext[] =
+        filteredAdminHrIds.map((userId) => ({
+          organizationId: params.organizationId,
+          recipientUserId: userId,
+          notificationType: NotificationType.CANDIDATE_REJECTED,
+          jobId: params.jobId,
+          triggererUserId: params.triggerUserId,
+          isMention: false,
+          notificationCategory: "inApp",
+        }));
+
+      const decisions = await batchCheckNotifications(decisionContexts);
+      const eligibleUserIds = filteredAdminHrIds.filter(
+        (userId, index) => decisions[index].shouldSend
+      );
+
+      if (eligibleUserIds.length === 0) {
+        console.log("No users have enabled CANDIDATE_REJECTED notifications");
+        return;
+      }
+
+      await this.createBulkNotifications(
+        {
+          organizationId: params.organizationId,
+          type: NotificationType.CANDIDATE_REJECTED,
+          title: "Candidate Rejected",
+          message: `${params.triggerUserName} rejected ${params.candidateName} for ${params.jobTitle}`,
+          relatedEntity: "candidate",
+          relatedId: params.candidateId,
+          actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
+          triggerUserId: params.triggerUserId,
+          triggerUserName: params.triggerUserName,
+          priority: "medium",
+          metadata: {
+            candidateName: params.candidateName,
+            jobTitle: params.jobTitle,
+            jobId: params.jobId,
+          },
+        },
+        eligibleUserIds
+      );
+
+      console.log(
+        `Sent in-app notifications to ${eligibleUserIds.length} users`
+      );
+    } catch (error) {
+      console.error("Failed to send candidate rejected notification:", error);
+    }
+  }
+
+  /** Notify when candidate is moved from one job to another */
+  static async notifyCandidateMoved(params: {
+    organizationId: string;
+    candidateId: string;
+    candidateName: string;
+    fromJobId: string;
+    fromJobTitle: string;
+    toJobId: string;
+    toJobTitle: string;
+    triggerUserId: string;
+    triggerUserName: string;
+  }) {
+    try {
+      await connectToDatabase();
+      const adminHrIds = await this.getUsersByRole(params.organizationId, [
+        "admin",
+        "hr",
+      ]);
+      const filteredAdminHrIds = adminHrIds.filter(
+        (id) => id !== params.triggerUserId
+      );
+
+      if (filteredAdminHrIds.length === 0) {
+        console.log("No eligible recipients for notification");
+        return;
+      }
+
+      const decisionContexts: NotificationDecisionContext[] =
+        filteredAdminHrIds.map((userId) => ({
+          organizationId: params.organizationId,
+          recipientUserId: userId,
+          notificationType: NotificationType.CANDIDATE_MOVED,
+          jobId: params.toJobId,
+          triggererUserId: params.triggerUserId,
+          isMention: false,
+          notificationCategory: "inApp",
+        }));
+
+      const decisions = await batchCheckNotifications(decisionContexts);
+      const eligibleUserIds = filteredAdminHrIds.filter(
+        (userId, index) => decisions[index].shouldSend
+      );
+
+      if (eligibleUserIds.length === 0) {
+        console.log("No users have enabled CANDIDATE_MOVED notifications");
+        return;
+      }
+
+      await this.createBulkNotifications(
+        {
+          organizationId: params.organizationId,
+          type: NotificationType.CANDIDATE_MOVED,
+          title: `Candidate Moved`,
+          message: `${params.candidateName} was moved from ${params.fromJobTitle} to ${params.toJobTitle}`,
+          relatedEntity: "candidate",
+          relatedId: params.candidateId,
+          actionUrl: `/dashboard/jobs/${params.toJobId}?candidateId=${params.candidateId}`,
+          triggerUserId: params.triggerUserId,
+          triggerUserName: params.triggerUserName,
+          priority: "medium",
+          metadata: {
+            candidateName: params.candidateName,
+            fromJobTitle: params.fromJobTitle,
+            fromJobId: params.fromJobId,
+            toJobTitle: params.toJobTitle,
+            toJobId: params.toJobId,
+          },
+        },
+        eligibleUserIds
+      );
+
+      console.log(
+        `Sent candidate moved notifications to ${eligibleUserIds.length} users`
+      );
+    } catch (error) {
+      console.error("Failed to send candidate moved notification:", error);
+    }
+  }
+
+  /** Notify when multiple candidates are moved from one job to another */
+  static async notifyBulkCandidateMoved(params: {
+    organizationId: string;
+    candidateIds: string[];
+    toJobId: string;
+    toJobTitle: string;
+    triggerUserId: string;
+    triggerUserName: string;
+  }) {
+    try {
+      await connectToDatabase();
+      const adminHrIds = await this.getUsersByRole(params.organizationId, [
+        "admin",
+        "hr",
+      ]);
+      const filteredAdminHrIds = adminHrIds.filter(
+        (id) => id !== params.triggerUserId
+      );
+
+      if (filteredAdminHrIds.length === 0) {
+        console.log("No eligible recipients for bulk move notification");
+        return;
+      }
+
+      const decisionContexts: NotificationDecisionContext[] =
+        filteredAdminHrIds.map((userId) => ({
+          organizationId: params.organizationId,
+          recipientUserId: userId,
+          notificationType: NotificationType.CANDIDATE_MOVED,
+          jobId: params.toJobId,
+          triggererUserId: params.triggerUserId,
+          isMention: false,
+          notificationCategory: "inApp",
+        }));
+
+      const decisions = await batchCheckNotifications(decisionContexts);
+      const eligibleUserIds = filteredAdminHrIds.filter(
+        (userId, index) => decisions[index].shouldSend
+      );
+
+      if (eligibleUserIds.length === 0) {
+        console.log("No users have enabled CANDIDATE_MOVED notifications");
+        return;
+      }
+
+      const candidateCount = params.candidateIds.length;
+
+      await this.createBulkNotifications(
+        {
+          organizationId: params.organizationId,
+          type: NotificationType.CANDIDATE_MOVED,
+          title: `Candidate Moved`,
+          message: `${candidateCount} candidate${candidateCount > 1 ? 's' : ''} ${candidateCount > 1 ? 'were' : 'was'} moved to ${params.toJobTitle}`,
+          relatedEntity: "job",
+          relatedId: params.toJobId, // Use first candidate ID for action URL
+          actionUrl: `/dashboard/jobs/${params.toJobId}`,
+          triggerUserId: params.triggerUserId,
+          triggerUserName: params.triggerUserName,
+          priority: "medium",
+          metadata: {
+            candidateCount,
+            candidateIds: params.candidateIds,
+            toJobTitle: params.toJobTitle,
+            toJobId: params.toJobId,
+            isBulkMove: true,
+          },
+        },
+        eligibleUserIds
+      );
+
+      console.log(
+        `Sent bulk candidate moved notifications to ${eligibleUserIds.length} users`
+      );
+    } catch (error) {
+      console.error("Failed to send bulk candidate moved notification:", error);
+    }
+  }
+
+  static async notifyCandidateDetailsUpdated(params: {
+    organizationId: string;
+    candidateId: string;
+    candidateName: string;
+    jobId: string;
+    jobTitle: string;
+    triggerUserId: string;
+    triggerUserName: string;
+  }) {
+    try {
+      await connectToDatabase();
+      const adminHrIds = await this.getUsersByRole(params.organizationId, [
+        "admin",
+        "hr",
+      ]);
+      const filteredAdminHrIds = adminHrIds.filter(
+        (id) => id !== params.triggerUserId
+      );
+
+      if (filteredAdminHrIds.length === 0) {
+        console.log("No eligible recipients for notification");
+        return;
+      }
+
+      const decisionContexts: NotificationDecisionContext[] =
+        filteredAdminHrIds.map((userId) => ({
+          organizationId: params.organizationId,
+          recipientUserId: userId,
+          notificationType: NotificationType.CANDIDATE_DETAILS_UPDATED, // Assume always enabled
+          jobId: params.jobId,
+          triggererUserId: params.triggerUserId,
+          isMention: false,
+          notificationCategory: "inApp",
+        }));
+
+      const decisions = await batchCheckNotifications(decisionContexts);
+      const eligibleUserIds = filteredAdminHrIds.filter(
+        (userId, index) => decisions[index].shouldSend
+      );
+
+      if (eligibleUserIds.length === 0) {
+        console.log(
+          "No users have enabled CANDIDATE_DETAILS_UPDATED notifications"
+        );
+        return;
+      }
+
+      await this.createBulkNotifications(
+        {
+          organizationId: params.organizationId,
+          type: NotificationType.CANDIDATE_DETAILS_UPDATED,
+          title: "Candidate Details Updated",
+          message: `${params.triggerUserName} updated details for ${params.candidateName}`,
+          relatedEntity: "candidate",
+          relatedId: params.candidateId,
+          actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
+          triggerUserId: params.triggerUserId,
+          triggerUserName: params.triggerUserName,
+          priority: "low",
+          metadata: {
+            candidateName: params.candidateName,
+            jobTitle: params.jobTitle,
+            jobId: params.jobId,
+          },
+        },
+        eligibleUserIds
+      );
+
+      console.log(
+        `Sent in-app notifications to ${eligibleUserIds.length} users`
+      );
+    } catch (error) {
+      console.error(
+        "Failed to send candidate details updated notification:",
+        error
+      );
+    }
+  }
+
+  /** Notify when job is created by HR/Admin */
+  static async notifyJobCreated(params: {
+    organizationId: string;
+    jobId: string;
+    jobTitle: string;
+    triggerUserId: string;
+    triggerUserName: string;
+  }) {
+    try {
+      await connectToDatabase();
+      const allUserIds = await this.getUsersByRole(params.organizationId, [
+        "admin",
+        "hr",
+      ]);
+      const filteredUserIds = allUserIds.filter(
+        (id) => id !== params.triggerUserId
+      );
+
+      if (filteredUserIds.length === 0) {
+        console.log("No eligible recipients for notification");
+        return;
+      }
+
+      const decisionContexts: NotificationDecisionContext[] =
+        filteredUserIds.map((userId) => ({
+          organizationId: params.organizationId,
+          recipientUserId: userId,
+          notificationType: NotificationType.JOB_CREATED, // Assume always enabled if not in settings
+          jobId: params.jobId,
+          triggererUserId: params.triggerUserId,
+          isMention: false,
+          notificationCategory: "inApp",
+        }));
+
+      const decisions = await batchCheckNotifications(decisionContexts);
+      const eligibleUserIds = filteredUserIds.filter(
+        (userId, index) => decisions[index].shouldSend
+      );
+
+      if (eligibleUserIds.length === 0) {
+        console.log("No users have enabled JOB_CREATED notifications");
+        return;
+      }
+
+      await this.createBulkNotifications(
+        {
+          organizationId: params.organizationId,
+          type: NotificationType.JOB_CREATED,
+          title: "New Job Created",
+          message: `${params.triggerUserName} created a new job: ${params.jobTitle}`,
+          relatedEntity: "job",
+          relatedId: params.jobId,
+          actionUrl: `/dashboard/jobs/${params.jobId}`,
+          triggerUserId: params.triggerUserId,
+          triggerUserName: params.triggerUserName,
+          priority: "medium",
+          metadata: {
+            jobTitle: params.jobTitle,
+            jobId: params.jobId,
+          },
+        },
+        eligibleUserIds
+      );
+
+      console.log(
+        `Sent in-app notifications to ${eligibleUserIds.length} users`
+      );
+    } catch (error) {
+      console.error("Failed to send job created notification:", error);
+    }
+  }
+
+  /** Notify when job is updated by HR/Admin */
+  static async notifyJobUpdated(params: {
+    organizationId: string;
+    jobId: string;
+    jobTitle: string;
+    triggerUserId: string;
+    triggerUserName: string;
+  }) {
+    try {
+      await connectToDatabase();
+      const allUserIds = await this.getUsersByRole(params.organizationId, [
+        "admin",
+        "hr",
+      ]);
+      const filteredUserIds = allUserIds.filter(
+        (id) => id !== params.triggerUserId
+      );
+
+      if (filteredUserIds.length === 0) {
+        console.log("No eligible recipients for notification");
+        return;
+      }
+
+      const decisionContexts: NotificationDecisionContext[] =
+        filteredUserIds.map((userId) => ({
+          organizationId: params.organizationId,
+          recipientUserId: userId,
+          notificationType: NotificationType.JOB_UPDATED,
+          jobId: params.jobId,
+          triggererUserId: params.triggerUserId,
+          isMention: false,
+          notificationCategory: "inApp",
+        }));
+
+      const decisions = await batchCheckNotifications(decisionContexts);
+      const eligibleUserIds = filteredUserIds.filter(
+        (userId, index) => decisions[index].shouldSend
+      );
+
+      if (eligibleUserIds.length === 0) {
+        console.log("No users have enabled JOB_UPDATED notifications");
+        return;
+      }
+
+      await this.createBulkNotifications(
+        {
+          organizationId: params.organizationId,
+          type: NotificationType.JOB_UPDATED,
+          title: "Job Updated",
+          message: `${params.triggerUserName} updated job: ${params.jobTitle}`,
+          relatedEntity: "job",
+          relatedId: params.jobId,
+          actionUrl: `/dashboard/jobs/${params.jobId}`,
+          triggerUserId: params.triggerUserId,
+          triggerUserName: params.triggerUserName,
+          priority: "low",
+          metadata: {
+            jobTitle: params.jobTitle,
+            jobId: params.jobId,
+          },
+        },
+        eligibleUserIds
+      );
+
+      console.log(
+        `Sent in-app notifications to ${eligibleUserIds.length} users`
+      );
+    } catch (error) {
+      console.error("Failed to send job updated notification:", error);
+    }
+  }
+
+  /** Notify when candidate is assigned to interviewer */
   static async notifyCandidateAssigned(params: {
     organizationId: string;
     candidateId: string;
@@ -362,7 +955,7 @@ export class NotificationService {
           jobId: params.jobId,
           triggererUserId: params.triggerUserId,
           isMention: false,
-          notificationCategory: "email",
+          notificationCategory: "inApp",
         };
 
         const decision = await batchCheckNotifications([decisionContext]);
@@ -411,14 +1004,15 @@ export class NotificationService {
           jobId: params.jobId,
           triggererUserId: params.triggerUserId,
           isMention: false,
-          notificationCategory: "email",
+          notificationCategory: "inApp",
         }));
 
       const decisions = await batchCheckNotifications(decisionContexts);
+      console.log(decisions, "decisions Notification");
       const eligibleUserIds = filteredAdminHrIds.filter(
         (userId, index) => decisions[index].shouldSend
       );
-
+      console.log(eligibleUserIds, "eligibleUserIds Notifications");
       if (eligibleUserIds.length === 0) {
         console.log(
           "No users have enabled INTERVIEW_ASSIGNMENTS notifications"
@@ -443,6 +1037,7 @@ export class NotificationService {
             jobTitle: params.jobTitle,
             jobId: params.jobId,
             interviewerName: params.interviewerName,
+            interviewerId: params.interviewerId,
           },
         },
         eligibleUserIds
@@ -456,108 +1051,7 @@ export class NotificationService {
     }
   }
 
-  static async notifyRemarkAdded(params: {
-    organizationId: string;
-    candidateId: string;
-    candidateName: string;
-    jobId: string;
-    jobTitle: string;
-    remarkText: string;
-    triggerUserId: string;
-    triggerUserName: string;
-    roles: string[];
-  }) {
-    try {
-      await connectToDatabase();
-      const userIds = await this.getUsersByRole(
-        params.organizationId,
-        params.roles
-      );
-      const filteredUserIds = userIds.filter(
-        (id) => id !== params.triggerUserId
-      );
-
-      let mentionedUserIds: string[] = [];
-      try {
-        const mentionResult = await findMentionedUsers(
-          params.remarkText,
-          params.organizationId
-        );
-        mentionedUserIds = mentionResult.mentionedUsers.map((u) =>
-          u._id.toString()
-        );
-        console.log("Mentioned users:", mentionedUserIds);
-      } catch (mentionError) {
-        console.error("Error in mention detection:", mentionError);
-      }
-
-      const allRecipients = [
-        ...new Set([...filteredUserIds, ...mentionedUserIds]),
-      ];
-
-      if (allRecipients.length === 0) {
-        console.log("No eligible recipients for remark notification");
-        return;
-      }
-
-      const decisionContexts: NotificationDecisionContext[] = allRecipients.map(
-        (userId) => ({
-          organizationId: params.organizationId,
-          recipientUserId: userId,
-          notificationType: mentionedUserIds.includes(userId)
-            ? NotificationType.MENTIONS
-            : NotificationType.NEW_REMARKS,
-          jobId: params.jobId,
-          triggererUserId: params.triggerUserId,
-          isMention: mentionedUserIds.includes(userId),
-          notificationCategory: "email",
-        })
-      );
-
-      const decisions = await batchCheckNotifications(decisionContexts);
-      const eligibleUserIds = allRecipients.filter(
-        (userId, index) => decisions[index].shouldSend
-      );
-
-      if (eligibleUserIds.length === 0) {
-        console.log(
-          "No users have enabled NEW_REMARKS or MENTIONS notifications"
-        );
-        return;
-      }
-
-      await this.createBulkNotifications(
-        {
-          organizationId: params.organizationId,
-          type: NotificationType.NEW_REMARKS,
-          title: "New Remark Added",
-          message: `${params.triggerUserName} added a remark for ${params.candidateName}`,
-          relatedEntity: "candidate",
-          relatedId: params.candidateId,
-          actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
-          triggerUserId: params.triggerUserId,
-          triggerUserName: params.triggerUserName,
-          priority: "low",
-          metadata: {
-            candidateName: params.candidateName,
-            jobTitle: params.jobTitle,
-            jobId: params.jobId,
-            remarkText:
-              params.remarkText.substring(0, 100) +
-              (params.remarkText.length > 100 ? "..." : ""),
-          },
-        },
-        eligibleUserIds
-      );
-
-      console.log(
-        `Sent remark notifications to ${eligibleUserIds.length} users`
-      );
-    } catch (error) {
-      console.error("Failed to send remark notification:", error);
-    }
-  }
-
+  /** Notify when meeting is scheduled */
   static async notifyMeetingScheduled(params: {
     organizationId: string;
     candidateId: string;
@@ -582,7 +1076,7 @@ export class NotificationService {
           jobId: params.jobId,
           triggererUserId: params.triggerUserId,
           isMention: false,
-          notificationCategory: "email",
+          notificationCategory: "inApp",
         };
 
         const decision = await batchCheckNotifications([decisionContext]);
@@ -632,7 +1126,7 @@ export class NotificationService {
           jobId: params.jobId,
           triggererUserId: params.triggerUserId,
           isMention: false,
-          notificationCategory: "email",
+          notificationCategory: "inApp",
         }));
 
       const decisions = await batchCheckNotifications(decisionContexts);
@@ -662,6 +1156,7 @@ export class NotificationService {
             jobTitle: params.jobTitle,
             jobId: params.jobId,
             interviewerName: params.interviewerName,
+            interviewerId: params.interviewerId,
             meetingDate: params.meetingDate,
           },
         },
@@ -676,418 +1171,7 @@ export class NotificationService {
     }
   }
 
-  static async notifyChecklistCompleted(params: {
-    organizationId: string;
-    candidateId: string;
-    candidateName: string;
-    jobId: string;
-    jobTitle: string;
-    triggerUserId: string;
-    triggerUserName: string;
-  }) {
-    try {
-      await connectToDatabase();
-      const adminHrIds = await this.getUsersByRole(params.organizationId, [
-        "admin",
-        "hr",
-      ]);
-      const filteredAdminHrIds = adminHrIds.filter(
-        (id) => id !== params.triggerUserId
-      );
-
-      if (filteredAdminHrIds.length === 0) {
-        console.log("No eligible recipients for notification");
-        return;
-      }
-
-      const decisionContexts: NotificationDecisionContext[] =
-        filteredAdminHrIds.map((userId) => ({
-          organizationId: params.organizationId,
-          recipientUserId: userId,
-          notificationType: NotificationType.STEP_COMPLETED,
-          jobId: params.jobId,
-          triggererUserId: params.triggerUserId,
-          isMention: false,
-          notificationCategory: "email",
-        }));
-
-      const decisions = await batchCheckNotifications(decisionContexts);
-      const eligibleUserIds = filteredAdminHrIds.filter(
-        (userId, index) => decisions[index].shouldSend
-      );
-
-      if (eligibleUserIds.length === 0) {
-        console.log("No users have enabled STEP_COMPLETED notifications");
-        return;
-      }
-
-      await this.createBulkNotifications(
-        {
-          organizationId: params.organizationId,
-          type: NotificationType.CHECKLIST_COMPLETED,
-          title: "Checklist Completed",
-          message: `${params.triggerUserName} completed checklist for ${params.candidateName}`,
-          relatedEntity: "checklist",
-          relatedId: params.candidateId,
-          actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
-          triggerUserId: params.triggerUserId,
-          triggerUserName: params.triggerUserName,
-          priority: "medium",
-          metadata: {
-            candidateName: params.candidateName,
-            jobTitle: params.jobTitle,
-            jobId: params.jobId,
-          },
-        },
-        eligibleUserIds
-      );
-
-      console.log(
-        `Sent in-app notifications to ${eligibleUserIds.length} users`
-      );
-    } catch (error) {
-      console.error("Failed to send checklist completed notification:", error);
-    }
-  }
-
-  static async notifyJobCreated(params: {
-    organizationId: string;
-    jobId: string;
-    jobTitle: string;
-    triggerUserId: string;
-    triggerUserName: string;
-  }) {
-    try {
-      await connectToDatabase();
-      const allUserIds = await this.getUsersByRole(params.organizationId, [
-        "admin",
-        "hr",
-      ]);
-      const filteredUserIds = allUserIds.filter(
-        (id) => id !== params.triggerUserId
-      );
-
-      if (filteredUserIds.length === 0) {
-        console.log("No eligible recipients for notification");
-        return;
-      }
-
-      const decisionContexts: NotificationDecisionContext[] =
-        filteredUserIds.map((userId) => ({
-          organizationId: params.organizationId,
-          recipientUserId: userId,
-          notificationType: NotificationType.JOB_CREATED, // Assume always enabled if not in settings
-          jobId: params.jobId,
-          triggererUserId: params.triggerUserId,
-          isMention: false,
-          notificationCategory: "email",
-        }));
-
-      const decisions = await batchCheckNotifications(decisionContexts);
-      const eligibleUserIds = filteredUserIds.filter(
-        (userId, index) => decisions[index].shouldSend
-      );
-
-      if (eligibleUserIds.length === 0) {
-        console.log("No users have enabled JOB_CREATED notifications");
-        return;
-      }
-
-      await this.createBulkNotifications(
-        {
-          organizationId: params.organizationId,
-          type: NotificationType.JOB_CREATED,
-          title: "New Job Created",
-          message: `${params.triggerUserName} created a new job: ${params.jobTitle}`,
-          relatedEntity: "job",
-          relatedId: params.jobId,
-          actionUrl: `/dashboard/jobs/${params.jobId}`,
-          triggerUserId: params.triggerUserId,
-          triggerUserName: params.triggerUserName,
-          priority: "medium",
-          metadata: {
-            jobTitle: params.jobTitle,
-            jobId: params.jobId,
-          },
-        },
-        eligibleUserIds
-      );
-
-      console.log(
-        `Sent in-app notifications to ${eligibleUserIds.length} users`
-      );
-    } catch (error) {
-      console.error("Failed to send job created notification:", error);
-    }
-  }
-
-  static async notifyUserAdded(params: {
-    organizationId: string;
-    newUserId: string;
-    newUserName: string;
-    newUserEmail: string;
-    newUserRole: string;
-    triggerUserId: string;
-    triggerUserName: string;
-  }) {
-    try {
-      await connectToDatabase();
-      const adminIds = await this.getUsersByRole(params.organizationId, [
-        "admin",
-        "hr",
-      ]);
-      const filteredAdminIds = adminIds.filter(
-        (id) => id !== params.triggerUserId && id !== params.newUserId
-      );
-
-      if (filteredAdminIds.length === 0) {
-        console.log("No eligible recipients for notification");
-        return;
-      }
-
-      const decisionContexts: NotificationDecisionContext[] =
-        filteredAdminIds.map((userId) => ({
-          organizationId: params.organizationId,
-          recipientUserId: userId,
-          notificationType: NotificationType.USER_ADDED, // Assume always enabled
-          triggererUserId: params.triggerUserId,
-          isMention: false,
-          notificationCategory: "email",
-        }));
-
-      const decisions = await batchCheckNotifications(decisionContexts);
-      const eligibleUserIds = filteredAdminIds.filter(
-        (userId, index) => decisions[index].shouldSend
-      );
-
-      if (eligibleUserIds.length === 0) {
-        console.log("No users have enabled USER_ADDED notifications");
-        return;
-      }
-
-      await this.createBulkNotifications(
-        {
-          organizationId: params.organizationId,
-          type: NotificationType.USER_ADDED,
-          title: "New User Added",
-          message: `${params.triggerUserName} added ${params.newUserName} as ${params.newUserRole}`,
-          relatedEntity: "user",
-          relatedId: params.newUserId,
-          actionUrl: `/dashboard/users`,
-          triggerUserId: params.triggerUserId,
-          triggerUserName: params.triggerUserName,
-          priority: "medium",
-          metadata: {
-            newUserName: params.newUserName,
-            newUserEmail: params.newUserEmail,
-            newUserRole: params.newUserRole,
-          },
-        },
-        eligibleUserIds
-      );
-
-      console.log(
-        `Sent in-app notifications to ${eligibleUserIds.length} users`
-      );
-    } catch (error) {
-      console.error("Failed to send user added notification:", error);
-    }
-  }
-
-  static async notifyCandidateDetailsUpdated(params: {
-    organizationId: string;
-    candidateId: string;
-    candidateName: string;
-    jobId: string;
-    jobTitle: string;
-    triggerUserId: string;
-    triggerUserName: string;
-  }) {
-    try {
-      await connectToDatabase();
-      const adminHrIds = await this.getUsersByRole(params.organizationId, [
-        "admin",
-        "hr",
-      ]);
-      const filteredAdminHrIds = adminHrIds.filter(
-        (id) => id !== params.triggerUserId
-      );
-
-      if (filteredAdminHrIds.length === 0) {
-        console.log("No eligible recipients for notification");
-        return;
-      }
-
-      const decisionContexts: NotificationDecisionContext[] =
-        filteredAdminHrIds.map((userId) => ({
-          organizationId: params.organizationId,
-          recipientUserId: userId,
-          notificationType: NotificationType.CANDIDATE_DETAILS_UPDATED, // Assume always enabled
-          jobId: params.jobId,
-          triggererUserId: params.triggerUserId,
-          isMention: false,
-          notificationCategory: "email",
-        }));
-
-      const decisions = await batchCheckNotifications(decisionContexts);
-      const eligibleUserIds = filteredAdminHrIds.filter(
-        (userId, index) => decisions[index].shouldSend
-      );
-
-      if (eligibleUserIds.length === 0) {
-        console.log(
-          "No users have enabled CANDIDATE_DETAILS_UPDATED notifications"
-        );
-        return;
-      }
-
-      await this.createBulkNotifications(
-        {
-          organizationId: params.organizationId,
-          type: NotificationType.CANDIDATE_DETAILS_UPDATED,
-          title: "Candidate Details Updated",
-          message: `${params.triggerUserName} updated details for ${params.candidateName}`,
-          relatedEntity: "candidate",
-          relatedId: params.candidateId,
-          actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
-          triggerUserId: params.triggerUserId,
-          triggerUserName: params.triggerUserName,
-          priority: "low",
-          metadata: {
-            candidateName: params.candidateName,
-            jobTitle: params.jobTitle,
-            jobId: params.jobId,
-          },
-        },
-        eligibleUserIds
-      );
-
-      console.log(
-        `Sent in-app notifications to ${eligibleUserIds.length} users`
-      );
-    } catch (error) {
-      console.error(
-        "Failed to send candidate details updated notification:",
-        error
-      );
-    }
-  }
-
-  static async notifyCandidateUnassigned(params: {
-    organizationId: string;
-    candidateId: string;
-    candidateName: string;
-    jobId: string;
-    jobTitle: string;
-    previousInterviewerId: string;
-    previousInterviewerName: string;
-    triggerUserId: string;
-    triggerUserName: string;
-  }) {
-    try {
-      await connectToDatabase();
-
-      // Notify the previous interviewer
-      if (params.previousInterviewerId !== params.triggerUserId) {
-        const decisionContext: NotificationDecisionContext = {
-          organizationId: params.organizationId,
-          recipientUserId: params.previousInterviewerId,
-          notificationType: NotificationType.STEP_COMPLETED, // Assume always enabled
-          jobId: params.jobId,
-          triggererUserId: params.triggerUserId,
-          isMention: false,
-          notificationCategory: "email",
-        };
-
-        const decision = await batchCheckNotifications([decisionContext]);
-        if (decision[0].shouldSend) {
-          await this.createNotification({
-            organizationId: params.organizationId,
-            recipientId: params.previousInterviewerId,
-            type: NotificationType.STEP_COMPLETED,
-            title: "Candidate Unassigned",
-            message: `You are no longer assigned to interview ${params.candidateName}`,
-            relatedEntity: "candidate",
-            relatedId: params.candidateId,
-            actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
-            triggerUserId: params.triggerUserId,
-            triggerUserName: params.triggerUserName,
-            priority: "medium",
-            metadata: {
-              candidateName: params.candidateName,
-              jobTitle: params.jobTitle,
-              jobId: params.jobId,
-              previousInterviewerName: params.previousInterviewerName,
-            },
-          });
-        }
-      }
-
-      // Notify admin/hr
-      const adminHrIds = await this.getUsersByRole(params.organizationId, [
-        "admin",
-        "hr",
-      ]);
-      const filteredAdminHrIds = adminHrIds.filter(
-        (id) => id !== params.triggerUserId
-      );
-
-      if (filteredAdminHrIds.length === 0) {
-        console.log("No eligible admin/hr recipients for notification");
-        return;
-      }
-
-      const decisionContexts: NotificationDecisionContext[] =
-        filteredAdminHrIds.map((userId) => ({
-          organizationId: params.organizationId,
-          recipientUserId: userId,
-          notificationType: NotificationType.STEP_COMPLETED,
-          jobId: params.jobId,
-          triggererUserId: params.triggerUserId,
-          isMention: false,
-          notificationCategory: "email",
-        }));
-
-      const decisions = await batchCheckNotifications(decisionContexts);
-      const eligibleUserIds = filteredAdminHrIds.filter(
-        (userId, index) => decisions[index].shouldSend
-      );
-
-      if (eligibleUserIds.length === 0) {
-        console.log("No users have enabled CANDIDATE_UNASSIGNED notifications");
-        return;
-      }
-
-      await this.createBulkNotifications(
-        {
-          organizationId: params.organizationId,
-          type: NotificationType.STEP_COMPLETED,
-          title: "Candidate Unassigned",
-          message: `${params.previousInterviewerName} are no longer assigned to interview ${params.candidateName}`,
-          relatedEntity: "candidate",
-          relatedId: params.candidateId,
-          actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
-          triggerUserId: params.triggerUserId,
-          triggerUserName: params.triggerUserName,
-          priority: "medium",
-          metadata: {
-            candidateName: params.candidateName,
-            jobTitle: params.jobTitle,
-            jobId: params.jobId,
-            previousInterviewerName: params.previousInterviewerName,
-          },
-        },
-        eligibleUserIds
-      );
-
-      console.log(
-        `Sent in-app notifications to ${eligibleUserIds.length + (decisions[0]?.shouldSend ? 1 : 0)} users`
-      );
-    } catch (error) {
-      console.error("Failed to send candidate unassigned notification:", error);
-    }
-  }
-
+  /** Notify when meeting is updated */
   static async notifyMeetingUpdated(params: {
     organizationId: string;
     candidateId: string;
@@ -1112,7 +1196,7 @@ export class NotificationService {
           jobId: params.jobId,
           triggererUserId: params.triggerUserId,
           isMention: false,
-          notificationCategory: "email",
+          notificationCategory: "inApp",
         };
 
         const decision = await batchCheckNotifications([decisionContext]);
@@ -1162,7 +1246,7 @@ export class NotificationService {
           jobId: params.jobId,
           triggererUserId: params.triggerUserId,
           isMention: false,
-          notificationCategory: "email",
+          notificationCategory: "inApp",
         }));
 
       const decisions = await batchCheckNotifications(decisionContexts);
@@ -1192,6 +1276,7 @@ export class NotificationService {
             jobTitle: params.jobTitle,
             jobId: params.jobId,
             interviewerName: params.interviewerName,
+            interviewerId: params.interviewerId,
             meetingDate: params.meetingDate.toISOString(),
           },
         },
@@ -1206,6 +1291,7 @@ export class NotificationService {
     }
   }
 
+  /** Notify when meeting is cancelled */
   static async notifyMeetingCancelled(params: {
     organizationId: string;
     candidateId: string;
@@ -1229,7 +1315,7 @@ export class NotificationService {
           jobId: params.jobId,
           triggererUserId: params.triggerUserId,
           isMention: false,
-          notificationCategory: "email",
+          notificationCategory: "inApp",
         };
 
         const decision = await batchCheckNotifications([decisionContext]);
@@ -1278,7 +1364,7 @@ export class NotificationService {
           jobId: params.jobId,
           triggererUserId: params.triggerUserId,
           isMention: false,
-          notificationCategory: "email",
+          notificationCategory: "inApp",
         }));
 
       const decisions = await batchCheckNotifications(decisionContexts);
@@ -1307,6 +1393,7 @@ export class NotificationService {
             candidateName: params.candidateName,
             jobTitle: params.jobTitle,
             jobId: params.jobId,
+            interviewerId: params.interviewerId,
             interviewerName: params.interviewerName,
           },
         },
@@ -1321,6 +1408,205 @@ export class NotificationService {
     }
   }
 
+  /** Notify when candidate is unassigned by HR/Admin */
+  static async notifyCandidateUnassigned(params: {
+    organizationId: string;
+    candidateId: string;
+    candidateName: string;
+    jobId: string;
+    jobTitle: string;
+    previousInterviewerId: string;
+    previousInterviewerName: string;
+    triggerUserId: string;
+    triggerUserName: string;
+  }) {
+    try {
+      await connectToDatabase();
+
+      // Notify the previous interviewer
+      if (params.previousInterviewerId !== params.triggerUserId) {
+        const decisionContext: NotificationDecisionContext = {
+          organizationId: params.organizationId,
+          recipientUserId: params.previousInterviewerId,
+          notificationType: NotificationType.STEP_COMPLETED, // Assume always enabled
+          jobId: params.jobId,
+          triggererUserId: params.triggerUserId,
+          isMention: false,
+          notificationCategory: "inApp",
+        };
+
+        const decision = await batchCheckNotifications([decisionContext]);
+        if (decision[0].shouldSend) {
+          await this.createNotification({
+            organizationId: params.organizationId,
+            recipientId: params.previousInterviewerId,
+            type: NotificationType.STEP_COMPLETED,
+            title: "Candidate Unassigned",
+            message: `You are no longer assigned to interview ${params.candidateName}`,
+            relatedEntity: "candidate",
+            relatedId: params.candidateId,
+            actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
+            triggerUserId: params.triggerUserId,
+            triggerUserName: params.triggerUserName,
+            priority: "medium",
+            metadata: {
+              candidateName: params.candidateName,
+              jobTitle: params.jobTitle,
+              jobId: params.jobId,
+              previousInterviewerName: params.previousInterviewerName,
+            },
+          });
+        }
+      }
+
+      // Notify admin/hr
+      const adminHrIds = await this.getUsersByRole(params.organizationId, [
+        "admin",
+        "hr",
+      ]);
+      const filteredAdminHrIds = adminHrIds.filter(
+        (id) => id !== params.triggerUserId
+      );
+
+      if (filteredAdminHrIds.length === 0) {
+        console.log("No eligible admin/hr recipients for notification");
+        return;
+      }
+
+      const decisionContexts: NotificationDecisionContext[] =
+        filteredAdminHrIds.map((userId) => ({
+          organizationId: params.organizationId,
+          recipientUserId: userId,
+          notificationType: NotificationType.STEP_COMPLETED,
+          jobId: params.jobId,
+          triggererUserId: params.triggerUserId,
+          isMention: false,
+          notificationCategory: "inApp",
+        }));
+
+      const decisions = await batchCheckNotifications(decisionContexts);
+      const eligibleUserIds = filteredAdminHrIds.filter(
+        (userId, index) => decisions[index].shouldSend
+      );
+
+      if (eligibleUserIds.length === 0) {
+        console.log("No users have enabled CANDIDATE_UNASSIGNED notifications");
+        return;
+      }
+
+      await this.createBulkNotifications(
+        {
+          organizationId: params.organizationId,
+          type: NotificationType.STEP_COMPLETED,
+          title: "Candidate Unassigned",
+          message: `${params.previousInterviewerName} are no longer assigned to interview ${params.candidateName}`,
+          relatedEntity: "candidate",
+          relatedId: params.candidateId,
+          actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
+          triggerUserId: params.triggerUserId,
+          triggerUserName: params.triggerUserName,
+          priority: "medium",
+          metadata: {
+            candidateName: params.candidateName,
+            jobTitle: params.jobTitle,
+            jobId: params.jobId,
+            previousInterviewerName: params.previousInterviewerName,
+            interviewerId: params.previousInterviewerId,
+          },
+        },
+        eligibleUserIds
+      );
+
+      console.log(
+        `Sent in-app notifications to ${eligibleUserIds.length + (decisions[0]?.shouldSend ? 1 : 0)} users`
+      );
+    } catch (error) {
+      console.error("Failed to send candidate unassigned notification:", error);
+    }
+  }
+
+  /** Notify when interview is completed */
+  static async notifyInterviewCompleted(params: {
+    organizationId: string;
+    candidateId: string;
+    candidateName: string;
+    jobId: string;
+    jobTitle: string;
+    interviewerId: string;
+    interviewerName: string;
+    triggerUserId: string;
+    triggerUserName: string;
+  }) {
+    try {
+      await connectToDatabase();
+
+      // Notify admin/hr
+      const adminHrIds = await this.getUsersByRole(params.organizationId, [
+        "admin",
+        "hr",
+      ]);
+
+      const filteredAdminHrIds = adminHrIds.filter(
+        (id) => id !== params.triggerUserId
+      );
+
+      if (filteredAdminHrIds.length === 0) {
+        console.log("No eligible admin/hr recipients for interview completed");
+        return;
+      }
+
+      const decisionContexts: NotificationDecisionContext[] =
+        filteredAdminHrIds.map((userId) => ({
+          organizationId: params.organizationId,
+          recipientUserId: userId,
+          notificationType: NotificationType.STEP_COMPLETED,
+          jobId: params.jobId,
+          triggererUserId: params.triggerUserId,
+          isMention: false,
+          notificationCategory: "inApp",
+        }));
+
+      const decisions = await batchCheckNotifications(decisionContexts);
+      const eligibleUserIds = filteredAdminHrIds.filter(
+        (userId, index) => decisions[index].shouldSend
+      );
+
+      if (eligibleUserIds.length === 0) {
+        console.log("No users have enabled INTERVIEW_COMPLETED notifications");
+        return;
+      }
+
+      await this.createBulkNotifications(
+        {
+          organizationId: params.organizationId,
+          type: NotificationType.INTERVIEW_COMPLETED,
+          title: "Interview Completed",
+          message: `${params.interviewerName} completed interview with ${params.candidateName}`,
+          relatedEntity: "candidate",
+          relatedId: params.candidateId,
+          actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
+          triggerUserId: params.triggerUserId,
+          triggerUserName: params.triggerUserName,
+          priority: "medium",
+          metadata: {
+            candidateName: params.candidateName,
+            jobTitle: params.jobTitle,
+            jobId: params.jobId,
+            interviewerName: params.interviewerName,
+          },
+        },
+        eligibleUserIds
+      );
+
+      console.log(
+        `Sent interview completed notifications to ${eligibleUserIds.length}`
+      );
+    } catch (error) {
+      console.error("Failed to send interview completed notification:", error);
+    }
+  }
+
+  /** Notify when follow-up is added by HR/Admin */
   static async notifyFollowUpAdded(params: {
     organizationId: string;
     candidateId: string;
@@ -1355,7 +1641,7 @@ export class NotificationService {
           jobId: params.jobId,
           triggererUserId: params.triggerUserId,
           isMention: false,
-          notificationCategory: "email",
+          notificationCategory: "inApp",
         }));
 
       const decisions = await batchCheckNotifications(decisionContexts);
@@ -1401,6 +1687,7 @@ export class NotificationService {
     }
   }
 
+  /** Notify when follow-up is updated by HR/Admin */
   static async notifyFollowupUpdated(params: {
     organizationId: string;
     candidateId: string;
@@ -1433,7 +1720,7 @@ export class NotificationService {
           jobId: params.jobId,
           triggererUserId: params.triggerUserId,
           isMention: false,
-          notificationCategory: "email",
+          notificationCategory: "inApp",
         }));
 
       const decisions = await batchCheckNotifications(decisionContexts);
@@ -1475,6 +1762,7 @@ export class NotificationService {
     }
   }
 
+  /** Notify when follow-up is removed by HR/Admin */
   static async notifyFollowupRemoved(params: {
     organizationId: string;
     candidateId: string;
@@ -1507,7 +1795,7 @@ export class NotificationService {
           jobId: params.jobId,
           triggererUserId: params.triggerUserId,
           isMention: false,
-          notificationCategory: "email",
+          notificationCategory: "inApp",
         }));
 
       const decisions = await batchCheckNotifications(decisionContexts);
@@ -1549,65 +1837,67 @@ export class NotificationService {
     }
   }
 
-  static async notifyJobUpdated(params: {
+  /** Notify when user is added by HR/Admin */
+  static async notifyUserAdded(params: {
     organizationId: string;
-    jobId: string;
-    jobTitle: string;
+    newUserId: string;
+    newUserName: string;
+    newUserEmail: string;
+    newUserRole: string;
     triggerUserId: string;
     triggerUserName: string;
   }) {
     try {
       await connectToDatabase();
-      const allUserIds = await this.getUsersByRole(params.organizationId, [
+      const adminIds = await this.getUsersByRole(params.organizationId, [
         "admin",
         "hr",
-        "interviewer",
       ]);
-      const filteredUserIds = allUserIds.filter(
-        (id) => id !== params.triggerUserId
+      const filteredAdminIds = adminIds.filter(
+        (id) => id !== params.triggerUserId && id !== params.newUserId
       );
 
-      if (filteredUserIds.length === 0) {
+      if (filteredAdminIds.length === 0) {
         console.log("No eligible recipients for notification");
         return;
       }
 
       const decisionContexts: NotificationDecisionContext[] =
-        filteredUserIds.map((userId) => ({
+        filteredAdminIds.map((userId) => ({
           organizationId: params.organizationId,
           recipientUserId: userId,
-          notificationType: NotificationType.JOB_UPDATED,
-          jobId: params.jobId,
+          notificationType: NotificationType.USER_ADDED, // Assume always enabled
           triggererUserId: params.triggerUserId,
           isMention: false,
-          notificationCategory: "email",
+          notificationCategory: "inApp",
         }));
 
       const decisions = await batchCheckNotifications(decisionContexts);
-      const eligibleUserIds = filteredUserIds.filter(
+      const eligibleUserIds = filteredAdminIds.filter(
         (userId, index) => decisions[index].shouldSend
       );
 
       if (eligibleUserIds.length === 0) {
-        console.log("No users have enabled JOB_UPDATED notifications");
+        console.log("No users have enabled USER_ADDED notifications");
         return;
       }
 
       await this.createBulkNotifications(
         {
           organizationId: params.organizationId,
-          type: NotificationType.JOB_UPDATED,
-          title: "Job Updated",
-          message: `${params.triggerUserName} updated job: ${params.jobTitle}`,
-          relatedEntity: "job",
-          relatedId: params.jobId,
-          actionUrl: `/dashboard/jobs/${params.jobId}`,
+          type: NotificationType.USER_ADDED,
+          title: "New User Added",
+          message: `${params.triggerUserName} added ${params.newUserName} as ${params.newUserRole}`,
+          relatedEntity: "user",
+          relatedId: params.newUserId,
+          actionUrl: `/dashboard/users`,
           triggerUserId: params.triggerUserId,
           triggerUserName: params.triggerUserName,
-          priority: "low",
+          priority: "medium",
           metadata: {
-            jobTitle: params.jobTitle,
-            jobId: params.jobId,
+            newUserName: params.newUserName,
+            newUserEmail: params.newUserEmail,
+            newUserRole: params.newUserRole,
           },
         },
         eligibleUserIds
@@ -1617,10 +1907,11 @@ export class NotificationService {
         `Sent in-app notifications to ${eligibleUserIds.length} users`
       );
     } catch (error) {
-      console.error("Failed to send job updated notification:", error);
+      console.error("Failed to send user added notification:", error);
     }
   }
 
+  /** Notify when bulk import is completed */
   static async notifyBulkImportCompleted(params: {
     organizationId: string;
     batchId: string;
@@ -1651,7 +1942,7 @@ export class NotificationService {
           notificationType: NotificationType.BULK_IMPORT_COMPLETED,
           triggererUserId: params.triggerUserId,
           isMention: false,
-          notificationCategory: "email",
+          notificationCategory: "inApp",
         }));
 
       const decisions = await batchCheckNotifications(decisionContexts);
@@ -1698,83 +1989,7 @@ export class NotificationService {
     }
   }
 
-  static async notifyCandidateRejected(params: {
-    organizationId: string;
-    candidateId: string;
-    candidateName: string;
-    jobId: string;
-    jobTitle: string;
-    triggerUserId: string;
-    triggerUserName: string;
-  }) {
-    try {
-      await connectToDatabase();
-      const adminHrIds = await this.getUsersByRole(params.organizationId, [
-        "admin",
-        "hr",
-      ]);
-      const filteredAdminHrIds = adminHrIds.filter(
-        (id) => id !== params.triggerUserId
-      );
-
-      if (filteredAdminHrIds.length === 0) {
-        console.log("No eligible recipients for notification");
-        return;
-      }
-
-      const decisionContexts: NotificationDecisionContext[] =
-        filteredAdminHrIds.map((userId) => ({
-          organizationId: params.organizationId,
-          recipientUserId: userId,
-          notificationType: NotificationType.CANDIDATE_REJECTED,
-          jobId: params.jobId,
-          triggererUserId: params.triggerUserId,
-          isMention: false,
-          notificationCategory: "email",
-        }));
-
-      const decisions = await batchCheckNotifications(decisionContexts);
-      const eligibleUserIds = filteredAdminHrIds.filter(
-        (userId, index) => decisions[index].shouldSend
-      );
-
-      if (eligibleUserIds.length === 0) {
-        console.log("No users have enabled CANDIDATE_REJECTED notifications");
-        return;
-      }
-
-      await this.createBulkNotifications(
-        {
-          organizationId: params.organizationId,
-          type: NotificationType.CANDIDATE_REJECTED,
-          title: "Candidate Rejected",
-          message: `${params.triggerUserName} rejected ${params.candidateName} for ${params.jobTitle}`,
-          relatedEntity: "candidate",
-          relatedId: params.candidateId,
-          actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
-          triggerUserId: params.triggerUserId,
-          triggerUserName: params.triggerUserName,
-          priority: "medium",
-          metadata: {
-            candidateName: params.candidateName,
-            jobTitle: params.jobTitle,
-            jobId: params.jobId,
-          },
-        },
-        eligibleUserIds
-      );
-
-      console.log(
-        `Sent in-app notifications to ${eligibleUserIds.length} users`
-      );
-    } catch (error) {
-      console.error("Failed to send candidate rejected notification:", error);
-    }
-  }
-
-  /**
-   * Notify when meeting invite is accepted
-   */
+  /** Notify when meeting invite is accepted */
   static async notifyMeetingInviteAccepted(params: {
     organizationId: string;
     candidateId: string;
@@ -1785,10 +2000,22 @@ export class NotificationService {
     attendeeName: string;
     interviewerId?: string;
     interviewerName?: string;
+    interviewerEmail?: string;
+    userEmail?: string;
     meetingDate?: Date;
   }) {
-    // Notify the organizer/interviewer
-    if (params.interviewerId) {
+    await connectToDatabase();
+
+    /** -------------------------
+     *  Notify interviewer (if they exist)
+     * ------------------------- */
+    const shouldNotifyInterviewer =
+      params.interviewerId &&
+      params.interviewerEmail &&
+      params.attendeeEmail &&
+      params.interviewerEmail !== params.attendeeEmail;
+
+    if (shouldNotifyInterviewer) {
       await this.createNotification({
         organizationId: params.organizationId,
         recipientId: params.interviewerId,
@@ -1811,16 +2038,36 @@ export class NotificationService {
       });
     }
 
-    // Notify admin/hr
-    const adminHrIds = await this.getUsersByRole(params.organizationId, [
-      "admin",
-      "hr",
-    ]);
-    const filteredAdminHrIds = adminHrIds.filter(
-      (id) => id !== params.interviewerId
-    );
+    /** -------------------------
+     *  Notify admin/hr
+     * ------------------------- */
 
-    if (filteredAdminHrIds.length > 0) {
+    const adminHrEmails = await this.getUsersEmailByRole(
+      params.organizationId,
+      ["admin", "hr"]
+    );
+    const filteredAdminHrIds = adminHrEmails
+      .filter((admin) => admin.email !== params.attendeeEmail) // remove matching email
+      .map((admin) => admin.id); // return only ids
+
+    if (filteredAdminHrIds.length === 0) return;
+
+    const decisionContexts: NotificationDecisionContext[] =
+      filteredAdminHrIds.map((userId) => ({
+        organizationId: params.organizationId,
+        recipientUserId: userId,
+        notificationType: NotificationType.MEETING_INVITE_ACCEPTED,
+        jobId: params.jobId,
+        triggererUserId: params.interviewerId ?? userId,
+        isMention: false,
+        notificationCategory: "inApp",
+      }));
+
+    const decisions = await batchCheckNotifications(decisionContexts);
+    const eligibleUserIds = filteredAdminHrIds.filter(
+      (userId, idx) => decisions[idx].shouldSend
+    );
+    if (eligibleUserIds.length > 0) {
       await this.createBulkNotifications(
         {
           organizationId: params.organizationId,
@@ -1838,17 +2085,16 @@ export class NotificationService {
             attendeeEmail: params.attendeeEmail,
             attendeeName: params.attendeeName,
             interviewerName: params.interviewerName,
+            interviewerId: params.interviewerId,
             meetingDate: params.meetingDate,
           },
         },
-        filteredAdminHrIds
+        eligibleUserIds
       );
     }
   }
 
-  /**
-   * Notify when meeting invite is declined
-   */
+  /** Notify when meeting invite is declined */
   static async notifyMeetingInviteDeclined(params: {
     organizationId: string;
     candidateId: string;
@@ -1859,13 +2105,22 @@ export class NotificationService {
     attendeeName: string;
     interviewerId?: string;
     interviewerName?: string;
+    interviewerEmail?: string;
     meetingDate?: Date;
   }) {
-    // High priority notification to the organizer/interviewer
-    if (params.interviewerId) {
+    await connectToDatabase();
+
+    /** Notify interviewer ONLY IF their email != attendee email */
+    const shouldNotifyInterviewer =
+      params.interviewerId &&
+      params.interviewerEmail &&
+      params.attendeeEmail &&
+      params.interviewerEmail !== params.attendeeEmail;
+
+    if (shouldNotifyInterviewer) {
       await this.createNotification({
         organizationId: params.organizationId,
-        recipientId: params.interviewerId,
+        recipientId: params.interviewerId!,
         type: NotificationType.MEETING_INVITE_DECLINED,
         title: "Meeting Invite Declined",
         message: `⚠️ ${params.attendeeName} has declined the interview invitation with ${params.candidateName}`,
@@ -1885,44 +2140,67 @@ export class NotificationService {
       });
     }
 
-    // High priority notification to admin/hr
-    const adminHrIds = await this.getUsersByRole(params.organizationId, [
-      "admin",
-      "hr",
-    ]);
-    const filteredAdminHrIds = adminHrIds.filter(
-      (id) => id !== params.interviewerId
+    /** -------------------------
+     *  Notify admin/hr AFTER filtering attendee email
+     * ------------------------- */
+
+    const adminHrEmails = await this.getUsersEmailByRole(
+      params.organizationId,
+      ["admin", "hr"]
     );
 
-    if (filteredAdminHrIds.length > 0) {
-      await this.createBulkNotifications(
-        {
-          organizationId: params.organizationId,
-          type: NotificationType.MEETING_INVITE_DECLINED,
-          title: "Meeting Invite Declined - Action Required",
-          message: `⚠️ ${params.attendeeName} has declined the interview invitation with ${params.candidateName}. Consider rescheduling.`,
-          relatedEntity: "meeting",
-          relatedId: params.candidateId,
-          actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
-          priority: "high",
-          metadata: {
-            candidateName: params.candidateName,
-            jobTitle: params.jobTitle,
-            jobId: params.jobId,
-            attendeeEmail: params.attendeeEmail,
-            attendeeName: params.attendeeName,
-            interviewerName: params.interviewerName,
-            meetingDate: params.meetingDate,
-          },
+    // filter out SAME EMAIL as attendee
+    const filteredAdminHrIds = adminHrEmails
+      .filter((admin) => admin.email !== params.attendeeEmail)
+      .map((admin) => admin.id);
+
+    if (filteredAdminHrIds.length === 0) return;
+
+    const decisionContexts: NotificationDecisionContext[] =
+      filteredAdminHrIds.map((userId) => ({
+        organizationId: params.organizationId,
+        recipientUserId: userId,
+        notificationType: NotificationType.MEETING_INVITE_DECLINED,
+        jobId: params.jobId,
+        triggererUserId: params.interviewerId ?? userId,
+        isMention: false,
+        notificationCategory: "inApp",
+      }));
+
+    const decisions = await batchCheckNotifications(decisionContexts);
+
+    const eligibleUserIds = filteredAdminHrIds.filter(
+      (userId, idx) => decisions[idx].shouldSend
+    );
+
+    if (eligibleUserIds.length === 0) return;
+
+    await this.createBulkNotifications(
+      {
+        organizationId: params.organizationId,
+        type: NotificationType.MEETING_INVITE_DECLINED,
+        title: "Meeting Invite Declined - Action Required",
+        message: `⚠️ ${params.attendeeName} has declined the interview invitation with ${params.candidateName}`,
+        relatedEntity: "meeting",
+        relatedId: params.candidateId,
+        actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
+        priority: "high",
+        metadata: {
+          candidateName: params.candidateName,
+          jobTitle: params.jobTitle,
+          jobId: params.jobId,
+          attendeeEmail: params.attendeeEmail,
+          attendeeName: params.attendeeName,
+          interviewerName: params.interviewerName,
+          interviewerId: params.interviewerId,
+          meetingDate: params.meetingDate,
         },
-        filteredAdminHrIds
-      );
-    }
+      },
+      eligibleUserIds
+    );
   }
 
-  /**
-   * Notify when meeting invite is tentatively accepted
-   */
+  /** Notify when meeting invite is tentatively accepted */
   static async notifyMeetingInviteTentative(params: {
     organizationId: string;
     candidateId: string;
@@ -1933,13 +2211,22 @@ export class NotificationService {
     attendeeName: string;
     interviewerId?: string;
     interviewerName?: string;
+    interviewerEmail?: string;
     meetingDate?: Date;
   }) {
-    // Notify the organizer/interviewer
-    if (params.interviewerId) {
+    await connectToDatabase();
+
+    /** Notify interviewer ONLY IF their email != attendee email */
+    const shouldNotifyInterviewer =
+      params.interviewerId &&
+      params.interviewerEmail &&
+      params.attendeeEmail &&
+      params.interviewerEmail !== params.attendeeEmail;
+
+    if (shouldNotifyInterviewer) {
       await this.createNotification({
         organizationId: params.organizationId,
-        recipientId: params.interviewerId,
+        recipientId: params.interviewerId!,
         type: NotificationType.MEETING_INVITE_TENTATIVE,
         title: "Meeting Invite - Maybe",
         message: `${params.attendeeName} tentatively accepted the interview invitation with ${params.candidateName}`,
@@ -1959,85 +2246,62 @@ export class NotificationService {
       });
     }
 
-    // Notify admin/hr
-    const adminHrIds = await this.getUsersByRole(params.organizationId, [
-      "admin",
-      "hr",
-    ]);
-    const filteredAdminHrIds = adminHrIds.filter(
-      (id) => id !== params.interviewerId
+    /** -------------------------
+     *  Notify admin/hr AFTER filtering attendee email
+     * ------------------------- */
+
+    const adminHrEmails = await this.getUsersEmailByRole(
+      params.organizationId,
+      ["admin", "hr"]
     );
 
-    if (filteredAdminHrIds.length > 0) {
-      await this.createBulkNotifications(
-        {
-          organizationId: params.organizationId,
-          type: NotificationType.MEETING_INVITE_TENTATIVE,
-          title: "Meeting Invite - Maybe",
-          message: `${params.attendeeName} tentatively accepted the interview invitation with ${params.candidateName}`,
-          relatedEntity: "meeting",
-          relatedId: params.candidateId,
-          actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
-          priority: "medium",
-          metadata: {
-            candidateName: params.candidateName,
-            jobTitle: params.jobTitle,
-            jobId: params.jobId,
-            attendeeEmail: params.attendeeEmail,
-            attendeeName: params.attendeeName,
-            interviewerName: params.interviewerName,
-            meetingDate: params.meetingDate,
-          },
-        },
-        filteredAdminHrIds
-      );
-    }
-  }
+    const filteredAdminHrIds = adminHrEmails
+      .filter((admin) => admin.email !== params.attendeeEmail)
+      .map((admin) => admin.id);
 
-  /**
-   * Notify when interview is completed
-   */
-  static async notifyInterviewCompleted(params: {
-    organizationId: string;
-    candidateId: string;
-    candidateName: string;
-    jobId: string;
-    jobTitle: string;
-    interviewerId: string;
-    interviewerName: string;
-    triggerUserId: string;
-    triggerUserName: string;
-  }) {
-    const adminHrIds = await this.getUsersByRole(params.organizationId, [
-      "admin",
-      "hr",
-    ]);
-    const filteredAdminHrIds = adminHrIds.filter(
-      (id) => id !== params.triggerUserId
+    if (filteredAdminHrIds.length === 0) return;
+
+    const decisionContexts: NotificationDecisionContext[] =
+      filteredAdminHrIds.map((userId) => ({
+        organizationId: params.organizationId,
+        recipientUserId: userId,
+        notificationType: NotificationType.MEETING_INVITE_TENTATIVE,
+        jobId: params.jobId,
+        triggererUserId: params.interviewerId ?? userId,
+        isMention: false,
+        notificationCategory: "inApp",
+      }));
+
+    const decisions = await batchCheckNotifications(decisionContexts);
+
+    const eligibleUserIds = filteredAdminHrIds.filter(
+      (userId, idx) => decisions[idx].shouldSend
     );
 
-    if (filteredAdminHrIds.length > 0) {
-      await this.createBulkNotifications(
-        {
-          organizationId: params.organizationId,
-          type: NotificationType.INTERVIEW_COMPLETED,
-          title: "Interview Completed",
-          message: `${params.interviewerName} completed interview with ${params.candidateName}`,
-          relatedEntity: "candidate",
-          relatedId: params.candidateId,
-          actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
-          triggerUserId: params.triggerUserId,
-          triggerUserName: params.triggerUserName,
-          priority: "medium",
-          metadata: {
-            candidateName: params.candidateName,
-            jobTitle: params.jobTitle,
-            jobId: params.jobId,
-            interviewerName: params.interviewerName,
-          },
+    if (eligibleUserIds.length === 0) return;
+
+    await this.createBulkNotifications(
+      {
+        organizationId: params.organizationId,
+        type: NotificationType.MEETING_INVITE_TENTATIVE,
+        title: "Meeting Invite - Maybe",
+        message: `${params.attendeeName} tentatively accepted the interview invitation with ${params.candidateName}`,
+        relatedEntity: "meeting",
+        relatedId: params.candidateId,
+        actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
+        priority: "medium",
+        metadata: {
+          candidateName: params.candidateName,
+          jobTitle: params.jobTitle,
+          jobId: params.jobId,
+          attendeeEmail: params.attendeeEmail,
+          attendeeName: params.attendeeName,
+          interviewerName: params.interviewerName,
+          interviewerId: params.interviewerId,
+          meetingDate: params.meetingDate,
         },
-        filteredAdminHrIds
-      );
-    }
+      },
+      eligibleUserIds
+    );
   }
 }

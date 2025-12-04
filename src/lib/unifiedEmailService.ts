@@ -387,6 +387,7 @@ export async function sendSmartNotification(
     eventType?: string;
     templateUsed?: string;
     content?: string;
+    validMentionUserIds?: string[]; // User IDs selected from mention picker
   },
   emailContent: {
     subject: string;
@@ -430,7 +431,8 @@ export async function sendSmartNotification(
       try {
         const mentionResult = await findMentionedUsers(
           context.content,
-          organizationId
+          organizationId,
+          context.validMentionUserIds
         );
         mentionedUsers = mentionResult.mentionedUsers.map((u) =>
           u._id.toString()
@@ -573,6 +575,7 @@ export async function sendRemarkNotificationWithMentions(
     candidateProfileLink?: string;
     organizationName?: string;
     recipientName?: string;
+    validMentionUserIds?: string[]; // User IDs selected from mention picker
   },
   potentialRecipients: string[]
 ): Promise<{
@@ -615,6 +618,7 @@ export async function sendRemarkNotificationWithMentions(
       content: remarkContent,
       eventType: "new_remark",
       templateUsed: "remark-notification",
+      validMentionUserIds: context.validMentionUserIds,
     },
     emailContentObj,
     potentialRecipients
@@ -793,12 +797,11 @@ async function filterRecipientsByNotificationSettings(
     followup_updated: NotificationType.FOLLOWUP_UPDATED,
     followup_removed: NotificationType.FOLLOWUP_REMOVED,
 
-    // checklist
-    checklist_completed: NotificationType.CHECKLIST_COMPLETED,
 
     // jobs
     job_created: NotificationType.JOB_CREATED,
     job_updated: NotificationType.JOB_UPDATED,
+    candidate_moved: NotificationType.CANDIDATE_MOVED,
 
     // user/org/system
     user_added: NotificationType.USER_ADDED,
