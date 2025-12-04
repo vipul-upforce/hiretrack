@@ -6,6 +6,7 @@ import { Code, Edit, FileText } from "lucide-react";
 import { Editor } from "@monaco-editor/react";
 import RichTextEditor from "@/components/ui/rte/RichTextEditor";
 import { EmailTemplate } from "./types";
+import { TemplateVisualEditor } from "./TemplateVisualEditor";
 
 interface EmailEditorProps {
   subject: string;
@@ -76,36 +77,35 @@ export const EmailEditor: React.FC<EmailEditorProps> = ({
             {/* Check if using a template */}
             {selectedTemplate !== "none" ? (
               <>
-                {/* Template Preview */}
-                <div className="border rounded-lg">
-                  <div className="bg-blue-50 dark:bg-blue-900/20 p-3 border-b border-blue-200 dark:border-blue-800">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-sm text-blue-800 dark:text-blue-200">
-                        <FileText className="h-4 w-4" />
-                        Using template:{" "}
+                {/* Template Visual Editor */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between px-1">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <FileText className="h-4 w-4" />
+                      Using template:{" "}
+                      <span className="font-semibold">
                         {templates.find((t) => t.id === selectedTemplate)?.name}
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedTemplate("none");
-                          setBody("");
-                        }}
-                        className="text-xs"
-                      >
-                        Remove Template
-                      </Button>
+                      </span>
                     </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedTemplate("none");
+                        setBody("");
+                      }}
+                      className="text-xs"
+                    >
+                      Remove Template
+                    </Button>
                   </div>
-                  <div className="p-4 bg-white max-h-[300px] overflow-y-auto">
-                    <div dangerouslySetInnerHTML={{ __html: body }} />
-                  </div>
-                  <div className="p-3 bg-white dark:bg-black border-t text-xs text-muted-foreground">
-                    💡 This template has professional formatting applied. Switch
-                    to "Advanced HTML" mode to modify the template structure.
-                  </div>
+                  <TemplateVisualEditor
+                    key={selectedTemplate}
+                    htmlContent={body}
+                    onContentChange={setBody}
+                    className="min-h-[300px]"
+                  />
                 </div>
               </>
             ) : (

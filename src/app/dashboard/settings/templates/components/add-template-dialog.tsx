@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -24,10 +24,11 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
-import { Code, Eye, FileText, Mail, Plus } from "lucide-react";
+import { Code, Eye, FileText, Mail, Plus, Edit2 } from "lucide-react";
 import { Editor } from "@monaco-editor/react";
 import { sampleCustomTemplates, templateVariables } from "../constants";
 import { useTheme } from "@/components/theme-provider";
+import { TemplateVisualEditor } from "@/app/dashboard/jobs/[id]/components/Dialogs/email-candidate-components/TemplateVisualEditor";
 
 interface AddTemplateDialogProps {
   open: boolean;
@@ -61,6 +62,7 @@ export const AddTemplateDialog: React.FC<AddTemplateDialogProps> = ({
   insertVariableInNewTemplate,
 }) => {
   const { theme } = useTheme();
+  const [editorMode, setEditorMode] = useState<"code" | "visual">("visual");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -165,26 +167,53 @@ export const AddTemplateDialog: React.FC<AddTemplateDialogProps> = ({
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-medium">Content</Label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setNewTemplatePreviewMode(!newTemplatePreviewMode)
-                    }
-                  >
-                    {newTemplatePreviewMode ? (
+                  <div className="flex gap-2">
+                    {!newTemplatePreviewMode && (
                       <>
-                        <Code className="h-4 w-4 mr-2" />
-                        Edit
-                      </>
-                    ) : (
-                      <>
-                        <Eye className="h-4 w-4 mr-2" />
-                        Preview
+                        <Button
+                          type="button"
+                          variant={editorMode === "visual" ? "primary" : "outline"}
+                          size="sm"
+                          onClick={() => setEditorMode("visual")}
+                          className="h-8"
+                        >
+                          <Edit2 className="h-3 w-3 mr-1" />
+                          Preview
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={editorMode === "code" ? "primary" : "outline"}
+                          size="sm"
+                          onClick={() => setEditorMode("code")}
+                          className="h-8"
+                        >
+                          <Code className="h-3 w-3 mr-1" />
+                          Edit
+                        </Button>
                       </>
                     )}
-                  </Button>
+                    {/* <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setNewTemplatePreviewMode(!newTemplatePreviewMode)
+                      }
+                      className="h-8"
+                    >
+                      {newTemplatePreviewMode ? (
+                        <>
+                          <Code className="h-4 w-4 mr-2" />
+                          Edit
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="h-4 w-4 mr-2" />
+                          Preview
+                        </>
+                      )}
+                    </Button> */}
+                  </div>
                 </div>
 
                 {newTemplatePreviewMode ? (
@@ -198,6 +227,17 @@ export const AddTemplateDialog: React.FC<AddTemplateDialogProps> = ({
                       }}
                     />
                   </div>
+                ) : editorMode === "visual" ? (
+                  <TemplateVisualEditor
+                    htmlContent={newTemplate.content}
+                    onContentChange={(html) =>
+                      setNewTemplate((prev) => ({
+                        ...prev,
+                        content: html,
+                      }))
+                    }
+                    className="min-h-[500px]"
+                  />
                 ) : (
                   <div className="border rounded-lg overflow-hidden">
                     <Editor
