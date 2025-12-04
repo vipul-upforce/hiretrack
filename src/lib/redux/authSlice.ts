@@ -1,9 +1,13 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
-import { EmailNotificationSettings, IUser, Organization, OrgInfo } from "@/lib/models/user";
+import {
+  EmailNotificationSettings,
+  Organization,
+  OrgInfo,
+} from "@/lib/models/user";
+import Cookies from "js-cookie";
 export interface ILocalUser {
   id: string;
-  organizationId: Organization |string;
+  organizationId: Organization | string;
   organizationInfo?: OrgInfo;
   name: string;
   email: string;
@@ -38,7 +42,24 @@ export const fetchUserFromToken = createAsyncThunk(
     try {
       localStorage.removeItem("persist:auth");
       localStorage.removeItem("persist:organization");
+      
+      const authState = Cookies.get("auth_state");
+      if (!authState || authState === "false") {
+        const user = {
+          id: "guest",
+          name: "Guest",
+          email: "",
+          role: "",
+          organizationId: "",
+          organizationInfo: null,
+          appliedApplications: [],
+          fileStorage: null,
+        };
+        return user;
+      }
+
       const response = await fetch("/api/auth/me");
+
       if (!response.ok) {
         const errorData = await response.json();
         localStorage.removeItem("persist:auth");
