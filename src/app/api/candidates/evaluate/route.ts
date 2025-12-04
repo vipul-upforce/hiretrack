@@ -184,10 +184,12 @@ export async function PUT(request: NextRequest) {
     }
 
     const { candidateId } = data;
-    const candidate = await Candidate.findById(candidateId).select("resume jobId contact scores").populate({
+    const candidate = await Candidate.findById(candidateId).select("resume jobId contact scores expectedCTC currentCTC").populate({
       path: "jobId",
       select: "description organizationId title skills salary experience evaluationWeights",
     });
+    console.log(candidate,"candidate in resume evaluation api");
+
     if (!candidate) {
       return NextResponse.json(
         { error: "Candidate not found" },
